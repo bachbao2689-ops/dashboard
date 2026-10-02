@@ -16,7 +16,7 @@ const taskStatusData = [
 
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
-  const { data, loading, refetch } = useDashboard();
+  const { data, loading, error, refetch } = useDashboard();
 
   const [dateRange, setDateRange] = useState('');
 
@@ -49,6 +49,19 @@ export const Overview: React.FC = () => {
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center flex flex-col items-center justify-center">
+        <div className="bg-red-100 text-red-600 p-4 rounded-xl max-w-lg shadow-sm border border-red-200">
+          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+          <h3 className="font-bold text-lg">Failed to load dashboard</h3>
+          <p className="mt-1">{error}</p>
+          <button onClick={refetch} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Retry</button>
+        </div>
+      </div>
+    );
   }
 
   return (

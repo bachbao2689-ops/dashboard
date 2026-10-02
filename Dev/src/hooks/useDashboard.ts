@@ -20,6 +20,7 @@ export function useDashboard() {
     recentRequests: []
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboard();
@@ -39,26 +40,28 @@ export function useDashboard() {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Simple aggregations
-      await await supabase.from('tasks').select('*', { count: 'exact', head: true });
-      const { count: pendingTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done');
-      await await supabase.from('assets').select('*', { count: 'exact', head: true });
-      const { count: activeBorrows } = await supabase.from('borrow_requests').select('*', { count: 'exact', head: true }).eq('approval_status', 'approved');
+      const { count: pendingTasks, error: err1 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done');
+      if (err1) throw err1;
 
-      // Fetch lists
-      const { data: upcoming } = await supabase
+      const { count: activeBorrows, error: err2 } = await supabase.from('borrow_requests').select('*', { count: 'exact', head: true }).eq('approval_status', 'approved');
+      if (err2) throw err2;
+
+      const { data: upcoming, error: err3 } = await supabase
         .from('tasks')
-        .select(`id, task_ref, title, priority, due_date, assignee:assignee_id(name, avatar_url)`)
+        .select(`id, task_ref, title, priority, due_date`)
         .neq('status', 'done')
         .order('due_date', { ascending: true })
         .limit(5);
+      if (err3) throw err3;
 
-      const { data: recent } = await supabase
+      const { data: recent, error: err4 } = await supabase
         .from('borrow_requests')
-        .select(`id, approval_status, due_date, asset:asset_id(name), requester:requester_id(name)`)
+        .select(`id, approval_status, due_date`)
         .order('requested_at', { ascending: false })
         .limit(5);
+      if (err4) throw err4;
 
       setData({
         myTasksCount: pendingTasks || 0,
@@ -68,12 +71,13 @@ export function useDashboard() {
         upcomingTasks: upcoming || [],
         recentRequests: recent || []
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching dashboard', err);
+      setError(err.message || 'Unknown error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  return { data, loading, refetch: fetchDashboard };
+  return { data, loading, error, refetch: fetchDashboard };
 }
