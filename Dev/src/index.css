@@ -102,21 +102,10 @@ body {
 }
 
 /* Custom Scrollbar for Glass UI */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 46, 109, 0.2);
-  border-radius: 8px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 46, 109, 0.4);
-}
+
+
+
+
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -167,3 +156,12 @@ body {
 .dark .hover\:bg-white\/40:hover { background-color: rgba(15, 23, 42, 0.6); }
 .dark .hover\:bg-white\/50:hover { background-color: rgba(15, 23, 42, 0.7); }
 .dark .hover\:bg-white\/60:hover { background-color: rgba(15, 23, 42, 0.8); }
+
+/* Globally hide scrollbars as requested */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

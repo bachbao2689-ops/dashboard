@@ -3,6 +3,8 @@ import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lu
 import { useAssets } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
 import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
+import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
+import { QrCode } from 'lucide-react';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -17,6 +19,7 @@ export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [qrAsset, setQrAsset] = useState<any>(null);
   const { assets, loading, refetch } = useAssets();
 
   const handleNewAsset = () => {
@@ -105,9 +108,14 @@ export const AssetInventory: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4">
-                      <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100">
-                        <MoreHorizontal size={18} />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); setQrAsset(asset); }} className="p-2 text-primary hover:text-primary/80 transition-colors rounded-lg hover:bg-primary/10" title="View QR Code">
+                          <QrCode size={18} />
+                        </button>
+                        <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <MoreHorizontal size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -119,6 +127,7 @@ export const AssetInventory: React.FC = () => {
     
       </div>
       <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} />
+      <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
 </div>
   );
 };
