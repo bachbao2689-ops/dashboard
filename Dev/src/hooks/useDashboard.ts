@@ -10,6 +10,20 @@ export interface DashboardData {
   recentRequests: any[];
 }
 
+const MOCK_DATA: DashboardData = {
+  myTasksCount: 12,
+  dueSoonCount: 5,
+  borrowedCount: 3,
+  overdueCount: 2,
+  upcomingTasks: [
+    { id: '1', task_ref: 'TSK-001', title: 'Hoàn thiện giao diện', priority: 'high', due_date: '2026-10-05', assignee: { name: 'Admin', avatar_url: null } },
+    { id: '2', task_ref: 'TSK-002', title: 'Thiết kế Database', priority: 'medium', due_date: '2026-10-07', assignee: { name: 'Bach Bao', avatar_url: null } },
+  ],
+  recentRequests: [
+    { id: '1', approval_status: 'pending', due_date: '2026-10-10', asset: { name: 'MacBook Pro M2' }, requester: { name: 'Admin' } },
+  ]
+};
+
 export function useDashboard() {
   const [data, setData] = useState<DashboardData>({
     myTasksCount: 0,
@@ -50,7 +64,7 @@ export function useDashboard() {
 
       const { data: upcoming, error: err3 } = await supabase
         .from('tasks')
-        .select(`id, task_ref, title, priority, due_date`)
+        .select(`id, task_ref, title, priority, due_date, assignee:assignee_id(name, avatar_url)`)
         .neq('status', 'done')
         .order('due_date', { ascending: true })
         .limit(5);
@@ -58,7 +72,7 @@ export function useDashboard() {
 
       const { data: recent, error: err4 } = await supabase
         .from('borrow_requests')
-        .select(`id, approval_status, due_date`)
+        .select(`id, approval_status, due_date, asset:asset_id(name), requester:requester_id(name)`)
         .order('requested_at', { ascending: false })
         .limit(5);
       if (err4) throw err4;
@@ -72,8 +86,10 @@ export function useDashboard() {
         recentRequests: recent || []
       });
     } catch (err: any) {
-      console.error('Error fetching dashboard', err);
-      setError(err.message || 'Unknown error occurred');
+      console.error('Error fetching dashboard, using mock data:', err);
+      // OFFLINE FALLBACK
+      setData(MOCK_DATA);
+      setError(err.message || 'Supabase Timeout - Loading Offline Mode');
     } finally {
       setLoading(false);
     }

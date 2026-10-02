@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
 
@@ -16,6 +17,14 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
+      // OFFLINE DEV BYPASS
+      if (email === 'admin' && password === 'admin') {
+        useAuthStore.getState().devLogin();
+        toast.success('Logged in via Offline Mode (Local Admin)');
+        navigate('/');
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,

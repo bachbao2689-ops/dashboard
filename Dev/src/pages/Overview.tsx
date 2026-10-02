@@ -51,21 +51,15 @@ export const Overview: React.FC = () => {
     return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
   }
 
-  if (error) {
-    return (
-      <div className="p-8 text-center flex flex-col items-center justify-center">
-        <div className="bg-red-100 text-red-600 p-4 rounded-xl max-w-lg shadow-sm border border-red-200">
-          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
-          <h3 className="font-bold text-lg">Failed to load dashboard</h3>
-          <p className="mt-1">{error}</p>
-          <button onClick={refetch} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Retry</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto z-10 relative">
+      {error && (
+        <div className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 p-3 rounded-xl border border-yellow-500/50 flex items-center gap-2">
+          <AlertCircle size={18} />
+          <span className="text-sm font-medium">Running in Offline/Dev Mode: {error}</span>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 p-6 rounded-3xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-md dark:bg-gray-800/40 dark:border-gray-700/50">
         <div>
           <h2 className="text-3xl font-bold text-gray-800 tracking-tight dark:text-gray-100">{t('overview.welcome')}</h2>
