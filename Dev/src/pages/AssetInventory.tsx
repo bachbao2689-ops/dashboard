@@ -1,92 +1,101 @@
 import React, { useState } from 'react';
-import { Filter, Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
-import inventoryData from '../data/inventory.json';
+import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
+import { useAssets } from '../hooks/useAssets';
 
-const getIcon = (cat: string) => {
-  if (cat === 'Camera' || cat === 'Lens') return <Camera size={16} className="text-purple-500" />;
-  if (cat === 'Laptop') return <Laptop size={16} className="text-blue-500" />;
-  if (cat === 'Storage') return <HardDrive size={16} className="text-emerald-500" />;
+const getIcon = (cat: string | undefined) => {
+  if (!cat) return <Box size={16} className="text-gray-500" />;
+  const c = cat.toLowerCase();
+  if (c.includes('camera') || c.includes('lens')) return <Camera size={16} className="text-primary" />;
+  if (c.includes('laptop')) return <Laptop size={16} className="text-blue-500" />;
+  if (c.includes('storage')) return <HardDrive size={16} className="text-emerald-500" />;
   return <Box size={16} className="text-gray-500" />;
 };
 
 export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { assets, loading } = useAssets();
 
-  const filteredAssets = inventoryData.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredAssets = assets.filter(a => 
+    a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    a.asset_code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="h-full flex flex-col z-10 relative">
       <div className="flex justify-between items-center mb-6 px-2">
-        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Asset Inventory</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Asset Inventory</h2>
         <div className="flex gap-3">
           <div className="relative group hidden sm:block">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
             <input 
               type="text" 
               placeholder="Search assets..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-white/40 backdrop-blur-md border border-white/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="pl-10 pr-4 py-2 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/60 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100"
             />
           </div>
-          <button className="flex items-center gap-2 bg-white/40 hover:bg-white/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-sm text-sm font-medium text-gray-700 transition-colors">
-            <Filter size={16} /> Filters
-          </button>
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl shadow-md text-sm font-medium transition-colors">
-            <Plus size={16} /> Add Asset
+          <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+            <Plus size={16} /> <span className="hidden sm:inline">Add Asset</span>
           </button>
         </div>
       </div>
 
-      <div className="glass-panel rounded-3xl overflow-hidden flex-1 flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="text-xs uppercase bg-white/50 border-b border-white/60 text-gray-500 font-bold sticky top-0 backdrop-blur-xl z-10">
-              <tr>
-                <th className="px-6 py-4">Asset Code</th>
-                <th className="px-6 py-4">Name / Category</th>
-                <th className="px-6 py-4">Condition</th>
-                <th className="px-6 py-4">Location</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4"></th>
+      <div className="glass-panel overflow-hidden border border-white/50 dark:border-gray-700/50 flex-1">
+        <div className="overflow-x-auto h-full">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset Code</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredAssets.map((asset) => (
-                <tr key={asset.id} className="border-b border-white/40 hover:bg-white/30 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">{asset.code}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-gray-800 flex items-center gap-2">
-                      {getIcon(asset.category)}
-                      {asset.name}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">{asset.category}</div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">{asset.condition || 'N/A'}</td>
-                  <td className="px-6 py-4 font-medium whitespace-nowrap">{asset.location}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 rounded-md border text-xs font-semibold flex items-center gap-1.5 w-max ${
-                      asset.status === 'Available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                      asset.status === 'Borrowed' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      'bg-red-50 text-red-700 border-red-200'
-                    }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        asset.status === 'Available' ? 'bg-emerald-500' :
-                        asset.status === 'Borrowed' ? 'bg-amber-500' :
-                        'bg-red-500'
-                      }`}></div>
-                      {asset.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-gray-400 hover:text-primary"><MoreHorizontal size={18} /></button>
-                  </td>
-                </tr>
-              ))}
-              {filteredAssets.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-10 text-gray-500 font-medium">No assets found.</td>
-                </tr>
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+              {loading ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading assets...</td></tr>
+              ) : filteredAssets.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">No assets found</td></tr>
+              ) : (
+                filteredAssets.map((asset) => (
+                  <tr key={asset.id} className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors group">
+                    <td className="p-4">
+                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">{asset.asset_code}</span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                          {getIcon(asset.category?.name)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{asset.category?.name || 'Uncategorized'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">{asset.condition || 'N/A'}</span>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.location || 'N/A'}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
+                        ${asset.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' : 
+                          asset.status === 'borrowed' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' : 
+                          'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${asset.status === 'available' ? 'bg-emerald-500' : asset.status === 'borrowed' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
+                        {asset.status === 'available' ? 'Available' : asset.status === 'borrowed' ? 'Borrowed' : 'Maintenance'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100">
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

@@ -1,70 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Avatar } from '../components/common/Avatar';
 import { Paperclip, MessageSquare } from 'lucide-react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import tasksData from '../data/tasks.json';
+import { useKanban } from '../hooks/useKanban';
+import type { KanbanTask } from '../hooks/useKanban';
 
-interface Task {
-  id: string;
-  tag: string;
-  title: string;
-  desc: string;
-  comments: number;
-  attachments: number;
-  users: string[];
-}
-
-// Convert JSON tasks to Kanban format
-const loadColumns = () => {
-  const cols: Record<string, Task[]> = {
-    'Yet to Start': [],
-    'In Progress': [],
-    'Feedback': [],
-    'Completed': []
+const SortableTaskItem = ({ task }: { task: KanbanTask }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
   };
 
-  tasksData.forEach(t => {
-    const status = (t['Trạng thái'] || '').toLowerCase();
-    let col = 'Yet to Start';
-    if (status.includes('done')) col = 'Completed';
-    else if (status.includes('feedback')) col = 'Feedback';
-    else if (status.includes('progress') || status.includes('on going')) col = 'In Progress';
-
-    const task: Task = {
-      id: t['ID'],
-      tag: t['Dự án'] || 'N/A',
-      title: t['Tên công việc'] || 'Untitled',
-      desc: (t['Nội dung'] || '').replace('Link\n(gắn link vào đây)', '').trim() || t['Sản phẩm cần giao'] || '',
-      comments: Math.floor(Math.random() * 5),
-      attachments: Math.floor(Math.random() * 3),
-      users: [t['Người phụ trách']]
-    };
-
-    if (cols[col]) {
-      cols[col].push(task);
-    }
-  });
-  return cols;
-};
-
-const SortableTaskItem = ({ task }: { task: Task }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
-  const style = { transform: CSS.Transform.toString(transform), transition };
-
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={`glass-panel p-5 rounded-2xl mb-4 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 scale-105 shadow-xl z-50' : 'hover:-translate-y-1 hover:shadow-lg z-10'}`}>
-      <div className="bg-white/50 backdrop-blur text-primary font-medium text-xs px-2.5 py-1 rounded-lg inline-block mb-3 border border-white/60 shadow-sm">{task.tag}</div>
-      <h4 className="font-bold text-gray-800 mb-2 text-sm">{task.title}</h4>
-      {task.desc && <p className="text-xs text-gray-500 mb-5 line-clamp-2 leading-relaxed">{task.desc}</p>}
-      <div className="flex items-center justify-between mt-auto pt-2">
-        <div className="flex -space-x-2">
-          {task.users.map((u, i) => <Avatar key={i} name={u} className="w-7 h-7 border-2 border-white text-[10px] shadow-sm" />)}
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+      className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group">
+      
+      {task.project && (
+        <div className="flex items-center space-x-2 mb-2">
+          <span className="w-2 h-2 rounded-full bg-primary/60"></span>
+          <span className="text-xs font-semibold text-primary">{task.project.name}</span>
         </div>
-        <div className="flex items-center gap-4 text-gray-400 text-xs font-medium">
-          <span className="flex items-center gap-1 hover:text-primary transition-colors"><Paperclip size={14} /> {task.attachments}</span>
-          <span className="flex items-center gap-1 hover:text-primary transition-colors"><MessageSquare size={14} /> {task.comments}</span>
+      )}
+      
+      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 leading-snug">{task.title}</h4>
+      {task.description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>}
+      
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex -space-x-2">
+          {task.assignee ? (
+            <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] text-gray-500">?</div>
+          )}
+        </div>
+        <div className="flex items-center space-x-3 text-gray-400">
+          <div className="flex items-center space-x-1">
+            <MessageSquare className="w-3 h-3" />
+            <span className="text-xs">{task.comments_count || 0}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Paperclip className="w-3 h-3" />
+            <span className="text-xs">{task.attachments_count || 0}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -72,49 +54,70 @@ const SortableTaskItem = ({ task }: { task: Task }) => {
 };
 
 export const ProjectsKanban: React.FC = () => {
-  const [columns] = useState(loadColumns());
+  const { columns, loading, moveTask } = useKanban();
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id !== over.id) {
+      // Find old and new col
+      let oldColId, newColId;
+      for (const col of columns) {
+        if (col.tasks.find(t => t.id === active.id)) oldColId = col.id;
+        if (col.id === over.id || col.tasks.find(t => t.id === over.id)) newColId = col.id;
+      }
+      
+      if (oldColId && newColId) {
+        // Find position index
+        const destCol = columns.find(c => c.id === newColId);
+        let newIndex = 0;
+        if (destCol) {
+          const overIndex = destCol.tasks.findIndex(t => t.id === over.id);
+          newIndex = overIndex >= 0 ? overIndex : destCol.tasks.length;
+        }
+        moveTask(active.id, newColId, newIndex);
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading Board...</div>;
+  }
 
   return (
-    <div className="h-full flex flex-col z-10 relative">
-      <div className="flex justify-between items-center mb-8 px-2">
-        <div className="flex gap-8 text-sm font-semibold text-gray-400 w-full overflow-x-auto custom-scrollbar pb-1">
-          {['Overview', 'Board', 'Timeline', 'Files', 'Activity'].map((tab, i) => (
-            <span key={tab} className={`pb-2 whitespace-nowrap cursor-pointer transition-colors relative ${i === 1 ? 'text-gray-900' : 'hover:text-gray-700'}`}>
-              {tab}
-              {i === 1 && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full shadow-[0_0_8px_rgba(0,46,109,0.5)]"></span>}
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-3 ml-8 flex-shrink-0">
-          <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-white rounded-xl transition-all shadow-md">
-             Add Task
-          </button>
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Kanban</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Drag and drop to update status</p>
       </div>
 
-      <DndContext collisionDetection={closestCenter}>
-        <div className="flex gap-6 h-full overflow-x-auto pb-4 custom-scrollbar">
-          {Object.entries(columns).map(([colName, tasks], i) => (
-            <div key={colName} className="min-w-[300px] max-w-[300px] flex-1 flex flex-col">
-              <div className="flex items-center gap-3 font-bold text-gray-800 mb-6 px-2">
-                {colName} 
-                <span className="bg-white/50 backdrop-blur border border-white/60 text-gray-500 font-semibold text-xs px-2 py-0.5 rounded-full shadow-sm">
-                  {tasks.length}
-                </span>
-                <div className={`ml-auto w-8 h-1 rounded-full ${
-                  i === 0 ? 'bg-gray-300' : 
-                  i === 1 ? 'bg-blue-400' : 
-                  i === 2 ? 'bg-orange-400' : 
-                  'bg-emerald-400'
-                }`}></div>
-              </div>
-              <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="flex flex-col h-full overflow-y-auto custom-scrollbar pr-2 pb-10">
-                  {tasks.map(task => (
-                    <SortableTaskItem key={task.id} task={task} />
-                  ))}
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="flex flex-1 gap-6 overflow-x-auto pb-4">
+          {columns.map(column => (
+            <div key={column.id} className="flex flex-col w-80 shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <span className={`w-3 h-3 rounded-full bg-${column.color}-500`}></span>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{column.name}</h3>
+                  <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full font-medium">
+                    {column.tasks.length}
+                  </span>
                 </div>
-              </SortableContext>
+              </div>
+
+              <div className="glass-panel flex-1 p-3 overflow-y-auto min-h-[200px]">
+                <SortableContext items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {column.tasks.map(task => (
+                      <SortableTaskItem key={task.id} task={task} />
+                    ))}
+                  </div>
+                </SortableContext>
+                {/* Empty drop zone placeholder */}
+                {column.tasks.length === 0 && (
+                  <div id={column.id} className="h-full w-full border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg" />
+                )}
+              </div>
             </div>
           ))}
         </div>
