@@ -1,6 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X } from 'lucide-react';
+import { FilterPanel } from '../components/common/FilterPanel';
+import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Avatar } from '../components/common/Avatar';
 import { useTasks } from '../hooks/useTasks';
@@ -27,8 +29,7 @@ const mapPriority = (prio: string | undefined) => {
 export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [filters, setFilters] = useState({ status: 'all', priority: 'all', assignee: 'all', department: 'all', dateRange: 'all' });
   const [groupBy, setGroupBy] = useState('none');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,8 +61,8 @@ export const TaskList: React.FC = () => {
   };
 
   const filteredTasks = tasks.filter(t => 
-    (statusFilter === 'all' || t.status === statusFilter) &&  
-    (priorityFilter === 'all' || mapPriority(t.priority).toLowerCase() === priorityFilter.toLowerCase()) &&
+    (filters.status === 'all' || t.status === filters.status) &&  
+    (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
     (t.title?.toLowerCase().includes(searchTerm.toLowerCase()) || t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -82,6 +83,7 @@ export const TaskList: React.FC = () => {
   return (
     <div className="space-y-6 relative pb-12">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
+      <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
       
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
@@ -122,44 +124,15 @@ export const TaskList: React.FC = () => {
             <option value="status">Status</option>
           </select>
 
-          <div className="relative">
-            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${showFilters || statusFilter !== 'all' || priorityFilter !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+          <button onClick={() => setShowFilters(true)} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
               <Filter className="w-4 h-4" />
-              <span>Filters {(statusFilter !== 'all' || priorityFilter !== 'all') && '•'}</span>
+              <span>Filters {(filters.status !== 'all' || filters.priority !== 'all') && '•'}</span>
             </button>
-            
-            {showFilters && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 p-3">
-                <div className="text-xs font-semibold text-gray-500 mb-2 px-2 uppercase tracking-wider">Status</div>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm mb-4">
-                  <option value="all">All Statuses</option>
-                  <option value="todo">To Do</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="done">Done</option>
-                  <option value="overdue">Overdue</option>
-                </select>
-
-                <div className="text-xs font-semibold text-gray-500 mb-2 px-2 uppercase tracking-wider">Priority</div>
-                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm mb-2">
-                  <option value="all">All Priorities</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-
-                {(statusFilter !== 'all' || priorityFilter !== 'all') && (
-                  <button onClick={() => { setStatusFilter('all'); setPriorityFilter('all'); }} className="w-full mt-2 text-center text-xs text-red-500 hover:text-red-600 py-1">
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="glass-panel p-8 text-center text-gray-500 dark:text-gray-400">Loading tasks...</div>
+        <div className="glass-panel p-2"><TableSkeleton rows={8} /></div>
       ) : filteredTasks.length === 0 ? (
         <div className="glass-panel p-16 text-center">
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
