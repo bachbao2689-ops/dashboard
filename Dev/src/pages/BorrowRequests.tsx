@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Check, X, Calendar, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
+import { BorrowModal } from '../components/features/assets/BorrowModal';
+import { Plus } from 'lucide-react';
 
 export const BorrowRequests: React.FC = () => {
   const [filter, setFilter] = useState('all');
-  const { requests, loading, updateStatus } = useBorrowRequests();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { requests, loading, updateStatus, refetch } = useBorrowRequests();
 
   const filtered = requests.filter(req => {
     if (filter === 'all') return true;
@@ -13,12 +16,17 @@ export const BorrowRequests: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col z-10 relative">
+      <BorrowModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={refetch} 
+      />
       <div className="flex justify-between items-center mb-6 px-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Borrow Requests</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage equipment borrowing approvals</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <select 
             className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white"
             value={filter}
@@ -29,6 +37,10 @@ export const BorrowRequests: React.FC = () => {
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
+          
+          <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+            <Plus size={16} /> <span className="hidden sm:inline">New Request</span>
+          </button>
         </div>
       </div>
 

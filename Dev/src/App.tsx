@@ -1,5 +1,5 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
 import { ProjectsKanban } from './pages/ProjectsKanban';
@@ -9,9 +9,11 @@ import { BorrowRequests } from './pages/BorrowRequests';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardLayout />}>
+    <>
+      <Toaster position="top-right" />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Overview />} />
           <Route path="tasks" element={<TaskList />} />
           <Route path="projects" element={<ProjectsKanban />} />
@@ -26,6 +28,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </>
   );
 }
 

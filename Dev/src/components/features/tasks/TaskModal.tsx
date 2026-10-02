@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import toast from "react-hot-toast";
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../../common/Modal';
 import { supabase } from '../../../services/supabase';
 
@@ -10,14 +11,51 @@ interface TaskModalProps {
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [projectId, setProjectId] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [description, setDescription] = useState('');
+  
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchFormData();
+    }
+  }, [isOpen]);
+
+  const fetchFormData = async () => {
+    const [usersRes, deptsRes, projectsRes] = await Promise.all([
+      supabase.from('users').select('id, name'),
+      supabase.from('departments').select('id, name'),
+      supabase.from('projects').select('id, name')
+    ]);
+    if (usersRes.data) setUsers(usersRes.data);
+    
+    // Seed departments if empty (since DB is fresh)
+    if (deptsRes.data && deptsRes.data.length > 0) {
+      setDepartments(deptsRes.data);
+    } else {
+      setDepartments([
+        { id: '1', name: 'ECOMMERCE' },
+        { id: '2', name: 'KSHOP' },
+        { id: '3', name: 'MARKETING' },
+        { id: '4', name: 'DESIGN' }
+      ]);
+    }
+
+    if (projectsRes.data) setProjects(projectsRes.data);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title) return;
+    if (!title || !departmentId) return;
     
     setLoading(true);
     try {
@@ -27,11 +65,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       const columnData = await supabase.from('columns').select('id').eq('workspace_id', wsData.id).eq('name', 'Yet to Start').single();
       const colId = columnData.data?.id || null;
 
+      // Handle dummy departments safely
+      let validDeptId = null;
+      if (departmentId.length > 10) validDeptId = departmentId; // UUID length check
+
       await supabase.from('tasks').insert([{
          title,
          description,
          priority,
          due_date: dueDate || null,
+         start_date: startDate || null,
+         department_id: validDeptId,
+         assignee_id: assigneeId || null,
+         project_id: projectId || null,
          task_ref: 'TK' + Math.floor(Math.random() * 10000),
          status: 'todo',
          column_id: colId,
@@ -40,15 +86,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       }]);
       
       onSuccess();
+      toast.success('Task created successfully');
       onClose();
       // Reset form
       setTitle('');
       setDescription('');
       setPriority('medium');
       setDueDate('');
+      setStartDate('');
+      setAssigneeId('');
+      setProjectId('');
+      setDepartmentId('');
     } catch (err) {
       console.error(err);
-      alert('Failed to create task');
+      toast.error('Failed to create task');
     } finally {
       setLoading(false);
     }
@@ -58,25 +109,46 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title <span className="text-red-500">*</span></label>
           <input 
             type="text" 
             required
+            maxLength={500}
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
-            placeholder="e.g. Design homepage mockup"
+            placeholder="Describe task briefly"
           />
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-          <textarea 
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]"
-            placeholder="Add details about this task..."
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department <span className="text-red-500">*</span></label>
+            <select 
+              required
+              value={departmentId}
+              onChange={e => setDepartmentId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">Select Department</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignee</label>
+            <select 
+              value={assigneeId}
+              onChange={e => setAssigneeId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">Unassigned</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -94,14 +166,50 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             </select>
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project</label>
+            <select 
+              value={projectId}
+              onChange={e => setProjectId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">No Project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
             <input 
               type="date" 
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
+              min={startDate || new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <textarea 
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]"
+            placeholder="Describe task details..."
+          />
         </div>
 
         <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -117,7 +225,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             disabled={loading}
             className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {loading ? 'Creating...' : 'Create Task'}
+            {loading ? 'Saving...' : 'Create Task'}
           </button>
         </div>
       </form>

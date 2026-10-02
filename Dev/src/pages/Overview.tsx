@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import React from 'react';
 import { KpiCard } from '../components/common/KpiCard';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -20,6 +21,7 @@ export const Overview: React.FC = () => {
   const handleUpdateStatus = async (id: string, status: string) => {
     await supabase.from('borrow_requests').update({ approval_status: status }).eq('id', id);
     refetch();
+    toast.success('Request updated');
   };
 
   const assetUtilization = [

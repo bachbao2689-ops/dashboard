@@ -1,0 +1,711 @@
+DASHBOARD - UI/UX FUNCTIONAL BRIEF
+(Complete Interactive Prototype Ready for Use)
+Document Version: 4.0 (Full Functionality) Created: 02 Oct 2026 Status: Ready for Development Owner: Product Team Target: Interactive prototype với đầy đủ buttons + popups để giao việc + quản lý ngay
+
+1. OBJECTIVE
+Tạo UI/UX hoàn chỉnh với đầy đủ:
+	•	✅ Mọi button đều clickable → mở popup/modal
+	•	✅ Mọi form đều submit được → call API (mock trước, connect sau)
+	•	✅ Mọi workflow đều chạy xong (create task, approve borrow, edit asset...)
+	•	✅ Có thể dùng demo cho team ngay
+
+2. SCREEN-BY-SCREEN FUNCTIONAL SPECS
+2.1 HOME DASHBOARD
+Actionable Elements
+┌───────────────────────────────────────────────────────┐
+│ [🏠 Home] ← Active                                   │
+│                                                      │
+│ 12 My Tasks       5 Due Soon    3 Borrowed   2 Overdue│
+│      ↑                    ↑            ↑         ↑   │
+│ [click → /my-tasks] [click → /overdue]...           │
+│                                                      │
+│ ┌───────── Chart ──────────┐  ┌─── Chart ────┐      │
+│ │ Task Status This Month   │  │ Asset Usage│     │
+│ │ [click → /reports]       │  │ [click → /assets]│ │
+│ └──────────────────────────┘  └──────────────┘      │
+│                                                      │
+│ ┌── Upcoming Deadlines ───┐  ┌─ Recent Borrow ───┐  │
+│ │ TK89 SALEKITS [View]    │  │ Bach Bao [Approve]│ │
+│ │ TK92 WEBSITE [Edit]     │  │ Tran Bach [View] │ │
+│ │ TK95 ECOM [Delete]      │  │                  │  │
+│ └─────────────────────────┘  └───────────────────┘  │
+│                                                      │
+│ [+ New Task] [📤 Export] [🤖 AI Summary]            │
+└───────────────────────────────────────────────────────┘
+Click Actions & Modals
+Button
+Action
+Popup/Screen
+Form Fields
+My Tasks
+Navigate
+/my-tasks
+Filter: assignee=me
++ New Task
+Open modal
+Create Task Modal
+See section 3
+TK89 (task item)
+Open
+Task Detail Drawer
+Edit, Comment, Delete
+[Approve] (borrow)
+Submit
+Confirm dialog → Call API
+Show success toast
+[Reject] (borrow)
+Open
+Reject Modal
+Reason textarea
+[Export]
+Download
+Generate CSV/PDF
+Auto-download
+[AI Summary]
+Show
+AI Summary Drawer
+Loading → Result
+
+2.2 ALL TASKS PAGE
+Interactive Table
+┌─────────────────────────────────────────────────────┐
+│ All Tasks                      [Filters] [+ New Task]│
+├─────────────────────────────────────────────────────┤
+│ [Sort: Due Date ↓]                                 │
+│                                                    │
+│ ┌──┬──────┬───────┬──────┬───────┬───────┬───────┐  │
+│ │☑️│TK01  │Update │E-COM │LOUIS  │High   │✓Done │  │
+│ │  │      │Web    │MERCE │       │       │      │  │
+│ ├──┼──────┼───────┼──────┼───────┼───────┼───────┤  │
+│ │☑️│TK02  │KV Món │KSHOP │WENDY  │Medium │✓Done │  │
+│ ├──┴──────┴───────┴──────┴───────┴───────┴───────┤  │
+│ │ ⚙️ Bulk Actions: [Assign] [Change Status] [Delete] │ │
+│ └───────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────┘
+Actions Per Row
+Icon/Button
+Function
+Popup/Behavior
+☑️ Checkbox
+Select multiple
+Appears in bulk actions bar
+TK01 (click)
+Open detail
+Task Detail Drawer slide-in from right
+⋮ (more menu)
+Dropdown
+[Edit] [Duplicate] [Archive] [Delete]
+LOUIS (assignee)
+Click
+Assignee Menu → Change person
+High (priority)
+Click
+Priority Selector → Low/Med/High/Urgent
+Complete (status)
+Click
+Status Selector → Todo/InProgress/Done
+Due Date
+Click
+DatePicker popup
+[Filters]
+Open
+Filter Panel slide-right
+[+ New Task]
+Open
+Create Task Modal
+
+2.3 KANBAN BOARD
+Drag & Drop Interactions
+┌─────────────┬─────────────┬────────────┬────────────┐
+│Yet to Start│In Progress  │ Feedback   │Completed   │
+│    19       │    30       │     1      │    57      │
+├─────────────┼─────────────┼────────────┼────────────┤
+│ ┌─────────┐ │ ┌─────────┐ │ ┌───────┐  │            │
+│ │ECOM Brand│ │ │sinht9   │ │ │Untitled│  │            │
+│ │[Drag]   │ │ │[Drag]   │ │ │[Drag] │  │            │
+│ └─────────┘ │ └─────────┘ │ └───────┘  │            │
+└─────────────┴─────────────┴────────────┴────────────┘
+Card Interactions
+Action
+Result
+Click card
+Open Task Detail Drawer
+Drag card
+Move between columns → auto update status
+Hover card
+Show quick-actions (⋮ menu)
+Right-click
+Context menu (Edit, Delete, Duplicate)
+[Add Task] +
+Open Create Task Modal with column pre-selected
+Column Actions
+Button
+Function
+Counter badge (19)
+Click → filter to show only tasks in this column
+⋮ (column header)
+Menu: [Add Task] [Rename] [Archive Column]
+
+2.4 ASSET INVENTORY PAGE
+Table with Full CRUD
+┌─────────────────────────────────────────────────────┐
+│ Asset Inventory                 [Search] [+ Add Asset]│
+├─────────────────────────────────────────────────────┤
+│ ┌──────┬───────┬────────┬──────────┬────────┬───┐  │
+│ │CODE  │NAME   │COND    │LOCATION  │STATUS  │⋮ │  │
+│ ├──────┼───────┼────────┼──────────┼────────┼───┤  │
+│ │LENC01│Lens...│Tốt 100%│Kho CTy   │🟡 Brrw │⋮ │  │
+│ │      │       │        │          │        │  │  │
+│ └──────┴───────┴────────┴──────────┴────────┴───┘  │
+└─────────────────────────────────────────────────────┘
+Row Actions Menu (Click ⋮)
+┌───────────────────┐
+│ 📁 View Details   │
+│ ✏️  Edit Asset    │
+│ 🔄 Transfer       │
+│ 📤 Report Issue   │
+│ 🗑️  Delete        │
+└───────────────────┘
+Action
+Popup
+Fields Required
+View Details
+Asset Detail Modal
+Read-only info + Borrow history
+Edit Asset
+Edit Asset Modal
+Name, Condition, Location, Category
+Transfer
+Transfer Modal
+From, To, Date
+Report Issue
+Issue Modal
+Description, Photos
+Delete
+Confirm Dialog
+"Are you sure?" → soft delete
+[+ Add Asset]
+Create Asset Modal
+Code, Name, Category, Condition, Location
+
+2.5 BORROW REQUESTS PAGE
+Approval Workflow
+┌─────────────────────────────────────────────────────┐
+│ Borrow Requests          [All Status ▼] [Filters]  │
+├─────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────┐│
+│ │ Lens Canon 24-70mm                              ││
+│ │ Trần Bạch Tố · Marketing                        ││
+│ │ Purpose: Chụp ngoại cảnh set quà 20.10          ││
+│ │ Borrow: 2026-10-01  Due: 2026-10-01              ││
+│ │                                      [Approve] [Reject]│
+│ └─────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────┘
+Actions
+Button
+Popup/Flow
+[Approve]
+Confirm → Call API → Show success toast → Move to "Approved" list
+[Reject]
+Reject Modal → Reason textarea → Submit
+Request item click
+Borrow Detail Drawer → See all details + timeline
+[New Request]
+Borrow Request Modal → Choose asset, dates, purpose
+
+3. CRITICAL MODALS/POPUPS - FULL SPEC
+3.1 CREATE TASK MODAL (Most Important)
+// Modal Component Spec
+interface CreateTaskModal {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+// Form Fields (Required + Optional)
+const fields = {
+  // REQUIRED
+  title: { 
+    type: 'text', 
+    required: true, 
+    maxLength: 500 
+  },
+  department: { 
+    type: 'select', 
+    options: ['ECOMMERCE', 'KSHOP', 'MARKETING', 'DESIGN'], 
+    required: true 
+  },
+  
+  // OPTIONAL
+  assignee: { 
+    type: 'person-select', 
+    searchable: true, 
+    placeholder: 'Unassigned' 
+  },
+  priority: { 
+    type: 'select', 
+    options: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium' 
+  },
+  projectId: { 
+    type: 'select', 
+    options: ['Launching Website', 'Campaign tháng 8'] 
+  },
+  dueDate: { 
+    type: 'datepicker', 
+    minDate: 'today' 
+  },
+  startDate: { 
+    type: 'datepicker' 
+  },
+  description: { 
+    type: 'richtext', 
+    placeholder: 'Describe task details...',
+    toolbar: ['bold', 'italic', 'list', 'link'] 
+  },
+  attachments: { 
+    type: 'file-upload', 
+    maxFiles: 10,
+    accept: ['.pdf', '.doc', '.png', '.jpg'] 
+  },
+  tags: { 
+    type: 'multi-select', 
+    creatable: true 
+  }
+};
+
+// Actions
+const actions = {
+  save: {
+    label: 'Create Task',
+    variant: 'primary',
+    onClick: async (formData) => {
+      await api.post('/tasks', formData);
+      toast.success('Task created successfully');
+      closeModal();
+      onSuccess(); // Refresh list
+    }
+  },
+  cancel: {
+    label: 'Cancel',
+    variant: 'ghost',
+    onClick: closeModal
+  }
+};
+
+// Validations
+const validations = {
+  title: value => value?.trim() !== '',
+  dueDate: value => !value || value >= today
+};
+
+// Keyboard shortcuts
+const shortcuts = {
+  'Ctrl+S': 'Submit',
+  'Escape': 'Close'
+};
+
+3.2 EDIT TASK DRAWER
+// Side drawer (slide from right)
+interface EditTaskDrawer {
+  task: Task;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+// Tabs inside drawer
+const tabs = [
+  { id: 'details', label: 'Details', default: true },
+  { id: 'comments', label: 'Comments', count: 5 },
+  { id: 'activity', label: 'Activity', count: 12 },
+  { id: 'attachments', label: 'Attachments', count: 3 }
+];
+
+// Tab: Details
+const detailsFields = [
+  { field: 'title', type: 'text', inline: true },
+  { field: 'status', type: 'select', inline: true },
+  { field: 'priority', type: 'select', inline: true },
+  { field: 'assignee', type: 'person-select', inline: true },
+  { field: 'dueDate', type: 'datepicker', inline: true },
+  { field: 'description', type: 'richtext' },
+  { field: 'attachments', type: 'file-list' }
+];
+
+// Tab: Comments
+const commentSection = {
+  composer: {
+    placeholder: 'Add a comment...',
+    enableMentions: true, // @Luna, @Wendy
+    enableFileUpload: true,
+    onSubmit: (comment) => {
+      api.post(`/tasks/${task.id}/comments`, comment);
+      addCommentToUI(comment);
+    }
+  },
+  list: {
+    items: comments.map(c => ({
+      author: c.author,
+      body: c.body,
+      timestamp: c.createdAt,
+      reactions: c.reactions,
+      onReply: () => {/* Open reply mode */ }
+    }))
+  }
+};
+
+// Tab: Activity
+const activityLog = {
+  items: [
+    {
+      action: 'Status changed',
+      from: 'In Progress',
+      to: 'Done',
+      by: 'Louis',
+      timestamp: '2 hours ago'
+    }
+  ],
+  filterOptions: ['all', 'status', 'assignments', 'comments']
+};
+
+// Header actions
+const headerActions = [
+  { label: 'Duplicate', icon: 'copy', onClick: duplicateTask },
+  { label: 'Archive', icon: 'archive', onClick: archiveTask },
+  { label: 'Delete', icon: 'trash', variant: 'danger', onClick: deleteTask },
+  { label: 'Close', icon: 'x', onClick: closeDrawer }
+];
+
+3.3 CREATE ASSET MODAL
+interface CreateAssetModal {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const fields = {
+  // REQUIRED
+  assetCode: { 
+    type: 'text', 
+    required: true,
+    placeholder: 'LENCANON01',
+    pattern: /^[A-Z0-9]{6,20}$/
+  },
+  name: { 
+    type: 'text', 
+    required: true,
+    placeholder: 'Lens Canon 24-70mm Ultrasonic' 
+  },
+  category: { 
+    type: 'select',
+    options: ['Laptop', 'Camera', 'Lens', 'Equipment'],
+    required: true 
+  },
+  
+  // OPTIONAL
+  condition: { 
+    type: 'select', 
+    options: ['Tốt 100%', 'Tốt 80%', 'Cần sửa', 'N/A'] 
+  },
+  location: { 
+    type: 'text',
+    placeholder: 'Kho Công Ty' 
+  },
+  purchaseDate: { 
+    type: 'datepicker' 
+  },
+  purchasePrice: { 
+    type: 'currency',
+    format: 'VND' 
+  },
+  serialNumber: { 
+    type: 'text' 
+  },
+  imageUpload: { 
+    type: 'file-upload',
+    accept: ['image/*'],
+    maxSize: '5MB'
+  },
+  description: { 
+    type: 'textarea' 
+  }
+};
+
+// Auto-generate code suggestion
+const autoSuggestion = {
+  trigger: 'onBlur',
+  field: 'name',
+  logic: 'Extract model from name → generate code'
+};
+
+3.4 BORROW REQUEST MODAL
+interface BorrowRequestModal {
+  isOpen: boolean;
+  assetId?: string; // Pre-selected if clicked from asset
+  onClose: () => void;
+}
+
+const fields = {
+  // AUTO-FILLED if assetId provided
+  asset: { 
+    type: 'asset-select',
+    required: true,
+    searchable: true,
+    filterByAvailability: true // Only show available assets
+  },
+  
+  // REQUIRED
+  borrowDate: { 
+    type: 'datepicker',
+    required: true,
+    minDate: 'today'
+  },
+  dueDate: { 
+    type: 'datepicker',
+    required: true,
+    minDate: '${borrowDate}' // Cannot be before borrow date
+  },
+  purpose: { 
+    type: 'textarea',
+    required: true,
+    placeholder: 'Chụp ngoại cảnh set quà 20.10',
+    maxLength: 500
+  },
+  notes: { 
+    type: 'textarea' 
+  }
+};
+
+// Validation rules
+const validations = {
+  dueDate: (value, formData) => value >= formData.borrowDate,
+  borrowDate: (value) => value >= today
+};
+
+// Conflict checker
+const availabilityCheck = {
+  trigger: 'onBlur',
+  fields: ['asset', 'borrowDate', 'dueDate'],
+  endpoint: '/api/v1/assets/check-availability',
+  onError: (conflict) => {
+    showWarning('Asset is already booked during these dates');
+    suggestAlternativeDates(conflict.availableSlots);
+  }
+};
+
+3.5 REJECT BORROW MODAL
+interface RejectModal {
+  requestId: string;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const fields = {
+  reason: { 
+    type: 'textarea',
+    required: true,
+    placeholder: 'Lý do từ chối...',
+    minLength: 10
+  },
+  notifyRequester: { 
+    type: 'checkbox',
+    default: true 
+  }
+};
+
+const actions = {
+  submit: {
+    label: 'Confirm Rejection',
+    onClick: async (data) => {
+      await api.post(`/borrow-requests/${requestId}/reject`, data);
+      toast.success('Request rejected');
+      closeModal();
+    }
+  }
+};
+
+3.6 FILTER PANEL (Slide from Right)
+interface FilterPanel {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (filters: FilterSet) => void;
+}
+
+const filterGroups = {
+  status: {
+    label: 'Status',
+    type: 'multi-select',
+    options: ['Todo', 'In Progress', 'Feedback', 'Done'],
+    default: [] // No filter
+  },
+  priority: {
+    label: 'Priority',
+    type: 'multi-select',
+    options: ['Low', 'Medium', 'High', 'Urgent']
+  },
+  assignee: {
+    label: 'Assignee',
+    type: 'person-select',
+    multiple: true
+  },
+  department: {
+    label: 'Department',
+    type: 'select',
+    options: ['ECOMMERCE', 'KSHOP', 'MARKETING', 'DESIGN']
+  },
+  dueDate: {
+    label: 'Due Date',
+    type: 'date-range',
+    presets: [
+      'Overdue', 'Today', 'This Week', 'Next Week', 'This Month', 'Custom'
+    ]
+  },
+  search: {
+    label: 'Search',
+    type: 'text',
+    placeholder: 'Search tasks...'
+  }
+};
+
+// Actions
+const actions = {
+  apply: {
+    label: 'Apply Filters',
+    onClick: () => {
+      applyFilters(currentFilters);
+      closeModal();
+    }
+  },
+  clear: {
+    label: 'Clear All',
+    variant: 'ghost',
+    onClick: () => {
+      resetFilters();
+    }
+  },
+  save: {
+    label: 'Save View',
+    variant: 'outline',
+    onClick: () => {
+      openSaveViewModal();
+    }
+  },
+  cancel: {
+    label: 'Cancel',
+    onClick: closeModal
+  }
+};
+
+3.7 CONFIRM DIALOG (Reusable)
+interface ConfirmDialog {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string; // Default: 'Confirm'
+  cancelText?: string;  // Default: 'Cancel'
+  variant?: 'danger' | 'warning' | 'info';
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}
+
+// Usage examples:
+// Delete task
+<ConfirmDialog
+  isOpen={isDeleteOpen}
+  title="Delete Task"
+  message="This action cannot be undone. Are you sure?"
+  confirmText="Delete"
+  variant="danger"
+  onConfirm={handleDelete}
+  onCancel={() => setIsDeleteOpen(false)}
+/>
+
+4. TOAST NOTIFICATIONS (Feedback System)
+interface ToastManager {
+  success(message: string, duration?: number): void;
+  error(message: string, duration?: number): void;
+  warning(message: string, duration?: number): void;
+  info(message: string, duration?: number): void;
+}
+
+// Auto-dismiss durations
+const defaults = {
+  success: 3000,  // 3s
+  error: 5000,    // 5s
+  warning: 4000,  // 4s
+  info: 3000
+};
+
+// Examples throughout app:
+toast.success('Task created successfully');
+toast.error('Failed to create task. Please try again.');
+toast.warning('This asset is already borrowed');
+toast.info('Changes saved automatically');
+
+5. LOADING STATES (No Blank Screens)
+5.1 Skeleton Patterns
+// Table skeleton (when loading tasks)
+<SkeletonTable>
+  <TableRow>
+    <SkeletonCell width="80px" />  {/* Task ID */}
+    <SkeletonCell width="300px" /> {/* Title */}
+    <SkeletonCell width="120px" /> {/* Department */}
+    <SkeletonAvatar />             {/* Assignee */}
+    <SkeletonCell width="80px" />  {/* Priority */}
+    <SkeletonCell width="120px" /> {/* Due Date */}
+  </TableRow>
+  {/* Repeat 5 times */}
+</SkeletonTable>
+
+// Card skeleton (when loading dashboard KPIs)
+<SkeletonCard height="120px">
+  <SkeletonCircle size="40px" />
+  <SkeletonText lines={2} />
+</SkeletonCard>
+5.2 Button States
+// Disabled + spinner while submitting
+<Button 
+  type="submit"
+  disabled={isSubmitting}
+  loading={isSubmitting}
+  loadingText="Saving..."
+>
+  Create Task
+</Button>
+
+// Optimistic UI update
+// Immediately update UI → rollback on error
+const optimisticUpdate = useOptimistic(taskList);
+optimisticUpdate.add(newTask);
+try {
+  await api.createTask(newTask);
+} catch (error) {
+  optimisticUpdate.rollback();
+  toast.error('Failed to create task');
+}
+
+6. VALIDATION RULES (Client-Side)
+const validationRules = {
+  // Required fields
+  title: { required: true, maxLength: 500 },
+  department: { required: true },
+  
+  // Date validation
+  dueDate: { 
+    required: false,
+    minDate: 'today',
+    compareWith: 'startDate' // Must be >= startDate
+  },
+  
+  // Asset code format
+  assetCode: { 
+    required: true, 
+    pattern: /^[A-Z0-9]{6,20}$/,
+    message: 'Code must be alphanumeric, 6-20 characters' 
+  },
+  
+  // Email validation
+  email: { 
+    type: 'email',
+    message: 'Please enter valid email address' 
+  },
+

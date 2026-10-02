@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 
@@ -60,8 +61,10 @@ export function useBorrowRequests() {
         .from('borrow_requests')
         .update({ approval_status: status })
         .eq('id', id);
+      toast.success('Request updated');
     } catch (err) {
       console.error('Update err', err);
+      toast.error('Failed to update request');
     }
   };
 
