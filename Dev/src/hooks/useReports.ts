@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export type TimeRange = 'week' | 'month' | 'quarter' | 'all';
@@ -23,6 +24,18 @@ export const useReports = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        setData({
+          kpis: { tasksCompleted: 45, tasksCompletedPrev: 32, overdueRate: 12, avgCompletionTimeDays: 2.4 },
+          completionTrend: [ { name: 'Week 1', completed: 10 }, { name: 'Week 2', completed: 15 }, { name: 'Week 3', completed: 8 }, { name: 'Week 4', completed: 12 } ],
+          statusDistribution: [ { name: 'todo', value: 15 }, { name: 'in_progress', value: 20 }, { name: 'done', value: 45 }, { name: 'overdue', value: 5 } ],
+          priorityBreakdown: [ { name: 'high', count: 18 }, { name: 'medium', count: 42 }, { name: 'low', count: 25 } ],
+          topPerformers: [ { name: 'Bách Bảo', completed: 25 }, { name: 'Admin', completed: 15 }, { name: 'Test Staff', completed: 5 } ]
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data: tasks, error: tasksError } = await supabase
         .from('tasks')
         .select('*');

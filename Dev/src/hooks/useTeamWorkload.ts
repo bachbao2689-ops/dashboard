@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export interface TeamMemberWorkload {
@@ -19,6 +20,17 @@ export const useTeamWorkload = () => {
   const fetchWorkload = async () => {
     setIsLoading(true);
     try {
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        const mockW: TeamMemberWorkload[] = [
+          { id: '1', name: 'Admin', activeTasksCount: 5, capacityPercentage: 80, status: 'high', tasks: [1,2,3] as any },
+          { id: '2', name: 'Bách Bảo', activeTasksCount: 2, capacityPercentage: 40, status: 'good', tasks: [1] as any },
+          { id: '3', name: 'Test Staff', activeTasksCount: 8, capacityPercentage: 110, status: 'overloaded', tasks: [1,2,3,4,5] as any },
+        ];
+        setWorkloads(mockW);
+        setIsLoading(false);
+        return;
+      }
+
       // Fetch users (profiles) and tasks
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
