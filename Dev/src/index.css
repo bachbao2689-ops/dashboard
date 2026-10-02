@@ -14,6 +14,13 @@
     --radius-sm: 8px;
     --radius-md: 16px;
     --radius-lg: 24px;
+
+    /* Calendar plugin variables */
+    --theme-bg: #002e6d;
+    --theme-track: #e6f0fa;
+    --line: #e2e8f0;
+    --muted: #64748b;
+    --text: #0f172a;
   }
 }
 

@@ -32,10 +32,38 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
     if (data) setAssets(data);
   };
 
+  useEffect(() => {
+    // Listen for custom change events dispatched by calendar.js
+    const borrowEl = document.getElementById('borrow-date-input');
+    const dueEl = document.getElementById('due-date-input');
+
+    const handleBorrowChange = (e: any) => setBorrowDate(e.target.value);
+    const handleDueChange = (e: any) => setDueDate(e.target.value);
+
+    borrowEl?.addEventListener('change', handleBorrowChange);
+    dueEl?.addEventListener('change', handleDueChange);
+
+    return () => {
+      borrowEl?.removeEventListener('change', handleBorrowChange);
+      dueEl?.removeEventListener('change', handleDueChange);
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssetId || !borrowDate || !dueDate || !purpose) return;
-    if (new Date(dueDate) < new Date(borrowDate)) {
+    
+    // Convert DD/MM/YYYY to YYYY-MM-DD for DB
+    const parseLocal = (s: string) => {
+      const p = s.split(/[-/]/);
+      if(p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
+      return s;
+    };
+    
+    const isoBorrow = parseLocal(borrowDate);
+    const isoDue = parseLocal(dueDate);
+
+    if (new Date(isoDue) < new Date(isoBorrow)) {
       toast.error('Due date cannot be before borrow date');
       return;
     }
@@ -47,9 +75,9 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
 
       await supabase.from('borrow_requests').insert([{
          asset_id: selectedAssetId,
-         requester_id: wsData.owner_id, // Simulating current user
-         borrow_date: borrowDate,
-         due_date: dueDate,
+         requester_id: wsData.owner_id,
+         borrow_date: isoBorrow,
+         due_date: isoDue,
          purpose,
          notes,
          approval_status: 'pending',
@@ -71,6 +99,14 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
       toast.error('Failed to submit request');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCal = (id: string, e: React.MouseEvent) => {
+    // @ts-ignore
+    if (window.openCalendar) {
+      // @ts-ignore
+      window.openCalendar({ displayId: id, mode: 'single' }, e);
     }
   };
 
@@ -97,26 +133,30 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="tw-calendar-picker relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Borrow Date *</label>
             <input 
-              type="date" 
+              type="text" 
+              id="borrow-date-input"
               required
-              min={new Date().toISOString().split('T')[0]}
+              readOnly
+              onClick={(e) => openCal('borrow-date-input', e)}
               value={borrowDate}
-              onChange={e => setBorrowDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="dd/mm/yyyy"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
-          <div>
+          <div className="tw-calendar-picker relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date *</label>
             <input 
-              type="date" 
+              type="text" 
+              id="due-date-input"
               required
-              min={borrowDate || new Date().toISOString().split('T')[0]}
+              readOnly
+              onClick={(e) => openCal('due-date-input', e)}
               value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="dd/mm/yyyy"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
         </div>

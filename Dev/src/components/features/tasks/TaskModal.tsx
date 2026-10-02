@@ -30,6 +30,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    const startEl = document.getElementById('task-start-input');
+    const dueEl = document.getElementById('task-due-input');
+
+    const handleStartChange = (e: any) => setStartDate(e.target.value);
+    const handleDueChange = (e: any) => setDueDate(e.target.value);
+
+    startEl?.addEventListener('change', handleStartChange);
+    dueEl?.addEventListener('change', handleDueChange);
+
+    return () => {
+      startEl?.removeEventListener('change', handleStartChange);
+      dueEl?.removeEventListener('change', handleDueChange);
+    };
+  }, []);
+
+  const parseLocal = (s: string) => {
+    if (!s) return null;
+    const p = s.split(/[-/]/);
+    if(p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
+    return s;
+  };
+
   const fetchFormData = async () => {
     const [usersRes, deptsRes, projectsRes] = await Promise.all([
       supabase.from('users').select('id, name'),
@@ -73,8 +96,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
          title,
          description,
          priority,
-         due_date: dueDate || null,
-         start_date: startDate || null,
+         due_date: parseLocal(dueDate),
+         start_date: parseLocal(startDate),
          department_id: validDeptId,
          assignee_id: assigneeId || null,
          project_id: projectId || null,
@@ -102,6 +125,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       toast.error('Failed to create task');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCal = (id: string, e: React.MouseEvent) => {
+    // @ts-ignore
+    if (window.openCalendar) {
+      // @ts-ignore
+      window.openCalendar({ displayId: id, mode: 'single' }, e);
     }
   };
 
@@ -181,23 +212,28 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="tw-calendar-picker relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
             <input 
-              type="date" 
+              type="text" 
+              id="task-start-input"
+              readOnly
+              onClick={(e) => openCal('task-start-input', e)}
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="dd/mm/yyyy"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
-          <div>
+          <div className="tw-calendar-picker relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
             <input 
-              type="date" 
+              type="text" 
+              id="task-due-input"
+              readOnly
+              onClick={(e) => openCal('task-due-input', e)}
               value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
-              min={startDate || new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="dd/mm/yyyy"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
         </div>

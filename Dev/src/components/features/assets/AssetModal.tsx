@@ -27,6 +27,13 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
     if (isOpen) fetchCategories();
   }, [isOpen]);
 
+  useEffect(() => {
+    const el = document.getElementById('asset-purchase-date');
+    const handleChange = (e: any) => setPurchaseDate(e.target.value);
+    el?.addEventListener('change', handleChange);
+    return () => el?.removeEventListener('change', handleChange);
+  }, []);
+
   const fetchCategories = async () => {
     const { data } = await supabase.from('asset_categories').select('*');
     if (data && data.length > 0) {
@@ -39,6 +46,13 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
         { id: '4', name: 'Equipment' }
       ]);
     }
+  };
+
+  const parseLocal = (s: string) => {
+    if (!s) return null;
+    const p = s.split(/[-/]/);
+    if (p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
+    return s;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +73,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
          category_id: validCatId,
          condition,
          location,
-         purchase_date: purchaseDate || null,
+         purchase_date: parseLocal(purchaseDate),
          purchase_price: purchasePrice ? parseFloat(purchasePrice) : null,
          serial_number: serialNumber || null,
          description: description || null,
@@ -86,6 +100,14 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
       toast.error('Failed to add asset');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCal = (id: string, e: React.MouseEvent) => {
+    // @ts-ignore
+    if (window.openCalendar) {
+      // @ts-ignore
+      window.openCalendar({ displayId: id, mode: 'single' }, e);
     }
   };
 
@@ -173,13 +195,16 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="tw-calendar-picker relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Date</label>
             <input 
-              type="date" 
+              type="text" 
+              id="asset-purchase-date"
+              readOnly
+              onClick={(e) => openCal('asset-purchase-date', e)}
               value={purchaseDate}
-              onChange={e => setPurchaseDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="dd/mm/yyyy"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
           <div>
