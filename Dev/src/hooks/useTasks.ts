@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import mockData from '../data/mock_generated.json';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export interface Task {
@@ -41,6 +42,14 @@ export function useTasks() {
     try {
       setLoading(true);
       setError(null);
+
+      // INSTANT BYPASS FOR DEV ADMIN
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        setTasks(mockData.tasks as any);
+        setError('Instant Offline Mode');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tasks')
         .select(`

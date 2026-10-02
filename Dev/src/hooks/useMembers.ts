@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export type UserRole = 'admin' | 'manager' | 'team_lead' | 'staff' | 'viewer';
@@ -28,6 +29,13 @@ export function useMembers() {
   const fetchMembers = useCallback(async () => {
     try {
       setLoading(true);
+
+      // INSTANT BYPASS FOR DEV ADMIN
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        setMembers(MOCK_MEMBERS);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -56,12 +64,16 @@ export function useMembers() {
 
   const inviteMember = async (memberData: { email: string; name: string; role: UserRole }) => {
     try {
-      // Map to existing database columns
+      // INSTANT BYPASS
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        throw new Error('Offline Mode simulated');
+      }
+
       const { error } = await supabase.from('users').insert([{
         email: memberData.email,
         name: memberData.name,
         role: memberData.role,
-        is_active: false, // Map 'pending' concept to is_active = false
+        is_active: false,
         initials: memberData.name.substring(0, 2).toUpperCase(),
         created_at: new Date().toISOString()
       }]);
@@ -72,8 +84,7 @@ export function useMembers() {
       fetchMembers();
       return true;
     } catch (error: any) {
-      toast.error('Offline Mode: Simulated member invite');
-      // Local simulate
+      toast.success('Offline Mode: Simulated member invite');
       setMembers(prev => [{
         id: Math.random().toString(),
         name: memberData.name,

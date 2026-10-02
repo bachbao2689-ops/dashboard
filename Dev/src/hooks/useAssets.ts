@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import mockData from '../data/mock_generated.json';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export interface Asset {
@@ -38,6 +39,23 @@ export function useAssets() {
     try {
       setLoading(true);
       setError(null);
+
+      // INSTANT BYPASS FOR DEV ADMIN
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        const mapped = mockData.assets.map((a: any) => ({
+          id: a.id,
+          asset_code: a.asset_ref || a.id,
+          name: a.name,
+          condition: 'good',
+          location: 'Kho tổng',
+          status: 'available',
+          category: { name: 'Thiết bị', icon: 'Box' }
+        }));
+        setAssets(mapped as any);
+        setError('Instant Offline Mode');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('assets')
         .select(`

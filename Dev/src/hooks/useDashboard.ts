@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuthStore } from '../store/authStore';
 
 export interface DashboardData {
   myTasksCount: number;
@@ -55,6 +56,13 @@ export function useDashboard() {
     try {
       setLoading(true);
       setError(null);
+
+      // INSTANT BYPASS FOR DEV ADMIN
+      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
+        setData(MOCK_DATA);
+        setError('Instant Offline Mode');
+        return;
+      }
       
       const { count: pendingTasks, error: err1 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done');
       if (err1) throw err1;
@@ -86,8 +94,7 @@ export function useDashboard() {
         recentRequests: recent || []
       });
     } catch (err: any) {
-      console.error('Error fetching dashboard, using mock data:', err);
-      // OFFLINE FALLBACK
+      console.warn('Error fetching dashboard, using mock data:', err);
       setData(MOCK_DATA);
       setError(err.message || 'Supabase Timeout - Loading Offline Mode');
     } finally {
