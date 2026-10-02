@@ -28,7 +28,17 @@ export function useMembers() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMembers(data || []);
+      
+      const mappedMembers = (data || []).map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        status: (u.is_active ? 'active' : 'suspended') as UserStatus,
+        created_at: u.created_at,
+        avatar_url: u.avatar_url
+      }));
+      setMembers(mappedMembers);
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch members');
     } finally {
@@ -38,9 +48,13 @@ export function useMembers() {
 
   const inviteMember = async (memberData: { email: string; name: string; role: UserRole }) => {
     try {
+      // Map to existing database columns
       const { error } = await supabase.from('users').insert([{
-        ...memberData,
-        status: 'pending',
+        email: memberData.email,
+        name: memberData.name,
+        role: memberData.role,
+        is_active: false, // Map 'pending' concept to is_active = false
+        initials: memberData.name.substring(0, 2).toUpperCase(),
         created_at: new Date().toISOString()
       }]);
       
