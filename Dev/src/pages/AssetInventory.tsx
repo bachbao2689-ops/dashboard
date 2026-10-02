@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
+import { supabase } from '../services/supabase';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -13,7 +14,28 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { assets, loading } = useAssets();
+  const { assets, loading, refetch } = useAssets();
+
+  const handleNewAsset = async () => {
+    const name = window.prompt("Nhập tên thiết bị mới:");
+    if (!name) return;
+    try {
+      const { data: wsData } = await supabase.from('workspaces').select('id, owner_id').limit(1).single();
+      if (!wsData) return;
+      
+      await supabase.from('assets').insert([{
+         name,
+         asset_code: 'AST' + Math.floor(Math.random() * 10000),
+         status: 'available',
+         condition: 'Mới 100%',
+         workspace_id: wsData.id,
+         added_by: wsData.owner_id
+      }]);
+      refetch();
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   const filteredAssets = assets.filter(a => 
     a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -35,7 +57,7 @@ export const AssetInventory: React.FC = () => {
               className="pl-10 pr-4 py-2 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/60 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100"
             />
           </div>
-          <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+          <button onClick={handleNewAsset} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
             <Plus size={16} /> <span className="hidden sm:inline">Add Asset</span>
           </button>
         </div>

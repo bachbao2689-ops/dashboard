@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
+import { supabase } from '../services/supabase';
 
 const taskStatusData = [
   { name: 'Week 1', created: 40, done: 24 },
@@ -14,7 +15,12 @@ const taskStatusData = [
 
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
-  const { data, loading } = useDashboard();
+  const { data, loading, refetch } = useDashboard();
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    await supabase.from('borrow_requests').update({ approval_status: status }).eq('id', id);
+    refetch();
+  };
 
   const assetUtilization = [
     { name: t('overview.borrowed'), value: 60, fill: '#002e6d' },
@@ -172,8 +178,8 @@ export const Overview: React.FC = () => {
                 
                 {req.approval_status === 'pending' ? (
                   <div className="flex gap-2 mt-auto">
-                    <button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-sm font-semibold shadow-sm transition-colors">{t('overview.approve')}</button>
-                    <button className="flex-1 bg-white hover:bg-gray-50 text-gray-700 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 shadow-sm transition-colors dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">{t('overview.reject')}</button>
+                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-sm font-semibold shadow-sm transition-colors">{t('overview.approve')}</button>
+                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className="flex-1 bg-white hover:bg-gray-50 text-gray-700 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 shadow-sm transition-colors dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">{t('overview.reject')}</button>
                   </div>
                 ) : req.approval_status === 'approved' ? (
                   <div className="flex gap-2 mt-auto">
