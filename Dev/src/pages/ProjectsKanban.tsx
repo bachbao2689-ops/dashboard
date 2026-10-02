@@ -101,7 +101,7 @@ export const ProjectsKanban: React.FC = () => {
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="flex flex-1 gap-6 overflow-x-auto pb-4">
+        <div className={`flex flex-1 gap-6 overflow-x-auto pb-4 transition-all duration-300 ${selectedTask ? 'mr-[480px]' : ''}`}>
           {columns.map(column => (
             <div key={column.id} className="flex flex-col w-80 shrink-0">
               <div className="flex items-center justify-between mb-4">
