@@ -51,7 +51,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         minWidth: isOpen ? width : 0, 
         opacity: isOpen ? 1 : 0 
       }}
-      className={`h-full glass-panel rounded-l-3xl border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 relative flex flex-col z-40 ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
+      className={`h-full glass-panel rounded-l-3xl !rounded-r-none border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 relative flex flex-col z-40 ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
     >
       {/* Resizer Handle */}
       {isOpen && (

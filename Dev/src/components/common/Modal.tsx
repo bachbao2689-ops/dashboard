@@ -32,8 +32,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
         onClick={onClose}
       />
       
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+      <div className="relative glass-panel shadow-glass-inset border border-white/40 rounded-3xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-6 border-b border-white/20 dark:border-gray-700/50">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
           <button 
             onClick={onClose}
