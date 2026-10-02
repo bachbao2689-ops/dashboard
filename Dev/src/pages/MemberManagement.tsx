@@ -1,0 +1,175 @@
+import { useState, useMemo } from 'react';
+import { useMembers } from '../hooks/useMembers';
+import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
+import { Search, Plus, MoreVertical, User } from 'lucide-react';
+
+export function MemberManagement() {
+  const { members, loading, inviteMember } = useMembers();
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const filteredMembers = useMemo(() => {
+    return members.filter(member => {
+      const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            member.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRole = roleFilter ? member.role === roleFilter : true;
+      const matchesStatus = statusFilter ? member.status === statusFilter : true;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [members, searchTerm, roleFilter, statusFilter]);
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'manager': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'team_lead': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300';
+      case 'viewer': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+      default: return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+      case 'suspended': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    }
+  };
+
+  return (
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Member Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your team members and roles</p>
+        </div>
+        <button
+          onClick={() => setIsInviteModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-lg"
+        >
+          <Plus size={20} />
+          <span>Invite Member</span>
+        </button>
+      </div>
+
+      <div className="glass-panel p-6 rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search members..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+            />
+          </div>
+          <div className="flex gap-4">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="team_lead">Team Lead</option>
+              <option value="staff">Staff</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-black/5 dark:bg-white/5 border-b border-white/10">
+              <tr>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Member</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Contact</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Joined</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5 dark:divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading members...</td>
+                </tr>
+              ) : filteredMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No members found</td>
+                </tr>
+              ) : (
+                filteredMembers.map((member) => (
+                  <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {member.avatar_url ? (
+                            <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <User size={20} className="text-gray-500" />
+                          )}
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{member.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                        {member.role?.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status || 'pending')}`}>
+                        {(member.status || 'pending').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                      {member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative group inline-block">
+                        <button className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 dark:text-gray-400">
+                          <MoreVertical size={20} />
+                        </button>
+                        <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-black/10 dark:border-white/10 py-1 hidden group-hover:block z-10">
+                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5">Edit Role</button>
+                          <button className="w-full text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-black/5 dark:hover:bg-white/5">Suspend</button>
+                          <button className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-black/5 dark:hover:bg-white/5">Remove</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <InviteMemberModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        onInvite={inviteMember}
+      />
+    </div>
+  );
+}

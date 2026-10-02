@@ -1,9 +1,12 @@
 import React from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, LogOut } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
 
+import { useAuthStore } from '../../store/authStore';
+
 export const Header: React.FC = () => {
+  const signOut = useAuthStore(state => state.signOut);
   const { theme, toggleTheme, lang, setLang } = useUiStore();
   const { t } = useTranslation();
 
@@ -55,7 +58,12 @@ export const Header: React.FC = () => {
             <Bell size={20} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
           </button>
-          <button className="p-2 hover:bg-white/50 rounded-xl transition-all md:hidden">
+          
+          <button onClick={signOut} className="p-2 hover:bg-white/50 hover:text-red-500 rounded-xl transition-all hidden md:block group" title="Logout">
+            <LogOut size={20} className="group-hover:stroke-red-500" />
+          </button>
+          
+          <button className="p-2 hover:bg-white/50 rounded-xl transition-all block md:hidden">
             <img src="https://i.pravatar.cc/150?u=byewind" className="w-6 h-6 rounded-full border border-white/80" alt="avatar" />
           </button>
         </div>

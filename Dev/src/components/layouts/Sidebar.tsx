@@ -39,6 +39,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.teamRep'),
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
+        { name: 'Members', path: '/members', icon: <Users size={18} /> },
         { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} /> },
       ]
     }
