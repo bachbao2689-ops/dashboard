@@ -37,8 +37,10 @@ export default {
       },
       animation: {
         'liquid-blob': 'liquidBlob 20s infinite alternate',
+        'fade-in-up': 'fadeInUp 0.3s ease-out forwards',
       },
       keyframes: {
+        fadeInUp: { '0%' : { opacity: 0, transform: 'translateY(20px)' }, '100%' : { opacity: 1, transform: 'translateY(0)' } },
         liquidBlob: {
           '0%': { transform: 'translate(0px, 0px) scale(1)' },
           '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
