@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ECOMTANNHIET02",
+    "code": "ECOMTANNHIET02",
+    "name": "Để tản nhiệt laptop onitek N99",
+    "category": "Laptop",
+    "condition": "Tốt 100%",
+    "location": "Kho Công Ty",
+    "status": "Borrowed"
+  },
+  {
+    "id": "LENCANON01",
+    "code": "LENCANON01",
+    "name": "Lens Canon 24-70mm Ultrasonic",
+    "category": "Lens",
+    "condition": "",
+    "location": "Kho Công Ty",
+    "status": "Borrowed"
+  },
+  {
+    "id": "MAYANHCANON01",
+    "code": "MAYANHCANON01",
+    "name": "Máy ảnh KTS Canon 5D Mark 4",
+    "category": "Camera",
+    "condition": "",
+    "location": "Kho Công Ty",
+    "status": "Borrowed"
+  },
+  {
+    "id": "CCDC000984",
+    "code": "CCDC000984",
+    "name": "Laptop Lenovo LOQ 15ARP9\n83JCO0M3VN",
+    "category": "Laptop",
+    "condition": "Tốt 100%",
+    "location": "Kho Công Ty",
+    "status": "Borrowed"
+  },
+  {
+    "id": "ECOMMAYSONYZV03",
+    "code": "ECOMMAYSONYZV03",
+    "name": "MÁY ẢNH SONY ZV-R10",
+    "category": "Camera",
+    "condition": "Tốt 100%",
+    "location": "Kho Công Ty",
+    "status": "Borrowed"
+  },
+  {
+    "id": "MAYANHSONY01",
+    "code": "MAYANHSONY01",
+    "name": "Máy chụp ảnh Sony Alpha A7 Mark\nIII (kèm dây sạc máy & pin)",
+    "category": "Equipment",
+    "condition": "Tốt 100%",
+    "location": "Kho Công Ty",
+    "status": "Available"
+  },
+  {
+    "id": "LENSONY01",
+    "code": "LENSONY01",
+    "name": "Ông kính máy ảnh Sony Alpha A7\nMark IIl",
+    "category": "Camera",
+    "condition": "Tốt 100%",
+    "location": "Kho Công Ty",
+    "status": "Available"
+  }
+]

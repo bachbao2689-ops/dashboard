@@ -1,0 +1,22 @@
+NHẬT KÝ QUẢN LÝ MƯỢN TÀI SẢN,,,,,,,,,,,NHẬT KÝ XÁC NHẬN TRẢ LẠI TÀI SẢN,,,,
+"Quản lý tạo/cập nhật một dòng cho mỗi lần duyệt, giao hoặc nhận lại thiết bị. Dữ liệu tự động đồng bộ để phục vụ theo dõi và đối soát.",,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+Dấu thời gian,Người đăng ký,Phòng ban,Ngày mượn,Hạn trả,Mã Thiết Bị,Tên Thiết Bị / Model,Tình Trạng,Mục đích,Trạng thái sau xử lý,Người xác nhận,Tình Trạng,"Ghi chú
+(nếu có fill thêm)",Dấu thời gian Xác Nhận,Trạng Thái Xác Nhận,ID Yêu Cầu
+11/09/2026 16:11:33,Bách Bảo,Design,2026-09-11,2026-09-12,ECOMTANNHIET02,Để tản nhiệt laptop onitek N99,Nguyên 100%,Chụp ảnh,Đang mượn,Manager,Tốt 100%,Da nhan,11/09/2026 09:29,Xác nhận,
+11/09/2026 16:11:33,Bách Bảo,Design,2026-09-11,2026-09-12,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,Chụp ảnh,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Da nhan,11/09/2026 16:32,Xác nhận,
+11/09/2026 16:37:23,BBBBBB,Dess,2026-09-13,2026-09-14,MAYANHCANON01,Máy ảnh KTS Canon 5D Mark 4,Nguyên 100%,Chụp Ảnh,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Đã nhận thiết bị,11/09/2026 16:38,Xác nhận,
+11/09/2026 16:37:23,BBBBBB,Dess,2026-09-13,2026-09-14,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,Chụp Ảnh,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Đã nhận thiết bị,11/09/2026 16:38,Xác nhận,
+11/09/2026 16:57:53,BBBBBB,Des,2026-09-12,2026-09-13,CCDC000984,"Laptop Lenovo LOQ 15ARP9
+83JCO0M3VN",Nguyên 100%,Chụp,Đang mượn,bachbao2689@gmail.com,Tốt 100%,Đã nhận,11/09/2026 16:58,Xác nhận,
+11/09/2026 16:57:53,BBBBBB,Des,2026-09-12,2026-09-13,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,Chụp,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Đã nhận,11/09/2026 16:58,Xác nhận,
+11/09/2026 17:08:45,THAI DANG,DESIGN,2026-09-11,2026-09-11,ECOMMAYSONYZV03,MÁY ẢNH SONY ZV-R10,Nguyên 100%,CHỤP SP,Đang mượn,bachbao2689@gmail.com,Tốt 100%,Đã nhận,11/09/2026 17:10,Xác nhận,
+11/09/2026 17:08:45,THAI DANG,DESIGN,2026-09-11,2026-09-11,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,CHỤP SP,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Đã nhận,11/09/2026 17:10,Xác nhận,
+11/09/2026 17:14:10,Trần Bạch Tố,Marketing,2026-09-12,2026-09-12,MAYANHCANON01,Máy ảnh KTS Canon 5D Mark 4,Nguyên 100%,Chụp ảnh set quà 20/10,Sẵn sàng,bachbao2689@gmail.com,,,30/09/2026 16:20,Xác nhận,
+11/09/2026 17:14:10,Trần Bạch Tố,Marketing,2026-09-12,2026-09-12,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,Chụp ảnh set quà 20/10,Sẵn sàng,bachbao2689@gmail.com,,,30/09/2026 16:20,Xác nhận,
+14/09/2026 16:29:24,Bach Bẻo,Des,2026-09-14,2026-09-15,MAYANHSONY01,"Máy chụp ảnh Sony Alpha A7 Mark
+III (kèm dây sạc máy & pin)",Nguyên 100%,Chụp ảnh,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Xác nhận đã nhận,15/09/2026 16:42,Xác nhận,"2026-09-14 16:28:14|bachbao2698@gmail.com|mayanhsony01,lensony01"
+14/09/2026 20:11:08,Bach Bẻo,Des,2026-09-14,2026-09-15,LENSONY01,"Ông kính máy ảnh Sony Alpha A7
+Mark IIl",Nguyên 100%,Chụp ảnh,Sẵn sàng,bachbao2689@gmail.com,Tốt 100%,Xác nhận đã nhận,15/09/2026 16:42,Xác nhận,"2026-09-14 16:28:14|bachbao2698@gmail.com|mayanhsony01,lensony01"
+30/09/2026 17:01:34,Trần Bạch Tố,Marketing,2026-10-01,2026-10-01,MAYANHCANON01,Máy ảnh KTS Canon 5D Mark 4,Nguyên 100%,Chụp ngoại cảnh set quà 20.10,Đang mượn,bachbao2689@gmail.com,,,,,"2026-09-30 17:00:37|mkt@kcoffee.vn|mayanhcanon01,lencanon01"
+30/09/2026 17:01:34,Trần Bạch Tố,Marketing,2026-10-01,2026-10-01,LENCANON01,Lens Canon 24-70mm Ultrasonic,Nguyên 100%,Chụp ngoại cảnh set quà 20.10,Đang mượn,bachbao2689@gmail.com,,,,,"2026-09-30 17:00:37|mkt@kcoffee.vn|mayanhcanon01,lencanon01"

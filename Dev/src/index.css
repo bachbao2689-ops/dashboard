@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #002e6d; /* Brand Blue */
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f4ff; /* slight blue tint background */
+  color: #1e293b;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Liquid Background Elements */
+.liquid-bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e0f2fe 0%, #eff6ff 100%);
+}
+
+.liquid-blob-1 {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(0, 46, 109, 0.25) 0%, rgba(0, 46, 109, 0) 70%);
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: liquidBlob 25s infinite alternate ease-in-out;
+}
+
+.liquid-blob-2 {
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.4) 0%, rgba(56, 189, 248, 0) 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: liquidBlob 20s infinite alternate-reverse ease-in-out;
+}
+
+.liquid-blob-3 {
+  position: absolute;
+  top: 40%;
+  left: 40%;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
+  border-radius: 50%;
+  filter: blur(70px);
+  animation: liquidBlob 30s infinite alternate ease-in-out;
+}
+
+@keyframes liquidBlob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(50px, -50px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* Glassmorphism utility class */
+.glass-panel {
+  @apply bg-white/50 backdrop-blur-xl border border-white/70;
+  box-shadow: 0 8px 32px 0 rgba(0, 46, 109, 0.05);
+}
+
+/* Custom Scrollbar for Glass UI */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 46, 109, 0.2);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 46, 109, 0.4);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dark Mode Overrides */
+.dark body {
+  background-color: #0b1120;
+  color: #f1f5f9;
+}
+
+.dark .liquid-bg-container {
+  background: radial-gradient(circle at top right, #001a40, #0b1120);
+}
+
+.dark .liquid-blob-1 { background: rgba(0, 46, 109, 0.2); }
+.dark .liquid-blob-2 { background: rgba(56, 189, 248, 0.1); }
+.dark .liquid-blob-3 { background: rgba(59, 130, 246, 0.15); }
+
+.dark .glass-panel {
+  background-color: rgba(15, 23, 42, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.dark .text-gray-900 { color: #f8fafc; }
+.dark .text-gray-800 { color: #f1f5f9; }
+.dark .text-gray-700 { color: #e2e8f0; }
+.dark .text-gray-600 { color: #cbd5e1; }
+.dark .text-gray-500 { color: #94a3b8; }
+.dark .text-gray-400 { color: #64748b; }
+
+.dark .bg-white\/30 { background-color: rgba(15, 23, 42, 0.3); }
+.dark .bg-white\/40 { background-color: rgba(15, 23, 42, 0.4); }
+.dark .bg-white\/50 { background-color: rgba(15, 23, 42, 0.5); }
+.dark .bg-white\/60 { background-color: rgba(15, 23, 42, 0.6); }
+
+.dark .border-white\/40 { border-color: rgba(255, 255, 255, 0.1); }
+.dark .border-white\/50 { border-color: rgba(255, 255, 255, 0.15); }
+.dark .border-white\/60 { border-color: rgba(255, 255, 255, 0.2); }
+.dark .border-white\/80 { border-color: rgba(255, 255, 255, 0.25); }
+
+.dark .hover\:bg-white\/30:hover { background-color: rgba(15, 23, 42, 0.5); }
+.dark .hover\:bg-white\/40:hover { background-color: rgba(15, 23, 42, 0.6); }
+.dark .hover\:bg-white\/50:hover { background-color: rgba(15, 23, 42, 0.7); }
+.dark .hover\:bg-white\/60:hover { background-color: rgba(15, 23, 42, 0.8); }

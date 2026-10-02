@@ -1,0 +1,142 @@
+[
+  {
+    "id": "BR014",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "Trần Bạch Tố",
+    "dept": "Marketing",
+    "borrowDate": "2026-10-01",
+    "dueDate": "2026-10-01",
+    "purpose": "Chụp ngoại cảnh set quà 20.10",
+    "status": "pending"
+  },
+  {
+    "id": "BR013",
+    "asset": "Máy ảnh KTS Canon 5D Mark 4",
+    "user": "Trần Bạch Tố",
+    "dept": "Marketing",
+    "borrowDate": "2026-10-01",
+    "dueDate": "2026-10-01",
+    "purpose": "Chụp ngoại cảnh set quà 20.10",
+    "status": "pending"
+  },
+  {
+    "id": "BR012",
+    "asset": "Ông kính máy ảnh Sony Alpha A7\nMark IIl",
+    "user": "Bach Bẻo",
+    "dept": "Des",
+    "borrowDate": "2026-09-14",
+    "dueDate": "2026-09-15",
+    "purpose": "Chụp ảnh",
+    "status": "pending"
+  },
+  {
+    "id": "BR011",
+    "asset": "Máy chụp ảnh Sony Alpha A7 Mark\nIII (kèm dây sạc máy & pin)",
+    "user": "Bach Bẻo",
+    "dept": "Des",
+    "borrowDate": "2026-09-14",
+    "dueDate": "2026-09-15",
+    "purpose": "Chụp ảnh",
+    "status": "pending"
+  },
+  {
+    "id": "BR010",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "Trần Bạch Tố",
+    "dept": "Marketing",
+    "borrowDate": "2026-09-12",
+    "dueDate": "2026-09-12",
+    "purpose": "Chụp ảnh set quà 20/10",
+    "status": "pending"
+  },
+  {
+    "id": "BR009",
+    "asset": "Máy ảnh KTS Canon 5D Mark 4",
+    "user": "Trần Bạch Tố",
+    "dept": "Marketing",
+    "borrowDate": "2026-09-12",
+    "dueDate": "2026-09-12",
+    "purpose": "Chụp ảnh set quà 20/10",
+    "status": "pending"
+  },
+  {
+    "id": "BR008",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "THAI DANG",
+    "dept": "DESIGN",
+    "borrowDate": "2026-09-11",
+    "dueDate": "2026-09-11",
+    "purpose": "CHỤP SP",
+    "status": "pending"
+  },
+  {
+    "id": "BR007",
+    "asset": "MÁY ẢNH SONY ZV-R10",
+    "user": "THAI DANG",
+    "dept": "DESIGN",
+    "borrowDate": "2026-09-11",
+    "dueDate": "2026-09-11",
+    "purpose": "CHỤP SP",
+    "status": "pending"
+  },
+  {
+    "id": "BR006",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "BBBBBB",
+    "dept": "Des",
+    "borrowDate": "2026-09-12",
+    "dueDate": "2026-09-13",
+    "purpose": "Chụp",
+    "status": "pending"
+  },
+  {
+    "id": "BR005",
+    "asset": "Laptop Lenovo LOQ 15ARP9\n83JCO0M3VN",
+    "user": "BBBBBB",
+    "dept": "Des",
+    "borrowDate": "2026-09-12",
+    "dueDate": "2026-09-13",
+    "purpose": "Chụp",
+    "status": "pending"
+  },
+  {
+    "id": "BR004",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "BBBBBB",
+    "dept": "Dess",
+    "borrowDate": "2026-09-13",
+    "dueDate": "2026-09-14",
+    "purpose": "Chụp Ảnh",
+    "status": "pending"
+  },
+  {
+    "id": "BR003",
+    "asset": "Máy ảnh KTS Canon 5D Mark 4",
+    "user": "BBBBBB",
+    "dept": "Dess",
+    "borrowDate": "2026-09-13",
+    "dueDate": "2026-09-14",
+    "purpose": "Chụp Ảnh",
+    "status": "pending"
+  },
+  {
+    "id": "BR002",
+    "asset": "Lens Canon 24-70mm Ultrasonic",
+    "user": "Bách Bảo",
+    "dept": "Design",
+    "borrowDate": "2026-09-11",
+    "dueDate": "2026-09-12",
+    "purpose": "Chụp ảnh",
+    "status": "pending"
+  },
+  {
+    "id": "BR001",
+    "asset": "Để tản nhiệt laptop onitek N99",
+    "user": "Bách Bảo",
+    "dept": "Design",
+    "borrowDate": "2026-09-11",
+    "dueDate": "2026-09-12",
+    "purpose": "Chụp ảnh",
+    "status": "pending"
+  }
+]

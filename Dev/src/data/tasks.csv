@@ -1,0 +1,145 @@
+ID,"Phòng ban
+Department","Nền tảng
+Platform","Dự án
+Project/Campaign","Tên công việc
+Task Name","Mức ưu tiên
+Priority","Nội dung
+Brief","Sản phẩm cần giao
+Deliverable","Người phụ trách
+PIC","Ngày bắt đầu
+Start Date","Ngày kết thúc
+Deadline","Ngày đăng bài
+Air Date","Trạng thái
+Status","Ghi chú
+Note","Link Nguồn
+Source Link"
+TK01,ECOMMERCE,Website,Launching Website,Update bộ hình sản phẩm,High,"Link
+(gắn link vào đây)",Size 1:1,LOUIS,02/07/2026,03/07/2026,15/08/2026,Done,,"Link
+(gắn link vào đây)"
+TK02,KSHOP,Facebook,Campaign tháng 8,Thiết kế KV Món mới,Medium,Link,4 hình ảnh size 1:1,WENDY,02/07/2026,20/07/2026,01/08/2026,Done,,"Link
+(gắn link vào đây)"
+TK03,KSHOP,POSM,Campaign tháng 8,Tentcard KV Món mới,Medium,Link,A4 / A5,WENDY,02/07/2026,20/07/2026,01/08/2026,Done,,"Link
+(gắn link vào đây)"
+TK04,KSHOP,Facebook,Campaign tháng 8,Thiết kế Social Post,Medium,Link,6 hình ảnh size 1:1,WENDY,02/07/2026,31/07/2026,03/08/2026,Done,,"Link
+(gắn link vào đây)"
+TK05,KSHOP,POSM,Campaign tháng 8,Thiết kế CTKM Retail,Medium,Link,A4 ,WENDY,02/07/2026,30/07/2026,01/08/2026,Done,,"Link
+(gắn link vào đây)"
+TK06,ECOMMERCE,"TikTok, Shopee, Lazada, Website",Campaign tháng 7,Gửi hình thumbnail 15.07,High,,Size 1:1,LUNA,01/07/2026,11/07/2026,14/07/2026,Done,,
+TK07,ECOMMERCE,"Shopee, Lazada",Campaign tháng 7,Gửi hình thumbnail 10.07,High,,Size 1:1,LUNA,01/07/2026,09/07/2026,10/07/2026,Done,,
+TK08,ECOMMERCE,"Shopee, Lazada",Campaign tháng 7,Gửi hình thumbnail 20.07,High,,Size 1:1,LUNA,01/07/2026,18/07/2026,20/07/2026,Done,,
+TK09,ECOMMERCE,"TikTok, Shopee, Lazada, Website",Campaign tháng 7,Gửi hình thumbnail 25.07,High,,Size 1:1,LUNA,01/07/2026,21/07/2026,23/07/2026,Done,,
+TK10,ECOMMERCE,"Shopee, TikTok, Lazada, Website","ECOM BRAND REDESIGN 
+(HÌNH CỐ ĐỊNH)",Cập nhật hình phân loại layout mới,Medium,,Size 1:1,LUNA,,,,Done,,
+TK11,ECOMMERCE,"Shopee, TikTok, Lazada, Website","ECOM BRAND REDESIGN 
+(HÌNH CỐ ĐỊNH)",Thiết kế bộ landing page cố định,Low,,"9 BANNER:
+- Tổng thể K COFFEE
+- Slide 5: vùng trồng, nhà máy, chứng nhận chính, 3 không, bản đồ
+- Slide 3: Câu chuyện thương hiệu, diễn giải về BRCGS và RA, toàn bộ chứng nhận
+
+ 7 BANNER NGÀNH HÀNG:
+- Specialty
+- Rang xay
+- Gu tham khảo
+- Hoà tan
+- Cas
+- Set quà tặng
+- Tiêu",LUNA,,,,Pending,,
+TK12,ECOMMERCE,"Shopee, Lazada, Website, TikTok, Facebook","ECOM BRAND REDESIGN 
+(HÌNH CỐ ĐỊNH)",adapt layout hình phân loại ,Medium,,,LUNA,,,,Pending,,
+TK40,ECOMMERCE,"Website, TikTok, Shopee, Lazada, Facebook",Campaign tháng 9,Adapt bộ thumbnail t9,High,,,LUNA,17/08/2026,28/08/2026,01/09/2026,Done,,
+TK13,VP - HCNS,POSM,,Thiết kế decal dán tủ lạnh,Medium,,2 decal,LUNA,,,,Done,,
+TK14,VP - HCNS,,,Thiết kế màn hình nền TV phòng họp,Medium,,2 opt,LUNA,,,,Done,,
+TK15,ECOMMERCE,"Shopee, TikTok, Website, Lazada",Campaign tháng 8,Gửi hình thumbnail daily,High,,,LUNA,24/07/2026,28/07/2026,01/08/2026,Done,,
+TK16,ECOMMERCE,"Shopee, TikTok, Website, Lazada",Campaign tháng 8,Gửi hình thumbnail 08.08,High,,,LUNA,24/07/2026,03/08/2026,06/08/2026,Done,,
+TK17,ECOMMERCE,,WEBSITE,Voucher + thư cảm ơn,High,,,LUNA,,,,Pending,,
+TK18,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",Campaign tháng 8,Thiết kế demo KV trung thu,High,,,LUNA,28/07/2026,05/08/2026,15/08/2026,Done,,
+TK19,MARKETING,Hội Chợ,HC Du Lịch ITE HCM 2026,"Thiết kế gian hàng, Namecard",Medium,,,LOUIS,27/07/2026,20/08/2026,,Done,,
+TK20,VP - HCNS,,Campaign tháng 8,Chụp hình retail trung thu,Medium,,,LUNA,21/07/2026,22/07/2026,15/08/2026,Done,,
+TK21,KSHOP,,BACK TO SCHOOL,Chụp hình + retouch món mới,Medium,,,LUNA,01/08/2026,03/08/2026,,Done,,
+TK22,ECOMMERCE,Website,Campaign tháng 8,adapt banner web 888,High,,,LUNA,06/08/2026,08/08/2026,08/08/2026,Done,,
+TK23,DIRECT SALE,POSM,POSM Bán Hàng,Sửa Salekits & Leaflet,Medium,,,LOUIS,10/08/2026,18/08/2026,,Done,,https://docs.google.com/presentation/d/141jHzB6V8vOaeI-UyTOXQ_AluXiHAaa3y3nCnXvxs-g/edit?slide=id.g3f98d0805a0_0_10#slide=id.g3f98d0805a0_0_10
+TK24,PS CORP,POSM,Tem  phụ SP,Thiết kế tem phụ SP Delight & Black,Medium,,,LOUIS,08/08/2026,13/08/2026,15/08/2026,Done,,
+TK25,ECOMMERCE,"Facebook, Website",WEBSITE,Thiết kế post social hướng dẫn nhận hoa hồng,Urgent,,,LUNA,11/08/2026,11/08/2026,11/08/2026,Done,,
+TK26,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",Campaign tháng 8,Final bộ landingpage trung thu,High,,,LUNA,15/07/2026,14/08/2026,14/08/2026,Done,,
+TK27,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",Campaign tháng 8,Gửi hình thumb 15.08,High,,,LUNA,11/08/2026,13/08/2026,14/08/2026,Done,,
+TK28,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",Campaign tháng 8,thiết kế frame livestream trung thu,High,,,LUNA,10/08/2026,13/08/2026,15/08/2026,Done,,
+TK29,MARKETING,Website,itent Brand Guideline,Resereach idea/intent,Medium,,,BOE,12/08/2026,15/08/2026,,Done,,
+TK30,ECOMMERCE,Website,WEBSITE,Bộ hình SP Website,High,,,LUNA,12/08/2026,12/08/2026,,Done,,1. FILE TK\ECOM\2026\HINH SP KHONG NEN
+TK31,ECOMMERCE,"Shopee, TikTok, Website",itent Brand Guideline Ecom,Resereach idea/intent Ecom,Medium,,,BOE,12/08/2026,15/08/2026,,Done,,
+TK32,,,Management Task,Management Task (Uprgrade),Medium,,GG sheet,BOE,12/08/2026,,,Done,Fix lại sheet Workload Tracking chuẩn hơn,"Updating : Email thông báo task, Đánh DONE task sẽ ẩn task tự động"
+TK31,PS CORP,POSM,Bao bì SP,Blue Son La,Medium,,,LOUIS,12/08/2026,15/08/2026,,Done,,
+TK75,PS COFFEE,SYSTEM,CHỮ KÝ MAIL,,Medium,,,LOUIS,29/08/2026,16/09/2026,,Feedback,,
+TK33,ECOMMERCE,"Shopee, Lazada",Campaign tháng 8,gửi hình thumb daily shopee,High,,,LUNA,11/08/2026,13/08/2026,13/08/2026,Done,,
+TK34,PS CORP,Hội Chợ,HC Anura,Thiết kế gian hàng HC,Medium,,,LOUIS,06/08/2026,15/08/2026,,Done,,
+TK35,ECOMMERCE,"TikTok, Website",Campaign tháng 8,gửi hình thumb daily tiktok web,High,,,LUNA,14/08/2026,14/08/2026,14/08/2026,Done,,
+TK36,ECOMMERCE,Website,Campaign tháng 8,Adapt bộ banner web trung thu,Urgent,,,LUNA,15/08/2026,15/08/2026,15/08/2026,Done,,
+TK37,ECOMMERCE,Website,WEBSITE,Adapt bộ banner web 15.08,Urgent,,,LUNA,15/08/2026,15/08/2026,15/08/2026,Done,,
+TK38,ECOMMERCE,"Website, TikTok, Shopee, Lazada, Facebook",Campaign tháng 8,Adapt bộ thumbnail 25.08,High,,,LUNA,17/08/2026,17/08/2026,22/08/2026,Done,,
+TK39,ECOMMERCE,Website,WEBSITE,Adapt bộ banner web 25.08,High,,,LUNA,17/08/2026,17/08/2026,22/08/2026,Done,,
+TK81,VP - HCNS,Zalo,sinh nhật t9,Thiết kế thiệp + màn hình  sinh nhật t9,Low,,,LUNA,,17/09/2026,18/09/2026,On going,,
+TK74,PS CORP,Events,SK PHUC SINH 25TH,Thiết kế POSM,High,,,LOUIS,08/09/2026,19/09/2026,,On going,Chờ KV,
+TK42,VP - HCNS,,sinh nhật t8,thiết kế thiệp mời + màn hình sinh nhật t8,Medium,,,LUNA,18/08/2026,18/08/2026,21/08/2026,Done,,
+TK43,MT,,,chụp + retouch hình sản phẩm MT,Urgent,,,LUNA,19/08/2026,19/08/2026,19/08/2026,Done,,
+TK44,ECOMMERCE,Shopee,Research Đối Thủ,RnD đối thủ top Shopee,Medium,,gg shet,BOE,18/08/2026,19/08/2026,,Done,,
+TK45,INTERNAL,SYSTEM,Management Task,Update thông báo khi DL còn 3 ngày,Medium,,,BOE,20/08/2026,,,Done,,Testing chạy remind gmail
+TK46,ECOMMERCE,Shopee,GuideLine ECOM,GuideLine ECOM (Safe zone...),Medium,,GG SHEET,BOE,20/08/2026,27/08/2026,,Done,,
+TK47,PS CORP,POSM,Namecard,Thiết kế namecard nhân viên,Medium,,,LOUIS,05/09/2026,,,Done,,
+TK49,MARKETING,Hội Chợ,HC HÀNG VNCLC,Thiết kế gian hàng HC,Medium,,,LOUIS,03/09/2026,20/09/2026,22/09/2026,On going,Xong tk gian hàng,
+TK72,PS CORP,Events,TL TRANH CHERRY,Thiết kế bộ POSM,High,,,LOUIS,08/09/2026,22/09/2026,,On going,Chờ duyệt,
+TK50,INTERNAL,SYSTEM,Management Asset,Management Asset,Medium,Form quản lí tài sản,,BOE,27/08/2026,31/08/2026,,Done,Update Luồng và UX cơ bản,
+TK51,INTERNAL,SYSTEM,Management Asset,Management Asset,Medium,Form quản lí tài sản,,BOE,03/09/2026,06/09/2026,,Done,Update UI thông báo Email,
+TK52,,"Facebook, POSM",Campaign tháng 9,adapt landing page T9,High,,,LUNA,,,,Done,,
+TK53,ECOMMERCE,Facebook,SOCIAL FANPAGE,resize cover banner fanpage,Urgent,,,LUNA,,,,Done,,
+TK54,ECOMMERCE,"TikTok, Shopee",Campaign tháng 9,thiết kế hình thumb livestream t9 (chương trình mới),Urgent,,,LUNA,,,,Done,,
+TK55,ECOMMERCE,"TikTok, Shopee",Campaign tháng 9,chỉnh sửa tagline promotion frame livestream,Urgent,,,LUNA,,,,Done,,
+TK56,ECOMMERCE,"TikTok, Facebook, Shopee",Campaign tháng 9,chỉnh sửa tagline promotion frame livestream,Urgent,,,LUNA,,,,Done,,
+TK73,PS CORP,Bao Bì,BAO BÌ,Thiết kế bao bì Delight 50 & 100 Sticks,Medium,,,LOUIS,01/09/2026,30/09/2026,,On going,,
+TK77,ECOMMERCE,SYSTEM,BẢNG NGUYÊN TẮC VẬN HÀNH LIVE,,Medium,,,"BOE, LUNA, LOUIS",08/09/2026,30/09/2026,,Done,,
+TK59,ECOMMERCE,Website,Campaign tháng 9,thiết kế banner web song cửu 9.9,Urgent,,,LUNA,,,,Done,,
+TK60,ECOMMERCE,Facebook,Campaign tháng 9,thiết kế banner social song cửu 9.9 + affiliate,Urgent,,,LUNA,,,,Done,,
+TK76,ECOMMERCE,SYSTEM,CẨM NANG AI,,Medium,,,"LUNA, BOE, VŨ TRẦN",08/09/2026,30/09/2026,,On going,Không biết gì thì hỏi BẢO,
+TK62,PS CORP,Events,SK TRIỂN LÃM TRANH CHERRY,chụp hình tranh Cherry + làm danh sách file,High,,,LUNA,,08/09/2026,,Done,,
+TK82,PS CORP,Hội Chợ,HC ĐỨC T11,Thiết kế gian hàng & POSM,Medium,,,LOUIS,09/09/2026,10/11/2026,,,,
+TK12,ECOMMERCE,"Shopee, TikTok, Lazada, Website","ECOM BRAND REDESIGN 
+(HÌNH CỐ ĐỊNH)",Cập nhật hình sub sản phẩm,Medium,,Size 1:1,LUNA,,,,On going,,
+TK57,ECOMMERCE,,Campaign tháng 9,adapt hình thumb tháng 9 anh Trưng,Urgent,,,LUNA,,,,On going,,
+TK58,ECOMMERCE,Website,Campaign tháng 9,adapt hình thumb tháng 9 web chị Thu chị Như,Urgent,,,LUNA,01/09/2026,25/11/2026,,On going,,
+TK63,PS CORP,Events,SK TRIỂN LÃM TRANH CHERRY,retouch tranh Cherry,High,,,LUNA,,,,On going,,
+TK64,VP - HCNS,SYSTEM,Management Asset,Làm file timeline quà tặng,Medium,,,LUNA,,,,,,
+TK65,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",CAMPAIGN T10,moodboard idea CP mùa vụ,High,,,"LUNA, VŨ TRẦN",,,,,,
+TK66,ECOMMERCE,"Facebook, TikTok, Shopee, Lazada, Website",CAMPAIGN T10,moodboard idea CP 20.10,High,,,LUNA,,,,,,
+TK67,MARKETING,"Facebook, Zalo",TRUNG THU CAMPAIGN,SOCIAL POST,High,,7 POST,"WENDY, LUNA",,,,On going,,
+TK68,VP - HCNS,POSM,SALEKITS,Brochure công thức & sử dụng sản phẩm KC,Medium,,,WENDY,,,,On going,,
+TK32,KSHOP,POSM,MENU LED,"Setup Menu KC Hưng Phước
+HT Của KC Mỹ Thái",Medium,,,LOUIS,,,,Pending,,
+TK69,VP - HCNS,POSM,SALEKITS,Update Catalogue PS Corp & PS Consumers all version,Medium,,,WENDY,,,,On going,,
+TK70,KSHOP,"Facebook, POSM",CAMPAIGN T10,DRAFT KV RETAIL + FNB ,High,,,WENDY,,,,On going,,
+TK71,DIRECT SALE,Zalo,CAMPAIGN T10,CTKM T10 NTD + NV,Medium,,,WENDY,,,,On going,,
+TK41,ECOMMERCE,Bao Bì,QR Thùng,,High,,,LOUIS,,,,,,
+TK48,VP - HCNS,Bao Bì,Bao bì,Thiết kế thùng carton tất cả SKU,Medium,,,LOUIS,15/09/2026,,,,,
+TK78,"ECOMMERCE, KSHOP",POSM,KV CÁC CP QUÝ 4/2026,,Medium,,,"LUNA, WENDY",08/09/2026,,,On going,,
+TK61,ECOMMERCE,SYSTEM,ECOM GUIDELINE,Thiết kế ecom design guideline,High,,,"LUNA, BOE, LOUIS, WENDY",,,,On going,,
+TK79,VP - HCNS,Events,CONCEPT YEP 2027,CONCEPT YEP 2027,Medium,,,"LUNA, WENDY, LOUIS, VŨ TRẦN, BOE",08/09/2026,,,On going,,
+TK80,DESIGN TEAM,SYSTEM,DESIGN TEAM - ORIENTATION,DESIGN TEAM - ORIENTATION,Medium,,,,08/09/2026,,,,,
+TK81,PS CORP,Website,Rs-IDEA UI WEBSTIE,Rs-IDEA UI WEBSTIE,Medium,Link,,,10/09/2026,11/09/2026,,Done,,
+TK69,VP - HCNS,POSM,SALEKITS,Update Catalogue PS Corp & PS Consumers all version,Medium,,,,,,,On going,,
+TK70,KSHOP,"Facebook, POSM",WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,,,,On going,,
+TK71,DIRECT SALE,Zalo,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,,,,On going,,
+TK72,ECOMMERCE,Bao Bì,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,,,,,,
+TK73,VP - HCNS,Bao Bì,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,15/09/2026,,,,,
+TK74,"ECOMMERCE, KSHOP",POSM,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,08/09/2026,,,On going,,
+TK75,ECOMMERCE,SYSTEM,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,,,,On going,,
+TK76,VP - HCNS,Events,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,08/09/2026,,,On going,,
+TK77,DESIGN TEAM,SYSTEM,WEBSITE,WEBSITE PHASHE 1 RUN,Low,,,,08/09/2026,,,,,
+TK70,KSHOP,"Facebook, POSM",WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,,,,On going,,
+TK71,DIRECT SALE,Zalo,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,,,,On going,,
+TK72,ECOMMERCE,Bao Bì,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,,,,,,
+TK73,VP - HCNS,Bao Bì,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,15/09/2026,,,,,
+TK74,"ECOMMERCE, KSHOP",POSM,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,08/09/2026,,,On going,,
+TK75,ECOMMERCE,SYSTEM,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,,,,On going,,
+TK76,VP - HCNS,Events,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,08/09/2026,,,On going,,
+TK77,DESIGN TEAM,SYSTEM,WEBSITE,WEBSITE PHASHE 1 RUN,Urgent,,,,08/09/2026,,,,,
+TK83,INTERNAL,SYSTEM,TEST — Management Hub,TEST — Kiểm tra luồng Direct Task Master,Low,Task kiểm thử luồng giao việc trực tiếp từ Management Hub vào Task Master.,Xác nhận hiển thị Dashboard và email,BOE,,,,Done,Test hệ thống — có thể đóng sau khi kiểm tra.,
+TK84,DESIGN TEAM,TikTok,Tạo Task cho nhân viên,Tạo Task cho nhân viên,High,Tạo Task cho nhân viên,Tạo Task cho nhân viên,BOE,19/09/2026,19/09/2026,,Pending,Tạo Task cho nhân viên,
+TK85,DESIGN TEAM,SYSTEM,Tạo Task cho nhân viên 123,Tạo Task cho nhân viên 1233,High,Tạo Task cho nhân viênTạo Task cho nhân viên,Tạo Task cho nhân viênTạo Task cho nhân viên,BOE,19/09/2026,01/10/2026,,Pending,,
+TK86,DESIGN TEAM,Facebook,Campaign tháng 10,Campaign tháng 10,Medium,Campaign tháng 10,Campaign tháng 10,BOE,30/09/2026,03/10/2026,,On going,Campaign tháng 10,https://script.google.com/macros/s/AKfycbwx4Vk96yLwEkPdsRe53SbO_df88HFfFVUatCB8cuI80gI0lyNw5hDHpVY19kGnXDffZw/exec
