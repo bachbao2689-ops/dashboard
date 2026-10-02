@@ -1,0 +1,1035 @@
+BRIEF CHI TIẾT CHO DEVELOPER
+PHẠM VI CÔNG VIỆC
+Dashboard này cần hoàn thiện 9 modules sau:
+
+MODULE 1: All Tasks
+User Story: "As a manager, I want to see ALL tasks across the organization with filtering and sorting"
+UI Requirements:
+	•	Table view hoặc Card view với toggle
+	•	Columns: Task ID, Name, Assignee, Status, Priority, Due Date, Actions
+	•	Filters: Status (Todo/In Progress/Done), Priority, Assignee, Date Range
+	•	Sort: By Date, Priority, Assignee
+	•	Pagination: 10/20/50 per page
+	•	Bulk actions checkbox
+Functionality:
+	•	Click row → mở task detail modal
+	•	Status badge clickable để quick update
+	•	Search bar tìm theo task name/ID
+	•	Export CSV/Excel button
+
+MODULE 2: Kanban Board
+User Story: "As a user, I want drag-and-drop task management like Trello"
+UI Requirements:
+	•	4-5 columns: Backlog, To Do, In Progress, Done, Archived
+	•	Cards với: Task title, priority badge, assignee avatar, due date
+	•	Drag handles trên card
+	•	Add new task button ở mỗi column
+	•	Column header với count badge
+Functionality:
+	•	Drag & drop giữa columns → auto update status
+	•	Click card → mở sidebar/detail panel
+	•	Double-click card → inline edit
+	•	Right-click context menu (Delete, Duplicate, Move)
+	•	Smooth animations khi di chuyển card
+	•	Keyboard shortcuts: Delete, Enter, Escape
+
+MODULE 3: My Tasks
+User Story: "As Louis, I want to see only tasks assigned to ME"
+UI Requirements:
+	•	Similar to All Tasks nhưng filtered by current user
+	•	Tabs: Today / This Week / All / Completed
+	•	Quick filter chips: High Priority, Overdue, Due Soon
+	•	"Mark as Complete" quick action
+	•	Time estimate hiển thị trên each card
+Functionality:
+	•	One-click completion với confirm dialog
+	•	Reschedule option khi quá hạn
+	•	Email reminder settings
+	•	Sync với calendar (nếu có)
+
+MODULE 4: Overdue
+User Story: "As a manager, I want to prioritize overdue tasks urgently"
+UI Requirements:
+	•	Red color scheme cho urgency
+	•	Sorting: Most overdue first
+	•	Highlight: Days overdue badge (ví dụ: ⚠️ +5 DAYS)
+	•	Escalation level indicator
+	•	Bulk action: Reassign, Extend deadline, Mark urgent
+Functionality:
+	•	Auto-notification trigger khi task mới overdue
+	•	Quick reassign dropdown
+	•	"Grant Extension" modal với reason field
+	•	Export list for reporting
+	•	Auto-refresh mỗi 5 phút
+
+MODULE 5: Inventory
+User Story: "As admin, I want to track coffee shop assets inventory"
+UI Requirements:
+	•	Grid view với product images
+	•	Stats cards: Total Items, Low Stock, Out of Stock, Maintenance
+	•	Search & Filter: Category, Location, Status
+	•	Table columns: Item ID, Name, Category, Quantity, Status, Last Updated
+	•	Color-coded status badges (Available, Borrowed, Maintenance)
+Functionality:
+	•	CRUD operations cho items
+	•	Barcode scanner integration (nếu hardware available)
+	•	Stock alert notifications khi dưới threshold
+	•	History tracking cho mỗi item
+	•	Import/Export spreadsheet
+
+MODULE 6: Borrow Requests
+User Story: "As staff, I want to request and approve asset borrowing"
+UI Requirements:
+	•	Two sections: Pending Requests / My Requests
+	•	Request form modal: Select item, Purpose, Duration, Return Date
+	•	Approval workflow UI (Approve/Reject buttons với comment)
+	•	Timeline visualization cho active borrowings
+	•	Return confirmation modal
+Functionality:
+	•	Submit request → gửi notification cho admin
+	•	Admin approval/rejection → update status
+	•	Auto-reminder trước return date
+	•	Late return penalty calculation
+	•	Request history tracking
+
+MODULE 7: Team Workload
+User Story: "As manager, I want to visualize team capacity distribution"
+UI Requirements:
+	•	Team member cards với progress bars
+	•	Heatmap calendar cho workload distribution
+	•	Chart: Tasks per person (bar chart)
+	•	Capacity gauge (0-100% utilization)
+	•	Filter: By week, project, or role
+Functionality:
+	•	Click member → xem detailed task list
+	•	Drag tasks between team members
+	•	Capacity warnings (>120% overload)
+	•	Export workload report
+	•	Role-based permissions visibility
+
+MODULE 8: Reports
+User Story: "As executive, I want comprehensive analytics and exports"
+UI Requirements:
+	•	Date range picker với presets (Week/Month/Quarter/Year)
+	•	Multiple charts: Task completion trends, Productivity, Overdue rate
+	•	Comparison view (This period vs Previous)
+	•	Export panel (PDF, Excel, CSV options)
+	•	Save report template feature
+Functionality:
+	•	Auto-generate monthly report
+	•	Scheduled email reports
+	•	Custom metric selection
+	•	Dashboard export to PDF
+	•	Shareable report links (read-only)
+
+MODULE 9: Home (ĐÃ CÓ - CHỈ CẦN TỐI ƯU)
+Current Issues:
+	•	AI Summary button chưa hoạt động
+	•	Download button chưa có action
+	•	Charts chưa interactive (không có tooltip hay drill-down)
+Enhancements:
+	•	Thêm click-through từ KPI cards → detail pages
+	•	Real-time data refresh indicator
+	•	Customizable widget positions
+	•	Dark mode toggle functional
+
+🔧 FUNCTION BUTTONS CẦN FIX NGAY
+Button
+Expected Behavior
+Priority
+Search bar
+Real-time filtering across all modules
+Critical
+Theme toggle (moon icon)
+Switch light/dark mode
+High
+EN/Language
+Open language selector dropdown
+High
+Notification bell
+Show notification dropdown with badges
+Critical
+Refresh icon
+Manual data reload
+Medium
+Dashboards dropdown
+Switch between dashboard views
+High
+AI Summary (Home)
+Generate AI-powered summary of stats
+Medium
+Download icon
+Export current view as PDF
+Medium
+Status badges
+Clickable quick status update
+Critical
+
+🎨 EMPTY STATES NEEDED
+Hiện chỉ có 1 "Module Coming Soon" - cần thêm:
+{
+  "type": "finding",
+  "title": "Empty states variety",
+  "body": "Cần thiết kế riêng cho từng trường hợp: Không có task, Không có borrowed items, Không có overdue, Không có kết quả tìm kiếm, Không có quyền truy cập",
+  "severity": "medium"
+}
+
+📊 TECHNICAL RECOMMENDATIONS
+Frontend Enhancements:
+{
+  "type": "finding",
+  "title": "State management",
+  "body": "Sử dụng React Query/SWR cho API caching, Redux/Zustand cho global state",
+  "severity": "high"
+}
+{
+  "type": "finding",
+  "title": "Real-time updates",
+  "body": "WebSocket cho notifications, auto-sync cross-tab",
+  "severity": "medium"
+}
+API Endpoints Cần Implement:
+GET    /api/tasks           - Fetch tasks (with filters)
+POST   /api/tasks           - Create new task
+PUT    /api/tasks/:id       - Update task
+DELETE /api/tasks/:id       - Delete task
+GET    /api/inventory       - Fetch inventory
+POST   /api/borrow-requests - Submit borrowing
+PUT    /api/borrow-requests/:id/approve - Approve
+GET    /api/workload        - Team workload data
+GET    /api/reports         - Analytics data
+
+⏰ PHASE IMPLEMENTATION PLAN
+Phase 1 (Week 1-2): Critical fixes
+	•	Fix all navigation buttons
+	•	Implement All Tasks, My Tasks modules
+	•	Fix search & filter functionality
+Phase 2 (Week 3-4): Core features
+	•	Kanban Board với drag-drop
+	•	Inventory & Borrow Requests CRUD
+	•	Notifications system
+Phase 3 (Week 5-6): Advanced features
+	•	Team Workload visualization
+	•	Reports & Analytics
+	•	AI Summary feature
+	•	Export functionalities
+## 1. PROJECT OVERVIEW
+
+### Mục tiêu
+Hoàn thiện dashboard quản lý task và asset cho K COFFEE với **9 functional modules**. Hiện tại UI đã hoàn chỉnh nhưng thiếu 80% functionality.
+
+### Scope
+- ✅ **Done:** UI design, navigation structure, Home dashboard layout
+- ❌ **Pending:** 8 module implementations, button functionalities, data integrations
+
+### Tech Stack (Assumed)
+- Frontend: React/Vue/Angular (verify với dev team)
+- State Management: ?
+- Backend API: ?
+- Database: ?
+
+---
+
+## 2. CURRENT STATE ANALYSIS
+
+### 2.1 Menu Items Status
+
+| Module | UI Exists | Functional | Priority |
+|--------|-----------|------------|----------|
+| Home | ✅ Yes | ⚠️ Partial | **CRITICAL** |
+| All Tasks | ❌ Coming Soon | ❌ No | **HIGH** |
+| Kanban Board | ❌ Coming Soon | ❌ No | **HIGH** |
+| My Tasks | ❌ Coming Soon | ❌ No | **HIGH** |
+| Overdue | ❌ Coming Soon | ❌ No | **MEDIUM** |
+| Inventory | ❌ Coming Soon | ❌ No | **MEDIUM** |
+| Borrow Requests | ❌ Coming Soon | ❌ No | **MEDIUM** |
+| Team Workload | ❌ Coming Soon | ❌ No | **MEDIUM** |
+| Reports | ❌ Coming Soon | ❌ No | **LOW** |
+
+### 2.2 Top Navigation Issues
+
+```card
+{
+  "type": "finding",
+  "title": "Critical navigation broken",
+  "body": "9/10 sidebar menu items chỉ render placeholder text 'Module Coming Soon'. Không có routing, không có event handlers.",
+  "severity": "critical"
+}
+
+3. MODULE SPECIFICATIONS
+
+MODULE 1: ALL TASKS (/tasks/all)
+Purpose: Manager view - xem tất cả tasks trong tổ chức
+3.1.1 UI Layout
++------------------------------------------------------------------+
+|  [Search Input]     [Filter ▼] [Sort ▼]    [+ New Task] [Export]  |
++------------------------------------------------------------------+
+|                                                                  |
+|  [ ] Task ID | Name          | Assignee | Status | Due      | ... |
+|  [ ] #TK001  | Buy beans     | @John    | 🔵 Done| 01/10    | ⚙️  |
+|  [ ] #TK002  | Restock cups  | @Sarah   | 🟡 Todo| 03/10    | ⚙️  |
+|                                                                  |
+|                        [1][2][3] [...]  >                        |
++------------------------------------------------------------------+
+3.1.2 Component Requirements
+// Required components
+- DataTable (sortable, filterable)
+- Multi-select dropdown (filter by assignee)
+- Status badge component (clickable for quick update)
+- Pagination component (10/25/50 rows)
+- Bulk action toolbar (when checkboxes selected)
+- Modal: Create/Edit Task
+- Dropdown: Quick Actions per row
+3.1.3 Functionality List
+#
+Feature
+User Action
+Expected Result
+Priority
+1
+Search
+Type in search box
+Real-time filter tasks by name/ID
+CRITICAL
+2
+Sort column
+Click column header
+Toggle asc/desc order
+HIGH
+3
+Filter status
+Click filter dropdown → select
+Filter tasks by status
+HIGH
+4
+Quick status update
+Click status badge
+Open quick update modal
+CRITICAL
+5
+View detail
+Click row
+Slide-in panel with full task info
+CRITICAL
+6
+Create task
+Click "+ New Task"
+Open create task modal
+CRITICAL
+7
+Delete task
+Click delete icon + confirm
+Remove task from list
+MEDIUM
+8
+Bulk delete
+Select rows → click bulk delete
+Delete all selected
+LOW
+9
+Export CSV
+Click export button
+Download filtered data as CSV
+MEDIUM
+10
+Pagination
+Click page number
+Load corresponding data batch
+HIGH
+3.1.4 API Endpoints
+GET    /api/tasks?status=&assignee=&search=&page=1&limit=25
+POST   /api/tasks { taskData }
+PUT    /api/tasks/{id} { updatedFields }
+DELETE /api/tasks/{id}
+PATCH  /api/tasks/{id}/status { newStatus }
+GET    /api/tasks/export?format=csv
+3.1.5 Validation Rules
+	•	Task name: required, min 3 chars, max 200 chars
+	•	Assignee: required for non-system tasks
+	•	Due date: cannot be in past when creating new task
+	•	Priority: enum [low, medium, high, urgent]
+	•	Description: optional, markdown supported
+
+MODULE 2: KANBAN BOARD (/tasks/kanban)
+Purpose: Drag-drop visual task management
+3.2.1 UI Layout
++------------------------------------------------------------------------------------+
+|  [Backlog] (3)     [To Do] (5)      [In Progress] (2)     [Done] (8)   [+ Add Column] |
+|  +------------+    +------------+    +---------------+    +------------+            |
+|  | #TK010     |    | #TK011     |    | #TK012        |    | #TK005     |            |
+|  | Buy beans  |    | Restock    |    | Train staff   |    | Audit      |            |
+|  | 🟡 Medium  |    | 🔴 High    |    | 🟢 Low        |    | ✅ Done    |            |
+|  | @John 👤2  |    | @Sarah     |    | @Mike 👤3     |    | @Lisa 👤1  |            |
+|  | 03/10 📅   |    | 02/10 ⚠️   |    | 01/10 ✔️      |    | 28/09      |            |
+|  +------------+    +------------+    +---------------+    +------------+            |
+|  | #TK015     |    |            |    |               |    |            |            |
+|  | ...        |    |            |    |               |    |            |            |
++------------------------------------------------------------------------------------+
+3.2.2 Component Requirements
+// Required libraries/components
+- react-beautiful-dnd OR @hello-pangea/dnd
+- KanbanColumn component
+- KanbanCard component
+- AddTaskButton per column
+- ColumnSettingsModal
+- CardContextMenu (right-click)
+3.2.3 Drag-Drop Functionality
+Event
+User Action
+Expected Result
+Start drag
+Click + hold card
+Card elevation shadow, ghost element appears
+Drop in same column
+Release in different position
+Reorder cards smoothly with animation
+Drop in different column
+Release on another column
+Animate slide, update status, play success sound
+Cancel drag
+Press ESC or drop outside board
+Return to original position with animation
+Drag over column
+Hover on column header
+Column highlight, show drop zone
+3.2.4 Card Interaction Functions
+#
+Interaction
+Expected Result
+1
+Single click
+Highlight card, show action buttons
+2
+Double click
+Open edit modal (full screen)
+3
+Right click
+Context menu (Edit, Duplicate, Delete, Move)
+4
+Click priority badge
+Quick change priority dropdown
+5
+Click assignee avatar
+Assignee change modal
+6
+Click due date
+Date picker modal
+7
+Drag card
+Activate drag mode (see 3.2.3)
+3.2.5 Additional Features
+Kanban essential features
+WIP limits per column, keyboard shortcuts (Del=delete, Enter=edit, Space=drag mode), auto-scroll khi dragging ở edge, smooth spring animations (stiff: 300, damping: 20)
+3.2.6 API Endpoints
+GET    /api/tasks/kanban?columns=all
+PATCH  /api/tasks/{id}/move { targetColumn, index }
+POST   /api/tasks { taskData }
+DELETE /api/tasks/{id}
+PUT    /api/columns/order [columnId1, columnId2, ...]
+
+MODULE 3: MY TASKS (/tasks/my)
+Purpose: Personal task view - tasks assigned to current user
+3.3.1 UI Layout
++--------------------------------------------------------------+
+|  Welcome, Louis 👋                                          |
+|                                                              |
+|  [Today] [This Week] [All] [Completed]                      |
+|                                                              |
+|  ┌────────────────┐  ┌────────────────┐                     |
+|  │ My Tasks       │  │ Due Soon       │                     |
+|  │       2        │  │       5        │                     |
+|  │  ↑5% vs last   │  │  ↓2% vs last   │                     |
+|  └────────────────┘  └────────────────┘                     |
+|                                                              |
+|  Quick Filters: [🔴 High] [⚠️ Overdue] [📅 Due Today] [x Clear]|
+|                                                              |
+|  +------------------------------------------------------+    |
+|  | #TK015  |  Task Name             | Due      | [✔️]  |    |
+|  |         |  Description snippet   | 03/10    |       |    |
+|  +------------------------------------------------------+    |
+3.3.2 Tab Functionality
+Tab
+Filter Logic
+Today
+due_date == today OR due_date < today AND status != done
+This Week
+due_date BETWEEN today AND today + 7 days
+All
+All tasks assigned to user (status any)
+Completed
+assigned_to == currentUser AND status == done
+3.3.3 Quick Actions Per Task
+const quickActions = {
+  complete: {
+    action: 'markComplete',
+    requiresConfirm: true,
+    confirmMessage: 'Mark "{taskName}" as complete?',
+    shortcut: 'Cmd/Ctrl + Enter'
+  },
+  defer: {
+    action: 'extendDeadline',
+    modal: true,
+    fields: ['newDate', 'reason']
+  },
+  delegate: {
+    action: 'reassign',
+    modal: true,
+    fields: ['newAssignee', 'notes']
+  },
+  escalate: {
+    action: 'flagUrgent',
+    requiresConfirm: false,
+    addsBadge: true
+  }
+};
+3.3.4 Notification Integration
+{
+  "type": "summary",
+  "title": "My Tasks notifications",
+  "body": "Push notification 24h before due date, email reminder daily morning digest, in-app badge when task overdue, sound alert khi assign new task",
+  "severity": "medium"
+}
+
+MODULE 4: OVERDUE (/tasks/overdue)
+Purpose: Emergency view for overdue tasks requiring immediate attention
+3.4.1 UI Layout
++------------------------------------------------------------------+
+|  OVERDUE TASKS                    🔴 URGENT VIEW                 |
++------------------------------------------------------------------+
+|                                                                  |
+|  +----------------------------------------------------------+    |
+|  | #TK008 | Prepare report  | -7 DAYS | @Admin | 🔴 URGENT  |    |
+|  |        | Description     | Escalated |                | ⚙️ |    |
+|  +----------------------------------------------------------+    |
+|                                                                  |
+|  +----------------------------------------------------------+    |
+|  | #TK012 | Monthly audit | -3 DAYS | @Lisa | ⚠️ WARNING    |    |
+|  |        |               |         |          |            | ⚙️ |    |
+|  +----------------------------------------------------------+    |
+|                                                                  |
+|  [Bulk Select] [Reassign Selected] [Grant Extension] [Escalate]|
++------------------------------------------------------------------+
+3.4.2 Urgency Logic
+const urgencyLevels = {
+  danger: { daysOverdue: 1, color: 'orange', bg: '#FEF3E2' },
+  warning: { daysOverdue: 3, color: 'red', bg: '#FEE2E2' },
+  critical: { daysOverdue: 7, color: 'darkred', bg: '#FE2A2A', text: '#FFFFFF' }
+};
+
+function calculateUrgency(task) {
+  const daysLate = Math.floor((today - task.dueDate) / 86400000);
+  return Object.values(urgencyLevels).find(l => daysLate >= l.daysOverdue);
+}
+3.4.3 Action Functions
+Action
+Modal Fields
+Post-Action
+Grant Extension
+newDate, reason, approver
+Send approval notification
+Reassign
+newAssignee, transferNotes
+Notify old + new assignee
+Mark Resolved
+resolutionNote
+Change status to done
+Escalate
+escalationLevel (L1/L2/L3)
+Add urgent badge, notify managers
+3.4.4 Auto-Refresh
+// Polling configuration
+useEffect(() => {
+  const interval = setInterval(refreshOverdueTasks, 300000); // 5 min
+  return () => clearInterval(interval);
+}, []);
+
+MODULE 5: INVENTORY (/assets/inventory)
+Purpose: Track all physical assets (coffee machines, furniture, equipment)
+3.5.1 UI Layout
++------------------------------------------------------------------+
+|  INVENTORY                        [+ Add Item] [Import CSV]       |
++------------------------------------------------------------------+
+|  [Search...]  [Category▼] [Location▼] [Status▼]                   |
++------------------------------------------------------------------+
+|  GRID VIEW                          LIST VIEW ◄                  |
+|                                                                  |
+|  +------------+  +------------+  +------------+                  |
+|  | 🖼️ IMG     |  | 🖼️ IMG     |  | 🖼️ IMG     |                  |
+|  | Espresso   |  | Blender    |  | Chair Set  |                  |
+|  | Machine 1  |  | Pro 500    |  | Bar Area   |                  |
+|  | Location:  |  | Location:  |  | Location:  |                  |
+|  | Main Bar   |  | Prep Area  |  | Dining     |                  |
+|  | 👁️5 | 🔒 |  | 👁️3 | 🔒 |  | 👁️8 | 🔒 |  |
+|  | [View] [Edit]|  | [View] [Edit]|  | [View] [Edit]|              |
+|  +------------+  +------------+  +------------+                  |
++------------------------------------------------------------------+
+3.5.2 CRUD Operations
+const itemSchema = {
+  id: { type: 'string', required: true, auto: 'INV-' + random(6) },
+  name: { type: 'string', required: true, minLength: 3, maxLength: 100 },
+  category: { type: 'enum', values: ['Equipment', 'Furniture', 'Utensils', 'Other'] },
+  quantity: { type: 'integer', min: 1, default: 1 },
+  location: { type: 'string', required: true },
+  status: { type: 'enum', values: ['available', 'borrowed', 'maintenance', 'out_of_stock'], default: 'available' },
+  purchaseDate: { type: 'date', required: false },
+  warrantyExpiry: { type: 'date', required: false },
+  notes: { type: 'text', maxLength: 500 },
+  imageUrl: { type: 'string', format: 'uri' }
+};
+3.5.3 Alert Thresholds
+const alerts = {
+  lowStock: { trigger: 'quantity < threshold', notify: 'in_app + email' },
+  maintenanceDue: { trigger: 'warrantyExpiry < 30 days', notify: 'in_app' },
+  outOfStock: { trigger: 'quantity == 0', notify: 'in_app + sms' }
+};
+
+MODULE 6: BORROW REQUESTS (/assets/borrow)
+Purpose: Asset lending workflow - request, approve, track returns
+3.6.1 UI Layout
++-----------------------------------------------------------+
+|  BORROW REQUESTS                                         |
++-----------------------------------------------------------+
+|  [Pending Requests (3)] [Active Borrowings (5)] [History]  |
++-----------------------------------------------------------+
+|                                                          |
+|  +-----------------------------------------------+        |
+|  | Request #BR045                                |        |
+|  | Item: Espresso Machine 1                      |        |
+|  | Requester: @Tom                               |        |
+|  | Duration: 02/10 → 05/10                       |        |
+|  | Reason: Training session                      |        |
+|  |                                               |        |
+|  |          [✅ Approve] [❌ Reject]            |        |
+|  +-----------------------------------------------+        |
++-----------------------------------------------------------+
+3.6.2 Workflow States
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> PendingApproval : Submit
+    PendingApproval --> Approved : Admin approves
+    PendingApproval --> Rejected : Admin rejects
+    Approved --> Borrowed : Item released
+    Borrowed --> Returned : Item returned
+    Borrowed --> Overdue : Past due date
+    Returned --> [*]
+3.6.3 Forms Required
+Request Form:
+const borrowRequestForm = {
+  itemId: { required: true, validation: 'must_be_available' },
+  purpose: { required: true, minLength: 10, maxLength: 500 },
+  startDate: { required: true, validation: 'must_be_future' },
+  endDate: { required: true, validation: 'must_be_after_start' },
+  contactInfo: { required: true, pattern: 'email_or_phone' }
+};
+Approval Modal:
+const approvalForm = {
+  action: { type: 'select', options: ['approve', 'reject'] },
+  notes: { type: 'text', requiredWhen: 'action === reject' },
+  conditionalEndDate: { type: 'date', requiredWhen: 'request_needs_adjustment' }
+};
+
+MODULE 7: TEAM WORKLOAD (/team/workload)
+Purpose: Visualize team capacity and distribute tasks evenly
+3.7.1 UI Layout
++----------------------------------------------------------------------+
+|  TEAM WORKLOAD                        [Week 39 ▼] [All Projects ▼]    |
++----------------------------------------------------------------------+
+|                                                                      |
+|  Member          Tasks   Load   Distribution                        |
+|  ┌────────────┐  ┌───┐  ┌───────┐                                   |
+|  | 👤 John    |  │40%│  ████░░░░                                    |
+|  └────────────┘  └───┘                                              |
+|  ┌────────────┐  ┌───┐  ┌───────┐                                   |
+|  | 👤 Sarah   |  │85%│  ████████░                                    |
+|  └────────────┘  └───┘                                              |
+|  ⚠️ Warning: Sarah at 85% capacity                                  |
+|                                                                      |
+|  [Bar Chart: Tasks per Person]   [Calendar Heatmap]                  |
++----------------------------------------------------------------------+
+3.7.2 Calculation Logic
+function calculateWorkload(member) {
+  const activeTasks = tasks.filter(t => t.assignee === member.id && t.status !== 'done');
+  const totalEstimate = activeTasks.reduce((sum, t) => sum + t.timeEstimate, 0);
+  const weeklyCapacity = 40; // hours
+  
+  return {
+    percentage: (totalEstimate / weeklyCapacity) * 100,
+    status: totalEstimate > weeklyCapacity ? 'OVERLOADED' :
+            totalEstimate > weeklyCapacity * 0.8 ? 'NEAR_LIMIT' :
+            'BALANCED'
+  };
+}
+3.7.3 Features
+	•	Heatmap Calendar: Green (light load) → Yellow (balanced) → Red (overloaded)
+	•	Drag Tasks: Click and drag task from overloaded → underloaded member
+	•	Capacity Settings: Admin can set custom weekly hours per role
+	•	Project Filtering: View workload per project
+	•	Export Report: PDF with charts for management review
+
+MODULE 8: REPORTS (/reports)
+Purpose: Comprehensive analytics and business insights
+3.8.1 UI Layout
++----------------------------------------------------------------------+
+|  ANALYTICS REPORTS                    [Date Range ▼] [Generate] [Export]|
++----------------------------------------------------------------------+
+|  This Month                         Previous Month                  |
+|  ╔══════════════╗                ╔══════════════╗                   |
+|  ║ Tasks Done   ║                ║ Tasks Done   ║                   |
+|  ║    47        ║                ║    52        ║                   |
+|  ║    ↓9.6%     ║                ║              ║                   |
+|  ╚══════════════╝                ╚══════════════╝                   |
++----------------------------------------------------------------------+
+|  [Completion Rate Trend Line Chart]                                 |
++----------------------------------------------------------------------+
+|  [Productivity Breakdown Pie]  [Top Performers Bar Chart]            |
++----------------------------------------------------------------------+
+|  Saved Templates: [Monthly Ops] [Weekly Summary] [Custom] [+ New]     |
++----------------------------------------------------------------------+
+3.8.2 Report Types
+const reportTypes = {
+  taskCompletion: {
+    metrics: ['completed', 'overdue', 'average_duration'],
+    breakdown: ['by_user', 'by_category', 'by_priority'],
+    timeframe: 'daily_weekly_monthly'
+  },
+  productivity: {
+    metrics: ['tasks_per_day', 'completion_rate', 'on_time_percentage'],
+    comparison: 'vs_previous_period',
+    visualization: 'line_chart'
+  },
+  workloadDistribution: {
+    metrics: ['tasks_per_member', 'capacity_utilization'],
+    visualization: 'heatmap_bar_combo'
+  },
+  assetUtilization: {
+    metrics: ['borrow_frequency', 'downtime_hours', 'availability_rate'],
+    breakdown: ['by_category', 'by_location']
+  }
+};
+3.8.3 Export Options
+const exportFormats = {
+  pdf: { template: 'company_branded', include_charts: true },
+  excel: { sheets: ['summary', 'raw_data'], formulas: true },
+  csv: { delimiter: ',', encoding: 'utf-8' },
+  shareableLink: { readOnly: true, expiresIn: '7_days' }
+};
+
+4. GLOBAL FUNCTIONALITY FIXES
+4.1 Navigation Buttons
+// Fix needed on EVERY menu item
+const navItems = [
+  { path: '/home', label: 'Home', icon: HomeIcon },
+  { path: '/tasks/all', label: 'All Tasks', icon: CheckCircleIcon },
+  { path: '/tasks/kanban', label: 'Kanban Board', icon: ViewKanbanIcon },
+  { path: '/tasks/my', label: 'My Tasks', icon: PersonIcon },
+  { path: '/tasks/overdue', label: 'Overdue', icon: ScheduleIcon },
+  { path: '/assets/inventory', label: 'Inventory', icon: InventoryIcon },
+  { path: '/assets/borrow', label: 'Borrow Requests', icon: ClockIcon },
+  { path: '/team/workload', label: 'Team Workload', icon: PeopleIcon },
+  { path: '/reports', label: 'Reports', icon: BarChartIcon }
+];
+
+// ROUTING IMPLEMENTATION REQUIRED
+// Currently renders: <ComingSoonPlaceholder /> for all routes except /home
+// Expected: Actual component per route
+4.2 Top Bar Icons
+Icon
+Current State
+Required Function
+🔍 Search
+Static input
+Live search across ALL modules with debouncing (300ms)
+🌐 EN
+Static text
+Language dropdown (EN/VN) → persist in localStorage
+🌙 Theme
+Static icon
+Toggle light/dark mode → persist preference
+🔄 Refresh
+Static icon
+Force data reload → show spinner
+🔔 Bell
+Static with red dot
+Notification dropdown with 3 types: Task assigned, Task completed, System alert
+4.3 Home Dashboard Interactive Fixes
+Element
+Fix Required
+AI Summary button
+Call LLM endpoint with aggregated stats, display in modal
+Download icon
+Export current dashboard as PNG/PDF
+This Month dropdown
+Filter all widgets by selected period
+KPI Cards
+Click → navigate to relevant module with applied filters
+Charts
+Add tooltips on hover, click chart → drill down to raw data
+
+5. EMPTY STATES DESIGN GUIDE
+Template Library
+Scenario
+Illustration
+Headline
+Body
+CTA Button
+No tasks
+📭 Empty inbox
+"No tasks yet"
+"Create your first task to get started"
+[+ Create Task]
+No overdue
+✅ Checkmark
+"All caught up!"
+"Great job! No overdue tasks right now"
+[Back to My Tasks]
+No inventory items
+📦 Empty box
+"Inventory is empty"
+"Add your first asset to track"
+[+ Add Item]
+No borrow requests
+📋 Clipboard
+"No requests pending"
+"Approved requests will appear here"
+[Create Request]
+No search results
+🔍 Magnifying glass
+"No results found"
+"Try adjusting your filters or search terms"
+[Clear Filters]
+No permissions
+🔒 Lock
+"Access restricted"
+"Contact admin for access to this module"
+[Contact Support]
+
+6. MICRO-INTERACTIONS & ANIMATIONS
+6.1 Required States
+const interactionStates = {
+  hover: {
+    css: { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
+    duration: '200ms',
+    easing: 'ease-out'
+  },
+  active: {
+    css: { transform: 'scale(0.98)' },
+    duration: '100ms'
+  },
+  loading: {
+    component: <SkeletonLoader />,
+    fallback: <Spinner size="sm" />
+  },
+  success: {
+    toast: { message: 'Saved successfully', type: 'success' },
+    animation: 'pulse_once'
+  },
+  error: {
+    toast: { message: errorMessage, type: 'error' },
+    animation: 'shake'
+  }
+};
+6.2 Page Transitions
+/* Required animations */
+.page-enter { opacity: 0; transform: translateY(10px); }
+.page-enter-active { opacity: 1; transform: translateY(0); transition: all 300ms ease-out; }
+.page-exit { opacity: 1; }
+.page-exit-active { opacity: 0; transition: all 200ms ease-in; }
+
+7. API CONTRACT SPECIFICATION
+7.1 Common Response Structure
+{
+  "success": true,
+  "data": { /* payload */ },
+  "meta": {
+    "page": 1,
+    "limit": 25,
+    "total": 150,
+    "hasMore": true
+  },
+  "timestamp": "2026-10-02T10:30:00Z"
+}
+7.2 Error Handling Standard
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Due date cannot be in the past",
+    "details": [
+      { "field": "dueDate", "issue": "past_date" }
+    ]
+  },
+  "timestamp": "2026-10-02T10:30:00Z"
+}
+7.3 Authentication
+// All API calls require Bearer token
+headers: {
+  'Authorization': 'Bearer {jwt_token}',
+  'Content-Type': 'application/json'
+}
+
+// Token stored in httpOnly cookie OR localStorage (verify security policy)
+
+8. RESPONSIVE REQUIREMENTS
+Breakpoint Specifications
+Breakpoint
+Width
+Layout Changes
+Desktop
+≥1024px
+Full sidebar visible, multi-column grid
+Tablet
+768px - 1023px
+Collapsible sidebar, single/multi column toggle
+Mobile
+<768px
+Hamburger menu, single column stack, bottom nav
+// Required responsive behavior
+const breakpoints = {
+  mobile: { hideSidebar: true, compactCards: true, disableDragDrop: true },
+  tablet: { sidebarCollapsed: true, preserveGrid },
+  desktop: { sidebarExpanded: true, enableDragDrop }
+};
+
+9. ACCESSIBILITY STANDARDS
+{
+  "type": "summary",
+  "title": "WCAG 2.1 AA compliance",
+  "body": "All interactive elements must be keyboard navigable, focus indicators visible, ARIA labels on icons, color contrast minimum 4.5:1, screen reader friendly announcements",
+  "severity": "high"
+}
+Required ARIA Attributes
+<!-- Example -->
+<button aria-label="Delete task #TK015" aria-describedby="delete-confirm">
+  <TrashIcon />
+</button>
+
+<div role="alert" aria-live="polite">
+  Task saved successfully
+</div>
+
+<nav aria-label="Main navigation">
+  <!-- Sidebar menu -->
+</nav>
+
+10. PERFORMANCE BUDGET
+Metric
+Target
+Maximum
+Initial load time
+<2s
+5s
+Time to interactive
+<3s
+7s
+API response time (normal)
+<500ms
+2s
+Drag-drop frame rate
+60fps
+-
+Bundle size (gzipped)
+<200KB
+500KB
+Optimization Requirements
+	•	Lazy load non-critical routes
+	•	Code split per module
+	•	Memoize expensive computations
+	•	Debounce search inputs (300ms)
+	•	Virtual scrolling for long lists (>100 items)
+	•	Image optimization (WebP with fallback)
+
+11. TESTING CHECKLIST
+Unit Tests (Jest/React Testing Library)
+const testCoverage = {
+  components: '≥80%',
+  utilities: '≥90%',
+  apiCalls: 'mock_all_requests'
+};
+E2E Tests (Cypress/Playwright)
+const e2eScenarios = [
+  'User can create, update, delete a task',
+  'User can drag card between kanban columns',
+  'Notification appears when task is assigned',
+  'Empty states display correctly',
+  'Search filters results accurately',
+  'Pagination works across all list views',
+  'Dark mode toggles and persists'
+];
+
+12. DELIVERY TIMELINE
+Phase 1 (Critical)
+Week 1-2
+▲Routing + Core Modules
+Phase 2 (Core)
+Week 3-4
+▲Kanban + CRUD
+Phase 3 (Advanced)
+Week 5-6
+▲Analytics + Exports
+Milestone Gates
+Milestone
+Acceptance Criteria
+Sign-off Required From
+M1: Navigation Working
+All menu links route correctly
+Product Owner
+M2: CRUD Complete
+Create/Read/Update/Delete on All Tasks + My Tasks
+QA Lead
+M3: Kanban Live
+Drag-drop functional without bugs
+UX Designer
+M4: API Integrated
+All endpoints connected with error handling
+Backend Lead
+M5: Performance Passed
+Lighthouse score ≥90
+DevOps
+M6: Production Ready
+E2E tests passing, no P0 bugs
+Product Owner + CTO
+
+13. RISK REGISTER
+Risk
+Likelihood
+Impact
+Mitigation
+Backend API delays
+Medium
+High
+Implement optimistic UI, offline cache
+Drag-drop performance lag
+Low
+Medium
+Virtualize canvas, debounce drop events
+Cross-browser compatibility
+Medium
+Medium
+Test Chrome/Firefox/Safari/Edge weekly
+Data migration from legacy system
+High
+High
+Early spike investigation, pilot migration
+Security vulnerabilities
+Low
+Critical
+SAST scanning, dependency audits, pen-test
+
+14. SUPPORT & MAINTENANCE
+Monitoring Required
+const monitoringStack = {
+  errors: 'Sentry',
+  analytics: 'PostHog/Amplitude',
+  uptime: 'Pingdom/UptimeRobot',
+  performance: 'Lighthouse CI'
+};
+Rollback Plan
+	•	Feature flags for gradual rollout
+	•	Database migrations reversible
+	•	Environment variables for kill switches
+	•	Staging deployment 48h before production
+
+15. FINAL NOTES FOR DEV TEAM
+Implementation prioritiescritical
+1) Fix routing FIRST (cannot build without working navigation), 2) Build data layer before UI components, 3) Test each module incrementally, 4) Collect feedback early via staging URL
+
