@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
-import { supabase } from '../services/supabase';
+import { AssetModal } from '../components/features/assets/AssetModal';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -14,27 +14,11 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { assets, loading, refetch } = useAssets();
 
-  const handleNewAsset = async () => {
-    const name = window.prompt("Nhập tên thiết bị mới:");
-    if (!name) return;
-    try {
-      const { data: wsData } = await supabase.from('workspaces').select('id, owner_id').limit(1).single();
-      if (!wsData) return;
-      
-      await supabase.from('assets').insert([{
-         name,
-         asset_code: 'AST' + Math.floor(Math.random() * 10000),
-         status: 'available',
-         condition: 'Mới 100%',
-         workspace_id: wsData.id,
-         added_by: wsData.owner_id
-      }]);
-      refetch();
-    } catch(err) {
-      console.error(err);
-    }
+  const handleNewAsset = () => {
+    setIsModalOpen(true);
   };
 
   const filteredAssets = assets.filter(a => 
@@ -44,6 +28,12 @@ export const AssetInventory: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col z-10 relative">
+      <AssetModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={refetch} 
+      />
+      
       <div className="flex justify-between items-center mb-6 px-2">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Asset Inventory</h2>
         <div className="flex gap-3">

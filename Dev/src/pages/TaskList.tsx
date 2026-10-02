@@ -3,8 +3,7 @@ import { Filter, Plus, Search, MoreHorizontal } from 'lucide-react';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Avatar } from '../components/common/Avatar';
 import { useTasks } from '../hooks/useTasks';
-
-import { supabase } from '../services/supabase';
+import { TaskModal } from '../components/features/tasks/TaskModal';
 
 const mapStatus = (status: string | undefined) => {
   if (!status) return 'Pending';
@@ -25,31 +24,11 @@ const mapPriority = (prio: string | undefined) => {
 
 export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { tasks, loading, refetch } = useTasks();
 
-  const handleNewTask = async () => {
-    const title = window.prompt("Nhập tên Task mới:");
-    if (!title) return;
-    try {
-      // Get workspace id and owner dynamically
-      const { data: wsData } = await supabase.from('workspaces').select('id, owner_id').limit(1).single();
-      if (!wsData) {
-         alert("Không tìm thấy Workspace nào trong Database.");
-         return;
-      }
-      
-      await supabase.from('tasks').insert([{
-         title,
-         task_ref: 'TK' + Math.floor(Math.random() * 1000),
-         status: 'todo',
-         priority: 'medium',
-         workspace_id: wsData.id,
-         created_by: wsData.owner_id
-      }]);
-      refetch();
-    } catch(err) {
-      console.error(err);
-    }
+  const handleNewTask = () => {
+    setIsModalOpen(true);
   };
 
   const filteredTasks = tasks.filter(t => 
@@ -59,6 +38,12 @@ export const TaskList: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <TaskModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={refetch} 
+      />
+      
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
         <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
