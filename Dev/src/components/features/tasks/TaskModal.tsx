@@ -140,26 +140,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Task Title <span className="text-red-500">*</span></label>
           <input 
             type="text" 
             required
             maxLength={500}
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Describe task briefly"
           />
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Department <span className="text-red-500">*</span></label>
             <select 
               required
               value={departmentId}
               onChange={e => setDepartmentId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="">Select Department</option>
               {departments.map(d => (
@@ -168,11 +168,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignee</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Assignee</label>
             <select 
               value={assigneeId}
               onChange={e => setAssigneeId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="">Unassigned</option>
               {users.map(u => (
@@ -184,11 +184,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Priority</label>
             <select 
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -197,11 +197,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Project</label>
             <select 
               value={projectId}
               onChange={e => setProjectId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="">No Project</option>
               {projects.map(p => (
@@ -213,7 +213,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
         <div className="grid grid-cols-2 gap-4">
           <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Start Date</label>
             <input 
               type="text" 
               id="task-start-input"
@@ -221,11 +221,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               onClick={(e) => openCal('task-start-input', e)}
               value={startDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
             />
           </div>
           <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Due Date</label>
             <input 
               type="text" 
               id="task-due-input"
@@ -233,17 +233,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               onClick={(e) => openCal('task-due-input', e)}
               value={dueDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
           <textarea 
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]"
+            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px]"
             placeholder="Describe task details..."
           />
         </div>

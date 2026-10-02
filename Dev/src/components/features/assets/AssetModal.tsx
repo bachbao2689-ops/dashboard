@@ -117,7 +117,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asset Code <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Asset Code <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               required
@@ -125,18 +125,18 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               title="6-20 alphanumeric characters"
               value={assetCode}
               onChange={e => setAssetCode(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 uppercase"
               placeholder="e.g. LENCANON01"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asset Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Asset Name <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="e.g. Lens Canon 24-70mm"
             />
           </div>
@@ -144,12 +144,12 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Category <span className="text-red-500">*</span></label>
             <select 
               required
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="">Select Category</option>
               {categories.map(c => (
@@ -158,11 +158,11 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Condition</label>
             <select 
               value={condition}
               onChange={e => setCondition(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="Tốt 100%">Tốt 100%</option>
               <option value="Tốt 80%">Tốt 80%</option>
@@ -174,29 +174,29 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Location</label>
             <input 
               type="text" 
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="e.g. Kho Công Ty"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Serial Number</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Serial Number</label>
             <input 
               type="text" 
               value={serialNumber}
               onChange={e => setSerialNumber(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Date</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Purchase Date</label>
             <input 
               type="text" 
               id="asset-purchase-date"
@@ -204,26 +204,26 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               onClick={(e) => openCal('asset-purchase-date', e)}
               value={purchaseDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purchase Price (VND)</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Purchase Price (VND)</label>
             <input 
               type="number" 
               value={purchasePrice}
               onChange={e => setPurchasePrice(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
           <textarea 
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px]"
+            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[80px]"
             placeholder="Add details about this asset..."
           />
         </div>
