@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Check, X, Calendar, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
 import { BorrowModal } from '../components/features/assets/BorrowModal';
+import { BorrowRequestDetailModal } from '../components/features/assets/BorrowRequestDetailModal';
 import { Plus } from 'lucide-react';
 
 export const BorrowRequests: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const { requests, loading, updateStatus, refetch } = useBorrowRequests();
 
   const filtered = requests.filter(req => {
@@ -21,6 +23,7 @@ export const BorrowRequests: React.FC = () => {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={refetch} 
       />
+      <BorrowRequestDetailModal isOpen={!!selectedRequest} onClose={() => setSelectedRequest(null)} request={selectedRequest} onApprove={() => { updateStatus(selectedRequest.id, 'approved'); setSelectedRequest(null); }} onReject={() => { updateStatus(selectedRequest.id, 'rejected'); setSelectedRequest(null); }} />
       <div className="flex justify-between items-center mb-6 px-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Borrow Requests</h2>
@@ -51,7 +54,7 @@ export const BorrowRequests: React.FC = () => {
           <div className="col-span-full p-8 text-center text-gray-500">No requests found</div>
         ) : (
           filtered.map(req => (
-            <div key={req.id} className="glass-panel p-5 flex flex-col group hover:-translate-y-1 transition-transform duration-300">
+            <div key={req.id} onClick={() => setSelectedRequest(req)} className="glass-panel p-5 flex flex-col group hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold
@@ -97,14 +100,14 @@ export const BorrowRequests: React.FC = () => {
                 {req.approval_status === 'pending' && (
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => updateStatus(req.id, 'rejected')}
+                      onClick={(e) => { e.stopPropagation(); updateStatus(req.id, 'rejected'); }}
                       className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-100 dark:border-red-900/30"
                       title="Reject"
                     >
                       <X size={16} />
                     </button>
                     <button 
-                      onClick={() => updateStatus(req.id, 'approved')}
+                      onClick={(e) => { e.stopPropagation(); updateStatus(req.id, 'approved'); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors shadow-lg shadow-emerald-500/20 text-sm font-medium"
                     >
                       <Check size={16} />
