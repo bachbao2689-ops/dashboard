@@ -3,8 +3,11 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
+import { useUiStore } from '../../store/uiStore';
 
 export const DashboardLayout: React.FC = () => {
+  const isSidebarOpen = useUiStore(state => state.isSidebarOpen);
+
   return (
     <>
       <div className="liquid-bg-container">
@@ -14,8 +17,10 @@ export const DashboardLayout: React.FC = () => {
       </div>
       
       <div className="flex h-screen bg-transparent text-gray-800">
-        <div className="hidden md:flex">
-          <Sidebar />
+        <div className={`hidden md:flex transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          <div className="w-72 flex-shrink-0 p-4 h-full">
+             <Sidebar />
+          </div>
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 md:pb-0">
           <Header />

@@ -24,6 +24,8 @@ const mapPriority = (prio: string | undefined) => {
 
 export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { tasks, loading, refetch } = useTasks();
 
@@ -31,9 +33,9 @@ export const TaskList: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const filteredTasks = tasks.filter(t => 
-    t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTasks = tasks.filter(t => (statusFilter === 'all' || t.status === statusFilter) &&  
+    (t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -63,10 +65,22 @@ export const TaskList: React.FC = () => {
             className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100"
           />
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
-          <Filter className="w-4 h-4" />
-          <span>Filters</span>
-        </button>
+        <div className="relative">
+          <button onClick={() => setShowFilters(!showFilters)} className="flex items-center space-x-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
+          </button>
+          
+          {showFilters && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-2">
+              <div className="text-xs font-semibold text-gray-500 mb-2 px-2 uppercase tracking-wider">Status</div>
+              <button onClick={() => setStatusFilter('all')} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>All Statuses</button>
+              <button onClick={() => setStatusFilter('todo')} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${statusFilter === 'todo' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>To Do</button>
+              <button onClick={() => setStatusFilter('in_progress')} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${statusFilter === 'in_progress' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>In Progress</button>
+              <button onClick={() => setStatusFilter('done')} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${statusFilter === 'done' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>Done</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="glass-panel overflow-hidden">
