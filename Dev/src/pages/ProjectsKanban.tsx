@@ -6,8 +6,10 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { useKanban } from '../hooks/useKanban';
 import type { KanbanTask } from '../hooks/useKanban';
+import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
+import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 
-const SortableTaskItem = ({ task }: { task: KanbanTask }) => {
+const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -18,7 +20,8 @@ const SortableTaskItem = ({ task }: { task: KanbanTask }) => {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group">
+      className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group"
+      onClick={onClick}>
       
       {task.project && (
         <div className="flex items-center space-x-2 mb-2">
@@ -55,6 +58,11 @@ const SortableTaskItem = ({ task }: { task: KanbanTask }) => {
 
 export const ProjectsKanban: React.FC = () => {
   const { columns, loading, moveTask } = useKanban();
+  const [selectedTask, setSelectedTask] = React.useState<KanbanTask | null>(null);
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -86,12 +94,13 @@ export const ProjectsKanban: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
+      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Kanban</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Drag and drop to update status</p>
       </div>
 
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex flex-1 gap-6 overflow-x-auto pb-4">
           {columns.map(column => (
             <div key={column.id} className="flex flex-col w-80 shrink-0">
@@ -109,7 +118,7 @@ export const ProjectsKanban: React.FC = () => {
                 <SortableContext items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {column.tasks.map(task => (
-                      <SortableTaskItem key={task.id} task={task} />
+                      <SortableTaskItem key={task.id} task={task} onClick={() => setSelectedTask(task)} />
                     ))}
                   </div>
                 </SortableContext>
