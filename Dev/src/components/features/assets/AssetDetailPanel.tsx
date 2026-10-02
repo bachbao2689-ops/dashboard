@@ -81,7 +81,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-xl bg-white/60 dark:bg-gray-800/60 shadow-sm border border-white/40 flex items-center justify-center">
-                    {getIcon(asset.category)}
+                    {getIcon(asset.category?.name)}
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{asset.name}</h2>
@@ -92,17 +92,17 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                 <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm mt-6">
                   <div className="grid grid-cols-[120px_1fr] items-center">
                     <div className="text-gray-500 flex items-center gap-1.5"><Tag className="w-4 h-4" /> Category</div>
-                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.category || 'Uncategorized'}</div>
+                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.category?.name || 'Uncategorized'}</div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
                     <div className="text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Status</div>
                     <div>
                       <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
-                        asset.status === 'available' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        asset.status === 'in_use' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        (asset.status || '') === 'available' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        (asset.status || '') === 'in_use' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       }`}>
-                        {asset.status.replace('_', ' ')}
+                        {(asset.status || '').replace('_', ' ')}
                       </span>
                     </div>
                   </div>
