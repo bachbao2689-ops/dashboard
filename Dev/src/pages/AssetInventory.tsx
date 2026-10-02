@@ -76,7 +76,7 @@ export const AssetInventory: React.FC = () => {
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">No assets found</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
-                  <tr key={asset.id} className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors group">
+                  <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors group cursor-pointer">
                     <td className="p-4">
                       <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">{asset.asset_code}</span>
                     </td>
@@ -105,7 +105,7 @@ export const AssetInventory: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100">
+                      <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100">
                         <MoreHorizontal size={18} />
                       </button>
                     </td>
