@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
+import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -15,6 +16,7 @@ const getIcon = (cat: string | undefined) => {
 export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const { assets, loading, refetch } = useAssets();
 
   const handleNewAsset = () => {
@@ -27,7 +29,8 @@ export const AssetInventory: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col z-10 relative">
+    <div className="h-[calc(100vh-100px)] flex -mx-4 md:-mx-8 px-4 md:px-8 z-10 relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 lg:pr-4">
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -113,6 +116,9 @@ export const AssetInventory: React.FC = () => {
           </table>
         </div>
       </div>
-    </div>
+    
+      </div>
+      <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} />
+</div>
   );
 };
