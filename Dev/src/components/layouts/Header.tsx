@@ -17,8 +17,8 @@ export const Header: React.FC = () => {
         
         {/* Mobile Logo */}
         <div className="md:hidden flex items-center gap-2">
-          <img src="/logo.svg" alt="K COFFEE" className="h-6 w-auto drop-shadow-md" />
-          <span className="font-bold text-gray-800 tracking-wide">K COFFEE</span>
+          <img src="/logo-light.svg" alt="K COFFEE" className="h-8 w-auto drop-shadow-md block dark:hidden" />
+          <img src="/logo-dark.svg" alt="K COFFEE" className="h-8 w-auto drop-shadow-md hidden dark:block" />
         </div>
 
         <div className="hidden md:flex items-center gap-2">
