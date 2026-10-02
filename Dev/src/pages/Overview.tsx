@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { KpiCard } from '../components/common/KpiCard';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
@@ -18,6 +18,15 @@ export const Overview: React.FC = () => {
   const { t } = useTranslation();
   const { data, loading, refetch } = useDashboard();
 
+  const [dateRange, setDateRange] = useState('');
+
+  useEffect(() => {
+    const el = document.getElementById('overview-date-range');
+    const handleChange = (e: any) => setDateRange(e.target.value);
+    el?.addEventListener('change', handleChange);
+    return () => el?.removeEventListener('change', handleChange);
+  }, []);
+
   const handleUpdateStatus = async (id: string, status: string) => {
     await supabase.from('borrow_requests').update({ approval_status: status }).eq('id', id);
     refetch();
@@ -29,6 +38,14 @@ export const Overview: React.FC = () => {
     { name: 'Available', value: 35, fill: '#10b981' },
     { name: 'Maintenance', value: 5, fill: '#ef4444' },
   ];
+
+  const openCal = (e: React.MouseEvent) => {
+    // @ts-ignore
+    if (window.openCalendar) {
+      // @ts-ignore
+      window.openCalendar({ displayId: 'overview-date-range', mode: 'range' }, e);
+    }
+  };
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
@@ -42,9 +59,18 @@ export const Overview: React.FC = () => {
           <p className="text-gray-500 mt-1 dark:text-gray-400">{t('overview.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors dark:bg-gray-700/60 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-            <Calendar size={16} /> {t('overview.thisMonth')} ▾
-          </button>
+          <div className="relative">
+            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            <input 
+              type="text" 
+              id="overview-date-range"
+              readOnly
+              onClick={openCal}
+              value={dateRange || t('overview.thisMonth')}
+              className="pl-9 pr-8 py-2 w-48 bg-white/60 hover:bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors dark:bg-gray-700/60 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30 text-center"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">▾</span>
+          </div>
           <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 text-white rounded-xl text-sm font-medium shadow-lg shadow-primary/30 transition-all">
             <Bot size={16} /> {t('overview.aiSummary')}
           </button>
