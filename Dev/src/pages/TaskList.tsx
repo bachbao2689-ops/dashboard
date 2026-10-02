@@ -83,7 +83,6 @@ export const TaskList: React.FC = () => {
   return (
     <div className="space-y-6 relative pb-12">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
-      <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
       
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
@@ -124,10 +123,11 @@ export const TaskList: React.FC = () => {
             <option value="status">Status</option>
           </select>
 
-          <button onClick={() => setShowFilters(true)} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
               <Filter className="w-4 h-4" />
               <span>Filters {(filters.status !== 'all' || filters.priority !== 'all') && '•'}</span>
             </button>
+            <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
         </div>
       </div>
 
