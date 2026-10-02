@@ -7,6 +7,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { Avatar } from '../components/common/Avatar';
 import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
+import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
 
 const mapStatus = (status: string) => {
@@ -33,6 +34,7 @@ export const TaskList: React.FC = () => {
   const [groupBy, setGroupBy] = useState('none');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const { tasks, loading, refetch } = useTasks();
 
   const handleNewTask = () => setIsModalOpen(true);
@@ -81,17 +83,18 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="space-y-6 relative pb-12">
+    <div className="h-[calc(100vh-100px)] flex -mx-4 md:-mx-8 px-4 md:px-8">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar pr-0 lg:pr-4 space-y-6 relative pb-12">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
         <div className="flex gap-2">
-          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition-colors">
+          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-colors">
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
-          <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+          <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4" />
             <span>New Task</span>
           </button>
@@ -106,7 +109,7 @@ export const TaskList: React.FC = () => {
             placeholder="Search tasks by title, ref..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
+            className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
           />
         </div>
         
@@ -115,7 +118,7 @@ export const TaskList: React.FC = () => {
           <select 
             value={groupBy} 
             onChange={(e) => setGroupBy(e.target.value)}
-            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="none">None</option>
             <option value="project">Project</option>
@@ -123,7 +126,7 @@ export const TaskList: React.FC = () => {
             <option value="status">Status</option>
           </select>
 
-          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-xl transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
               <Filter className="w-4 h-4" />
               <span>Filters {(filters.status !== 'all' || filters.priority !== 'all') && '•'}</span>
             </button>
@@ -184,12 +187,12 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
                             checked={selectedTasks.includes(task.id)}
-                            onChange={() => toggleSelectTask(task.id)}
+                            onClick={(e) => e.stopPropagation()} onChange={() => toggleSelectTask(task.id)}
                             className="rounded border-gray-300 text-primary focus:ring-primary"
                           />
                         </td>
@@ -209,10 +212,10 @@ export const TaskList: React.FC = () => {
                             <span className="text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={() => toast('Inline edit status coming soon', { icon: '🚧' })}>
+                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit status coming soon', { icon: '🚧' }); }}>
                           <StatusBadge status={mapStatus(task.status) as any} />
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={() => toast('Inline edit priority coming soon', { icon: '🚧' })}>
+                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit priority coming soon', { icon: '🚧' }); }}>
                           <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold
                             ${mapPriority(task.priority) === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                             mapPriority(task.priority) === 'Medium' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
@@ -224,7 +227,7 @@ export const TaskList: React.FC = () => {
                           {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="p-4">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700">
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
                         </td>
@@ -246,10 +249,10 @@ export const TaskList: React.FC = () => {
             <span className="text-sm font-medium">Selected</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white">
+            <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white">
               <CheckCircle2 className="w-4 h-4 text-green-400" /> Mark Done
             </button>
-            <button onClick={() => toast.success(`Deleted ${selectedTasks.length} tasks`)} className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
+            <button onClick={() => toast.success(`Deleted ${selectedTasks.length} tasks`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
               <Trash2 className="w-4 h-4" /> Delete
             </button>
           </div>
@@ -258,6 +261,9 @@ export const TaskList: React.FC = () => {
           </button>
         </div>
       )}
-    </div>
+    
+      </div>
+      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
+</div>
   );
 };
