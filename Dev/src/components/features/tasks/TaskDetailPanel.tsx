@@ -51,7 +51,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         minWidth: isOpen ? width : 0, 
         opacity: isOpen ? 1 : 0 
       }}
-      className={`h-full glass-panel rounded-l-3xl !rounded-r-none border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 relative flex flex-col z-40 ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
+      className={`h-full glass-panel rounded-l-xl !rounded-r-none border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 relative flex flex-col z-40 ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
     >
       {/* Resizer Handle */}
       {isOpen && (
@@ -169,7 +169,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         )}
         
         {/* Footer Actions */}
-        <div className="p-5 border-t border-white/20 dark:border-gray-700/50 bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl flex gap-4 shrink-0 rounded-bl-3xl">
+        <div className="p-5 border-t border-white/20 dark:border-gray-700/50 bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl flex gap-4 shrink-0 rounded-bl-xl">
           <button className="flex-1 px-4 py-2.5 bg-white/60 dark:bg-gray-700/60 border border-white/50 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-sm hover:bg-white dark:hover:bg-gray-600 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
             <MessageSquare className="w-4 h-4" /> Comment
           </button>
