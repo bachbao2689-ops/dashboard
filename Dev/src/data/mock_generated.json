@@ -1,0 +1,1186 @@
+{
+  "tasks": [
+    {
+      "id": "csv-task-0",
+      "task_ref": "TK01",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Launching Website"
+      },
+      "title": "Update bộ hình sản phẩm",
+      "priority": "high",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "03/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-1",
+      "task_ref": "TK02",
+      "department": {
+        "name": "KSHOP"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Thiết kế KV Món mới",
+      "priority": "medium",
+      "assignee": {
+        "name": "WENDY",
+        "avatar_url": null
+      },
+      "due_date": "20/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-2",
+      "task_ref": "TK03",
+      "department": {
+        "name": "KSHOP"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Tentcard KV Món mới",
+      "priority": "medium",
+      "assignee": {
+        "name": "WENDY",
+        "avatar_url": null
+      },
+      "due_date": "20/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-3",
+      "task_ref": "TK04",
+      "department": {
+        "name": "KSHOP"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Thiết kế Social Post",
+      "priority": "medium",
+      "assignee": {
+        "name": "WENDY",
+        "avatar_url": null
+      },
+      "due_date": "31/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-4",
+      "task_ref": "TK05",
+      "department": {
+        "name": "KSHOP"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Thiết kế CTKM Retail",
+      "priority": "medium",
+      "assignee": {
+        "name": "WENDY",
+        "avatar_url": null
+      },
+      "due_date": "30/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-5",
+      "task_ref": "TK06",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 7"
+      },
+      "title": "Gửi hình thumbnail 15.07",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "11/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-6",
+      "task_ref": "TK07",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 7"
+      },
+      "title": "Gửi hình thumbnail 10.07",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "09/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-7",
+      "task_ref": "TK08",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 7"
+      },
+      "title": "Gửi hình thumbnail 20.07",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "18/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-8",
+      "task_ref": "TK09",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 7"
+      },
+      "title": "Gửi hình thumbnail 25.07",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "21/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-9",
+      "task_ref": "TK10",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "ECOM BRAND REDESIGN \n(HÌNH CỐ ĐỊNH)"
+      },
+      "title": "Cập nhật hình phân loại layout mới",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.254Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-10",
+      "task_ref": "TK11",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "ECOM BRAND REDESIGN \n(HÌNH CỐ ĐỊNH)"
+      },
+      "title": "Thiết kế bộ landing page cố định",
+      "priority": "low",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-11",
+      "task_ref": "TK12",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "ECOM BRAND REDESIGN \n(HÌNH CỐ ĐỊNH)"
+      },
+      "title": "adapt layout hình phân loại",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-12",
+      "task_ref": "TK40",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 9"
+      },
+      "title": "Adapt bộ thumbnail t9",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "28/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-13",
+      "task_ref": "TK13",
+      "department": {
+        "name": "VP - HCNS"
+      },
+      "project": {
+        "name": "Default"
+      },
+      "title": "Thiết kế decal dán tủ lạnh",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-14",
+      "task_ref": "TK14",
+      "department": {
+        "name": "VP - HCNS"
+      },
+      "project": {
+        "name": "Default"
+      },
+      "title": "Thiết kế màn hình nền TV phòng họp",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-15",
+      "task_ref": "TK15",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Gửi hình thumbnail daily",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "28/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-16",
+      "task_ref": "TK16",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Gửi hình thumbnail 08.08",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "03/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-17",
+      "task_ref": "TK17",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "WEBSITE"
+      },
+      "title": "Voucher + thư cảm ơn",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-18",
+      "task_ref": "TK18",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Thiết kế demo KV trung thu",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "05/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-19",
+      "task_ref": "TK19",
+      "department": {
+        "name": "MARKETING"
+      },
+      "project": {
+        "name": "HC Du Lịch ITE HCM 2026"
+      },
+      "title": "Thiết kế gian hàng, Namecard",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "20/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-20",
+      "task_ref": "TK20",
+      "department": {
+        "name": "VP - HCNS"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Chụp hình retail trung thu",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "22/07/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-21",
+      "task_ref": "TK21",
+      "department": {
+        "name": "KSHOP"
+      },
+      "project": {
+        "name": "BACK TO SCHOOL"
+      },
+      "title": "Chụp hình + retouch món mới",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "03/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-22",
+      "task_ref": "TK22",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "adapt banner web 888",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "08/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-23",
+      "task_ref": "TK23",
+      "department": {
+        "name": "DIRECT SALE"
+      },
+      "project": {
+        "name": "POSM Bán Hàng"
+      },
+      "title": "Sửa Salekits & Leaflet",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "18/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-24",
+      "task_ref": "TK24",
+      "department": {
+        "name": "PS CORP"
+      },
+      "project": {
+        "name": "Tem  phụ SP"
+      },
+      "title": "Thiết kế tem phụ SP Delight & Black",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "13/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-25",
+      "task_ref": "TK25",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "WEBSITE"
+      },
+      "title": "Thiết kế post social hướng dẫn nhận hoa hồng",
+      "priority": "urgent",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "11/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-26",
+      "task_ref": "TK26",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Final bộ landingpage trung thu",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "14/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-27",
+      "task_ref": "TK27",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Gửi hình thumb 15.08",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "13/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-28",
+      "task_ref": "TK28",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "thiết kế frame livestream trung thu",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "13/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-29",
+      "task_ref": "TK29",
+      "department": {
+        "name": "MARKETING"
+      },
+      "project": {
+        "name": "itent Brand Guideline"
+      },
+      "title": "Resereach idea/intent",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-30",
+      "task_ref": "TK30",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "WEBSITE"
+      },
+      "title": "Bộ hình SP Website",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "12/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-31",
+      "task_ref": "TK31",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "itent Brand Guideline Ecom"
+      },
+      "title": "Resereach idea/intent Ecom",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-32",
+      "task_ref": "TK32",
+      "department": {
+        "name": "Media"
+      },
+      "project": {
+        "name": "Management Task"
+      },
+      "title": "Management Task (Uprgrade)",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-33",
+      "task_ref": "TK31",
+      "department": {
+        "name": "PS CORP"
+      },
+      "project": {
+        "name": "Bao bì SP"
+      },
+      "title": "Blue Son La",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-35",
+      "task_ref": "TK33",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "gửi hình thumb daily shopee",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "13/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-36",
+      "task_ref": "TK34",
+      "department": {
+        "name": "PS CORP"
+      },
+      "project": {
+        "name": "HC Anura"
+      },
+      "title": "Thiết kế gian hàng HC",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-37",
+      "task_ref": "TK35",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "gửi hình thumb daily tiktok web",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "14/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-38",
+      "task_ref": "TK36",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Adapt bộ banner web trung thu",
+      "priority": "urgent",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-39",
+      "task_ref": "TK37",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "WEBSITE"
+      },
+      "title": "Adapt bộ banner web 15.08",
+      "priority": "urgent",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "15/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-40",
+      "task_ref": "TK38",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Campaign tháng 8"
+      },
+      "title": "Adapt bộ thumbnail 25.08",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "17/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-41",
+      "task_ref": "TK39",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "WEBSITE"
+      },
+      "title": "Adapt bộ banner web 25.08",
+      "priority": "high",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "17/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-42",
+      "task_ref": "TK81",
+      "department": {
+        "name": "VP - HCNS"
+      },
+      "project": {
+        "name": "sinh nhật t9"
+      },
+      "title": "Thiết kế thiệp + màn hình  sinh nhật t9",
+      "priority": "low",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "17/09/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-43",
+      "task_ref": "TK74",
+      "department": {
+        "name": "PS CORP"
+      },
+      "project": {
+        "name": "SK PHUC SINH 25TH"
+      },
+      "title": "Thiết kế POSM",
+      "priority": "high",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "19/09/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-44",
+      "task_ref": "TK42",
+      "department": {
+        "name": "VP - HCNS"
+      },
+      "project": {
+        "name": "sinh nhật t8"
+      },
+      "title": "thiết kế thiệp mời + màn hình sinh nhật t8",
+      "priority": "medium",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "18/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-45",
+      "task_ref": "TK43",
+      "department": {
+        "name": "MT"
+      },
+      "project": {
+        "name": "Default"
+      },
+      "title": "chụp + retouch hình sản phẩm MT",
+      "priority": "urgent",
+      "assignee": {
+        "name": "LUNA",
+        "avatar_url": null
+      },
+      "due_date": "19/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-46",
+      "task_ref": "TK44",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "Research Đối Thủ"
+      },
+      "title": "RnD đối thủ top Shopee",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "19/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-47",
+      "task_ref": "TK45",
+      "department": {
+        "name": "INTERNAL"
+      },
+      "project": {
+        "name": "Management Task"
+      },
+      "title": "Update thông báo khi DL còn 3 ngày",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-48",
+      "task_ref": "TK46",
+      "department": {
+        "name": "ECOMMERCE"
+      },
+      "project": {
+        "name": "GuideLine ECOM"
+      },
+      "title": "GuideLine ECOM (Safe zone...)",
+      "priority": "medium",
+      "assignee": {
+        "name": "BOE",
+        "avatar_url": null
+      },
+      "due_date": "27/08/2026",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-49",
+      "task_ref": "TK47",
+      "department": {
+        "name": "PS CORP"
+      },
+      "project": {
+        "name": "Namecard"
+      },
+      "title": "Thiết kế namecard nhân viên",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "2026-10-02T08:14:30.255Z",
+      "status": "todo"
+    },
+    {
+      "id": "csv-task-50",
+      "task_ref": "TK49",
+      "department": {
+        "name": "MARKETING"
+      },
+      "project": {
+        "name": "HC HÀNG VNCLC"
+      },
+      "title": "Thiết kế gian hàng HC",
+      "priority": "medium",
+      "assignee": {
+        "name": "LOUIS",
+        "avatar_url": null
+      },
+      "due_date": "20/09/2026",
+      "status": "todo"
+    }
+  ],
+  "assets": [
+    {
+      "id": "csv-asset-0",
+      "created_at": "11/09/2026 16:11:33",
+      "requester": {
+        "name": "Bách Bảo"
+      },
+      "department": {
+        "name": "Design"
+      },
+      "borrow_date": "2026-09-11",
+      "due_date": "2026-09-12",
+      "asset_ref": "ECOMTANNHIET02",
+      "name": "Để tản nhiệt laptop onitek N99",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh",
+      "approval_status": "Đang mượn",
+      "approver": {
+        "name": "Manager"
+      }
+    },
+    {
+      "id": "csv-asset-1",
+      "created_at": "11/09/2026 16:11:33",
+      "requester": {
+        "name": "Bách Bảo"
+      },
+      "department": {
+        "name": "Design"
+      },
+      "borrow_date": "2026-09-11",
+      "due_date": "2026-09-12",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-2",
+      "created_at": "11/09/2026 16:37:23",
+      "requester": {
+        "name": "BBBBBB"
+      },
+      "department": {
+        "name": "Dess"
+      },
+      "borrow_date": "2026-09-13",
+      "due_date": "2026-09-14",
+      "asset_ref": "MAYANHCANON01",
+      "name": "Máy ảnh KTS Canon 5D Mark 4",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp Ảnh",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-3",
+      "created_at": "11/09/2026 16:37:23",
+      "requester": {
+        "name": "BBBBBB"
+      },
+      "department": {
+        "name": "Dess"
+      },
+      "borrow_date": "2026-09-13",
+      "due_date": "2026-09-14",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp Ảnh",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-4",
+      "created_at": "11/09/2026 16:57:53",
+      "requester": {
+        "name": "BBBBBB"
+      },
+      "department": {
+        "name": "Des"
+      },
+      "borrow_date": "2026-09-12",
+      "due_date": "2026-09-13",
+      "asset_ref": "CCDC000984",
+      "name": "Laptop Lenovo LOQ 15ARP9\n83JCO0M3VN",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp",
+      "approval_status": "Đang mượn",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-5",
+      "created_at": "11/09/2026 16:57:53",
+      "requester": {
+        "name": "BBBBBB"
+      },
+      "department": {
+        "name": "Des"
+      },
+      "borrow_date": "2026-09-12",
+      "due_date": "2026-09-13",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-6",
+      "created_at": "11/09/2026 17:08:45",
+      "requester": {
+        "name": "THAI DANG"
+      },
+      "department": {
+        "name": "DESIGN"
+      },
+      "borrow_date": "2026-09-11",
+      "due_date": "2026-09-11",
+      "asset_ref": "ECOMMAYSONYZV03",
+      "name": "MÁY ẢNH SONY ZV-R10",
+      "status": "Nguyên 100%",
+      "purpose": "CHỤP SP",
+      "approval_status": "Đang mượn",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-7",
+      "created_at": "11/09/2026 17:08:45",
+      "requester": {
+        "name": "THAI DANG"
+      },
+      "department": {
+        "name": "DESIGN"
+      },
+      "borrow_date": "2026-09-11",
+      "due_date": "2026-09-11",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "CHỤP SP",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-8",
+      "created_at": "11/09/2026 17:14:10",
+      "requester": {
+        "name": "Trần Bạch Tố"
+      },
+      "department": {
+        "name": "Marketing"
+      },
+      "borrow_date": "2026-09-12",
+      "due_date": "2026-09-12",
+      "asset_ref": "MAYANHCANON01",
+      "name": "Máy ảnh KTS Canon 5D Mark 4",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh set quà 20/10",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-9",
+      "created_at": "11/09/2026 17:14:10",
+      "requester": {
+        "name": "Trần Bạch Tố"
+      },
+      "department": {
+        "name": "Marketing"
+      },
+      "borrow_date": "2026-09-12",
+      "due_date": "2026-09-12",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh set quà 20/10",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-10",
+      "created_at": "14/09/2026 16:29:24",
+      "requester": {
+        "name": "Bach Bẻo"
+      },
+      "department": {
+        "name": "Des"
+      },
+      "borrow_date": "2026-09-14",
+      "due_date": "2026-09-15",
+      "asset_ref": "MAYANHSONY01",
+      "name": "Máy chụp ảnh Sony Alpha A7 Mark\nIII (kèm dây sạc máy & pin)",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-11",
+      "created_at": "14/09/2026 20:11:08",
+      "requester": {
+        "name": "Bach Bẻo"
+      },
+      "department": {
+        "name": "Des"
+      },
+      "borrow_date": "2026-09-14",
+      "due_date": "2026-09-15",
+      "asset_ref": "LENSONY01",
+      "name": "Ông kính máy ảnh Sony Alpha A7\nMark IIl",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ảnh",
+      "approval_status": "Sẵn sàng",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-12",
+      "created_at": "30/09/2026 17:01:34",
+      "requester": {
+        "name": "Trần Bạch Tố"
+      },
+      "department": {
+        "name": "Marketing"
+      },
+      "borrow_date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "asset_ref": "MAYANHCANON01",
+      "name": "Máy ảnh KTS Canon 5D Mark 4",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ngoại cảnh set quà 20.10",
+      "approval_status": "Đang mượn",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    },
+    {
+      "id": "csv-asset-13",
+      "created_at": "30/09/2026 17:01:34",
+      "requester": {
+        "name": "Trần Bạch Tố"
+      },
+      "department": {
+        "name": "Marketing"
+      },
+      "borrow_date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "asset_ref": "LENCANON01",
+      "name": "Lens Canon 24-70mm Ultrasonic",
+      "status": "Nguyên 100%",
+      "purpose": "Chụp ngoại cảnh set quà 20.10",
+      "approval_status": "Đang mượn",
+      "approver": {
+        "name": "bachbao2689@gmail.com"
+      }
+    }
+  ]
+}

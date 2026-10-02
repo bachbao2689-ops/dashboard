@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import mockData from '../data/mock_generated.json';
+import toast from 'react-hot-toast';
 
 export interface Asset {
   id: string;
@@ -15,6 +17,7 @@ export interface Asset {
 export function useAssets() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAssets();
@@ -34,6 +37,7 @@ export function useAssets() {
   const fetchAssets = async () => {
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('assets')
         .select(`
@@ -44,12 +48,25 @@ export function useAssets() {
 
       if (error) throw error;
       setAssets(data as any);
-    } catch (err) {
-      console.error('Error fetching assets', err);
+    } catch (err: any) {
+      console.warn('Error fetching assets', err);
+      // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS
+      const mapped = mockData.assets.map((a: any) => ({
+        id: a.id,
+        asset_code: a.asset_ref || a.id,
+        name: a.name,
+        condition: 'good',
+        location: 'Kho tổng',
+        status: 'available',
+        category: { name: 'Thiết bị', icon: 'Box' }
+      }));
+      setAssets(mapped as any);
+      setError(err.message || 'Offline Mode');
+      toast.error('Offline Mode: Loaded Assets from Google Sheets');
     } finally {
       setLoading(false);
     }
   };
 
-  return { assets, loading, refetch: fetchAssets };
+  return { assets, loading, error, refetch: fetchAssets };
 }

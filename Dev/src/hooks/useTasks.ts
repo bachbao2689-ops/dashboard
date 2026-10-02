@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import mockData from '../data/mock_generated.json';
+import toast from 'react-hot-toast';
 
 export interface Task {
   id: string;
@@ -17,6 +19,7 @@ export interface Task {
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -37,6 +40,7 @@ export function useTasks() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('tasks')
         .select(`
@@ -50,12 +54,16 @@ export function useTasks() {
 
       if (error) throw error;
       setTasks(data as any);
-    } catch (err) {
-      console.error('Error fetching tasks', err);
+    } catch (err: any) {
+      console.warn('Error fetching tasks, falling back to Google Sheets mock', err);
+      // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS
+      setTasks(mockData.tasks as any);
+      setError(err.message || 'Offline Mode');
+      toast.error('Offline Mode: Loaded Tasks from Google Sheets');
     } finally {
       setLoading(false);
     }
   };
 
-  return { tasks, loading, refetch: fetchTasks };
+  return { tasks, loading, error, refetch: fetchTasks };
 }
