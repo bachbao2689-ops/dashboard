@@ -93,15 +93,15 @@ export const ProjectsKanban: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
+    <div className="h-full flex -mx-4 md:-mx-8 px-4 md:px-8">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Kanban</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Drag and drop to update status</p>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className={`flex flex-1 gap-6 overflow-x-auto pb-4 transition-all duration-300 ${selectedTask ? 'mr-[480px]' : ''}`}>
+        <div className="flex flex-1 gap-6 overflow-x-auto pb-4 custom-scrollbar">
           {columns.map(column => (
             <div key={column.id} className="flex flex-col w-80 shrink-0">
               <div className="flex items-center justify-between mb-4">
@@ -131,6 +131,9 @@ export const ProjectsKanban: React.FC = () => {
           ))}
         </div>
       </DndContext>
-    </div>
+    
+      </div>
+      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
+</div>
   );
 };
