@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
                 <Mail className="h-5 w-5 text-white/50" />
               </div>
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
