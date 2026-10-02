@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Avatar } from '../components/common/Avatar';
-import { Paperclip, MessageSquare, Plus, MoreHorizontal } from 'lucide-react';
+import { Paperclip, MessageSquare } from 'lucide-react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
