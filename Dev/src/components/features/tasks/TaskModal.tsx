@@ -248,18 +248,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200/50 dark:border-slate-700/50">
           <button 
             type="button" 
             onClick={onClose}
-            className="px-5 py-2 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             Cancel
           </button>
           <button 
             type="submit" 
             disabled={loading}
-            className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-[#002e6d]/20"
           >
             {loading ? 'Saving...' : 'Create Task'}
           </button>
