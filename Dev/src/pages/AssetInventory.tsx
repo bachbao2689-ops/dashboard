@@ -32,7 +32,7 @@ export const AssetInventory: React.FC = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-100px)] flex -mx-4 md:-mx-8 px-4 md:px-8 z-10 relative">
+    <div className="h-full flex -mx-4 md:-mx-8 px-4 md:px-8 z-10 relative">
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 lg:pr-4">
       <AssetModal 
         isOpen={isModalOpen} 
