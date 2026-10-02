@@ -97,7 +97,7 @@ export const TaskList: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-panel p-4 flex flex-wrap justify-between items-center gap-4">
+      <div className="glass-panel p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
