@@ -6,7 +6,7 @@ export const DashboardPreview: React.FC = () => {
   return (
     <div className="w-full h-[calc(100vh-120px)] overflow-hidden">
       <iframe frameBorder="0" style={{ border: "none", outline: "none" }} 
-        src="/ui-hub/ManagerApp.html" 
+        src={`/ui-hub/ManagerApp.html?v=${Date.now()}`} 
         className="w-full h-full border-0"
         title="UI HUB Dashboard Preview"
       />
