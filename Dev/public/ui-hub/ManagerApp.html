@@ -1743,7 +1743,7 @@ function initLoginGate(){
     if(loginEntered&&document.visibilityState==='visible')google.script.run.apiRecordStaffSession({event:'HEARTBEAT'});
   },300000);
 }
-initLoginGate();
+// initLoginGate(); // Bypassed per request
 load(true);
 if(typeof google!=='undefined'&&google.script) {
   window.setInterval(()=>{if(document.visibilityState==='visible')load(true);},60000);
