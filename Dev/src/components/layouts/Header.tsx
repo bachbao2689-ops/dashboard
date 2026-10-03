@@ -76,7 +76,7 @@ export const Header: React.FC = () => {
         setExpandedGroup(activeGroup.title);
       }
     }
-  }, [location.pathname, isSidebarOpen, t]);
+  }, [location.pathname, isSidebarOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   return (
@@ -129,9 +129,9 @@ export const Header: React.FC = () => {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) => cn(
-                        "px-3 py-1.5 mx-0.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap",
+                        "px-3 py-1.5 mx-0.5 rounded-lg transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap",
                         isActive 
-                          ? "bg-white dark:bg-slate-700 text-primary dark:text-primary shadow-sm border border-gray-200 dark:border-slate-600 font-semibold" 
+                          ? "bg-primary text-white shadow-md font-semibold" 
                           : "text-gray-500 hover:text-primary hover:bg-white dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200"
                       )}
                     >
