@@ -125,10 +125,6 @@ export const TaskList: React.FC = () => {
         </div>
       </div>
 
-      {viewMode === 'kanban' ? (
-        <div className="-mx-4 md:-mx-8 flex-1 flex flex-col"><ProjectsKanban hideHeader={true} /></div>
-      ) : (
-      <>
       <div className="card-hub rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -161,6 +157,11 @@ export const TaskList: React.FC = () => {
             <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
         </div>
       </div>
+      
+      {viewMode === 'kanban' ? (
+        <div className="flex-1 flex flex-col min-h-[600px] mt-2"><ProjectsKanban hideHeader={true} /></div>
+      ) : (
+      <>
 
       {loading ? (
         <div className="card-hub rounded-2xl p-2"><TableSkeleton rows={8} /></div>

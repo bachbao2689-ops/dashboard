@@ -93,7 +93,7 @@ export const ProjectsKanban: React.FC<{hideHeader?: boolean}> = ({hideHeader = f
   }
 
   return (
-    <div className="h-full flex -mx-4 md:-mx-8 px-4 md:px-8">
+    <div className={hideHeader ? "h-full flex" : "h-full flex -mx-4 md:-mx-8 px-4 md:px-8"}>
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-4">
       { !hideHeader && (
         <div className="mb-6">
