@@ -16,7 +16,7 @@ export const dict = {
     'nav.team': 'Team Workload',
     'nav.reports': 'Reports',
     
-    'overview.welcome': 'Welcome, Louis 👋',
+    'overview.welcome': 'Welcome,',
     'overview.subtitle': "Here's your unified task and asset overview for today.",
     'overview.myTasks': 'My Tasks',
     'overview.dueSoon': 'Due Soon',
@@ -72,7 +72,7 @@ export const dict = {
     'nav.team': 'Năng suất Team',
     'nav.reports': 'Báo cáo',
     
-    'overview.welcome': 'Chào Louis 👋',
+    'overview.welcome': 'Chào,',
     'overview.subtitle': 'Đây là tổng quan công việc và thiết bị của bạn hôm nay.',
     'overview.myTasks': 'Việc của tôi',
     'overview.dueSoon': 'Sắp đến hạn',

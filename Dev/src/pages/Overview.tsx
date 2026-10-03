@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
+import { useAuthStore } from '../store/authStore';
 import { supabase } from '../services/supabase';
 
 const taskStatusData = [
@@ -17,6 +18,8 @@ const taskStatusData = [
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
   const { data, loading, error, refetch } = useDashboard();
+  const user = useAuthStore(state => state.user);
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Admin';
 
   const [dateRange, setDateRange] = useState('');
 
@@ -62,7 +65,7 @@ export const Overview: React.FC = () => {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 p-6 rounded-3xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-md dark:bg-gray-800/40 dark:border-gray-700/50">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 tracking-tight dark:text-gray-100">{t('overview.welcome')}</h2>
+          <h2 className="text-3xl font-bold text-gray-800 tracking-tight dark:text-gray-100">{t('overview.welcome')} {userName} 👋</h2>
           <p className="text-gray-500 mt-1 dark:text-gray-400">{t('overview.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
