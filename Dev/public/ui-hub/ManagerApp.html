@@ -461,12 +461,24 @@ dialog button:focus-visible{outline:3px solid #80b6ff;outline-offset:2px}
 }
 </style><!-- hub-shared:end -->
 <style id="custom-overrides">
+  /* Hide top sections */
   .site-header,
   .page-heading,
   .context-bar,
   #kpis,
   footer {
     display: none !important;
+  }
+  
+  /* Make workspace transparent and remove its own padding so it relies on React's padding */
+  body, html {
+    background-color: transparent !important;
+  }
+  
+  .workspace {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 </style>
 </head><body>
