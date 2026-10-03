@@ -11,6 +11,8 @@ export interface Task {
   status: string;
   priority: string;
   due_date: string;
+  start_date?: string;
+  description?: string;
   project?: { name: string };
   assignee?: { name: string; avatar_url: string };
   department?: { name: string };
@@ -54,7 +56,7 @@ export function useTasks() {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
-          id, task_ref, title, status, priority, due_date,
+          id, task_ref, title, status, priority, due_date, start_date, description,
           project:project_id(name),
           assignee:assignee_id(name, avatar_url),
           department:department_id(name),

@@ -105,7 +105,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 </div>
               </div>
 
-              {/* Assignee & Dates */}
+              {/* Info Grid */}
               <div className="grid grid-cols-2 gap-6 bg-white/30 dark:bg-gray-800/30 p-5 rounded-2xl border border-white/40 shadow-glass-inset">
                 <div>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Assignee</div>
@@ -120,10 +120,40 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     )}
                   </div>
                 </div>
+                
                 <div>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Due Date</div>
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white/50 dark:bg-gray-800/50 inline-block px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
-                    2026-10-15
+                  {task.due_date ? (
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white/50 dark:bg-gray-800/50 inline-block px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                      {task.due_date}
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded-md">N/A</span>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Start Date</div>
+                  {(task as any).start_date ? (
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white/50 dark:bg-gray-800/50 inline-block px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                      {(task as any).start_date}
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded-md">N/A</span>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Project</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {task.project?.name || <span className="text-gray-500 font-medium">No Project</span>}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Department</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {(task as any).department?.name || <span className="text-gray-500 font-medium">N/A</span>}
                   </div>
                 </div>
               </div>
@@ -133,7 +163,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
                   <AlignLeft className="w-4 h-4 text-gray-500" /> Description
                 </div>
-                <div className="bg-white/40 dark:bg-gray-800/40 p-5 rounded-2xl border border-white/50 shadow-glass-inset text-sm text-gray-700 dark:text-gray-300 leading-relaxed min-h-[100px]">
+                <div className="bg-white/40 dark:bg-gray-800/40 p-5 rounded-2xl border border-white/50 shadow-glass-inset text-sm text-gray-700 dark:text-gray-300 leading-relaxed min-h-[100px] whitespace-pre-wrap">
                   {task.description || 'No description provided for this task.'}
                 </div>
               </div>

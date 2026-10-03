@@ -44,7 +44,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       startEl?.removeEventListener('change', handleStartChange);
       dueEl?.removeEventListener('change', handleDueChange);
     };
-  }, []);
+  }, [isOpen]);
 
   const parseLocal = (s: string) => {
     if (!s) return null;

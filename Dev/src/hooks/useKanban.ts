@@ -19,6 +19,11 @@ export interface KanbanTask {
   attachments_count: number;
   project?: { name: string };
   assignee?: { name: string; avatar_url: string };
+  department?: { name: string };
+  priority?: string;
+  status?: string;
+  due_date?: string;
+  start_date?: string;
   column_id: string;
   position: number;
 }
