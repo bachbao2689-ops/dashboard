@@ -19,7 +19,7 @@ export const Login: React.FC = () => {
     try {
       // OFFLINE DEV BYPASS
       if (email === 'admin' && password === 'admin') {
-        useAuthStore.getState().devLogin();
+        useAuthStore.getState().devLogin(rememberMe);
         toast.success('Logged in via Offline Mode (Local Admin)');
         navigate('/');
         return;
