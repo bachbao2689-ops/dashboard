@@ -1,23 +1,60 @@
 import toast from "react-hot-toast";
-import React, { useState, useEffect } from 'react';
-import { KpiCard } from '../components/common/KpiCard';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar,
+} from 'recharts';
+import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
+import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../services/supabase';
 
+/* Shared design tokens (same as Dashboard / Departments 2) */
+const INK = 'text-[#153454] dark:text-slate-100';
+const MUTED = 'text-[#6f84a1] dark:text-slate-400';
+const LINK = 'text-[#3789f4] dark:text-sky-400';
+const PANEL =
+  'bg-white border border-[#e0eaf8] rounded-[18px] shadow-[0_3px_15px_rgba(9,47,102,0.02)] min-w-0 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none';
+const INNER = 'border border-[#e0eaf8] dark:border-slate-700';
+const LABEL = `text-[10px] font-bold tracking-[0.12em] uppercase ${MUTED}`;
+
 const taskStatusData = [
-  { name: 'Week 1', created: 40, done: 24 },
-  { name: 'Week 2', created: 30, done: 35 },
-  { name: 'Week 3', created: 20, done: 28 },
-  { name: 'Week 4', created: 27, done: 30 },
+  { name: 'W1', created: 40, done: 24 },
+  { name: 'W2', created: 30, done: 35 },
+  { name: 'W3', created: 20, done: 28 },
+  { name: 'W4', created: 27, done: 30 },
 ];
+
+/* Baseline load per weekday (mock) – real upcoming tasks are added on top */
+const BASE_WEEK_LOAD = [2, 3, 1, 4, 2, 0, 1];
+
+const Ring: React.FC<{ pct: number; color: string; size?: number; track: string }> = ({ pct, color, size = 60, track }) => {
+  const r = (size - 8) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} className="-rotate-90 shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={6} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={6} strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(pct, 100) / 100)} />
+    </svg>
+  );
+};
+
+const Trend: React.FC<{ v: number }> = ({ v }) => (
+  <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${v >= 0 ? 'text-[#279561] bg-[#279561]/10' : 'text-[#d9435a] bg-[#d9435a]/10'}`}>
+    {v >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}{v >= 0 ? '+' : ''}{v}%
+  </span>
+);
 
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data, loading, error, refetch } = useDashboard();
+  const theme = useUiStore(state => state.theme);
+  const isDark = theme === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
   const user = useAuthStore(state => state.user);
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Admin';
 
@@ -36,12 +73,6 @@ export const Overview: React.FC = () => {
     toast.success('Request updated');
   };
 
-  const assetUtilization = [
-    { name: t('overview.borrowed'), value: 60, fill: '#002e6d' },
-    { name: 'Available', value: 35, fill: '#10b981' },
-    { name: 'Maintenance', value: 5, fill: '#ef4444' },
-  ];
-
   const openCal = (e: React.MouseEvent) => {
     // @ts-ignore
     if (window.openCalendar) {
@@ -50,187 +81,272 @@ export const Overview: React.FC = () => {
     }
   };
 
+  const assetUtilization = [
+    { name: t('overview.borrowed'), value: 60, fill: '#153454' },
+    { name: 'Available', value: 35, fill: '#45a894' },
+    { name: 'Maintenance', value: 5, fill: '#d9435a' },
+  ];
+
+  /* Tasks due per day for the next 7 days */
+  const weekData = useMemo(() => {
+    const days: { name: string; count: number; today: boolean }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now); d.setDate(now.getDate() + i);
+      const real = data.upcomingTasks.filter(tk => tk.due_date && new Date(tk.due_date).toDateString() === d.toDateString()).length;
+      days.push({ name: d.toLocaleDateString('en-US', { weekday: 'short' }), count: BASE_WEEK_LOAD[i] + real, today: i === 0 });
+    }
+    return days;
+  }, [data.upcomingTasks]);
+
+  const created = taskStatusData.reduce((s, d) => s + d.created, 0);
+  const done = taskStatusData.reduce((s, d) => s + d.done, 0);
+  const donePct = Math.round((done / created) * 100);
+  const pendingApprovals = data.recentRequests.filter(r => r.approval_status === 'pending').length;
+
+  const grid = isDark ? '#334155' : '#e8eef8';
+  const axis = isDark ? '#94a3b8' : '#6f84a1';
+  const ringTrack = isDark ? '#334155' : '#eef3fb';
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#0f172a' : '#153454', borderRadius: 10, border: 'none', color: '#fff', fontSize: 12, padding: '6px 10px',
+  };
+
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
+    return <div className={`p-8 text-center ${MUTED}`}>Loading Dashboard...</div>;
   }
 
   return (
-    <div className="space-y-6 w-full z-10 relative">
+    <div className="space-y-4 w-full z-10 relative font-sans">
       {error && (
-        <div className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 p-3 rounded-xl border border-yellow-500/50 flex items-center gap-2">
-          <AlertCircle size={18} />
-          <span className="text-sm font-medium">Running in Offline/Dev Mode: {error}</span>
+        <div className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-500/30 flex items-center gap-2">
+          <AlertCircle size={16} />
+          <span className="text-xs font-semibold">Running in Offline/Dev Mode: {error}</span>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+      {/* Header */}
+      <div className={`${PANEL} px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3`}>
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 tracking-tight dark:text-gray-100">{t('overview.welcome')} {userName} 👋</h2>
-          <p className="text-gray-500 mt-1 dark:text-gray-400">{t('overview.subtitle')}</p>
+          <h2 className={`text-2xl font-bold tracking-tight ${INK}`}>{t('overview.welcome')} {userName} 👋</h2>
+          <p className={`text-sm mt-0.5 ${MUTED}`}>{t('overview.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-            <input 
-              type="text" 
-              id="overview-date-range"
-              readOnly
-              onClick={openCal}
+            <Calendar size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${MUTED}`} />
+            <input
+              type="text" id="overview-date-range" readOnly onClick={openCal}
               value={dateRange || t('overview.thisMonth')}
-              className="pl-9 pr-8 py-2 w-48 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30 text-center"
+              className={`pl-8 pr-7 py-2 w-44 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] text-xs font-semibold ${INK} cursor-pointer outline-none text-center`}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">▾</span>
+            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${MUTED}`}>▾</span>
           </div>
-          <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 text-white rounded-xl text-sm font-medium shadow-lg shadow-primary/30 transition-all">
-            <Bot size={16} /> {t('overview.aiSummary')}
+          <button className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-[#153454] dark:bg-sky-500 hover:opacity-90 text-white rounded-[10px] text-xs font-semibold transition-opacity">
+            <Bot size={14} /> {t('overview.aiSummary')}
           </button>
-          <button className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-gray-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
-            <Download size={16} />
+          <button className={`flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] ${INK} hover:bg-[#f6f9fe] dark:hover:bg-slate-700 transition-colors`}>
+            <Download size={14} />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title={t('overview.myTasks')} value={data.myTasksCount.toString()} trend={5} colorTheme="primary" />
-        <KpiCard title={t('overview.dueSoon')} value={data.dueSoonCount.toString()} trend={-2} colorTheme="warning" />
-        <KpiCard title={t('overview.borrowed')} value={data.borrowedCount.toString()} trend={1} colorTheme="info" />
-        <div className="card-hub p-6 rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
-          <p className="text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
-             <span className="text-sm font-semibold text-red-600 dark:text-red-400">{t('overview.overdue')}</span>
-          </p>
-          <h3 className="text-4xl font-black text-gray-800 tracking-tight dark:text-gray-100">{data.overdueCount}</h3>
-          
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full dark:bg-red-900/30 dark:text-red-400">
-              <AlertCircle size={14} />
-              {t('overview.actionRequired')}
-            </div>
+      {/* KPI row – each card is clickable and has a mini visual */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <button onClick={() => navigate('/my-tasks')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+          <div className="space-y-1.5">
+            <p className={LABEL}>{t('overview.myTasks')}</p>
+            <p className={`text-4xl font-bold leading-none ${INK}`}>{data.myTasksCount}</p>
+            <Trend v={5} />
           </div>
-        </div>
+          <div className="relative grid place-items-center">
+            <Ring pct={donePct} color="#153454" track={ringTrack} />
+            <span className={`absolute text-xs font-bold ${INK}`}>{donePct}%</span>
+          </div>
+        </button>
+
+        <button onClick={() => navigate('/tasks')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+          <div className="space-y-1.5">
+            <p className={LABEL}>{t('overview.dueSoon')}</p>
+            <p className={`text-4xl font-bold leading-none ${INK}`}>{data.dueSoonCount}</p>
+            <Trend v={-2} />
+          </div>
+          <div className="flex items-end gap-1 h-[60px]">
+            {weekData.slice(0, 5).map((d, i) => (
+              <i key={i} className="w-2 rounded-t bg-amber-400" style={{ height: `${Math.max(d.count, 0.4) / 5 * 100}%`, opacity: 0.4 + i * 0.15 }} />
+            ))}
+          </div>
+        </button>
+
+        <button onClick={() => navigate('/borrow-requests')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+          <div className="space-y-1.5">
+            <p className={LABEL}>{t('overview.borrowed')}</p>
+            <p className={`text-4xl font-bold leading-none ${INK}`}>{data.borrowedCount}</p>
+            <Trend v={1} />
+          </div>
+          <div className="relative grid place-items-center">
+            <Ring pct={60} color="#3789f4" track={ringTrack} />
+            <span className={`absolute text-xs font-bold ${INK}`}>60%</span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/tasks')}
+          className={`p-4 text-left rounded-[18px] border flex items-center justify-between gap-3 hover:shadow-md transition-shadow ${
+            data.overdueCount > 0
+              ? 'bg-[#fff5f6] border-[#f6d3d8] dark:bg-red-500/10 dark:border-red-500/30'
+              : `bg-white dark:bg-slate-800 ${INNER}`
+          }`}
+        >
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#d9435a]">{t('overview.overdue')}</p>
+            <p className="text-4xl font-bold leading-none text-[#d9435a]">{data.overdueCount}</p>
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#d9435a]">
+              <AlertCircle size={12} /> {t('overview.actionRequired')}
+            </span>
+          </div>
+          <ChevronRight size={22} className="text-[#d9435a]/60" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 card-hub p-6 rounded-3xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-gray-800 text-lg dark:text-gray-100">{t('overview.taskStatus')}</h3>
-            <div className="flex items-center gap-4 text-sm font-medium text-gray-600 dark:text-gray-400">
-              <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(0,46,109,0.5)]"></div>{t('overview.created')}</span>
-              <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>{t('overview.done')}</span>
+      {/* Charts row */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className={`${PANEL} p-5 xl:col-span-2`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <p className={LABEL}>{t('overview.taskStatus')}</p>
+              <p className={`text-sm mt-1 ${INK}`}>
+                <b className="text-2xl">{donePct}%</b> <span className={MUTED}>completed · {done}/{created} tasks</span>
+              </p>
+            </div>
+            <div className={`flex items-center gap-4 text-xs font-semibold ${MUTED}`}>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-[#153454] dark:bg-sky-400" />{t('overview.created')}</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-[#45a894]" />{t('overview.done')}</span>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={taskStatusData}>
+              <AreaChart data={taskStatusData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#002e6d" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#002e6d" stopOpacity={0}/>
+                    <stop offset="5%" stopColor={isDark ? '#38bdf8' : '#153454'} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={isDark ? '#38bdf8' : '#153454'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.2)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} />
-                <Tooltip contentStyle={{ backgroundColor: 'rgba(30,41,59,0.8)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }} />
-                <Area type="monotone" dataKey="created" stroke="#002e6d" fillOpacity={1} fill="url(#colorCreated)" strokeWidth={3} />
-                <Area type="monotone" dataKey="done" stroke="#10b981" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={grid} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 12 }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 12 }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Area type="monotone" dataKey="created" stroke={isDark ? '#38bdf8' : '#153454'} fill="url(#colorCreated)" strokeWidth={2.5} />
+                <Area type="monotone" dataKey="done" stroke="#45a894" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="card-hub p-6 rounded-3xl flex flex-col justify-center relative overflow-hidden">
-          <h3 className="font-bold text-gray-800 mb-2 absolute top-6 left-6 text-lg dark:text-gray-100">{t('overview.assetUtil')}</h3>
-          <div className="flex flex-col items-center justify-center gap-6 mt-12 relative z-10">
-            <div className="h-40 w-40 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={assetUtilization} innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value" stroke="rgba(255,255,255,0.1)" strokeWidth={2}>
-                    {assetUtilization.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: 'rgba(30,41,59,0.8)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-full space-y-3 px-4">
-              {assetUtilization.map(loc => (
-                <div key={loc.name} className="flex items-center justify-between gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full shadow-sm border border-white" style={{backgroundColor: loc.fill}}></div>
-                    <span className="text-gray-700 font-medium dark:text-gray-300">{loc.name}</span>
-                  </div>
-                  <span className="font-bold text-gray-900 dark:text-gray-100">{loc.value}%</span>
-                </div>
-              ))}
-            </div>
+        <div className={`${PANEL} p-5 flex flex-col`}>
+          <p className={LABEL}>{t('overview.upcoming')}</p>
+          <p className={`text-sm mt-1 ${MUTED}`}>Tasks due per day</p>
+          <div className="h-40 mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weekData} margin={{ left: -28, right: 4, top: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={grid} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 11 }} allowDecimals={false} />
+                <Tooltip cursor={{ fill: isDark ? '#1e293b' : '#f3f7fd' }} contentStyle={tooltipStyle} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  {weekData.map((d, i) => (
+                    <Cell key={i} fill={d.today ? '#d9435a' : d.count >= 4 ? '#f5a524' : isDark ? '#38bdf8' : '#153454'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className={`flex gap-3 mt-2 text-[10px] font-semibold ${MUTED}`}>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#d9435a]" />Today</span>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#f5a524]" />Heavy</span>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#153454] dark:bg-sky-400" />Normal</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-hub p-6 rounded-3xl">
-          <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.upcoming')}</h3>
-          <div className="space-y-4">
+      {/* Bottom row: only what needs action */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Most urgent tasks */}
+        <div className={`${PANEL} p-5`}>
+          <div className="flex items-center justify-between mb-3">
+            <p className={LABEL}>Most urgent</p>
+            <button onClick={() => navigate('/tasks')} className={`text-xs font-semibold ${LINK} flex items-center gap-0.5`}>All <ChevronRight size={12} /></button>
+          </div>
+          <div className="space-y-2">
             {data.upcomingTasks.length === 0 ? (
-               <div className="p-4 text-center text-gray-500">No upcoming tasks!</div>
-            ) : data.upcomingTasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs shadow-inner dark:bg-gray-700 dark:text-gray-300">
-                    #{task.task_ref}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-200">{task.title}</h4>
-                    <div className="flex items-center gap-2 mt-1 text-xs font-medium">
-                      <span className={`px-2 py-0.5 rounded-md border ${task.priority === 'high' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
-                        {task.priority || 'Medium'}
-                      </span>
-                      <span className="text-gray-500 flex items-center gap-1 dark:text-gray-400"><Clock size={12} /> {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xs font-semibold bg-gray-100 px-3 py-1 rounded-full text-gray-600 border border-gray-200 shadow-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
-                  👤 {task.assignee?.name || 'Unassigned'}
+              <div className={`py-6 text-center text-sm ${MUTED}`}>No upcoming tasks!</div>
+            ) : data.upcomingTasks.slice(0, 3).map(task => (
+              <div key={task.id} className={`${INNER} rounded-[12px] px-3 py-2.5 flex items-center gap-3`}>
+                <i className={`w-1.5 self-stretch rounded-full ${task.priority === 'high' ? 'bg-[#d9435a]' : 'bg-[#3789f4]'}`} />
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold truncate ${INK}`}>{task.title}</p>
+                  <p className={`text-xs flex items-center gap-1 ${MUTED}`}>
+                    <Clock size={11} /> {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'} · {task.assignee?.name || 'Unassigned'}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="card-hub p-6 rounded-3xl">
-          <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.recentBorrow')}</h3>
-          <div className="space-y-4">
-            {data.recentRequests.length === 0 ? (
-               <div className="p-4 text-center text-gray-500">No recent requests</div>
-            ) : data.recentRequests.map((req, i) => (
-              <div key={i} className="p-4 bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow flex flex-col justify-between h-full dark:bg-slate-800 dark:border-slate-700">
-                <div className="mb-4">
-                  <p className="text-sm text-gray-800 font-medium dark:text-gray-200">
-                    <span className="font-bold text-primary">{req.requester?.name}</span> {t('overview.wantsToBorrow')} <br />
-                    <span className="font-semibold">{req.asset?.name}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 dark:text-gray-400"><Clock size={12} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
+        {/* Asset utilisation */}
+        <div className={`${PANEL} p-5`}>
+          <p className={`${LABEL} mb-3`}>{t('overview.assetUtil')}</p>
+          <div className="flex items-center gap-4">
+            <div className="h-28 w-28 shrink-0 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={assetUtilization} innerRadius={34} outerRadius={52} paddingAngle={3} dataKey="value" stroke="none">
+                    {assetUtilization.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                <span className={`text-lg font-bold ${INK}`}>60%</span>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2.5">
+              {assetUtilization.map(a => (
+                <div key={a.name} className="flex items-center justify-between text-sm">
+                  <span className={`flex items-center gap-2 ${INK}`}><i className="w-2.5 h-2.5 rounded-full" style={{ background: a.fill }} />{a.name}</span>
+                  <b className={INK}>{a.value}%</b>
                 </div>
-                
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Approvals */}
+        <div className={`${PANEL} p-5`}>
+          <div className="flex items-center justify-between mb-3">
+            <p className={LABEL}>{t('overview.recentBorrow')}</p>
+            {pendingApprovals > 0 && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#3789f4]/10 text-[#3789f4]">{pendingApprovals} pending</span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {data.recentRequests.length === 0 ? (
+              <div className={`py-6 text-center text-sm ${MUTED}`}>No recent requests</div>
+            ) : data.recentRequests.slice(0, 2).map((req, i) => (
+              <div key={i} className={`${INNER} rounded-[12px] p-3`}>
+                <p className={`text-sm ${INK}`}>
+                  <b>{req.requester?.name}</b> {t('overview.wantsToBorrow')} <b>{req.asset?.name}</b>
+                </p>
+                <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
                 {req.approval_status === 'pending' ? (
-                  <div className="flex gap-2 mt-auto">
-                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-sm font-semibold shadow-sm transition-colors">{t('overview.approve')}</button>
-                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className="flex-1 bg-white hover:bg-gray-50 text-gray-700 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 shadow-sm transition-colors dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">{t('overview.reject')}</button>
+                  <div className="flex gap-2 mt-2.5">
+                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-[#279561] hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
+                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-[#f6f9fe] dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
                   </div>
                 ) : req.approval_status === 'approved' ? (
-                  <div className="flex gap-2 mt-auto">
-                    <button disabled className="flex-1 bg-emerald-50 text-emerald-600 border border-emerald-200 py-1.5 rounded-lg text-sm font-bold opacity-80 flex items-center justify-center gap-1 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400">
-                      <CheckCircle size={14} /> {t('overview.approved')}
-                    </button>
-                  </div>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-[#279561]"><CheckCircle size={13} /> {t('overview.approved')}</p>
                 ) : (
-                  <div className="flex gap-2 mt-auto">
-                    <button disabled className="flex-1 bg-red-50 text-red-600 border border-red-200 py-1.5 rounded-lg text-sm font-bold opacity-80 flex items-center justify-center gap-1 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
-                      <XCircle size={14} /> Rejected
-                    </button>
-                  </div>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-[#d9435a]"><XCircle size={13} /> Rejected</p>
                 )}
               </div>
             ))}
