@@ -9,6 +9,8 @@ import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
+import { ProjectsKanban } from './ProjectsKanban';
+import { cn } from '../components/common/KpiCard';
 
 const mapStatus = (status: string) => {
   const s = status.toLowerCase();
@@ -28,6 +30,7 @@ const mapPriority = (prio: string | undefined) => {
 };
 
 export const TaskList: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'list'|'kanban'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ status: 'all', priority: 'all', assignee: 'all', department: 'all', dateRange: 'all' });
@@ -92,7 +95,24 @@ export const TaskList: React.FC = () => {
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
+          
+          <div className="flex bg-gray-100 dark:bg-slate-800/80 p-1 rounded-xl border border-gray-200 dark:border-slate-700">
+             <button 
+               onClick={() => setViewMode('list')} 
+               className={cn("px-4 py-1 rounded-lg text-sm font-semibold transition-all duration-300", viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300')}
+             >
+               List
+             </button>
+             <button 
+               onClick={() => setViewMode('kanban')} 
+               className={cn("px-4 py-1 rounded-lg text-sm font-semibold transition-all duration-300", viewMode === 'kanban' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300')}
+             >
+               Kanban
+             </button>
+          </div>
+        </div>
         <div className="flex gap-2">
           <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
@@ -105,6 +125,10 @@ export const TaskList: React.FC = () => {
         </div>
       </div>
 
+      {viewMode === 'kanban' ? (
+        <div className="-mx-4 md:-mx-8 flex-1 flex flex-col"><ProjectsKanban hideHeader={true} /></div>
+      ) : (
+      <>
       <div className="card-hub rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -276,6 +300,8 @@ export const TaskList: React.FC = () => {
         </div>
       )}
     
+      </>
+      )}
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
 </div>

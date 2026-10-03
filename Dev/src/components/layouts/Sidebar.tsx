@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, CheckSquare, FolderKanban, 
+  Home, CheckSquare, 
   Users, BarChart2, History, Box, AlertCircle
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
@@ -24,7 +24,6 @@ export const Sidebar: React.FC = () => {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
         { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={18} /> },
         { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]

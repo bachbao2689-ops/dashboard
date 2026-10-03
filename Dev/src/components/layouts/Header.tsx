@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, LogOut, Home, CheckSquare, FolderKanban, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, LogOut, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
@@ -46,7 +46,6 @@ export const Header: React.FC = () => {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
         { name: t('nav.myTasks'), path: '/my-tasks', icon: <Users size={18} /> },
         { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]

@@ -6,7 +6,6 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
 import { DashboardPreview } from './pages/DashboardPreview';
-import { ProjectsKanban } from './pages/ProjectsKanban';
 import { TaskList } from './pages/TaskList';
 import { AssetInventory } from './pages/AssetInventory';
 import { BorrowRequests } from './pages/BorrowRequests';
@@ -36,7 +35,6 @@ function App() {
             <Route index element={<Overview />} />
             <Route path="ui-dashboard" element={<DashboardPreview />} />
             <Route path="tasks" element={<TaskList />} />
-            <Route path="projects" element={<ProjectsKanban />} />
             <Route path="my-tasks" element={<MyTasks />} />
             <Route path="project" element={<Project />} />
             <Route path="assets" element={<AssetInventory />} />

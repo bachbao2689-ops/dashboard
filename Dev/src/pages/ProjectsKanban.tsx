@@ -56,7 +56,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
   );
 };
 
-export const ProjectsKanban: React.FC = () => {
+export const ProjectsKanban: React.FC<{hideHeader?: boolean}> = ({hideHeader = false}) => {
   const { columns, loading, moveTask } = useKanban();
   const [selectedTask, setSelectedTask] = React.useState<KanbanTask | null>(null);
   const sensors = useSensors(
@@ -95,10 +95,12 @@ export const ProjectsKanban: React.FC = () => {
   return (
     <div className="h-full flex -mx-4 md:-mx-8 px-4 md:px-8">
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Kanban</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Drag and drop to update status</p>
-      </div>
+      { !hideHeader && (
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Kanban</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Drag and drop to update status</p>
+        </div>
+      )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex flex-1 gap-6 overflow-x-auto pb-4 custom-scrollbar">
