@@ -1,36 +1,120 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, FolderKanban, Bell, User } from 'lucide-react';
+import { Home, CheckSquare, FolderKanban, Package, User } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 
 export const MobileNav: React.FC = () => {
   const { t } = useTranslation();
+  const [isHidden, setIsHidden] = useState(false);
+  
+  // Track scroll travel logic to avoid jitter
+  const travelRef = useRef(0);
+  const lastYRef = useRef(0);
   
   const navItems = [
-    { name: t('nav.home'), path: '/', icon: <Home size={22} /> },
-    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={22} /> },
-    { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={22} /> },
-    { name: t('nav.overdue'), path: '/overdue', icon: <Bell size={22} /> },
-    { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={22} /> },
+    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} /> },
+    { name: t('nav.designTeam'), path: '/project', icon: <FolderKanban size={23} strokeWidth={1.8} /> },
+    { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} /> },
+    { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
+    { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },
   ];
 
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      // Only process scroll events from large containers (e.g. main page areas)
+      if (!target || !target.clientHeight || target.clientHeight < 300) return;
+
+      const y = Math.max(0, target.scrollTop);
+      const delta = y - lastYRef.current;
+      
+      if (y <= 20) {
+        setIsHidden(false);
+        travelRef.current = 0;
+      } else {
+        if (delta && Math.sign(delta) !== Math.sign(travelRef.current)) {
+          travelRef.current = 0;
+        }
+        travelRef.current += delta;
+        
+        if (travelRef.current > 15 && y > 60) {
+          setIsHidden(true);
+          travelRef.current = 0;
+        } else if (travelRef.current < -15) {
+          setIsHidden(false);
+          travelRef.current = 0;
+        }
+      }
+      lastYRef.current = y;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+  }, []);
+
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-panel rounded-t-3xl border-b-0 z-50 flex items-center justify-around px-2 shadow-[0_-8px_32px_0_rgba(31,38,135,0.1)]">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.name}
-          to={item.path}
-          className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center w-14 h-12 rounded-xl transition-all",
-            isActive 
-              ? "text-primary bg-white/50 shadow-inner dark:bg-gray-800/50" 
-              : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          )}
-        >
-          {item.icon}
-        </NavLink>
-      ))}
-    </div>
+    <>
+      <style>{`
+        .mobile-nav-mask {
+          height: calc(120px + env(safe-area-inset-bottom));
+          background: linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0));
+          backdrop-filter: blur(16px) saturate(150%);
+          -webkit-backdrop-filter: blur(16px) saturate(150%);
+          mask-image: linear-gradient(to top, #000 25%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 100%);
+          transition: opacity 0.3s ease;
+        }
+        .dark .mobile-nav-mask {
+          background: linear-gradient(to top, rgba(17,24,39,0.9), rgba(17,24,39,0));
+        }
+        .mobile-nav-container {
+          max-width: 350px;
+          margin: 0 auto;
+          bottom: calc(24px + env(safe-area-inset-bottom));
+          transform-origin: bottom center;
+          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .mobile-nav-container.nav-hidden {
+          transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom)));
+          opacity: 0;
+          pointer-events: none;
+        }
+        .mobile-nav-mask.nav-hidden {
+          opacity: 0;
+        }
+      `}</style>
+      
+      {/* Background Mask */}
+      <div 
+        className={cn(
+          "md:hidden fixed bottom-0 left-0 right-0 pointer-events-none z-[98] mobile-nav-mask",
+          isHidden && "nav-hidden"
+        )}
+      />
+
+      {/* Nav Pill */}
+      <div 
+        className={cn(
+          "md:hidden fixed left-4 right-4 bg-white/45 dark:bg-gray-800/60 backdrop-blur-md rounded-full z-[99] flex items-center justify-between p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/60 dark:border-gray-600/60 mobile-nav-container",
+          isHidden && "nav-hidden"
+        )}
+      >
+        {navItems.map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.path}
+            className={({ isActive }) => cn(
+              "flex flex-col items-center justify-center w-12 h-[44px] rounded-full transition-transform duration-300",
+              isActive 
+                ? "text-primary bg-white/65 dark:bg-white/10 scale-105 shadow-sm" 
+                : "text-gray-500 dark:text-gray-400"
+            )}
+          >
+            {item.icon}
+          </NavLink>
+        ))}
+      </div>
+    </>
   );
 };

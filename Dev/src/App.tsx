@@ -10,7 +10,7 @@ import { TaskList } from './pages/TaskList';
 import { AssetInventory } from './pages/AssetInventory';
 import { BorrowRequests } from './pages/BorrowRequests';
 import { MyTasks } from './pages/MyTasks';
-import { Overdue } from './pages/Overdue';
+import { Project } from './pages/Project';
 import { TeamWorkload } from './pages/TeamWorkload';
 import { Reports } from './pages/Reports';
 import { MemberManagement } from './pages/MemberManagement';
@@ -42,7 +42,7 @@ function App() {
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<ProjectsKanban />} />
             <Route path="my-tasks" element={<MyTasks />} />
-            <Route path="overdue" element={<Overdue />} />
+            <Route path="project" element={<Project />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />

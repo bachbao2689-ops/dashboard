@@ -1,0 +1,63 @@
+import React, { useState } from 'react';
+import { Settings, Bell, Edit3, Shield, Mail, Calendar, LogOut } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
+import { EditProfileModal } from './EditProfileModal';
+import type { ProfileTab } from '../../../pages/MyTasks';
+
+export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileTab) => void }> = ({ role, onTabChange }) => {
+  const user = useAuthStore(state => state.user);
+  const signOut = useAuthStore(state => state.signOut);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const name = user?.user_metadata?.full_name || 'Louis Nguyễn';
+  const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+
+  return (
+    <>
+    <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
+      {/* Decorative background blur */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
+        
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-primary/30">
+            {initials}
+          </div>
+          
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{name}</h1>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${role === 'manager' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                {role === 'manager' ? '👑 MANAGER' : '👤 STAFF'}
+              </span>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1.5"><Mail size={16} /> {user?.email || 'louis@kcoffee.com'}</div>
+              <div className="flex items-center gap-1.5"><Shield size={16} /> Marketing · Workspace: K COFFEE</div>
+              <div className="flex items-center gap-1.5"><Calendar size={16} /> Joined: Mar 2025</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 text-sm font-medium">
+            <Edit3 size={16} /> Edit Profile
+          </button>
+          <button onClick={() => onTabChange('activity')} className="p-2 hover:bg-white dark:hover:bg-gray-800 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 relative">
+            <Bell size={18} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          <button onClick={() => onTabChange('settings')} className="p-2 hover:bg-white dark:hover:bg-gray-800 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700">
+            <Settings size={18} />
+          </button>
+          <button onClick={signOut} className="p-2 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 text-gray-500">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+    <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
+    </>
+  );
+};

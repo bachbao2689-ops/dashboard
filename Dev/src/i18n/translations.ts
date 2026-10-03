@@ -10,7 +10,7 @@ export const dict = {
     'nav.tasks': 'All Tasks',
     'nav.projects': 'Kanban Board',
     'nav.myTasks': 'My Tasks',
-    'nav.overdue': 'Overdue',
+    'nav.designTeam': 'Design Team',
     'nav.inventory': 'Inventory',
     'nav.borrow': 'Borrow Requests',
     'nav.team': 'Team Workload',
@@ -48,6 +48,14 @@ export const dict = {
     'tasks.title': 'All Tasks',
     'assets.title': 'Asset Inventory',
     'borrow.title': 'Borrow Requests',
+    
+    'design.title': 'DESIGN TEAM',
+    'design.subtitle': 'Project management and workflow for the creative team',
+    'design.newRequest': 'New Request',
+    'design.tab.portfolio': 'Portfolio',
+    'design.tab.tasks': 'Tasks Board',
+    'design.tab.capacity': 'Team Capacity',
+    'design.tab.assets': 'Asset Library',
   },
   vi: {
     'nav.main': 'Chính',
@@ -58,7 +66,7 @@ export const dict = {
     'nav.tasks': 'Tất cả Công việc',
     'nav.projects': 'Bảng Kanban',
     'nav.myTasks': 'Việc của tôi',
-    'nav.overdue': 'Quá hạn',
+    'nav.designTeam': 'Design Team',
     'nav.inventory': 'Kho Thiết bị',
     'nav.borrow': 'Duyệt Mượn/Trả',
     'nav.team': 'Năng suất Team',
@@ -96,6 +104,14 @@ export const dict = {
     'tasks.title': 'Tất cả Công việc',
     'assets.title': 'Kho Thiết bị',
     'borrow.title': 'Yêu cầu Mượn/Trả',
+    
+    'design.title': 'ĐỘI NGŨ THIẾT KẾ',
+    'design.subtitle': 'Quản lý dự án và luồng công việc cho team sáng tạo',
+    'design.newRequest': 'Yêu cầu mới',
+    'design.tab.portfolio': 'Danh mục Dự án',
+    'design.tab.tasks': 'Bảng Công việc',
+    'design.tab.capacity': 'Năng suất Team',
+    'design.tab.assets': 'Kho Tài nguyên',
   }
 };
 

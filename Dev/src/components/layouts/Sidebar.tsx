@@ -25,7 +25,7 @@ export const Sidebar: React.FC = () => {
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
         { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
         { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={18} /> },
-        { name: t('nav.overdue'), path: '/overdue', icon: <AlertCircle size={18} /> },
+        { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]
     },
     {

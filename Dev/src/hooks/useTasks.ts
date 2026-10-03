@@ -26,8 +26,9 @@ export function useTasks() {
     fetchTasks();
     
     // Subscribe to realtime changes
+    const channelName = `tasks_channel_${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
-      .channel('tasks_channel')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         fetchTasks(); // Refresh list on change
       })
