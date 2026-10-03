@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X } from 'lucide-react';
+import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { FilterPanel } from '../components/common/FilterPanel';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -33,9 +33,13 @@ export const TaskList: React.FC = () => {
   const [filters, setFilters] = useState({ status: 'all', priority: 'all', assignee: 'all', department: 'all', dateRange: 'all' });
   const [groupBy, setGroupBy] = useState('none');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+
   const { tasks, loading, refetch } = useTasks();
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+  const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
   const handleNewTask = () => setIsModalOpen(true);
 
@@ -149,12 +153,21 @@ export const TaskList: React.FC = () => {
           {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
             <div key={groupName} className="glass-panel overflow-hidden">
               {groupBy !== 'none' && (
-                <div className="bg-gray-50/80 dark:bg-gray-800/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">{groupName}</h3>
-                  <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300">{groupTasks.length} tasks</span>
+                <div 
+                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-gray-800/80 dark:hover:bg-gray-700/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer transition-colors"
+                  onClick={() => toggleGroup(groupName)}
+                >
+                  <div className="flex items-center gap-3">
+                    <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center">
+                      {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                    </button>
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide text-sm">{groupName}</h3>
+                    <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-white/10">{groupTasks.length} tasks</span>
+                  </div>
                 </div>
               )}
-              <div className="overflow-x-auto">
+              {!collapsedGroups.includes(groupName) && (
+                <div className="overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white/50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700">
@@ -236,6 +249,7 @@ export const TaskList: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           ))}
         </div>
