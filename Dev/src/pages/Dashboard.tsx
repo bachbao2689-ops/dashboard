@@ -70,7 +70,7 @@ const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; cl
   </button>
 );
 
-export const Dashboard2: React.FC = () => {
+export const Dashboard: React.FC = () => {
   const isDark = useUiStore(state => state.theme) === 'dark';
   const [tab, setTab] = useState<'detail' | 'allocation'>('detail');
   const [idx, setIdx] = useState(0);
@@ -90,7 +90,7 @@ export const Dashboard2: React.FC = () => {
   const next = () => setIdx((idx + 1) % STAFF.length);
 
   return (
-    <div className="dash2-scale grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_clamp(270px,25%,330px)] gap-4 w-full xl:items-stretch">
+    <div className="dashboard-scale grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_clamp(270px,25%,330px)] gap-4 w-full xl:items-stretch">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
       <section className={`${PANEL} p-4 sm:p-[25px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">

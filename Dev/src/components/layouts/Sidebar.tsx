@@ -17,8 +17,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} /> },
-        { name: 'Dashboard 2', path: '/dashboard-2', icon: <BarChart2 size={18} /> }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} /> }
       ]
     },
     {
