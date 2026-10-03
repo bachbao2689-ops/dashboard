@@ -7,6 +7,7 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: { sans: ['Barlow', 'sans-serif'] },
       colors: {
         primary: "var(--color-primary)",
         success: "var(--color-success)",
