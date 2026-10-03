@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
+import { DashboardPreview } from './pages/DashboardPreview';
 import { ProjectsKanban } from './pages/ProjectsKanban';
 import { TaskList } from './pages/TaskList';
 import { AssetInventory } from './pages/AssetInventory';
@@ -14,8 +15,6 @@ import { Project } from './pages/Project';
 import { TeamWorkload } from './pages/TeamWorkload';
 import { Reports } from './pages/Reports';
 import { MemberManagement } from './pages/MemberManagement';
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
 
 function App() {
   const initialize = useAuthStore(state => state.initialize);
@@ -29,16 +28,13 @@ function App() {
       <Toaster position="top-right" />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/auth/accept-invite" element={<Register />} />
-
           <Route path="/" element={
             <ProtectedRoute>
               <DashboardLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Overview />} />
+            <Route path="ui-dashboard" element={<DashboardPreview />} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<ProjectsKanban />} />
             <Route path="my-tasks" element={<MyTasks />} />

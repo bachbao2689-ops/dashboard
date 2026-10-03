@@ -1,5 +1,4 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Loader2 } from 'lucide-react';
 
@@ -22,7 +21,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // If somehow user is null, just force initialize it
+    useAuthStore.getState().initialize();
+    return null;
   }
 
   return <>{children}</>;

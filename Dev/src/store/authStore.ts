@@ -18,37 +18,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: true,
 
   initialize: async () => {
-    try {
-      // Check for dev session first
-      const devSession = localStorage.getItem('kcoffee_dev_session');
-      const isRememberMe = localStorage.getItem('kcoffee_auth_remember') === 'true';
-      
-      if (devSession) {
-        if (!isRememberMe && !sessionStorage.getItem('kcoffee_session_active')) {
-          // If not remember me and it's a new tab/window, clear it
-          localStorage.removeItem('kcoffee_dev_session');
-        } else {
-          sessionStorage.setItem('kcoffee_session_active', 'true');
-          get().devLogin(isRememberMe);
-          return;
-        }
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      // Only set if not already overridden by devLogin
-      if (!get().user || get().user?.id !== 'dev-admin-id') {
-        set({ session, user: session?.user || null, loading: false });
-      }
-
-      supabase.auth.onAuthStateChange((_event, session) => {
-        if (!get().user || get().user?.id !== 'dev-admin-id') {
-          set({ session, user: session?.user || null });
-        }
-      });
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      set({ loading: false });
-    }
+    // Bypass login entirely as requested
+    get().devLogin(true);
   },
 
   devLogin: (rememberMe: boolean = true) => {
