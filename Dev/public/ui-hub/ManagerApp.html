@@ -465,9 +465,11 @@ dialog button:focus-visible{outline:3px solid #80b6ff;outline-offset:2px}
 }
 </style><!-- hub-shared:end -->
 
+
+
 <style id="custom-overrides">
   /* Hide all top elements requested by user */
-  .top-nav,
+  .site-header,
   .page-heading,
   .context-bar,
   #kpis {
@@ -476,11 +478,14 @@ dialog button:focus-visible{outline:3px solid #80b6ff;outline-offset:2px}
   
   /* Make the workspace take the full height without the padding of the top nav */
   .workspace {
-    padding-top: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
-  
-  body, .workspace {
+
+  body {
     background-color: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   /* Restore the stroke/shadow overrides from earlier */
@@ -489,6 +494,8 @@ dialog button:focus-visible{outline:3px solid #80b6ff;outline-offset:2px}
     border: 1px solid #dce8fa !important;
   }
 </style>
+
+
 
 </head><body>
 <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
