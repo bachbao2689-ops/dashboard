@@ -182,3 +182,12 @@ body {
 *::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+/* Dashboard 2: fluid scale so the layout fills large screens evenly (same idea as UI HUB body zoom) */
+.dash2-scale { --z: 1; zoom: var(--z); min-height: calc((100vh - 140px) / var(--z)); }
+@media (min-width: 1400px) { .dash2-scale { --z: 1.1; } }
+@media (min-width: 1700px) { .dash2-scale { --z: 1.25; } }
+@media (min-width: 2000px) { .dash2-scale { --z: 1.4; } }
+@media (min-width: 2400px) { .dash2-scale { --z: 1.6; } }
+@media (min-width: 3000px) { .dash2-scale { --z: 2; } }
+@media (max-width: 1023px) { .dash2-scale { min-height: 0; } }
