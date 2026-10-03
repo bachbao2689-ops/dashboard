@@ -11,7 +11,7 @@ const LINK = 'text-[#3789f4] dark:text-sky-400';
 const PANEL =
   'bg-white border border-[#e0eaf8] rounded-[18px] shadow-[0_3px_15px_rgba(9,47,102,0.02)] min-w-0 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none';
 const INNER = 'border border-[#e0eaf8] dark:border-slate-700';
-const LABEL = `text-[10px] font-bold tracking-[0.12em] uppercase ${MUTED}`;
+const LABEL = `text-xs font-bold tracking-[0.12em] uppercase ${MUTED}`;
 
 type Dept = 'ecommerce' | 'design' | 'all';
 type Tab = 'overview' | 'projects' | 'capacity' | 'timeline' | 'resources';
@@ -83,7 +83,7 @@ const Bar: React.FC<{ pct: number; color?: string }> = ({ pct, color }) => (
 const Kpi: React.FC<{ value: string; label: string; tone?: string; icon?: React.ReactNode }> = ({ value, label, tone, icon }) => (
   <div className={`${INNER} rounded-[14px] px-4 py-3 bg-[radial-gradient(ellipse_at_100%_110%,#eaf3ff_0%,transparent_55%)] dark:bg-none flex flex-col gap-1`}>
     <span className={LABEL}>{label}</span>
-    <span className={`flex items-center gap-1.5 text-[26px] font-bold leading-none ${tone ?? INK}`}>{icon}{value}</span>
+    <span className={`flex items-center gap-1.5 text-2xl font-bold leading-none ${tone ?? INK}`}>{icon}{value}</span>
   </div>
 );
 
@@ -122,22 +122,22 @@ export const Departments2: React.FC = () => {
   const title = DEPTS.find(d => d[0] === dept)![1].toUpperCase();
 
   return (
-    <div className="dashboard-scale w-full space-y-4 font-sans">
+    <div className="w-full space-y-4 font-sans">
       {/* Header */}
       <div className={`${PANEL} px-5 py-4 flex flex-wrap items-center justify-between gap-3`}>
         <div>
           <span className={LABEL}>Team Management</span>
-          <h1 className={`text-[22px] font-bold leading-tight ${INK}`}>{title} TEAM</h1>
+          <h1 className={`text-xl font-bold leading-tight ${INK}`}>{title} TEAM</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className={`${INNER} rounded-[10px] p-0.5 flex bg-[#f6f9fe] dark:bg-slate-900`}>
             {DEPTS.map(([k, l]) => (
               <button key={k} onClick={() => setDept(k)}
-                className={`px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-colors ${dept === k ? 'bg-[#153454] text-white dark:bg-sky-500' : `${MUTED} hover:text-[#153454] dark:hover:text-white`}`}>{l}</button>
+                className={`px-3 py-1.5 rounded-[8px] text-sm font-semibold transition-colors ${dept === k ? 'bg-[#153454] text-white dark:bg-sky-500' : `${MUTED} hover:text-[#153454] dark:hover:text-white`}`}>{l}</button>
             ))}
           </div>
           <button onClick={() => toast.success('New project draft created')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] bg-[#153454] dark:bg-sky-500 text-white text-[12px] font-semibold hover:opacity-90">
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] bg-[#153454] dark:bg-sky-500 text-white text-sm font-semibold hover:opacity-90">
             <Plus size={14} /> New Project
           </button>
         </div>
@@ -147,7 +147,7 @@ export const Departments2: React.FC = () => {
       <div className={`${PANEL} px-5 pt-2`}>
         <div className="flex gap-6 overflow-x-auto">
           {TABS.map(([k, l]) => (
-            <button key={k} onClick={() => setTab(k)} className={`relative py-2.5 text-[13px] font-semibold whitespace-nowrap ${tab === k ? INK : MUTED}`}>
+            <button key={k} onClick={() => setTab(k)} className={`relative py-2.5 text-sm font-semibold whitespace-nowrap ${tab === k ? INK : MUTED}`}>
               {l}
               <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-[#153454] dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
             </button>
@@ -177,11 +177,11 @@ export const Departments2: React.FC = () => {
                 {[...projects].sort((a, b) => (a.status === 'overdue' ? -1 : 0) - (b.status === 'overdue' ? -1 : 0)).slice(0, 4).map(p => (
                   <div key={p.id} className={`${INNER} rounded-[14px] p-4 space-y-2.5`}>
                     <div className="flex justify-between items-start gap-2">
-                      <span className={`text-[14px] font-bold ${INK}`}>{p.name}</span>
-                      <span className={`text-[12px] font-bold ${INK}`}>{p.progress}%</span>
+                      <span className={`text-sm font-bold ${INK}`}>{p.name}</span>
+                      <span className={`text-sm font-bold ${INK}`}>{p.progress}%</span>
                     </div>
                     <Bar pct={p.progress} />
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-xs">
                       <span className={`flex items-center gap-1.5 font-semibold ${STATUS_STYLE[p.status].text}`}>
                         <i className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[p.status].dot}`} />{p.status === 'overdue' ? 'Overdue' : `Due ${p.due}`}
                       </span>
@@ -194,12 +194,12 @@ export const Departments2: React.FC = () => {
 
             <div className={`${PANEL} p-5`}>
               <p className={`${LABEL} mb-3`}>Alerts · Manager Action Needed</p>
-              <ul className="space-y-2.5 text-[12.5px]">
+              <ul className="space-y-2.5 text-sm">
                 <li className={`flex items-center gap-2 ${INK}`}><AlertTriangle size={15} className="text-amber-500 shrink-0" />{projects.filter(p => p.status !== 'ok').length} projects at risk of delay</li>
                 <li className={`flex items-center gap-2 ${INK}`}><span className="w-3.5 h-3.5 rounded-full bg-[#d9435a] shrink-0" />{totals.overdue} tasks overdue (2 urgent)</li>
                 <li className={`flex items-center gap-2 ${INK}`}><CheckCircle2 size={15} className={`${LINK} shrink-0`} />5 pending approvals</li>
               </ul>
-              <button className={`mt-4 text-[12px] font-semibold ${LINK} flex items-center gap-1`} onClick={() => setTab('projects')}>View All Alerts <ChevronRight size={13} /></button>
+              <button className={`mt-4 text-sm font-semibold ${LINK} flex items-center gap-1`} onClick={() => setTab('projects')}>View All Alerts <ChevronRight size={13} /></button>
             </div>
           </div>
 
@@ -208,17 +208,17 @@ export const Departments2: React.FC = () => {
             <div className="flex items-center gap-2 mb-3"><Zap size={15} className="text-amber-500" /><p className={LABEL}>Command Center · Manager Only</p></div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div className={`${INNER} rounded-[14px] p-4`}>
-                <p className={`text-[12px] font-bold mb-2 ${INK}`}>Alerts (Realtime)</p>
-                <ul className={`space-y-2 text-[12px] ${INK}`}>
+                <p className={`text-sm font-bold mb-2 ${INK}`}>Alerts (Realtime)</p>
+                <ul className={`space-y-2 text-sm ${INK}`}>
                   <li>⚠️ Wendy over capacity (18/12)</li>
                   <li>⚠️ Campaign tháng 8 overdue risk (3 tasks)</li>
                   <li>⚠️ Canon 5D borrowed &gt; 14 days</li>
                 </ul>
-                <button onClick={() => rebalance('Wendy')} className={`mt-3 text-[11px] font-semibold ${LINK}`}>Redistribute →</button>
+                <button onClick={() => rebalance('Wendy')} className={`mt-3 text-xs font-semibold ${LINK}`}>Redistribute →</button>
               </div>
               <div className={`${INNER} rounded-[14px] p-4`}>
-                <p className={`text-[12px] font-bold mb-2 ${INK}`}>Prediction Engine</p>
-                <ul className="space-y-2 text-[12px]">
+                <p className={`text-sm font-bold mb-2 ${INK}`}>Prediction Engine</p>
+                <ul className="space-y-2 text-sm">
                   {PROJECTS.filter(p => p.dept === 'ecommerce').map(p => (
                     <li key={p.id} className="flex justify-between">
                       <span className={INK}>{p.name}</span>
@@ -228,15 +228,15 @@ export const Departments2: React.FC = () => {
                 </ul>
               </div>
               <div className={`${INNER} rounded-[14px] p-4 space-y-2`}>
-                <p className={`text-[12px] font-bold mb-1 ${INK}`}>Quick Decisions</p>
+                <p className={`text-sm font-bold mb-1 ${INK}`}>Quick Decisions</p>
                 {[
                   { icon: <CheckCircle2 size={14} />, label: 'Approve all pending requests', sub: '12 items', msg: '12 requests approved' },
                   { icon: <Shuffle size={14} />, label: 'Auto-balance team capacity', sub: 'Save 2hrs/day', msg: 'Team capacity rebalanced' },
                   { icon: <Mail size={14} />, label: 'Email overdue reminders', sub: '5 members affected', msg: 'Reminders sent to 5 members' },
                 ].map(a => (
                   <button key={a.label} onClick={() => toast.success(a.msg)}
-                    className={`w-full ${INNER} rounded-[10px] px-3 py-2 flex items-center gap-2 text-left text-[12px] font-semibold ${INK} hover:bg-[#f6f9fe] dark:hover:bg-slate-700 transition-colors`}>
-                    {a.icon}<span className="flex-1">{a.label}</span><span className={`text-[10.5px] font-medium ${MUTED}`}>{a.sub}</span>
+                    className={`w-full ${INNER} rounded-[10px] px-3 py-2 flex items-center gap-2 text-left text-sm font-semibold ${INK} hover:bg-[#f6f9fe] dark:hover:bg-slate-700 transition-colors`}>
+                    {a.icon}<span className="flex-1">{a.label}</span><span className={`text-xs font-medium ${MUTED}`}>{a.sub}</span>
                   </button>
                 ))}
               </div>
@@ -251,12 +251,12 @@ export const Departments2: React.FC = () => {
           <div className={`${PANEL} px-4 py-3 flex flex-wrap items-center gap-3`}>
             <div className={`${INNER} rounded-[10px] flex items-center gap-2 px-3 py-1.5 flex-1 min-w-[180px]`}>
               <Search size={14} className={MUTED} />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." className={`bg-transparent outline-none text-[12px] w-full ${INK}`} />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." className={`bg-transparent outline-none text-sm w-full ${INK}`} />
             </div>
-            <select value={platform} onChange={e => setPlatform(e.target.value)} className={`bg-white dark:bg-slate-700 ${INNER} rounded-[10px] px-3 py-1.5 text-[12px] font-semibold ${INK} outline-none`}>
+            <select value={platform} onChange={e => setPlatform(e.target.value)} className={`bg-white dark:bg-slate-700 ${INNER} rounded-[10px] px-3 py-1.5 text-sm font-semibold ${INK} outline-none`}>
               {['All', ...Array.from(new Set(PROJECTS.map(p => p.platform)))].map(o => <option key={o}>{o}</option>)}
             </select>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | Status)} className={`bg-white dark:bg-slate-700 ${INNER} rounded-[10px] px-3 py-1.5 text-[12px] font-semibold ${INK} outline-none`}>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | Status)} className={`bg-white dark:bg-slate-700 ${INNER} rounded-[10px] px-3 py-1.5 text-sm font-semibold ${INK} outline-none`}>
               <option value="all">Status: All</option><option value="ok">On track</option><option value="risk">At risk</option><option value="overdue">Overdue</option>
             </select>
           </div>
@@ -264,41 +264,41 @@ export const Departments2: React.FC = () => {
             {filtered.map(p => (
               <div key={p.id} className={`${PANEL} p-5 space-y-3`}>
                 <div className="flex justify-between items-start">
-                  <h3 className={`text-[15px] font-bold ${INK}`}>{p.name}</h3>
-                  <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${STATUS_STYLE[p.status].text}`}><i className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[p.status].dot}`} />{STATUS_STYLE[p.status].label}</span>
+                  <h3 className={`text-base font-bold ${INK}`}>{p.name}</h3>
+                  <span className={`flex items-center gap-1.5 text-xs font-semibold ${STATUS_STYLE[p.status].text}`}><i className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[p.status].dot}`} />{STATUS_STYLE[p.status].label}</span>
                 </div>
-                <div className={`flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] ${MUTED}`}>
+                <div className={`flex flex-wrap gap-x-4 gap-y-1 text-xs ${MUTED}`}>
                   <span>Platform: <b className={INK}>{p.platform}</b></span><span>Manager: <b className={INK}>{p.manager}</b></span><span>Budget: <b className={INK}>₫{p.budget}M</b></span>
                 </div>
                 <div>
-                  <div className="flex justify-between text-[11.5px] mb-1"><span className={MUTED}>Progress</span><span className={`font-bold ${INK}`}>{Math.round(p.done / p.total * 100)}% ({p.done}/{p.total} tasks done)</span></div>
+                  <div className="flex justify-between text-xs mb-1"><span className={MUTED}>Progress</span><span className={`font-bold ${INK}`}>{Math.round(p.done / p.total * 100)}% ({p.done}/{p.total} tasks done)</span></div>
                   <Bar pct={p.done / p.total * 100} />
                 </div>
                 <div className={`${INNER} rounded-[12px] p-3 space-y-1.5`}>
                   <p className={LABEL}>Tasks Breakdown</p>
                   {p.breakdown.map(b => (
-                    <div key={b.label} className="flex items-center gap-2 text-[12px]">
+                    <div key={b.label} className="flex items-center gap-2 text-sm">
                       <span className={`w-16 ${INK}`}>{b.label}</span>
                       <div className="flex-1"><Bar pct={b.done / b.total * 100} color={b.done / b.total < 0.5 ? 'bg-amber-400' : 'bg-[#45a894]'} /></div>
                       <span className={`w-10 text-right font-semibold ${INK}`}>{b.done}/{b.total}</span>
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap gap-2 text-[11px]">
+                <div className="flex flex-wrap gap-2 text-xs">
                   {p.milestones.map(m => (
                     <span key={m.label} className={`${INNER} rounded-full px-2.5 py-1 font-semibold ${m.state === 'done' ? 'text-[#279561]' : m.state === 'next' ? 'text-amber-500' : MUTED}`}>
                       {m.state === 'done' ? '✅' : m.state === 'next' ? '⏳' : '🔜'} {m.label} ({m.date})
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-4 pt-1 text-[12px] font-semibold">
+                <div className="flex gap-4 pt-1 text-sm font-semibold">
                   <button className={LINK} onClick={() => toast('Opening tasks…')}>View All Tasks</button>
                   <button className={LINK} onClick={() => setTab('capacity')}>Manage Team</button>
                   <button className={LINK} onClick={() => setTab('timeline')}>Timeline View</button>
                 </div>
               </div>
             ))}
-            {!filtered.length && <div className={`${PANEL} p-10 text-center text-[13px] ${MUTED} xl:col-span-2`}>No projects match your filters.</div>}
+            {!filtered.length && <div className={`${PANEL} p-10 text-center text-sm ${MUTED} xl:col-span-2`}>No projects match your filters.</div>}
           </div>
         </div>
       )}
@@ -309,8 +309,8 @@ export const Departments2: React.FC = () => {
           <div className={`${PANEL} p-5 xl:col-span-2`}>
             <p className={`${LABEL} mb-3`}>Team Capacity</p>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12.5px]">
-                <thead><tr className={`text-left ${MUTED} text-[10.5px] uppercase tracking-wider`}>
+              <table className="w-full text-sm">
+                <thead><tr className={`text-left ${MUTED} text-xs uppercase tracking-wider`}>
                   <th className="pb-2 font-bold">Member</th><th className="pb-2 font-bold">Role</th><th className="pb-2 font-bold">Assigned</th><th className="pb-2 font-bold w-1/4">Load</th><th className="pb-2 font-bold">Health</th><th />
                 </tr></thead>
                 <tbody>
@@ -324,14 +324,14 @@ export const Departments2: React.FC = () => {
                         <td className={`font-semibold ${INK}`}>{m.assigned}/{m.cap}</td>
                         <td className="pr-3"><Bar pct={pct} color={barColor(pct)} /></td>
                         <td className={`font-semibold ${over ? 'text-[#d9435a]' : 'text-[#279561]'}`}>{over ? '● OVERLOAD' : '● OK'}</td>
-                        <td className="text-right">{over && <button onClick={() => rebalance(m.name)} className={`text-[11px] font-semibold ${LINK}`}>Rebalance</button>}</td>
+                        <td className="text-right">{over && <button onClick={() => rebalance(m.name)} className={`text-xs font-semibold ${LINK}`}>Rebalance</button>}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            <div className={`${INNER} rounded-[12px] p-3 mt-4 flex items-center gap-2 text-[12px] ${INK}`}>
+            <div className={`${INNER} rounded-[12px] p-3 mt-4 flex items-center gap-2 text-sm ${INK}`}>
               <Clock size={14} className="text-amber-500" /><b>Forecast next week:</b> Dự kiến nhận 8 task mới → Cần phân bổ thêm 2 người
             </div>
           </div>
@@ -340,7 +340,7 @@ export const Departments2: React.FC = () => {
             <div className="space-y-3">
               {PLATFORM_DIST.map(d => (
                 <div key={d.label}>
-                  <div className="flex justify-between text-[12px] mb-1"><span className={INK}>{d.label}</span><span className={`font-bold ${INK}`}>{d.pct}%</span></div>
+                  <div className="flex justify-between text-sm mb-1"><span className={INK}>{d.label}</span><span className={`font-bold ${INK}`}>{d.pct}%</span></div>
                   <div className="h-2 rounded-full bg-[#eef3fb] dark:bg-slate-700"><div className="h-full rounded-full" style={{ width: `${d.pct}%`, background: d.color }} /></div>
                 </div>
               ))}
@@ -354,14 +354,14 @@ export const Departments2: React.FC = () => {
         <div className={`${PANEL} p-5`}>
           <div className="flex items-center justify-between mb-4">
             <p className={LABEL}>Timeline View</p>
-            <span className={`text-[11px] ${MUTED}`}>Zoom: Week</span>
+            <span className={`text-xs ${MUTED}`}>Zoom: Week</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] gap-y-3 items-center">
             <span />
-            <div className={`grid grid-cols-4 text-[11px] font-semibold ${MUTED}`}>{['Oct 8', 'Oct 15', 'Oct 22', 'Oct 29'].map(d => <span key={d}>{d}</span>)}</div>
+            <div className={`grid grid-cols-4 text-xs font-semibold ${MUTED}`}>{['Oct 8', 'Oct 15', 'Oct 22', 'Oct 29'].map(d => <span key={d}>{d}</span>)}</div>
             {projects.map(p => (
               <React.Fragment key={p.id}>
-                <span className={`text-[12px] font-bold ${INK}`}>{p.name}</span>
+                <span className={`text-sm font-bold ${INK}`}>{p.name}</span>
                 <div className="relative h-6 rounded-md bg-[#f3f7fd] dark:bg-slate-900">
                   <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-[#d9435a]/25' : 'bg-[#153454]/15 dark:bg-sky-400/20'}`} style={{ left: `${p.start}%`, width: `${p.len}%` }} />
                   <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-[#d9435a]' : 'bg-[#153454] dark:bg-sky-400'}`} style={{ left: `${p.start}%`, width: `${p.len * p.progress / 100}%` }} />
@@ -369,7 +369,7 @@ export const Departments2: React.FC = () => {
               </React.Fragment>
             ))}
           </div>
-          <div className={`flex gap-5 mt-5 text-[11px] ${MUTED}`}>
+          <div className={`flex gap-5 mt-5 text-xs ${MUTED}`}>
             <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#153454]" />Active</span>
             <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#153454]/20" />Remaining</span>
             <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#d9435a]" />Delayed</span>
@@ -388,23 +388,23 @@ export const Departments2: React.FC = () => {
             ].map(r => (
               <div key={r.title} className={`${PANEL} p-5`}>
                 <div className={`flex items-center gap-2 ${LABEL}`}>{r.icon}{r.title}</div>
-                <p className={`mt-3 text-[15px] font-bold ${INK}`}>{r.name}</p>
-                <p className={`text-[12px] font-semibold ${r.tone}`}>● {r.state}</p>
-                <p className={`text-[11.5px] ${MUTED}`}>{r.note}</p>
+                <p className={`mt-3 text-base font-bold ${INK}`}>{r.name}</p>
+                <p className={`text-sm font-semibold ${r.tone}`}>● {r.state}</p>
+                <p className={`text-xs ${MUTED}`}>{r.note}</p>
               </div>
             ))}
           </div>
           <div className={`${PANEL} p-5`}>
             <div className="flex items-center justify-between mb-4">
               <p className={LABEL}>Budget Tracking</p>
-              <button onClick={() => toast.success('Export started')} className={`text-[12px] font-semibold ${LINK}`}>Export</button>
+              <button onClick={() => toast.success('Export started')} className={`text-sm font-semibold ${LINK}`}>Export</button>
             </div>
             <div className="space-y-4">
               {projects.map(p => {
                 const pct = Math.round((p.spent / p.budget) * 100);
                 return (
                   <div key={p.id}>
-                    <div className="flex justify-between text-[12.5px] mb-1">
+                    <div className="flex justify-between text-sm mb-1">
                       <span className={`font-semibold ${INK}`}>{p.name}</span>
                       <span className={`font-bold ${pct >= 80 ? 'text-amber-500' : INK}`}>{pct}% used (₫{p.spent}M/₫{p.budget}M){pct >= 80 && ' ⚠️'}</span>
                     </div>
@@ -414,8 +414,8 @@ export const Departments2: React.FC = () => {
               })}
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => toast('Opening budget report…')} className={`${INNER} rounded-[10px] px-3 py-2 text-[12px] font-semibold ${INK}`}>View Budget Report</button>
-              <button onClick={() => toast.success('Funds request submitted')} className={`${INNER} rounded-[10px] px-3 py-2 text-[12px] font-semibold ${INK}`}>Request Additional Funds</button>
+              <button onClick={() => toast('Opening budget report…')} className={`${INNER} rounded-[10px] px-3 py-2 text-sm font-semibold ${INK}`}>View Budget Report</button>
+              <button onClick={() => toast.success('Funds request submitted')} className={`${INNER} rounded-[10px] px-3 py-2 text-sm font-semibold ${INK}`}>Request Additional Funds</button>
             </div>
           </div>
         </div>
