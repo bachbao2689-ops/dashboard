@@ -9,6 +9,7 @@ interface AuthState {
   initialize: () => void;
   signOut: () => Promise<void>;
   devLogin: (rememberMe?: boolean) => void;
+  updateUserMetadata: (data: any) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -59,6 +60,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       session: { access_token: 'dev-token', refresh_token: 'dev-token' } as any,
       loading: false
     });
+  },
+
+  updateUserMetadata: async (data: any) => {
+    const { user } = get();
+    if (!user) return;
+    
+    // For local dev admin bypass
+    if (user.id === 'dev-admin-id') {
+      set({ user: { ...user, user_metadata: { ...user.user_metadata, ...data } } as any });
+      return;
+    }
+    
+    // For real Supabase auth
+    const { data: updatedUser, error } = await supabase.auth.updateUser({ data });
+    if (!error && updatedUser.user) {
+      set({ user: updatedUser.user });
+    }
   },
 
   signOut: async () => {

@@ -1,14 +1,35 @@
 import React, { useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
+import toast from 'react-hot-toast';
 
 export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const user = useAuthStore(state => state.user);
+  const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || 'Louis Nguyễn',
     phone: '0901234567',
     position: 'Content Manager'
   });
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateUserMetadata({
+        full_name: formData.fullName,
+        name: formData.fullName,
+        phone: formData.phone,
+        position: formData.position
+      });
+      toast.success('Profile updated successfully!');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -26,7 +47,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <div className="flex justify-center">
             <div className="relative group cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg">
-                LN
+                {formData.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
               </div>
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={24} className="text-white" />
@@ -68,8 +89,8 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <button onClick={onClose} className="px-5 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">
             Cancel
           </button>
-          <button onClick={onClose} className="px-5 py-2 font-medium text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors shadow-lg shadow-primary/30">
-            Save Changes
+          <button onClick={handleSave} disabled={isSaving} className="px-5 py-2 font-medium text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors shadow-lg shadow-primary/30 disabled:opacity-50 flex items-center gap-2">
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
