@@ -26,7 +26,7 @@ export const MyTasks: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <ProfileHeader role={role} onTabChange={setActiveTab} />
       <ProfileKpis role={role} />
       

@@ -55,7 +55,7 @@ export const Overview: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto z-10 relative">
+    <div className="space-y-6 w-full dashboard-scale z-10 relative">
       {error && (
         <div className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 p-3 rounded-xl border border-yellow-500/50 flex items-center gap-2">
           <AlertCircle size={18} />
