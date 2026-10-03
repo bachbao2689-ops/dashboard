@@ -24,7 +24,7 @@ export const DashboardLayout: React.FC = () => {
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 md:pb-0">
           <Header />
-          <main className="flex-1 flex flex-col min-h-0 overflow-auto px-4 md:px-8 pt-4 md:pt-8 pb-4 scrollbar-hide">
+          <main className="flex-1 overflow-auto px-4 md:px-8 pt-4 md:pt-8 pb-4 scrollbar-hide">
             <Outlet />
           </main>
         </div>
