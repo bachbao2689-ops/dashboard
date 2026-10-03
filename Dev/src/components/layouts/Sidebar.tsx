@@ -47,9 +47,9 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full border-r border-white/40 h-full glass-panel flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-[0_8px_32px_0_rgba(31,38,135,0.1)]">
+    <aside className="w-full h-full bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
       
-      <div className="mb-8 flex items-center justify-center bg-white/30 dark:bg-gray-800/50 mx-6 p-4 rounded-xl border border-white/50 dark:border-gray-700/50 backdrop-blur-sm shadow-sm transition-transform hover:scale-105">
+      <div className="mb-8 flex items-center justify-center bg-white dark:bg-slate-800 mx-6 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105">
         <img src="/logo-light.svg" alt="K COFFEE Logo" className="h-11 w-auto filter drop-shadow-md block dark:hidden" />
         <img src="/logo-dark.svg" alt="K COFFEE Logo" className="h-11 w-auto filter drop-shadow-md hidden dark:block" />
       </div>
@@ -66,8 +66,8 @@ export const Sidebar: React.FC = () => {
                     className={({ isActive }) => cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
                       isActive 
-                        ? "bg-white/60 text-primary shadow-sm border border-white/80 backdrop-blur-md font-semibold dark:bg-gray-700/60 dark:text-purple-400" 
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white/40 dark:hover:bg-gray-700/40"
+                        ? "bg-white text-primary shadow-sm border border-gray-200 font-semibold dark:bg-slate-700 dark:border-slate-600 dark:text-purple-400" 
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-slate-700"
                     )}
                   >
                     {item.icon}

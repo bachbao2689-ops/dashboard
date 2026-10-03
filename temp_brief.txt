@@ -1,0 +1,2866 @@
+📋 DEVELOPMENT BRIEF: DESIGN TEAM PROJECT MANAGEMENT SYSTEM
+Version: 1.0 Date: 02 October 2026 Priority: HIGH (Phase 1 of Task Management)
+
+1. TỔNG QUAN HỆ THỐNG
+Mục Tiêu
+Xây dựng hệ thống quản lý công việc thiết kế chuyên biệt cho Design Team với visual task cards, revision tracking, approval workflow, và designer capacity management. Đây là module cốt lõi của All Tasks nhưng được tối ưu cho workflow sáng tạo.
+Phạm Vi
+Design Workflows
+4
+▲Request→In Progress→Review→Approve
+Revision Layers
+Unlimited
+▲v1, v2, v3...
+File Formats
+PSD,AI,FIG,PDF
+▲Multiple previews
+Timeline
+Week 1-3
+▲Core features
+
+2. KIẾN TRÚC LUỒNG (FLOWCHART)
+2.1 Design Request Lifecycle
+┌─────────────┐     ┌───────────────┐     ┌──────────────┐
+│ STAKEHOLDER │────▶│  REQUEST      │────▶│  DESIGNER    │
+│ Submits     │     │  (Brief+Files)│     │  In Progress │
+└─────────────┘     └───────────────┘     └──────────────┘
+                                                 │
+                                                 ▼
+┌─────────────┐     ┌───────────────┐     ┌──────────────┐
+│ DELIVERED   │◀────│  APPROVED     │◀────│  FOR REVIEW  │
+│ Final Files │     │  ✅           │     │  Waiting     │
+└─────────────┘     └───────────────┘     └──────────────┘
+                             ▲                    │
+                             │                    ▼
+                      ┌──────────────┐     ┌──────────────┐
+                      │  REVISION    │◀────│  REJECTED    │
+                      │  (Changes)   │     │  With Notes  │
+                      └──────────────┘     └──────────────┘
+2.2 Approval Workflow
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ DESIGNER     │     │  REVIEWER    │     │  FINAL       │
+│ Upload v1    │────▶│  Comments    │────▶│  APPROVAL    │
+└──────────────┘     └──────────────┘     └──────────────┘
+                            │                    │
+                            ▼                    ▼
+                      ┌──────────────┐     ┌──────────────┐
+                      │  v2+v3...    │     │  ARCHIVE     │
+                      │  Iterations  │     │  + Archive   │
+                      └──────────────┘     └──────────────┘
+
+3. DATABASE SCHEMA (CHI TIẾT)
+3.1 ER Diagram
+┌────────────────┐       ┌──────────────┐       ┌──────────────┐
+│  PROJECTS      │───────│  DESIGN_TASKS│───────│  TASK_FILES  │
+│                │  N:1  │              │  1:N  │              │
+│ id             │       │ id           │       │ taskId       │
+│ name           │       │ projectId    │       │ version      │
+│ department     │       │ type         │       │ fileUrl      │
+│ budget         │       │ priority     │       │ thumbnailUrl │
+│ startDate      │       │ status       │       │ metadata     │
+│ endDate        │       │ assigneeId   │       │              │
+└────────────────┘       │ reviewerId   │       ┌──────────────┘
+                         │ estimatedHrs │       
+                         └──────────────┘       
+                                 │              
+                                 │ 1:N          
+                                 ▼              
+                         ┌──────────────┐       
+                         │ REVISIONS    │       
+                         │              │       
+                         │ taskId       │       
+                         │ version      │       
+                         │ changesNote  │       
+                         │ approvedBy   │       
+                         │ status       │       
+                         └──────────────┘      
+3.2 SQL DDL Statements
+-- PROJECTS TABLE
+CREATE TABLE projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(150) NOT NULL,
+  description TEXT,
+  client VARCHAR(100),
+  department VARCHAR(50), -- Ecommerce, Marketing, Retail, Internal
+  category VARCHAR(50), -- KV, Social Post, Banner, Packaging, etc.
+  budget DECIMAL(10,2),
+  actualCost DECIMAL(10,2) DEFAULT 0,
+  startDate DATE NOT NULL,
+  endDate DATE NOT NULL,
+  priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
+  status VARCHAR(20) DEFAULT 'planning' CHECK (status IN ('planning','active','on_hold','completed','cancelled')),
+  ownerId UUID REFERENCES users(id),
+  createdAt TIMESTAMP DEFAULT NOW(),
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX idx_projects_priority ON projects(priority);
+CREATE INDEX idx_projects_department ON projects(department);
+
+-- DESIGN TASKS TABLE
+CREATE TABLE design_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  taskId UUID REFERENCES tasks(id) ON DELETE CASCADE, -- Links to main task system
+  projectId UUID NOT NULL REFERENCES projects(id),
+  title VARCHAR(200) NOT NULL,
+  brief TEXT, -- Original request brief
+  requirements JSONB DEFAULT '[]', -- List of deliverables
+  specifications JSONB DEFAULT '{}', -- Size, format, brand guidelines
+  deliverables JSONB DEFAULT '[]', -- Expected final files
+  
+  -- Assignment
+  designerId UUID REFERENCES users(id),
+  reviewerId UUID REFERENCES users(id),
+  stakeholderId UUID REFERENCES users(id), -- Who requested
+  
+  -- Tracking
+  status VARCHAR(30) DEFAULT 'requested' CHECK (status IN (
+    'requested', 'draft', 'in_progress', 'ready_for_review', 
+    'revision_needed', 'approved', 'delivered', 'rejected'
+  )),
+  priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
+  
+  -- Timing
+  estimatedHours DECIMAL(4,2),
+  actualHours DECIMAL(4,2),
+  dueDate TIMESTAMP NOT NULL,
+  startedAt TIMESTAMP,
+  submittedForReviewAt TIMESTAMP,
+  approvedAt TIMESTAMP,
+  deliveredAt TIMESTAMP,
+  
+  -- Metrics
+  revisionCount INTEGER DEFAULT 0,
+  approvalRound INTEGER DEFAULT 1,
+  isUrgent BOOLEAN DEFAULT FALSE,
+  
+  -- Metadata
+  tags VARCHAR(50)[],
+  createdAt TIMESTAMP DEFAULT NOW(),
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_design_tasks_project ON design_tasks(projectId);
+CREATE INDEX idx_design_tasks_designer ON design_tasks(designerId);
+CREATE INDEX idx_design_tasks_status ON design_tasks(status);
+CREATE INDEX idx_design_tasks_due_date ON design_tasks(dueDate);
+
+-- REVISIONS TABLE (VERSION TRACKING)
+CREATE TABLE revisions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  taskId UUID NOT NULL REFERENCES design_tasks(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL, -- v1, v2, v3...
+  title VARCHAR(200),
+  description TEXT, -- What changed in this version
+  
+  -- Files
+  previewUrl TEXT NOT NULL, -- Web preview (webp/jpg)
+  downloadUrl TEXT NOT NULL, -- Original file (PSD,AI,FIG)
+  fileSize INTEGER NOT NULL, -- Bytes
+  mimeType VARCHAR(100),
+  metadata JSONB DEFAULT '{}', -- Dimensions, layers, etc.
+  
+  -- Workflow
+  createdById UUID NOT NULL REFERENCES users(id),
+  status VARCHAR(20) DEFAULT 'submitted' CHECK (status IN ('submitted','reviewed','approved','rejected')),
+  feedback TEXT, -- Reviewer comments
+  approvedById UUID REFERENCES users(id),
+  rejectedReason TEXT,
+  
+  -- Timestamps
+  createdAt TIMESTAMP DEFAULT NOW(),
+  reviewedAt TIMESTAMP,
+  
+  UNIQUE(taskId, version)
+);
+
+CREATE INDEX idx_revisions_task ON revisions(taskId);
+CREATE INDEX idx_reversions_version ON revisions(taskId, version DESC);
+
+-- DESIGN ASSETS LIBRARY
+CREATE TABLE design_assets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  category VARCHAR(50), -- Templates, Logos, Icons, Fonts, Colors
+  subcategory VARCHAR(50),
+  fileType VARCHAR(20), -- PSD, AI, FIGMA, SVG, PNG, PDF
+  fileUrl TEXT NOT NULL,
+  thumbnailUrl TEXT,
+  
+  -- Brand metadata
+  brandId UUID REFERENCES brands(id),
+  tags VARCHAR(50)[],
+  usageRights VARCHAR(50), -- Internal, Commercial, Licensed
+  lastUpdated TIMESTAMP,
+  uploadedBy UUID REFERENCES users(id),
+  downloadCount INTEGER DEFAULT 0,
+  
+  createdAt TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_assets_category ON design_assets(category);
+CREATE INDEX idx_assets_tags ON design_assets USING GIN(tags);
+
+-- BRAND GUIDELINES
+CREATE TABLE brand_guidelines (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  brandName VARCHAR(100) NOT NULL,
+  version VARCHAR(20),
+  logoVariations JSONB DEFAULT '[]',
+  colorPalette JSONB DEFAULT '[]', -- {name, hex, usage}
+  typography JSONB DEFAULT '[]', -- Fonts, sizes, hierarchy
+  templates JSONB DEFAULT '[]', -- Downloadable templates
+  doAndDonots JSONB DEFAULT '{}',
+  pdfUrl TEXT,
+  isActive BOOLEAN DEFAULT TRUE,
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+
+-- COMMENTS ON DESIGNS (PINNED ANNOTATIONS)
+CREATE TABLE design_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  revisionId UUID NOT NULL REFERENCES revisions(id) ON DELETE CASCADE,
+  userId UUID NOT NULL REFERENCES users(id),
+  xCoordinate INTEGER NOT NULL, -- Position on image
+  yCoordinate INTEGER NOT NULL,
+  width INTEGER, -- Bubble size
+  height INTEGER,
+  content TEXT NOT NULL,
+  resolved BOOLEAN DEFAULT FALSE,
+  resolvedById UUID REFERENCES users(id),
+  resolvedAt TIMESTAMP,
+  parentId UUID REFERENCES design_comments(id), -- For replies
+  createdAt TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_comments_revision ON design_comments(revisionId);
+CREATE INDEX idx_comments_resolved ON design_comments(resolved);
+
+4. API SPECIFICATIONS
+4.1 Project Endpoints
+# 1. LIST PROJECTS (PORTFOLIO VIEW)
+GET /api/design/projects?page=1&limit=25&status=active&department=ecommerce&search=campaign
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Campaign Tháng 9",
+      "department": "Marketing",
+      "category": "KV",
+      "progress": 65,
+      "budgetUsed": 8000,
+      "budgetTotal": 12000,
+      "startDate": "2026-09-01",
+      "endDate": "2026-10-15",
+      "owner": { "id": "uuid", "name": "Admin", "avatar": "url" },
+      "stats": {
+        "totalTasks": 12,
+        "completed": 8,
+        "inProgress": 3,
+        "pending": 1
+      },
+      "team": [
+        { "id": "uuid", "name": "Wendy", "role": "Lead" },
+        { "id": "uuid", "name": "Luna", "role": "Designer" }
+      ]
+    }
+  ],
+  "meta": {
+    "total": 24,
+    "page": 1,
+    "limit": 25,
+    "totalPages": 1
+  }
+}
+
+# 2. CREATE PROJECT
+POST /api/design/projects
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "name": "Brand Redesign 2027",
+  "description": "Complete visual identity overhaul",
+  "client": "Internal",
+  "department": "Ecommerce",
+  "category": "Brand Guidelines",
+  "budget": 50000,
+  "startDate": "2026-10-01",
+  "endDate": "2027-03-31",
+  "priority": "high",
+  "ownerId": "uuid",
+  "teamMemberIds": ["uuid1", "uuid2"]
+}
+Response: 201 Created
+
+# 3. GET PROJECT DETAIL
+GET /api/design/projects/:id?include=tasks,revisions,team
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+
+# 4. UPDATE PROJECT
+PUT /api/design/projects/:id
+Body: {
+  "status": "completed",
+  "endDate": "2026-12-31",
+  "actualCost": 48500
+}
+
+# 5. DELETE PROJECT
+DELETE /api/design/projects/:id
+Body: {
+  "softDelete": true,
+  "archiveData": true
+}
+4.2 Design Task Endpoints
+# 1. CREATE DESIGN REQUEST
+POST /api/design/tasks
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "projectId": "uuid",
+  "title": "Social Media Post - National Day",
+  "brief": "Create FB post for 2/9 celebration",
+  "requirements": [
+    "Facebook cover (820x312px)",
+    "Instagram square (1080x1080px)",
+    "Story (1080x1920px)"
+  ],
+  "specifications": {
+    "brandGuideline": "K Coffee 2026",
+    "fileFormats": ["PNG", "JPEG"],
+    "colorMode": "RGB"
+  },
+  "designerId": "uuid", -- Optional, auto-assign by queue
+  "dueDate": "2026-10-05T17:00:00Z",
+  "estimatedHours": 4,
+  "priority": "high",
+  "attachments": ["file1.pdf", "reference.jpg"]
+}
+Response: 201 Created
+
+# 2. LIST DESIGN TASKS (FILTERABLE)
+GET /api/design/tasks?projectId=&designerId=&status=in_progress,pending_review&priority=urgent&search=banner
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+
+# 3. ASSIGN TASK TO DESIGNER
+PUT /api/design/tasks/:id/assign
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "designerId": "uuid",
+  "notifyUser": true
+}
+Response: 200 OK
+
+# 4. UPDATE TASK STATUS
+PATCH /api/design/tasks/:id/status
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "status": "ready_for_review",
+  "note": "First draft ready, awaiting feedback"
+}
+Response: 200 OK
+
+# 5. GET TASK DETAIL WITH REVISIONS
+GET /api/design/tasks/:id?include=revisions,comments,files
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Social Media Post - National Day",
+    "status": "ready_for_review",
+    "currentVersion": 3,
+    "revisions": [
+      {
+        "version": 3,
+        "previewUrl": "https://cdn.kcoffee.com/prev/...",
+        "downloadUrl": "https://cdn.kcoffee.com/dl/...",
+        "createdBy": "Wendy",
+        "createdAt": "2026-10-02T14:30:00Z",
+        "feedback": "Approved with minor changes",
+        "status": "submitted"
+      }
+    ],
+    "comments": [...],
+    "timeline": [
+      { "action": "created", "by": "Admin", "at": "2026-09-28" },
+      { "action": "assigned", "to": "Wendy", "at": "2026-09-28" },
+      { "action": "started", "at": "2026-09-29" },
+      { "action": "submitted_v1", "at": "2026-09-30" },
+      { "action": "revision_requested", "comment": "Logo too small", "at": "2026-10-01" },
+      { "action": "submitted_v2", "at": "2026-10-01" },
+      { "action": "submitted_v3", "at": "2026-10-02" }
+    ]
+  }
+}
+
+# 6. SUBMIT REVISION
+POST /api/design/tasks/:id/revisions
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "version": 4,
+  "title": "Fixed logo size + adjusted colors",
+  "changesDescription": "Increased logo to 15%, moved text down",
+  "files": [
+    {
+      "name": "national_day_v4.psd",
+      "url": "https://upload.kcoffee.com/...",
+      "size": 45678912,
+      "thumbnail": "https://thumb.kcoffee.com/..."
+    }
+  ]
+}
+Response: 201 Created
+
+# 7. REVIEW & APPROVE/REJECT
+POST /api/design/tasks/:id/review
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "action": "approve" | "reject" | "request_changes",
+  "feedback": "Looks great! Approved.",
+  "commentIds": ["uuid1", "uuid2"], -- Resolved comments
+  "nextVersionRequired": true -- If reject, need v5
+}
+Response: 200 OK
+
+# 8. ADD PINNED COMMENT (ANNOTATION)
+POST /api/design/comments
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "revisionId": "uuid",
+  "xCoordinate": 250,
+  "yCoordinate": 180,
+  "content": "Please adjust the red to match brand guidelines (#E63946)",
+  "parentId": null -- Or parent comment ID for reply
+}
+Response: 201 Created
+
+# 9. RESOLVE COMMENT
+PATCH /api/design/comments/:id/resolve
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+
+# 10. DOWNLOAD FILES
+GET /api/design/tasks/:id/download/:version
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK (file stream)
+4.3 Designer Capacity Endpoints
+# 1. GET DESIGNER WORKLOAD
+GET /api/design/workload?week=40&year=2026
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+{
+  "success": true,
+  "data": [
+    {
+      "designerId": "uuid",
+      "name": "Wendy",
+      "capacity": 40, -- hours/week
+      "allocated": 28, -- hours booked
+      "available": 12,
+      "percentage": 70,
+      "status": "available", -- available, balanced, overloaded
+      "tasks": [
+        {
+          "taskId": "uuid",
+          "title": "KV Campaign",
+          "estimatedHours": 8,
+          "dueDate": "2026-10-05"
+        }
+      ]
+    }
+  ]
+}
+
+# 2. REASSIGN TASK
+PATCH /api/design/tasks/:id/reassign
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "fromDesignerId": "uuid1",
+  "toDesignerId": "uuid2",
+  "reason": "Overloaded, redistributing workload",
+  "notifyBoth": true
+}
+Response: 200 OK
+
+# 3. SET DESIGNER AVAILABILITY
+PUT /api/design/designers/:id/availability
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "weeklyCapacity": 35,
+  "unavailableDates": ["2026-10-14", "2026-10-15"],
+  "skills": ["Illustration", "Photo Manipulation", "UI Design"]
+}
+Response: 200 OK
+
+# 4. FORECAST CAPACITY
+GET /api/design/workload/forecast?weeks=4
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "week40": { "totalAllocated": 140, "totalCapacity": 160, "utilization": "87%" },
+    "week41": { "totalAllocated": 155, "totalCapacity": 160, "utilization": "97%" },
+    "week42": { "totalAllocated": 175, "totalCapacity": 160, "utilization": "109%", "warning": "Overloaded" }
+  }
+}
+4.4 Asset Library Endpoints
+# 1. SEARCH ASSETS
+GET /api/design/assets?search=logo&category=templates&tag=vietnamese
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+
+# 2. DOWNLOAD ASSET
+GET /api/design/assets/:id/download
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK (increments downloadCount)
+
+# 3. UPLOAD ASSET
+POST /api/design/assets/upload
+Headers: { Authorization: "Bearer ..." }
+Body: {
+  "name": "KV Template 2026",
+  "category": "Templates",
+  "subcategory": "Campaign",
+  "fileType": "PSD",
+  "file": Binary,
+  "tags": ["campaign", "kv", "template"],
+  "usageRights": "internal",
+  "brandId": "uuid"
+}
+Response: 201 Created
+
+# 5. GET BRAND GUIDELINES
+GET /api/design/brands/:id/guidelines
+Headers: { Authorization: "Bearer ..." }
+Response: 200 OK
+{
+  "success": true,
+  "data": {
+    "brandName": "K Coffee Vietnam",
+    "logoVariations": [
+      { "type": "primary", "url": "logo_primary.png", "backgroundColor": "white" },
+      { "type": "inverse", "url": "logo_inverse.png", "backgroundColor": "black" }
+    ],
+    "colorPalette": [
+      { "name": "Primary Red", "hex": "#E63946", "usage": "Main brand color" },
+      { "name": "Secondary Gold", "hex": "#F4A261", "usage": "Accents" }
+    ],
+    "typography": [
+      { "fontFamily": "Helvetica Neue", "weights": [400, 500, 700], "usage": "Headlines" },
+      { "fontFamily": "Roboto", "weights": [300, 400, 500], "usage": "Body text" }
+    ],
+    "pdfUrl": "https://cdn.kcoffee.com/brand-guidelines-2026.pdf"
+  }
+}
+
+5. FRONTEND COMPONENT SPECIFICATIONS
+5.1 Project Portfolio View
+// ProjectPortfolioPage.jsx
+Component: ProjectPortfolioPage
+State:
+  - projects: Project[]
+  - filters: { status, department, priority, search }
+  - viewMode: 'grid' | 'list' | 'kanban'
+  - isLoading: boolean
+
+Required Child Components:
+  - FilterBar (search, dropdowns)
+  - ProjectCardGrid (visual cards)
+  - ProjectListView (table layout)
+  - ProjectKanbanBoard (status columns)
+  - CreateProjectModal
+
+ProjectCard Props:
+interface ProjectCardProps {
+  project: Project;
+  onClick: () => void;
+  onSelect?: () => void; // For bulk actions
+}
+Project Card Design
++-----------------------------------------------+
+|  🎨 ECOMMERCE WEBSITE                 [•••]   |
+|                                               |
+|  ████████░░░░░░ 80%                          |
+|                                               |
+|  👥 Wendy, Luna, Mike                        |
+|  📅 Oct 1 - Dec 31                          |
+|  💰 $12,450 / $15,000                       |
+|                                               |
+|  🔴 2 overdue tasks                          |
+|  📊 24 total tasks                           |
++-----------------------------------------------+
+
+// Hover state: Show quick actions
+[👁️ Preview] [✏️ Edit] [➕ Add Task]
+5.2 Design Task Grid (Visual Board)
+// DesignTaskGrid.jsx
+Component: DesignTaskGrid
+Props:
+  - tasks: DesignTask[]
+  - onView: (taskId) => void
+  - onStatusChange: (taskId, status) => void
+
+Grid Layout:
++------------------+------------------+------------------+
+|  🖼️ PREVIEW IMG  |  🖼️ PREVIEW IMG  |  🖼️ PREVIEW IMG  |
+|                  |                  |                  |
+|  KV Món Mới      |  Social Post     |  Landing Page    |
+|                  |                  |                  |
+|  ██████░░░░ 60% |  ██████████ 100% |  ████░░░░░░ 40% |
+|                  |                  |                  |
+|  🟡 Wendy        |  ✅ Luna         |  🟡 Louis        |
+|  📅 Due: 5/10    |  ✅ Approved     |  📅 Due: 8/10    |
+|  🔁 Rev: 2/3     |  📁 v4 final     |  ⏳ Pending      |
++------------------+------------------+------------------+
+
+// Progress bar logic
+progress = (completedTasks / totalTasks) * 100
+if (overdue) → red border
+if (revision > 3) → warning badge
+5.3 Task Detail Slide-over (Full Screen Panel)
+// TaskDetailPanel.jsx
++----------------------------------------------------------+
+|  #TK001 - Social Media Post - National Day       [✕]     |
++----------------------------------------------------------+
+|                                                          |
+|  STATUS:  🟡 Ready for Review                            |
+|  PRIORITY: 🔴 High                                       |
+|  DESIGNER: 👤 Wendy (Graphics Team)                      |
+|  DEADLINE: 5/10/2026 (2 days remaining) ⚠️               |
+|  REVISIONS: v4 of 5 rounds                               |
+|                                                          |
+|  BRIEF:                                                  |
+|  Create Facebook cover post celebrating National Day     |
+|  with K Coffee branding. Needs 3 variants.               |
+|                                                          |
+|  REQUIREMENTS:                                          |
+|  □ Facebook cover (820x312px)                           |
+│  ✓ Instagram square (1080x1080px)                      |
+│  ✓ Story (1080x1920px)                                |
+│                                                          |
+|  CURRENT VERSION (v4):                                  |
+│  ┌──────────────────────────────────────────────┐       |
+│  │                                              │       |
+│  │         [PREVIEW IMAGE - WEBP FORMAT]        │       |
+│  │                                              │       |
+│  └──────────────────────────────────────────────┘       |
+│  Uploaded: Oct 2, 2:30 PM | By Wendy                    |
+│  [💬 Add Comment] [👁️ Fullscreen] [⬇️ Download]        |
+|                                                          |
+|  TIMELINE:                                             |
+|  • v4 submitted - Oct 2, 2:30 PM                      |
+│  • v3 approved with notes - Oct 1, 5:15 PM           |
+|  • v3 rejected (color mismatch) - Oct 1, 10:00 AM     |
+│  • v2 submitted - Sep 30, 3:00 PM                  |
+|  • v1 submitted - Sep 29, 10:00 AM                |
+│  • Task assigned to Wendy - Sep 28              |
+│                                                          |
+|  PINNED COMMENTS (3):                                   |
+│  ┌─ 🔴 Logo too small, increase to 15% (Admin)      │   |
+│  └─ ✅ Resolved - increased in v2                   │   |
+│  ┌─ 🟡 Red color doesn't match brand (#E63946)     │   |
+│  └─ Pending                                         │   |
+│  ┌─ ✓ Great progress! Approve after color fix     │   |
+│  └─ Pending (Luna, Manager)                       │   |
+|                                                          |
++----------------------------------------------------------+
+|  [← Previous v3]   [Submit v5]   [✓ Approve]   [✗ Reject]|
++----------------------------------------------------------+
+5.4 Revision Comparison View
+// RevisionComparison.jsx
++----------------------------------------------------------+
+|  VERSION COMPARISON                            [Close]   |
++----------------------------------------------------------+
+|                                                          |
+|  v4 (Current)                         v3 (Previous)     |
+|  ┌────────────────┐                  ┌────────────────┐ |
+│  │                │                  │                │ |
+│  │   PREVIEW 4    │   ←→   ↔   →     │   PREVIEW 3    │ |
+│  │                │                  │                │ |
+│  └────────────────┘                  └────────────────┘ |
+|                                                          |
+|  Changes made in v4:                                    |
+|  • Increased logo size from 10% to 15%                 |
+│  • Adjusted red color to #E63946                     |
+|  • Moved tagline down 20px                           |
+│                                                          |
+|  [Compare Side-by-Side] [Toggle Overlay] [Play Animation]│
++----------------------------------------------------------+
+5.5 Designer Capacity Dashboard
+// DesignerCapacityDashboard.jsx
++----------------------------------------------------------+
+|  DESIGNER CAPACITY                       Week 40 (Oct 1) |
++----------------------------------------------------------+
+|                                                          |
+|  OVERALL: ████████████░░ 87% utilized                    |
+|                                                          |
+|  Wendy    ████░░░░░░ 40% (4h available) 🟢              |
+|  Luna     ████████░░ 80% (1.5h available) 🟡             |
+|  Louis    █████░░░░░ 50% (4h available) 🟢              |
+|  Mike     ██████████ 100% (0h available) 🔴 OVERLOADED  |
+|                                                          |
+|  DRAG TASKS TO REASSIGN:                                |
+|  Click task → Select new designer → Confirm             |
+|                                                          |
+|  UPCOMING DEADLINES:                                   |
+|  ┌──────────────────────────────────────────────┐       |
+|  │ Oct 5: KV Món Mới (Mike - 8h)               │       |
+|  │ Oct 7: Landing Page (Louis - 12h)           │       |
+|  │ Oct 10: Social Pack (Wendy - 6h)            │       |
+│  └──────────────────────────────────────────────┘       |
++----------------------------------------------------------+
+5.6 Asset Library (Grid + Search)
+// AssetLibraryPage.jsx
++----------------------------------------------------------+
+|  ASSET LIBRARY                            [+ Upload]      |
++----------------------------------------------------------+
+|  [Search assets...]  [Category ▼] [Tag ▼] [Format ▼]     |
++----------------------------------------------------------+
+|                                                          |
+|  📂 TEMPLATES                                            |
+|  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      |
+│  │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │      |
+│  │ KV 2026 │  │ Social  │  │ Banner  │  │ Story   │      |
+│  │ PSD     │  │ Post    │  │ HD      │  │ Frame   │      |
+│  │ 124 uses│  │ 89 uses │  │ 56 uses │  │ 43 uses │      |
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘      |
+|                                                          |
+|  🎨 BRAND COLORS                                       |
+|  Primary Red: #E63946  Secondary Gold: #F4A261          |
+|                                                          |
++----------------------------------------------------------+
+
+6. BUSINESS LOGIC & VALIDATIONS
+6.1 Revision State Machine
+// Revision lifecycle
+const revisionStates = {
+  submitted: {
+    nextAllowed: ['reviewed', 'approved', 'rejected'],
+    triggers: ['designer uploads file']
+  },
+  reviewed: {
+    nextAllowed: ['approved', 'rejected'],
+    triggers: ['reviewer gives feedback']
+  },
+  approved: {
+    nextAllowed: ['final_approved'],
+    triggers: ['manager approves']
+  },
+  rejected: {
+    nextAllowed: ['submitted'], // Need new version
+    triggers: ['designer submits v(n+1)']
+  }
+};
+
+// Max revision rule
+const MAX_REVISIONS = 5;
+function checkRevisionLimit(currentVersion) {
+  if (currentVersion >= MAX_REVISIONS) {
+    return {
+      allowed: false,
+      message: `Maximum ${MAX_REVISIONS} revisions reached. Escalate to manager.`
+    };
+  }
+  return { allowed: true };
+}
+6.2 Auto-Assignment Algorithm
+// Assign task to least loaded designer
+function autoAssignDesigner(projectId, requiredSkills) {
+  const designers = await getDesignersByProject(projectId);
+  
+  const availabilityScores = await Promise.all(
+    designers.map(async (designer) => {
+      const workload = await getDesignerWorkload(designer.id);
+      const skillMatch = calculateSkillMatch(designer.skills, requiredSkills);
+      
+      return {
+        designer,
+        score: {
+          availability: (workload.availableHours / workload.capacity) * 0.7,
+          skillMatch: skillMatch * 0.3
+        },
+        totalScore: ((workload.availableHours / workload.capacity) * 0.7) + (skillMatch * 0.3)
+      };
+    })
+  );
+  
+  // Sort by total score descending
+  availabilityScores.sort((a, b) => b.totalScore - a.totalScore);
+  
+  return availabilityScores[0].designer;
+}
+6.3 Deadline Alert Logic
+// Calculate urgency and send alerts
+function checkTaskDeadlines() {
+  const today = new Date();
+  
+  tasks.forEach(task => {
+    const daysRemaining = Math.ceil((task.dueDate - today) / (1000 * 60 * 60 * 24));
+    
+    if (task.status === 'in_progress' && daysRemaining <= 2) {
+      // Send urgent alert
+      sendNotification({
+        type: 'deadline_urgent',
+        to: [task.designerId, task.reviewerId],
+        message: `Task "${task.title}" due in ${daysRemaining} days`,
+        priority: 'high'
+      });
+    }
+    
+    if (task.status === 'in_progress' && daysRemaining <= 0) {
+      // Already overdue
+      task.isUrgent = true;
+      notifyManager(task.id, 'Task overdue - escalation needed');
+    }
+    
+    if (task.revisionCount >= 3 && daysRemaining <= 3) {
+      // High revision count with tight deadline
+      warnAboutQualityRisk(task.id);
+    }
+  });
+}
+
+// Run cron job every hour
+scheduleCron('0 * * * *', checkTaskDeadlines);
+
+7. UI/UX REQUIREMENTS
+7.1 Design System Tokens
+:root {
+  /* Status Colors for Design Workflow */
+  --status-requested: #6B7280;
+  --status-draft: #9CA3AF;
+  --status-in-progress: #3B82F6;
+  --status-for-review: #F59E0B;
+  --status-approved: #10B981;
+  --status-rejected: #EF4444;
+  --status-delivered: #059669;
+  
+  /* Priority Indicators */
+  --priority-low: #10B981;
+  --priority-medium: #F59E0B;
+  --priority-high: #EF4444;
+  --priority-urgent: #DC2626;
+  
+  /* Revision Badges */
+  --revision-good: #D1FAE5; /* <3 rounds */
+  --revision-warning: #FEF3C7; /* 3-4 rounds */
+  --revision-danger: #FEE2E2; /* >4 rounds */
+  
+  /* File Type Icons */
+  --file-psd: #31A8FF;
+  --file-ai: #CF95F9;
+  --file-figma: #F24E1E;
+  --file-pdf: #FF0000;
+}
+7.2 Loading States & Animations
+// Skeleton for visual cards
+const DesignCardSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="bg-gray-200 h-48 rounded-lg mb-3"></div>
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="flex justify-between mt-2">
+      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+    </div>
+  </div>
+);
+
+// Image lazy loading with blur placeholder
+const PreviewImage = ({ src, alt }) => {
+  const [loaded, setLoaded] = useState(false);
+  
+  return (
+    <div className="relative">
+      {!loaded && (
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer" />
+      )}
+      <img 
+        src={src} 
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        className={`transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </div>
+  );
+};
+7.3 Accessibility Requirements
+// All interactive elements must have:
+const accessibleComponents = {
+  card: {
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': 'View task details for {taskTitle}',
+    onKeyDown: (e) => { if (e.key === 'Enter') openDetails() }
+  },
+  
+  previewImage: {
+    role: 'img',
+    'aria-labelledby': 'task-title-{id}'
+  },
+  
+  pinnedComment: {
+    role: 'button',
+    'aria-label': 'Comment about design annotation at position {x},{y}',
+    'aria-expanded': isOpen
+  }
+};
+
+// Keyboard navigation
+const keyboardShortcuts = {
+  Escape: 'close-panel',
+  ArrowRight: 'next-task',
+  ArrowLeft: 'previous-task',
+  Enter: 'open-details',
+  KeyC: 'copy-link',
+  KeyD: 'download-file'
+};
+
+8. FILE HANDLING & STORAGE
+8.1 Supported Formats
+const supportedFormats = {
+  preview: ['JPG', 'JPEG', 'WEBP', 'PNG', 'GIF'],
+  source: ['PSD', 'AI', 'FIG', 'SKETCH', 'XD', 'PDF'],
+  export: ['PNG', 'JPG', 'SVG', 'PDF', 'MP4']
+};
+
+// Auto-generate web preview from source
+async function generatePreview(sourceFile) {
+  const ext = getFileExtension(sourceFile.name);
+  
+  if (supportedFormats.source.includes(ext)) {
+    // Use ImageMagick/GraphicsMagick for raster
+    // Use Sharp for conversion to WebP
+    const previewBuffer = await sharp(sourceFile.buffer)
+      .resize(800, 600, { fit: 'inside' })
+      .webp({ quality: 80 })
+      .toBuffer();
+    
+    return {
+      previewUrl: `https://cdn.kcoffee.com/previews/${uuid}.webp`,
+      thumbnailUrl: `https://cdn.kcoffee.com/thumbs/${uuid}.jpg`
+    };
+  }
+}
+8.2 Storage Structure
+kcoffee-design-storage/
+├── projects/
+│   ├── {projectId}/
+│   │   ├── briefs/
+│   │   ├── deliveries/
+│   │   └── references/
+├── tasks/
+│   └── {taskId}/
+│       ├── v1/
+│       │   ├── preview.webp
+│       │   └── source.psd
+│       ├── v2/
+│       ├── v3/
+│       └── final/
+├── assets/
+│   ├── templates/
+│   ├── brand-assets/
+│   └── shared/
+└── thumbnails/
+    └── {taskId}_{version}.jpg
+8.3 CDN Configuration
+// Cloudfront distribution
+const cdnConfig = {
+  previewUrl: 'https://preview.kcoffee.com',
+  downloadUrl: 'https://dl.kcoffee.com',
+  thumbUrl: 'https://thumb.kcoffee.com',
+  
+  // Signed URLs for protected content
+  signatureExpiration: 3600, // 1 hour
+  
+  // Compression
+  autoCompress: true,
+  targetSize: {
+    preview: '< 1MB',
+    thumbnail: '< 200KB'
+  }
+};
+
+9. TESTING STRATEGY
+9.1 Unit Tests
+// __tests__/designWorkflow.test.js
+describe('Design Workflow', () => {
+  it('should track revisions correctly', async () => {
+    const task = await createDesignTask({ designerId: 'u1' });
+    
+    const v1 = await submitRevision(task.id, 1);
+    expect(v1.version).toBe(1);
+    
+    const v2 = await submitRevision(task.id, 2);
+    expect(v2.version).toBe(2);
+    expect(v1.status).toBe('superseded');
+  });
+  
+  it('should enforce max revision limit', async () => {
+    const task = await createDesignTask({ designerId: 'u1' });
+    
+    for (let i = 1; i <= 5; i++) {
+      await submitRevision(task.id, i);
+    }
+    
+    await expect(submitRevision(task.id, 6)).rejects.toThrow(
+      'Maximum revisions reached'
+    );
+  });
+  
+  it('should approve task after final submission', async () => {
+    const task = await createDesignTask({ reviewerId: 'u2' });
+    
+    await submitRevision(task.id, 1);
+    await review(task.id, { action: 'approve' });
+    
+    const updated = await getTask(task.id);
+    expect(updated.status).toBe('approved');
+    expect(updated.approvedAt).toBeTruthy();
+  });
+});
+9.2 Integration Tests
+// __tests__/design-api.test.js
+describe('Design API', () => {
+  describe('POST /api/design/tasks/:id/revisions', () => {
+    it('should create new revision with file upload', async () => {
+      const response = await request(app)
+        .post('/api/design/tasks/task123/revisions')
+        .set('Authorization', `Bearer ${designerToken}`)
+        .attach('files', fs.createReadStream('./test.psd'))
+        .field('version', 3)
+        .field('changesDescription', 'Fixed logo size')
+        .expect(201);
+      
+      expect(response.body.data.version).toBe(3);
+      expect(response.body.data.previewUrl).toBeDefined();
+    });
+  });
+  
+  describe('GET /api/design/workload', () => {
+    it('should calculate accurate workload percentages', async () => {
+      const response = await request(app)
+        .get('/api/design/workload?week=40')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+      
+      const mike = response.body.data.find(d => d.name === 'Mike');
+      expect(mike.percentage).toBe(100);
+      expect(mike.status).toBe('overloaded');
+    });
+  });
+});
+9.3 E2E Tests (Playwright)
+// e2e/design-workflow.spec.js
+test.describe('Design Workflow E2E', () => {
+  test('complete design request to approval journey', async ({ page }) => {
+    // Login as stakeholder
+    await page.goto('/login');
+    await fillLoginForm('stakeholder@kcoffee.com', 'Password123!');
+    
+    // Create new design request
+    await page.click('[data-testid="new-design-request"]');
+    await page.fill('[name=title]', 'National Day Banner');
+    await page.fill('[name=brief]', 'FB cover for 2/9 celebration');
+    await page.selectOption('[name=priority]', 'high');
+    await page.click('[data-testid="submit-request"]');
+    
+    // Verify request created
+    await expect(page.locator('.toast-success')).toContainText(
+      'Request submitted successfully'
+    );
+    
+    // Switch to designer account
+    await logout();
+    await loginAs('wendy@kcoffee.com', 'Password123!');
+    
+    // Accept task and submit revision
+    await page.click('[data-testid="claim-task"]');
+    await page.click('[data-testid="submit-revision"]');
+    await page.setInputFiles('input[type=file]', './design_v1.psd');
+    await page.click('[data-testid="confirm-upload"]');
+    
+    // Verify revision appears
+    await expect(page.locator('.version-history')).toContainText('v1 Submitted');
+    
+    // Switch to reviewer account
+    await logout();
+    await loginAs('manager@kcoffee.com', 'Manager123!');
+    
+    // Review and approve
+    await page.goto(`/design/tasks/${taskId}/review`);
+    await page.fill('[name=feedback]', 'Approved! Looks great.');
+    await page.click('[data-testid="approve-btn"]');
+    
+    // Verify task status changed
+    await expect(page.locator('.task-status')).toContainText('✅ Approved');
+  });
+});
+
+10. DELIVERY TIMELINE
+Phase 1: Foundation (Week 1)
+Database Schema
+Day 1-2
+▲All tables + indexes
+API Endpoints
+Day 3-4
+▲Projects + Tasks CRUD
+File Upload
+Day 5-7
+▲Cloud storage + preview
+Phase 2: Core Features (Week 2-3)
+Revision Workflow
+Week 2
+▲Submit, review, approve
+Task Detail Panel
+Week 2
+▲Full slide-over UI
+Capacity Dashboard
+Week 3
+▲Designer workload view
+Pinned Comments
+Week 3
+▲Annotation system
+Phase 3: Enhancement (Week 4)
+Asset Library
+Week 4
+▲Templates + brand assets
+Brand Guidelines
+Week 4
+▲Color palette, fonts
+Performance Tuning
+Week 4
+▲Optimize image loading
+
+11. ACCEPTANCE CRITERIA
+Definition of Donecritical
+1) Designer can submit revision → reviewer receives notification → approval workflow complete, 2) Visual cards show correct thumbnail previews for all supported formats, 3) Revision history tracks all versions with rollback capability, 4) Designer capacity dashboard accurately reflects real-time workload, 5) Pinned comments display correctly on image previews, 6) API responds <500ms for 95% requests under load of 100 concurrent users
+Checklist Sign-off
+	•	File upload handles PSD, AI, FIG formats correctly
+	•	Web preview generated within 30 seconds of upload
+	•	Revision history preserves all previous versions
+	•	Approval workflow enforces proper state transitions
+	•	Designer workload calculations accurate (<5% variance)
+	•	Pinned comments coordinate correctly on responsive images
+	•	Email notifications sent for key events (assignment, review, approval)
+	•	Asset library search returns relevant results <2 seconds
+	•	Brand guidelines accessible without download
+	•	Load test passes: 50 concurrent designers uploading files simultaneously
+
+12. RISKS & MITIGATIONS
+Risk
+Likelihood
+Impact
+Mitigation
+Owner
+Large file uploads timeout
+Medium
+High
+Chunked uploads, background processing, progress polling
+DevOps
+Image preview fails for unsupported format
+Medium
+Medium
+Fallback to generic icon, alert admin, offer manual conversion
+Backend Lead
+Designer overwrites v(n+1) accidentally
+Low
+Critical
+Confirmation dialog, version backup, undo for 24h
+Frontend Lead
+Comment coordinates shift on resize
+Medium
+Medium
+Store relative percentages (%) not absolute pixels
+Frontend Lead
+CDN costs exceed budget
+Low
+Medium
+Implement aggressive caching, CDN origin shield
+DevOps
+
+Document Prepared By: Lumo AI Assistant Review Required By: Product Owner + Tech Lead + Design Lead Last Updated: 02 October 2026 Next Review: After Phase 1 completion (Week 1)
+
+Bạn cần tôi bổ sung thêm phần nào không? Ví dụ:
+	•	Wireframes chi tiết cho task detail panel?
+	•	Sample data cho testing workflow?
+	•	API documentation Swagger/OpenAPI spec?
+	•	Migration path từ current task system? 🐱
+6 files
+Wireframes
+Thought this through
+🎨 DESIGN TEAM DASHBOARD - WIREFREMES
+Tôi sẽ cung cấp wireframes chi tiết dưới dạng text-based diagrams + component specs để dev dễ implement.
+
+1. PROJECT PORTFOLIO VIEW (HOME)
+1.1 Full Page Layout
+┌────────────────────────────────────────────────────────────────────────────┐
+│  TOP BAR (64px height)                                                   │
+│  ┌─────────┐  Dashboards / Design Projects                     [Search..] │
+│  └─────────┘                                                       [EN][🌙] │
+│                                                                             │
+├────────────────────────────────────────────────────────────────────────────┤
+│  SIDEBAR (240px)                        MAIN CONTENT                         │
+│  ┌──────────────┐                       ┌──────────────────────────────┐   │
+│  │ MAIN         │                       │ DESIGN PROJECTS    [+ New]   │   │
+│  │ 🏠 Home      │                       ├──────────────────────────────┤   │
+│  │              │                       │                              │   │
+│  │ TASKS & PROJ │                       │ FILTERS:                     │   │
+│  │ ✏️ All Tasks │                       │ [Search..] [Status▼] [Dept▼]  │   │
+│  │ 📋 Kanban    │                       │                              │   │
+│  │ 👤 My Tasks  │                       │ ┌─────────┐  ┌─────────┐    │   │
+│  │ ⏰ Overdue   │                       │ │ PROJECT │  │ PROJECT │    │   │
+│  │              │                       │ │ CARD 1  │  │ CARD 2  │    │   │
+│  │ ASSETS       │                       │ │████80% │  │████40% │    │   │
+│  │ 📦 Inventory │                       │ │Wendy,Luna│ │Luna,Louis│  │   │
+│  │ 🔄 Borrow    │                       │ │Due:Dec │  │Due:Nov │    │   │
+│  │              │                       │ └─────────┘  └─────────┘    │   │
+│  │ TEAM & REPORT│                       │                              │   │
+│  │ 📊 Workload  │                       │ ┌─────────┐  ┌─────────┐    │   │
+│  │ 👥 Members   │                       │ │ PROJECT │  │ PROJECT │    │   │
+│  │ 📈 Reports   │                       │ │ CARD 3  │  │ CARD 4  │    │   │
+│  │              │                       │ │████60% │  │████90% │    │   │
+│  └──────────────┘                       │ │Mike,Lisa│  │Wendy    │    │   │
+│                                        │ │Due:Oct │  │Due:Sep │    │   │
+│                                        │ └─────────┘  └─────────┘    │   │
+│                                        │                              │   │
+│                                        │ PAGINATION: [< 1 2 3 >]     │   │
+│                                        └──────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
+1.2 Project Card Detail
+┌─────────────────────────────────────────┐
+│ ECOMMERCE WEBSITE REDISEIGN      [•••] │
+│                                         │
+│ ████████░░░░░░░░░░░ 80%               │
+│                                         │
+│ ┌───────────────────────────────────┐ │
+│ │ [THUMBNAIL PREVIEW - 400x250px]  │ │
+│ │                                 │ │
+│ │ Progress visualization          │ │
+│ │ with milestone dots             │ │
+│ └───────────────────────────────────┘ │
+│                                         │
+│ 👥 TEAM:                               │
+│  [Avatar] Wendy (Lead)                │
+│  [Avatar] Luna                        │
+│  [Avatar] Mike                        │
+│                                         │
+│ 📅 TIMELINE:                          │
+│  Oct 1, 2026 → Dec 31, 2026           │
+│                                         │
+│ 💰 BUDGET:                            │
+│  $12,450 / $15,000 (83%)             │
+│                                         │
+│ 📊 TASKS:                             │
+│  24 total | 18 done | 6 pending       │
+│                                         │
+│ ⚠️ ALERTS:                            │
+│  🔴 2 overdue tasks                   │
+│                                         │
+└─────────────────────────────────────────┘
+
+HOVER STATE:
++-----------------------------------------+
+| ECOMMERCE WEBSITE REDISEIGN      [•••] |
+|                                         |
+| ████████░░░░░░░░░░░ 80%               |
+|                                         |
+| [QUICK ACTIONS OVERLAY]:               |
+| [👁️ Preview] [✏️ Edit] [➕ Task]    |
++-----------------------------------------+
+
+2. DESIGN TASK GRID (VISUAL BOARD)
+2.1 Main View Layout
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ALL DESIGN TASKS                                    [+ New Request]        │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│ VIEW MODES: [📷 Grid] [📋 List] [📊 Board]                                │
+│                                                                          │
+│ FILTERS:                                                                │
+│ [Search tasks...]  [Status▼] [Designer▼] [Priority▼] [Due Date▼]          │
+│                                                                          │
+│ GRID LAYOUT (3 columns, responsive):                                    │
+│                                                                          │
+│ ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│ │ KV MÓN MỚI      │  │ SOCIAL POST     │  │ LANDING PAGE  │            │
+│ │                 │  │                 │  │                 │            │
+│ │ ┌─────────────┐ │  │ ┌─────────────┐ │  │ ┌─────────────┐ │            │
+│ │ │ 🖼️ PREV   │ │  │ │ 🖼️ PREV   │ │  │ │ 🖼️ PREV   │ │            │
+│ │ │           │ │  │ │  ✅ DONE   │ │  │ │           │ │            │
+│ │ └─────────────┘ │  │ └─────────────┘ │  │ └─────────────┘ │            │
+│ │                 │  │                 │  │                 │            │
+│ │ ██████░░░░ 60% │  │ ██████████ 100%│  │ ████░░░░░░ 40% │            │
+│ │                 │  │                 │  │                 │            │
+│ │ 🟡 Wendy        │  │ ✅ Luna         │  │ 🟡 Louis        │            │
+│ │ 📅 Due: 5/10    │  │ ✅ Approved     │  │ 📅 Due: 8/10    │            │
+│ │ 🔁 Rev: 2/3     │  │ 📁 v4 final     │  │ ⏳ Pending      │            │
+│ │                 │  │                 │  │                 │            │
+│ │ [👁️][✏️][⏭️]│  │ [👁️][✓][📥]│  │ [👁️][✏️][⏭️]│            │
+│ └─────────────────┘  └─────────────────┘  └─────────────────┘            │
+│                                                                          │
+│ ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│ │ BANNER HD       │  │ STORY FRAME     │  │ MENU BOARD    │            │
+│ │ [Preview img]   │  │ [Preview img]   │  │ [Preview img]   │            │
+│ │ █████░░░░░ 50%  │  │ ████░░░░░░ 40%  │  │ ████████░░ 80%  │            │
+│ │ 🟢 Louis        │  │ 🟡 Wendy        │  │ 🔴 Mike         │            │
+│ │ 📅 Due: 10/10   │  │ ⚠️ Overdue      │  │ ✅ Done         │            │
+│ │ 🔁 Rev: 1/3     │  │ 🔁 Rev: 4/5     │  │ 📁 v3 final     │            │
+│ │ [👁️][✏️][⏭️]│  │ [👁️][✏️][⏭️]│  │ [👁️][✓][📥]│            │
+│ └─────────────────┘  └─────────────────┘  └─────────────────┘            │
+│                                                                          │
+│ PAGINATION: Showing 1-18 of 142 tasks  [< 1 2 3 4 ... 8 >]                │
+│                                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+2.2 Task Card Hover States
+DEFAULT:
+┌─────────────────┐
+│ KV MÓN MỚI      │
+│                 │
+│ [Thumbnail]     │
+│                 │
+│ ██████░░░░ 60% │
+│ 🟡 Wendy        │
+│ 📅 Due: 5/10    │
+└─────────────────┘
+
+HOVER:
+┌─────────────────┐
+│ KV MÓN MỚI      │
+│                 │
+│ [Thumbnail]     │
+│                 │
+│ ██████░░░░ 60% │
+│ 🟡 Wendy        │
+│ 📅 Due: 5/10    │
+│                 │
+│ [👁️ Preview]   │
+│ [✏️ Edit]      │
+│ [💬 Comment]   │
+│ [⏭️ Reassign] │
+└─────────────────┘
+
+SELECTED (for bulk actions):
+┌═════════════════┐  ← Blue border
+║ KV MÓN MỚI      ║
+║                 ║
+║ [Thumbnail]     ║
+║                 ║
+║ ██████░░░░ 60% ║
+║ 🟡 Wendy        ║
+║ 📅 Due: 5/10    ║
+└═════════════════┘
+
+BULK ACTION BAR (appears when items selected):
+╔═══════════════════════════════════════════════════════════╗
+║ ✓ 3 items selected    [Delete] [Reassign] [Change Status]║
+╚═══════════════════════════════════════════════════════════╝
+
+3. TASK DETAIL PANEL (SLIDE-OVER)
+3.1 Full Slide-over Layout
+┌────────────────────────────────────────────────────────────────────┐
+│ ← Back         #TK001 - Social Media Post - National Day     [✕]  │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│ METRICS ROW:                                                     │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│ │ STATUS       │ │ PRIORITY     │ │ DEADLINE     │ │ REVISIONS  │ │
+│ │              │ │              │ │              │ │            │ │
+│ │ 🟡 Review    │ │ 🔴 High      │ │ 📅 5/10     │ │ 🔁 4/5    │ │
+│ │              │ │              │ │ (-2 days!)  │ │            │ │
+│ └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                   │
+│ ASSIGNEE SECTION:                                               │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ 👤 DESIGNER: Wendy (Graphics Team)           [Change]       │   │
+│ │    📧 wendy@kcoffee.com  📱 +84 90 123 4567                  │   │
+│ │                                                           │   │
+│ │ 👀 REVIEWER: Admin                         [Change]        │   │
+│ │    📧 admin@kcoffee.com                                  │   │
+│ │                                                           │   │
+│ │ 🙋 REQUESTED BY: Marketing Dept                          │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│ BRIEF SECTION:                                                   │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ ORIGINAL REQUEST:                                          │   │
+│ │ Create Facebook cover post celebrating National Day        │   │
+│ │ with K Coffee branding. Need 3 variants (red/gold/blue).   │   │
+│ │                                                           │   │
+│ │ REQUIREMENTS:                                            │   │
+│ │ ✅ Facebook cover (820x312px)                           │   │
+│ │ ✅ Instagram square (1080x1080px)                      │   │
+│ │ ☐ Story (1080x1920px)                                │   │
+│ │                                                           │   │
+│ │ BRAND GUIDELINES:                                      │   │
+│ │ • Use K Coffee primary red (#E63946)                 │   │
+│ │ • Logo min 15% width                                │   │
+│ │ • Helvetica Neue font family                       │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│ CURRENT VERSION PREVIEW:                                        │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │                    [FULL SCREEN PREVIEW]                   │   │
+│ │                    v4 - Latest Submission                  │   │
+│ │                                                            │   │
+│ │              [Zoom In] [Pan Mode] [Annotate]               │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│ VERSION INFO:                                                    │
+│ Uploaded: Oct 2, 2026 at 2:30 PM by Wendy                        │
+│ File: national_day_v4.psd (45.2 MB)                             │
+│ [📥 Download Original] [👁️ Compare with v3]                      │
+│                                                                   │
+│ CHANGES SINCE V3:                                                │
+│ • Increased logo size from 10% to 15%                          │   │
+│ • Adjusted red color to match brand (#E63946)                │   │
+│ • Moved tagline down 20px                                    │   │
+│ • Fixed spelling error in headline                            │   │
+│                                                                   │
+│ PINNED COMMENTS:                                                 │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ 💬 @Admin (Oct 1, 10:00 AM)                               │   │
+│ │    🔴 "Logo too small, increase to min 15%"              │   │
+│ │    ✅ RESOLVED - Fixed in v2                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ 💬 @Luna (Oct 2, 9:00 AM)                                │   │
+│ │    🟡 "Red still slightly off, compare with #E63946"      │   │
+│ │    ⏳ PENDING - Needs adjustment                        │   │
+│ │        [Reply] [Resolve]                                │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ 💬 @Manager (Oct 2, 11:00 AM)                            │   │
+│ │    ✅ "Great progress! Approve after color fix"          │   │
+│ │    ⏳ PENDING - Waiting for v5                          │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│ TIMELINE:                                                        │
+│ ─────────────────────────────────────────────────────────────     │
+│ Oct 2, 2:30 PM  • v4 submitted by Wendy                        │
+│ Oct 1, 5:15 PM  • v3 approved with notes by Luna              │
+│ Oct 1, 10:00 AM • v3 rejected (color mismatch)                │
+│ Sep 30, 3:00 PM • v2 submitted by Wendy                      │
+│ Sep 29, 10:00AM • v1 submitted by Wendy                     │
+│ Sep 28, 2:00 PM • Task assigned to Wendy                    │
+│ Sep 28, 10:00AM • Request created by Marketing             │
+│                                                                   │
+│ ATTACHMENTS:                                                     │
+│ 📄 brief_document.pdf (2.3 MB) [📥]                              │
+│ 📄 reference_images.zip (15.8 MB) [📥]                           │
+│ 📄 brand_logo.ai (1.2 MB) [📥]                                  │
+│                                                                   │
+├────────────────────────────────────────────────────────────────────┤
+│ FOOTER ACTIONS:                                                  │
+│                                                                  │
+│ [← Prev] [Submit v5]  [✓ APPROVE]  [✗ Reject]  [Share]            │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+3.2 Preview Canvas with Annotations
+┌────────────────────────────────────────────────────────────────────┐
+│ PREVIEW CANVAS (Responsive, zoomable)                            │
+│                                                                  │
+│  [Zoom: 50% ▼]  [Fit] [100%] [200%]  [Pan] [Annotate] [×]        │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │                  [IMAGE CONTENT AREA]                   │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │      ● Annotation Point 1 (red circle)                  │  │
+│  │      ↘                                                  │  │
+│  │         ┌──────────────────┐                           │  │
+│  │         │ 🔴 Logo small    │ ← Hover shows comment     │  │
+│  │         │ Increase to 15%  │                           │  │
+│  │         └──────────────────┘                           │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │                     ● Annotation Point 2               │  │
+│  │                     ↘                                   │  │
+│  │                        ┌──────────────┐               │  │
+│  │                        │ 🟡 Color off │               │  │
+│  │                        │ Check #E63946│               │  │
+│  │                        └──────────────┘               │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  SHORTCUTS:                                                      │
+│  Z = Zoom, P = Pan, A = Annotate, Esc = Exit                    │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+
+4. REVISION COMPARISON MODAL
+4.1 Side-by-Side View
+┌────────────────────────────────────────────────────────────────────┐
+│ VERSION COMPARISON: KV Món Mới                    [Close ✕]       │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ CONTROLS:                                                        │
+│ [◄ Prev]  v3 (Oct 1)  ↔  v4 (Current)  [Next ►]                    │
+│ [Side-by-Side] [Overlay Toggle] [Animate Transition] [Reset]     │
+│                                                                  │
+│ ┌──────────────────────────────┬──────────────────────────────┐  │
+│ │                              │                              │  │
+│ │                              │                              │  │
+│ │    v3 - REJECTED VERSION     │    v4 - CURRENT VERSION      │  │
+│ │                              │                              │  │
+│ │    [PREVIEW IMAGE]          │    [PREVIEW IMAGE]          │  │
+│ │                              │                              │  │
+│ │    🔴 3 issues marked        │    ✅ All fixed             │  │
+│ │                              │                              │  │
+│ │                              │                              │  │
+│ └──────────────────────────────┴──────────────────────────────┘  │
+│                                                                  │
+│ DIFF SUMMARY:                                                    │
+│ ┌────────────────────────────────────────────────────────────┐   │
+│ │ Changes made in v4:                                      │   │
+│ │                                                         │   │
+│ │ ✅ Logo size: 10% → 15%                                │   │
+│ │ ✅ Color: #FF0000 → #E63946                          │   │
+│ │ ✅ Tagline position: moved down 20px                 │   │
+│ │ ✅ Fixed typo: "Celebraiton" → "Celebration"         │   │
+│ │                                                         │   │
+│ │ Total changes: 4 modifications                        │   │
+│ └────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ METRICS COMPARISON:                                              │
+│ ┌───────────────┬───────────────┬───────────────┐                │
+│ │               │     v3        │     v4        │                │
+│ ├───────────────┼───────────────┼───────────────┤                │
+│ │ File Size     │ 42.1 MB       │ 45.2 MB       │                │
+│ │ Resolution    │ 1920x1080     │ 1920x1080     │                │
+│ │ Layers        │ 28            │ 31            │                │
+│ │ Feedback      │ 3 comments    │ 0 comments    │                │
+│ │ Status        │ ❌ Rejected   │ ⏳ Pending    │                │
+│ └───────────────┴───────────────┴───────────────┘                │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+4.2 Overlay Diff View
+┌────────────────────────────────────────────────────────────────────┐
+│ OVERLAY DIFF MODE                                                │
+│                                                                  │
+│  [Opacity Slider: ████░░░░░░ 60%]                                │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │    [v3 Base Layer] (gray)                               │  │
+│  │    +                                                     │  │
+│  │    [v4 Overlay] (colored highlights)                    │  │
+│  │                                                          │  │
+│  │    🔴 = Changed area                                    │  │
+│  │    ✅ = Improvements                                    │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  │                                                          │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Legend:  Red outline = Modified, Green check = Improved       │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+
+5. DESIGNER CAPACITY DASHBOARD
+5.1 Weekly View
+┌────────────────────────────────────────────────────────────────────┐
+│ DESIGNER CAPACITY                                Week 40 (Oct 1)  │
+│                                    [Previous Week] [Next Week►]   │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ OVERALL UTILIZATION: ████████████░░░ 87% (140h/160h)              │
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │  DESIGNER              CAPACITY    ALLOCATED    STATUS    │   │
+│ │  ───────────────────────────────────────────────────────  │   │
+│ │                                                            │   │
+│ │  👤 Wendy              40h/week    18h (45%)    🟢 OK      │   │
+│ │  ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░           │   │
+│ │  Tasks: 3 active, 0 overdue                                │   │
+│ │                                                            │   │
+│ │  👤 Luna               40h/week    32h (80%)    🟡 NEAR    │   │
+│ │  ████████████████████████████████░░░░░░░░░░░░░░░░           │   │
+│ │  Tasks: 5 active, 1 overdue ⚠️                            │   │
+│ │                                                            │   │
+│ │  👤 Louis              40h/week    22h (55%)    🟢 OK      │   │
+│ │  ███████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░           │   │
+│ │  Tasks: 4 active, 0 overdue                                │   │
+│ │                                                            │   │
+│ │  👤 Mike               40h/week    40h (100%)   🔴 FULL   │   │
+│ │  ██████████████████████████████████████████████           │   │
+│ │  Tasks: 6 active, 2 overdue ⚠️⚠️                          │   │
+│ │                                                            │   │
+│ │  👤 Lisa               40h/week    8h (20%)     🟢 FREE   │   │
+│ │  ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░           │   │
+│ │  Tasks: 1 active, 0 overdue                                │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ DRAG & DROP REASSIGNMENT:                                       │
+│ Click a task → Drag to designer with available capacity        │
+│                                                                  │
+│ UPCOMING DEADLINES (Next 7 Days):                              │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ Oct 5  • KV Món Mới          • 8h  • Mike  ⚠️ URGENT     │   │
+│ │ Oct 7  • Landing Page        • 12h • Louis                │   │
+│ │ Oct 8  • Social Pack         • 6h  • Wendy               │   │
+│ │ Oct 10 • Banner Design       • 4h  • Luna                │   │
+│ │ Oct 12 • Menu Redesign       • 10h • Mike  ⚠️            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ FORECAST:                                                        │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │ Week 41: ████████████████████░░░ 97% (155h/160h)           │   │
+│ │ Week 42: ████████████████████████░░ 109% (175h/160h) 🔴    │   │
+│ │ Week 43: ████████████████░░░░░░░░░ 68% (109h/160h)         │   │
+│ │                                                            │   │
+│ │ WARNING: Week 42 overcapacity by 15h - redistribute tasks  │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+5.2 Calendar Heatmap
+┌────────────────────────────────────────────────────────────────────┐
+│ WORKLOAD CALENDAR                    October 2026                 │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│        Sun  Mon  Tue  Wed  Thu  Fri  Sat                         │
+│      ┌────┬────┬────┬────┬────┬────┬────┐                       │
+│ Sep29│ █  │ █  │ █  │ ░  │ ░  │ ░  │ ░  │  ← Last Week          │
+│      └────┴────┴────┴────┴────┴────┴────┘                       │
+│ Oct 1│ ███│ ███│ ███│ ███│ ███│ ███│ ░  │  ← Week 40            │
+│      │95% │92% │98% │85% │100%│75% │0%  │                       │
+│      └────┴────┴────┴────┴────┴────┴────┘                       │
+│ Oct 8│ █  │ █  │ ██ │ ██ │ █  │ █  │ ░  │  ← Week 41          │
+│      │80% │88% │95% │92% │85% │78% │0%  │                       │
+│      └────┴────┴────┴────┴────┴────┴────┘                       │
+│ Oct15│ ░  │ █  │ █  │ ███│ █  │ █  │ ░  │  ← Week 42          │
+│      │0%  │72% │80% │110%│95% │88% │0%  │  🔴 Overcapacity    │
+│      └────┴────┴────┴────┴────┴────┴────┘                       │
+│                                                                  │
+│ LEGEND:                                                        │
+│ ░ = Available  <50%  🟢 = Balanced 50-85%  🟡 = Near 85-100%     │
+│ 🔴 = Over 100%                                                 │
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+
+6. NEW TASK CREATION MODAL
+6.1 Full Form Layout
+┌────────────────────────────────────────────────────────────────────┐
+│ CREATE NEW DESIGN REQUEST                             [✕ Close]   │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ STEP 1: BASIC INFO                                               │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │ Task Title *                                              │   │
+│ │ [_________________________________________]               │   │
+│ │ e.g., National Day Social Media Kit                       │   │
+│ │                                                            │   │
+│ │ Project *                              Priority *         │   │
+│ │ [Select Project ▼]                   [Medium ▼]          │   │
+│ │                                                            │   │
+│ │ Department                            Due Date *          │   │
+│ │ [Marketing ▼]                        [📅 05/10/2026]      │   │
+│ │                                                            │   │
+│ │ Requested By: Marketing Team (auto-filled)                │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ STEP 2: REQUIREMENTS                                             │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │ Brief/Description *                                       │   │
+│ │ ┌─────────────────────────────────────────────────────┐   │   │
+│ │ │                                                   │   │   │
+│ │ │ Describe the design request, target audience,     │   │   │
+│ │ │ key messaging, and any specific requirements...   │   │   │
+│ │ │                                                   │   │   │
+│ │ └─────────────────────────────────────────────────────┘   │   │
+│ │                                                            │   │
+│ │ Deliverables Needed:                                      │   │
+│ │ ┌─────────────────────────────────────────────────────┐   │   │
+│ │ │ 1. Facebook Cover (820x312px)  [+ Add Line]        │   │   │
+│ │ │ 2. Instagram Square (1080x1080px)                │   │   │
+│ │ │ 3. Instagram Story (1080x1920px)                 │   │   │
+│ │ └─────────────────────────────────────────────────────┘   │   │
+│ │                                                            │   │
+│ │ Specifications:                                           │   │
+│ │ • File Formats: [PNG] [JPEG] [PDF] [+ Add]               │   │
+│ │ • Color Mode: [RGB ▼]                                   │   │
+│ │ • Brand Guideline: [K Coffee 2026 ▼]                   │   │
+│ │ • Estimated Hours: [___] h                             │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ STEP 3: ASSIGNMENT (Optional)                                    │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │ Assign Designer:                                           │   │
+│ │ ○ Auto-assign (recommended)                               │   │
+│ │ ○ Assign to specific person:                              │   │
+│ │   [Select Designer ▼]                                     │   │
+│ │                                                            │   │
+│ │ Based on availability: Wendy (45%), Lisa (20%)            │   │
+│ │                                                            │   │
+│ │ Assign Reviewer:                                           │   │
+│ │ [Select Reviewer ▼]                                       │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ STEP 4: ATTACHMENTS                                              │
+│ ┌─────────────────────────────────────────────────────────────┐   │
+│ │                                                            │   │
+│ │ Upload Reference Files:                                    │   │
+│ │ ┌─────────────────────────────────────────────────────┐   │   │
+│ │ │                                                   │   │   │
+│ │ │      📁 Drag & drop files here or click to browse  │   │   │
+│ │ │                                                   │   │   │
+│ │ │      Supported: PDF, JPG, PNG, AI, PSD            │   │   │
+│ │ │      Max size: 50MB per file                     │   │   │
+│ │ │                                                   │   │   │
+│ │ └─────────────────────────────────────────────────────┘   │   │
+│ │                                                            │   │
+│ │ Attached Files (0):                                        │   │
+│ │ No files attached yet                                     │   │
+│ │                                                            │   │
+│ └─────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ NOTIFICATIONS:                                                   │
+│ ☑ Notify designer via email                                    │
+│ ☑ Notify reviewer via email                                    │
+│ ☐ Send Slack notification                                      │
+│                                                                  │
+├────────────────────────────────────────────────────────────────────┤
+│ ACTIONS:                                                         │
+│                                                                  │
+│                              [Cancel]  [Create & Assign]  [Draft]|
+│                                                                  │
+└────────────────────────────────────────────────────────────────────┘
+
+7. ASSET LIBRARY
+7.1 Grid View
+┌────────────────────────────────────────────────────────────────────┐
+│ ASSET LIBRARY                                     [+ Upload Asset]│
+├────────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ [Search assets...]  [Category▼] [Tag▼] [Format▼] [Brand▼]        │
+│                                                                  │
+│ QUICK FILTERS:                                                   │
+│ [All Assets] [Templates] [Logos] [Icons] [Fonts] [Colors]        │
+│                                                                  │
+┌──────────────────────────────────────────────────────────────────┐
+│ 📂 TEMPLATES (24 items)                                         │
+│ ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐              │
+│ │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │              │
+│ │         │  │         │  │         │  │         │              │
+│ │ KV 2026 │  │ Social  │  │ Banner  │  │ Story   │              │
+│ │ PSD     │  │ Post    │  │ HD      │  │ Frame   │              │
+│ │         │  │ PSD     │  │ AI      │  │ PSD     │              │
+│ │ 📅 Oct  │  │ 📅 Sep  │  │ 📅 Aug  │  │ 📅 Jul  │              │
+│ │ 👤 Wendy│  │ 👤 Luna │  │ 👤 Mike │  │ 👤 Lisa │              │
+│ │ 👁️ 124 │  │ 👁️ 89  │  │ 👁️ 56  │  │ 👁️ 43  │              │
+│ │ [📥]    │  │ [📥]    │  │ [📥]    │  │ [📥]    │              │
+│ └─────────┘  └─────────┘  └─────────┘  └─────────┘              │
+│                                                                 │
+│ ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐              │
+│ │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │  │ 🖼️ IMG  │              │
+│ │ Email   │  │ Promo   │  │ Product │  │ Receipt │              │
+│ │ Template│  │ Flyer   │  │ Label   │  │ Design  │              │
+│ │ FIGMA   │  │ AI      │  │ PSD     │  │ INDD    │              │
+│ │ 📅 Jun  │  │ 📅 May  │  │ 📅 Apr  │  │ 📅 Mar  │              │
+│ │ 👤 Admin│  │ 👤 Wendy│  │ 👤 Luna │  │ 👤 Mike │              │
+│ │ 👁️ 210 │  │ 👁️ 156 │  │ 👁️ 98  │  │ 👁️ 67  │              │
+│ │ [📥]    │  │ [📥]    │  │ [📥]    │  │ [📥]    │              │
+│ └─────────┘  └─────────┘  └─────────┘  └─────────┘              │
+│                                                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🎨 BRAND COLORS (12 swatches)                                  │
+│ ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐                │
+│ │ #E63946│  │ #F4A261│  │ #2A9D8F│  │ #26465C│                │
+│ │Primary │  │Secondary│  │Accent  │  │Dark    │                │
+│ │Red     │  │Gold    │  │Teal    │  │Navy    │                │
+│ │[Copy]  │  │[Copy]  │  │[Copy]  │  │[Copy]  │                │
+│ └────────┘  └────────┘  └────────┘  └────────┘                │
+│                                                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ LOGOS (6 variations)                                           │
+│ ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐                │
+│ │ 🖼️ IMG │  │ 🖼️ IMG │  │ 🖼️ IMG │  │ 🖼️ IMG │                │
+│ │Primary │  │Inverse │  │Icon    │  │Monochrome│              │
+│ │Full    │  │White   │  │Only    │  │B&W      │                │
+│ │PNG     │  │PNG     │  │SVG     │  │EPS      │                │
+│ │[📥]    │  │[📥]    │  │[📥]    │  │[📥]    │                │
+│ └────────┘  └────────┘  └────────┘  └────────┘                │
+│                                                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+PAGINATION: Showing 1-16 of 142 assets  [< 1 2 3 4 5 ... 9 >]      │
+
+8. RESPONSIVE BREAKPOINTS
+Mobile (<768px)
+┌─────────────────────┐
+│ ☰  Design Projects  │ ← Hamburger menu
+├─────────────────────┤
+│ [+ New]             │
+├─────────────────────┤
+│ [Search...]         │
+├─────────────────────┤
+│ ▼ Status ▼         │
+├─────────────────────┤
+│ ┌─────────────────┐ │
+│ │ PROJECT CARD    │ │ ← Stacked vertically
+│ │ [Thumbnail]     │ │
+│ │ ██████ 60%     │ │
+│ │ 🟡 Wendy        │ │
+│ │ 📅 Due: 5/10   │ │
+│ │ [👁️] [✏️]     │ │
+│ └─────────────────┘ │
+├─────────────────────┤
+│ [‹ 1 2 3 ›]        │
+└─────────────────────┘
+Tablet (768-1024px)
+┌───────────────────────────────────┐
+│ ☰  Design Projects     [Search..]│
+├───────────────────────────────────┤
+│ [+ New]  [Status▼] [Priority▼]   │
+├───────────────────────────────────┤
+│ ┌───────┐ ┌───────┐ ┌───────┐    │
+│ │ CARD  │ │ CARD  │ │ CARD  │    │ ← 3 columns
+│ │       │ │       │ │       │    │
+│ └───────┘ └───────┘ └───────┘    │
+│                                   │
+│ ┌───────┐ ┌───────┐ ┌───────┐    │
+│ │ CARD  │ │ CARD  │ │ CARD  │    │
+│ │       │ │       │ │       │    │
+│ └───────┘ └───────┘ └───────┘    │
+└───────────────────────────────────┘
+Desktop (≥1024px)
+┌────────────────────────────────────────────────────────────┐
+│  Sidebar │  Full Grid (4 columns)                        │
+│  (240px) │                                               │
+│          │  [Card] [Card] [Card] [Card]                 │
+│          │  [Card] [Card] [Card] [Card]                 │
+│          │  [Card] [Card] [Card] [Card]                 │
+└────────────────────────────────────────────────────────────┘
+
+9. COMPONENT HIERARCHY
+App
+├── Layout
+│   ├── Sidebar
+│   │   ├── Navigation Menu
+│   │   └── User Profile
+│   ├── TopBar
+│   │   ├── Breadcrumb
+│   │   ├── Search
+│   │   └── Actions (Theme, Language, Notifications)
+│   └── MainContent
+│
+├── ProjectPortfolioPage
+│   ├── FilterBar
+│   ├── ProjectCardGrid
+│   │   └── ProjectCard (xN)
+│   ├── ProjectCardList
+│   └── Pagination
+│
+├── DesignTaskGrid
+│   ├── ViewToggle
+│   ├── FilterBar
+│   ├── TaskCardGrid
+│   │   └── TaskCard (xN)
+│   │       ├── Thumbnail
+│   │       ├── ProgressBar
+│   │       ├── Metadata
+│   │       └── QuickActions
+│   └── BulkActionBar
+│
+├── TaskDetailPanel (Slide-over)
+│   ├── Header
+│   ├── MetricsRow
+│   ├── AssigneeSection
+│   ├── BriefSection
+│   ├── PreviewCanvas
+│   │   ├── ZoomControls
+│   │   ├── ImageLayer
+│   │   └── AnnotationLayer
+│   ├── VersionInfo
+│   ├── CommentsList
+│   │   └── CommentBubble (xN)
+│   ├── Timeline
+│   ├── AttachmentsList
+│   └── FooterActions
+│
+├── RevisionComparisonModal
+│   ├── ComparisonControls
+│   ├── SideBySideView
+│   │   ├── LeftPreview
+│   │   └── RightPreview
+│   ├── DiffSummary
+│   └── MetricsTable
+│
+├── CapacityDashboard
+│   ├── UtilizationGauge
+│   ├── DesignerCardList
+│   │   └── DesignerCard (xN)
+│   │       ├── ProgressBar
+│   │       └── TaskList
+│   ├── DeadlineList
+│   └── ForecastChart
+│
+├── AssetLibrary
+│   ├── FilterBar
+│   ├── AssetGridView
+│   │   └── AssetCard (xN)
+│   ├── ColorPalette
+│   └── LogoGallery
+│
+└── Modals
+    ├── CreateTaskModal
+    ├── UploadModal
+    ├── ApprovalModal
+    └── ConfirmDialog
+
+10. INTERACTION SPECIFICATIONS
+10.1 Animations
+/* Task Card Hover */
+.task-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Slide-over Panel */
+.panel-slide {
+  animation: slideIn 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Drag and Drop */
+.draggable {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.dragging {
+  opacity: 0.5;
+  transform: scale(1.05);
+}
+.drop-target {
+  animation: pulse 500ms ease;
+}
+@keyframes pulse {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(93, 74, 255, 0.1); }
+}
+
+/* Loading Skeleton */
+.skeleton {
+  animation: shimmer 1.5s infinite linear;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+10.2 Hover States
+const hoverStates = {
+  taskCard: {
+    elevation: 2,
+    scale: 1.02,
+    actionsVisible: true
+  },
+  button: {
+    backgroundColor: 'primary.lighter',
+    scale: 1.05
+  },
+  link: {
+    textDecoration: 'underline',
+    color: 'primary.dark'
+  },
+  row: {
+    backgroundColor: 'rgba(109, 74, 255, 0.04)'
+  }
+};
+10.3 Focus States (Accessibility)
+:focus-visible {
+  outline: 2px solid #6D4AFF;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  border-radius: 4px;
+}
+
+.card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.3);
+}
+
+Bạn cần tôi bổ sung wireframe nào thêm không? Ví dụ:
+	•	Mobile app wireframes?
+	•	Dark mode variations?
+	•	Loading/Error states?
+	•	Notifications dropdown? 🐱
+6 files
+Mobile app wireframes?
+Dark mode variations?
+Loading/Error states?
+Notifications dropdown?
+cần thêm bro
+Thought this through
+📱 DESIGN DASHBOARD - SUPPLEMENTARY WIREFRAMES
+Tham khảo thêm cho brief: Mobile + Dark Mode + States + Notifications
+
+PART 1: MOBILE APP WIREFRAMES
+1.1 Mobile Navigation Structure
+┌───────────────────────────┐
+│  Mobile App Architecture  │
+└───────────────────────────┘
+
+SCREENS STACK:
+Splash → Login → Onboarding → Main Tabs
+
+MAIN TAB BAR (Bottom Navigation - 5 items):
+┌─────────────────────────────┐
+│                             │
+│      [CONTENT AREA]         │
+│                             │
+│                             │
+├─────────────────────────────┤
+│  🏠    🎨    ➕    👤    ⚙️  │
+│ Home  Tasks  New  Team  Me  │
+└─────────────────────────────┘
+1.2 Home Screen (Mobile)
+┌─────────────────────────────┐
+│ ☰  K Coffee        🔔  👤   │
+├─────────────────────────────┤
+│                             │
+│  Good morning, Louis 👋    │
+│  Friday, Oct 2              │
+│                             │
+│  ┌───────────────────────┐  │
+│  │ ⚡ QUICK STATS        │  │
+│  │                      │  │
+│  │ ┌─────┐  ┌─────┐     │  │
+│  │ │ 12  │  │ 3   │     │  │
+│  │ │Tasks│  │Due   │     │  │
+│  │ └─────┘  └─────┘     │  │
+│  │ ┌─────┐  ┌─────┐     │  │
+│  │ │ 2   │  │ 85% │     │  │
+│  │ │Over │  │Done  │     │  │
+│  │ └─────┘  └─────┘     │  │
+│  └───────────────────────┘  │
+│                             │
+│  YOUR TODAY (swipeable)   │
+│  ┌───────────────────────┐  │
+│  │ #TK15 KV Món Mới      │  │
+│  │ 🟡 Wendy  📅 Today    │  │
+│  │ ██████░░░░ 60%        │  │
+│  │ [Start] [Details →]  │  │
+│  └───────────────────────┘  │
+│  ┌───────────────────────┐  │
+│  │ #TK18 Social Post    │  │
+│  │ 🔴 Urgent  ⚠️ -1 day │  │
+│  │ ████████░░ 80%        │  │
+│  │ [Start] [Details →]  │  │
+│  └───────────────────────┘  │
+│                             │
+│  ACTIVE PROJECTS →         │
+│  ┌─────┐ ┌─────┐ ┌─────┐  │
+│  │ 🖼️  │ │ 🖼️  │ │ 🖼️  │  │
+│  │ P1  │ │ P2  │ │ P3  │  │
+│  │ 80% │ │ 40% │ │ 90% │  │
+│  └─────┘ └─────┘ └─────┘  │
+│   (horizontal scroll)      │
+│                             │
+├─────────────────────────────┤
+│  🏠    🎨   ⊕   👤   ⚙️   │
+└─────────────────────────────┘
+1.3 Task List (Mobile)
+┌─────────────────────────────┐
+│ ← Design Tasks       🔍 ⋮   │
+├─────────────────────────────┤
+│                             │
+│ [My Tasks] [Team] [All]    │
+│ ──────────                  │
+│                             │
+│ FILTER CHIPS (scroll):     │
+│ [🔴 Urgent] [📅 Today]     │
+│ [🔁 Review] [✅ Done]      │
+│                             │
+│ ┌───────────────────────┐   │
+│ │ ┌──┐ #TK15            │   │
+│ │ │🖼️│ KV Món Mới      │   │
+│ │ │  │ ██████░░ 60%    │   │
+│ │ └──┘ 🟡Wendy ⏰Today │   │
+│ │      🔁 v2 →  [→]     │   │
+│ └───────────────────────┘   │
+│                             │
+│ ┌───────────────────────┐   │
+│ │ ┌──┐ #TK18            │   │
+│ │ │🖼️│ Social Post     │   │
+│ │ │  │ ████████░ 80%   │   │
+│ │ └──┘ 🔴Mike  ⚠️Overdue│   │
+│ │      🔁 v4  [→]       │   │
+│ └───────────────────────┘   │
+│                             │
+│ Pull to refresh ↕           │
+│                             │
+│ Infinite scroll loading...  │
+│         ● ● ●               │
+│                             │
+├─────────────────────────────┤
+│  🏠    🎨   ⊕   👤   ⚙️   │
+└─────────────────────────────┘
+1.4 Task Detail (Mobile)
+┌─────────────────────────────┐
+│ ←  #TK15 - KV Món Mới  ⋮   │
+├─────────────────────────────┤
+│                             │
+│ ┌───────────────────────┐   │
+│ │ 🖼️ PREVIEW IMAGE      │   │
+│ │                       │   │
+│ │    (tap to zoom)      │   │
+│ │                       │   │
+│ │      ● ← annotation   │   │
+│ │                       │   │
+│ └───────────────────────┘   │
+│  v4 • Oct 2, 2:30 PM        │
+│  [⬇️ Download] [🔍 Zoom]    │
+│                             │
+│ ── STATUS ────────────────── │
+│ 🟡 Ready for Review          │
+│ 🔴 High Priority             │
+│ 📅 Due Tomorrow ⚠️          │
+│ 🔁 Revision 4/5            │
+│                             │
+│ ── ASSIGNEE ─────────────── │
+│ 👤 Wendy (Graphics Team)    │
+│         [Chat 💬] [Call 📞] │
+│                             │
+│ ── ACTIONS (sticky) ──────  │
+│ ╔═══════════════════════╗   │
+│ ║ [✓ Approve] [✗ Reject]║   │
+│ ╚═══════════════════════╝   │
+│  [🔁 Request Revision]      │
+│  [💬 Add Comment]           │
+│                             │
+│ ── COMMENTS ──────────────  │
+│ 💬 Admin: "Logo hơi nhỏ"    │
+│    ✅ Resolved in v2       │
+│ 💬 Luna: "Màu chưa đúng"    │
+│    ⏳ Pending              │
+│    [Reply] [Resolve]        │
+│                             │
+│ ── VERSIONS ──────────────  │
+│ v4 ●━━●━━●━━○  (timeline)   │
+│ [v1] [v2] [v3] [v4]         │
+│ Tap version → switch preview│
+│                             │
+├─────────────────────────────┤
+│ STICKY ACTION BAR:          │
+│ [✓ Approve] [✗] [💬] [⋮]  │
+└─────────────────────────────┘
+1.5 Submit Revision (Mobile)
+┌─────────────────────────────┐
+│ ←  Submit New Version       │
+├─────────────────────────────┤
+│                             │
+│ CURRENT: v4 (Oct 2)         │
+│ SUBMITTING: v5              │
+│                             │
+│ What changed? *             │
+│ ┌───────────────────────┐   │
+│ │ - Fixed red color to  │   │
+│ │   brand #E63946       │   │
+│ │ - Adjusted spacing    │   │
+│ └───────────────────────┘   │
+│                             │
+│ Upload file *               │
+│ ┌───────────────────────┐   │
+│ │                       │   │
+│ │   📁 Tap to upload    │   │
+│ │                       │   │
+│ │   [Take Photo 📷]     │   │
+│ │   [Choose File 📂]    │   │
+│ │   [From Cloud ☁️]     │   │
+│ └───────────────────────┘   │
+│                             │
+│ 📄 kv_mon_moi_v5.psd        │
+│    45.2 MB  [Preview] [🗑️] │
+│                             │
+│ ☑ Notify reviewer           │
+│                             │
+├─────────────────────────────┤
+│ ╔═══════════════════════╗   │
+│ ║    [Submit v5]        ║   │
+│ ╚═══════════════════════╝   │
+└─────────────────────────────┘
+
+UPLOAD PROGRESS SCREEN:
+┌─────────────────────────────┐
+│ Uploading kv_mon_moi_v5.psd │
+│                             │
+│ ████████████░░░░ 78%        │
+│                             │
+│ Remaining: ~30 seconds      │
+│                             │
+│ ⚠️ Keep app open            │
+│    during upload            │
+│                             │
+│ [Cancel]                    │
+└─────────────────────────────┘
+1.6 Capacity View (Mobile)
+┌─────────────────────────────┐
+│ ←  Team Capacity    W40 ⚙️  │
+├─────────────────────────────┤
+│                             │
+│ TEAM UTILIZATION            │
+│ ███████████░░░ 87%         │
+│ 140h allocated / 160h       │
+│                             │
+│ ┌───────────────────────┐   │
+│ │ 👤 Wendy         🟢   │   │
+│ │ ████████░░░ 45%      │   │
+│ │ 3 tasks • 0 overdue   │   │
+│ │        [View Tasks →] │   │
+│ └───────────────────────┘   │
+│ ┌───────────────────────┐   │
+│ │ 👤 Luna           🟡   │   │
+│ │ ████████████░ 80%    │   │
+│ │ 5 tasks • 1 overdue   │   │
+│ │        [View Tasks →] │   │
+│ └───────────────────────┘   │
+│ ┌───────────────────────┐   │
+│ │ 👤 Mike           🔴   │   │
+│ │ ████████████████ 100%│   │
+│ │ 6 tasks • 2 overdue   │   │
+│ │ ⚠️ OVERLOADED           │   │
+│ │   [Reassign Tasks →]  │   │
+│ └───────────────────────┘   │
+│                             │
+│ WEEKLY FORECAST →            │
+│ W40: ██ 87% 🟡              │
+│ W41: ██ 97% 🟡              │
+│ W42: ███ 109% 🔴 Over!      │
+│                             │
+├─────────────────────────────┤
+│  🏠    🎨   ⊕   👤   ⚙️   │
+└─────────────────────────────┘
+
+PART 2: DARK MODE VARIATIONS
+2.1 Color Token Mapping
+/* LIGHT MODE → DARK MODE TOKEN MAP */
+
+:root[data-theme="light"] {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F9FAFB;
+  --bg-card: #FFFFFF;
+  --border: #E5E7EB;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --shadow-card: rgba(0,0,0,0.08);
+}
+
+:root[data-theme="dark"] {
+  --bg-primary: #0F1117;      /* Main background */
+  --bg-secondary: #161923;    /* Sidebar/panels */
+  --bg-card: #1C2030;        /* Card surfaces */
+  --border: #2A2F45;          /* Borders/dividers */
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --shadow-card: rgba(0,0,0,0.4);
+
+  /* Brand colors stay vibrant but muted backgrounds */
+  --accent-primary: #8B6AFF;  /* Lighter purple for contrast */
+  --status-success: #34D399;
+  --status-warning: #FBBF24;
+  --status-danger: #F87171;
+  --status-info: #60A5FA;
+
+  /* Surface elevations (key for dark mode depth) */
+  --elevation-1: #1C2030;    /* Cards */
+  --elevation-2: #242940;    /* Dropdowns, modals */
+  --elevation-3: #2D3350;    /* Tooltips, popovers */
+}
+
+/* Rule: NEVER pure black (#000) or pure white (#FFF)
+   for large surfaces - causes eye strain */
+2.2 Sidebar Dark Mode
+LIGHT MODE:                  DARK MODE:
+┌──────────────┐            ┌──────────────┐
+│ ██████████│ #FFFFFF   │              │ #161923
+│ ▓ Home      │            │ ░ Home       │
+│ ▓ All Tasks │            │ ░ All Tasks  │
+│ ▓ Kanban    │            │ ░ Kanban     │
+└──────────────┘            └──────────────┘
+
+ACTIVE ITEM:
+Light: purple bg-tint      Dark: #2D3350 bg +
+       purple left-border          lighter purple text
+                              (#B39FFF)
+2.3 Task Card Grid (Dark Mode)
+┌────────────────────────────────────────────────────────────┐
+│ BG: #0F1117                                               │
+│                                                            │
+│ ┌─────────────────┐  ┌─────────────────┐                 │
+│ │ Card BG: #1C2030│  │ Card BG: #1C2030│                 │
+│ │ Border: #2A2F45 │  │                  │                 │
+│ │                 │  │                  │                 │
+│ │ KV MÓN MỚI      │  │ SOCIAL POST      │                 │
+│ │ Text: #F3F4F6   │  │                  │                 │
+│ │                 │  │                  │                 │
+│ │ [Thumbnail      │  │ [Thumbnail      │                 │
+│ │  dimmed 10%     │  │                  │                 │
+│ │  overlay]       │  │                  │                 │
+│ │                 │  │                  │                 │
+│ │ ██████░░░░ 60% │  │ ██████████ 100% │                 │
+│ │ (progress bar:  │  │                  │                 │
+│ │  #8B6AFF)       │  │                  │                 │
+│ │                 │  │                  │                 │
+│ │ 🟡 Wendy        │  │ ✅ Luna           │                 │
+│ │ Text: #9CA3AF  │  │                  │                 │
+│ │ 📅 Due: 5/10    │  │ ✅ Approved       │                 │
+│ │ 🔁 Rev: 2/3     │  │ 📁 v4 final     │                 │
+│ └─────────────────┘  └─────────────────┘                 │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+
+KEY DARK MODE RULES:
+1. Images/thumbnails: giảm saturation 10-15%
+   tự nhiên hơn trên nền tối
+2. Progress bars: dùng brand color sáng hơn (#8B6AFF
+   thay vì #6D4AFF) để đảm bảo contrast ≥4.5:1
+3. Shadows: dùng elevation surfaces thay vì drop-shadow
+4. Status badges: darker bg + brighter text
+   e.g. Success: bg #0A3325, text #34D399
+5. Charts: background grid lines → #2A2F45
+2.4 Detail Panel (Dark Mode)
+┌────────────────────────────────────────────┐
+│ SLIDE-OVER PANEL                           │
+│ BG: #161923                                │
+├────────────────────────────────────────────┤
+│ #TK001 - Social Media Post    [✕]          │
+│ Text: #F3F4F6                              │
+│                                            │
+│ STATUS BADGES:                             │
+│ ┌─────────────┐ ┌─────────────┐            │
+│ │ 🟡 Review   │ │ 🔴 High     │            │
+│ │ bg:#3D2E10  │ │ bg:#3D1010  │            │
+│ │ text:#FBBF24│ │ text:#F87171│            │
+│ └─────────────┘ └─────────────┘            │
+│                                            │
+│ SECTIONS (elevated):                       │
+│ ┌────────────────────────────────────────┐ │
+│ │ BG: #1C2030 (elevation-1)             │ │
+│ │ 👤 DESIGNER: Wendy                     │ │
+│ └────────────────────────────────────────┘ │
+│                                            │
+│ PREVIEW IMAGE:                             │
+│ ┌────────────────────────────────────────┐ │
+│ │ White padding around image (8px,       │ │
+│ │ #F3F4F6) để design không "tan chảy"   │ │
+│ │ vào nền tối                            │ │
+│ └────────────────────────────────────────┘ │
+│                                            │
+│ COMMENTS THREAD:                          │
+│ BG: #242940 (elevation-2)                 │
+│ Annotation pins: sáng hơn (#FFD54F)       │
+│                                            │
+├────────────────────────────────────────────┤
+│ BUTTONS:                                   │
+│ Primary: bg #8B6AFF, text #0F1117         │
+│ Secondary: bg transparent,                │
+│           border #2A2F45, text #F3F4F6     │
+└────────────────────────────────────────────┘
+2.5 Theme Toggle Transition
+/* Smooth theme switching */
+:root {
+  --theme-transition: 300ms ease;
+}
+
+body, .card, .sidebar, .panel {
+  transition: background-color var(--theme-transition),
+              color var(--theme-transition),
+              border-color var(--theme-transition);
+}
+
+/* Persistence */
+localStorage.setItem('theme', 'dark');
+
+/* Follow system preference (default) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* dark tokens */
+  }
+}
+
+PART 3: LOADING & ERROR STATES
+3.1 Loading States Catalog
+A. Initial Page Load (Skeleton)
+┌────────────────────────────────────────────┐
+│ DESIGN TASKS                               │
+├────────────────────────────────────────────┤
+│ [██████░░░░░░] [████░░░░] [███░░░]        │
+│                                            │
+│ ┌─────────┐  ┌─────────┐  ┌─────────┐      │
+│ │ ░░░░░░░ │  │ ░░░░░░░ │  │ ░░░░░░░ │      │
+│ │ (shimmer│  │ (shimmer│  │ (shimmer│      │
+│ │  anim)  │  │  anim)  │  │  anim)  │      │
+│ │ ░░░░░░░ │  │ ░░░░░░░ │  │ ░░░░░░░ │      │
+│ │ ███████ │  │ ███████ │  │ ███████ │      │
+│ │ ████░░░ │  │ ████░░░ │  │ ████░░░ │      │
+│ │ ░░░░░░░ │  │ ░░░░░░░ │  │ ░░░░░░░ │      │
+│ └─────────┘  └─────────┘  └─────────┘      │
+│                                            │
+│          Skeleton giữ nguyên layout       │
+│      structure để tránh layout shift      │
+└────────────────────────────────────────────┘
+
+RULES:
+- Skeleton shape phải match EXACTLY kích thước
+  content thật (tránh CLS - Cumulative Layout Shift)
+- Shimmer animation: L→R, 1.5s loop
+- Max skeleton time: 3s, sau đó show error
+B. Button Loading States
+NORMAL:           LOADING:           SUCCESS (2s):     ERROR (2s):
+┌──────────┐     ┌──────────┐      ┌──────────┐     ┌──────────┐
+│ Approve  │     │ ◐ Loading│      │ ✓ Approved│     │ ✗ Failed │
+└──────────┘     └──────────┘      └──────────┘     └──────────┘
+
+RULES:
+- Disable button khi loading (không double-submit)
+- Spinner + giữ nguyên width (tránh jump)
+- Success: đổi text + check icon, auto-revert 2s
+- Error: đỏ + shake animation 300ms + toast error
+C. Image Loading (Blur-up)
+STEP 1 - PLACEHOLDER:    STEP 2 - BLUR:      STEP 3 - LOADED:
+┌──────────┐            ┌──────────┐        ┌──────────┐
+│ ░░░░░░░░ │            │▒▒▒▒▒▒▒▒▒ │        │ [IMAGE   │
+│ ░░░░░░░░ │            │▒ blur(8)▒│        │   REAL]  │
+│ (dominant│            │▒▒▒▒▒▒▒▒▒ │        │ opacity:1│
+│  color)  │            │ (tiny    │        │ (fade in │
+└──────────┘            │  preview)│        │  300ms)  │
+                        └──────────┘        └──────────┘
+
+IMPLEMENTATION:
+1. Extract dominant color từ file metadata → fill placeholder
+2. Load 20px tiny version → stretch + CSS blur
+3. Load full preview → cross-fade
+D. Progressive Loading Priority
+┌────────────────────────────────────────────┐
+│ LOAD ORDER (above-the-fold first):          │
+│                                            │
+│ 1. ⚡ Text content (title, badges, meta)    │
+│ 2. 🖼️ Thumbnails visible on screen          │
+│ 3. 🖼️ Thumbnails khi scroll tới (lazy)      │
+│ 4. 📊 Full-size previews (khi open detail) │
+└────────────────────────────────────────────┘
+3.2 Error States Catalog
+A. Page-Level Error
+┌────────────────────────────────────────────┐
+│                                            │
+│              ⚠️                             │
+│         ┌────────┐                        │
+│         │ ⚠ 512  │  ← illustration         │
+│         └────────┘                         │
+│                                            │
+│      Something went wrong                 │
+│   We couldn't load your design tasks.     │
+│   The issue has been reported.            │
+│                                            │
+│         [🔄 Try Again]                    │
+│         [📞 Contact Support]               │
+│         [🏠 Back to Home]                  │
+│                                            │
+│   Error Code: ERR_NETWORK_503              │
+│   Time: Oct 2, 2:34 PM                     │
+└────────────────────────────────────────────┘
+B. Empty States (per scenario)
+NO TASKS AT ALL:
+┌────────────────────────────────────────────┐
+│           🎨                              │
+│      No design tasks yet                   │
+│   Create your first request to get         │
+│   your team started                        │
+│         [+ New Request]                    │
+└────────────────────────────────────────────┘
+
+NO SEARCH RESULTS:
+┌────────────────────────────────────────────┐
+│           🔍                              │
+│      No results for "xyzabc"              │
+│   Try different keywords or clear          │
+│   your filters                             │
+│      [Clear Filters]                      │
+└────────────────────────────────────────────┘
+
+NO DRAFTS (draft tab empty):
+┌────────────────────────────────────────────┐
+│           📝                              │
+│      No drafts in progress                │
+│   Tasks you save as draft will             │
+│   appear here                             │
+└────────────────────────────────────────────┘
+
+FILTER RETURNED NOTHING:
+┌────────────────────────────────────────────┐
+│           🗂️                              │
+│      0 tasks match your filters           │
+│                                            │
+│   Active filters:                          │
+│   [Status: Approved ×] [Priority: Urgent ×]│
+│                                            │
+│      [Remove All Filters]                  │
+└────────────────────────────────────────────┘
+
+OFFLINE:
+┌────────────────────────────────────────────┐
+│  ⚡ You're offline                         │
+│  ─────────────────────────────             │
+│  ✅ Cached tasks still viewable            │
+│  ⏸️ Changes will sync when reconnected   │
+│  ─────────────────────────────             │
+│  Last synced: 2 minutes ago                │
+│         [Retry Connection]                 │
+└────────────────────────────────────────────┘
+C. Inline Form Errors
+┌────────────────────────────────────────────┐
+│ CREATE NEW REQUEST                         │
+│                                            │
+│ Task Title *                               │
+│ ┌────────────────────────────────────────┐ │
+│ │ Kí                                    │ │ ← error state
+│ └────────────────────────────────────────┘ │
+│ ⚠️ Title must be at least 5 characters    │ ← red, below field
+│                                            │
+│ Due Date *                                 │
+│ ┌──────────────────┐                       │
+│ │ 01/10/2026      │ ← border red          │
+│ └──────────────────┘                       │
+│ ⚠️ Due date cannot be in the past         │
+│                                            │
+│ File Upload                                │
+│ ┌────────────────────────────────────────┐ │
+│ │ 📄 huge_video.mp4                     │ │
+│ │    250 MB          [🗑️ Remove]        │ │
+│ │ ⚠️ File exceeds 50MB limit           │ │
+│ └────────────────────────────────────────┘
+│                                            │
+│ ERROR SUMMARY (on submit attempt):         │
+│ ┌────────────────────────────────────────┐ │
+│ │ ⚠️ 2 errors need fixing:              │ │
+│ │ 1. Task title too short                │ │
+│ │ 2. Due date is in the past             │ │
+│ └────────────────────────────────────────┘ │
+│                                            │
+│            [Cancel]    [Submit] ← disabled │
+└────────────────────────────────────────────┘
+D. Upload Error Recovery
+UPLOAD FAILED MID-WAY:
+┌────────────────────────────────────────────┐
+│ Uploading kv_mon_moi_v5.psd                │
+│                                            │
+│ ████████████░░░░ FAILED at 78%             │
+│                                            │
+│ ⚠️ Connection lost during upload          │
+│                                            │
+│    [🔄 Resume Upload]    ← resume từ 78%   │
+│    [↩️ Start Over]                         │
+│    [🗑️ Cancel]                            │
+│                                            │
+│ Tip: Files under 50MB auto-retry 3 times   │
+└────────────────────────────────────────────┘
+
+IMPLEMENTATION:
+- Chunked upload (5MB chunks) → resumable
+- Store chunk manifest in IndexedDB
+- On reconnect: prompt to resume
+3.3 Toast Notifications
+POSITION: bottom-right (desktop) / top (mobile)
+
+SUCCESS TOAST (4s auto-dismiss):
+┌────────────────────────────────────────────┐
+│ ✓ Task approved!                   [✕]    │
+│ KV Món Mới moved to Approved       Undo    │
+└────────────────────────────────────────────┘
+
+ERROR TOAST (persistent until dismissed):
+┌────────────────────────────────────────────┐
+│ ✗ Failed to approve task           [✕]    │
+│ Check your connection and retry.   [Retry] │
+└────────────────────────────────────────────┘
+
+WARNING TOAST (6s):
+┌────────────────────────────────────────────┐
+│ ⚠️ Reviewer hasn't responded       [✕]    │
+│ Task pending review for 48+ hours  [Escalate]│
+└────────────────────────────────────────────┘
+
+INFO TOAST (4s):
+┌────────────────────────────────────────────┐
+│ ℹ️ Draft saved                    [✕]    │
+└────────────────────────────────────────────┘
+
+STACKING RULE:
+- Max 3 toasts visible, older ones collapse
+- "2 more notifications" expander at bottom
+
+PART 4: NOTIFICATIONS DROPDOWN
+4.1 Dropdown Layout (Desktop)
+┌──────────────────────────────────────────────┐
+│ NOTIFICATIONS (8)                    [Mark all]│
+├──────────────────────────────────────────────┤
+│ [All] [Mentions] [Approvals] [System]        │
+├──────────────────────────────────────────────┤
+│                                              │
+│ GROUP: TODAY                                 │
+│ ┌────────────────────────────────────────┐  │
+│ │ ● [🖼️] Luna commented on #TK15         │  │
+│ │      "Red still slightly off"           │  │
+│ │      2 hours ago                        │  │
+│ │                              [Preview →]│  │
+│ └────────────────────────────────────────┘  │
+│ ┌────────────────────────────────────────┐  │
+│ │ ● [✅] Your design v4 was approved     │  │
+│ │      KV Món Mới • by Manager            │  │
+│ │      3 hours ago                        │  │
+│ │                                [View →] │  │
+│ └────────────────────────────────────────┘  │
+│ ┌────────────────────────────────────────┐  │
+│ │ ● [⏰] #TK18 is overdue (-1 day)        │  │
+│ │      Assigned to Mike • needs action    │  │
+│ │      5 hours ago            ⚠️ URGENT   │  │
+│ └────────────────────────────────────────┘  │
+│                                              │
+│ GROUP: YESTERDAY                             │
+│ ┌────────────────────────────────────────┐  │
+│ │ ○ [👤] New task assigned to you         │  │
+│ │      Story Frames pack • due 8/10       │  │
+│ │      Yesterday              [Open →]    │  │
+│ └────────────────────────────────────────┘  │
+│ ┌────────────────────────────────────────┐  │
+│ │ ○ [🔁] Revision requested on v3        │  │
+│ │      Banner HD • by Luna              │  │
+│ │      Yesterday                          │  │
+│ └────────────────────────────────────────┘  │
+│                                              │
+│ GROUP: EARLIER THIS WEEK                     │
+│ ○ [📦] 2 more notifications    [Show all]   │
+│                                              │
+├──────────────────────────────────────────────┤
+│ [🔔 Notification Settings]  [View All →]     │
+└──────────────────────────────────────────────┘
+
+SPECIFICATIONS:
+- Width: 400px, max-height: 600px (scrollable)
+- ● = unread (purple dot left + subtle bg tint)
+- ○ = read
+- Unread count badge on bell icon: (8)
+- Click row → mark read + navigate to target
+- Hover row → show quick action button
+- "Mark all" = instant, with 5s Undo toast
+4.2 Notification Types Config
+const notificationTypes = {
+  // TASK RELATED
+  task_assigned: {
+    icon: '👤',
+    color: '#60A5FA',
+    priority: 'medium',
+    channels: ['in_app', 'email'],
+    action: () => navigate(`/tasks/${id}`)
+  },
+  task_approved: {
+    icon: '✅',
+    color: '#34D399',
+    priority: 'high',
+    channels: ['in_app', 'email'],
+    action: () => navigate(`/tasks/${id}?tab=versions`)
+  },
+  revision_requested: {
+    icon: '🔁',
+    color: '#FBBF24',
+    priority: 'high',
+    channels: ['in_app', 'email', 'push_mobile'],
+    action: () => navigate(`/tasks/${id}/compare?v=${version-1}&v2=${version}`)
+  },
+  comment_mention: {
+    icon: '💬',
+    color: '#8B6AFF',
+    priority: 'medium',
+    channels: ['in_app', 'email'],
+    action: () => navigate(`/tasks/${id}#comment-${commentId}`)
+  },
+  comment_reply: {
+    icon: '↩️',
+    color: '#9CA3AF',
+    priority: 'low',
+    channels: ['in_app'],
+    action: () => navigate(`/tasks/${id}#comment-${commentId}`)
+  },
+
+  // DEADLINE RELATED
+  deadline_24h: {
+    icon: '⏰',
+    color: '#F87171',
+    priority: 'urgent',
+    channels: ['in_app', 'email', 'push_mobile', 'sms'], // chỉ khi task urgent
+    action: () => navigate(`/tasks/${id}`)
+  },
+  task_overdue: {
+    icon: '⚠️',
+    color: '#DC2626',
+    priority: 'urgent',
+    channels: ['in_app', 'email', 'push_mobile'],
+    action: () => navigate(`/tasks/${id}`),
+    repeatDaily: true // re-nudge mỗi ngày
+  },
+
+  // SYSTEM
+  system_maintenance: {
+    icon: '🔧',
+    color: '#6B7280',
+    priority: 'low',
+    channels: ['in_app'],
+    action: () => openModal('maintenance_schedule')
+  },
+  storage_limit: {
+    icon: '💾',
+    color: '#FBBF24',
+    priority: 'medium',
+    channels: ['in_app', 'email'],
+    action: () => navigate('/settings/storage')
+  }
+};
+4.3 Notification Settings Page
+┌──────────────────────────────────────────────────┐
+│ NOTIFICATION PREFERENCES                          │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│ TASK UPDATES                                     │
+│ ┌──────────────────────────────────────────────┐│
+│ │ Notify me when...                  In-app Push Email SMS ││
+│ │ ───────────────────────────────────────────────││
+│ │ ...someone assigns me a task       [✓]  [✓]  [ ] [ ]││
+│ │ ...my design is approved/rejected  [✓]  [✓]  [✓] [ ]││
+│ │ ...a revision is requested        [✓]  [✓]  [✓] [ ]││
+│ │ ...someone mentions me             [✓]  [✓]  [ ] [ ]││
+│ │ ...someone replies to my comment   [✓]  [ ]  [ ] [ ]││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ DEADLINES & REMINDERS                            │
+│ ┌──────────────────────────────────────────────┘│
+│ │ Reminder timing:        [24h before ▼]        │
+│ │  (24h / 48h / 72h / 1 week)                   │
+│ │ Additional nudge:      [✓] Daily if overdue  │
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ DIGEST SETTINGS                                  │
+│ ┌──────────────────────────────────────────────┐│
+│ │ Daily digest email:   [✓] Enabled            │
+│ │ Send time:            [8:00 AM ▼]            │
+│ │ Include:              ☑ Tasks due today     │
+│ │                       ☑ Pending approvals    │
+│ │                       ☑ Team activity        │
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ QUIET HOURS (no push notifications)             │
+│ ┌──────────────────────────────────────────────┐│
+│ │ Enabled: [✓]                                  ││
+│ │ From: [10:00 PM ▼]  To: [7:00 AM ▼]          ││
+│ │ Exception: ☑ Allow urgent overdue alerts     ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+├──────────────────────────────────────────────────┤
+│                          [Reset Defaults] [Save] │
+└──────────────────────────────────────────────────┘
+4.4 Mobile Notification Center
+┌─────────────────────────────┐
+│ ← Notifications    [Mark ✓]│
+├─────────────────────────────┤
+│ [All] [Mentions] [Approvals]│
+│ (swipeable tabs)           │
+├─────────────────────────────┤
+│                             │
+│ TODAY                       │
+│ ┌───────────────────────┐   │
+│ │ ● 💬 Luna • 2h ago    │   │
+│ │   "Red still off..."  │   │
+│ │   #TK15               │   │
+│ │            swipe → ⏎  │   │
+│ └───────────────────────┘   │
+│ ┌───────────────────────┐   │
+│ │ ● ✅ Approved • 3h   │   │
+│ │   Your v4 was         │   │
+│ │   approved 🎉          │   │
+│ │            swipe → ⏎  │   │
+│ └───────────────────────┘   │
+│                             │
+│ Swipe right → mark as read  │
+│ Swipe left → delete         │
+│ Long press → mute this task│
+│                             │
+│ 2 unread • pulled ↕ fresh   │
+├─────────────────────────────┤
+│  🏠    🎨   ⊕   👤   ⚙️   │
+└─────────────────────────────┘
+4.5 Real-Time Delivery Architecture
+┌──────────────────────────────────────────────────┐
+│ DELIVERY FLOW                                    │
+│                                                  │
+│ [Event happens: task approved]                  │
+│        │                                        │
+│        ▼                                        │
+│ Backend creates notification record             │
+│        │                                        │
+│        ├──▶ WebSocket → push to online users    │
+│        │            (badge update, live        │
+│        │             dropdown prepend, <1s)    │
+│        │                                        │
+│        ├──▶ Push notification → mobile (FCM/    │
+│        │            APNs) nếu user opt-in       │
+│        │                                        │
+│        └──▶ Queue email → batch every 5 min     │
+│              (hoặc theo digest setting)         │
+│                                                  │
+│ UNREAD BADGE SYNC:                               │
+│ - WebSocket event: unread_count updated         │
+│ - Cross-device sync (đọc trên mobile →          │
+│   badge desktop cũng tắt)                       │
+│                                                  │
+│ GROUPING RULE (anti-spam):                       │
+│ - Cùng task + cùng loại trong 10 phút →          │
+│   gộp thành 1: "Luna added 3 comments on #TK15" │
+└──────────────────────────────────────────────────┘
+
+✅ IMPLEMENT PRIORITY
+Sprint 1
+States + Toasts
+▲Loading, error, empty states
+Sprint 2
+Notifications
+▲Dropdown + WebSocket
+Sprint 3
+Dark Mode
+▲Token system + toggle
+Sprint 4
+Mobile
+▲Responsive + native feel
+Quick winwarning
+Dark mode nên implement NGAY từ đầu bằng CSS token system (biến CSS) thay vì retrofit — retrofit dark mode về sau tốn gấp 3 lần effort vì phải audit từng component. Mobile-first responsive cũng rẻ hơn nếu làm cùng lúc.
+

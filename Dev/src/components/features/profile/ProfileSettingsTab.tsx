@@ -26,7 +26,7 @@ export const ProfileSettingsTab: React.FC = () => {
   );
 
   return (
-    <div className="glass-panel p-6 rounded-3xl space-y-8">
+    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm space-y-8">
       
       <div>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Notifications</h3>
@@ -50,12 +50,12 @@ export const ProfileSettingsTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+      <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Preferences</h3>
         <div className="space-y-4 max-w-sm">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngôn ngữ</label>
-            <select value={settings.lang} onChange={e => setSettings({...settings, lang: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
+            <select value={settings.lang} onChange={e => setSettings({...settings, lang: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
               <option value="vi">Tiếng Việt</option>
               <option value="en">English</option>
             </select>
@@ -66,7 +66,7 @@ export const ProfileSettingsTab: React.FC = () => {
             <select value={theme} onChange={(e) => {
               if (e.target.value === 'dark' && theme !== 'dark') toggleTheme();
               if (e.target.value === 'light' && theme !== 'light') toggleTheme();
-            }} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
+            }} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
@@ -74,7 +74,7 @@ export const ProfileSettingsTab: React.FC = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timezone</label>
-            <select value={settings.timezone} onChange={e => setSettings({...settings, timezone: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
+            <select value={settings.timezone} onChange={e => setSettings({...settings, timezone: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary outline-none dark:text-white">
               <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh</option>
               <option value="UTC">UTC</option>
             </select>

@@ -43,7 +43,7 @@ export const Project: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100/50 dark:bg-gray-800/50 p-1 rounded-xl w-full sm:w-fit overflow-x-auto border border-gray-200 dark:border-gray-700">
+      <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl w-full sm:w-fit overflow-x-auto border border-gray-200 dark:border-slate-700">
         {([
           { id: 'portfolio', label: t('design.tab.portfolio') },
           { id: 'tasks', label: t('design.tab.tasks') },
@@ -55,8 +55,8 @@ export const Project: React.FC = () => {
             onClick={() => setActiveTab(tab.id as ActiveTab)}
             className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === tab.id
-                ? 'bg-white dark:bg-gray-700 text-primary dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 hover:bg-gray-200/50 dark:hover:bg-slate-700/50'
             }`}
           >
             {tab.label}

@@ -147,7 +147,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             maxLength={500}
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             placeholder="Describe task briefly"
           />
         </div>
@@ -159,7 +159,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               required
               value={departmentId}
               onChange={e => setDepartmentId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="">Select Department</option>
               {departments.map(d => (
@@ -172,7 +172,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             <select 
               value={assigneeId}
               onChange={e => setAssigneeId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="">Unassigned</option>
               {users.map(u => (
@@ -188,7 +188,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             <select 
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -201,7 +201,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             <select 
               value={projectId}
               onChange={e => setProjectId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="">No Project</option>
               {projects.map(p => (
@@ -221,7 +221,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               onClick={(e) => openCal('task-start-input', e)}
               value={startDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
             />
           </div>
           <div className="tw-calendar-picker relative">
@@ -233,7 +233,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               onClick={(e) => openCal('task-due-input', e)}
               value={dueDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
             />
           </div>
         </div>
@@ -243,12 +243,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
           <textarea 
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px]"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm"
             placeholder="Describe task details..."
           />
         </div>
 
-        <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200/50 dark:border-slate-700/50">
+        <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
           <button 
             type="button" 
             onClick={onClose}
@@ -259,7 +259,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
           <button 
             type="submit" 
             disabled={loading}
-            className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-[#002e6d]/20"
+            className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm hover:shadow-md"
           >
             {loading ? 'Saving...' : 'Create Task'}
           </button>

@@ -50,20 +50,20 @@ export const AssetInventory: React.FC = () => {
               placeholder="Search assets..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/60 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100"
+              className="pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 shadow-sm"
             />
           </div>
-          <button onClick={handleNewAsset} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+          <button onClick={handleNewAsset} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm flex items-center gap-2">
             <Plus size={16} /> <span className="hidden sm:inline">Add Asset</span>
           </button>
         </div>
       </div>
 
-      <div className="glass-panel overflow-hidden border border-white/50 dark:border-gray-700/50 flex-1">
+      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl overflow-hidden flex-1 shadow-sm">
         <div className="overflow-x-auto h-full">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
+              <tr className="border-b border-gray-100 dark:border-slate-700">
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset Code</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
@@ -72,20 +72,20 @@ export const AssetInventory: React.FC = () => {
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
               {loading ? (
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading assets...</td></tr>
               ) : filteredAssets.length === 0 ? (
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">No assets found</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
-                  <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors group cursor-pointer">
+                  <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
                     <td className="p-4">
-                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">{asset.asset_code}</span>
+                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600">{asset.asset_code}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">
                           {getIcon(asset.category?.name)}
                         </div>
                         <div>
@@ -112,7 +112,7 @@ export const AssetInventory: React.FC = () => {
                         <button onClick={(e) => { e.stopPropagation(); setQrAsset(asset); }} className="p-2 text-primary hover:text-primary/80 transition-colors rounded-lg hover:bg-primary/10" title="View QR Code">
                           <QrCode size={18} />
                         </button>
-                        <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
                           <MoreHorizontal size={18} />
                         </button>
                       </div>

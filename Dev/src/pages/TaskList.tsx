@@ -94,18 +94,18 @@ export const TaskList: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
         <div className="flex gap-2">
-          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-colors">
+          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
-          <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+          <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
             <span>New Task</span>
           </button>
         </div>
       </div>
 
-      <div className="glass-panel p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
+      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
@@ -113,7 +113,7 @@ export const TaskList: React.FC = () => {
             placeholder="Search tasks by title, ref..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
           />
         </div>
         
@@ -122,7 +122,7 @@ export const TaskList: React.FC = () => {
           <select 
             value={groupBy} 
             onChange={(e) => setGroupBy(e.target.value)}
-            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="none">None</option>
             <option value="project">Project</option>
@@ -130,7 +130,7 @@ export const TaskList: React.FC = () => {
             <option value="status">Status</option>
           </select>
 
-          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-xl transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-xl transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'}`}>
               <Filter className="w-4 h-4" />
               <span>Filters {(filters.status !== 'all' || filters.priority !== 'all') && '•'}</span>
             </button>
@@ -139,10 +139,10 @@ export const TaskList: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="glass-panel p-2"><TableSkeleton rows={8} /></div>
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-2"><TableSkeleton rows={8} /></div>
       ) : filteredTasks.length === 0 ? (
-        <div className="glass-panel p-16 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-16 text-center">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No tasks found</h3>
@@ -151,10 +151,10 @@ export const TaskList: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
-            <div key={groupName} className="glass-panel overflow-hidden">
+            <div key={groupName} className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl overflow-hidden">
               {groupBy !== 'none' && (
                 <div 
-                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-gray-800/80 dark:hover:bg-gray-700/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer transition-colors"
+                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
                   onClick={() => toggleGroup(groupName)}
                 >
                   <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export const TaskList: React.FC = () => {
                       {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>
                     <h3 className="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide text-sm">{groupName}</h3>
-                    <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-white/10">{groupTasks.length} tasks</span>
+                    <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-slate-600">{groupTasks.length} tasks</span>
                   </div>
                 </div>
               )}
@@ -170,7 +170,7 @@ export const TaskList: React.FC = () => {
                 <div className="overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-white/50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700">
+                    <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                       <th className="p-4 w-12">
                         <input 
                           type="checkbox" 
@@ -198,9 +198,9 @@ export const TaskList: React.FC = () => {
                       <th className="p-4"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
@@ -222,7 +222,7 @@ export const TaskList: React.FC = () => {
                               <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{task.assignee.name}</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">Unassigned</span>
+                            <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md">Unassigned</span>
                           )}
                         </td>
                         <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit status coming soon', { icon: '🚧' }); }}>
@@ -240,7 +240,7 @@ export const TaskList: React.FC = () => {
                           {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="p-4">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700">
+                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700">
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
                         </td>

@@ -1,0 +1,5 @@
+/* Custom Stroke/Boxed Override */
+.panel, .kpi-card, .profile-card, .metric-card, .chart-card, .project-card, .tw-card, .cal-popup, .login-card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+}

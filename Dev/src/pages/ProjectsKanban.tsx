@@ -20,7 +20,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group"
+      className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group"
       onClick={onClick}>
       
       {task.project && (
@@ -38,7 +38,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
           {task.assignee ? (
             <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] text-gray-500">?</div>
+            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-slate-700 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] text-gray-500">?</div>
           )}
         </div>
         <div className="flex items-center space-x-3 text-gray-400">
@@ -108,13 +108,13 @@ export const ProjectsKanban: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <span className={`w-3 h-3 rounded-full bg-${column.color}-500`}></span>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{column.name}</h3>
-                  <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full font-medium">
+                  <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full font-medium">
                     {column.tasks.length}
                   </span>
                 </div>
               </div>
 
-              <div className="glass-panel flex-1 p-3 overflow-y-auto min-h-[200px]">
+              <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl flex-1 p-3 overflow-y-auto min-h-[200px]">
                 <SortableContext items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {column.tasks.map(task => (
@@ -124,7 +124,7 @@ export const ProjectsKanban: React.FC = () => {
                 </SortableContext>
                 {/* Empty drop zone placeholder */}
                 {column.tasks.length === 0 && (
-                  <div id={column.id} className="h-full w-full border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg" />
+                  <div id={column.id} className="h-full w-full border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg" />
                 )}
               </div>
             </div>

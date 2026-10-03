@@ -28,17 +28,17 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div 
-        className="absolute inset-0 bg-slate-900/40 dark:bg-slate-900/70 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-slate-900/40 dark:bg-slate-900/70 transition-opacity"
         onClick={onClose}
       />
       
-      <div className="relative bg-[#f4f6f8] dark:bg-[#1e2330] shadow-2xl border border-white/60 dark:border-slate-700/80 rounded-[32px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white dark:bg-slate-800 shadow-xl border border-gray-200 dark:border-slate-700 rounded-3xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200">
         
         <div className="flex items-center justify-between p-6 md:px-8 pt-8">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h3>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all"
+            className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all"
           >
             <X size={24} />
           </button>

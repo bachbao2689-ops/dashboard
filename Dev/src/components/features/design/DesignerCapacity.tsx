@@ -85,10 +85,10 @@ export const DesignerCapacity: React.FC = () => {
   if (loading && tasks.length === 0) {
     return (
       <div className="space-y-6 pt-4 animate-pulse">
-        <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl w-full"></div>
+        <div className="h-32 bg-gray-200 dark:bg-slate-800 rounded-2xl w-full"></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
-           <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
+           <div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-2xl"></div>
+           <div className="h-64 bg-gray-200 dark:bg-slate-800 rounded-2xl"></div>
         </div>
       </div>
     )
@@ -97,7 +97,7 @@ export const DesignerCapacity: React.FC = () => {
   return (
     <div className="space-y-6 pt-4">
       {/* Overall Status */}
-      <div className="glass-panel p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">TEAM CAPACITY - ACTIVE TASKS</h2>
           <div className="text-right">
@@ -105,7 +105,7 @@ export const DesignerCapacity: React.FC = () => {
             <span className="text-gray-500 dark:text-gray-400 ml-2 font-medium">utilized</span>
           </div>
         </div>
-        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-500 ${overallUtilization > 100 ? 'bg-red-500' : 'bg-primary'}`} 
             style={{ width: `${Math.min(overallUtilization, 100)}%` }}
@@ -120,7 +120,7 @@ export const DesignerCapacity: React.FC = () => {
           const isOver = designer.status === 'overloaded';
           
           return (
-            <div key={designer.id} className="glass-panel p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+            <div key={designer.id} className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export const DesignerCapacity: React.FC = () => {
                     <span>{designer.allocated}h / {designer.capacity}h</span>
                     <span>{percent}%</span>
                   </div>
-                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden flex">
+                  <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden flex">
                     <div 
                       className={`h-full ${isOver ? 'bg-red-500' : 'bg-primary'} transition-all`} 
                       style={{ width: `${Math.min(percent, 100)}%` }}
@@ -159,13 +159,13 @@ export const DesignerCapacity: React.FC = () => {
               </div>
 
               {designer.deadlines.length > 0 ? (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                     <Calendar size={12} /> Upcoming Deadlines
                   </h4>
                   <ul className="space-y-2">
                     {designer.deadlines.map((d, i) => (
-                      <li key={i} className="text-sm flex justify-between bg-gray-50 dark:bg-gray-900/50 px-3 py-2 rounded-lg gap-3">
+                      <li key={i} className="text-sm flex justify-between bg-gray-50/80 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 px-3 py-2 rounded-lg gap-3">
                         <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{d.task}</span>
                         <span className="text-gray-500 whitespace-nowrap">{d.date}</span>
                       </li>
@@ -173,7 +173,7 @@ export const DesignerCapacity: React.FC = () => {
                   </ul>
                 </div>
               ) : (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-400 text-center">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 text-sm text-gray-400 text-center">
                   No upcoming deadlines
                 </div>
               )}

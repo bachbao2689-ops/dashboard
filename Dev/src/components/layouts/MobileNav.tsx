@@ -96,7 +96,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-4 right-4 bg-white/45 dark:bg-gray-800/60 backdrop-blur-md rounded-full z-[99] flex items-center justify-between p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/60 dark:border-gray-600/60 mobile-nav-container",
+          "md:hidden fixed left-4 right-4 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-slate-700 mobile-nav-container",
           isHidden && "nav-hidden"
         )}
       >
@@ -107,7 +107,7 @@ export const MobileNav: React.FC = () => {
             className={({ isActive }) => cn(
               "flex flex-col items-center justify-center w-12 h-[44px] rounded-full transition-transform duration-300",
               isActive 
-                ? "text-primary bg-white/65 dark:bg-white/10 scale-105 shadow-sm" 
+                ? "text-primary bg-gray-100 dark:bg-slate-700 scale-105 shadow-sm" 
                 : "text-gray-500 dark:text-gray-400"
             )}
           >

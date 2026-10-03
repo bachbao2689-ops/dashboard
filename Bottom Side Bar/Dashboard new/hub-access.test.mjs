@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const ctx=vm.createContext({});vm.runInContext(fs.readFileSync('hub-access.js','utf8'),ctx);
+const data={users:[{email:'lead@test',role:' LEAD ',department:'Design',pic:'A'},{email:'sales@test',role:'Leader',department:'Sales',pic:'B'},{email:'admin@test',role:'Admin'}],tasks:[{id:1,department:'Design',pic:'X'},{id:2,department:'Sales',pic:'A, B'},{id:3,department:'Sales',pic:'AA'},{id:4,department:'',pic:''}],options:{pics:['A','B']}};
+test('LEAD sees own team and exact multi-PIC assignments without mutating source',()=>{const d=ctx.hubAccessData(data,'LEAD@test',false);assert.equal(d.meta.canManage,true);assert.deepEqual(Array.from(d.tasks,t=>t.id),[1,2]);assert.ok(d.meta.allowedViews.includes('requests'));assert.equal(data.tasks.length,4);assert.equal(data.users.length,3);});
+test('Non-design lead has overview, Task and assets but no borrow review tabs',()=>{const d=ctx.hubAccessData(data,'sales@test',false);assert.ok(d.meta.allowedViews.includes('overview'));assert.ok(d.meta.allowedViews.includes('assets'));assert.ok(!d.meta.allowedViews.includes('requests'));assert.ok(!d.meta.allowedViews.includes('logs'));});
+test('Missing live identity never becomes admin; explicit local preview remains usable',()=>{const live=ctx.hubAccessData(data,'',false);assert.equal(live.meta.canManage,false);assert.equal(live.tasks.length,0);assert.equal(ctx.hubAccessData(data,'',true).meta.canManage,true);});
+test('Admin retains all rows; switching identity does not inherit prior team filtering',()=>{ctx.hubAccessData(data,'lead@test',false);const d=ctx.hubAccessData(data,'admin@test',false);assert.equal(d.tasks.length,4);assert.equal(d.users.length,3);});

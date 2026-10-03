@@ -33,18 +33,18 @@ export const KpiCard: React.FC<KpiCardProps> = ({ title, value, trend, className
   };
 
   return (
-    <div className={cn("glass-panel p-6 rounded-3xl flex flex-col justify-between h-40 relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:-translate-y-1", className)}>
+    <div className={cn("bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm p-6 rounded-3xl flex flex-col justify-between h-40 relative overflow-hidden group transition-all duration-300 hover:shadow-md hover:-translate-y-1", className)}>
       <div className={`absolute top-0 right-0 w-24 h-24 ${bgColors[colorTheme]} rounded-full blur-2xl -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-150`}></div>
       
       <div className="flex justify-between items-start relative z-10">
-        <span className="text-sm font-semibold text-gray-600">{title}</span>
-        <div className={`p-1.5 rounded-xl bg-white/60 backdrop-blur-sm border border-white/80 shadow-sm ${textColors[colorTheme]}`}>
+        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{title}</span>
+        <div className={`p-1.5 rounded-xl bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm ${textColors[colorTheme]}`}>
           {isPositive ? <TrendingUp size={18} strokeWidth={2.5} /> : <TrendingDown size={18} strokeWidth={2.5} />}
         </div>
       </div>
       <div className="flex items-end justify-between mt-4 relative z-10">
-        <h3 className="text-4xl font-bold text-gray-800 tracking-tight">{value}</h3>
-        <span className={`text-sm font-bold flex items-center px-2.5 py-1 rounded-lg bg-white/50 backdrop-blur border border-white/50 ${isPositive ? 'text-emerald-600' : 'text-rose-500'}`}>
+        <h3 className="text-4xl font-bold text-gray-800 dark:text-white tracking-tight">{value}</h3>
+        <span className={`text-sm font-bold flex items-center px-2.5 py-1 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
           {isPositive ? '+' : ''}{trend}%
         </span>
       </div>

@@ -47,7 +47,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   return (
     <div 
       style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0, opacity: isOpen ? 1 : 0 } : { width: isOpen ? '100%' : 0, opacity: isOpen ? 1 : 0 }}
-      className={`h-full glass-panel rounded-l-xl md:rounded-l-3xl !rounded-r-none border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
+      className={`h-full bg-white dark:bg-slate-800 rounded-l-xl md:rounded-l-3xl !rounded-r-none border-l border-gray-200 dark:border-slate-700 shadow-sm shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
     >
       {/* Resizer Handle */}
       {isOpen && (
@@ -63,16 +63,16 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       <div className="w-full h-full flex flex-col overflow-hidden" style={{ minWidth: isOpen ? (window.innerWidth >= 768 ? 320 : '100%') : 0 }}>
         
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-white/20 dark:border-gray-700/50 shrink-0">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-sm border border-white/40">
+            <span className="text-xs font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-sm border border-gray-200 dark:border-slate-700">
               {task?.task_ref || 'TK-000'}
             </span>
-            <button className="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+            <button className="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
               <MoreHorizontal className="w-5 h-5" />
             </button>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/60 dark:hover:bg-gray-700/60 text-gray-500 hover:text-gray-800 transition-colors shadow-sm border border-transparent hover:border-white/40">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-slate-700">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -86,7 +86,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5 leading-tight">{task.title}</h2>
                 <div className="flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-3 bg-white/40 dark:bg-gray-800/40 p-2 pr-4 rounded-full border border-white/50 shadow-sm">
+                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pr-4 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
@@ -94,7 +94,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                       <div className="font-medium text-gray-900 dark:text-gray-100 capitalize">{((task as any).status || 'todo').replace('_', ' ')}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 bg-white/40 dark:bg-gray-800/40 p-2 pr-4 rounded-full border border-white/50 shadow-sm">
+                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pr-4 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
                     <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
                       <Clock className="w-4 h-4" />
                     </div>
@@ -106,7 +106,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               </div>
 
               {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-6 bg-white/30 dark:bg-gray-800/30 p-5 rounded-2xl border border-white/40 shadow-glass-inset">
+              <div className="grid grid-cols-2 gap-6 bg-gray-50/80 dark:bg-slate-800/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700">
                 <div>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Assignee</div>
                   <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{task.assignee.name}</span>
                       </>
                     ) : (
-                      <span className="text-sm font-medium text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded-md">Unassigned</span>
+                      <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">Unassigned</span>
                     )}
                   </div>
                 </div>
@@ -124,22 +124,22 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 <div>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Due Date</div>
                   {task.due_date ? (
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white/50 dark:bg-gray-800/50 inline-block px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800 inline-block px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
                       {task.due_date}
                     </div>
                   ) : (
-                    <span className="text-sm font-medium text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded-md">N/A</span>
+                    <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">N/A</span>
                   )}
                 </div>
 
                 <div>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Start Date</div>
                   {(task as any).start_date ? (
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white/50 dark:bg-gray-800/50 inline-block px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800 inline-block px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
                       {(task as any).start_date}
                     </div>
                   ) : (
-                    <span className="text-sm font-medium text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded-md">N/A</span>
+                    <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">N/A</span>
                   )}
                 </div>
 
@@ -163,7 +163,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
                   <AlignLeft className="w-4 h-4 text-gray-500" /> Description
                 </div>
-                <div className="bg-white/40 dark:bg-gray-800/40 p-5 rounded-2xl border border-white/50 shadow-glass-inset text-sm text-gray-700 dark:text-gray-300 leading-relaxed min-h-[100px] whitespace-pre-wrap">
+                <div className="bg-gray-50/80 dark:bg-slate-800/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 leading-relaxed min-h-[100px] whitespace-pre-wrap">
                   {task.description || 'No description provided for this task.'}
                 </div>
               </div>
@@ -176,10 +176,10 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 
                 <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 dark:before:via-gray-600 before:to-transparent">
                   <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 shrink-0 z-10 shadow-md">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-500 shrink-0 z-10 shadow-sm">
                       <Clock className="w-4 h-4" />
                     </div>
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-white/50 shadow-glass-inset bg-white/60 dark:bg-gray-800/60 ml-4 md:ml-0 backdrop-blur-md hover:shadow-lg transition-shadow">
+                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 ml-4 md:ml-0 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">Task created</span>
                         <span className="text-xs font-medium text-gray-500">2 days ago</span>
@@ -195,11 +195,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         )}
         
         {/* Footer Actions */}
-        <div className="p-5 border-t border-white/20 dark:border-gray-700/50 bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl flex gap-4 shrink-0 rounded-bl-xl">
-          <button className="flex-1 px-4 py-2.5 bg-white/60 dark:bg-gray-700/60 border border-white/50 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-sm hover:bg-white dark:hover:bg-gray-600 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
+        <div className="p-5 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-4 shrink-0 rounded-bl-xl">
+          <button className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-sm hover:bg-gray-100 dark:hover:bg-slate-600 transition-all shadow-sm flex items-center justify-center gap-2">
             <MessageSquare className="w-4 h-4" /> Comment
           </button>
-          <button className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2">
+          <button className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
             <CheckCircle2 className="w-4 h-4" /> Complete
           </button>
         </div>

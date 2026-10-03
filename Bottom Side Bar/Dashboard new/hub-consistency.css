@@ -1,0 +1,29 @@
+/* Shared modal and touch controls across all hub tabs. */
+dialog#detail-dialog,dialog.tw-drawer{color:var(--ink,#153454);border:1px solid var(--line,#e0eaf8);background:white;border-radius:20px;box-shadow:0 24px 80px #122d5533}
+dialog#detail-dialog{position:fixed;inset:0!important;margin:auto!important;width:min(640px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;max-height:82dvh!important;padding:0;overflow:auto}
+dialog#detail-dialog:has(#create-task-form){width:min(560px,calc(100vw - 24px))!important;max-height:min(680px,82dvh)!important}
+#create-task-form .detail-grid{max-height:none!important;overflow:visible!important;gap:12px!important}
+#create-task-form .detail-field{padding:10px 12px}
+#create-task-form .dialog-actions{position:sticky;bottom:-20px;background:white;padding:12px 0;border-top:1px solid var(--line)}
+.dashboard-grid[hidden],#kpis[hidden],#secondary-view[hidden],#filter-bar[hidden]{display:none!important}
+dialog::backdrop{background:#102a4940;backdrop-filter:blur(3px)}
+.dialog-header{position:sticky;top:0;z-index:2;background:#fff;padding:16px 20px;border-bottom:1px solid var(--line,#e0eaf8)}
+#dialog-body{padding:20px;overflow-wrap:anywhere}
+dialog input,dialog textarea,dialog select{max-width:100%;box-sizing:border-box}
+dialog input:not([type=hidden]),dialog select{min-height:36px}
+dialog button:focus-visible{outline:3px solid #80b6ff;outline-offset:2px}
+.task-table tr[data-detail]:hover{background:#f3f7fc}
+.task-table tr[data-detail]:focus-visible{outline:2px solid #3789f4;outline-offset:-2px}
+@media(max-width:720px){
+  dialog#detail-dialog{inset:0!important;margin:auto!important;width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:84dvh!important;border-radius:16px!important}
+  #dialog-body{padding:16px}
+  dialog input:not([type=hidden]),dialog select,dialog textarea{font-size:16px!important;min-height:44px}
+  .dialog-actions{flex-wrap:wrap}
+  .dialog-actions>*{min-height:44px}
+  .mobile-property>div:first-child{width:110px!important;white-space:normal!important}
+  .mobile-property>div:last-child{overflow-wrap:anywhere;white-space:normal}
+  .list-toolbar,.toolbar-controls{gap:10px;flex-wrap:wrap}
+  .list-toolbar .filter-bar{margin-left:0!important;width:100%;flex-wrap:wrap}
+  .list-toolbar input,.list-toolbar select{min-width:0;max-width:100%;min-height:44px}
+  .mobile-nav-mask:has(+.mobile-nav.keyboard-hidden){opacity:0;visibility:hidden}
+}

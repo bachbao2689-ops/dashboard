@@ -13,14 +13,14 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
 
   return (
     <>
-    <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
+    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl relative overflow-hidden shadow-sm">
       {/* Decorative background blur */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
       
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
         
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-primary/30">
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm">
             {initials}
           </div>
           
@@ -41,17 +41,17 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 text-sm font-medium">
+          <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm">
             <Edit3 size={16} /> Edit Profile
           </button>
-          <button onClick={() => onTabChange('activity')} className="p-2 hover:bg-white dark:hover:bg-gray-800 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 relative">
+          <button onClick={() => onTabChange('activity')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 relative shadow-sm">
             <Bell size={18} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
-          <button onClick={() => onTabChange('settings')} className="p-2 hover:bg-white dark:hover:bg-gray-800 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700">
+          <button onClick={() => onTabChange('settings')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 shadow-sm">
             <Settings size={18} />
           </button>
-          <button onClick={signOut} className="p-2 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 bg-white/50 dark:bg-gray-800/50 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 text-gray-500">
+          <button onClick={signOut} className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-gray-500 shadow-sm">
             <LogOut size={18} />
           </button>
         </div>

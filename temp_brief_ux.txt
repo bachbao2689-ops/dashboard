@@ -1,0 +1,534 @@
+UX & OPERATION SPEC: DESIGN TEAM DASHBOARD
+Phiên bản: 1.0 — "Bấm vô là chạy được" Focus: Function mapping + Data flow + Screen linking + Logic vận hành
+
+1. NGUYÊN TẮC VẬN HÀNH CHÍNH
+3 quy tắc vàng khi bấm nút
+1) Mọi action phải có phản hồi tức thì (<100ms) — optimistic update UI trước, sync server sau. 2) Mọi action khả phá hủy (delete, reject) phải có Confirm Dialog hoặc Undo 5s. 3) Sau mỗi action, dữ liệu liên quan ở MỌI màn hình khác phải tự cập nhật (nếu đang mở).
+
+2. ACTION MAP — BẤM NÚT THÌ CHẠY GÌ
+2.1 Sidebar Navigation
+Bấm vào
+Điều gì xảy ra
+Data load
+Thời gian
+🏠 Home
+Route /home → render dashboard tổng quan
+KPI aggregate + 5 task gần deadline + 3 project active
+<300ms (cached)
+✏️ All Tasks
+Route /tasks → render bảng tất cả task
+Tasks với filter mặc định: status != done, sort dueDate ASC
+<500ms
+🎨 Design Projects
+Route /design → render portfolio grid
+Projects + progress tính real-time từ tasks
+<500ms
+👤 My Tasks
+Route /tasks?assignee=me → bảng đã filter
+Chỉ task assigneeId == current user
+<400ms
+⏰ Overdue
+Route /tasks?overdue=true
+dueDate < now AND status != done, sort: muộn nhất trước
+<400ms
+📦 Inventory
+Route /assets → grid asset
+Assets + trạng thái mượn
+<500ms
+👥 Members
+Route /members
+Users + role + status
+<400ms
+📊 Workload
+Route /workload → capacity view
+Workload tính từ task estimates tuần hiện tại
+<600ms
+Cực kỳ quan trọng — Active state:
+// Menu item đang active → highlight + update URL
+// User refresh page (F5) → vẫn đứng đúng màn hình đó
+// Vì: state nằm trong URL, không phải memory
+
+// VÍ DỤ SAU:
+// User đang ở /tasks?status=review&priority=high
+// Bấm F5 → vẫn thấy bảng đã filter đúng như cũ
+// Copy link gửi cho đồng nghiệp → mở ra thấy giống hệt
+// → Đây là điểm mà 90% dashboard non-professional làm sai
+
+2.2 Top Bar Buttons
+🔍 Search (quan trọng nhất)
+Bấm vào search bar:
+STEP 1: Focus input → dropdown overlay hiện ra (500px)
+        Hiện:
+        ├── 3 recent searches của user này (lưu localStorage)
+        ├── Quick jumps: matching projects, tasks, members
+        └── Shortcut hint: "Nhấn Esc để đóng"
+
+STEP 2: Gõ chữ (debounce 300ms):
+        QUERY: "kv"
+        ├── 🎨 PROJECTS: KV Campaign Tháng 9 (2)
+        ├── ✏️ TASKS: KV Món Mới, KV Banner Q4 (2)
+        ├── 👤 MEMBERS: (không match)
+        └── 📦 ASSETS: KV Template 2026.psd (1)
+
+STEP 3: Click kết quả:
+        - Project → navigate /design/project/123
+        - Task → navigate /tasks?open=task123 (mở detail panel luôn)
+        - Asset → navigate /assets?highlight=asset456
+Keyboard shortcuts:
+Ctrl+K hoặc "/"    → focus search
+↑ ↓               → di chuyển giữa kết quả
+Enter              → mở kết quả đang chọn
+Esc                → thoát search
+🔔 Notification Bell
+Bấm vào: Dropdown hiện notification (đã spec ở wireframe trước) — NHƯNG logic đọc như sau:
+// Khi user MỞ dropdown:
+// 1. Gọi API: PATCH /notifications/mark-seen
+//    (seen ≠ read — badge đỏ biến thành xám nhạt)
+// 2. Gọi API: GET /notifications?unread=true&limit=10
+// 3. Render danh sách mới nhất trước
+
+// Khi user CLICK một notification:
+// 1. PATCH /notifications/:id → mark READ (biến mất dot)
+// 2. Navigate đến target:
+//    - "Luna commented #TK15" → /tasks?open=TK15#comments
+//    - "v4 approved" → /tasks?open=TK15&tab=versions
+//    - NẮM QUY TẮC: user bấm notification → tới nơi gây ra nó
+//      + AUTO SCROLL đến đúng comment/version đó
+
+// LIVE BEHAVIOR:
+// - Có notification mới khi đang ở app → WebSocket push
+//   → badge +1 với bounce animation
+//   → Nếu dropdown đang mở: prepend item với fade-in
+// - KHÔNG bao giờ auto-open dropdown (quấy rầy user)
+🌙 Theme Toggle
+// Bấm:
+// 1. Toggle data-theme="light" ↔ "dark" trên <html>
+// 2. localStorage.setItem('theme', newValue)
+// 3. Nếu user chưa từng set → default theo system preference
+
+// Edge case: user đổi theme system → app follow nếu
+// họ chưa override thủ công (respect cả 2 chiều)
+
+3. PROJECT PORTFOLIO — UX CHI TIẾT
+3.1 Click vào Project Card
+Single click → route /design/project/{id} — Project Detail page:
+PROJECT DETAIL PAGE render theo thứ tự:
+
+┌─────────────────────────────────────────────────┐
+│ ← Back (về portfolio)                            │
+│                                                   │
+│ BỘ PHẬN THÔNG TIN CHÍNH (query 1):               │
+│ ├── Name, status, priority, owner                 │
+│ ├── Timeline bar (start → today → end)           │
+│ │   vẽ: [███████████░░░░░░░]                      │
+│ │   ██ = đã qua, ░ = còn lại                      │
+│ │   ★ marker vị trí hôm nay                       │
+│ │   ⚠️ nếu today > endDate → thanh đỏ "TRỄ 12 ngày"│
+│ └── Budget bar tương tự                           │
+│                                                   │
+│ HÀNG KPI (query 2, aggregate):                    │
+│ ┌───────┐┌───────┐┌───────┐┌───────┐             │
+│ │Tasks  ││Done % ││Overdue││Hours  │             │
+│ │24/38  ││63%    ││3 🔴   ││142h   │             │
+│ │+2 this││▲8%vsLW││      ││/200h  │             │
+│ └───────┘└───────┘└───────┘└───────┘             │
+│  MỖI KPI CARD BẤM ĐƯỢC:                          │
+│  - Tasks → scroll xuống task board               │
+│  - Overdue → task board với filter overdue on     │
+│  - Hours → mở breakdown theo thành viên          │
+│                                                   │
+│ TEAM SECTION (query 3):                           │
+│ ┌─────────────────────────────────────────────┐  │
+│ │ Wendy (Lead) [avatar] 8h assigned  [Message] │  │
+│ │ Luna          [avatar] 12h assigned [Message]│  │
+│ │ Mike 🔴       [avatar] 16h OVER [Message]    │  │
+│ └─────────────────────────────────────────────┘  │
+│  [Message] → mở DM modal (tích hợp chat)         │
+│  Hover avatar → popup: số task đang giữ + status │
+│                                                   │
+│ TASK BOARD (query 4 - xem section 4)             │
+└─────────────────────────────────────────────────┘
+Tối ưu load: 4 queries chạy song song (Promise.all) — không đợi tuần tự. Khi đang load thì hiện skeleton TỪNG SECTION độc lập (header hiện trước, KPI sau 200ms, board cuối — user thấy "app chạy nhanh" dù tổng thể vậy).
+3.2 Hover vào Project Card — Quick Actions
+Nút
+Action
+Kết quả
+👁️ Preview
+Modal peek project detail
+Không rời trang, 70% opacity backdrop
+✏️ Edit
+Mở Edit Project modal
+Pre-filled từ data hiện tại
+➕ Add Task
+Modal New Task
+projectId auto-filled sẵn
+
+4. TASK BOARD — UX CHI TIẾT (PHẦN TRỌNG TÂM)
+4.1 Drag-Drop Card Giữa Cột (Kanban logic)
+LUỒNG DRAG KHI THẢ VÀO CỘT MỚI:
+
+Bước 1: User kéo card "KV Món Mới" từ [In Progress] sang [Ready for Review]
+        → card theo con trỏ, cột đích highlight xanh
+
+Bước 2: Thả card
+        → OPTIMISTIC: card đã nằm ở cột mới NGAY LẬP TỨC
+        → API call nền: PATCH /tasks/:id { status: 'ready_for_review' }
+
+Bước 3a: API trả về OK
+        → Không làm gì thêm (UI đã đúng)
+        → Badge đếm cột +1/-1 cập nhật
+
+Bước 3b: API FAIL (mất mạng / lỗi validation)
+        → Card BAY VỀ cột cũ với animation ngược
+        → Toast: "Không thể chuyển task. Đã hoàn tác."
+        
+EDGE CASES PHẢI XỬ LÝ:
+├── Thả "Approved" card về "In Progress"? 
+│   → HIỂN THỊ CONFIRM: "Task đã duyệt. Chuyển về In Progress
+│     sẽ gửi notification lại cho designer. Tiếp tục?" [OK] [Hủy]
+├── Thả card vào cột bị khóa WIP limit (>5 cards)
+│   → Cột rung đỏ + toast: "Cột đã đạt giới hạn 5. 
+│     Hoàn thành task trước khi thêm mới."
+└── Drag trong mobile → KHÔNG dùng drag, thay bằng:
+    card menu (⋯) → "Move to..." → chọn cột từ bottom sheet
+State machine chuyển đổi hợp lệ:
+const allowedTransitions = {
+  'requested':    ['in_progress', 'cancelled'],
+  'in_progress':  ['ready_for_review', 'requested', 'cancelled'],
+  'ready_for_review': ['approved', 'revision_needed', 'in_progress'],
+  'revision_needed': ['in_progress'],
+  'approved':     ['delivered'],           // ← khóa, không quay đầu
+  'delivered':    []                        // ← terminal state
+};
+
+// Nếu drop vào cột không hợp lệ → card弹 về + toast giải thích
+// "Không thể chuyển từ Approved về In Progress trực tiếp"
+4.2 Click Vào Card — Task Detail Panel
+Click card → slide-over panel từ phải (600px desktop / fullscreen mobile):
+// Data loading strategy:
+// Panel mở NGAY với data đã có từ card (từ list query)
+// → gọi GET /tasks/:id?include=versions,comments,timeline
+// → khi response về thì SWAP silent (không loading flash)
+// → nếu API chậm, sections versions/comments hiện skeleton riêng
+// ĐIỂM MẤU CHỐT: KHÔNG bắt user nhìn màn hình trắng chờ API
+Trong panel — MỖI phần tử bấm được:
+Element
+Click → làm gì
+Preview image
+Lightbox fullscreen + zoom + annotations
+🖊 Edit title
+Inline edit (double-click text)
+Status badge
+Dropdown chọn status mới → xác nhận
+👤 Assignee avatar
+Dropdown chọn member khác
+📅 Due date
+Date picker inline
+⭐ Priority
+Dropdown low/med/high/urgent
+Each version chip
+Swap preview image sang version đó
+Compare v3↔v4
+Mở comparison modal side-by-side
+💬 Comment input
+Enter để gửi → comment append ngay (optimistic)
+🔴 Annotation pin
+Zoom vào vùng đó + mở comment thread
+[✓ Approve]
+Xem flow riêng bên dưới ⬇️
+4.3 Approve Flow — End-to-End
+BẤM [✓ APPROVE]:
+
+Bước 1: UI khóa nút ngay (disabled, spinner)
+        API: PATCH /tasks/:id { status: 'approved' }
+
+Bước 2: API OK → trên panel:
+        ├── Status badge flip sang xanh "✅ Approved" (flip animation)
+        ├── Nút [Approve]/[Reject] ẩn đi, thay bằng [Mark Delivered] + [Undo 5s]
+        ├── Notification đẩy đến designer (badge +1, push mobile nếu bật)
+        └── Card ở board lùi upstream cũng flip trạng thái (sync!)
+
+Bước 3: User nhận ra nhầm nút → bấm [Undo 5s]
+        → API revert status về 'ready_for_review'
+        → TẤT CẨU UI sync ngược lại (panel + board + notification rút)
+        → Sau 5s nếu không bấm → Undo biến mất, action thành thật
+        
+ĐÂY LÀ LÝ DO "OPERATION" KHÁC "UI":
+- UI chỉ vẽ nút Approve đẹp
+- Operation phải lo: race conditions (2 người approve cùng lúc?
+  → server check version, người sau nhận "Task vừa được duyệt bởi Admin"),
+  undo window, cross-screen sync, notification routing
+
+5. DATA RELATIONSHIPS — SCREENS LINK VỚI NHAU
+                   ┌──────────────┐
+                    │    HOME      │
+                    │ (tổng quan)  │
+                    └──────┬───────┘
+                           │ mọi KPI click được
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+   ┌───────────┐    ┌───────────┐    ┌───────────┐
+   │ALL TASKS  │◀──▶│  PROJECT  │◀──▶│  WORKLOAD │
+   │(bảng mọi  │    │ DETAIL    │    │  VIEW     │
+   ;;task)     │    │(deep dive) │    │(con người)│
+   └─────┬─────┘    └─────┬─────┘    └─────┬─────┘
+         │                │                │
+         │   Task từ mọi   │  Task thuộc     │ Task xếp
+         │   project       │  1 project      │ theo NGƯỜI
+         ▼                ▼                ▼
+   ┌───────────────────────────────────────────┐
+   │            TASK DETAIL PANEL               │
+   │  (1 task, mọi thông tin + versions +       │
+   │   comments + timeline + actions)          │
+   └──────────────────┬────────────────────────┘
+                      │ khi approve/reject/reassign
+                      ▼
+   ┌───────────────────────────────────────────┐
+   │            NOTIFICATIONS                  │
+   │  → đẩy đến đúng người liên quan           │
+   │  → họ click → về đúng chỗ gây event      │
+   └───────────────────────────────────────────┘
+Cụ thể hóa từng đường link:
+// 1. HOME → ALL TASKS
+// Click KPI "3 overdue" 
+// → navigate('/tasks?overdue=true&sort=overdue_days:desc')
+// → bảng render sẵn filter, KHÔNG cần user filter lại lần nữa
+
+// 2. ALL TASKS → PROJECT DETAIL  
+// Click tên project trong cột "Project"
+// → navigate(`/design/project/${projectId}`)
+
+// 3. PROJECT DETAIL → WORKLOAD
+// Click "Mike 🔴 16h OVER"
+// → navigate(`/workload?highlight=mikeId&week=current`)
+// → trang workload scroll đến + flash highlight card của Mike
+
+// 4. WORKLOAD → TASK LIST của người đó
+// Click [View Tasks] trên designer card
+// → navigate(`/tasks?assignee=mikeId&status=active`)
+
+// 5. TASK DETAIL → Member profile
+// Click avatar Wendy → hover card + [View Profile]
+// → navigate(`/members?id=wendyId`) (nếu có quyền)
+
+// NGUYÊN TẮC: MỌI THỨ LIÊN QUAN THÌ CLICK ĐƯỢC
+// Nếu user thấy tên "Mike" trên màn hình mà bấm không có gì
+// → đó là UI chết, phải sửa
+
+6. THÔNG TIN NÊN HIỂN THỊ Ở MỖI BOARD (DATA USEFULNESS)
+Nguyên tắc chọn data hiển thịinfo
+Mỗi con số trên màn hình phải trả lời được câu hỏi người quản lý tự hỏi. Nếu không ai thèm nhìn → bỏ. Nếu phải bấm 3 lần mới thấy → đưa lên cấp 1.
+6.1 Bảng All Tasks — cột nào đáng giá
+Cột
+Giữ/Bỏ
+Lý do
+Thumbnail preview
+✅ GIỮ
+Task design = nhìn hình nhanh hơn đọc tên
+Title
+✅ GIỮ
+Bắt buộc
+Project
+✅ GIỮ
+Context công việc
+Assignee avatar
+✅ GIỮ
+Trả lời "ai đang làm?"
+Status badge
+✅ GIỮ
+Câu hỏi số 1 của manager
+Due date + số ngày còn lại
+✅ GIỮ
+Hiển thị "5/10 (−2d)" thay vì chỉ ngày — não xử lý "còn 2 ngày" nhanh hơn
+Priority
+⚠️ CHỈ HIỆN HIGH+
+Low/Medium priority làm nhiễu, filter khi cần
+Estimated hours
+❌ BỎ khỏi list
+Chỉ cần trong detail/workload
+Creator
+❌ BỎ
+Hiếm khi ai hỏi
+Created date
+❌ BỎ
+Giữ trong timeline của detail
+6.2 KPI Card trên Home — chỉ 6 số này đáng mặt
+1. "N tasks due trong 7 ngày tới"  ← quyết định thứ tự làm việc hôm nay
+2. "N overdue"                      ← số đỏ duy nhất đáng giật mình
+3. "N chờ tôi duyệt"               ← VÀNG — chỉ hiện nếu user là reviewer
+                                      "Bạn đang chặn 3 tasks" → tâm lý hành động ngay
+4. "% on-time tháng này"           ← health check
+5. "Số task mới hôm nay"           ← sức sống team
+6. "Capacity team tuần này"         ← nhận hay không nhận việc mới?
+
+TẤT CẢ 6 card đều BẤM ĐƯỢC → navigate với filter sẵn (mục 5)
+6.3 Card của 1 designer trên Workload
+Đủ dùng, không thừa:
+├── Avatar + tên (rõ)
+├── Thanh capacity % + màu semantic (xanh/vàng/đỏ)
+├── "5 tasks • 2 overdue" (đếm ngắn gọn)
+├── Danh sách 5 task đó thu gọn (title + due)
+│   → click từng task → đến task detail
+└── [Reassign] chỉ hiện khi >85% capacity
+
+7. CÁC LUỒNG VẬN HÀNH ĐẦY ĐỦ (USER JOURNEYS)
+Journey 1: Stakeholder gửi request → nhận成品
+[Marketing nhân viên]
+  1. Bấm [+ New Request] trên All Tasks
+  2. Điền form → Attach brief PDF → Submit
+     → UI: task xuất hiện cuối cột "Requested" NGAY
+     → Toast: "Đã gửi. Được gán cho Wendy (theo cân bằng workload)"
+
+[Designer Wendy]
+  3. Nhận notification "Bạn được giao task mới" → click
+     → Landing thẳng vào task detail
+  4. Bấm [Start] → status → in_progress, timer start
+  5. Làm xong → bấm [Submit version] → upload file PSD
+     → progress bar → preview tự generate → status → ready_for_review
+
+[Reviewer Luna]
+  6. Notification "Wendy submitted v1 #TK15" → click → detail
+  7. Xem preview → bấm annotation mode → ghim 3 chú thích lên hình
+     → mỗi pin gắn comment cụ thể
+  8. Bấm [Request Revision] → status → revision_needed
+     → designer nhận notification có kèm 3 comments
+
+[Wendy]
+  9. Notification → click → thấy 3 pins trên v1
+     → sửa đúng chỗ được chỉ → submit v2 → lặp lại 6-8
+
+[Luna] 10. v2 đạt → [✓ Approve] → status approved
+[Marketing] 11. Notification "Design của bạn đã hoàn thành 🎉"
+              → click → download final files
+
+TOÀN BỘ JOURNEY: 0 email, 0 screenshot qua Zalo, 0 "anh xem file em
+gửi sáng nay chưa?" — mọi thứ nằm trong app và MỌI bước bấm được
+Journey 2: Manager cứu task muộn
+Manager mở Home buổi sáng 8h:
+  → KPI "3 overdue" đỏ → click
+  → Land: All Tasks filter overdue, sort muộn nhất trước
+  → Mở task "KV Banner" (muộn 5 ngày, v3/5 revision)
+  
+  Áp lực kép → quyết định:
+  
+  NẾU LÝ DO MUỘN LÀ REVIEWER CHẬM:
+  → Timeline panel cho thấy "v3 submitted Oct 1, review pending 2 ngày"
+  → Thay vì mắng designer → nhắn/chuyển giao reviewer
+  
+  NẾU DESIGNER QUÁ TẢI:
+  → Click assignee Wendy → workload pop-up "92% capacity"
+  → Click [Reassign] → dropdown chỉ gợi ý user capacity thấp
+  → Chọn Lisa (20%) → task chuyển, cả 2 nhận notification
+  
+  NẾU KHÔNG THỂ CỨU:
+  → Menu (⋯) → [Extend deadline] → date mới + reason
+  → hệ thống ghi deadline change vào timeline (audit trail)
+Journey 3: Loop bảo vệ chất lượng
+Auto rules chạy nền (cron mỗi giờ):
+
+Rule 1: Task 'ready_for_review' > 48h chưa ai duyệt
+        → Nudge reviewer: "Bạn đang chặn #TK15 (48h)"
+        → Sau 72h → escalate lên manager của reviewer
+
+Rule 2: Revision count = 4 (gần max 5)
+        → Warning banner trên task detail:
+          "Nhiều vòng sửa — cân nhắc hop kickoff để đồng bộ brief"
+        → Không chặn, chỉ gợi ý
+
+Rule 3: Due trong 24h nhưng chưa có version nào submit
+        → Alert designer + team lead
+
+Rule 4: Weekend/holiday → task due ngày đó
+        → Auto suggest: "Dời deadline sang thứ 2?" [OK]
+
+8. CROSS-SCREEN SYNC MATRIX
+Đây là phần "link lại với nhau" — khi data thay đổi, màn hình nào cần biết:
+Event xảy ra
+All Tasks board
+Kanban board
+Project detail
+Workload
+Notifications
+Task được approve
+Card badge flip ✅
+Card chuyển cột
+KPI Done +1
+Không đổi
+→ Designer
+Reassign Wendy→Lisa
+Tên đổi
+Tên đổi
+Team list đổi
+Thanh capacity ± cả 2
+→ Cả 2 người
+New revision submit
+Số version đổi
+Badge "v5"
+Preview mới
+Est. hours có thể đổi
+→ Reviewer
+Deadline extend
+Ngày đổi + bỏ đỏ
+Card hết viền đỏ
+Timeline cập nhật
+Sắp lại vị trí
+→ Assignee
+Task delete
+Row biến mất (fade)
+Card biến mất
+KPI đếm −1
+Capacity giảm
+—
+**Kỹ thuật:**单一 source of truth — GraphQL subscription hoặc WebSocket broadcast event task_updated, mọi component đang subscribe sẽ tự re-render phần liên quan. Tuyệt đối không để mỗi màn hình poll riêng — data lệch nhau giữa các tab là dấu hiệu amateur rõ nhất.
+
+9. BUTTON DISABLING & PERMISSION LOGIC
+// Nút không đủ quyền → KHÔNG RENDER, đừng render rồi disable
+// (trừ khi cần communicate "feature tồn tại")
+
+Ai thấy nút gì:
+
+[+ New Request]        → mọi role (trừ Viewer)
+[✓ Approve / ✗ Reject] → chỉ reviewer + manager của project
+[Assign/Reassign]     → manager + trở lên
+[Delete task]         → manager + trở lên (author cũng được, 
+                         nếu task status ∈ [requested, draft])
+[Extend deadline]     → manager + reviewer
+[Submit version]      → chỉ assignee chính
+[Edit brief]          → author + manager (khi chưa có version nào)
+
+// Ví dụ cụ thể: Wendy mở task của Mike
+// → Wendy KHÔNG THẤY nút [Submit version]
+// → đừng hiện nút disabled màu xám khiến Wendy thắc mắc "sao không bấm được"
+
+10. DEFINITION OF "BẤM VÔ DÙNG ĐƯỢC" — TEST SCRIPT
+QA chạy checklist này trên MỖI button trước khi bàn giao:
+□ Bấm nút → có phản hồi < 100ms (dù là chỉ disabled + spinner)
+□ API fail → toast lỗi + UI rollback đúng trạng thái cũ
+□ Double-click nhanh 2 lần → KHÔNG tạo 2 task / gửi 2 lần
+□ Bấm nút xong → quay lại màn hình trước → data vẫn đúng (persisted)
+□ Bấm action ở tab A → mở tab B song song → B tự refresh data
+□ Refresh trang giữa chừng → không mất filter/position
+□ Network chậm 3G (throttle) → vẫn dùng được, không đơ
+□ Bấm trên mobile → responsive hit-area ≥ 44x44px
+□ Keyboard-only tab → đi hết mọi nút, Enter hoạt động
+□ Back button browser → quay đúng trang trước đó (không về / luôn)
+□ Nút ngoài quyền → không render
+□ Undo hoạt động trong cửa sổ thời gian cho phép
+Ranh giới UI vs UXcritical
+UI hoàn thành khi mọi màn hình vẽ đẹp. UX hoàn thành khi: user mới không cần hướng dẫn, user cũ không cần chờ, và user bấm sai thì luôn có đường về. Checklist mục 10 chính là cổng nghiệm thu giữa UI → UX.
+
+11. THỨ TỰ IMPLEMENT CHO DEV
+Tuần 1
+Routing + Click paths
+▲Mọi menu/nút navigate thật, state trong URL
+Tuần 2
+CRUD flows
+▲Create/Edit/Delete + optimistic UI + undo
+Tuần 3
+Drag-drop + Approval
+▲Kanban state machine + approve flow
+Tuần 4
+Sync + Notifications
+▲WebSocket cross-screen + notification routing
+
+

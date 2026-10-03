@@ -31,15 +31,15 @@ export const MyTasks: React.FC = () => {
       <ProfileKpis role={role} />
       
       {/* Tabs Navigation */}
-      <div className="flex bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/60 dark:border-gray-700/50 p-1.5 rounded-2xl w-full md:w-fit overflow-x-auto hide-scrollbar gap-1">
+      <div className="flex bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-2xl w-full md:w-fit overflow-x-auto hide-scrollbar gap-1 shadow-sm">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as ProfileTab)}
             className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap rounded-xl ${
               activeTab === tab.id
-                ? 'bg-white dark:bg-gray-700 text-primary shadow-sm'
-                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                ? 'bg-gray-100 dark:bg-slate-700 text-primary dark:text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50'
             }`}
           >
             {tab.label}

@@ -37,14 +37,14 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
       
       {/* Dropdown Popover (like a Calendar) */}
       <div 
-        className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-[70] flex flex-col overflow-hidden animate-fade-in-up origin-top-right"
+        className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 z-[70] flex flex-col overflow-hidden animate-fade-in-up origin-top-right"
       >
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
           <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold text-sm">
             <Filter className="w-4 h-4" />
             <span>Advanced Filters</span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors">
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -57,7 +57,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
                 <button 
                   key={s}
                   onClick={() => setLocalFilters({ ...localFilters, status: s })}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${localFilters.status === s ? 'bg-primary text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${localFilters.status === s ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
                 >
                   {s.replace('_', ' ')}
                 </button>
@@ -72,7 +72,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
                 <button 
                   key={p}
                   onClick={() => setLocalFilters({ ...localFilters, priority: p })}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${localFilters.priority === p ? 'bg-primary text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${localFilters.priority === p ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
                 >
                   {p}
                 </button>
@@ -85,7 +85,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
             <select 
               value={localFilters.assignee}
               onChange={(e) => setLocalFilters({ ...localFilters, assignee: e.target.value })}
-              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none text-gray-700 dark:text-gray-300"
+              className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none text-gray-700 dark:text-gray-300"
             >
               <option value="all">Any Assignee</option>
               <option value="me">Assigned to Me</option>
@@ -94,16 +94,16 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
           </div>
         </div>
 
-        <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center gap-2">
+        <div className="p-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex justify-between items-center gap-2">
           <button 
             onClick={handleReset}
-            className="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors w-1/3"
+            className="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors w-1/3"
           >
             Clear
           </button>
           <button 
             onClick={handleApply}
-            className="px-3 py-2 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-md shadow-primary/30 w-2/3"
+            className="px-3 py-2 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm w-2/3"
           >
             Apply
           </button>

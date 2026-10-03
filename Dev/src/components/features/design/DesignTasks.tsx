@@ -40,14 +40,14 @@ export const DesignTasks: React.FC<{ onOpenTaskDetail?: () => void }> = ({ onOpe
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-4">
         {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="glass-panel bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
-            <div className="h-28 bg-gray-200 dark:bg-gray-700"></div>
+          <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 animate-pulse">
+            <div className="h-28 bg-gray-200 dark:bg-slate-700"></div>
             <div className="p-5 space-y-3">
-              <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-5 w-3/4 bg-gray-200 dark:bg-slate-700 rounded"></div>
+              <div className="h-2 w-full bg-gray-200 dark:bg-slate-700 rounded"></div>
               <div className="flex gap-4">
-                <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-4 w-1/3 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                <div className="h-4 w-1/3 bg-gray-200 dark:bg-slate-700 rounded"></div>
               </div>
             </div>
           </div>
@@ -75,10 +75,10 @@ export const DesignTasks: React.FC<{ onOpenTaskDetail?: () => void }> = ({ onOpe
             <div
               key={task.id}
               onClick={() => onOpenTaskDetail?.()}
-              className={`glass-panel bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border cursor-pointer hover:shadow-lg transition-all duration-300 ${
+              className={`bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 ${
                 isTaskOverdue
-                  ? 'border-red-400 dark:border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.08)]'
-                  : 'border-gray-200 dark:border-gray-700'
+                  ? 'border-red-400 dark:border-red-500'
+                  : 'border-gray-200 dark:border-slate-700'
               }`}
             >
               {/* Color top bar based on priority */}
@@ -91,7 +91,7 @@ export const DesignTasks: React.FC<{ onOpenTaskDetail?: () => void }> = ({ onOpe
               <div className="p-5">
                 {/* Header: ref + project */}
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                  <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
                     #{task.task_ref}
                   </span>
                   {task.project?.name && (
@@ -116,7 +116,7 @@ export const DesignTasks: React.FC<{ onOpenTaskDetail?: () => void }> = ({ onOpe
                 )}
 
                 {/* Footer row */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
                   {/* Assignee */}
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold">

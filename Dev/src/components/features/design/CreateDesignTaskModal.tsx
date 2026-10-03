@@ -75,7 +75,7 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
     onClose();
   };
 
-  const inputClass = "w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors dark:text-white";
+  const inputClass = "w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors dark:text-white shadow-sm";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
   return (
@@ -139,7 +139,7 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
                   <button
                     type="button"
                     onClick={() => removeRequirement(index)}
-                    className="p-2 text-gray-400 hover:text-red-500 rounded-xl border border-gray-300 dark:border-gray-600 hover:border-red-500 transition-colors"
+                    className="p-2 text-gray-400 hover:text-red-500 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-red-500 transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -156,7 +156,7 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
           </div>
 
           {/* Specifications */}
-          <div className="md:col-span-2 space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/50">
+          <div className="md:col-span-2 space-y-4 rounded-xl border border-gray-200 dark:border-slate-700 p-4 bg-gray-50/80 dark:bg-slate-900/50">
             <h4 className="font-medium text-gray-900 dark:text-white">Specifications</h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -201,7 +201,7 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
                         type="checkbox"
                         checked={formData.fileFormats.includes(format)}
                         onChange={() => toggleFileFormat(format)}
-                        className="rounded text-primary focus:ring-primary border-gray-300"
+                        className="rounded text-primary focus:ring-primary border-gray-200 dark:border-slate-700"
                       />
                       {format}
                     </label>
@@ -271,7 +271,7 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
           {/* Attachments */}
           <div className="md:col-span-2">
             <label className={labelClass}>Attachments</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 dark:border-slate-700 border-dashed rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
               <div className="space-y-1 text-center">
                 <Upload className="mx-auto h-12 w-12 text-gray-400" />
                 <div className="flex text-sm text-gray-600 dark:text-gray-400">
@@ -289,19 +289,19 @@ export const CreateDesignTaskModal: React.FC<CreateDesignTaskModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 shadow-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-xl hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-xl hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center gap-2 disabled:opacity-50 shadow-sm hover:shadow-md"
           >
             {isSubmitting ? (
               <>

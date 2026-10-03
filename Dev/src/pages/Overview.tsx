@@ -63,7 +63,7 @@ export const Overview: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 p-6 rounded-3xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-md dark:bg-gray-800/40 dark:border-gray-700/50">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
         <div>
           <h2 className="text-3xl font-bold text-gray-800 tracking-tight dark:text-gray-100">{t('overview.welcome')} {userName} 👋</h2>
           <p className="text-gray-500 mt-1 dark:text-gray-400">{t('overview.subtitle')}</p>
@@ -77,14 +77,14 @@ export const Overview: React.FC = () => {
               readOnly
               onClick={openCal}
               value={dateRange || t('overview.thisMonth')}
-              className="pl-9 pr-8 py-2 w-48 bg-white/60 hover:bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors dark:bg-gray-700/60 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30 text-center"
+              className="pl-9 pr-8 py-2 w-48 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30 text-center"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">▾</span>
           </div>
           <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 text-white rounded-xl text-sm font-medium shadow-lg shadow-primary/30 transition-all">
             <Bot size={16} /> {t('overview.aiSummary')}
           </button>
-          <button className="flex items-center justify-center w-10 h-10 bg-white/60 hover:bg-white border border-gray-200 rounded-xl text-gray-700 transition-colors dark:bg-gray-700/60 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+          <button className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-gray-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-gray-200">
             <Download size={16} />
           </button>
         </div>
@@ -94,7 +94,7 @@ export const Overview: React.FC = () => {
         <KpiCard title={t('overview.myTasks')} value={data.myTasksCount.toString()} trend={5} colorTheme="primary" />
         <KpiCard title={t('overview.dueSoon')} value={data.dueSoonCount.toString()} trend={-2} colorTheme="warning" />
         <KpiCard title={t('overview.borrowed')} value={data.borrowedCount.toString()} trend={1} colorTheme="info" />
-        <div className="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:shadow-xl transition-all duration-300">
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
           <p className="text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
              <span className="text-sm font-semibold text-red-600 dark:text-red-400">{t('overview.overdue')}</span>
@@ -111,7 +111,7 @@ export const Overview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-panel p-6 rounded-3xl flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-gray-800 text-lg dark:text-gray-100">{t('overview.taskStatus')}</h3>
             <div className="flex items-center gap-4 text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -139,7 +139,7 @@ export const Overview: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-panel p-6 rounded-3xl flex flex-col justify-center relative overflow-hidden">
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl flex flex-col justify-center relative overflow-hidden">
           <h3 className="font-bold text-gray-800 mb-2 absolute top-6 left-6 text-lg dark:text-gray-100">{t('overview.assetUtil')}</h3>
           <div className="flex flex-col items-center justify-center gap-6 mt-12 relative z-10">
             <div className="h-40 w-40 relative">
@@ -170,13 +170,13 @@ export const Overview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-3xl">
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl">
           <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.upcoming')}</h3>
           <div className="space-y-4">
             {data.upcomingTasks.length === 0 ? (
                <div className="p-4 text-center text-gray-500">No upcoming tasks!</div>
             ) : data.upcomingTasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/60 hover:shadow-md transition-shadow dark:bg-gray-800/50 dark:border-gray-700/50">
+              <div key={task.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs shadow-inner dark:bg-gray-700 dark:text-gray-300">
                     #{task.task_ref}
@@ -199,13 +199,13 @@ export const Overview: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-panel p-6 rounded-3xl">
+        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl">
           <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.recentBorrow')}</h3>
           <div className="space-y-4">
             {data.recentRequests.length === 0 ? (
                <div className="p-4 text-center text-gray-500">No recent requests</div>
             ) : data.recentRequests.map((req, i) => (
-              <div key={i} className="p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/60 hover:shadow-md transition-shadow flex flex-col justify-between h-full dark:bg-gray-800/50 dark:border-gray-700/50">
+              <div key={i} className="p-4 bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow flex flex-col justify-between h-full dark:bg-slate-800 dark:border-slate-700">
                 <div className="mb-4">
                   <p className="text-sm text-gray-800 font-medium dark:text-gray-200">
                     <span className="font-bold text-primary">{req.requester?.name}</span> {t('overview.wantsToBorrow')} <br />

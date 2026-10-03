@@ -14,7 +14,7 @@ export const ProfileInfoTab: React.FC = () => {
   ];
 
   return (
-    <div className="glass-panel p-6 rounded-3xl">
+    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm">
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Personal Information</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -22,7 +22,7 @@ export const ProfileInfoTab: React.FC = () => {
           <div key={idx} className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
               {item.icon} {item.label}
-              {item.readonly && <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-400 ml-1">READ-ONLY</span>}
+              {item.readonly && <span className="text-[10px] bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-400 ml-1">READ-ONLY</span>}
             </span>
             {item.badge ? (
               <div>
