@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
 import { Dashboard } from './pages/Dashboard';
+import { Departments2 } from './pages/Departments2';
 import { TaskList } from './pages/TaskList';
 import { AssetInventory } from './pages/AssetInventory';
 import { BorrowRequests } from './pages/BorrowRequests';
@@ -37,6 +38,7 @@ function App() {
             <Route path="tasks" element={<TaskList />} />
             <Route path="my-tasks" element={<MyTasks />} />
             <Route path="project" element={<Project />} />
+            <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />
