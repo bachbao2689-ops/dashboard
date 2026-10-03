@@ -60,10 +60,13 @@ export const ProjectPortfolio: React.FC<{ onSelectProject?: (id: string) => void
         const inProgressCount = projectTasks.filter(t => t.status === 'in-progress' || t.status === 'in_progress').length;
         const progress = projectTasks.length > 0 ? Math.round((doneCount / projectTasks.length) * 100) : 0;
 
+        const mockDepts = ['E-Commerce', 'Design', 'Marketing', 'E-Commerce', 'HR & Admin'];
+        const dept = projectTasks[0]?.department?.name || mockDepts[idx % mockDepts.length];
+
         return {
           id: `proj-${idx}`,
           name,
-          department: projectTasks[0]?.department?.name || '',
+          department: dept,
           tasks: projectTasks,
           totalTasks: projectTasks.length,
           completed: doneCount,
@@ -162,7 +165,12 @@ export const ProjectPortfolio: React.FC<{ onSelectProject?: (id: string) => void
                   </h3>
                 </div>
                 {project.department && (
-                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary dark:bg-primary/20">
+                  <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    project.department === 'E-Commerce' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                    project.department === 'Design' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                    project.department === 'Marketing' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
+                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  }`}>
                     {project.department}
                   </span>
                 )}
@@ -177,7 +185,7 @@ export const ProjectPortfolio: React.FC<{ onSelectProject?: (id: string) => void
                   </div>
                   <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all duration-500 ${project.progress === 100 ? 'bg-green-500' : 'bg-primary'}`}
+                      className={`h-2 rounded-full transition-all duration-500 ${project.progress >= 60 ? 'bg-green-500' : 'bg-primary'}`}
                       style={{ width: `${project.progress}%` }}
                     ></div>
                   </div>
@@ -240,12 +248,21 @@ export const ProjectPortfolio: React.FC<{ onSelectProject?: (id: string) => void
               {projects.map(p => (
                 <tr key={p.id} onClick={() => onSelectProject?.(p.id)} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
                   <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{p.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{p.department}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      p.department === 'E-Commerce' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                      p.department === 'Design' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      p.department === 'Marketing' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
+                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    }`}>
+                      {p.department}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-center font-medium">{p.totalTasks}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-16 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
-                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${p.progress}%` }}></div>
+                        <div className={`h-1.5 rounded-full ${p.progress >= 60 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${p.progress}%` }}></div>
                       </div>
                       <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{p.progress}%</span>
                     </div>
