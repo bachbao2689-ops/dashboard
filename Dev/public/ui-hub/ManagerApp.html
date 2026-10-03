@@ -380,8 +380,12 @@ body.login-open{overflow:hidden;background:#edf1f6}.login-gate[hidden]{display:n
   .login-gate{padding:12px;align-items:stretch;overflow:auto}.login-card{padding:24px;border-radius:22px}.login-art-frame{min-height:220px;border-radius:15px}.login-art-frame::before{inset:11px}.login-art-placeholder{width:min(270px,78%);padding:20px 18px;gap:7px}.login-art-icon{width:36px;height:36px;font-size:22px}.login-art-placeholder strong{font-size:14px}.login-art-placeholder small{font-size:11px}.login-art-caption{bottom:16px;left:18px;font-size:8px}.login-form-panel{padding:12px 0 18px}.login-brand{width:124px;margin-bottom:30px}.login-copy h1{font-size:30px;margin:10px 0}.login-copy p{font-size:14px;line-height:1.55}.login-form{gap:16px;margin-top:30px}.login-submit{min-height:52px}.login-hint{font-size:11px}
 }
 
-</style><!-- hub-shared:start --><script>/* UI visibility follows the existing team rules. Server authorization is separate. */
-function hubAccessData(raw, email, localPreview) {
+/* Custom Stroke/Boxed Override */
+.panel, .kpi-card, .profile-card, .metric-card, .chart-card, .project-card, .tw-card, .cal-popup, .login-card, .profile-hero, .profile-avatar-lg {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+}
+</style><!-- hub-shared:start --><script>/* UI visibility follows the existing team rules. Server authorization is separate. */ function hubAccessData(raw, email, localPreview) {
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').trim().toLowerCase();
   const deptKey=v=>{const value=norm(v);return ['desgin','design','design team'].includes(value)?'design':value;};
   const inDept=(value,dept)=>Boolean(dept)&&String(value||'').split(/[,;\n]/).some(part=>deptKey(part)===deptKey(dept));

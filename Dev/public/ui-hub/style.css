@@ -510,3 +510,9 @@ dialog.tw-drawer[open]{animation:tw-popup .18s ease-out}
   .tw-event .tw-card{padding:11px}
   .tw-list-note{padding:2px 0 10px;font-size:12px}
 }
+
+/* Custom Stroke/Boxed Override */
+.panel, .kpi-card, .profile-card, .metric-card, .chart-card, .project-card, .tw-card, .cal-popup, .login-card, .profile-hero, .profile-avatar-lg {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+}
