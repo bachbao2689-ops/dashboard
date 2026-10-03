@@ -31,7 +31,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f7fb;
+  background-color: #ffffff;
   color: #1e293b;
   overflow: hidden;
 }
@@ -49,7 +49,7 @@ body {
   height: 100vh;
   z-index: -1;
   overflow: hidden;
-  background: #f5f7fb;
+  background: #ffffff;
 }
 
 .liquid-blob-1 {
