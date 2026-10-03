@@ -33,7 +33,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({ title, value, trend, className
   };
 
   return (
-    <div className={cn("bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm p-6 rounded-3xl flex flex-col justify-between h-40 relative overflow-hidden group transition-all duration-300 hover:shadow-md hover:-translate-y-1", className)}>
+    <div className={cn("card-hub shadow-sm p-6 rounded-3xl flex flex-col justify-between h-40 relative overflow-hidden group transition-all duration-300 hover:shadow-md hover:-translate-y-1", className)}>
       <div className={`absolute top-0 right-0 w-24 h-24 ${bgColors[colorTheme]} rounded-full blur-2xl -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-150`}></div>
       
       <div className="flex justify-between items-start relative z-10">

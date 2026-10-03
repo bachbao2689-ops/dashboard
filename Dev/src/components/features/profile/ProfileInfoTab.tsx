@@ -14,7 +14,7 @@ export const ProfileInfoTab: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm">
+    <div className="card-hub p-6 rounded-2xl shadow-sm">
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Personal Information</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

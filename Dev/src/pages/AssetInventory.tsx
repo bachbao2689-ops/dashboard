@@ -59,7 +59,7 @@ export const AssetInventory: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl overflow-hidden flex-1 shadow-sm">
+      <div className="card-hub rounded-2xl overflow-hidden flex-1 shadow-sm">
         <div className="overflow-x-auto h-full">
           <table className="w-full text-left">
             <thead>

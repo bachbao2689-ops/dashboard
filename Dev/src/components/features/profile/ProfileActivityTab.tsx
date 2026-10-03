@@ -11,7 +11,7 @@ export const ProfileActivityTab: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm">
+    <div className="card-hub p-6 rounded-2xl shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity Timeline</h3>
         <div className="flex gap-2">

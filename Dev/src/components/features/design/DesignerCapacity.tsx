@@ -97,7 +97,7 @@ export const DesignerCapacity: React.FC = () => {
   return (
     <div className="space-y-6 pt-4">
       {/* Overall Status */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm">
+      <div className="p-6 rounded-2xl card-hub shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">TEAM CAPACITY - ACTIVE TASKS</h2>
           <div className="text-right">
@@ -120,7 +120,7 @@ export const DesignerCapacity: React.FC = () => {
           const isOver = designer.status === 'overloaded';
           
           return (
-            <div key={designer.id} className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div key={designer.id} className="p-5 rounded-2xl card-hub shadow-sm flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">

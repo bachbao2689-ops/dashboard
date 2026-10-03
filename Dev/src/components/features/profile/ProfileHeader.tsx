@@ -13,7 +13,7 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
 
   return (
     <>
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl relative overflow-hidden shadow-sm">
+    <div className="card-hub p-6 rounded-2xl relative overflow-hidden shadow-sm">
       {/* Decorative background blur */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
       

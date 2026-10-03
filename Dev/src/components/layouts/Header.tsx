@@ -30,7 +30,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-    <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm z-[100] relative">
+    <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600">

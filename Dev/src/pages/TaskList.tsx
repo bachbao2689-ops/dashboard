@@ -105,7 +105,7 @@ export const TaskList: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
+      <div className="card-hub rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
@@ -139,9 +139,9 @@ export const TaskList: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-2"><TableSkeleton rows={8} /></div>
+        <div className="card-hub rounded-2xl p-2"><TableSkeleton rows={8} /></div>
       ) : filteredTasks.length === 0 ? (
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl p-16 text-center">
+        <div className="card-hub rounded-2xl p-16 text-center">
           <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-gray-400" />
           </div>
@@ -151,7 +151,7 @@ export const TaskList: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
-            <div key={groupName} className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-2xl overflow-hidden">
+            <div key={groupName} className="card-hub rounded-2xl overflow-hidden">
               {groupBy !== 'none' && (
                 <div 
                   className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"

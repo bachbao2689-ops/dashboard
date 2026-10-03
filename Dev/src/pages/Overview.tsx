@@ -94,7 +94,7 @@ export const Overview: React.FC = () => {
         <KpiCard title={t('overview.myTasks')} value={data.myTasksCount.toString()} trend={5} colorTheme="primary" />
         <KpiCard title={t('overview.dueSoon')} value={data.dueSoonCount.toString()} trend={-2} colorTheme="warning" />
         <KpiCard title={t('overview.borrowed')} value={data.borrowedCount.toString()} trend={1} colorTheme="info" />
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300">
+        <div className="card-hub p-6 rounded-3xl relative overflow-hidden group hover:shadow-md transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
           <p className="text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
              <span className="text-sm font-semibold text-red-600 dark:text-red-400">{t('overview.overdue')}</span>
@@ -111,7 +111,7 @@ export const Overview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl flex flex-col justify-between">
+        <div className="lg:col-span-2 card-hub p-6 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-gray-800 text-lg dark:text-gray-100">{t('overview.taskStatus')}</h3>
             <div className="flex items-center gap-4 text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -139,7 +139,7 @@ export const Overview: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl flex flex-col justify-center relative overflow-hidden">
+        <div className="card-hub p-6 rounded-3xl flex flex-col justify-center relative overflow-hidden">
           <h3 className="font-bold text-gray-800 mb-2 absolute top-6 left-6 text-lg dark:text-gray-100">{t('overview.assetUtil')}</h3>
           <div className="flex flex-col items-center justify-center gap-6 mt-12 relative z-10">
             <div className="h-40 w-40 relative">
@@ -170,7 +170,7 @@ export const Overview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl">
+        <div className="card-hub p-6 rounded-3xl">
           <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.upcoming')}</h3>
           <div className="space-y-4">
             {data.upcomingTasks.length === 0 ? (
@@ -199,7 +199,7 @@ export const Overview: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-3xl">
+        <div className="card-hub p-6 rounded-3xl">
           <h3 className="font-bold text-gray-800 mb-6 text-lg dark:text-gray-100">{t('overview.recentBorrow')}</h3>
           <div className="space-y-4">
             {data.recentRequests.length === 0 ? (

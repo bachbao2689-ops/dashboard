@@ -26,7 +26,7 @@ export const ProfileSettingsTab: React.FC = () => {
   );
 
   return (
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm space-y-8">
+    <div className="card-hub p-6 rounded-2xl shadow-sm space-y-8">
       
       <div>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Notifications</h3>

@@ -9,7 +9,7 @@ export const ProfileTeamTab: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-6 rounded-2xl shadow-sm">
+    <div className="card-hub p-6 rounded-2xl shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Đội ngũ (4 thành viên)</h3>
         <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">

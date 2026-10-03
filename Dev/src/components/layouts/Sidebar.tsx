@@ -47,7 +47,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full h-full bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
+    <aside className="w-full h-full card-hub flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
       
       <div className="mb-8 flex items-center justify-center bg-white dark:bg-slate-800 mx-6 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105">
         <img src="/logo-light.svg" alt="K COFFEE Logo" className="h-11 w-auto filter drop-shadow-md block dark:hidden" />

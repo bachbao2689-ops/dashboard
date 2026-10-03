@@ -108,8 +108,6 @@ body {
 .card-hub {
   background: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, transparent 55%), linear-gradient(130deg, #fff, #fcfdff);
   border: 1px solid #dce8fa;
-  border-radius: 13px;
-  box-shadow: none;
 }
 
 /* Custom Scrollbar for Glass UI */

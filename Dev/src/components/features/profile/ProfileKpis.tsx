@@ -3,7 +3,7 @@ import React from 'react';
 export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-4 rounded-2xl shadow-sm">
+      <div className="card-hub p-4 rounded-2xl shadow-sm">
         <div className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 uppercase tracking-wider">
           {role === 'manager' ? 'Tasks Assigned (Team)' : 'My Tasks'}
         </div>
@@ -12,14 +12,14 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
         </div>
       </div>
       
-      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-4 rounded-2xl shadow-sm">
+      <div className="card-hub p-4 rounded-2xl shadow-sm">
         <div className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 uppercase tracking-wider">
           Completed Rate
         </div>
         <div className="text-2xl font-bold text-primary">92%</div>
       </div>
       
-      <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 p-4 rounded-2xl shadow-sm">
+      <div className="card-hub p-4 rounded-2xl shadow-sm">
         <div className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 uppercase tracking-wider">
           Borrow Requests
         </div>

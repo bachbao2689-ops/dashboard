@@ -114,7 +114,7 @@ export const ProjectsKanban: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl flex-1 p-3 overflow-y-auto min-h-[200px]">
+              <div className="card-hub rounded-xl flex-1 p-3 overflow-y-auto min-h-[200px]">
                 <SortableContext items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {column.tasks.map(task => (

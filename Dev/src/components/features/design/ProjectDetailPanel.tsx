@@ -182,7 +182,7 @@ export function ProjectDetailPanel({ isOpen, onClose, projectId }: ProjectDetail
                 {/* 1. Timeline & Budget Bars */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Timeline Bar */}
-                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm">
+                   <div className="p-5 rounded-2xl card-hub shadow-sm">
                      <div className="flex justify-between items-center mb-3">
                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                          <Calendar size={16} className="text-primary" /> Timeline
@@ -209,7 +209,7 @@ export function ProjectDetailPanel({ isOpen, onClose, projectId }: ProjectDetail
                    </div>
 
                    {/* Budget Bar */}
-                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm">
+                   <div className="p-5 rounded-2xl card-hub shadow-sm">
                      <div className="flex justify-between items-center mb-3">
                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                          <Briefcase size={16} className="text-green-500" /> Resources
