@@ -91,7 +91,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] gap-4 w-full xl:items-stretch">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
-      <section className={`${PANEL} p-4 sm:p-[25px] flex flex-col`}>
+      <section className={`${PANEL} p-4 sm:p-[16px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
             <Eyebrow className="!text-xs mb-[3px]">TEAM INSIGHTS</Eyebrow>
@@ -281,7 +281,7 @@ export const Dashboard: React.FC = () => {
       {/* ============ RIGHT STACK (compact) ============ */}
       <div className="flex flex-col gap-4 min-w-0">
         {/* History */}
-        <section className={`${PANEL} px-[18px] pt-[18px] pb-[13px] flex flex-col flex-[4]`}>
+        <section className={`${PANEL} px-4 pt-4 pb-[13px] flex flex-col flex-[4]`}>
           <div className="flex items-center justify-between mb-[9px]">
             <div>
               <Eyebrow className="!text-xs mb-[3px]">HISTORY</Eyebrow>
