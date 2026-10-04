@@ -60,7 +60,7 @@ const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const MONTH_LABELS = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <span className={`block text-sm font-semibold ${MUTED} ${className}`}>{children}</span>
+  <span className={`block text-xs font-semibold tracking-[1.8px] uppercase ${MUTED} ${className}`}>{children}</span>
 );
 
 const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; className?: string }> = ({ children, onClick, className = '' }) => (
@@ -116,7 +116,7 @@ export const Dashboard: React.FC = () => {
             <button
               key={k}
               onClick={() => setTab(k)}
-              className={`relative pt-2 pb-3 text-sm whitespace-nowrap transition-colors ${tab === k ? `font-semibold ${INK}` : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+              className={`relative pt-2 pb-3 text-sm whitespace-nowrap transition-colors ${tab === k ? `font-semibold ${INK}` : 'text-[#8c9bb0] hover:text-gray-900 dark:hover:text-white'}`}
             >
               {label}
               <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-gray-900 dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
@@ -131,7 +131,7 @@ export const Dashboard: React.FC = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
               {/* Staff Spotlight */}
-              <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-gray-50 dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
+              <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
                 <div className="w-full flex items-center justify-between">
                   <Eyebrow className="!text-xs !tracking-[1.6px]">STAFF SPOTLIGHT</Eyebrow>
                   <button className={`${MUTED} hover:text-gray-900 dark:hover:text-white`}><ChevronRight size={15} /></button>
@@ -179,7 +179,7 @@ export const Dashboard: React.FC = () => {
                 >
                   <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex flex-col items-center justify-center">
                     <strong className={`text-2xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-sm">%</small></strong>
-                    <span className="text-xs text-gray-400">hoàn thành</span>
+                    <span className="text-xs text-[#92a0b1]">hoàn thành</span>
                   </div>
                 </div>
                 <p className={`text-center text-xs ${MUTED}`}>{s.done} / {s.total} task được giao</p>
@@ -190,13 +190,13 @@ export const Dashboard: React.FC = () => {
               </div>
 
               {/* Focus needed */}
-              <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-gray-50 dark:bg-gray-50`}>
+              <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
                 <div className="flex items-center justify-between">
                   <strong className={`text-sm ${INK}`}>Cần tập trung</strong>
                   <Clock size={14} className={MUTED} />
                 </div>
-                <div className="mt-3 text-4xl leading-none font-bold text-red-600 dark:text-rose-400">{s.overdue}</div>
-                <span className="mt-2 self-start text-xs font-semibold text-red-600 bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
+                <div className="mt-3 text-4xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
+                <span className="mt-2 self-start text-xs font-semibold text-[#b0364b] bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
                 <div className="mt-4 space-y-2 text-xs">
                   <div className="flex justify-between"><span className={MUTED}>Deadline trong 3 ngày</span><b className={INK}>{s.due3}</b></div>
                   <div className="flex justify-between"><span className={MUTED}>Ưu tiên High / Urgent</span><b className={INK}>{s.urgent}</b></div>
@@ -239,7 +239,7 @@ export const Dashboard: React.FC = () => {
                         contentStyle={{
                           fontSize: 11, borderRadius: 8,
                           background: isDark ? '#1e293b' : '#fff',
-                          color: isDark ? '#e2e8f0' : '#153454',
+                          color: isDark ? '#e2e8f0' : '#093570',
                           border: `1px solid ${isDark ? '#334155' : '#e0eaf8'}`,
                         }}
                       />
@@ -256,19 +256,19 @@ export const Dashboard: React.FC = () => {
 
             {/* Insight strip */}
             <div className="flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-4 mt-[17px]">
-              <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-blue-500 dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
+              <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
               <div className="min-w-0">
                 <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
-                <p className="text-xs text-gray-400 dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
+                <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
               </div>
               <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
             </div>
-            <div className="flex items-center gap-[7px] mt-[14px] text-xs text-gray-400 dark:text-slate-400">
+            <div className="flex items-center gap-[7px] mt-[14px] text-xs text-[#8698b0] dark:text-slate-400">
               <Info size={13} className="shrink-0" />
               <span className="flex items-center gap-2.5 flex-wrap">
-                Chất lượng dữ liệu <b className="font-normal text-amber-700 dark:text-amber-400">{s.noDeadline} thiếu hạn</b>
-                <b className="font-normal text-amber-700 dark:text-amber-400">0 thiếu PIC</b>
-                <b className="font-normal text-amber-700 dark:text-amber-400">1 mở trùng</b>
+                Chất lượng dữ liệu <b className="font-normal text-[#947d5b] dark:text-amber-400">{s.noDeadline} thiếu hạn</b>
+                <b className="font-normal text-[#947d5b] dark:text-amber-400">0 thiếu PIC</b>
+                <b className="font-normal text-[#947d5b] dark:text-amber-400">1 mở trùng</b>
               </span>
               <ArrowRight size={13} className="ml-auto shrink-0" />
             </div>
@@ -301,7 +301,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <p className={`text-xs ${MUTED}`}>Chưa có lịch sử Task · Đang hiển thị nhật ký tài sản</p>
           <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-            <FileText size={22} className="text-gray-300 dark:text-slate-500 mb-2" />
+            <FileText size={22} className="text-[#b9c6d8] dark:text-slate-500 mb-2" />
             <h3 className={`text-sm font-bold ${INK}`}>Chưa có hoạt động</h3>
             <p className={`text-xs mt-1 ${MUTED}`}>Nguồn dữ liệu chưa có nhật ký.</p>
           </div>
@@ -316,16 +316,16 @@ export const Dashboard: React.FC = () => {
                 <h2 className={`text-sm font-bold ${INK}`}>Task còn 3 ngày</h2>
                 <p className={`text-xs mt-1 ${MUTED}`}>Deadline trong 3 ngày tới</p>
               </div>
-              <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">3 ngày</span>
+              <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">3 ngày</span>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs">
                 <b className={INK}>TK86</b>
-                <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300 font-semibold">Medium</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-[#b7791f] dark:bg-amber-500/15 dark:text-amber-300 font-semibold">Medium</span>
               </div>
               <h4 className={`text-sm font-bold mt-2 ${INK}`}>Campaign tháng 10</h4>
               <div className={`text-xs mt-1 ${MUTED}`}>BOE</div>
-              <div className={`flex items-center gap-1 text-xs mt-2 ${MUTED}`}><Calendar size={10} className="text-amber-600 dark:text-amber-400" />3/10/2026 · Hôm nay</div>
+              <div className={`flex items-center gap-1 text-xs mt-2 ${MUTED}`}><Calendar size={10} className="text-[#b7791f] dark:text-amber-400" />3/10/2026 · Hôm nay</div>
             </div>
           </section>
 
@@ -348,7 +348,7 @@ export const Dashboard: React.FC = () => {
                       <div className="overflow-hidden">
                         {d.members.map(m => (
                           <div key={m.i} className="flex items-center gap-2 pb-2">
-                            <span className="w-[24px] h-[24px] rounded-full bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-sky-300 grid place-items-center text-xs font-bold">{m.i}</span>
+                            <span className="w-[24px] h-[24px] rounded-full bg-blue-50 dark:bg-slate-700 text-[#2a6fc1] dark:text-sky-300 grid place-items-center text-xs font-bold">{m.i}</span>
                             <div className="flex-1 min-w-0">
                               <strong className={`block text-xs truncate ${LINK}`}>{m.n}</strong>
                               <small className={`block text-xs ${MUTED}`}>{m.r}</small>

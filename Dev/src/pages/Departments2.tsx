@@ -11,7 +11,7 @@ const MUTED = 'text-gray-500 dark:text-gray-400';
 const LINK = 'text-blue-600 dark:text-blue-400';
 const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
 const INNER = 'border border-gray-200 dark:border-slate-700';
-const LABEL = 'text-sm font-semibold text-gray-500 dark:text-gray-400';
+const LABEL = 'text-xs font-bold tracking-[0.12em] uppercase text-gray-500 dark:text-gray-400';
 
 type Dept = 'ecommerce' | 'design' | 'all';
 type Tab = 'overview' | 'projects' | 'capacity' | 'timeline' | 'resources';
@@ -62,7 +62,7 @@ const MEMBERS = [
 ];
 
 const PLATFORM_DIST = [
-  { label: 'Web', pct: 45, color: '#153454' }, { label: 'App', pct: 25, color: '#3789f4' },
+  { label: 'Web', pct: 45, color: '#093570' }, { label: 'App', pct: 25, color: '#3789f4' },
   { label: 'Social', pct: 20, color: '#45a894' }, { label: 'Other', pct: 10, color: '#a8b7cc' },
 ];
 
@@ -81,7 +81,7 @@ const Bar: React.FC<{ pct: number; color?: string }> = ({ pct, color }) => (
 );
 
 const Kpi: React.FC<{ value: string; label: string; tone?: string; icon?: React.ReactNode }> = ({ value, label, tone, icon }) => (
-  <div className={`${INNER} rounded-[14px] px-4 py-3 bg-gray-50 dark:bg-none flex flex-col gap-1`}>
+  <div className={`${INNER} rounded-[14px] px-4 py-3 bg-[radial-gradient(ellipse_at_100%_110%,#eaf3ff_0%,transparent_55%)] dark:bg-none flex flex-col gap-1`}>
     <span className={LABEL}>{label}</span>
     <span className={`flex items-center gap-1.5 text-2xl font-bold leading-none ${tone ?? INK}`}>{icon}{value}</span>
   </div>
@@ -120,7 +120,7 @@ export const Departments2: React.FC = () => {
   const progressData = useMemo(() => [...projects].sort((a,b)=>b.progress-a.progress).slice(0, 5).map(p => ({
     name: p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name,
     progress: p.progress,
-    fill: p.status === 'ok' ? '#153454' : p.status === 'risk' ? '#f5a524' : '#d9435a'
+    fill: p.status === 'ok' ? '#093570' : p.status === 'risk' ? '#f5a524' : '#d9435a'
   })), [projects]);
 
   const filtered = projects.filter(p =>
@@ -198,7 +198,7 @@ export const Departments2: React.FC = () => {
                   <BarChart data={progressData} margin={{ left: -20, right: 0, top: 10, bottom: 0 }}>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6f84a1', fontSize: 11 }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6f84a1', fontSize: 11 }} />
-                    <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#153454', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
+                    <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#093570', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
                     <RechartsBar dataKey="progress" radius={[4, 4, 0, 0]} maxBarSize={40}>
                       {progressData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                     </RechartsBar>
@@ -215,7 +215,7 @@ export const Departments2: React.FC = () => {
                     <Pie data={statusData} innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value" stroke="none">
                       {statusData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                     </Pie>
-                    <RechartsTooltip contentStyle={{ backgroundColor: '#153454', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#093570', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -237,8 +237,8 @@ export const Departments2: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={capacityData} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
                     <XAxis type="number" hide domain={[0, 'dataMax + 20']} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#153454', fontSize: 12, fontWeight: 600 }} width={60} />
-                    <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ backgroundColor: '#153454', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#093570', fontSize: 12, fontWeight: 600 }} width={60} />
+                    <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ backgroundColor: '#093570', borderRadius: '10px', color: '#fff', border: 'none', fontSize: '12px' }} />
                     <RechartsBar dataKey="load" radius={[0, 4, 4, 0]} barSize={20}>
                       {capacityData.map((d, i) => (
                         <Cell key={i} fill={d.load > 100 ? '#d9435a' : d.load > 85 ? '#f5a524' : '#45a894'} />

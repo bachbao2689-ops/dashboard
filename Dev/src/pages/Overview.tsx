@@ -18,7 +18,7 @@ const MUTED = 'text-gray-500 dark:text-gray-400';
 const LINK = 'text-blue-600 dark:text-blue-400';
 const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
 const INNER = 'border border-gray-200 dark:border-slate-700';
-const LABEL = 'text-sm font-semibold text-gray-500 dark:text-gray-400';
+const LABEL = 'text-xs font-bold tracking-[0.12em] uppercase text-gray-500 dark:text-gray-400';
 
 const taskStatusData = [
   { name: 'W1', created: 40, done: 24 },
@@ -81,7 +81,7 @@ export const Overview: React.FC = () => {
   };
 
   const assetUtilization = [
-    { name: t('overview.borrowed'), value: 60, fill: '#153454' },
+    { name: t('overview.borrowed'), value: 60, fill: '#093570' },
     { name: 'Available', value: 35, fill: '#45a894' },
     { name: 'Maintenance', value: 5, fill: '#d9435a' },
   ];
@@ -107,7 +107,7 @@ export const Overview: React.FC = () => {
   const axis = isDark ? '#94a3b8' : '#6f84a1';
   const ringTrack = isDark ? '#334155' : '#eef3fb';
   const tooltipStyle = {
-    backgroundColor: isDark ? '#0f172a' : '#153454', borderRadius: 10, border: 'none', color: '#fff', fontSize: 12, padding: '6px 10px',
+    backgroundColor: isDark ? '#0f172a' : '#093570', borderRadius: 10, border: 'none', color: '#fff', fontSize: 12, padding: '6px 10px',
   };
 
   if (loading) {
@@ -157,7 +157,7 @@ export const Overview: React.FC = () => {
             <Trend v={5} />
           </div>
           <div className="relative grid place-items-center">
-            <Ring pct={donePct} color="#153454" track={ringTrack} />
+            <Ring pct={donePct} color="#093570" track={ringTrack} />
             <span className={`absolute text-xs font-bold ${INK}`}>{donePct}%</span>
           </div>
         </button>
@@ -226,15 +226,15 @@ export const Overview: React.FC = () => {
               <AreaChart data={taskStatusData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isDark ? '#38bdf8' : '#153454'} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={isDark ? '#38bdf8' : '#153454'} stopOpacity={0} />
+                    <stop offset="5%" stopColor={isDark ? '#38bdf8' : '#093570'} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={isDark ? '#38bdf8' : '#093570'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={grid} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 12 }} dy={8} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: axis, fontSize: 12 }} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="created" stroke={isDark ? '#38bdf8' : '#153454'} fill="url(#colorCreated)" strokeWidth={2.5} />
+                <Area type="monotone" dataKey="created" stroke={isDark ? '#38bdf8' : '#093570'} fill="url(#colorCreated)" strokeWidth={2.5} />
                 <Area type="monotone" dataKey="done" stroke="#45a894" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
               </AreaChart>
             </ResponsiveContainer>
@@ -253,7 +253,7 @@ export const Overview: React.FC = () => {
                 <Tooltip cursor={{ fill: isDark ? '#1e293b' : '#f3f7fd' }} contentStyle={tooltipStyle} />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {weekData.map((d, i) => (
-                    <Cell key={i} fill={d.today ? '#d9435a' : d.count >= 4 ? '#f5a524' : isDark ? '#38bdf8' : '#153454'} />
+                    <Cell key={i} fill={d.today ? '#d9435a' : d.count >= 4 ? '#f5a524' : isDark ? '#38bdf8' : '#093570'} />
                   ))}
                 </Bar>
               </BarChart>

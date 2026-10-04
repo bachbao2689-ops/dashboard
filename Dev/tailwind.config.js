@@ -10,6 +10,19 @@ export default {
       fontFamily: { sans: ['Barlow', 'sans-serif'] },
       
       colors: {
+        gray: {
+          50: '#f6f9fe',
+          100: '#eef3fb',
+          200: '#e0eaf8',
+          300: '#a8b7cc',
+          400: '#8b9ebb',
+          500: '#6f84a1',
+          600: '#526986',
+          700: '#38506b',
+          800: '#093570',
+          900: '#093570',
+          950: '#0d2238',
+        },
 
         primary: "var(--color-primary)",
         success: "var(--color-success)",
@@ -31,10 +44,11 @@ export default {
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
         xl: "1rem",
-        '2xl': "1.5rem",
-        '3xl': "2rem",
+        '2xl': "18px",
+        '3xl': "24px",
       },
       boxShadow: {
+        'sm': '0 3px 15px rgba(9, 47, 102, 0.04)',
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
         'glass-inset': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
       },
