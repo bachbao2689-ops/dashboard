@@ -2,7 +2,6 @@
 import React from 'react';
 import {
   AlertTriangle,
-  RotateCw,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -35,12 +34,7 @@ interface OverallViewProps {
 
 export const OverallView: React.FC<OverallViewProps> = ({
   data,
-  period,
-  onPeriodChange,
   onSelectDepartment,
-  formattedTime,
-  isRefreshing,
-  onRefreshNow,
   isDark = false,
 }) => {
   const tickColor = isDark ? '#94a3b8' : '#52514e';
@@ -71,65 +65,6 @@ export const OverallView: React.FC<OverallViewProps> = ({
 
   return (
     <div className="flex flex-col gap-2.5 w-full">
-      {/* 1. Header Bar: Title, Refresh Badge, Period Segments */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-base font-semibold text-gray-900 dark:text-white">
-            Tổng quan hiệu suất công việc
-          </h1>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Làm mới sau: {formattedTime}</span>
-            <button
-              type="button"
-              onClick={onRefreshNow}
-              disabled={isRefreshing}
-              className="ml-1 p-0.5 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
-              title="Làm mới dữ liệu ngay"
-            >
-              <RotateCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Period segment buttons (Tuần / Tháng / Quý) */}
-        <div className="flex items-center p-0.5 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={() => onPeriodChange('week')}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-              period === 'week'
-                ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-semibold'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Tuần
-          </button>
-          <button
-            type="button"
-            onClick={() => onPeriodChange('month')}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-              period === 'month'
-                ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-semibold'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Tháng
-          </button>
-          <button
-            type="button"
-            onClick={() => onPeriodChange('quarter')}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-              period === 'quarter'
-                ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-semibold'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Quý
-          </button>
-        </div>
-      </div>
-
       {/* 2. Warning / Alert Banner */}
       <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-xs">
         <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -140,7 +75,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
       <DepartmentKpiCards kpis={data.kpis} isOverall />
 
       {/* 4. Middle Stage: Comparison Stacked Bar Chart */}
-      <div className="w-full h-[180px]">
+      <div className="w-full h-[250px]">
         <DepartmentComparisonChart
           data={data.comparison}
           onSelectDepartment={onSelectDepartment}
@@ -151,9 +86,9 @@ export const OverallView: React.FC<OverallViewProps> = ({
       {/* 5. Middle 2-Column Grid: Trend Chart + Workload Heatmap */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {/* Weekly Trend vs Target */}
-        <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm flex flex-col h-[175px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Tỷ lệ hoàn thành theo tuần so với mục tiêu
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
@@ -234,7 +169,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
         </div>
 
         {/* Workload Heatmap */}
-        <div className="h-[175px]">
+        <div className="h-[260px]">
           <DepartmentHeatmap
             data={data.heatmap}
             onSelectDepartment={onSelectDepartment}
@@ -243,8 +178,8 @@ export const OverallView: React.FC<OverallViewProps> = ({
       </div>
 
       {/* 6. Cross-Department Project Progress Card */}
-      <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Tiến độ project
         </p>
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60">

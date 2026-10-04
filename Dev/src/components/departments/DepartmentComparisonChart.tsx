@@ -30,10 +30,10 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(137,135,129,0.18)';
 
   return (
-    <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
             So sánh phòng ban (sắp theo số task quá hạn)
           </p>
           <span className="text-[11px] text-blue-600 dark:text-blue-400">
@@ -60,7 +60,7 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
         </div>
       </div>
 
-      <div className="flex-1 w-full min-h-[190px] relative">
+      <div className="flex-1 w-full min-h-0 relative">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"

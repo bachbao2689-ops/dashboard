@@ -1,8 +1,6 @@
 // src/components/departments/DepartmentDetailView.tsx
 import React, { useState, useMemo } from 'react';
 import {
-  ArrowLeft,
-  RotateCw,
   CheckCircle2,
   MessageSquare,
   Clock,
@@ -23,7 +21,6 @@ import type {
   TaskStatusFilter,
   AlertLevel,
 } from '../../types/department';
-import { DEPARTMENTS_LIST } from '../../data/departmentData';
 import { DepartmentKpiCards } from './DepartmentKpiCards';
 
 interface DepartmentDetailViewProps {
@@ -38,11 +35,6 @@ interface DepartmentDetailViewProps {
 
 export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
   data,
-  onBack,
-  onSelectDepartment,
-  formattedTime,
-  isRefreshing,
-  onRefreshNow,
   isDark = false,
 }) => {
   const [taskFilter, setTaskFilter] = useState<TaskStatusFilter>('all');
@@ -115,66 +107,12 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
 
   return (
     <div className="flex flex-col gap-2.5 w-full">
-      {/* 1. Breadcrumb Navigation: Back to Overall View */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer py-0.5 px-1 rounded-md"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Tổng quan</span>
-        </button>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Làm mới sau: {formattedTime}</span>
-          <button
-            type="button"
-            onClick={onRefreshNow}
-            disabled={isRefreshing}
-            className="ml-1 p-0.5 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
-            title="Làm mới dữ liệu ngay"
-          >
-            <RotateCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Department Title & Switcher Chips */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-          {data.name}
-        </h1>
-
-        {/* Department Switcher Chips: Design, E-commerce, HR, Kế toán, Sale, Marketing */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {DEPARTMENTS_LIST.map((dept) => {
-            const isActive = dept.id === data.id;
-            return (
-              <button
-                key={dept.id}
-                type="button"
-                onClick={() => onSelectDepartment(dept.id)}
-                className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                  isActive
-                    ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                {dept.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 3. Department KPI Cards Row */}
       <DepartmentKpiCards kpis={data.kpis} isOverall={false} />
 
       {/* 4. Active Projects Grid (Project đang chạy) */}
-      <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Project đang chạy
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -185,7 +123,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
             return (
               <div
                 key={proj.id}
-                className="bg-gray-50/70 dark:bg-slate-800 border border-gray-100 dark:border-slate-700/60 rounded-xl p-3 flex flex-col justify-between"
+                className="bg-gray-50/70 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -228,9 +166,9 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       </div>
 
       {/* 5. Active Tasks Table with Filter Chips */}
-      <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
             Task đang hoạt động
           </p>
           <div className="flex items-center gap-1">
@@ -334,9 +272,9 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       {/* 6. Burndown & Member Workload 2-Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {/* Burndown Chart Card */}
-        <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm flex flex-col h-[175px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Burndown: task còn lại
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
@@ -416,9 +354,9 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         </div>
 
         {/* Member Workload Card */}
-        <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm flex flex-col h-[175px] justify-between">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px] justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Mức tải theo thành viên (% công suất)
             </p>
             <span className="text-[10px] text-gray-400 dark:text-gray-500">
@@ -474,8 +412,8 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       </div>
 
       {/* 7. Recent Activity Feed Card */}
-      <div className="bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700/60 rounded-xl p-3.5 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Hoạt động gần đây
         </p>
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
