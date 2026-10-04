@@ -112,7 +112,7 @@ body {
 .card-hub {
   background: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, transparent 55%), linear-gradient(130deg, #fff, #fcfdff) !important;
   border: 1px solid #dce8fa !important;
-  border-radius: 13px !important;
+  border-radius: 18px !important;
 }
 
 /* Custom Scrollbar for Glass UI */
@@ -195,3 +195,32 @@ body {
 @media (min-width: 2400px) { .dashboard-scale { --z: 1.6; } }
 @media (min-width: 3000px) { .dashboard-scale { --z: 2; } }
 @media (max-width: 1023px) { .dashboard-scale { min-height: 0; } }
+
+
+/* ===== UI Hub card shape ===== */
+.card-hub {
+  background-image: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, rgba(234, 243, 255, 0) 55%);
+  background-color: #ffffff;
+  border: 1px solid #dce8fa;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .card-hub {
+  background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+/* Fallback for components still using old classes */
+.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
+.glass-panel {
+  background-image: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, rgba(234, 243, 255, 0) 55%);
+  border-color: #dce8fa;
+  border-radius: 18px;
+}
+.dark .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
+.dark .glass-panel {
+  background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
+  border-color: #334155;
+}

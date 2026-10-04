@@ -31,7 +31,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="glass-panel w-full max-w-md p-6 rounded-3xl border border-white/20 bg-white/10 dark:bg-black/40">
+      <div className="card-hub w-full max-w-md p-6 rounded-3xl border border-white/20 bg-white dark:bg-black/40">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Invite Member</h2>
           <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 dark:text-gray-400">
@@ -47,7 +47,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white/5 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
               placeholder="John Doe"
             />
           </div>
@@ -58,7 +58,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white/5 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
               placeholder="john@example.com"
             />
           </div>
@@ -67,7 +67,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white/5 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
             >
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
@@ -81,7 +81,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white transition-colors"
             >
               Cancel
             </button>

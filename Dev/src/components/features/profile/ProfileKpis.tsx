@@ -5,7 +5,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div className="card-hub p-4 rounded-2xl shadow-sm">
         <div className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 uppercase tracking-wider">
-          {role === 'manager' ? 'Tasks Assigned (Team)' : 'My Tasks'}
+          {role === 'manager' ? 'Task đã giao (Team)' : 'My Tasks'}
         </div>
         <div className="text-2xl font-bold text-gray-900 dark:text-white">
           {role === 'manager' ? '34' : '12'}
@@ -14,7 +14,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       
       <div className="card-hub p-4 rounded-2xl shadow-sm">
         <div className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 uppercase tracking-wider">
-          Completed Rate
+          Hoàn thành Rate
         </div>
         <div className="text-2xl font-bold text-primary">92%</div>
       </div>

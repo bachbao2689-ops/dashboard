@@ -93,10 +93,10 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
         </span>
       </div>
 
-      {/* 5. Project at risk / Project */}
+      {/* 5. Dự án rủi ro / Project */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
-          {isOverall ? 'Project at risk' : 'Project'}
+          {isOverall ? 'Dự án rủi ro' : 'Project'}
         </span>
         <b className={`text-2xl font-bold tracking-tight leading-tight my-0.5 ${projectRiskColor}`}>
           {kpis.projectsAtRiskOrCount}

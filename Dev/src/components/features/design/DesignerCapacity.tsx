@@ -102,7 +102,7 @@ export const DesignerCapacity: React.FC = () => {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">TEAM CAPACITY - ACTIVE TASKS</h2>
           <div className="text-right">
             <span className="text-3xl font-black text-primary">{overallUtilization}%</span>
-            <span className="text-gray-500 dark:text-gray-400 ml-2 font-medium">utilized</span>
+            <span className="text-gray-500 dark:text-gray-400 ml-2 font-medium">đã sử dụng</span>
           </div>
         </div>
         <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
@@ -182,7 +182,7 @@ export const DesignerCapacity: React.FC = () => {
         })}
         {workload.length === 0 && !loading && (
            <div className="col-span-full text-center py-10 text-gray-500">
-              No active tasks assigned to team members.
+              No active Task đã giao to team members.
            </div>
         )}
       </div>

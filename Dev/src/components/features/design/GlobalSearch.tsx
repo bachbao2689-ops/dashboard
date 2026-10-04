@@ -99,8 +99,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
         ref={containerRef}
         className={cn(
           "w-full max-w-[600px] mx-4 flex flex-col",
-          "glass-panel rounded-2xl overflow-hidden shadow-2xl",
-          "border border-gray-100 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95"
+          "card-hub rounded-2xl overflow-hidden shadow-2xl",
+          "border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900/95"
         )}
       >
         <div className="flex items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700">
@@ -179,7 +179,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
           )}
         </div>
         
-        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-slate-800 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
           <div className="flex space-x-4">
             <span className="flex items-center"><kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 mr-1.5 shadow-sm font-sans">↑↓</kbd> navigate</span>
             <span className="flex items-center"><kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 mr-1.5 shadow-sm font-sans">↵</kbd> select</span>

@@ -51,7 +51,7 @@ export const AssetLibrary: React.FC = () => {
   return (
     <div className="space-y-6 pt-4">
       {/* Search and Filters */}
-      <div className="flex flex-wrap items-center gap-4 bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
@@ -85,7 +85,7 @@ export const AssetLibrary: React.FC = () => {
       </div>
 
       {/* Brand Colors Quick Access */}
-      <div className="glass-panel p-5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <div className="card-hub p-5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Brand Colors</h4>
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export const AssetLibrary: React.FC = () => {
             <div key={asset.id} className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
               <div className="h-32 w-full bg-gray-100 dark:bg-gray-900 relative">
                 <img src={asset.previewUrl} alt={asset.name} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
-                <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/90 text-gray-900 backdrop-blur-sm">
+                <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-gray-900 backdrop-blur-sm">
                   {asset.type}
                 </div>
               </div>

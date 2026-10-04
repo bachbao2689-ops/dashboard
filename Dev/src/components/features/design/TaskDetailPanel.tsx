@@ -175,7 +175,7 @@ export function TaskDetailPanel({ isOpen, onClose, task: initialTask }: TaskDeta
           className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 bg-transparent hover:bg-primary/20 cursor-col-resize z-50 transition-all -translate-x-1/2 group hidden md:flex items-center justify-center"
           onMouseDown={startResizing}
         >
-          <div className="h-12 w-1 bg-gray-400/50 dark:bg-gray-500/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="h-12 w-1 bg-gray-400/50 dark:bg-slate-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
       )}
 

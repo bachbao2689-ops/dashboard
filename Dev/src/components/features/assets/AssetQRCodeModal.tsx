@@ -23,13 +23,13 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
         
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all z-10"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white rounded-full transition-all z-10"
         >
           <X size={20} />
         </button>
 
         <div className="p-8 flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-[#002e6d]/10 dark:bg-white/10 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-[#002e6d]/10 dark:bg-white flex items-center justify-center mb-4">
             <ScanLine className="w-6 h-6 text-[#002e6d] dark:text-white" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-1">Asset QR Code</h3>

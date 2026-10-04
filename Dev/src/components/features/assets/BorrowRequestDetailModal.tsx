@@ -23,7 +23,7 @@ export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> =
         
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all z-10"
+          className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-black/5 dark:hover:bg-white rounded-full transition-all z-10"
         >
           <X size={24} />
         </button>
