@@ -89,7 +89,7 @@ export const Dashboard: React.FC = () => {
   const next = () => setIdx((idx + 1) % STAFF.length);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_288px] gap-4 w-full xl:items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] gap-4 w-full xl:items-stretch">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
       <section className={`${PANEL} p-4 sm:p-[25px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -261,16 +261,6 @@ export const Dashboard: React.FC = () => {
                 <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
                 <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
               </div>
-              <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
-            </div>
-            <div className="flex items-center gap-[7px] mt-[14px] text-xs text-[#8698b0] dark:text-slate-400">
-              <Info size={13} className="shrink-0" />
-              <span className="flex items-center gap-2.5 flex-wrap">
-                Chất lượng dữ liệu <b className="font-normal text-[#947d5b] dark:text-amber-400">{s.noDeadline} thiếu hạn</b>
-                <b className="font-normal text-[#947d5b] dark:text-amber-400">0 thiếu PIC</b>
-                <b className="font-normal text-[#947d5b] dark:text-amber-400">1 mở trùng</b>
-              </span>
-              <ArrowRight size={13} className="ml-auto shrink-0" />
             </div>
           </>
         ) : (

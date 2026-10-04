@@ -17,8 +17,8 @@ export const DashboardLayout: React.FC = () => {
       </div>
       
       <div className="flex h-screen bg-transparent text-gray-800">
-        <div className={`hidden md:flex transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
-          <div className="w-72 flex-shrink-0 p-4 h-full">
+        <div className={`hidden md:flex transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[272px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          <div className="w-[272px] flex-shrink-0 pl-4 py-4 pr-0 h-full">
              <Sidebar />
           </div>
         </div>
