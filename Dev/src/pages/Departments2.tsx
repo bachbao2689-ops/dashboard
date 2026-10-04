@@ -140,7 +140,7 @@ export const Departments2: React.FC = () => {
   const title = DEPTS.find(d => d[0] === dept)![1].toUpperCase();
 
   return (
-    <div className="w-full space-y-4 font-sans">
+    <div className="-mx-4 md:-mx-8 px-4 md:px-8 w-full space-y-4 font-sans">
       {/* Header */}
       <div className={`${PANEL} px-5 py-4 flex flex-wrap items-center justify-between gap-3`}>
         <div>
