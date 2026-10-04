@@ -6,13 +6,12 @@ import {
 } from 'lucide-react';
 
 /* Design tokens shared with the Dashboard tab */
-const INK = 'text-[#153454] dark:text-slate-100';
-const MUTED = 'text-[#6f84a1] dark:text-slate-400';
-const LINK = 'text-[#3789f4] dark:text-sky-400';
-const PANEL =
-  'bg-white border border-[#e0eaf8] rounded-[18px] shadow-[0_3px_15px_rgba(9,47,102,0.02)] min-w-0 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none';
-const INNER = 'border border-[#e0eaf8] dark:border-slate-700';
-const LABEL = `text-xs font-bold tracking-[0.12em] uppercase ${MUTED}`;
+const INK = 'text-gray-900 dark:text-white';
+const MUTED = 'text-gray-500 dark:text-gray-400';
+const LINK = 'text-blue-600 dark:text-blue-400';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
+const INNER = 'border border-gray-200 dark:border-slate-700';
+const LABEL = 'text-sm font-semibold text-gray-500 dark:text-gray-400';
 
 type Dept = 'ecommerce' | 'design' | 'all';
 type Tab = 'overview' | 'projects' | 'capacity' | 'timeline' | 'resources';
@@ -68,21 +67,21 @@ const PLATFORM_DIST = [
 ];
 
 const STATUS_STYLE: Record<Status, { dot: string; text: string; label: string }> = {
-  ok: { dot: 'bg-[#279561]', text: 'text-[#279561]', label: 'On track' },
+  ok: { dot: 'bg-emerald-600', text: 'text-emerald-600', label: 'On track' },
   risk: { dot: 'bg-amber-400', text: 'text-amber-500', label: 'At risk' },
-  overdue: { dot: 'bg-[#d9435a]', text: 'text-[#d9435a]', label: 'Overdue' },
+  overdue: { dot: 'bg-red-500', text: 'text-red-500', label: 'Overdue' },
 };
 
-const barColor = (pct: number) => (pct > 100 ? 'bg-[#d9435a]' : pct >= 85 ? 'bg-amber-400' : 'bg-[#45a894]');
+const barColor = (pct: number) => (pct > 100 ? 'bg-red-500' : pct >= 85 ? 'bg-amber-400' : 'bg-teal-500');
 
 const Bar: React.FC<{ pct: number; color?: string }> = ({ pct, color }) => (
-  <div className="h-1.5 rounded-full bg-[#eef3fb] dark:bg-slate-700 overflow-hidden">
-    <div className={`h-full rounded-full ${color ?? 'bg-[#153454] dark:bg-sky-400'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+  <div className="h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+    <div className={`h-full rounded-full ${color ?? 'bg-gray-900 dark:bg-sky-400'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
   </div>
 );
 
 const Kpi: React.FC<{ value: string; label: string; tone?: string; icon?: React.ReactNode }> = ({ value, label, tone, icon }) => (
-  <div className={`${INNER} rounded-[14px] px-4 py-3 bg-[radial-gradient(ellipse_at_100%_110%,#eaf3ff_0%,transparent_55%)] dark:bg-none flex flex-col gap-1`}>
+  <div className={`${INNER} rounded-[14px] px-4 py-3 bg-gray-50 dark:bg-none flex flex-col gap-1`}>
     <span className={LABEL}>{label}</span>
     <span className={`flex items-center gap-1.5 text-2xl font-bold leading-none ${tone ?? INK}`}>{icon}{value}</span>
   </div>
@@ -149,14 +148,14 @@ export const Departments2: React.FC = () => {
           <h1 className={`text-xl font-bold leading-tight ${INK}`}>{title} TEAM</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className={`${INNER} rounded-[10px] p-0.5 flex bg-[#f6f9fe] dark:bg-slate-900`}>
+          <div className={`${INNER} rounded-[10px] p-0.5 flex bg-gray-50 dark:bg-slate-900`}>
             {DEPTS.map(([k, l]) => (
               <button key={k} onClick={() => setDept(k)}
-                className={`px-3 py-1.5 rounded-[8px] text-sm font-semibold transition-colors ${dept === k ? 'bg-[#153454] text-white dark:bg-sky-500' : `${MUTED} hover:text-[#153454] dark:hover:text-white`}`}>{l}</button>
+                className={`px-3 py-1.5 rounded-[8px] text-sm font-semibold transition-colors ${dept === k ? 'bg-gray-900 text-white dark:bg-sky-500' : `${MUTED} hover:text-gray-900 dark:hover:text-white`}`}>{l}</button>
             ))}
           </div>
           <button onClick={() => toast.success('New project draft created')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] bg-[#153454] dark:bg-sky-500 text-white text-sm font-semibold hover:opacity-90">
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] bg-gray-900 dark:bg-sky-500 text-white text-sm font-semibold hover:opacity-90">
             <Plus size={14} /> New Project
           </button>
         </div>
@@ -168,7 +167,7 @@ export const Departments2: React.FC = () => {
           {TABS.map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)} className={`relative py-2.5 text-sm font-semibold whitespace-nowrap ${tab === k ? INK : MUTED}`}>
               {l}
-              <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-[#153454] dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
+              <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-gray-900 dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
             </button>
           ))}
         </div>
@@ -182,9 +181,9 @@ export const Departments2: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
               <Kpi value={String(totals.active)} label="Active Proj" />
               <Kpi value={String(totals.tasks)} label="Tasks Total" />
-              <Kpi value={String(totals.overdue)} label="Overdue" tone="text-[#d9435a]" icon={<AlertTriangle size={18} />} />
+              <Kpi value={String(totals.overdue)} label="Overdue" tone="text-red-500" icon={<AlertTriangle size={18} />} />
               <Kpi value={`${totals.health}%`} label="Health Score" />
-              <Kpi value={`${totals.ontime}%`} label="On-time Rate" tone="text-[#279561]" />
+              <Kpi value={`${totals.ontime}%`} label="On-time Rate" tone="text-emerald-600" />
               <Kpi value={String(totals.members)} label="Members" icon={<Users size={18} />} />
             </div>
           </div>
@@ -255,11 +254,11 @@ export const Departments2: React.FC = () => {
               <div className="space-y-2">
                 {[
                   { icon: <Shuffle size={16} className="text-amber-500" />, label: 'Auto-balance capacity', sub: 'Wendy is overloaded (150%)', action: () => toast.success('Rebalancing workload') },
-                  { icon: <Mail size={16} className="text-[#3789f4]" />, label: 'Email overdue reminders', sub: '2 projects are late', action: () => toast.success('Emails sent') },
-                  { icon: <CheckCircle2 size={16} className="text-[#279561]" />, label: 'Approve pending requests', sub: '5 items pending', action: () => toast.success('Requests approved') },
+                  { icon: <Mail size={16} className="text-blue-500" />, label: 'Email overdue reminders', sub: '2 projects are late', action: () => toast.success('Emails sent') },
+                  { icon: <CheckCircle2 size={16} className="text-emerald-600" />, label: 'Approve pending requests', sub: '5 items pending', action: () => toast.success('Requests approved') },
                 ].map(a => (
-                  <button key={a.label} onClick={a.action} className={`w-full ${INNER} rounded-[12px] p-3 flex items-center gap-3 text-left hover:bg-[#f6f9fe] dark:hover:bg-slate-700 transition-colors`}>
-                    <div className="w-8 h-8 rounded-full bg-[#f6f9fe] dark:bg-slate-800 flex items-center justify-center shrink-0">{a.icon}</div>
+                  <button key={a.label} onClick={a.action} className={`w-full ${INNER} rounded-[12px] p-3 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}>
+                    <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-slate-800 flex items-center justify-center shrink-0">{a.icon}</div>
                     <div className="flex-1"><p className={`text-sm font-bold ${INK}`}>{a.label}</p><p className={`text-xs ${MUTED}`}>{a.sub}</p></div>
                     <ChevronRight size={16} className={MUTED} />
                   </button>
@@ -304,14 +303,14 @@ export const Departments2: React.FC = () => {
                   {p.breakdown.map(b => (
                     <div key={b.label} className="flex items-center gap-2 text-sm">
                       <span className={`w-16 ${INK}`}>{b.label}</span>
-                      <div className="flex-1"><Bar pct={b.done / b.total * 100} color={b.done / b.total < 0.5 ? 'bg-amber-400' : 'bg-[#45a894]'} /></div>
+                      <div className="flex-1"><Bar pct={b.done / b.total * 100} color={b.done / b.total < 0.5 ? 'bg-amber-400' : 'bg-teal-500'} /></div>
                       <span className={`w-10 text-right font-semibold ${INK}`}>{b.done}/{b.total}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   {p.milestones.map(m => (
-                    <span key={m.label} className={`${INNER} rounded-full px-2.5 py-1 font-semibold ${m.state === 'done' ? 'text-[#279561]' : m.state === 'next' ? 'text-amber-500' : MUTED}`}>
+                    <span key={m.label} className={`${INNER} rounded-full px-2.5 py-1 font-semibold ${m.state === 'done' ? 'text-emerald-600' : m.state === 'next' ? 'text-amber-500' : MUTED}`}>
                       {m.state === 'done' ? '✅' : m.state === 'next' ? '⏳' : '🔜'} {m.label} ({m.date})
                     </span>
                   ))}
@@ -348,7 +347,7 @@ export const Departments2: React.FC = () => {
                         <td className={MUTED}>{m.role}</td>
                         <td className={`font-semibold ${INK}`}>{m.assigned}/{m.cap}</td>
                         <td className="pr-3"><Bar pct={pct} color={barColor(pct)} /></td>
-                        <td className={`font-semibold ${over ? 'text-[#d9435a]' : 'text-[#279561]'}`}>{over ? '● OVERLOAD' : '● OK'}</td>
+                        <td className={`font-semibold ${over ? 'text-red-500' : 'text-emerald-600'}`}>{over ? '● OVERLOAD' : '● OK'}</td>
                         <td className="text-right">{over && <button onClick={() => rebalance(m.name)} className={`text-xs font-semibold ${LINK}`}>Rebalance</button>}</td>
                       </tr>
                     );
@@ -366,7 +365,7 @@ export const Departments2: React.FC = () => {
               {PLATFORM_DIST.map(d => (
                 <div key={d.label}>
                   <div className="flex justify-between text-sm mb-1"><span className={INK}>{d.label}</span><span className={`font-bold ${INK}`}>{d.pct}%</span></div>
-                  <div className="h-2 rounded-full bg-[#eef3fb] dark:bg-slate-700"><div className="h-full rounded-full" style={{ width: `${d.pct}%`, background: d.color }} /></div>
+                  <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-700"><div className="h-full rounded-full" style={{ width: `${d.pct}%`, background: d.color }} /></div>
                 </div>
               ))}
             </div>
@@ -387,17 +386,17 @@ export const Departments2: React.FC = () => {
             {projects.map(p => (
               <React.Fragment key={p.id}>
                 <span className={`text-sm font-bold ${INK}`}>{p.name}</span>
-                <div className="relative h-6 rounded-md bg-[#f3f7fd] dark:bg-slate-900">
-                  <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-[#d9435a]/25' : 'bg-[#153454]/15 dark:bg-sky-400/20'}`} style={{ left: `${p.start}%`, width: `${p.len}%` }} />
-                  <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-[#d9435a]' : 'bg-[#153454] dark:bg-sky-400'}`} style={{ left: `${p.start}%`, width: `${p.len * p.progress / 100}%` }} />
+                <div className="relative h-6 rounded-md bg-gray-100 dark:bg-slate-900">
+                  <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-red-500/25' : 'bg-gray-900/15 dark:bg-sky-400/20'}`} style={{ left: `${p.start}%`, width: `${p.len}%` }} />
+                  <div className={`absolute top-0 h-6 rounded-md ${p.status === 'overdue' ? 'bg-red-500' : 'bg-gray-900 dark:bg-sky-400'}`} style={{ left: `${p.start}%`, width: `${p.len * p.progress / 100}%` }} />
                 </div>
               </React.Fragment>
             ))}
           </div>
           <div className={`flex gap-5 mt-5 text-xs ${MUTED}`}>
-            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#153454]" />Active</span>
-            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#153454]/20" />Remaining</span>
-            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-[#d9435a]" />Delayed</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-gray-900" />Active</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-gray-900/20" />Remaining</span>
+            <span className="flex items-center gap-1.5"><i className="w-3 h-2 rounded bg-red-500" />Delayed</span>
           </div>
         </div>
       )}
@@ -408,8 +407,8 @@ export const Departments2: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { icon: <Camera size={16} />, title: 'Camera', name: 'Canon 5D', state: 'Borrowed', note: 'Due: Oct 12', tone: 'text-amber-500' },
-              { icon: <Laptop size={16} />, title: 'Computers', name: 'MacBook Pro', state: 'Available', note: '2 available', tone: 'text-[#279561]' },
-              { icon: <KeyRound size={16} />, title: 'Software', name: 'Photoshop', state: 'License OK', note: 'Exp: Dec 2026', tone: 'text-[#279561]' },
+              { icon: <Laptop size={16} />, title: 'Computers', name: 'MacBook Pro', state: 'Available', note: '2 available', tone: 'text-emerald-600' },
+              { icon: <KeyRound size={16} />, title: 'Software', name: 'Photoshop', state: 'License OK', note: 'Exp: Dec 2026', tone: 'text-emerald-600' },
             ].map(r => (
               <div key={r.title} className={`${PANEL} p-5`}>
                 <div className={`flex items-center gap-2 ${LABEL}`}>{r.icon}{r.title}</div>

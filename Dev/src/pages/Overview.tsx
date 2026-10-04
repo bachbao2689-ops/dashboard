@@ -13,13 +13,12 @@ import { useAuthStore } from '../store/authStore';
 import { supabase } from '../services/supabase';
 
 /* Shared design tokens (same as Dashboard / Departments 2) */
-const INK = 'text-[#153454] dark:text-slate-100';
-const MUTED = 'text-[#6f84a1] dark:text-slate-400';
-const LINK = 'text-[#3789f4] dark:text-sky-400';
-const PANEL =
-  'bg-white border border-[#e0eaf8] rounded-[18px] shadow-[0_3px_15px_rgba(9,47,102,0.02)] min-w-0 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none';
-const INNER = 'border border-[#e0eaf8] dark:border-slate-700';
-const LABEL = `text-[10px] font-bold tracking-[0.12em] uppercase ${MUTED}`;
+const INK = 'text-gray-900 dark:text-white';
+const MUTED = 'text-gray-500 dark:text-gray-400';
+const LINK = 'text-blue-600 dark:text-blue-400';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
+const INNER = 'border border-gray-200 dark:border-slate-700';
+const LABEL = 'text-sm font-semibold text-gray-500 dark:text-gray-400';
 
 const taskStatusData = [
   { name: 'W1', created: 40, done: 24 },
@@ -44,7 +43,7 @@ const Ring: React.FC<{ pct: number; color: string; size?: number; track: string 
 };
 
 const Trend: React.FC<{ v: number }> = ({ v }) => (
-  <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${v >= 0 ? 'text-[#279561] bg-[#279561]/10' : 'text-[#d9435a] bg-[#d9435a]/10'}`}>
+  <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${v >= 0 ? 'text-emerald-600 bg-emerald-600/10' : 'text-red-500 bg-red-500/10'}`}>
     {v >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}{v >= 0 ? '+' : ''}{v}%
   </span>
 );
@@ -140,10 +139,10 @@ export const Overview: React.FC = () => {
             />
             <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${MUTED}`}>▾</span>
           </div>
-          <button className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-[#153454] dark:bg-sky-500 hover:opacity-90 text-white rounded-[10px] text-xs font-semibold transition-opacity">
+          <button className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 dark:bg-sky-500 hover:opacity-90 text-white rounded-[10px] text-xs font-semibold transition-opacity">
             <Bot size={14} /> {t('overview.aiSummary')}
           </button>
-          <button className={`flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] ${INK} hover:bg-[#f6f9fe] dark:hover:bg-slate-700 transition-colors`}>
+          <button className={`flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] ${INK} hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}>
             <Download size={14} />
           </button>
         </div>
@@ -192,18 +191,18 @@ export const Overview: React.FC = () => {
           onClick={() => navigate('/tasks')}
           className={`p-4 text-left rounded-[18px] border flex items-center justify-between gap-3 hover:shadow-md transition-shadow ${
             data.overdueCount > 0
-              ? 'bg-[#fff5f6] border-[#f6d3d8] dark:bg-red-500/10 dark:border-red-500/30'
+              ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30'
               : `bg-white dark:bg-slate-800 ${INNER}`
           }`}
         >
           <div className="space-y-1.5">
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#d9435a]">{t('overview.overdue')}</p>
-            <p className="text-4xl font-bold leading-none text-[#d9435a]">{data.overdueCount}</p>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#d9435a]">
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-red-500">{t('overview.overdue')}</p>
+            <p className="text-4xl font-bold leading-none text-red-500">{data.overdueCount}</p>
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-red-500">
               <AlertCircle size={12} /> {t('overview.actionRequired')}
             </span>
           </div>
-          <ChevronRight size={22} className="text-[#d9435a]/60" />
+          <ChevronRight size={22} className="text-red-500/60" />
         </button>
       </div>
 
@@ -218,8 +217,8 @@ export const Overview: React.FC = () => {
               </p>
             </div>
             <div className={`flex items-center gap-4 text-xs font-semibold ${MUTED}`}>
-              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-[#153454] dark:bg-sky-400" />{t('overview.created')}</span>
-              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-[#45a894]" />{t('overview.done')}</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-gray-900 dark:bg-sky-400" />{t('overview.created')}</span>
+              <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-teal-500" />{t('overview.done')}</span>
             </div>
           </div>
           <div className="h-56">
@@ -261,9 +260,9 @@ export const Overview: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className={`flex gap-3 mt-2 text-[10px] font-semibold ${MUTED}`}>
-            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#d9435a]" />Today</span>
-            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#f5a524]" />Heavy</span>
-            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-[#153454] dark:bg-sky-400" />Normal</span>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-red-500" />Today</span>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-amber-500" />Heavy</span>
+            <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-sm bg-gray-900 dark:bg-sky-400" />Normal</span>
           </div>
         </div>
       </div>
@@ -281,7 +280,7 @@ export const Overview: React.FC = () => {
               <div className={`py-6 text-center text-sm ${MUTED}`}>No upcoming tasks!</div>
             ) : data.upcomingTasks.slice(0, 3).map(task => (
               <div key={task.id} className={`${INNER} rounded-[12px] px-3 py-2.5 flex items-center gap-3`}>
-                <i className={`w-1.5 self-stretch rounded-full ${task.priority === 'high' ? 'bg-[#d9435a]' : 'bg-[#3789f4]'}`} />
+                <i className={`w-1.5 self-stretch rounded-full ${task.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-semibold truncate ${INK}`}>{task.title}</p>
                   <p className={`text-xs flex items-center gap-1 ${MUTED}`}>
@@ -326,7 +325,7 @@ export const Overview: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <p className={LABEL}>{t('overview.recentBorrow')}</p>
             {pendingApprovals > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#3789f4]/10 text-[#3789f4]">{pendingApprovals} pending</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">{pendingApprovals} pending</span>
             )}
           </div>
           <div className="space-y-2">
@@ -340,13 +339,13 @@ export const Overview: React.FC = () => {
                 <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
                 {req.approval_status === 'pending' ? (
                   <div className="flex gap-2 mt-2.5">
-                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-[#279561] hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
-                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-[#f6f9fe] dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
+                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
+                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
                   </div>
                 ) : req.approval_status === 'approved' ? (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-[#279561]"><CheckCircle size={13} /> {t('overview.approved')}</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle size={13} /> {t('overview.approved')}</p>
                 ) : (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-[#d9435a]"><XCircle size={13} /> Rejected</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500"><XCircle size={13} /> Rejected</p>
                 )}
               </div>
             ))}

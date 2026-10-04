@@ -7,12 +7,11 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'rechar
 import { useUiStore } from '../store/uiStore';
 
 /* Design tokens copied from the UI HUB Dashboard tab (light + dark variants) */
-const INK = 'text-[#153454] dark:text-slate-100';
-const MUTED = 'text-[#6f84a1] dark:text-slate-400';
-const LINK = 'text-[#3789f4] dark:text-sky-400';
-const PANEL =
-  'bg-white border border-[#e0eaf8] rounded-[18px] shadow-[0_3px_15px_rgba(9,47,102,0.02)] min-w-0 dark:bg-slate-800 dark:border-slate-700 dark:shadow-none';
-const INNER = 'border border-[#e0eaf8] dark:border-slate-700';
+const INK = 'text-gray-900 dark:text-white';
+const MUTED = 'text-gray-500 dark:text-gray-400';
+const LINK = 'text-blue-600 dark:text-blue-400';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
+const INNER = 'border border-gray-200 dark:border-slate-700';
 const ICON_BTN = 'w-7 h-7 rounded-full grid place-items-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors';
 
 interface Staff {
@@ -61,7 +60,7 @@ const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const MONTH_LABELS = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <span className={`block text-xs font-semibold tracking-[1.8px] uppercase ${MUTED} ${className}`}>{children}</span>
+  <span className={`block text-sm font-semibold ${MUTED} ${className}`}>{children}</span>
 );
 
 const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; className?: string }> = ({ children, onClick, className = '' }) => (
@@ -112,15 +111,15 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-[23px] border-b border-[#e0eaf8] dark:border-slate-700 mb-[13px] overflow-x-auto">
+        <div className="flex gap-[23px] border-b border-gray-200 dark:border-slate-700 mb-[13px] overflow-x-auto">
           {([['detail', 'Chi tiết nhân sự'], ['allocation', 'Phân bổ đội ngũ']] as const).map(([k, label]) => (
             <button
               key={k}
               onClick={() => setTab(k)}
-              className={`relative pt-2 pb-3 text-sm whitespace-nowrap transition-colors ${tab === k ? `font-semibold ${INK}` : 'text-[#8c9bb0] hover:text-[#153454] dark:hover:text-white'}`}
+              className={`relative pt-2 pb-3 text-sm whitespace-nowrap transition-colors ${tab === k ? `font-semibold ${INK}` : 'text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
               {label}
-              <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-[#153454] dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
+              <span className={`absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-gray-900 dark:bg-sky-400 transition-opacity ${tab === k ? 'opacity-100' : 'opacity-0'}`} />
             </button>
           ))}
         </div>
@@ -132,10 +131,10 @@ export const Dashboard: React.FC = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
               {/* Staff Spotlight */}
-              <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-[#e8edf5] dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
+              <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-gray-50 dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
                 <div className="w-full flex items-center justify-between">
                   <Eyebrow className="!text-xs !tracking-[1.6px]">STAFF SPOTLIGHT</Eyebrow>
-                  <button className={`${MUTED} hover:text-[#153454] dark:hover:text-white`}><ChevronRight size={15} /></button>
+                  <button className={`${MUTED} hover:text-gray-900 dark:hover:text-white`}><ChevronRight size={15} /></button>
                 </div>
 
                 <div className="flex items-center justify-between w-full my-4">
@@ -144,8 +143,8 @@ export const Dashboard: React.FC = () => {
                     className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] rounded-full grid place-items-center p-[5px]"
                     style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
                   >
-                    <div className={`w-full h-full rounded-full bg-[#eaf2ff] dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 grid place-items-center text-3xl font-bold ${INK}`}>{s.initial}</div>
-                    <span className="absolute bottom-0 right-1 w-[22px] h-[22px] rounded-full bg-[#279561] border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={12} strokeWidth={3} /></span>
+                    <div className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 grid place-items-center text-3xl font-bold ${INK}`}>{s.initial}</div>
+                    <span className="absolute bottom-0 right-1 w-[22px] h-[22px] rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={12} strokeWidth={3} /></span>
                   </div>
                   <button onClick={next} aria-label="Next" className={`${ICON_BTN} ${MUTED}`}><ChevronRight size={16} /></button>
                 </div>
@@ -156,14 +155,14 @@ export const Dashboard: React.FC = () => {
 
                 <div className="grid grid-cols-3 w-full gap-[5px] my-6">
                   {[[s.open, 'Đang mở'], [s.done, 'Hoàn tất'], [s.projects, 'Dự án mở']].map(([v, l], i) => (
-                    <div key={l as string} className={i < 2 ? 'border-r border-[#eaf0f6] dark:border-slate-700' : ''}>
+                    <div key={l as string} className={i < 2 ? 'border-r border-gray-50 dark:border-slate-700' : ''}>
                       <strong className={`block text-xl font-semibold ${INK}`}>{v}</strong>
                       <span className={`block text-xs mt-0.5 ${MUTED}`}>{l}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="w-full border-t border-[#e0eaf8] dark:border-slate-700 pt-[13px]">
+                <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
                   <TextButton className={INK}>Xem {s.total} công việc</TextButton>
                 </div>
               </div>
@@ -180,30 +179,30 @@ export const Dashboard: React.FC = () => {
                 >
                   <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex flex-col items-center justify-center">
                     <strong className={`text-2xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-sm">%</small></strong>
-                    <span className="text-xs text-[#92a0b1]">hoàn thành</span>
+                    <span className="text-xs text-gray-400">hoàn thành</span>
                   </div>
                 </div>
                 <p className={`text-center text-xs ${MUTED}`}>{s.done} / {s.total} task được giao</p>
                 <div className={`flex justify-center gap-3 text-xs mt-2 ${MUTED}`}>
-                  <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-[#45a894]" />Done</span>
-                  <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-[#d6e1ee] dark:bg-slate-600" />Đang mở</span>
+                  <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-teal-500" />Done</span>
+                  <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-slate-600" />Đang mở</span>
                 </div>
               </div>
 
               {/* Focus needed */}
-              <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
+              <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-gray-50 dark:bg-gray-50`}>
                 <div className="flex items-center justify-between">
                   <strong className={`text-sm ${INK}`}>Cần tập trung</strong>
                   <Clock size={14} className={MUTED} />
                 </div>
-                <div className="mt-3 text-4xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
-                <span className="mt-2 self-start text-xs font-semibold text-[#b0364b] bg-[#fdecef] dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
+                <div className="mt-3 text-4xl leading-none font-bold text-red-600 dark:text-rose-400">{s.overdue}</div>
+                <span className="mt-2 self-start text-xs font-semibold text-red-600 bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
                 <div className="mt-4 space-y-2 text-xs">
                   <div className="flex justify-between"><span className={MUTED}>Deadline trong 3 ngày</span><b className={INK}>{s.due3}</b></div>
                   <div className="flex justify-between"><span className={MUTED}>Ưu tiên High / Urgent</span><b className={INK}>{s.urgent}</b></div>
-                  <div className="h-1 rounded-full bg-[#dfe7f1] dark:bg-slate-600 overflow-hidden flex">
-                    <i className="bg-[#c04a5a]" style={{ width: `${Math.min(100, s.overdue * 10)}%` }} />
-                    <i className="bg-[#4a8de0]" style={{ width: `${Math.min(100, s.urgent * 5)}%` }} />
+                  <div className="h-1 rounded-full bg-gray-100 dark:bg-slate-600 overflow-hidden flex">
+                    <i className="bg-red-500" style={{ width: `${Math.min(100, s.overdue * 10)}%` }} />
+                    <i className="bg-blue-500" style={{ width: `${Math.min(100, s.urgent * 5)}%` }} />
                   </div>
                   <div className="flex justify-between"><span className={MUTED}>Chưa có deadline</span><b className={INK}>{s.noDeadline}</b></div>
                 </div>
@@ -217,12 +216,12 @@ export const Dashboard: React.FC = () => {
                     <strong className={`text-sm ${INK}`}>Lịch deadline</strong>
                     <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · 28/9/2026 — 4/10/2026</p>
                   </div>
-                  <div className="flex bg-[#f3f7fc] dark:bg-slate-700 border border-[#e0eaf8] dark:border-slate-600 rounded-lg p-0.5">
+                  <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
                     {(['weekly', 'monthly'] as const).map(r => (
                       <button
                         key={r}
                         onClick={() => setRange(r)}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-[#153454] dark:text-white' : MUTED}`}
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
                       >
                         {r === 'weekly' ? 'Weekly' : 'Monthly'}
                       </button>
@@ -256,20 +255,20 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Insight strip */}
-            <div className="flex items-center gap-[13px] border border-[#e2ecf9] dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-4 mt-[17px]">
-              <span className="w-8 h-8 rounded-lg bg-[#e3eefc] dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
+            <div className="flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-4 mt-[17px]">
+              <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-blue-500 dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
               <div className="min-w-0">
                 <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
-                <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
+                <p className="text-xs text-gray-400 dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
               </div>
-              <button className={`ml-auto shrink-0 ${MUTED} hover:text-[#153454] dark:hover:text-white`}><ArrowRight size={16} /></button>
+              <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
             </div>
-            <div className="flex items-center gap-[7px] mt-[14px] text-xs text-[#8698b0] dark:text-slate-400">
+            <div className="flex items-center gap-[7px] mt-[14px] text-xs text-gray-400 dark:text-slate-400">
               <Info size={13} className="shrink-0" />
               <span className="flex items-center gap-2.5 flex-wrap">
-                Chất lượng dữ liệu <b className="font-normal text-[#947d5b] dark:text-amber-400">{s.noDeadline} thiếu hạn</b>
-                <b className="font-normal text-[#947d5b] dark:text-amber-400">0 thiếu PIC</b>
-                <b className="font-normal text-[#947d5b] dark:text-amber-400">1 mở trùng</b>
+                Chất lượng dữ liệu <b className="font-normal text-amber-700 dark:text-amber-400">{s.noDeadline} thiếu hạn</b>
+                <b className="font-normal text-amber-700 dark:text-amber-400">0 thiếu PIC</b>
+                <b className="font-normal text-amber-700 dark:text-amber-400">1 mở trùng</b>
               </span>
               <ArrowRight size={13} className="ml-auto shrink-0" />
             </div>
@@ -282,7 +281,7 @@ export const Dashboard: React.FC = () => {
                   <strong className={`text-sm ${INK}`}>{d.name}</strong>
                   <span className={`text-xs ${MUTED}`}>{d.members.length} PIC</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[#edf3f8] dark:bg-slate-700 overflow-hidden"><i className="block h-full bg-[#4a8de0]" style={{ width: `${Math.min(100, d.members.length * 35)}%` }} /></div>
+                <div className="h-1.5 rounded-full bg-gray-50 dark:bg-slate-700 overflow-hidden"><i className="block h-full bg-blue-500" style={{ width: `${Math.min(100, d.members.length * 35)}%` }} /></div>
               </div>
             ))}
           </div>
@@ -298,11 +297,11 @@ export const Dashboard: React.FC = () => {
               <Eyebrow className="!text-xs mb-[3px]">HISTORY</Eyebrow>
               <h2 className={`text-base font-bold ${INK}`}>Lịch sử hoạt động</h2>
             </div>
-            <i className="w-1.5 h-1.5 rounded-full bg-[#6ea2f0]" />
+            <i className="w-1.5 h-1.5 rounded-full bg-blue-400" />
           </div>
           <p className={`text-xs ${MUTED}`}>Chưa có lịch sử Task · Đang hiển thị nhật ký tài sản</p>
           <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-            <FileText size={22} className="text-[#b9c6d8] dark:text-slate-500 mb-2" />
+            <FileText size={22} className="text-gray-300 dark:text-slate-500 mb-2" />
             <h3 className={`text-sm font-bold ${INK}`}>Chưa có hoạt động</h3>
             <p className={`text-xs mt-1 ${MUTED}`}>Nguồn dữ liệu chưa có nhật ký.</p>
           </div>
@@ -317,16 +316,16 @@ export const Dashboard: React.FC = () => {
                 <h2 className={`text-sm font-bold ${INK}`}>Task còn 3 ngày</h2>
                 <p className={`text-xs mt-1 ${MUTED}`}>Deadline trong 3 ngày tới</p>
               </div>
-              <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-[#fff3d9] text-[#b7791f] border border-[#f6dfaa] dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">3 ngày</span>
+              <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">3 ngày</span>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs">
                 <b className={INK}>TK86</b>
-                <span className="px-1.5 py-0.5 rounded-md bg-[#fff3d9] text-[#b7791f] dark:bg-amber-500/15 dark:text-amber-300 font-semibold">Medium</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300 font-semibold">Medium</span>
               </div>
               <h4 className={`text-sm font-bold mt-2 ${INK}`}>Campaign tháng 10</h4>
               <div className={`text-xs mt-1 ${MUTED}`}>BOE</div>
-              <div className={`flex items-center gap-1 text-xs mt-2 ${MUTED}`}><Calendar size={10} className="text-[#b7791f] dark:text-amber-400" />3/10/2026 · Hôm nay</div>
+              <div className={`flex items-center gap-1 text-xs mt-2 ${MUTED}`}><Calendar size={10} className="text-amber-600 dark:text-amber-400" />3/10/2026 · Hôm nay</div>
             </div>
           </section>
 
@@ -340,7 +339,7 @@ export const Dashboard: React.FC = () => {
               {TEAM.map(d => {
                 const open = openDept === d.name;
                 return (
-                  <div key={d.name} className="border-b border-[#e0eaf8] dark:border-slate-700 last:border-0">
+                  <div key={d.name} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
                     <button onClick={() => setOpenDept(open ? null : d.name)} className="w-full flex items-center justify-between py-2">
                       <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>({d.members.length} PIC)</span></span>
                       <ChevronDown size={13} className={`${MUTED} transition-transform duration-300 ${open ? 'rotate-180' : '-rotate-90'}`} />
@@ -349,7 +348,7 @@ export const Dashboard: React.FC = () => {
                       <div className="overflow-hidden">
                         {d.members.map(m => (
                           <div key={m.i} className="flex items-center gap-2 pb-2">
-                            <span className="w-[24px] h-[24px] rounded-full bg-[#e3eefc] dark:bg-slate-700 text-[#2a6fc1] dark:text-sky-300 grid place-items-center text-xs font-bold">{m.i}</span>
+                            <span className="w-[24px] h-[24px] rounded-full bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-sky-300 grid place-items-center text-xs font-bold">{m.i}</span>
                             <div className="flex-1 min-w-0">
                               <strong className={`block text-xs truncate ${LINK}`}>{m.n}</strong>
                               <small className={`block text-xs ${MUTED}`}>{m.r}</small>
