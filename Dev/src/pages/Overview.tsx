@@ -115,7 +115,7 @@ export const Overview: React.FC = () => {
   }
 
   return (
-    <div className="dashboard-scale space-y-4 w-full z-10 relative font-sans">
+    <div className="space-y-4 w-full z-10 relative font-sans">
       {error && (
         <div className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-500/30 flex items-center gap-2">
           <AlertCircle size={16} />

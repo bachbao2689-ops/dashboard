@@ -89,7 +89,7 @@ export const Dashboard: React.FC = () => {
   const next = () => setIdx((idx + 1) % STAFF.length);
 
   return (
-    <div className="dashboard-scale grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] gap-4 w-full xl:items-stretch h-full">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
       <section className={`${PANEL} p-4 sm:p-[16px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -140,23 +140,23 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center justify-between w-full my-4">
                   <button onClick={prev} aria-label="Previous" className={`${ICON_BTN} ${MUTED}`}><ChevronLeft size={16} /></button>
                   <div
-                    className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] rounded-full grid place-items-center p-[5px]"
+                    className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
                     style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
                   >
-                    <div className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 grid place-items-center text-3xl font-bold ${INK}`}>{s.initial}</div>
+                    <div className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 grid place-items-center text-3xl 2xl:text-5xl font-bold ${INK}`}>{s.initial}</div>
                     <span className="absolute bottom-0 right-1 w-[22px] h-[22px] rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={12} strokeWidth={3} /></span>
                   </div>
                   <button onClick={next} aria-label="Next" className={`${ICON_BTN} ${MUTED}`}><ChevronRight size={16} /></button>
                 </div>
 
-                <h3 className={`text-xl font-bold tracking-tight ${INK}`}>{s.name}</h3>
+                <h3 className={`text-xl 2xl:text-2xl font-bold tracking-tight ${INK}`}>{s.name}</h3>
                 <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
                 <div className={`text-xs mt-2 ${MUTED}`}>{s.dept}</div>
 
                 <div className="grid grid-cols-3 w-full gap-[5px] my-6">
                   {[[s.open, 'Đang mở'], [s.done, 'Hoàn tất'], [s.projects, 'Dự án mở']].map(([v, l], i) => (
                     <div key={l as string} className={i < 2 ? 'border-r border-gray-50 dark:border-slate-700' : ''}>
-                      <strong className={`block text-xl font-semibold ${INK}`}>{v}</strong>
+                      <strong className={`block text-xl 2xl:text-2xl font-semibold ${INK}`}>{v}</strong>
                       <span className={`block text-xs mt-0.5 ${MUTED}`}>{l}</span>
                     </div>
                   ))}
@@ -174,11 +174,11 @@ export const Dashboard: React.FC = () => {
                   <Info size={13} className={MUTED} />
                 </div>
                 <div
-                  className="w-[108px] h-[108px] rounded-full mx-auto mt-[13px] mb-[9px] p-[9px]"
+                  className="w-[108px] h-[108px] 2xl:w-[150px] 2xl:h-[150px] rounded-full mx-auto mt-[13px] mb-[9px] p-[9px] 2xl:p-[12px]"
                   style={{ background: `conic-gradient(#45a894 ${pct}%, ${trackRing} 0)` }}
                 >
                   <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex flex-col items-center justify-center">
-                    <strong className={`text-2xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-sm">%</small></strong>
+                    <strong className={`text-2xl 2xl:text-4xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-sm 2xl:text-base">%</small></strong>
                     <span className="text-xs text-[#92a0b1]">hoàn thành</span>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export const Dashboard: React.FC = () => {
                   <strong className={`text-sm ${INK}`}>Cần tập trung</strong>
                   <Clock size={14} className={MUTED} />
                 </div>
-                <div className="mt-3 text-4xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
+                <div className="mt-3 text-4xl 2xl:text-6xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
                 <span className="mt-2 self-start text-xs font-semibold text-[#b0364b] bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
                 <div className="mt-4 space-y-2 text-xs">
                   <div className="flex justify-between"><span className={MUTED}>Deadline trong 3 ngày</span><b className={INK}>{s.due3}</b></div>
