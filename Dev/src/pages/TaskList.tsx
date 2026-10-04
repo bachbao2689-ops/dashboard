@@ -90,7 +90,7 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="h-full flex -mx-4 md:-mx-8 px-4 md:px-8">
+    <div className="h-full flex">
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar pr-0 lg:pr-4 space-y-6 relative pb-12">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
