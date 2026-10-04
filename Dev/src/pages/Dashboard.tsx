@@ -89,7 +89,7 @@ export const Dashboard: React.FC = () => {
   const next = () => setIdx((idx + 1) % STAFF.length);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_240px] gap-4 w-full xl:items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_288px] gap-4 w-full xl:items-stretch">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
       <section className={`${PANEL} p-4 sm:p-[25px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
