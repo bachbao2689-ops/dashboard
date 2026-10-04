@@ -89,7 +89,7 @@ export const Dashboard: React.FC = () => {
   const next = () => setIdx((idx + 1) % STAFF.length);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_clamp(220px,20%,280px)] gap-4 w-full xl:items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_240px] gap-4 w-full xl:items-stretch">
       {/* ============ LEFT: PERFORMANCE PANEL (priority) ============ */}
       <section className={`${PANEL} p-4 sm:p-[25px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -129,7 +129,7 @@ export const Dashboard: React.FC = () => {
 
         {tab === 'detail' ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
               {/* Staff Spotlight */}
               <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
                 <div className="w-full flex items-center justify-between">
