@@ -22,13 +22,11 @@ export const DashboardLayout: React.FC = () => {
              <Sidebar />
           </div>
         </div>
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 md:pb-0 items-center">
-          <div className="w-full max-w-[1600px] flex flex-col flex-1 min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 md:pb-0">
           <Header />
           <main id="main-scroll-container" className="flex-1 overflow-auto px-4 pt-4 md:pt-6 pb-4 scrollbar-hide relative">
             <Outlet />
           </main>
-          </div>
         </div>
         <MobileNav />
       </div>
