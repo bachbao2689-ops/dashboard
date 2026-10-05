@@ -28,7 +28,21 @@ export const Header: React.FC = () => {
       setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : 'Thông báo', message: notification.message })));
     };
     void loadNotifications();
-    return () => { active = false; };
+    const channel = profileId
+      ? supabase
+          .channel(`header-notifications-${profileId}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profileId}` },
+            () => { void loadNotifications(); },
+          )
+          .subscribe()
+      : null;
+
+    return () => {
+      active = false;
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, [profileId]);
 
   const markAllNotificationsRead = async () => {
