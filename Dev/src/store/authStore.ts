@@ -105,7 +105,17 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ session, profile, user: enrichUser(authUser, profile), loading: false });
     } catch (error) {
       console.error('Could not load staff profile:', error);
-      set({ session, profile: null, user: enrichUser(authUser, null), loading: false });
+      // Keep an existing staff account usable even if an optional profile
+      // enrichment query fails. This direct fallback is especially important
+      // for Admin accounts, which do not belong to a department.
+      try {
+        const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title';
+        const { data: fallback } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
+        const profile = fallback ? { ...fallback, department_name: null } as StaffProfile : null;
+        set({ session, profile, user: enrichUser(authUser, profile), loading: false });
+      } catch {
+        set({ session, profile: null, user: enrichUser(authUser, null), loading: false });
+      }
     }
   };
 
