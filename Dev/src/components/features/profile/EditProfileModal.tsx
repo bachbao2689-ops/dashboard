@@ -2,16 +2,51 @@ import React, { useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
+import { supabase } from '../../../services/supabase';
 
 export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const user = useAuthStore(state => state.user);
   const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [passwords, setPasswords] = useState({ new: '', confirm: '' });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || 'Louis Nguyễn',
     phone: '0901234567',
     position: 'Content Manager'
   });
+
+
+  const handleUpdatePassword = async () => {
+    if (passwords.new.length < 6) {
+      return toast.error('Password must be at least 6 characters');
+    }
+    if (passwords.new !== passwords.confirm) {
+      return toast.error('Passwords do not match');
+    }
+    
+    // OFFLINE DEV BYPASS CHECK
+    if (user?.id === 'dev-admin-id') {
+      toast.success('Password updated (Offline Mode simulated)');
+      setPasswords({ new: '', confirm: '' });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwords.new });
+      if (error) throw error;
+      
+      toast.success('Password updated successfully!');
+      setPasswords({ new: '', confirm: '' });
+      onClose(); // Optional: close modal after change
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update password');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -37,13 +72,31 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50">
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Account Settings</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors text-gray-500">
             <X size={20} />
           </button>
         </div>
+        <div className="flex border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'profile' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            Profile Info
+          </button>
+          <button 
+            onClick={() => setActiveTab('password')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'password' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            Security & Password
+          </button>
+        </div>
 
-        <div className="p-6 overflow-y-auto space-y-6">
+
+                <div className="p-6 overflow-y-auto space-y-6">
+          {activeTab === 'profile' ? (
+            <>
+
           <div className="flex justify-center">
             <div className="relative group cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm">
@@ -83,15 +136,54 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
               </div>
             </div>
           </div>
+        
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+                <input 
+                  type="password" 
+                  value={passwords.new} 
+                  onChange={e => setPasswords({...passwords, new: e.target.value})} 
+                  placeholder="At least 6 characters"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+                <input 
+                  type="password" 
+                  value={passwords.confirm} 
+                  onChange={e => setPasswords({...passwords, confirm: e.target.value})} 
+                  placeholder="Repeat new password"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
+                />
+              </div>
+              
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-xl mt-6">
+                <h4 className="text-sm font-bold text-yellow-800 dark:text-yellow-500 mb-1">Important Notice</h4>
+                <p className="text-xs text-yellow-700 dark:text-yellow-600">
+                  Changing your password will immediately secure your account. Make sure to use a strong password.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-xl transition-colors">
             Cancel
           </button>
-          <button onClick={handleSave} disabled={isSaving} className="px-5 py-2 font-medium text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
+          {activeTab === 'profile' ? (
+            <button onClick={handleSave} disabled={isSaving} className="px-5 py-2 font-medium text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          ) : (
+            <button onClick={handleUpdatePassword} disabled={isUpdatingPassword || !passwords.new} className="px-5 py-2 font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2">
+              {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+            </button>
+          )}
         </div>
       </div>
     </div>
