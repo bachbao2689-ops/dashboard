@@ -19,7 +19,7 @@ export type WorkspaceTask = {
 export type WorkspaceData = {
   tasks: WorkspaceTask[];
   assets: Array<{ id: string; asset_code: string; name: string; status: string; is_available: boolean; category?: { name: string } | null }>;
-  users: Array<{ id: string; name: string; avatar_url?: string | null; role?: string | null }>;
+  users: Array<{ id: string; name: string; avatar_url?: string | null; role?: string | null; employment_level?: string | null; job_title?: string | null; department?: { name: string } | null }>;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -39,14 +39,14 @@ export function useWorkspaceData(): WorkspaceData {
       const [tasksResult, assetsResult, usersResult] = await Promise.all([
         supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name)').order('created_at', { ascending: false }),
         supabase.from('assets').select('id, asset_code, name, status, is_available, category:category_id(name)').order('asset_code'),
-        supabase.from('users').select('id, name, avatar_url, role').eq('is_active', true).order('name'),
+        supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department:department_id(name)').eq('is_active', true).order('name'),
       ]);
       if (tasksResult.error) throw tasksResult.error;
       if (assetsResult.error) throw assetsResult.error;
       if (usersResult.error) throw usersResult.error;
       setTasks((tasksResult.data || []) as unknown as WorkspaceTask[]);
       setAssets((assetsResult.data || []) as unknown as WorkspaceData['assets']);
-      setUsers((usersResult.data || []) as WorkspaceData['users']);
+      setUsers((usersResult.data || []) as unknown as WorkspaceData['users']);
     } catch (err: any) {
       setError(err.message || 'Unable to load workspace data');
     } finally {

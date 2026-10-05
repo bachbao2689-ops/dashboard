@@ -152,7 +152,14 @@ export const Dashboard: React.FC = () => {
       });
       return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: 'Dự án', total: list.length, overdue, due3, urgent, noDeadline, week, month };
     };
-    const members = users.map(user => stats(`user-${user.id}`, 'staff', user.name, user.role === 'admin' ? 'Admin' : 'Thành viên', 'Khối lượng công việc', tasks.filter(task => String(task.assignee_id) === String(user.id))));
+    const members = users.map(user => stats(
+      `user-${user.id}`,
+      'staff',
+      user.name,
+      user.job_title ? `${user.employment_level || 'Nhân viên'} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : 'Thành viên'),
+      user.department?.name || 'Chưa cập nhật team',
+      tasks.filter(task => String(task.assignee_id) === String(user.id))
+    ));
     const deptNames = [...new Set(tasks.map(task => task.department?.name || 'Chưa phân phòng'))];
     const depts = deptNames.map(name => stats(`dept-${name}`, 'department', name, 'Phòng ban', 'Phòng ban', tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === name)));
     const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))] as string[];
@@ -190,10 +197,10 @@ export const Dashboard: React.FC = () => {
       dueStr: Math.max(0, Math.ceil((new Date(task.due_date!).getTime() - Date.now()) / 86400000)) + ' ngày',
       priority: task.priority === 'high' ? 'High' : 'Medium',
     }));
-  const teams = liveData.filter(item => item.type === 'department').map(department => ({
-    name: department.name,
-    id: department.id,
-    members: liveData.filter(member => member.type === 'staff' && tasks.some(task => String(task.assignee_id) === member.id.replace('user-', '') && (task.department?.name || 'Chưa phân phòng') === department.name)).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open })),
+  const teams = [...new Set(users.map(user => user.department?.name || 'Chưa cập nhật team'))].map(name => ({
+    name,
+    id: `team-${name}`,
+    members: liveData.filter(member => member.type === 'staff' && users.find(user => `user-${user.id}` === member.id)?.department?.name === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open })),
   }));
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading dashboard data...</div>;
