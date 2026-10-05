@@ -16,6 +16,7 @@ import { MyTasks } from './pages/MyTasks';
 import { TeamWorkload } from './pages/TeamWorkload';
 import { Reports } from './pages/Reports';
 import { MemberManagement } from './pages/MemberManagement';
+import { Projects } from './pages/Projects';
 
 function App() {
   const initialize = useAuthStore(state => state.initialize);
@@ -39,6 +40,7 @@ function App() {
             <Route index element={<Overview />} />
             <Route path="ui-dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<TaskList />} />
+            <Route path="projects" element={<Projects />} />
             <Route path="my-tasks" element={<MyTasks />} />
                         <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />
