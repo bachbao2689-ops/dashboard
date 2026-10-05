@@ -54,11 +54,14 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
-        {navGroups.map((group, idx) => (
+        {navGroups.map((group, idx) => {
+          const visibleItems = group.items.filter(item => !(item as any).hidden);
+          if (visibleItems.length === 0) return null;
+          return (
           <div key={idx} className="mb-6">
             <h4 className="px-3 text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">{group.title}</h4>
             <ul className="space-y-1">
-              {group.items.map((item) => (
+              {visibleItems.map((item) => (
                 <li key={item.name}>
                   <NavLink
                     to={item.path}
@@ -76,7 +79,7 @@ export const Sidebar: React.FC = () => {
               ))}
             </ul>
           </div>
-        ))}
+        )})}
       </div>
 
       <div className="mt-auto pt-4 px-6 text-center">

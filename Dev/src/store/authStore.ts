@@ -33,8 +33,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const { data: { session } } = await supabase.auth.getSession();
+      
+      let finalUser = session?.user || null;
+      if (finalUser && finalUser.id !== 'dev-admin-id') {
+        // Fetch role from public.users
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role, department_id')
+          .eq('auth_id', finalUser.id)
+          .single();
+          
+        if (profile) {
+          finalUser = {
+            ...finalUser,
+            user_metadata: {
+              ...finalUser.user_metadata,
+              role: profile.role || 'staff',
+              department_id: profile.department_id
+            }
+          };
+        }
+      }
+
       if (!get().user || get().user?.id !== 'dev-admin-id') {
-        set({ session, user: session?.user || null, loading: false });
+        set({ session, user: finalUser, loading: false });
       }
 
       supabase.auth.onAuthStateChange((_event, session) => {
