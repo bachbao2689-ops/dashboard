@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -11,6 +11,13 @@ export const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +28,6 @@ export const Login: React.FC = () => {
       if (email === 'admin' && password === 'admin') {
         useAuthStore.getState().devLogin(rememberMe);
         toast.success('Logged in via Offline Mode (Local Admin)');
-        navigate('/');
         return;
       }
 
@@ -35,10 +41,8 @@ export const Login: React.FC = () => {
       }
 
       toast.success('Successfully logged in!');
-      navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Failed to login');
-    } finally {
       setLoading(false);
     }
   };
