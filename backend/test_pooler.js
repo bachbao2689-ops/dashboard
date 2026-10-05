@@ -1,6 +1,10 @@
 const { Client } = require('pg');
+require('dotenv').config();
 
-const connectionString = 'postgresql://postgres.jxrwphjriuqbpdpwpqcn:Bachbao1235@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required. Add it to backend/.env.');
+}
 
 async function migrate() {
   const client = new Client({
