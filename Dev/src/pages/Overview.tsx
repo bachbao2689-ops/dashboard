@@ -45,6 +45,7 @@ export const Overview: React.FC = () => {
   const theme = useUiStore(state => state.theme);
   const isDark = theme === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
   const user = useAuthStore(state => state.user);
+  const isAdmin = user?.id === 'dev-admin-id' || user?.user_metadata?.role === 'admin';
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Admin';
 
   const [dateRange, setDateRange] = useState('');
@@ -332,13 +333,15 @@ export const Overview: React.FC = () => {
                   <b>{req.requester?.name}</b> {t('overview.wantsToBorrow')} <b>{req.asset?.name}</b>
                 </p>
                 <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
-                {req.approval_status === 'pending' ? (
+                {req.approval_status === 'pending' && isAdmin ? (
                   <div className="flex gap-2 mt-2.5">
                     <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
                     <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
                   </div>
                 ) : req.approval_status === 'approved' ? (
                   <p className="mt-2 flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle size={13} /> {t('overview.approved')}</p>
+                ) : req.approval_status === 'pending' ? (
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Clock size={13} /> Đang chờ duyệt</p>
                 ) : (
                   <p className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500"><XCircle size={13} /> Rejected</p>
                 )}

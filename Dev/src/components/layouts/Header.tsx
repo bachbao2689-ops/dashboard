@@ -4,14 +4,37 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
+import { useAuthStore } from '../../store/authStore';
+import { supabase } from '../../services/supabase';
+
+type NotificationItem = { id: string; title: string; message: string };
 
 export const Header: React.FC = () => {
     const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
+  const profileId = useAuthStore(state => state.profile?.id);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const location = useLocation();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadNotifications = async () => {
+      if (!profileId) { if (active) setNotifications([]); return; }
+      const [taskResult, borrowResult] = await Promise.all([
+        supabase.from('tasks').select('id, task_ref, title, status, due_date').eq('assignee_id', profileId).not('status', 'eq', 'done').order('updated_at', { ascending: false }).limit(4),
+        supabase.from('borrow_requests').select('id, approval_status, asset:asset_id(name)').eq('requester_id', profileId).order('created_at', { ascending: false }).limit(3),
+      ]);
+      if (!active) return;
+      const taskItems = (taskResult.data || []).map((task: any) => ({ id: `task-${task.id}`, title: `Task ${task.task_ref || ''}`.trim(), message: `${task.title}${task.due_date ? ` · hạn ${new Date(task.due_date).toLocaleDateString('vi-VN')}` : ''}` }));
+      const borrowItems = (borrowResult.data || []).map((request: any) => ({ id: `borrow-${request.id}`, title: 'Yêu cầu mượn thiết bị', message: `${request.asset?.name || 'Thiết bị'} · ${request.approval_status || 'pending'}` }));
+      setNotifications([...taskItems, ...borrowItems]);
+    };
+    void loadNotifications();
+    return () => { active = false; };
+  }, [profileId]);
 
   const navGroups = [
     {
@@ -180,24 +203,17 @@ export const Header: React.FC = () => {
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
             >
               <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+              {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
             </button>
             
             {showNotifs && (
               <div className="fixed inset-x-4 top-[80px] sm:absolute sm:inset-auto sm:right-0 sm:top-auto sm:mt-2 w-auto sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden">
                 <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
                   <span>Notifications</span>
-                  <span className="text-xs text-primary cursor-pointer hover:underline">Mark all as read</span>
+                  <span className="text-xs text-primary cursor-pointer hover:underline" onClick={() => setNotifications([])}>Mark all as read</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  <div className="p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">System Update</p>
-                    <p className="text-xs text-gray-500 mt-1">Vercel deployment was successful. Check out the new offline mode!</p>
-                  </div>
-                  <div className="p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Task Assigned</p>
-                    <p className="text-xs text-gray-500 mt-1">Admin assigned you to "Hoàn thiện giao diện UI/UX"</p>
-                  </div>
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <div key={notification.id} className="p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></div>)}
                 </div>
                 <div className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                   View all notifications

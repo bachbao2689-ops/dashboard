@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
-import { AdminRoute, ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
@@ -38,7 +38,7 @@ function App() {
           }>
             <Route index element={<Overview />} />
             <Route path="ui-dashboard" element={<Dashboard />} />
-            <Route path="tasks" element={<AdminRoute><TaskList /></AdminRoute>} />
+            <Route path="tasks" element={<TaskList />} />
             <Route path="my-tasks" element={<MyTasks />} />
                         <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />

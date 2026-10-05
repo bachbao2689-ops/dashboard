@@ -30,6 +30,7 @@ const MOCK_DATA: DashboardData = {
 };
 
 export function useDashboard() {
+  const profileId = useAuthStore(state => state.profile?.id);
   const [data, setData] = useState<DashboardData>({
     myTasksCount: 0,
     dueSoonCount: 0,
@@ -56,7 +57,7 @@ export function useDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profileId]);
 
   const fetchDashboard = async () => {
     try {
@@ -82,16 +83,16 @@ export function useDashboard() {
 
       const { data: recent, error: err4 } = await supabase
         .from('borrow_requests')
-        .select(`id, approval_status, due_date, asset:asset_id(name), requester:requester_id(name)`)
-        .order('requested_at', { ascending: false })
-        .limit(5);
+        .select(`id, approval_status, due_date, returned_at, requested_at, asset:asset_id(name), requester:requester_id(name)`)
+        .eq('requester_id', profileId || -1)
+        .order('requested_at', { ascending: false });
       if (err4) throw err4;
 
       const allTasks = tasks || [];
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
-      const userId = useAuthStore.getState().user?.id;
-      const myTasks = allTasks.filter(task => task.assignee_id === userId);
+      // tasks.assignee_id references public.users.id (bigint), not auth.users.id (UUID).
+      const myTasks = allTasks.filter(task => String(task.assignee_id) === String(profileId));
       const openTasks = myTasks.filter(task => task.status !== 'done');
       const upcoming = openTasks.filter(task => task.due_date).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
       const overdue = openTasks.filter(task => task.due_date && new Date(task.due_date) < today);
@@ -102,18 +103,21 @@ export function useDashboard() {
         return counts;
       }, {});
 
+      const personalRequests = recent || [];
+      const activeBorrowed = personalRequests.filter((request: any) => request.approval_status === 'approved' && !request.returned_at).length;
+      const pendingBorrowed = personalRequests.filter((request: any) => request.approval_status === 'pending').length;
       setData({
         myTasksCount: openTasks.length,
         dueSoonCount: dueSoon.length,
-        borrowedCount: assetCounts.borrowed || 0,
+        borrowedCount: activeBorrowed,
         overdueCount: overdue.length,
         upcomingTasks: upcoming,
-        recentRequests: recent || []
-        , tasks: allTasks,
+        recentRequests: personalRequests,
+        tasks: myTasks,
         assetStatusData: [
-          { name: 'Borrowed', value: assetCounts.borrowed || 0, fill: '#093570' },
-          { name: 'Available', value: assetCounts.available || 0, fill: '#45a894' },
-          { name: 'Maintenance', value: assetCounts.maintenance || 0, fill: '#d9435a' },
+          { name: 'Borrowed', value: activeBorrowed, fill: '#093570' },
+          { name: 'Pending', value: pendingBorrowed, fill: '#f5a524' },
+          { name: 'Available inventory', value: assetCounts.available || 0, fill: '#45a894' },
         ].filter(item => item.value > 0)
       });
     } catch (err: any) {
