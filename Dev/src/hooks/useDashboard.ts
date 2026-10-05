@@ -72,7 +72,7 @@ export function useDashboard() {
       
       const { data: tasks, error: err1 } = await supabase
         .from('tasks')
-        .select(`id, task_ref, title, priority, status, due_date, start_date, created_at, assignee:assignee_id(name, avatar_url)`);
+        .select(`id, task_ref, title, priority, status, due_date, start_date, created_at, assignee_id, assignee:assignee_id(name, avatar_url)`);
       if (err1) throw err1;
 
       const { data: assets, error: err2 } = await supabase
@@ -90,7 +90,9 @@ export function useDashboard() {
       const allTasks = tasks || [];
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
-      const openTasks = allTasks.filter(task => task.status !== 'done');
+      const userId = useAuthStore.getState().user?.id;
+      const myTasks = allTasks.filter(task => task.assignee_id === userId);
+      const openTasks = myTasks.filter(task => task.status !== 'done');
       const upcoming = openTasks.filter(task => task.due_date).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
       const overdue = openTasks.filter(task => task.due_date && new Date(task.due_date) < today);
       const dueSoon = openTasks.filter(task => task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= inSevenDays);
