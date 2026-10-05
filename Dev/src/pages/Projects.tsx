@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Send } from 'lucide-react';
+import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Modal } from '../components/common/Modal';
@@ -17,7 +17,10 @@ export const Projects: React.FC = () => {
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [createOpen, setCreateOpen] = useState(false); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [start, setStart] = useState(''); const [due, setDue] = useState(''); const [priority, setPriority] = useState('medium'); const [ownerIds, setOwnerIds] = useState<string[]>([]);
-  const [subtasks, setSubtasks] = useState<any[]>([]); const [comments, setComments] = useState<any[]>([]); const [newSubtask, setNewSubtask] = useState(''); const [editMode, setEditMode] = useState(false); const [showSubtaskForm, setShowSubtaskForm] = useState(false); const [width, setWidth] = useState(500); const [resizing, setResizing] = useState(false); const [subtaskOwner, setSubtaskOwner] = useState(''); const [subtaskDue, setSubtaskDue] = useState(''); const [comment, setComment] = useState('');
+  const [subtasks, setSubtasks] = useState<any[]>([]); const [comments, setComments] = useState<any[]>([]); const [editingCommentId, setEditingCommentId] = useState<string | null>(null); const [editingCommentText, setEditingCommentText] = useState('');
+  const removeComment = async (id: string) => { await supabase.from('project_comments').delete().eq('id', id); setComments(comments.filter(c => c.id !== id)); };
+  const saveEditedComment = async (id: string) => { await supabase.from('project_comments').update({ body: editingCommentText }).eq('id', id); setComments(comments.map(c => c.id === id ? { ...c, body: editingCommentText } : c)); setEditingCommentId(null); };
+  const [newSubtask, setNewSubtask] = useState(''); const [editMode, setEditMode] = useState(false); const [showSubtaskForm, setShowSubtaskForm] = useState(false); const [width, setWidth] = useState(500); const [resizing, setResizing] = useState(false); const [subtaskOwner, setSubtaskOwner] = useState(''); const [subtaskDue, setSubtaskDue] = useState(''); const [comment, setComment] = useState('');
 
   useEffect(() => {
     if (!resizing) return;
@@ -75,14 +78,12 @@ export const Projects: React.FC = () => {
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
             <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3>
             <div className="flex items-center gap-2">
-              {canCreate && (
-                <button onClick={() => {
+              (<button onClick={() => {
                   setTitle(selected.name); setDescription(selected.description || ''); setStart(selected.start_date || ''); setDue(selected.due_date || ''); setPriority(selected.priority || 'medium'); setOwnerIds(members[selected.id] || []);
                   setEditMode(true); setCreateOpen(true);
                 }} className="p-2 rounded-xl text-primary hover:bg-gray-100 dark:hover:bg-slate-700">
                   <Edit3 className="w-5 h-5" />
-                </button>
-              )}
+                </button>)
               <button onClick={() => setSelected(null)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700">
               <X className="w-5 h-5 text-gray-500" />
               </button>
@@ -93,9 +94,32 @@ export const Projects: React.FC = () => {
               <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-primary border border-blue-100">Project</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">{selected?.priority || 'medium'} Priority</span></div>
       <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">Owners</p><div className="mt-1 font-semibold">{(members[selected?.id || ''] || []).map(id=>people.find(p=>String(p.id)===id)?.name).filter(Boolean).join(', ') || 'Unassigned'}</div></div><div><p className="text-[10px] uppercase text-gray-400">Timeline</p><div className="mt-1 font-semibold">{dateValue(selected?.start_date || '')} – {dateValue(selected?.due_date || '')}</div></div></div>
       <section><h3 className="font-bold text-sm mb-2">Description</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || 'No description yet.'}</div></section>
-      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> Subtasks</h3><div className="space-y-2">{subtasks.map(s=><div key={s.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm"><b>{s.title}</b><span className="ml-2 text-gray-500">{s.assignee?.name || 'Unassigned'} · {dateValue(s.due_date || '')}</span></div>)}</div>{!showSubtaskForm && canCreate && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> Thêm Subtask</button>}
-{showSubtaskForm && canCreate && <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3"><input value={newSubtask} onChange={e=>setNewSubtask(e.target.value)} placeholder="Tên subtask..." className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/><div className="grid grid-cols-2 gap-2"><select value={subtaskOwner} onChange={e=>setSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">Chọn PIC</option>{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="date" value={subtaskDue} onChange={e=>setSubtaskDue(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/></div><div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700">Hủy</button><button onClick={() => { addSubtask(); setShowSubtaskForm(false); }} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg shadow-sm">Giao việc</button></div></div>}</section>
-      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> Activity & Comments</h3><div className="space-y-2">{comments.map(c=><div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm"><b>{c.author?.name || 'Member'}</b><p>{c.body}</p></div>)}</div><div className="mt-4"><textarea value={comment} onChange={e=>setComment(e.target.value)} rows={3} placeholder="Viết bình luận cho team..." className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /><button disabled={!comment.trim()} onClick={addComment} className="mt-2 px-4 py-2 bg-[#002e6d] text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-[#002150] disabled:opacity-50"><Send className="w-4 h-4 inline mr-1" />Gửi bình luận</button></div></section>
+      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> Subtasks</h3><div className="space-y-2">{subtasks.map(s=><div key={s.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm"><b>{s.title}</b><span className="ml-2 text-gray-500">{s.assignee?.name || 'Unassigned'} · {dateValue(s.due_date || '')}</span></div>)}</div>{!showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> Thêm Subtask</button>}
+{showSubtaskForm && <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3"><input value={newSubtask} onChange={e=>setNewSubtask(e.target.value)} placeholder="Tên subtask..." className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/><div className="grid grid-cols-2 gap-2"><select value={subtaskOwner} onChange={e=>setSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">Chọn PIC</option>{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="date" value={subtaskDue} onChange={e=>setSubtaskDue(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/></div><div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700">Hủy</button><button onClick={() => { addSubtask(); setShowSubtaskForm(false); }} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg shadow-sm">Giao việc</button></div></div>}</section>
+      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> Activity & Comments</h3><div className="space-y-2">{comments.map(c=>(
+  <div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm group relative">
+    <div className="flex justify-between items-start">
+      <b>{c.author?.name || 'Member'}</b>
+      {c.author_id === profile?.id && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+          <button onClick={() => { setEditingCommentId(c.id); setEditingCommentText(c.body); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
+          <button onClick={() => removeComment(c.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
+        </div>
+      )}
+    </div>
+    {editingCommentId === c.id ? (
+      <div className="mt-2">
+        <textarea value={editingCommentText} onChange={e=>setEditingCommentText(e.target.value)} className="w-full p-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg outline-none" rows={2} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEditedComment(c.id); } }} />
+        <div className="flex justify-end gap-2 mt-1">
+          <button onClick={() => setEditingCommentId(null)} className="text-xs text-gray-500 hover:text-gray-700">Hủy</button>
+          <button onClick={() => saveEditedComment(c.id)} className="text-xs text-primary font-bold">Lưu</button>
+        </div>
+      </div>
+    ) : (
+      <p className="whitespace-pre-wrap mt-1">{c.body}</p>
+    )}
+  </div>
+))}</div><div className="mt-4 relative"><textarea value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (comment.trim()) addComment(); } }} rows={3} placeholder="Viết bình luận cho team... (Nhấn Enter để gửi)" className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /></div></section>
             </div>
           </div>
         </div>
