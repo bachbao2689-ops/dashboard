@@ -9,6 +9,8 @@ export interface DashboardData {
   overdueCount: number;
   upcomingTasks: any[];
   recentRequests: any[];
+  tasks: any[];
+  assetStatusData: { name: string; value: number; fill: string }[];
 }
 
 const MOCK_DATA: DashboardData = {
@@ -22,7 +24,9 @@ const MOCK_DATA: DashboardData = {
   ],
   recentRequests: [
     { id: '1', approval_status: 'pending', due_date: '2026-10-10', asset: { name: 'MacBook Pro M2' }, requester: { name: 'Admin' } },
-  ]
+  ],
+  tasks: [],
+  assetStatusData: []
 };
 
 export function useDashboard() {
@@ -32,7 +36,9 @@ export function useDashboard() {
     borrowedCount: 0,
     overdueCount: 0,
     upcomingTasks: [],
-    recentRequests: []
+    recentRequests: [],
+    tasks: [],
+    assetStatusData: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,19 +70,15 @@ export function useDashboard() {
         return;
       }
       
-      const { count: pendingTasks, error: err1 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'done');
+      const { data: tasks, error: err1 } = await supabase
+        .from('tasks')
+        .select(`id, task_ref, title, priority, status, due_date, start_date, created_at, assignee:assignee_id(name, avatar_url)`);
       if (err1) throw err1;
 
-      const { count: activeBorrows, error: err2 } = await supabase.from('borrow_requests').select('*', { count: 'exact', head: true }).eq('approval_status', 'approved');
+      const { data: assets, error: err2 } = await supabase
+        .from('assets')
+        .select('status, is_available');
       if (err2) throw err2;
-
-      const { data: upcoming, error: err3 } = await supabase
-        .from('tasks')
-        .select(`id, task_ref, title, priority, due_date, assignee:assignee_id(name, avatar_url)`)
-        .neq('status', 'done')
-        .order('due_date', { ascending: true })
-        .limit(5);
-      if (err3) throw err3;
 
       const { data: recent, error: err4 } = await supabase
         .from('borrow_requests')
@@ -85,13 +87,32 @@ export function useDashboard() {
         .limit(5);
       if (err4) throw err4;
 
+      const allTasks = tasks || [];
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
+      const openTasks = allTasks.filter(task => task.status !== 'done');
+      const upcoming = openTasks.filter(task => task.due_date).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
+      const overdue = openTasks.filter(task => task.due_date && new Date(task.due_date) < today);
+      const dueSoon = openTasks.filter(task => task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= inSevenDays);
+      const assetCounts = (assets || []).reduce((counts: Record<string, number>, asset: any) => {
+        const key = asset.status || (asset.is_available ? 'available' : 'borrowed');
+        counts[key] = (counts[key] || 0) + 1;
+        return counts;
+      }, {});
+
       setData({
-        myTasksCount: pendingTasks || 0,
-        dueSoonCount: 5,
-        borrowedCount: activeBorrows || 0,
-        overdueCount: 2,
-        upcomingTasks: upcoming || [],
+        myTasksCount: openTasks.length,
+        dueSoonCount: dueSoon.length,
+        borrowedCount: assetCounts.borrowed || 0,
+        overdueCount: overdue.length,
+        upcomingTasks: upcoming,
         recentRequests: recent || []
+        , tasks: allTasks,
+        assetStatusData: [
+          { name: 'Borrowed', value: assetCounts.borrowed || 0, fill: '#093570' },
+          { name: 'Available', value: assetCounts.available || 0, fill: '#45a894' },
+          { name: 'Maintenance', value: assetCounts.maintenance || 0, fill: '#d9435a' },
+        ].filter(item => item.value > 0)
       });
     } catch (err: any) {
       console.warn('Error fetching dashboard, using mock data:', err);

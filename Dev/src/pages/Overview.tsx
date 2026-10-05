@@ -20,16 +20,6 @@ const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-sla
 const INNER = 'border border-gray-200 dark:border-slate-700';
 const LABEL = 'text-xs font-bold tracking-[0.12em] uppercase text-gray-500 dark:text-gray-400';
 
-const taskStatusData = [
-  { name: 'W1', created: 40, done: 24 },
-  { name: 'W2', created: 30, done: 35 },
-  { name: 'W3', created: 20, done: 28 },
-  { name: 'W4', created: 27, done: 30 },
-];
-
-/* Baseline load per weekday (mock) – real upcoming tasks are added on top */
-const BASE_WEEK_LOAD = [2, 3, 1, 4, 2, 0, 1];
-
 const Ring: React.FC<{ pct: number; color: string; size?: number; track: string }> = ({ pct, color, size = 60, track }) => {
   const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
@@ -80,11 +70,7 @@ export const Overview: React.FC = () => {
     }
   };
 
-  const assetUtilization = [
-    { name: t('overview.borrowed'), value: 60, fill: '#093570' },
-    { name: 'Available', value: 35, fill: '#45a894' },
-    { name: 'Maintenance', value: 5, fill: '#d9435a' },
-  ];
+  const assetUtilization = data.assetStatusData;
 
   /* Tasks due per day for the next 7 days */
   const weekData = useMemo(() => {
@@ -92,15 +78,24 @@ export const Overview: React.FC = () => {
     const now = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(now); d.setDate(now.getDate() + i);
-      const real = data.upcomingTasks.filter(tk => tk.due_date && new Date(tk.due_date).toDateString() === d.toDateString()).length;
-      days.push({ name: d.toLocaleDateString('en-US', { weekday: 'short' }), count: BASE_WEEK_LOAD[i] + real, today: i === 0 });
+      const real = data.tasks.filter(tk => tk.status !== 'done' && tk.due_date && new Date(tk.due_date).toDateString() === d.toDateString()).length;
+      days.push({ name: d.toLocaleDateString('en-US', { weekday: 'short' }), count: real, today: i === 0 });
     }
     return days;
   }, [data.upcomingTasks]);
 
-  const created = taskStatusData.reduce((s, d) => s + d.created, 0);
-  const done = taskStatusData.reduce((s, d) => s + d.done, 0);
-  const donePct = Math.round((done / created) * 100);
+  const taskStatusData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 4 }, (_, index) => {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((3 - index) * 7 + 6));
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((3 - index) * 7));
+      const inWeek = (task: any) => new Date(task.created_at || task.start_date || 0) >= start && new Date(task.created_at || task.start_date || 0) <= end;
+      return { name: `W${index + 1}`, created: data.tasks.filter(inWeek).length, done: data.tasks.filter(task => task.status === 'done' && inWeek(task)).length };
+    });
+  }, [data.tasks]);
+  const created = data.tasks.length;
+  const done = data.tasks.filter(task => task.status === 'done').length;
+  const donePct = created ? Math.round((done / created) * 100) : 0;
   const pendingApprovals = data.recentRequests.filter(r => r.approval_status === 'pending').length;
 
   const grid = isDark ? '#334155' : '#e8eef8';

@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useUiStore } from '../store/uiStore';
+import { useWorkspaceData } from '../hooks/useWorkspaceData';
 
 /* Design tokens */
 const INK = 'text-gray-900 dark:text-white';
@@ -90,6 +91,11 @@ const TEAM_MEMBERS = [
   { name: 'MEDIA', id: 'd7', members: [{ i: 'VC', id: 's6', n: 'Lê Văn C', r: 'Nhân viên', open: 0 }] },
 ];
 
+// Legacy visual fixtures are retained only as design references. All rendered data below comes from Supabase.
+void DATA;
+void UPCOMING_PROJECTS;
+void TEAM_MEMBERS;
+
 const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const MONTH_LABELS = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
 
@@ -105,6 +111,7 @@ const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; cl
 
 export const Dashboard: React.FC = () => {
   const isDark = useUiStore(state => state.theme) === 'dark';
+  const { tasks, users, loading } = useWorkspaceData();
   const [activeId, setActiveId] = useState('s1');
   const [range, setRange] = useState<'weekly' | 'monthly'>('weekly');
   const [openDept, setOpenDept] = useState<string | null>('DESIGN');
@@ -123,22 +130,74 @@ export const Dashboard: React.FC = () => {
     return () => document.removeEventListener('mousedown', clickOut);
   }, []);
 
-  const s = DATA.find(d => d.id === activeId) || DATA[0];
-  const pct = Math.round((s.done / s.total) * 100) || 0;
+  const liveData = useMemo<PerfData[]>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const plusThree = new Date(today); plusThree.setDate(today.getDate() + 3);
+    const stats = (id: string, type: PerfData['type'], name: string, role: string, dept: string, list: any[]): PerfData => {
+      const done = list.filter(task => task.status === 'done').length;
+      const open = list.length - done;
+      const overdue = list.filter(task => task.status !== 'done' && task.due_date && new Date(task.due_date) < today).length;
+      const due3 = list.filter(task => task.status !== 'done' && task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= plusThree).length;
+      const urgent = list.filter(task => task.status !== 'done' && task.priority === 'high').length;
+      const noDeadline = list.filter(task => !task.due_date).length;
+      const projects = new Set(list.map(task => task.project?.name).filter(Boolean)).size;
+      const week = Array.from({ length: 7 }, (_, offset) => {
+        const date = new Date(today); date.setDate(today.getDate() + offset);
+        return list.filter(task => task.due_date && new Date(task.due_date).toDateString() === date.toDateString()).length;
+      });
+      const month = Array.from({ length: 4 }, (_, offset) => {
+        const date = new Date(today.getFullYear(), today.getMonth() - 3 + offset, 1);
+        return list.filter(task => task.due_date && new Date(task.due_date).getFullYear() === date.getFullYear() && new Date(task.due_date).getMonth() === date.getMonth()).length;
+      });
+      return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: 'Dự án', total: list.length, overdue, due3, urgent, noDeadline, week, month };
+    };
+    const members = users.map(user => stats(`user-${user.id}`, 'staff', user.name, user.role === 'admin' ? 'Admin' : 'Thành viên', 'Khối lượng công việc', tasks.filter(task => String(task.assignee_id) === String(user.id))));
+    const deptNames = [...new Set(tasks.map(task => task.department?.name || 'Chưa phân phòng'))];
+    const depts = deptNames.map(name => stats(`dept-${name}`, 'department', name, 'Phòng ban', 'Phòng ban', tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === name)));
+    const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))] as string[];
+    const projects = projectNames.map(name => stats(`project-${name}`, 'project', name, 'Dự án', 'Dự án', tasks.filter(task => task.project?.name === name)));
+    return [...members, ...depts, ...projects];
+  }, [tasks, users]);
+
+  const s = liveData.find(d => d.id === activeId) || liveData.find(d => d.type === 'department') || liveData[0];
+  const pct = s ? Math.round((s.done / s.total) * 100) || 0 : 0;
   const trackRing = isDark ? '#334155' : '#edf3f8';
   const trackOrbit = isDark ? '#334155' : '#e8eff8';
-  const chartData = (range === 'weekly' ? s.week : s.month).map((v, i) => ({
+  const chartData = (s ? (range === 'weekly' ? s.week : s.month) : []).map((v, i) => ({
     name: range === 'weekly' ? WEEK_LABELS[i] : MONTH_LABELS[i],
     value: v,
   }));
 
-  const filteredDepts = DATA.filter(d => d.type === 'department' && d.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredDepts = liveData.filter(d => d.type === 'department' && d.name.toLowerCase().includes(search.toLowerCase()));
 
   const getEyebrow = () => {
-    if (s.type === 'department') return 'DEPARTMENT INSIGHTS';
-    if (s.type === 'project') return 'PROJECT OVERVIEW';
+    if (s?.type === 'department') return 'DEPARTMENT INSIGHTS';
+    if (s?.type === 'project') return 'PROJECT OVERVIEW';
     return 'STAFF SPOTLIGHT';
   };
+
+  const upcomingProjects = tasks
+    .filter(task => task.status !== 'done' && task.due_date)
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+    .slice(0, 2)
+    .map(task => ({
+      id: `project-${task.project?.name || task.id}`,
+      code: task.task_ref || '—',
+      name: task.project?.name || task.title,
+      dept: task.department?.name || 'Chưa phân phòng',
+      date: new Date(task.due_date!).toLocaleDateString('vi-VN'),
+      dueStr: Math.max(0, Math.ceil((new Date(task.due_date!).getTime() - Date.now()) / 86400000)) + ' ngày',
+      priority: task.priority === 'high' ? 'High' : 'Medium',
+    }));
+  const teams = liveData.filter(item => item.type === 'department').map(department => ({
+    name: department.name,
+    id: department.id,
+    members: liveData.filter(member => member.type === 'staff' && tasks.some(task => String(task.assignee_id) === member.id.replace('user-', '') && (task.department?.name || 'Chưa phân phòng') === department.name)).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open })),
+  }));
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading dashboard data...</div>;
+  if (!s) return <div className="p-8 text-center text-gray-500">No task data is available yet.</div>;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
@@ -361,7 +420,7 @@ export const Dashboard: React.FC = () => {
               <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">🔥 Urgent</span>
             </div>
             <div className="space-y-3">
-              {UPCOMING_PROJECTS.map(p => (
+              {upcomingProjects.length ? upcomingProjects.map(p => (
                 <button 
                   key={p.id} 
                   onClick={() => setActiveId(p.id)} 
@@ -378,7 +437,7 @@ export const Dashboard: React.FC = () => {
                     <span className="text-xs font-semibold text-rose-500">Còn {p.dueStr}</span>
                   </div>
                 </button>
-              ))}
+              )) : <p className={`text-xs ${MUTED}`}>Không có task mở có deadline.</p>}
             </div>
           </section>
 
@@ -386,10 +445,10 @@ export const Dashboard: React.FC = () => {
           <section className={`${PANEL} px-[14px] py-[16px]`}>
             <div className="flex items-center justify-between mb-[6px]">
               <h2 className={`text-sm font-bold ${INK}`}>TEAM</h2>
-              <Eyebrow className="!text-xs !tracking-[.5px]">{TEAM_MEMBERS.reduce((n, d) => n + d.members.length, 0)} PIC</Eyebrow>
+              <Eyebrow className="!text-xs !tracking-[.5px]">{users.length} PIC</Eyebrow>
             </div>
             <div>
-              {TEAM_MEMBERS.map(d => {
+              {teams.map(d => {
                 const open = openDept === d.name;
                 return (
                   <div key={d.name} className="border-b border-gray-200 dark:border-slate-700 last:border-0">

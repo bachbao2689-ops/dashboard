@@ -31,10 +31,11 @@ export const useTeamWorkload = () => {
         return;
       }
 
-      // Fetch users (profiles) and tasks
+      // The dashboard stores its members in public.users, not auth profiles.
       const { data: usersData, error: usersError } = await supabase
-        .from('profiles')
-        .select('*');
+        .from('users')
+        .select('id, name, email, avatar_url')
+        .eq('is_active', true);
         
       if (usersError) throw usersError;
 
@@ -71,7 +72,7 @@ export const useTeamWorkload = () => {
 
         return {
           id: user.id,
-          name: user.full_name || user.email || 'Unknown',
+          name: user.name || user.email || 'Unknown',
           avatar_url: user.avatar_url,
           activeTasksCount,
           capacityPercentage,

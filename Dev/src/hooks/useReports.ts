@@ -43,8 +43,8 @@ export const useReports = () => {
       if (tasksError) throw tasksError;
 
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
+        .from('users')
+        .select('id, name, email');
         
       if (profilesError) throw profilesError;
 
@@ -100,7 +100,7 @@ export const useReports = () => {
         .map(userId => {
           const user = allProfiles.find(p => p.id === userId);
           return {
-            name: user?.full_name || user?.email || 'Unknown',
+            name: user?.name || user?.email || 'Unknown',
             completed: userCompletions[userId]
           };
         })
