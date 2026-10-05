@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
@@ -12,13 +12,38 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
   const [passwords, setPasswords] = useState({ new: '', confirm: '' });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || '',
   });
 
   useEffect(() => {
-    if (isOpen) setFormData({ fullName: user?.user_metadata?.full_name || '' });
-  }, [isOpen, user?.user_metadata?.full_name]);
+    if (isOpen) {
+      setFormData({ fullName: profile?.name || user?.user_metadata?.full_name || '' });
+      setAvatarUrl(profile?.avatar_url || null);
+    }
+  }, [isOpen, user?.user_metadata?.full_name, profile?.name, profile?.avatar_url]);
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) return toast.error('Vui lòng chọn file ảnh');
+    if (file.size > 3 * 1024 * 1024) return toast.error('Ảnh tối đa 3MB');
+    setIsSaving(true);
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const path = `${user.id}/${Date.now()}.${extension}`;
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      await updateUserMetadata({ avatar_url: data.publicUrl });
+      setAvatarUrl(data.publicUrl);
+      toast.success('Đã cập nhật ảnh đại diện');
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải ảnh lên');
+    } finally { setIsSaving(false); }
+  };
 
   const handleUpdatePassword = async () => {
     if (passwords.new.length < 6) {
@@ -97,14 +122,15 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
             <>
 
           <div className="flex justify-center">
-            <div className="relative group cursor-pointer">
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm">
-                {formData.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
+                {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" /> : (formData.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U')}
               </div>
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={24} className="text-white" />
               </div>
-            </div>
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
 
           <div className="space-y-4">

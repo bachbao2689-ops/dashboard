@@ -11,6 +11,8 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+  const title = profile?.job_title || (profile?.employment_level === 'Leader' ? 'Team Lead' : 'Staff');
+  const badge = profile?.employment_level || (role === 'admin' ? 'Admin' : role === 'manager' ? 'Manager' : 'Nhân viên');
 
   return (
     <>
@@ -21,22 +23,22 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
         
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm">
-            {initials}
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm overflow-hidden">
+            {profile?.avatar_url ? <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" /> : initials}
           </div>
           
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{name}</h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${role === 'manager' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                {role === 'manager' ? '👑 MANAGER' : '👤 STAFF'}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${profile?.employment_level === 'Leader' || role === 'manager' || role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                {badge}
               </span>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1.5"><Mail size={16} /> {profile?.email || user?.email || 'Chưa cập nhật'}</div>
-              <div className="flex items-center gap-1.5"><Shield size={16} /> {profile?.department_name || 'Chưa phân team'} · {profile?.job_title || 'Chưa cập nhật'}</div>
-              <div className="flex items-center gap-1.5"><Calendar size={16} /> {profile?.employment_level || 'Chưa cập nhật cấp bậc'}</div>
+              <div className="flex items-center gap-1.5"><Shield size={16} /> {profile?.department_name || 'Chưa phân team'} · {title}</div>
+              <div className="flex items-center gap-1.5"><Calendar size={16} /> {badge}</div>
             </div>
           </div>
         </div>

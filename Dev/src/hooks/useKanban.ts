@@ -81,7 +81,7 @@ export function useKanban() {
       const { data: tasksData, error: tasksErr } = await supabase
         .from('tasks')
         .select(`
-          id, task_ref, title, description, comments_count, attachments_count, column_id, position,
+          id, task_ref, title, description, comments_count, attachments_count, column_id, position, priority,
           project:project_id(name),
           assignee:assignee_id(name, avatar_url)
         `)

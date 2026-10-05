@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../services/supabase';
 
-type NotificationItem = { id: string; title: string; message: string };
+type NotificationItem = { id: string; title: string; message: string; entity_type?: string | null; entity_id?: string | null };
 
 export const Header: React.FC = () => {
     const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
@@ -17,15 +17,16 @@ export const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     const loadNotifications = async () => {
       if (!profileId) { if (active) setNotifications([]); return; }
-      const { data } = await supabase.from('notifications').select('id, type, message, is_read').eq('user_id', profileId).eq('is_read', false).order('created_at', { ascending: false }).limit(12);
+      const { data } = await supabase.from('notifications').select('id, type, message, entity_type, entity_id, is_read').eq('user_id', profileId).eq('is_read', false).order('created_at', { ascending: false }).limit(12);
       if (!active) return;
-      setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : 'Thông báo', message: notification.message })));
+      setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : 'Thông báo', message: notification.message, entity_type: notification.entity_type, entity_id: notification.entity_id })));
     };
     void loadNotifications();
     const channel = profileId
@@ -51,6 +52,13 @@ export const Header: React.FC = () => {
     if (ids.length) await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).in('id', ids);
   };
 
+  const openNotification = async (notification: NotificationItem) => {
+    setNotifications(current => current.filter(item => item.id !== notification.id));
+    await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', notification.id);
+    setShowNotifs(false);
+    if (notification.entity_type === 'task' && notification.entity_id) navigate(`/tasks?task=${notification.entity_id}`);
+  };
+
   const navGroups = [
     {
       title: t('nav.main'),
@@ -63,7 +71,7 @@ export const Header: React.FC = () => {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: t('nav.myTasks'), path: '/my-tasks', icon: <Users size={18} /> },
+        { name: 'Profile', path: '/my-tasks', icon: <Users size={18} /> },
         { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]
     },
@@ -228,7 +236,7 @@ export const Header: React.FC = () => {
                   <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>Mark all as read</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <div key={notification.id} className="p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></div>)}
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
                 <div className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                   View all notifications

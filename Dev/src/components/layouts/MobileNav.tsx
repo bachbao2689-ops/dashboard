@@ -16,7 +16,7 @@ export const MobileNav: React.FC = () => {
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} /> },
     { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
-    { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },
+    { name: 'Profile', path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },
   ];
 
   useEffect(() => {

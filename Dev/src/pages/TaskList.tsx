@@ -36,7 +36,9 @@ export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
+  const profile = useAuthStore(state => state.profile);
   const profileId = useAuthStore(state => state.profile?.id);
+  const canCreateTask = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [filters, setFilters] = useState({ 
     status: searchParams.get('status') || 'all', 
     priority: searchParams.get('priority') || 'all', 
@@ -59,6 +61,14 @@ export const TaskList: React.FC = () => {
   useEffect(() => {
     setFilters(current => ({ ...current, status: searchParams.get('status') || 'all', priority: searchParams.get('priority') || 'all', assignee: searchParams.get('assignee') || 'all' }));
   }, [searchParams]);
+
+  useEffect(() => {
+    const taskId = searchParams.get('task');
+    if (taskId && tasks.length) {
+      const task = tasks.find(item => item.id === taskId);
+      if (task) setSelectedTask(task);
+    }
+  }, [searchParams, tasks]);
 
 
   const toggleSelectTask = (id: string) => {
@@ -144,10 +154,10 @@ export const TaskList: React.FC = () => {
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
-          <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
-            <Plus className="w-4 h-4" />
-            <span>New Task</span>
-          </button>
+          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
+              <Plus className="w-4 h-4" />
+              <span>New Task</span>
+            </button>}
         </div>
       </div>
 

@@ -1,24 +1,38 @@
 import { useState, useMemo } from 'react';
 import { useMembers } from '../hooks/useMembers';
+import { useAuthStore } from '../store/authStore';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
-import { Search, Plus, MoreVertical, User } from 'lucide-react';
+import { Search, Plus, MoreVertical, User, ChevronDown, ChevronRight } from 'lucide-react';
 
 export function MemberManagement() {
   const { members, loading, inviteMember } = useMembers();
+  const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
+  const canManageAll = profile?.role === 'admin' || profile?.role === 'manager';
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
+      const inVisibleDepartment = canManageAll || (profile?.department_id && member.department?.name === profile.department_name);
       const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
       const matchesStatus = statusFilter ? member.status === statusFilter : true;
-      return matchesSearch && matchesRole && matchesStatus;
+      return inVisibleDepartment && matchesSearch && matchesRole && matchesStatus;
     });
-  }, [members, searchTerm, roleFilter, statusFilter]);
+  }, [members, searchTerm, roleFilter, statusFilter, canManageAll, profile?.department_id, profile?.department_name]);
+
+  const memberGroups = useMemo(() => {
+    if (!canManageAll) return [[profile?.department_name || 'Phòng ban của tôi', filteredMembers] as const];
+    return Object.entries(filteredMembers.reduce<Record<string, typeof filteredMembers>>((groups, member) => {
+      const key = member.department?.name || 'Chưa phân phòng ban';
+      (groups[key] ||= []).push(member);
+      return groups;
+    }, {})).sort(([a], [b]) => a.localeCompare(b));
+  }, [canManageAll, filteredMembers, profile?.department_name]);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -46,13 +60,13 @@ export function MemberManagement() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Member Management</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your team members and roles</p>
         </div>
-        <button
+        {canManageAll && <button
           onClick={() => setIsInviteModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-lg"
         >
           <Plus size={20} />
           <span>Invite Member</span>
-        </button>
+        </button>}
       </div>
 
       <div className="glass-panel p-6 rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md mb-6">
@@ -120,7 +134,9 @@ export function MemberManagement() {
                   <td colSpan={9} className="px-6 py-8 text-center text-gray-500">No members found</td>
                 </tr>
               ) : (
-                filteredMembers.map((member) => (
+                memberGroups.flatMap(([departmentName, departmentMembers]) => [
+                  ...(canManageAll ? [<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={9} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>] : []),
+                  ...(collapsedDepartments.includes(departmentName) ? [] : departmentMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -164,7 +180,8 @@ export function MemberManagement() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  )))
+                ])
               )}
             </tbody>
           </table>

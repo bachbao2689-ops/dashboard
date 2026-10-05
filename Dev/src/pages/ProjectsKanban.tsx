@@ -20,7 +20,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group"
+      className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group ${task.priority?.toLowerCase().includes('high') || task.priority?.toLowerCase().includes('urgent') ? 'border-l-4 border-l-rose-400 border-gray-200 dark:border-slate-700' : task.priority?.toLowerCase().includes('low') ? 'border-l-4 border-l-sky-400 border-gray-200 dark:border-slate-700' : 'border-l-4 border-l-amber-300 border-gray-200 dark:border-slate-700'}`}
       onClick={onClick}>
       
       {task.project && (
@@ -31,6 +31,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
       )}
       
       <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 leading-snug">{task.title}</h4>
+      <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-md ${task.priority?.toLowerCase().includes('high') || task.priority?.toLowerCase().includes('urgent') ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : task.priority?.toLowerCase().includes('low') ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{task.priority || 'Medium'}</span>
       {task.description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>}
       
       <div className="flex items-center justify-between mt-4">
@@ -108,7 +109,7 @@ export const ProjectsKanban: React.FC<{hideHeader?: boolean}> = ({hideHeader = f
             <div key={column.id} className="flex flex-col w-80 shrink-0">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
-                  <span className={`w-3 h-3 rounded-full bg-${column.color}-500`}></span>
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color || '#64748b' }}></span>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{column.name}</h3>
                   <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full font-medium">
                     {column.tasks.length}

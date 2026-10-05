@@ -23,7 +23,7 @@ interface AuthState {
   initialize: () => void;
   signOut: () => Promise<void>;
   devLogin: (rememberMe?: boolean) => void;
-  updateUserMetadata: (data: { full_name?: string }) => Promise<void>;
+  updateUserMetadata: (data: { full_name?: string; avatar_url?: string }) => Promise<void>;
 }
 
 let authListenerStarted = false;
@@ -150,18 +150,18 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     updateUserMetadata: async (data) => {
       const { user, profile } = get();
-      const fullName = data.full_name?.trim();
+      const fullName = data.full_name?.trim() || profile?.name;
       if (!user || !fullName) throw new Error('Full name is required');
       if (user.id === 'dev-admin-id') {
-        set({ user: { ...user, user_metadata: { ...user.user_metadata, full_name: fullName } } as User });
+        set({ user: { ...user, user_metadata: { ...user.user_metadata, full_name: fullName, avatar_url: data.avatar_url || user.user_metadata?.avatar_url } } as User });
         return;
       }
 
-      const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName } });
+      const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName, ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) } });
       if (authError) throw authError;
       const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, departments(name)';
       const { data: updatedProfile, error: profileError } = await supabase.from('users')
-        .update({ name: fullName, initials: initialsFromName(fullName) }).eq('auth_id', user.id).select(fields).maybeSingle();
+        .update({ name: fullName, initials: initialsFromName(fullName), ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
       const department = updatedProfile && (Array.isArray((updatedProfile as any).departments) ? (updatedProfile as any).departments[0] : (updatedProfile as any).departments);
       const nextProfile = updatedProfile ? { ...updatedProfile, department_name: department?.name || null } as StaffProfile : profile;
