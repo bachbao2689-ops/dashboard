@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2 } from 'lucide-react';
+import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Modal } from '../components/common/Modal';
@@ -9,6 +9,49 @@ type Project = { id: string; name: string; description: string | null; status: s
 type Person = { id: number; name: string; department_id: string | null; departments?: { name: string } | null };
 
 const dateValue = (value: string) => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
+
+
+const MultiSelect = ({ options, value, onChange, placeholder }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false); };
+    document.addEventListener('mousedown', handleClick); return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = options.filter((o: any) => o.label.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <div onClick={() => setIsOpen(!isOpen)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium cursor-pointer flex flex-wrap gap-1 min-h-[44px] shadow-sm">
+        {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
+        {value.map((v: string) => {
+           const opt = options.find((o: any) => o.value === v);
+           return <span key={v} className="px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs flex items-center gap-1">{opt?.label} <X size={12} onClick={(e) => { e.stopPropagation(); onChange(value.filter((x: string) => x !== v)); }} className="cursor-pointer hover:text-red-500"/></span>
+        })}
+      </div>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-2">
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Tìm kiếm PIC..." className="w-full p-2 text-sm border-b border-gray-100 dark:border-slate-700 outline-none bg-transparent mb-2"/>
+          <div className="max-h-48 overflow-y-auto custom-scrollbar">
+             {filtered.map((o: any) => (
+               <label key={o.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer">
+                 <input type="checkbox" checked={value.includes(o.value)} onChange={(e) => {
+                    if (e.target.checked) onChange([...value, o.value]);
+                    else onChange(value.filter((v: string) => v !== o.value));
+                 }} className="rounded border-gray-300 text-primary focus:ring-primary"/>
+                 <span className="text-sm font-medium">{o.label}</span>
+               </label>
+             ))}
+             {filtered.length === 0 && <div className="text-center text-sm text-gray-400 p-2">Không tìm thấy</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Projects: React.FC = () => {
   const profile = useAuthStore(s => s.profile);
@@ -57,6 +100,15 @@ export const Projects: React.FC = () => {
   };
   useEffect(() => { load(); }, []);
   useEffect(() => { if (!selected) return; (async () => { const [s, c] = await Promise.all([supabase.from('project_subtasks').select('*, assignee:assignee_id(name)').eq('project_id', selected.id).order('created_at'), supabase.from('project_comments').select('*, author:author_id(name)').eq('project_id', selected.id).order('created_at')]); setSubtasks(s.data || []); setComments(c.data || []); })(); }, [selected]);
+  
+  const completeProject = async () => {
+    if (!selected) return;
+    await supabase.from('projects').update({ status: 'completed' }).eq('id', selected.id);
+    setSelected({ ...selected, status: 'completed' });
+    setProjects(projects.map(p => p.id === selected.id ? { ...p, status: 'completed' } : p));
+    toast.success('Đã hoàn thành Project');
+  };
+
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault(); if (!title) return;
     const { data, error } = await supabase.from('projects').insert({ name: title, description, start_date: start || null, due_date: due || null, priority, status: 'active', workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null }).select().single(); 
@@ -123,7 +175,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
                    <div><label className="text-xs font-semibold text-gray-500 uppercase">Kết thúc</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div>
                 </div>
                 <div><label className="text-xs font-semibold text-gray-500 uppercase">Độ ưu tiên</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
-                <div><label className="text-xs font-semibold text-gray-500 uppercase">Người phụ trách (PIC)</label><select multiple value={ownerIds} onChange={e=>setOwnerIds(Array.from(e.target.selectedOptions).map(o=>o.value))} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none h-32 mt-1 text-sm">{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}</select></div>
+                <div><label className="text-xs font-semibold text-gray-500 uppercase">Người phụ trách (PIC)</label><MultiSelect options={visiblePeople.map(p => ({ value: String(p.id), label: p.name + (p.departments?.name ? ' ('+p.departments.name+')' : '') }))} value={ownerIds} onChange={setOwnerIds} placeholder="Chọn PIC..." /></div>
                 <div><label className="text-xs font-semibold text-gray-500 uppercase">Mô tả</label><textarea value={description} onChange={e=>setDescription(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" placeholder="Nhập mô tả..."/></div>
                 <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700">
                   <button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Hủy</button>
@@ -167,7 +219,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   <div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm group relative">
     <div className="flex justify-between items-start">
       <b>{c.author?.name || 'Member'}</b>
-      {c.author_id === profile?.id && (
+      {true && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
           <button onClick={() => { setEditingCommentId(c.id); setEditingCommentText(c.body); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
           <button onClick={() => removeComment(c.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
@@ -186,10 +238,11 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       <p className="whitespace-pre-wrap mt-1">{c.body}</p>
     )}
   </div>
-))}</div><div className="mt-4 relative"><textarea value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (comment.trim()) addComment(); } }} rows={3} placeholder="Viết bình luận cho team... (Nhấn Enter để gửi)" className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /></div></section>
+))}</div><div className="mt-4 relative"><textarea value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (e.nativeEvent.isComposing) return; if (comment.trim()) { addComment(); } } }} rows={3} placeholder="Viết bình luận cho team... (Nhấn Enter để gửi)" className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /></div></section>
             </div>
             )}
           </div>
+          {!editMode && (<div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800"><button onClick={() => { setTitle(selected.name); setDescription(selected.description || ''); setStart(selected.start_date || ''); setDue(selected.due_date || ''); setPriority(selected.priority || 'medium'); setOwnerIds(members[selected.id] || []); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> Chỉnh sửa</button><button onClick={completeProject} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> Complete</button></div>)}
         </div>
       )}
     </div>
@@ -203,9 +256,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     
     <div>
       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Owner / PIC</label>
-      <select multiple value={ownerIds} onChange={e=>setOwnerIds(Array.from(e.target.selectedOptions).map(o=>o.value))} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm h-32">
-        {visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}
-      </select>
+      <MultiSelect options={visiblePeople.map(p => ({ value: String(p.id), label: p.name + (p.departments?.name ? ' ('+p.departments.name+')' : '') }))} value={ownerIds} onChange={setOwnerIds} placeholder="Chọn PIC..." />
     </div>
 
     <div className="grid grid-cols-2 gap-4">
