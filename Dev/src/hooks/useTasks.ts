@@ -21,6 +21,7 @@ export interface Task {
 }
 
 export function useTasks() {
+  const profile = useAuthStore(state => state.profile);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export function useTasks() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.department_id, profile?.role]);
 
   const fetchTasks = async () => {
     try {
@@ -54,7 +55,7 @@ export function useTasks() {
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select(`
           id, task_ref, title, status, priority, due_date, start_date, description, assignee_id,
@@ -64,6 +65,10 @@ export function useTasks() {
           column:column_id(name)
         `)
         .order('created_at', { ascending: false });
+
+      const canViewAllDepartments = profile?.role === 'admin' || profile?.role === 'manager';
+      if (!canViewAllDepartments && profile?.department_id) query = query.eq('department_id', profile.department_id);
+      const { data, error } = await query;
 
       if (error) throw error;
       setTasks(data as any);

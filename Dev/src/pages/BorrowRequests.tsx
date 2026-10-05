@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Check, X, Calendar, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
 import { BorrowModal } from '../components/features/assets/BorrowModal';
@@ -13,6 +13,7 @@ export const BorrowRequests: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [searchParams] = useSearchParams();
   const profileId = useAuthStore(state => state.profile?.id);
+  const profile = useAuthStore(state => state.profile);
   const { requests, loading, updateStatus, refetch } = useBorrowRequests();
 
   const filtered = requests.filter(req => {
@@ -20,6 +21,8 @@ export const BorrowRequests: React.FC = () => {
     if (filter === 'all') return true;
     return req.approval_status === filter;
   });
+
+  if (profile?.department_name === 'MARKETING' && profile.employment_level === 'Leader') return <Navigate to="/" replace />;
 
   return (
     <div className="h-full flex flex-col z-10 relative">

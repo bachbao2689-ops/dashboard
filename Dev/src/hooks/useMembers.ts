@@ -41,7 +41,7 @@ export function useMembers() {
 
       const { data, error } = await supabase
         .from('users')
-        .select('*, departments(name)')
+        .select('*, department:department_id(name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -56,7 +56,7 @@ export function useMembers() {
         avatar_url: u.avatar_url,
         employment_level: u.employment_level,
         job_title: u.job_title,
-        department: Array.isArray(u.departments) ? u.departments[0] : u.departments || (Array.isArray(u.department) ? u.department[0] : u.department),
+        department: Array.isArray(u.department) ? u.department[0] : u.department,
       }));
       setMembers(mappedMembers);
     } catch (error: any) {

@@ -16,6 +16,7 @@ export const Sidebar: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const isAdmin = user?.id === 'dev-admin-id' || profile?.role === 'admin';
   const canViewDashboard = isAdmin || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const isMarketingLead = profile?.department_name === 'MARKETING' && profile?.employment_level === 'Leader';
 
   const navGroups = [
     {
@@ -37,7 +38,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} /> },
+        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: isMarketingLead },
       ]
     },
     {

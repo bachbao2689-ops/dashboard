@@ -14,11 +14,14 @@ export const Header: React.FC = () => {
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
   const profileId = useAuthStore(state => state.profile?.id);
+  const profile = useAuthStore(state => state.profile);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const canViewDashboard = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const isMarketingLead = profile?.department_name === 'MARKETING' && profile?.employment_level === 'Leader';
 
   useEffect(() => {
     let active = true;
@@ -64,7 +67,7 @@ export const Header: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} /> }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
       ]
     },
     {
@@ -79,7 +82,7 @@ export const Header: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} /> },
+        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: isMarketingLead },
       ]
     },
     {
@@ -146,7 +149,7 @@ export const Header: React.FC = () => {
                     expandedGroup === group.title ? "max-w-[800px] opacity-100 pr-1 pl-0" : "max-w-0 opacity-0 px-0"
                   )}
                 >
-                  {group.items.map(item => (
+                  {group.items.filter(item => !(item as any).hidden).map(item => (
                     <NavLink
                       key={item.path}
                       to={item.path}

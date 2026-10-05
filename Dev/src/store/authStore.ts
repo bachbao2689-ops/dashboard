@@ -32,7 +32,7 @@ const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boole
 const nameFromEmail = (email?: string | null) => (email || 'Staff').split('@')[0];
 
 async function loadStaffProfile(authUser: User, markSignedIn = false): Promise<StaffProfile | null> {
-  const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, departments(name)';
+  const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, department:department_id(name)';
   let { data: row, error } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
   if (error) throw error;
 
@@ -67,7 +67,7 @@ async function loadStaffProfile(authUser: User, markSignedIn = false): Promise<S
     if (signInError) console.warn('Could not record staff sign-in:', signInError.message);
   }
 
-  const department = Array.isArray((row as any).departments) ? (row as any).departments[0] : (row as any).departments;
+  const department = Array.isArray((row as any).department) ? (row as any).department[0] : (row as any).department;
   return { ...row, department_name: department?.name || null } as StaffProfile;
 }
 
@@ -159,11 +159,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
       const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName, ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) } });
       if (authError) throw authError;
-      const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, departments(name)';
+      const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, department:department_id(name)';
       const { data: updatedProfile, error: profileError } = await supabase.from('users')
         .update({ name: fullName, initials: initialsFromName(fullName), ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
-      const department = updatedProfile && (Array.isArray((updatedProfile as any).departments) ? (updatedProfile as any).departments[0] : (updatedProfile as any).departments);
+      const department = updatedProfile && (Array.isArray((updatedProfile as any).department) ? (updatedProfile as any).department[0] : (updatedProfile as any).department);
       const nextProfile = updatedProfile ? { ...updatedProfile, department_name: department?.name || null } as StaffProfile : profile;
       set({ profile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });
     },
