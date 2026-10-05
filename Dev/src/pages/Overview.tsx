@@ -146,7 +146,7 @@ export const Overview: React.FC = () => {
 
       {/* KPI row – each card is clickable and has a mini visual */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <button onClick={() => navigate('/my-tasks')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/tasks?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.myTasks')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.myTasksCount}</p>
@@ -158,7 +158,7 @@ export const Overview: React.FC = () => {
           </div>
         </button>
 
-        <button onClick={() => navigate('/tasks')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/tasks?scope=due-soon')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.dueSoon')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.dueSoonCount}</p>
@@ -171,7 +171,7 @@ export const Overview: React.FC = () => {
           </div>
         </button>
 
-        <button onClick={() => navigate('/borrow-requests')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/borrow-requests?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.borrowed')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.borrowedCount}</p>
@@ -184,7 +184,7 @@ export const Overview: React.FC = () => {
         </button>
 
         <button
-          onClick={() => navigate('/tasks')}
+          onClick={() => navigate('/tasks?scope=overdue')}
           className={`p-4 text-left rounded-[18px] border flex items-center justify-between gap-3 hover:shadow-md transition-shadow ${
             data.overdueCount > 0
               ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30'

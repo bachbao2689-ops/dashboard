@@ -57,9 +57,9 @@ export function useTasks() {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
-          id, task_ref, title, status, priority, due_date, start_date, description,
+          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id,
           project:project_id(name),
-          assignee:assignee_id(name, avatar_url),
+          assignee:assignee_id(id, name, avatar_url),
           department:department_id(name),
           column:column_id(name)
         `)

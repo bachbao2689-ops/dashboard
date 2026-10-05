@@ -1,209 +1,100 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, Clock, MessageSquare, CheckCircle2, User, MoreHorizontal, Calendar, AlignLeft, Activity } from 'lucide-react';
-import type { KanbanTask } from '../../../hooks/useKanban';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X, Clock, MessageSquare, CheckCircle2, User, Calendar, AlignLeft, Activity, Edit3, Save, Send } from 'lucide-react';
+import { supabase } from '../../../services/supabase';
+import { useAuthStore } from '../../../store/authStore';
 import { Avatar } from '../../common/Avatar';
+import toast from 'react-hot-toast';
 
 interface TaskDetailPanelProps {
-  task: KanbanTask | null;
+  task: any | null;
   isOpen: boolean;
   onClose: () => void;
+  onTaskUpdated?: (task?: any) => void;
 }
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose }) => {
-  const [width, setWidth] = useState(480);
-  const [isResizing, setIsResizing] = useState(false);
+type Comment = { id: string; body: string; created_at: string; is_edited: boolean; author?: { name?: string; avatar_url?: string | null } | null };
+const priorityStyle = (priority?: string) => {
+  const value = (priority || 'medium').toLowerCase();
+  if (value.includes('urgent') || value.includes('high') || value.includes('cao')) return 'border-red-400';
+  if (value.includes('low') || value.includes('thấp')) return 'border-blue-400';
+  return 'border-amber-400';
+};
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated }) => {
+  const profileId = useAuthStore(state => state.profile?.id);
+  const [width, setWidth] = useState(500);
+  const [resizing, setResizing] = useState(false);
+  const [description, setDescription] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [saving, setSaving] = useState(false);
+  const commentInput = useRef<HTMLTextAreaElement>(null);
+
+  const loadComments = useCallback(async () => {
+    if (!task?.id) return;
+    const { data, error } = await supabase.from('comments').select('id, body, created_at, is_edited, author:author_id(name, avatar_url)').eq('task_id', task.id).order('created_at', { ascending: true });
+    if (error) { console.warn('Could not load task comments:', error.message); return; }
+    setComments((data || []) as Comment[]);
+  }, [task?.id]);
 
   useEffect(() => {
-    if (!isResizing) return;
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = document.body.clientWidth - e.clientX;
-      if (newWidth > 320 && newWidth < 800) {
-        setWidth(newWidth);
-      }
-    };
-    
-    const handleMouseUp = () => setIsResizing(false);
+    setDescription(task?.description || '');
+    setEditingDescription(false);
+    setCommentText('');
+    void loadComments();
+  }, [task?.id, task?.description, loadComments]);
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
+  useEffect(() => {
+    if (!resizing) return;
+    const move = (event: MouseEvent) => { const next = document.body.clientWidth - event.clientX; if (next >= 360 && next <= 800) setWidth(next); };
+    const up = () => setResizing(false);
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  }, [resizing]);
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-    };
-  }, [isResizing]);
+  const saveDescription = async () => {
+    if (!task) return;
+    setSaving(true);
+    const { error } = await supabase.from('tasks').update({ description, updated_at: new Date().toISOString() }).eq('id', task.id);
+    setSaving(false);
+    if (error) return toast.error('Không thể lưu mô tả');
+    setEditingDescription(false); onTaskUpdated?.({ description }); toast.success('Đã lưu mô tả');
+  };
 
-  return (
-    <div 
-      style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0, opacity: isOpen ? 1 : 0 } : { width: isOpen ? '100%' : 0, opacity: isOpen ? 1 : 0 }}
-      className={`h-full bg-white dark:bg-slate-800 rounded-l-xl md:rounded-l-3xl !rounded-r-none border-l border-gray-200 dark:border-slate-700 shadow-sm shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
-    >
-      {/* Resizer Handle */}
-      {isOpen && (
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 bg-transparent hover:bg-primary/20 cursor-col-resize z-50 transition-all -translate-x-1/2 group hidden md:flex items-center justify-center"
-          onMouseDown={startResizing}
-        >
-          <div className="h-12 w-1 bg-gray-400/50 dark:bg-slate-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-      )}
+  const addComment = async () => {
+    const body = commentText.trim();
+    if (!task || !profileId || !body) return;
+    setSaving(true);
+    const { error } = await supabase.from('comments').insert({ task_id: task.id, author_id: profileId, body });
+    if (!error) await supabase.from('tasks').update({ comments_count: comments.length + 1, updated_at: new Date().toISOString() }).eq('id', task.id);
+    setSaving(false);
+    if (error) return toast.error('Không thể gửi bình luận');
+    setCommentText(''); await loadComments(); onTaskUpdated?.({ comments_count: comments.length + 1 }); toast.success('Đã gửi bình luận');
+  };
 
-      {/* Wrapper to prevent content crushing during width=0 animation */}
-      <div className="w-full h-full flex flex-col overflow-hidden" style={{ minWidth: isOpen ? (window.innerWidth >= 768 ? 320 : '100%') : 0 }}>
-        
-        {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-sm border border-gray-200 dark:border-slate-700">
-              {task?.task_ref || 'TK-000'}
-            </span>
-            <button className="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-slate-700">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  const completeTask = async () => {
+    if (!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
+    setSaving(true);
+    const { error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id);
+    setSaving(false);
+    if (error) return toast.error('Không thể hoàn thành task');
+    onTaskUpdated?.({ status: 'done' }); toast.success('Task đã hoàn thành');
+  };
 
-        {/* Content */}
-        {task && (
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="p-6 md:px-8 space-y-8">
-              
-              {/* Title Section */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5 leading-tight">{task.title}</h2>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pr-4 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100 capitalize">{((task as any).status || 'todo').replace('_', ' ')}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pr-4 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
-                    <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100 capitalize">{((task as any).priority || 'medium')}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-6 bg-gray-50/80 dark:bg-slate-800/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700">
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Assignee</div>
-                  <div className="flex items-center gap-2">
-                    {task.assignee ? (
-                      <>
-                        <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
-                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{task.assignee.name}</span>
-                      </>
-                    ) : (
-                      <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">Unassigned</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Due Date</div>
-                  {task.due_date ? (
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800 inline-block px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
-                      {task.due_date}
-                    </div>
-                  ) : (
-                    <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">N/A</span>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Start Date</div>
-                  {(task as any).start_date ? (
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800 inline-block px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
-                      {(task as any).start_date}
-                    </div>
-                  ) : (
-                    <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md">N/A</span>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Project</div>
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {task.project?.name || <span className="text-gray-500 font-medium">No Project</span>}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Department</div>
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {(task as any).department?.name || <span className="text-gray-500 font-medium">N/A</span>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                  <AlignLeft className="w-4 h-4 text-gray-500" /> Description
-                </div>
-                <div className="bg-gray-50/80 dark:bg-slate-800/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 leading-relaxed min-h-[100px] whitespace-pre-wrap">
-                  {task.description || 'No description provided for this task.'}
-                </div>
-              </div>
-
-              {/* Activity & Comments (Timeline) */}
-              <div>
-                <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-5 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-gray-500" /> Activity & Comments
-                </div>
-                
-                <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 dark:before:via-gray-600 before:to-transparent">
-                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-500 shrink-0 z-10 shadow-sm">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 ml-4 md:ml-0 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">Task created</span>
-                        <span className="text-xs font-medium text-gray-500">2 days ago</span>
-                      </div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Created by Admin</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-        
-        {/* Footer Actions */}
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-4 shrink-0 rounded-bl-xl">
-          <button className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-sm hover:bg-gray-100 dark:hover:bg-slate-600 transition-all shadow-sm flex items-center justify-center gap-2">
-            <MessageSquare className="w-4 h-4" /> Comment
-          </button>
-          <button className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Complete
-          </button>
-        </div>
-      </div>
+  const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
+  return <div style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0 } : { width: isOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl border-l-4 ${priorityStyle(task?.priority)} shadow-xl shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    {isOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
+    <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+      <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} priority</span></div>
+      <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5" /></button>
     </div>
-  );
+    {task && <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
+      <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{task.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? 'Completed' : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span></div></section>
+      <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700"><div><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />Assignee</p>{task.assignee ? <div className="flex items-center gap-2"><Avatar name={task.assignee.name} src={task.assignee.avatar_url} /><b className="text-sm">{task.assignee.name}</b></div> : <span className="text-sm text-gray-500">Unassigned</span>}</div><div><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />Due date</p><b className="text-sm">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : 'Chưa đặt hạn'}</b></div><div><p className="text-xs text-gray-500 uppercase mb-2">Project</p><b className="text-sm">{task.project?.name || 'No project'}</b></div><div><p className="text-xs text-gray-500 uppercase mb-2">Department</p><b className="text-sm">{task.department?.name || 'N/A'}</b></div></section>
+      <section><div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />Description</p>{!editingDescription && <button onClick={() => setEditingDescription(true)} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />Edit</button>}</div>{editingDescription ? <><textarea value={description} onChange={event => setDescription(event.target.value)} rows={5} className="w-full p-4 rounded-2xl border border-primary/40 bg-white dark:bg-slate-900 outline-none" placeholder="Nhập mô tả task..." /><div className="flex gap-2 mt-2 justify-end"><button onClick={() => { setDescription(task.description || ''); setEditingDescription(false); }} className="px-3 py-2 text-sm">Hủy</button><button disabled={saving} onClick={saveDescription} className="px-3 py-2 text-sm bg-primary text-white rounded-lg"><Save className="w-4 h-4 inline mr-1" />Lưu</button></div></> : <div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || 'Chưa có mô tả.'}</div>}</section>
+      <section><p className="text-sm font-bold mb-3"><Activity className="w-4 h-4 inline mr-2" />Activity & Comments</p><div className="space-y-3">{comments.length === 0 && <p className="text-sm text-gray-500">Chưa có bình luận. Hãy bắt đầu trao đổi về task này.</p>}{comments.map(comment => <div key={comment.id} className="p-3 rounded-xl border border-gray-200 dark:border-slate-700"><div className="flex justify-between gap-3"><b className="text-sm">{comment.author?.name || 'Staff'}</b><span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString('vi-VN')}</span></div><p className="mt-1 text-sm whitespace-pre-wrap">{comment.body}</p></div>)}</div><div className="mt-4"><textarea ref={commentInput} value={commentText} onChange={event => setCommentText(event.target.value)} rows={3} placeholder="Viết bình luận cho team..." className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" /><button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"><Send className="w-4 h-4 inline mr-1" />Gửi bình luận</button></div></section>
+    </div>}
+    <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0"><button onClick={() => commentInput.current?.focus()} className="flex-1 px-4 py-2.5 border rounded-xl font-bold text-sm"><MessageSquare className="w-4 h-4 inline mr-2" />Comment</button><button disabled={isDone || saving} onClick={completeTask} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl font-bold text-sm disabled:opacity-50"><CheckCircle2 className="w-4 h-4 inline mr-2" />{isDone ? 'Completed' : 'Complete'}</button></div>
+  </div>;
 };

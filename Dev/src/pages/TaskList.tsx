@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { FilterPanel } from '../components/common/FilterPanel';
@@ -12,6 +12,7 @@ import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
 import { ProjectsKanban } from './ProjectsKanban';
 import { cn } from '../components/common/KpiCard';
+import { useAuthStore } from '../store/authStore';
 
 const mapStatus = (status: string) => {
   const s = status.toLowerCase();
@@ -35,6 +36,7 @@ export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
+  const profileId = useAuthStore(state => state.profile?.id);
   const [filters, setFilters] = useState({ 
     status: searchParams.get('status') || 'all', 
     priority: searchParams.get('priority') || 'all', 
@@ -53,6 +55,10 @@ export const TaskList: React.FC = () => {
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
   const handleNewTask = () => setIsModalOpen(true);
+
+  useEffect(() => {
+    setFilters(current => ({ ...current, status: searchParams.get('status') || 'all', priority: searchParams.get('priority') || 'all', assignee: searchParams.get('assignee') || 'all' }));
+  }, [searchParams]);
 
 
   const toggleSelectTask = (id: string) => {
@@ -77,10 +83,20 @@ export const TaskList: React.FC = () => {
     toast.success('Xuất file CSV thành công');
   };
 
+  const shortcutScope = searchParams.get('scope');
+  const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
   const filteredTasks = tasks.filter(t => 
     (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
     (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
-    (filters.assignee === 'all' || t.assignee?.id === filters.assignee || t.assignee_id === filters.assignee) &&
+    (filters.assignee === 'all' || (filters.assignee === 'me' && String(t.assignee_id) === String(profileId)) || t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee) &&
+    (!shortcutScope || (
+      String(t.assignee_id) === String(profileId) &&
+      (shortcutScope === 'mine' ||
+        (shortcutScope === 'due-soon' && isOpenTask(t) && t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays) ||
+        (shortcutScope === 'overdue' && isOpenTask(t) && t.due_date && new Date(t.due_date) < today))
+    )) &&
     (t.title?.toLowerCase().includes(searchTerm.toLowerCase()) || t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -133,6 +149,8 @@ export const TaskList: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
 
       <div className="card-hub rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
         <div className="relative flex-1 max-w-md">
@@ -313,7 +331,7 @@ export const TaskList: React.FC = () => {
       </>
       )}
       </div>
-      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} />
+      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
 </div>
   );
 };
