@@ -41,11 +41,13 @@ export function useMembers() {
 
       const { data, error } = await supabase
         .from('users')
-        .select('*, department:department_id(name)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
+      const { data: departments } = await supabase.from('departments').select('id, name');
+      const departmentNames = new Map((departments || []).map((department: any) => [department.id, department.name]));
       const mappedMembers = (data || []).map((u: any) => ({
         id: u.id,
         name: u.name,
@@ -56,7 +58,7 @@ export function useMembers() {
         avatar_url: u.avatar_url,
         employment_level: u.employment_level,
         job_title: u.job_title,
-        department: Array.isArray(u.department) ? u.department[0] : u.department,
+        department: u.department_id ? { name: departmentNames.get(u.department_id) || 'Chưa cập nhật team' } : null,
       }));
       setMembers(mappedMembers);
     } catch (error: any) {
