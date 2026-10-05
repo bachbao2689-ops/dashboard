@@ -29,6 +29,21 @@ export const Projects: React.FC = () => {
     document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
     return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
   }, [resizing]);
+
+  useEffect(() => {
+    if (!createOpen) return;
+    const startEl = document.getElementById('project-start-input');
+    const dueEl = document.getElementById('project-due-input');
+    const handleStartChange = (e: any) => setStart(e.target.value);
+    const handleDueChange = (e: any) => setDue(e.target.value);
+    startEl?.addEventListener('change', handleStartChange);
+    dueEl?.addEventListener('change', handleDueChange);
+    return () => {
+      startEl?.removeEventListener('change', handleStartChange);
+      dueEl?.removeEventListener('change', handleDueChange);
+    };
+  }, [createOpen]);
+
   const visiblePeople = useMemo(() => (profile?.role === 'admin' || profile?.role === 'manager') ? people : people.filter(p => p.department_id === profile?.department_id), [people, profile]);
   const load = async () => {
     const [projectRes, peopleRes, memberRes] = await Promise.all([
@@ -77,7 +92,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   <div className="h-full flex overflow-hidden relative">
     {/* Left Side: Projects List */}
     <div className={`h-full flex flex-col min-w-0 transition-all duration-300 flex-1 p-1 space-y-6 overflow-auto ${selected ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="btn-primary flex items-center gap-2"><Plus size={18}/> New Project</button>}</div><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5"><td className="p-4"><b className="text-gray-900 dark:text-white">{project.name}</b><p className="text-xs text-gray-500 line-clamp-1 mt-1">{project.description || 'No description'}</p></td><td><div className="flex -space-x-2">{(members[project.id] || []).slice(0,4).map(id => <span key={id} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold">{people.find(p => String(p.id) === id)?.name?.[0] || '?'}</span>)}</div></td><td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td><td><span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">{project.priority}</span></td><td className="text-sm text-primary font-medium">{project.status}</td></tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5"><td className="p-4"><b className="text-gray-900 dark:text-white">{project.name}</b><p className="text-xs text-gray-500 line-clamp-1 mt-1">{project.description || 'No description'}</p></td><td><div className="flex -space-x-2">{(members[project.id] || []).slice(0,4).map(id => <span key={id} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold">{people.find(p => String(p.id) === id)?.name?.[0] || '?'}</span>)}</div></td><td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td><td><span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">{project.priority}</span></td><td className="text-sm text-primary font-medium">{project.status}</td></tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>
   
   
     </div>
@@ -179,7 +194,55 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       )}
     </div>
 
-    <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={editMode ? "Chỉnh sửa Project" : "Create New Project"}><form onSubmit={createProject} className="space-y-4"><input required value={title} onChange={e=>setTitle(e.target.value)} placeholder="Project Title" className="input-hub w-full"/><label className="text-sm font-semibold">Owner / PIC</label><select multiple value={ownerIds} onChange={e=>setOwnerIds(Array.from(e.target.selectedOptions).map(o=>o.value))} className="input-hub w-full h-32">{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><div className="grid grid-cols-2 gap-3"><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="input-hub"/><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="input-hub"/></div><select value={priority} onChange={e=>setPriority(e.target.value)} className="input-hub w-full"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select><textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Description" className="input-hub w-full min-h-28"/><button className="btn-primary w-full">{editMode ? 'Lưu thay đổi' : 'Create Project'}</button></form></Modal>
+    <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Tạo Project">
+  <form onSubmit={createProject} className="space-y-4">
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Project Title <span className="text-red-500">*</span></label>
+      <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Nhập tên project..." />
+    </div>
+    
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Owner / PIC</label>
+      <select multiple value={ownerIds} onChange={e=>setOwnerIds(Array.from(e.target.selectedOptions).map(o=>o.value))} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm h-32">
+        {visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}
+      </select>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <div className="tw-calendar-picker relative">
+        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Start Date</label>
+        <input type="text" id="project-start-input" readOnly onClick={(e) => {
+            // @ts-ignore
+            if (window.openCalendar) window.openCalendar({ displayId: 'project-start-input', mode: 'single' }, e);
+          }} value={start} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm" />
+      </div>
+      <div className="tw-calendar-picker relative">
+        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Due Date</label>
+        <input type="text" id="project-due-input" readOnly onClick={(e) => {
+            // @ts-ignore
+            if (window.openCalendar) window.openCalendar({ displayId: 'project-due-input', mode: 'single' }, e);
+          }} value={due} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm" />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Priority</label>
+      <select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm">
+        <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
+      <textarea value={description} onChange={e=>setDescription(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm" placeholder="Project Description..."/>
+    </div>
+
+    <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
+      <button type="button" onClick={() => setCreateOpen(false)} className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Cancel</button>
+      <button type="submit" className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors shadow-sm hover:shadow-md">Tạo Project</button>
+    </div>
+  </form>
+</Modal>
   </div>
 );
 };
