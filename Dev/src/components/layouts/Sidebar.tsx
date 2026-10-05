@@ -13,14 +13,16 @@ const User = ({size}: {size: number}) => <Users size={size} />;
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
-  const isAdmin = user?.id === 'dev-admin-id' || user?.user_metadata?.role === 'admin';
+  const profile = useAuthStore(state => state.profile);
+  const isAdmin = user?.id === 'dev-admin-id' || profile?.role === 'admin';
+  const canViewDashboard = isAdmin || profile?.role === 'manager' || profile?.employment_level === 'Leader';
 
   const navGroups = [
     {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !isAdmin }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
       ]
     },
     {
