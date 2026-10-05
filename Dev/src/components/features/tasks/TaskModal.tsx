@@ -2,6 +2,7 @@ import toast from "react-hot-toast";
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../common/Modal';
 import { supabase } from '../../../services/supabase';
+import { useAuthStore } from '../../../store/authStore';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface TaskModalProps {
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const profile = useAuthStore(state => state.profile);
+  const canChooseDepartment = profile?.role === 'admin' || profile?.role === 'manager';
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -27,8 +30,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   useEffect(() => {
     if (isOpen) {
       fetchFormData();
+      // A department leader always creates work in their own department.
+      if (!canChooseDepartment && profile?.department_id) setDepartmentId(profile.department_id);
     }
-  }, [isOpen]);
+  }, [isOpen, canChooseDepartment, profile?.department_id]);
+
+  useEffect(() => {
+    // Never retain an assignee from another department after changing the team.
+    if (assigneeId && !users.some(user => String(user.id) === assigneeId && user.department_id === departmentId)) {
+      setAssigneeId('');
+    }
+  }, [departmentId, assigneeId, users]);
 
   useEffect(() => {
     const startEl = document.getElementById('task-start-input');
@@ -55,7 +67,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
   const fetchFormData = async () => {
     const [usersRes, deptsRes, projectsRes] = await Promise.all([
-      supabase.from('users').select('id, name'),
+      supabase.from('users').select('id, name, department_id').eq('is_active', true),
       supabase.from('departments').select('id, name'),
       supabase.from('projects').select('id, name')
     ]);
@@ -88,17 +100,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       const columnData = await supabase.from('columns').select('id').eq('workspace_id', wsData.id).eq('name', 'Yet to Start').single();
       const colId = columnData.data?.id || null;
 
-      // Handle dummy departments safely
-      let validDeptId = null;
-      if (departmentId.length > 10) validDeptId = departmentId; // UUID length check
-
       await supabase.from('tasks').insert([{
          title,
          description,
          priority,
          due_date: parseLocal(dueDate),
          start_date: parseLocal(startDate),
-         department_id: validDeptId,
+         department_id: departmentId,
          assignee_id: assigneeId || null,
          project_id: projectId || null,
          task_ref: 'TK' + Math.floor(Math.random() * 10000),
@@ -136,6 +144,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
+  const visibleDepartments = canChooseDepartment
+    ? departments
+    : departments.filter(department => department.id === profile?.department_id);
+  const visibleUsers = departmentId
+    ? users.filter(user => user.department_id === departmentId)
+    : [];
+  const visibleProjects = projects;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,10 +175,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               required
               value={departmentId}
               onChange={e => setDepartmentId(e.target.value)}
+              disabled={!canChooseDepartment}
               className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
-              <option value="">Select Department</option>
-              {departments.map(d => (
+              {canChooseDepartment && <option value="">Select Department</option>}
+              {visibleDepartments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
@@ -175,7 +192,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="">Unassigned</option>
-              {users.map(u => (
+              {visibleUsers.map(u => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
@@ -204,7 +221,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             >
               <option value="">No Project</option>
-              {projects.map(p => (
+              {visibleProjects.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
