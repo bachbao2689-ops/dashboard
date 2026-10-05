@@ -12,7 +12,7 @@ const dateValue = (value: string) => value ? new Date(value).toLocaleDateString(
 
 export const Projects: React.FC = () => {
   const profile = useAuthStore(s => s.profile);
-  const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const canCreate = true;
   const [projects, setProjects] = useState<Project[]>([]); const [people, setPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [createOpen, setCreateOpen] = useState(false); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
@@ -44,7 +44,7 @@ export const Projects: React.FC = () => {
     };
   }, [createOpen]);
 
-  const visiblePeople = useMemo(() => (profile?.role === 'admin' || profile?.role === 'manager') ? people : people.filter(p => p.department_id === profile?.department_id), [people, profile]);
+  const visiblePeople = useMemo(() => people, [people]);
   const load = async () => {
     const [projectRes, peopleRes, memberRes] = await Promise.all([
       supabase.from('projects').select('*').order('created_at', { ascending: false }),

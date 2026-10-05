@@ -49,7 +49,7 @@ export function useWorkspaceData(): WorkspaceData {
         return;
       }
 
-      const canViewAllDepartments = isDevAdmin || profile?.role === 'admin' || profile?.role === 'manager';
+      const canViewAllDepartments = true;
       if (!canViewAllDepartments && !profile?.department_id) {
         setTasks([]);
         setUsers([]);

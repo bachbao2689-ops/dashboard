@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../store/authStore';
 
 import { ProfileHeader } from '../components/features/profile/ProfileHeader';
 import { ProfileKpis } from '../components/features/profile/ProfileKpis';
@@ -12,8 +11,8 @@ import { ProfileSettingsTab } from '../components/features/profile/ProfileSettin
 export type ProfileTab = 'info' | 'activity' | 'permission' | 'team' | 'settings';
 
 export const MyTasks: React.FC = () => {
-  const profile = useAuthStore(state => state.profile);
-  const isManager = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  
+  const isManager = true;
   const role = isManager ? 'manager' : 'staff';
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('info');

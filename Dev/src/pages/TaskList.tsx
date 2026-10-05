@@ -36,9 +36,9 @@ export const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
-  const profile = useAuthStore(state => state.profile);
+  
   const profileId = useAuthStore(state => state.profile?.id);
-  const canCreateTask = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const canCreateTask = true;
   const [filters, setFilters] = useState({ 
     status: searchParams.get('status') || 'all', 
     priority: searchParams.get('priority') || 'all', 

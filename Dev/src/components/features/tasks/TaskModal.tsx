@@ -12,7 +12,7 @@ interface TaskModalProps {
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const profile = useAuthStore(state => state.profile);
-  const canChooseDepartment = profile?.role === 'admin' || profile?.role === 'manager';
+  const canChooseDepartment = true;
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');

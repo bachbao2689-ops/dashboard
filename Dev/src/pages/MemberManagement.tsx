@@ -12,7 +12,7 @@ export function MemberManagement() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
-  const canManageAll = profile?.role === 'admin' || profile?.role === 'manager';
+  const canManageAll = true;
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {

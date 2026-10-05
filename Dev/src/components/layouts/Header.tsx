@@ -20,7 +20,7 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const canViewDashboard = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const canViewDashboard = true;
   const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
 
   useEffect(() => {

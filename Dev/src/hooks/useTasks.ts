@@ -74,7 +74,7 @@ export function useTasks() {
         `)
         .order('created_at', { ascending: false });
 
-      const canViewAllDepartments = profile?.role === 'admin' || profile?.role === 'manager';
+      const canViewAllDepartments = true;
       if (!canViewAllDepartments) {
         if (!profile.department_id) {
           setTasks([]);

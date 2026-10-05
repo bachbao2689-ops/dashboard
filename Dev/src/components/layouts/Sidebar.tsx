@@ -6,24 +6,23 @@ import {
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
-import { useAuthStore } from '../../store/authStore';
 
 const User = ({size}: {size: number}) => <Users size={size} />; 
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
-  const user = useAuthStore(state => state.user);
-  const profile = useAuthStore(state => state.profile);
-  const isAdmin = user?.id === 'dev-admin-id' || profile?.role === 'admin';
-  const canViewDashboard = isAdmin || profile?.role === 'manager' || profile?.employment_level === 'Leader';
-  const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
+   
+   
+   
+  
+  
 
   const navGroups = [
     {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: false }
       ]
     },
     {
@@ -32,14 +31,14 @@ export const Sidebar: React.FC = () => {
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
         { name: 'Projects', path: '/projects', icon: <FolderKanban size={18} /> },
         { name: 'Profile', path: '/my-tasks', icon: <User size={18} /> },
-        { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: !isAdmin },
+        { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: false },
       ]
     },
     {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: isMarketingLead },
+        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: false },
       ]
     },
     {
@@ -47,7 +46,7 @@ export const Sidebar: React.FC = () => {
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
         { name: 'Members', path: '/members', icon: <Users size={18} /> },
-        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: !isAdmin },
+        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: false },
       ]
     }
   ];
