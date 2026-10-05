@@ -98,7 +98,7 @@ export const useReports = () => {
 
       const topPerformers = Object.keys(userCompletions)
         .map(userId => {
-          const user = allProfiles.find(p => p.id === userId);
+          const user = allProfiles.find(p => String(p.id) === String(userId));
           return {
             name: user?.name || user?.email || 'Unknown',
             completed: userCompletions[userId]
