@@ -6,9 +6,10 @@ import type { ProfileTab } from '../../../pages/MyTasks';
 
 export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileTab) => void }> = ({ role, onTabChange }) => {
   const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const name = user?.user_metadata?.full_name || 'Louis Nguyễn';
+  const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
 
   return (
@@ -33,9 +34,9 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 mt-3 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1.5"><Mail size={16} /> {user?.email || 'louis@kcoffee.com'}</div>
-              <div className="flex items-center gap-1.5"><Shield size={16} /> Marketing · Workspace: K COFFEE</div>
-              <div className="flex items-center gap-1.5"><Calendar size={16} /> Joined: Mar 2025</div>
+              <div className="flex items-center gap-1.5"><Mail size={16} /> {profile?.email || user?.email || 'Chưa cập nhật'}</div>
+              <div className="flex items-center gap-1.5"><Shield size={16} /> {profile?.department_name || 'Chưa phân team'} · {profile?.job_title || 'Chưa cập nhật'}</div>
+              <div className="flex items-center gap-1.5"><Calendar size={16} /> {profile?.employment_level || 'Chưa cập nhật cấp bậc'}</div>
             </div>
           </div>
         </div>

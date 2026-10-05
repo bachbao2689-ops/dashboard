@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
@@ -6,17 +6,19 @@ import { supabase } from '../../../services/supabase';
 
 export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state => state.profile);
   const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
   const [passwords, setPasswords] = useState({ new: '', confirm: '' });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || 'Louis Nguyễn',
-    phone: '0901234567',
-    position: 'Content Manager'
+    fullName: user?.user_metadata?.full_name || '',
   });
 
+  useEffect(() => {
+    if (isOpen) setFormData({ fullName: user?.user_metadata?.full_name || '' });
+  }, [isOpen, user?.user_metadata?.full_name]);
 
   const handleUpdatePassword = async () => {
     if (passwords.new.length < 6) {
@@ -53,9 +55,6 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
     try {
       await updateUserMetadata({
         full_name: formData.fullName,
-        name: formData.fullName,
-        phone: formData.phone,
-        position: formData.position
       });
       toast.success('Profile updated successfully!');
       onClose();
@@ -114,25 +113,20 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
               <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
-              <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
-              <input type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
-            </div>
-
             <div className="pt-2 border-t border-gray-200 dark:border-slate-700 space-y-4 mt-2">
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Email (Read-only)</label>
-                <input type="text" value={user?.email || 'louis@kcoffee.com'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
+                <input type="text" value={user?.email || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Department (Read-only)</label>
-                <input type="text" value="Marketing" disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
+                <input type="text" value={profile?.department_name || 'Chưa phân team'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Job title & level (Read-only)</label>
+                <input type="text" value={[profile?.job_title, profile?.employment_level].filter(Boolean).join(' · ') || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
               </div>
             </div>
           </div>

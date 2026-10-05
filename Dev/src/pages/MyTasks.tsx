@@ -13,7 +13,7 @@ export type ProfileTab = 'info' | 'activity' | 'permission' | 'team' | 'settings
 
 export const MyTasks: React.FC = () => {
   const user = useAuthStore(state => state.user);
-  const role = user?.user_metadata?.role || 'manager'; // Use manager as default for demo
+  const role = user?.user_metadata?.role === 'admin' ? 'manager' : 'staff';
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('info');
 

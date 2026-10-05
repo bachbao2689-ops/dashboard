@@ -4,13 +4,14 @@ import { Mail, Phone, Briefcase, Building, ShieldCheck } from 'lucide-react';
 
 export const ProfileInfoTab: React.FC = () => {
   const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state => state.profile);
   
   const infoData = [
-    { label: 'Full Name', value: user?.user_metadata?.full_name || 'Louis Nguyễn', icon: <ShieldCheck size={18} /> },
-    { label: 'Email', value: user?.email || 'louis@kcoffee.com', icon: <Mail size={18} />, readonly: true },
-    { label: 'Phone', value: '0901234567', icon: <Phone size={18} /> },
-    { label: 'Department', value: 'Marketing', icon: <Building size={18} />, readonly: true, badge: true },
-    { label: 'Position', value: 'Content Manager', icon: <Briefcase size={18} /> },
+    { label: 'Full Name', value: profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật', icon: <ShieldCheck size={18} /> },
+    { label: 'Email', value: profile?.email || user?.email || 'Chưa cập nhật', icon: <Mail size={18} />, readonly: true },
+    { label: 'Cấp bậc', value: profile?.employment_level || 'Chưa cập nhật', icon: <Phone size={18} />, readonly: true },
+    { label: 'Department', value: profile?.department_name || 'Chưa phân team', icon: <Building size={18} />, readonly: true, badge: true },
+    { label: 'Chức danh', value: profile?.job_title || 'Chưa cập nhật', icon: <Briefcase size={18} />, readonly: true },
   ];
 
   return (
