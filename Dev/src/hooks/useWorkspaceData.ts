@@ -42,11 +42,22 @@ export function useWorkspaceData(): WorkspaceData {
         supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department:department_id(name)').eq('is_active', true).order('name'),
       ]);
       if (tasksResult.error) throw tasksResult.error;
-      if (assetsResult.error) throw assetsResult.error;
-      if (usersResult.error) throw usersResult.error;
-      setTasks((tasksResult.data || []) as unknown as WorkspaceTask[]);
-      setAssets((assetsResult.data || []) as unknown as WorkspaceData['assets']);
-      setUsers((usersResult.data || []) as unknown as WorkspaceData['users']);
+      const liveTasks = (tasksResult.data || []) as unknown as WorkspaceTask[];
+      setTasks(liveTasks);
+      setAssets(assetsResult.error ? [] : (assetsResult.data || []) as unknown as WorkspaceData['assets']);
+      if (usersResult.error) {
+        // Profile fields can be unavailable briefly after a schema migration. Keep the
+        // dashboard functional using the assignee relation already returned with tasks.
+        const assignees = new Map<string, WorkspaceData['users'][number]>();
+        liveTasks.forEach(task => {
+          const assignee = Array.isArray(task.assignee) ? task.assignee[0] : task.assignee;
+          if (assignee?.id) assignees.set(String(assignee.id), { id: String(assignee.id), name: assignee.name, avatar_url: assignee.avatar_url });
+        });
+        setUsers([...assignees.values()]);
+        setError(`Profile details are temporarily unavailable: ${usersResult.error.message}`);
+      } else {
+        setUsers((usersResult.data || []) as unknown as WorkspaceData['users']);
+      }
     } catch (err: any) {
       setError(err.message || 'Unable to load workspace data');
     } finally {
