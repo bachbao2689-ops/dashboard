@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Clock, MessageSquare, CheckCircle2, User, Calendar, AlignLeft, Activity, Edit3, Save, Send } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import { notifyTaskParticipants } from '../../../services/taskNotifications';
 import { Avatar } from '../../common/Avatar';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,7 @@ const priorityStyle = (priority?: string) => {
 
 export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated }) => {
   const profileId = useAuthStore(state => state.profile?.id);
+  const profile = useAuthStore(state => state.profile);
   const [width, setWidth] = useState(500);
   const [resizing, setResizing] = useState(false);
   const [description, setDescription] = useState('');
@@ -59,6 +61,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const { error } = await supabase.from('tasks').update({ description, updated_at: new Date().toISOString() }).eq('id', task.id);
     setSaving(false);
     if (error) return toast.error('Không thể lưu mô tả');
+    await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_updated');
     setEditingDescription(false); onTaskUpdated?.({ description }); toast.success('Đã lưu mô tả');
   };
 
@@ -70,6 +73,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     if (!error) await supabase.from('tasks').update({ comments_count: comments.length + 1, updated_at: new Date().toISOString() }).eq('id', task.id);
     setSaving(false);
     if (error) return toast.error('Không thể gửi bình luận');
+    await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_comment');
     setCommentText(''); await loadComments(); onTaskUpdated?.({ comments_count: comments.length + 1 }); toast.success('Đã gửi bình luận');
   };
 
@@ -79,6 +83,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const { error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id);
     setSaving(false);
     if (error) return toast.error('Không thể hoàn thành task');
+    await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_completed');
     onTaskUpdated?.({ status: 'done' }); toast.success('Task đã hoàn thành');
   };
 

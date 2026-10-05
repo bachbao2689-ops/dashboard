@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Check, X, Calendar, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
 import { BorrowModal } from '../components/features/assets/BorrowModal';
 import { BorrowRequestDetailModal } from '../components/features/assets/BorrowRequestDetailModal';
 import { Plus } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 export const BorrowRequests: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const profileId = useAuthStore(state => state.profile?.id);
   const { requests, loading, updateStatus, refetch } = useBorrowRequests();
 
   const filtered = requests.filter(req => {
+    if (searchParams.get('scope') === 'mine' && String(req.requester_id) !== String(profileId)) return false;
     if (filter === 'all') return true;
     return req.approval_status === filter;
   });
@@ -28,6 +33,7 @@ export const BorrowRequests: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Borrow Requests</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage equipment borrowing approvals</p>
+          {searchParams.get('scope') === 'mine' && <p className="text-xs text-primary mt-1">Đang lọc yêu cầu mượn của tôi</p>}
         </div>
         <div className="flex gap-3">
           <select 

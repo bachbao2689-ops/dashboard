@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 
 export interface BorrowRequest {
   id: string;
+  requester_id?: string;
   asset?: { name: string };
   requester?: { name: string };
   department?: { name: string; color?: string };
@@ -39,7 +40,7 @@ export function useBorrowRequests() {
       const { data, error } = await supabase
         .from('borrow_requests')
         .select(`
-          id, borrow_date, due_date, requested_at, purpose, approval_status,
+          id, requester_id, borrow_date, due_date, requested_at, purpose, approval_status,
           asset:asset_id(name),
           requester:requester_id(name),
           department:department_id(name)

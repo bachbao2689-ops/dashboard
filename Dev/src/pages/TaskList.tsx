@@ -88,6 +88,7 @@ export const TaskList: React.FC = () => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
   const filteredTasks = tasks.filter(t => 
+    (filters.status === 'done' || !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((t.status || '').toLowerCase())) &&
     (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
     (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
     (filters.assignee === 'all' || (filters.assignee === 'me' && String(t.assignee_id) === String(profileId)) || t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee) &&
