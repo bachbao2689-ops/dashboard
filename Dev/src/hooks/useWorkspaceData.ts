@@ -39,7 +39,7 @@ export function useWorkspaceData(): WorkspaceData {
       const [tasksResult, assetsResult, usersResult] = await Promise.all([
         supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name)').order('created_at', { ascending: false }),
         supabase.from('assets').select('id, asset_code, name, status, is_available, category:category_id(name)').order('asset_code'),
-        supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department:department_id(name)').eq('is_active', true).order('name'),
+        supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, departments(name)').eq('is_active', true).order('name'),
       ]);
       if (tasksResult.error) throw tasksResult.error;
       const liveTasks = (tasksResult.data || []) as unknown as WorkspaceTask[];
@@ -56,7 +56,7 @@ export function useWorkspaceData(): WorkspaceData {
         setUsers([...assignees.values()]);
         setError(`Profile details are temporarily unavailable: ${usersResult.error.message}`);
       } else {
-        setUsers((usersResult.data || []) as unknown as WorkspaceData['users']);
+        setUsers(((usersResult.data || []) as any[]).map(u => ({ ...u, department: Array.isArray(u.departments) ? u.departments[0] : u.departments })) as unknown as WorkspaceData['users']);
       }
     } catch (err: any) {
       setError(err.message || 'Unable to load workspace data');
