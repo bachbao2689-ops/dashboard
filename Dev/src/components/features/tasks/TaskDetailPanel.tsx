@@ -88,7 +88,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   };
 
   const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
-  return <div style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0 } : { width: isOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl border-l-4 ${priorityStyle(task?.priority)} shadow-xl shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+  return <div style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0 } : { width: isOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shadow-xl ${isOpen ? 'border-l-4 ' + priorityStyle(task?.priority) : 'border-l-0 border-transparent'} shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
     {isOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
     <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
       <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} priority</span></div>

@@ -45,7 +45,7 @@ export const Projects: React.FC = () => {
     </div>
 
     {/* Right Side: Detail Panel */}
-    <div style={window.innerWidth >= 768 ? { width: selected ? 500 : 0, minWidth: selected ? 500 : 0 } : { width: selected ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl border-l-4 border-l-amber-400 shadow-xl shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden transition-[width,min-width] duration-300`}>
+    <div style={window.innerWidth >= 768 ? { width: selected ? 500 : 0, minWidth: selected ? 500 : 0 } : { width: selected ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shadow-xl shrink-0 ${selected ? 'border-l-4 border-l-amber-400' : 'border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden transition-[width,min-width] duration-300`}>
       {selected && (
         <div className="flex flex-col h-full">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
