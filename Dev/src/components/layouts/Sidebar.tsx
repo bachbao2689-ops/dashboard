@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, CheckSquare, 
-  Users, BarChart2, History, Box, AlertCircle
+  Users, BarChart2, History, Box
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
@@ -25,7 +25,6 @@ export const Sidebar: React.FC = () => {
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
         { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={18} /> },
-        { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
         { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} /> },
       ]
     },

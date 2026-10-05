@@ -5,31 +5,12 @@ import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
-import { GlobalSearch } from '../features/design/GlobalSearch';
 
 export const Header: React.FC = () => {
   const signOut = useAuthStore(state => state.signOut);
   const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-
-  // Ctrl+K or "/" to open search
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowSearch(true);
-      }
-      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-        e.preventDefault();
-        setShowSearch(true);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
 
   const location = useLocation();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -169,7 +150,7 @@ export const Header: React.FC = () => {
 
       {/* RIGHT AREA */}
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative group hidden sm:block" onClick={() => setShowSearch(true)}>
+        <div className="relative group hidden sm:block" >
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" />
           <div
             className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 transition-all text-gray-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800"
@@ -195,7 +176,7 @@ export const Header: React.FC = () => {
           </button>
 
           <button className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden md:block"><History size={20} /></button>
-          <button onClick={() => setShowSearch(true)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
+          <button  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
           
           <div className="relative">
             <button 
@@ -235,7 +216,6 @@ export const Header: React.FC = () => {
         </div>
       </div>
     </header>
-      <GlobalSearch isOpen={showSearch} onClose={() => setShowSearch(false)} />
     </>
   );
 };

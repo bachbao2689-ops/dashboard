@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, FolderKanban, Package, User } from 'lucide-react';
+import { Home, CheckSquare, Package, User } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 
@@ -14,7 +14,6 @@ export const MobileNav: React.FC = () => {
   
   const navItems = [
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} /> },
-    { name: t('nav.designTeam'), path: '/project', icon: <FolderKanban size={23} strokeWidth={1.8} /> },
     { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
     { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },

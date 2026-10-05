@@ -11,7 +11,6 @@ import { TaskList } from './pages/TaskList';
 import { AssetInventory } from './pages/AssetInventory';
 import { BorrowRequests } from './pages/BorrowRequests';
 import { MyTasks } from './pages/MyTasks';
-import { Project } from './pages/Project';
 import { TeamWorkload } from './pages/TeamWorkload';
 import { Reports } from './pages/Reports';
 import { MemberManagement } from './pages/MemberManagement';
@@ -37,8 +36,7 @@ function App() {
             <Route path="ui-dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="my-tasks" element={<MyTasks />} />
-            <Route path="project" element={<Project />} />
-            <Route path="departments-2" element={<Departments2 />} />
+                        <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />
