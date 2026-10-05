@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
-export type UserRole = 'admin' | 'manager' | 'team_lead' | 'staff' | 'viewer';
+export type UserRole = 'admin' | 'member' | 'manager' | 'team_lead' | 'staff' | 'viewer';
 export type UserStatus = 'active' | 'pending' | 'suspended';
 
 export interface Member {
@@ -14,6 +14,9 @@ export interface Member {
   status: UserStatus;
   created_at: string;
   avatar_url: string | null;
+  employment_level?: string | null;
+  job_title?: string | null;
+  department?: { name: string } | null;
 }
 
 const MOCK_MEMBERS: Member[] = [
@@ -38,7 +41,7 @@ export function useMembers() {
 
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('*, department:department_id(name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +53,10 @@ export function useMembers() {
         role: u.role,
         status: (u.is_active ? 'active' : 'suspended') as UserStatus,
         created_at: u.created_at,
-        avatar_url: u.avatar_url
+        avatar_url: u.avatar_url,
+        employment_level: u.employment_level,
+        job_title: u.job_title,
+        department: Array.isArray(u.department) ? u.department[0] : u.department,
       }));
       setMembers(mappedMembers);
     } catch (error: any) {

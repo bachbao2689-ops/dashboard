@@ -101,7 +101,10 @@ export function MemberManagement() {
               <tr>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Member</th>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Contact</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Team</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Chức danh</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Cấp bậc</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Quyền</th>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Joined</th>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Actions</th>
@@ -110,11 +113,11 @@ export function MemberManagement() {
             <tbody className="divide-y divide-black/5 dark:divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading members...</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">Loading members...</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No members found</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">No members found</td>
                 </tr>
               ) : (
                 filteredMembers.map((member) => (
@@ -132,6 +135,9 @@ export function MemberManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{member.email}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{member.department?.name || '—'}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">{member.job_title || '—'}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{member.employment_level || '—'}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
                         {member.role?.replace('_', ' ').toUpperCase()}
