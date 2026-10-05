@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2 } from 'lucide-react';
+import { FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Modal } from '../components/common/Modal';
@@ -88,15 +88,34 @@ export const Projects: React.FC = () => {
   }, [createOpen]);
 
   const visiblePeople = useMemo(() => people, [people]);
+    const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
+  const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
+
   const load = async () => {
-    const [projectRes, peopleRes, memberRes] = await Promise.all([
+    const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
       supabase.from('projects').select('*').order('created_at', { ascending: false }),
-      supabase.from('users').select('id,name,department_id').eq('is_active', true).order('name'),
+      supabase.from('users').select('id,name,department_id,departments(name)').eq('is_active', true).order('name'),
       supabase.from('project_members').select('project_id,user_id'),
+      supabase.from('project_comments').select('project_id'),
+      supabase.from('project_subtasks').select('project_id,assignee_id')
     ]);
     if (projectRes.error) return toast.error('Không thể tải Project');
-    setProjects(projectRes.data || []); setPeople(peopleRes.data || []);
+    setProjects(projectRes.data || []); setPeople((peopleRes.data as any) || []);
     setMembers((memberRes.data || []).reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
+    
+    const commentsMap: Record<string, boolean> = {};
+    (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
+    setHasComments(commentsMap);
+
+    const stMap: Record<string, Set<string>> = {};
+    (subtaskRes.data || []).forEach(s => {
+       if (!s.assignee_id) return;
+       if (!stMap[s.project_id]) stMap[s.project_id] = new Set();
+       stMap[s.project_id].add(String(s.assignee_id));
+    });
+    const subtaskMembersRecord: Record<string, string[]> = {};
+    for (const pid in stMap) subtaskMembersRecord[pid] = Array.from(stMap[pid]);
+    setSubtaskMembers(subtaskMembersRecord);
   };
   useEffect(() => { load(); }, []);
 
@@ -155,7 +174,33 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   <div className="h-full flex overflow-hidden relative">
     {/* Left Side: Projects List */}
     <div className={`h-full flex flex-col min-w-0 transition-all duration-300 flex-1 p-1 space-y-6 overflow-auto ${selected ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5"><td className="p-4"><b className="text-gray-900 dark:text-white">{project.name}</b><p className="text-xs text-gray-500 line-clamp-1 mt-1">{project.description || 'No description'}</p></td><td><div className="flex -space-x-2">{(members[project.id] || []).slice(0,4).map(id => <span key={id} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold">{people.find(p => String(p.id) === id)?.name?.[0] || '?'}</span>)}</div></td><td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td><td><span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">{project.priority}</span></td><td className="text-sm text-primary font-medium">{project.status}</td></tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
+<td className="p-4">
+  <div className="flex items-center gap-2">
+    <b className="text-gray-900 dark:text-white">{project.name}</b>
+    {hasComments[project.id] && <span title="Có bình luận"><MessageSquare size={14} className="text-blue-500" /></span>}
+  </div>
+  <p className="text-xs text-gray-500 line-clamp-1 mt-1">{project.description || 'No description'}</p>
+</td>
+<td>
+  <div className="flex items-center gap-2">
+    <div className="flex -space-x-2">
+      {(members[project.id] || []).slice(0,4).map(id => <span key={id} title={people.find(p=>String(p.id)===id)?.name} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold z-10">{people.find(p => String(p.id) === id)?.name?.[0] || '?'}</span>)}
+    </div>
+    {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
+      <>
+        <span className="text-gray-300 dark:text-gray-600">|</span>
+        <div className="flex -space-x-2">
+          {subtaskMembers[project.id].slice(0,4).map(id => <span key={id} title={(people.find(p=>String(p.id)===id)?.name || 'Unknown') + ' (Subtask PIC)'} className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold z-10">{people.find(p => String(p.id) === id)?.name?.[0] || '?'}</span>)}
+        </div>
+      </>
+    )}
+  </div>
+</td>
+<td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td>
+<td><span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">{project.priority}</span></td>
+<td className="text-sm text-primary font-medium">{project.status}</td>
+</tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>
   
   
     </div>
@@ -210,11 +255,24 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
          </div>
       </div>
     ) : (
-      <div className="flex justify-between items-center">
-        <div>
-          <b>{s.title}</b><span className="ml-2 text-gray-500">{s.assignee?.name || 'Unassigned'} · {dateValue(s.due_date || '')}</span>
-        </div>
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+      <div className="flex justify-between items-center w-full">
+  <div className="flex items-center gap-3 flex-1">
+    <div className="flex-1">
+      <b className="text-gray-900 dark:text-white block">{s.title}</b>
+      <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
+         <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 font-medium">
+           {s.assignee ? (
+             <>
+               <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[8px] uppercase">{s.assignee.name[0]}</span>
+               {s.assignee.name}
+             </>
+           ) : 'Unassigned'}
+         </span>
+         {s.due_date && <span className="flex items-center gap-1 font-medium text-gray-600 dark:text-gray-400"><Calendar size={12}/> {dateValue(s.due_date)}</span>}
+      </div>
+    </div>
+  </div>
+  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 shrink-0">
           <button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date || ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
           <button onClick={()=>removeSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
         </div>
