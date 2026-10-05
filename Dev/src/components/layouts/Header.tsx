@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, LogOut, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
-import { useAuthStore } from '../../store/authStore';
 
 export const Header: React.FC = () => {
-  const signOut = useAuthStore(state => state.signOut);
-  const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
+    const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
 
@@ -69,9 +67,7 @@ export const Header: React.FC = () => {
         
         {isSidebarOpen ? (
           <div className="hidden md:flex items-center gap-2">
-            <span className="hover:text-primary cursor-pointer transition-colors" onClick={toggleSidebar}>{t('header.dashboards')}</span>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-900 dark:text-gray-100 font-semibold bg-gray-50 dark:bg-slate-700 px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-600">Default</span>
+            
           </div>
         ) : (
           <div className="hidden md:flex items-center gap-1 overflow-x-auto hide-scrollbar w-full">
@@ -175,7 +171,7 @@ export const Header: React.FC = () => {
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
           </button>
 
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden md:block"><History size={20} /></button>
+          
           <button  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
           
           <div className="relative">
@@ -210,9 +206,7 @@ export const Header: React.FC = () => {
             )}
           </div>
           
-          <button onClick={signOut} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-red-500 rounded-xl transition-all hidden md:block group" title="Logout">
-            <LogOut size={20} className="group-hover:stroke-red-500" />
-          </button>
+          
         </div>
       </div>
     </header>

@@ -27,3 +27,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   return <>{children}</>;
 };
+
+export const AdminRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, loading } = useAuthStore();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  const isAdmin = user.id === 'dev-admin-id' || user.user_metadata?.role === 'admin';
+  return isAdmin ? <>{children}</> : <Navigate to="/my-tasks" replace />;
+};

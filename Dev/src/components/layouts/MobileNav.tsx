@@ -8,8 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 export const MobileNav: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
-  const role = user?.user_metadata?.role || (user?.id === 'dev-admin-id' ? 'admin' : 'staff');
-  const canSee = (allowedRoles: string[]) => allowedRoles.includes(role);
+  const isAdmin = user?.id === 'dev-admin-id' || user?.user_metadata?.role === 'admin';
   const [isHidden, setIsHidden] = useState(false);
   
   // Track scroll travel logic to avoid jitter
@@ -17,7 +16,7 @@ export const MobileNav: React.FC = () => {
   const lastYRef = useRef(0);
   
   const navItems = [
-    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} />, hidden: !canSee(['admin', 'manager', 'team_lead']) },
+    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} />, hidden: !isAdmin },
     { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
     { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },

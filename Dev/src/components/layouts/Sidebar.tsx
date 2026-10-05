@@ -13,23 +13,22 @@ const User = ({size}: {size: number}) => <Users size={size} />;
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
-  const role = user?.user_metadata?.role || (user?.id === 'dev-admin-id' ? 'admin' : 'staff');
-  const canSee = (allowedRoles: string[]) => allowedRoles.includes(role);
+  const isAdmin = user?.id === 'dev-admin-id' || user?.user_metadata?.role === 'admin';
 
   const navGroups = [
     {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canSee(['admin', 'manager']) }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !isAdmin }
       ]
     },
     {
       title: t('nav.tasksProj'),
       items: [
-        { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} />, hidden: !canSee(['admin', 'manager', 'team_lead']) },
+        { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} />, hidden: !isAdmin },
         { name: t('nav.myTasks'), path: '/my-tasks', icon: <User size={18} /> },
-        { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: !canSee(['admin', 'manager']) },
+        { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: !isAdmin },
       ]
     },
     {
@@ -44,7 +43,7 @@ export const Sidebar: React.FC = () => {
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
         { name: 'Members', path: '/members', icon: <Users size={18} /> },
-        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: !canSee(['admin', 'manager']) },
+        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: !isAdmin },
       ]
     }
   ];

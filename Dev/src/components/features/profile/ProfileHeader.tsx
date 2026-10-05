@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Bell, Edit3, Shield, Mail, Calendar, LogOut } from 'lucide-react';
+import { Settings, Edit3, Shield, Mail, Calendar, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { EditProfileModal } from './EditProfileModal';
 import type { ProfileTab } from '../../../pages/MyTasks';
@@ -45,10 +45,7 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
           <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm">
             <Edit3 size={16} /> Edit Profile
           </button>
-          <button onClick={() => onTabChange('activity')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 relative shadow-sm">
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          
           <button onClick={() => onTabChange('settings')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 shadow-sm">
             <Settings size={18} />
           </button>

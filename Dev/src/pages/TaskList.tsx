@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { FilterPanel } from '../components/common/FilterPanel';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -33,7 +34,14 @@ export const TaskList: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list'|'kanban'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ status: 'all', priority: 'all', assignee: 'all', department: 'all', dateRange: 'all' });
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState({ 
+    status: searchParams.get('status') || 'all', 
+    priority: searchParams.get('priority') || 'all', 
+    assignee: searchParams.get('assignee') || 'all', 
+    department: 'all', 
+    dateRange: 'all' 
+  });
   const [groupBy, setGroupBy] = useState('none');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
@@ -70,8 +78,9 @@ export const TaskList: React.FC = () => {
   };
 
   const filteredTasks = tasks.filter(t => 
-    (filters.status === 'all' || t.status === filters.status) &&  
+    (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
     (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
+    (filters.assignee === 'all' || t.assignee?.id === filters.assignee || t.assignee_id === filters.assignee) &&
     (t.title?.toLowerCase().includes(searchTerm.toLowerCase()) || t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
