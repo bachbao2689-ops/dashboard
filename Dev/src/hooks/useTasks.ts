@@ -55,6 +55,14 @@ export function useTasks() {
         return;
       }
 
+      // Never request the shared task list while the signed-in user's profile is
+      // still loading. It prevents a department leader from briefly receiving
+      // another department's data before the department filter is available.
+      if (!profile) {
+        setTasks([]);
+        return;
+      }
+
       let query = supabase
         .from('tasks')
         .select(`
@@ -67,7 +75,13 @@ export function useTasks() {
         .order('created_at', { ascending: false });
 
       const canViewAllDepartments = profile?.role === 'admin' || profile?.role === 'manager';
-      if (!canViewAllDepartments && profile?.department_id) query = query.eq('department_id', profile.department_id);
+      if (!canViewAllDepartments) {
+        if (!profile.department_id) {
+          setTasks([]);
+          return;
+        }
+        query = query.eq('department_id', profile.department_id);
+      }
       const { data, error } = await query;
 
       if (error) throw error;

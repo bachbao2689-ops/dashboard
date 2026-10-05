@@ -21,7 +21,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const canViewDashboard = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
-  const isMarketingLead = profile?.department_name === 'MARKETING' && profile?.employment_level === 'Leader';
+  const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
 
   useEffect(() => {
     let active = true;

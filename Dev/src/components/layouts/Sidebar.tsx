@@ -16,7 +16,7 @@ export const Sidebar: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const isAdmin = user?.id === 'dev-admin-id' || profile?.role === 'admin';
   const canViewDashboard = isAdmin || profile?.role === 'manager' || profile?.employment_level === 'Leader';
-  const isMarketingLead = profile?.department_name === 'MARKETING' && profile?.employment_level === 'Leader';
+  const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
 
   const navGroups = [
     {

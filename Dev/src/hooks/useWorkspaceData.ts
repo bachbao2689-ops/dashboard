@@ -27,6 +27,7 @@ export type WorkspaceData = {
 };
 
 export function useWorkspaceData(): WorkspaceData {
+  const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [assets, setAssets] = useState<WorkspaceData['assets']>([]);
@@ -38,12 +39,29 @@ export function useWorkspaceData(): WorkspaceData {
     setLoading(true);
     setError(null);
     try {
-      const canViewAllDepartments = profile?.role === 'admin' || profile?.role === 'manager';
+      const isDevAdmin = user?.id === 'dev-admin-id';
+      // Do not run unfiltered workspace queries during authentication/profile
+      // hydration. A leader must only receive records from their department.
+      if (!profile && !isDevAdmin) {
+        setTasks([]);
+        setUsers([]);
+        setAssets([]);
+        return;
+      }
+
+      const canViewAllDepartments = isDevAdmin || profile?.role === 'admin' || profile?.role === 'manager';
+      if (!canViewAllDepartments && !profile?.department_id) {
+        setTasks([]);
+        setUsers([]);
+        setAssets([]);
+        return;
+      }
+      const departmentId = profile?.department_id;
       let taskQuery = supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name)').order('created_at', { ascending: false });
       let userQuery = supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department:department_id(name)').eq('is_active', true).order('name');
-      if (!canViewAllDepartments && profile?.department_id) {
-        taskQuery = taskQuery.eq('department_id', profile.department_id);
-        userQuery = userQuery.eq('department_id', profile.department_id);
+      if (!canViewAllDepartments) {
+        taskQuery = taskQuery.eq('department_id', departmentId!);
+        userQuery = userQuery.eq('department_id', departmentId!);
       }
       const [tasksResult, assetsResult, usersResult] = await Promise.all([
         taskQuery,
@@ -72,7 +90,7 @@ export function useWorkspaceData(): WorkspaceData {
     } finally {
       setLoading(false);
     }
-  }, [profile?.department_id, profile?.role]);
+  }, [profile?.department_id, profile?.role, user?.id]);
 
   useEffect(() => {
     refetch();

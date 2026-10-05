@@ -22,7 +22,7 @@ export const BorrowRequests: React.FC = () => {
     return req.approval_status === filter;
   });
 
-  if (profile?.department_name === 'MARKETING' && profile.employment_level === 'Leader') return <Navigate to="/" replace />;
+  if (profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile.employment_level === 'Leader') return <Navigate to="/" replace />;
 
   return (
     <div className="h-full flex flex-col z-10 relative">
