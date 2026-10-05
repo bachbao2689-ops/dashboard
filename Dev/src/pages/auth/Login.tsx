@@ -10,10 +10,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const navigate = useNavigate();
-
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,43 +47,11 @@ export const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#002e6d] to-[#00173d] flex items-center justify-center p-4">
       <div className="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/20 backdrop-blur-md bg-white/10 shadow-2xl">
         <div className="text-center mb-8">
-          {isForgotPassword ? (
-            <>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Cấp Lại Mật Khẩu</h1>
-              <p className="text-gray-500">Yêu cầu quyền truy cập từ quản trị viên</p>
-            </>
-          ) : (
-            <>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
-              <p className="text-gray-500">Sign in to your K COFFEE dashboard</p>
-            </>
-          )}
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
+          <p className="text-gray-500">Sign in to your K COFFEE dashboard</p>
         </div>
 
-        
-        {isForgotPassword ? (
-          <div className="space-y-6 text-center py-4">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
-              <Lock className="w-8 h-8 text-[#002e6d]" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-800">Quên mật khẩu?</h3>
-            <p className="text-gray-600 text-sm">
-              Vì lý do bảo mật, vui lòng liên hệ <strong>Quản lý</strong> hoặc <strong>Admin IT</strong> để được cấp lại mật khẩu mới.
-            </p>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 mt-6">
-              <p className="text-sm font-medium text-gray-800">Liên hệ Admin:</p>
-              <a href="mailto:admin@kcoffee.com" className="text-[#002e6d] hover:underline font-bold text-lg mt-1 block">admin@kcoffee.com</a>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsForgotPassword(false)}
-              className="mt-8 w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all"
-            >
-              &larr; Quay lại đăng nhập
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-800 mb-2">
               Email Address
@@ -96,7 +61,7 @@ export const Login: React.FC = () => {
                 <Mail className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type="text"
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -138,11 +103,7 @@ export const Login: React.FC = () => {
                 Remember me
               </label>
             </div>
-            <div className="text-sm">
-              <button type="button" onClick={() => setIsForgotPassword(true)} className="font-medium text-primary hover:text-primary/80 transition-colors">
-                Forgot password?
-              </button>
-            </div>
+            {/* Removed Forgot Password Link */}
           </div>
 
           <button
@@ -166,7 +127,6 @@ export const Login: React.FC = () => {
             )}
           </button>
         </form>
-        )}
       </div>
     </div>
   );
