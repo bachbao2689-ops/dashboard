@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { ChevronDown, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff } from 'lucide-react';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { CampaignPanel } from '../components/features/projects/CampaignPanel';
@@ -75,7 +76,9 @@ export const Projects: React.FC = () => {
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [subtaskToDelete, setSubtaskToDelete] = useState<string | null>(null); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [start, setStart] = useState(''); const [due, setDue] = useState(''); const [priority, setPriority] = useState('medium'); const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [creationType, setCreationType] = useState<'project' | 'campaign'>('project'); const [showAdvanced, setShowAdvanced] = useState(false);
   const [primaryOwnerId, setPrimaryOwnerId] = useState(''); const [parentCampaignId, setParentCampaignId] = useState(''); const [departmentId, setDepartmentId] = useState('');
@@ -255,7 +258,19 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editSubtaskOwner, setEditSubtaskOwner] = useState('');
   const [editSubtaskDue, setEditSubtaskDue] = useState('');
 
-  const removeSubtask = async (id: string) => { await supabase.from('project_subtasks').delete().eq('id', id); setSubtasks(subtasks.filter(s => s.id !== id)); };
+  
+  const executeRemoveSubtask = async () => {
+    if (!subtaskToDelete) return;
+    await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', subtaskToDelete);
+    setSubtasks(subtasks.filter(s => s.id !== subtaskToDelete));
+    setSubtaskToDelete(null);
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const removeSubtask = (id: string) => {
+    setSubtaskToDelete(id);
+  };
+
   const saveEditedSubtask = async (id: string) => {
     await supabase.from('project_subtasks').update({ title: editSubtaskTitle, assignee_id: editSubtaskOwner ? Number(editSubtaskOwner) : null, due_date: editSubtaskDue || null }).eq('id', id);
     const { data } = await supabase.from('project_subtasks').select('*, assignee:assignee_id(name)').eq('id', id).single();
@@ -283,14 +298,26 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     toast.success('Đã ẩn Project');
   };
 
-  const removeProject = async (project: Project) => {
-    if (!window.confirm(`Xóa Project “${project.name}”? Subtask, PIC và comment của Project này cũng sẽ bị xóa.`)) return;
-    const { error } = await supabase.from('projects').delete().eq('id', project.id);
-    if (error) return toast.error('Không thể xóa Project');
-    if (selected?.id === project.id) setSelected(null);
-    await load();
-    toast.success('Đã xóa Project');
+  
+  const executeRemoveProject = async () => {
+    if (!projectToDelete) return;
+    const { error } = await supabase.from('projects').update({ status: 'deleted' }).eq('id', projectToDelete.id);
+    if (!error) {
+      await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('project_id', projectToDelete.id);
+      toast.success('Đã chuyển Project vào thùng rác');
+      if (selected?.id === projectToDelete.id) setSelected(null);
+      await load();
+      window.dispatchEvent(new Event('tasks:changed'));
+    } else {
+      toast.error('Không thể xóa Project');
+    }
+    setProjectToDelete(null);
   };
+
+  const removeProject = (project: Project) => {
+    setProjectToDelete(project);
+  };
+
 
 
   const parseYMD = (dateStr: string) => {
@@ -505,6 +532,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       </form>
       </>}
     </div>
+      <ConfirmDeleteModal isOpen={!!projectToDelete} title="Xóa Dự án" message={`Bạn có chắc muốn xóa dự án "${projectToDelete?.name}"? Tất cả subtask của dự án này cũng sẽ bị xóa.`} onConfirm={executeRemoveProject} onCancel={() => setProjectToDelete(null)} />
+      <ConfirmDeleteModal isOpen={!!subtaskToDelete} title="Xóa Subtask" message="Bạn có chắc muốn xóa subtask này?" onConfirm={executeRemoveSubtask} onCancel={() => setSubtaskToDelete(null)} />
   </div>
 );
 };

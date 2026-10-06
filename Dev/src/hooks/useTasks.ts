@@ -72,7 +72,7 @@ export function useTasks() {
           department:department_id(name),
           column:column_id(name)
         `)
-        .order('created_at', { ascending: false });
+        .neq('status', 'deleted').order('created_at', { ascending: false });
 
       const canViewAllDepartments = true;
       if (!canViewAllDepartments) {
@@ -82,8 +82,8 @@ export function useTasks() {
       
       const [tasksRes, pSubRes, cSubRes] = await Promise.all([
         query,
-        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name), assignee:assignee_id(id, name, avatar_url)'),
-        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name), assignee:assignee_id(id, name, avatar_url)')
+        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted'),
+        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted')
       ]);
 
       if (tasksRes.error) throw tasksRes.error;

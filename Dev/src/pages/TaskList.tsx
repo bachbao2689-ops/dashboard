@@ -3,6 +3,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { FilterPanel } from '../components/common/FilterPanel';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
+import { supabase } from '../services/supabase';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Avatar } from '../components/common/Avatar';
@@ -50,6 +52,8 @@ export const TaskList: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<any>(null);
 
   const { tasks, loading, refetch } = useTasks();
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
@@ -96,6 +100,42 @@ export const TaskList: React.FC = () => {
   const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
+  
+  const handleBulkDelete = async () => {
+    let deletedCount = 0;
+    for (const taskId of selectedTasks) {
+      if (taskId.startsWith('ps-')) {
+        await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('ps-', ''));
+      } else if (taskId.startsWith('cs-')) {
+        await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('cs-', ''));
+      } else {
+        await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId);
+      }
+      deletedCount++;
+    }
+    toast.success(`Đã chuyển ${deletedCount} task vào thùng rác`);
+    setSelectedTasks([]);
+    setIsBulkDeleteModalOpen(false);
+    window.dispatchEvent(new Event('tasks:changed'));
+    refetch();
+  };
+
+  const handleSingleDelete = async () => {
+    if (!taskToDelete) return;
+    const taskId = taskToDelete.id;
+    if (taskId.startsWith('ps-')) {
+      await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('ps-', ''));
+    } else if (taskId.startsWith('cs-')) {
+      await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('cs-', ''));
+    } else {
+      await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId);
+    }
+    toast.success(`Đã chuyển task vào thùng rác`);
+    setTaskToDelete(null);
+    window.dispatchEvent(new Event('tasks:changed'));
+    refetch();
+  };
+
   const filteredTasks = tasks.filter(t => 
     (filters.status === 'done' || !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((t.status || '').toLowerCase())) &&
     (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
@@ -321,7 +361,7 @@ export const TaskList: React.FC = () => {
             <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white">
               <CheckCircle2 className="w-4 h-4 text-green-400" /> Mark Done
             </button>
-            <button onClick={() => toast.success(`Deleted ${selectedTasks.length} tasks`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
+            <button onClick={() => setIsBulkDeleteModalOpen(true)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
               <Trash2 className="w-4 h-4" /> Delete
             </button>
           </div>
@@ -333,6 +373,8 @@ export const TaskList: React.FC = () => {
     
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
-</div>
+      <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title="Xóa các Task đã chọn" message={`Bạn có chắc muốn xóa ${selectedTasks.length} task đã chọn vào thùng rác?`} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
+      <ConfirmDeleteModal isOpen={!!taskToDelete} title="Xóa Task" message={`Bạn có chắc muốn xóa task "${taskToDelete?.title}" vào thùng rác?`} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
+    </div>
   );
 };

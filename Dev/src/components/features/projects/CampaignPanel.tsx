@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, Megaphone, Trash2, EyeOff } from 'lucide-react';
+import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
@@ -26,6 +27,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   const profile = useAuthStore(s => s.profile);
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [expanded, setExpanded] = useState(true);
+  const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   const load = async () => {
@@ -51,13 +53,25 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     toast.success('Đã ẩn Campaign');
   };
 
-  const remove = async (campaign: any) => {
-    if (!window.confirm(`Xóa Campaign “${campaign.name}”? Project liên kết vẫn được giữ.`)) return;
-    const { error } = await supabase.from('campaigns').delete().eq('id', campaign.id);
-    if (error) return toast.error('Không thể xóa Campaign');
-    await load();
-    toast.success('Đã xóa Campaign');
+  
+  const executeRemove = async () => {
+    if (!campaignToDelete) return;
+    const { error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', campaignToDelete.id);
+    if (!error) {
+      await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('campaign_id', campaignToDelete.id);
+      toast.success('Đã chuyển Campaign vào thùng rác');
+      await load();
+      window.dispatchEvent(new Event('tasks:changed'));
+    } else {
+      toast.error('Lỗi khi xóa Campaign');
+    }
+    setCampaignToDelete(null);
   };
+
+  const remove = (campaign: any) => {
+    setCampaignToDelete(campaign);
+  };
+
 
   return (
     <section className="card-hub rounded-2xl overflow-hidden shrink-0">
@@ -85,6 +99,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
         </table>
         {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">Chưa có Campaign.</p>}
       </div>}
+    <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemove} onCancel={() => setCampaignToDelete(null)} />
     </section>
   );
 };

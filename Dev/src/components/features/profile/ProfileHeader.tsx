@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Settings, Edit3, Shield, Mail, Calendar, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { EditProfileModal } from './EditProfileModal';
+import { TrashModal } from './TrashModal';
+import { Trash2 } from 'lucide-react';
 import type { ProfileTab } from '../../../pages/MyTasks';
 
 export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileTab) => void }> = ({ role, onTabChange }) => {
@@ -9,6 +11,7 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
   const title = profile?.job_title || (profile?.employment_level === 'Leader' ? 'Team Lead' : 'Staff');
@@ -48,6 +51,9 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
             <Edit3 size={16} /> Edit Profile
           </button>
           
+          <button onClick={() => setIsTrashModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm text-red-600 hover:text-red-700">
+            <Trash2 size={16} /> Đã xóa
+          </button>
           <button onClick={() => onTabChange('settings')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 shadow-sm">
             <Settings size={18} />
           </button>
@@ -58,6 +64,7 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
       </div>
     </div>
     <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
+    <TrashModal isOpen={isTrashModalOpen} onClose={() => setIsTrashModalOpen(false)} />
     </>
   );
 };
