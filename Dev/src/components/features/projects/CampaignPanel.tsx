@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, Megaphone, Trash2, EyeOff } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
+import { ConfirmHideModal } from '../../common/ConfirmHideModal';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
@@ -28,6 +29,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
+  const [campaignToHide, setCampaignToHide] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   const load = async () => {
@@ -45,13 +47,23 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   }, [profile?.id, profile?.department_id]);
 
   
-  const archive = async (campaign: any) => {
-    if (!window.confirm(`Ẩn Campaign “${campaign.name}”?`)) return;
-    const { error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaign.id);
-    if (error) return toast.error('Không thể ẩn Campaign');
-    await load();
-    toast.success('Đã ẩn Campaign');
+  
+  const executeHide = async () => {
+    if (!campaignToHide) return;
+    const { error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaignToHide.id);
+    if (error) {
+      toast.error('Không thể ẩn Campaign');
+    } else {
+      await load();
+      toast.success('Đã ẩn Campaign');
+    }
+    setCampaignToHide(null);
   };
+
+  const archive = (campaign: any) => {
+    setCampaignToHide(campaign);
+  };
+
 
   
   const executeRemove = async () => {
@@ -100,6 +112,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
         {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">Chưa có Campaign.</p>}
       </div>}
     <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemove} onCancel={() => setCampaignToDelete(null)} />
+    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHide} onCancel={() => setCampaignToHide(null)} />
     </section>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { ChevronDown, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff } from 'lucide-react';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
+import { ConfirmHideModal } from '../components/common/ConfirmHideModal';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { CampaignPanel } from '../components/features/projects/CampaignPanel';
@@ -78,6 +79,7 @@ export const Projects: React.FC = () => {
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectToHide, setProjectToHide] = useState<Project | null>(null);
   const [subtaskToDelete, setSubtaskToDelete] = useState<string | null>(null); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [start, setStart] = useState(''); const [due, setDue] = useState(''); const [priority, setPriority] = useState('medium'); const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [creationType, setCreationType] = useState<'project' | 'campaign'>('project'); const [showAdvanced, setShowAdvanced] = useState(false);
@@ -289,14 +291,24 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   
-  const archiveProject = async (project: Project) => {
-    if (!window.confirm(`Ẩn Project “${project.name}”?`)) return;
-    const { error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', project.id);
-    if (error) return toast.error('Không thể ẩn Project');
-    if (selected?.id === project.id) setSelected(null);
-    await load();
-    toast.success('Đã ẩn Project');
+  
+  const executeHideProject = async () => {
+    if (!projectToHide) return;
+    const { error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', projectToHide.id);
+    if (error) {
+      toast.error('Không thể ẩn Project');
+    } else {
+      if (selected?.id === projectToHide.id) setSelected(null);
+      await load();
+      toast.success('Đã ẩn Project');
+    }
+    setProjectToHide(null);
   };
+
+  const archiveProject = (project: Project) => {
+    setProjectToHide(project);
+  };
+
 
   
   const executeRemoveProject = async () => {
@@ -534,6 +546,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     </div>
       <ConfirmDeleteModal isOpen={!!projectToDelete} title="Xóa Dự án" message={`Bạn có chắc muốn xóa dự án "${projectToDelete?.name}"? Tất cả subtask của dự án này cũng sẽ bị xóa.`} onConfirm={executeRemoveProject} onCancel={() => setProjectToDelete(null)} />
       <ConfirmDeleteModal isOpen={!!subtaskToDelete} title="Xóa Subtask" message="Bạn có chắc muốn xóa subtask này?" onConfirm={executeRemoveSubtask} onCancel={() => setSubtaskToDelete(null)} />
+    <ConfirmHideModal isOpen={!!projectToHide} title="Ẩn Dự án" message={`Bạn có chắc muốn ẩn dự án "${projectToHide?.name}"? Dự án sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHideProject} onCancel={() => setProjectToHide(null)} />
   </div>
 );
 };
