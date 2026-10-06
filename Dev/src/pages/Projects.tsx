@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { Modal } from '../components/common/Modal';
 import { CampaignPanel } from '../components/features/projects/CampaignPanel';
 
-type Project = { id: string; name: string; description: string | null; status: string; start_date: string | null; due_date: string | null; priority: string; created_by: number | null };
+type Project = { id: string; name: string; description: string | null; status: string; start_date: string | null; due_date: string | null; priority: string; created_by: number | null; campaign_id?: string | null; department_id?: string | null };
 type Person = { id: number; name: string; department_id: string | null; departments?: { name: string } | null };
 
 const dateValue = (value: string) => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
@@ -56,11 +56,15 @@ const MultiSelect = ({ options, value, onChange, placeholder }: any) => {
 
 export const Projects: React.FC = () => {
   const profile = useAuthStore(s => s.profile);
-  const canCreate = true;
+  const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [projects, setProjects] = useState<Project[]>([]); const [people, setPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [createOpen, setCreateOpen] = useState(false); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [start, setStart] = useState(''); const [due, setDue] = useState(''); const [priority, setPriority] = useState('medium'); const [ownerIds, setOwnerIds] = useState<string[]>([]);
+  const [creationType, setCreationType] = useState<'project' | 'campaign'>('project'); const [showAdvanced, setShowAdvanced] = useState(false);
+  const [primaryOwnerId, setPrimaryOwnerId] = useState(''); const [parentCampaignId, setParentCampaignId] = useState(''); const [departmentId, setDepartmentId] = useState('');
+  const [campaignObjective, setCampaignObjective] = useState(''); const [campaignBudget, setCampaignBudget] = useState(''); const [campaignStatus, setCampaignStatus] = useState('planning');
+  const [campaigns, setCampaigns] = useState<any[]>([]); const [departments, setDepartments] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]); const [comments, setComments] = useState<any[]>([]); const [editingCommentId, setEditingCommentId] = useState<string | null>(null); const [editingCommentText, setEditingCommentText] = useState('');
   const removeComment = async (id: string) => { await supabase.from('project_comments').delete().eq('id', id); setComments(comments.filter(c => c.id !== id)); };
   const saveEditedComment = async (id: string) => { await supabase.from('project_comments').update({ body: editingCommentText }).eq('id', id); setComments(comments.map(c => c.id === id ? { ...c, body: editingCommentText } : c)); setEditingCommentId(null); };
@@ -76,8 +80,8 @@ export const Projects: React.FC = () => {
 
   useEffect(() => {
     if (!createOpen) return;
-    const startEl = document.getElementById('project-start-input');
-    const dueEl = document.getElementById('project-due-input');
+    const startEl = document.getElementById('create-start-input');
+    const dueEl = document.getElementById('create-end-input');
     const handleStartChange = (e: any) => setStart(e.target.value);
     const handleDueChange = (e: any) => setDue(e.target.value);
     startEl?.addEventListener('change', handleStartChange);
@@ -88,7 +92,10 @@ export const Projects: React.FC = () => {
     };
   }, [createOpen]);
 
-  const visiblePeople = useMemo(() => people, [people]);
+  const visiblePeople = useMemo(() => {
+    if (profile?.role === 'admin' || profile?.role === 'manager') return people;
+    return people.filter(person => person.department_id === profile?.department_id);
+  }, [people, profile?.role, profile?.department_id]);
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
   const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
 
@@ -107,6 +114,11 @@ export const Projects: React.FC = () => {
     const commentsMap: Record<string, boolean> = {};
     (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
     setHasComments(commentsMap);
+    const [campaignRes, departmentRes] = await Promise.all([
+      supabase.from('campaigns').select('id,name').order('name'),
+      supabase.from('departments').select('id,name').order('name')
+    ]);
+    setCampaigns(campaignRes.data || []); setDepartments(departmentRes.data || []);
 
     const stMap: Record<string, Set<string>> = {};
     (subtaskRes.data || []).forEach(s => {
@@ -140,12 +152,36 @@ export const Projects: React.FC = () => {
     toast.success('Đã hoàn thành Project');
   };
 
-  const createProject = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!title) return;
-    const { data, error } = await supabase.from('projects').insert({ name: title, description, start_date: start || null, due_date: due || null, priority, status: 'active', workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null }).select().single(); 
-    if (error || !data) return toast.error('Không thể tạo Project'); 
-    if (ownerIds.length) await supabase.from('project_members').insert(ownerIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) }))); 
-    setCreateOpen(false); setTitle(''); setDescription(''); setOwnerIds([]); load(); toast.success('Đã tạo Project');
+  const resetCreateForm = () => {
+    setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setPrimaryOwnerId('');
+    setParentCampaignId(''); setDepartmentId(profile?.department_id || ''); setCampaignObjective(''); setCampaignBudget(''); setCampaignStatus('planning'); setShowAdvanced(false);
+  };
+
+  const createItem = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!title.trim() || !primaryOwnerId) return;
+    if (creationType === 'campaign') {
+      const { error } = await supabase.from('campaigns').insert({
+        name: title.trim(), objective: campaignObjective || null, start_date: start || null, end_date: due || null,
+        budget: campaignBudget ? Number(campaignBudget) : null, lead_id: Number(primaryOwnerId), status: campaignStatus,
+        department_id: profile?.department_id || null, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null
+      });
+      if (error) { console.error('Campaign create failed', error); return toast.error('Không thể tạo Campaign'); }
+      toast.success('Đã tạo Campaign');
+    } else {
+      const assigneeIds = Array.from(new Set([primaryOwnerId, ...ownerIds]));
+      const { data, error } = await supabase.from('projects').insert({
+        name: title.trim(), description: description || null, start_date: start || null, due_date: due || null, priority,
+        status: 'active', campaign_id: parentCampaignId || null, department_id: departmentId || profile?.department_id || null,
+        workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null
+      }).select().single();
+      if (error || !data) { console.error('Project create failed', error); return toast.error('Không thể tạo Project'); }
+      if (assigneeIds.length) {
+        const { error: memberError } = await supabase.from('project_members').insert(assigneeIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) })));
+        if (memberError) toast.error('Project đã tạo nhưng không lưu được toàn bộ PIC');
+      }
+      toast.success('Đã tạo Project');
+    }
+    setCreateOpen(false); resetCreateForm(); await load();
   };
 const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editSubtaskTitle, setEditSubtaskTitle] = useState('');
@@ -184,7 +220,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   <div className="h-full flex overflow-hidden relative">
     {/* Left Side: Projects List */}
     <div className={`h-full flex flex-col min-w-0 transition-all duration-300 flex-1 p-1 space-y-6 overflow-auto ${selected ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><CampaignPanel/><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { resetCreateForm(); setCreationType('project'); setCreateOpen(true); }} className="flex items-center gap-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Add</span></button>}</div><CampaignPanel/><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
 <td className="p-4">
   <div className="flex items-center gap-2">
     <b className="text-gray-900 dark:text-white">{project.name}</b>
@@ -324,53 +360,37 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       )}
     </div>
 
-    <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Tạo Project">
-  <form onSubmit={createProject} className="space-y-4">
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Project Title <span className="text-red-500">*</span></label>
-      <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Nhập tên project..." />
-    </div>
-    
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Owner / PIC</label>
-      <MultiSelect options={visiblePeople.map(p => ({ value: String(p.id), label: p.name + (p.departments?.name ? ' ('+p.departments.name+')' : '') }))} value={ownerIds} onChange={setOwnerIds} placeholder="Chọn PIC..." />
-    </div>
+    <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={creationType === 'project' ? 'Tạo Dự án' : 'Tạo Chiến dịch'}>
+      <form onSubmit={createItem} className="space-y-4">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 dark:bg-slate-900 p-1" role="tablist" aria-label="Loại khởi tạo">
+          <button type="button" role="tab" aria-selected={creationType === 'campaign'} onClick={() => setCreationType('campaign')} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>🎯 Chiến dịch</button>
+          <button type="button" role="tab" aria-selected={creationType === 'project'} onClick={() => setCreationType('project')} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>📁 Dự án</button>
+        </div>
 
-    <div className="grid grid-cols-2 gap-4">
-      <div className="tw-calendar-picker relative">
-        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Start Date</label>
-        <input type="text" id="project-start-input" readOnly onClick={(e) => {
-            // @ts-ignore
-            if (window.openCalendar) window.openCalendar({ displayId: 'project-start-input', mode: 'single' }, e);
-          }} value={start} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm" />
-      </div>
-      <div className="tw-calendar-picker relative">
-        <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Due Date</label>
-        <input type="text" id="project-due-input" readOnly onClick={(e) => {
-            // @ts-ignore
-            if (window.openCalendar) window.openCalendar({ displayId: 'project-due-input', mode: 'single' }, e);
-          }} value={due} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm" />
-      </div>
-    </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Tên {creationType === 'project' ? 'dự án' : 'chiến dịch'} <span className="text-red-500">*</span></label>
+          <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400 shadow-sm" placeholder="Nhập tên..." />
+        </div>
 
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Priority</label>
-      <select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm">
-        <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
-      </select>
-    </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Ngày bắt đầu</label><input type="text" id="create-start-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-start-input', mode: 'single' }, e); }} value={start} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
+          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Ngày kết thúc</label><input type="text" id="create-end-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-end-input', mode: 'single' }, e); }} value={due} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
+        </div>
 
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
-      <textarea value={description} onChange={e=>setDescription(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm" placeholder="Project Description..."/>
-    </div>
+        <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Owner / PIC <span className="text-red-500">*</span></label><select required value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white"><option value="">Chọn người phụ trách</option>{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name}{p.departments?.name ? ` (${p.departments.name})` : ''}</option>)}</select></div>
 
-    <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
-      <button type="button" onClick={() => setCreateOpen(false)} className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Cancel</button>
-      <button type="submit" className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors shadow-sm hover:shadow-md">Tạo Project</button>
-    </div>
-  </form>
-</Modal>
+        {creationType === 'campaign' ? <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Mục tiêu chính / KPI</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder="Mục tiêu chiến dịch..." /></div> : <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Mô tả</label><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder="Ghi chú nhanh..." /></div>}
+
+        <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-semibold text-primary hover:underline">{showAdvanced ? 'Ẩn tùy chọn nâng cao' : 'Hiển thị thêm tùy chọn'}</button>
+        {showAdvanced && (creationType === 'project' ? <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4">
+          <div><label className="block text-sm font-semibold mb-1">Thuộc Chiến dịch</label><select value={parentCampaignId} onChange={e=>setParentCampaignId(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="">Dự án độc lập</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-semibold mb-1">Ưu tiên</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div><div><label className="block text-sm font-semibold mb-1">Phòng ban</label><select value={departmentId || profile?.department_id || ''} onChange={e=>setDepartmentId(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="">Phòng ban của tôi</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div></div>
+          <div><label className="block text-sm font-semibold mb-1">Người thực thi bổ sung</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} onChange={setOwnerIds} placeholder="Chọn PIC thực thi..." /></div>
+        </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4"><div><label className="block text-sm font-semibold mb-1">Ngân sách dự kiến (tùy chọn)</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" placeholder="Nhập ngân sách" /></div><div><label className="block text-sm font-semibold mb-1">Trạng thái</label><select value={campaignStatus} onChange={e=>setCampaignStatus(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="planning">Planning</option><option value="active">Active</option><option value="draft">Draft</option></select></div></div>)}
+
+        <div className="flex justify-end items-center gap-3 pt-4 border-t border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setCreateOpen(false)} className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700">Hủy</button><button type="submit" className="px-5 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl shadow-sm">Tạo {creationType === 'project' ? 'dự án' : 'chiến dịch'}</button></div>
+      </form>
+    </Modal>
   </div>
 );
 };
