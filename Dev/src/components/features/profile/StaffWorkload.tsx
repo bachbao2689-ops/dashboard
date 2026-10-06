@@ -5,14 +5,21 @@ import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
 export const StaffWorkload: React.FC = () => {
   const { summary, loading, tasks } = useProfileWorkload();
 
-  // Mock derived metrics for Staff UI
-  const todaysTasks = Math.max(0, summary.open - 2); // Mocking logic for demo
-  const dueSoon = 2; 
-  const waitingApproval = 1;
-  const onTimeRate = 92; 
-  const completionTarget = 10;
-  const completed = summary.completed || 8;
+  // Compute derived metrics for Staff UI
+  const isDone = (status?: string | null) => ['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((status || '').toLowerCase());
+  const todayStr = new Date().toDateString();
+  const in3Days = new Date(); in3Days.setDate(in3Days.getDate() + 3);
   
+  const todaysTasks = tasks.filter(t => !isDone(t.status) && t.due_date && new Date(t.due_date).toDateString() === todayStr).length;
+  const dueSoon = tasks.filter(t => !isDone(t.status) && t.due_date && new Date(t.due_date) > new Date() && new Date(t.due_date) <= in3Days).length;
+  const waitingApproval = summary.pendingBorrow || 0;
+  
+  const completedTasks = tasks.filter(t => isDone(t.status));
+  const onTimeTasks = completedTasks.filter(t => !t.due_date || new Date(t.updated_at) <= new Date(t.due_date)).length;
+  const onTimeRate = completedTasks.length ? Math.round((onTimeTasks / completedTasks.length) * 100) : 100;
+  
+  const completionTarget = Math.max(10, summary.total || 0);
+  const completed = summary.completed || 0;
   const completionPercent = Math.min(100, Math.round((completed / completionTarget) * 100));
 
   return (

@@ -302,7 +302,12 @@ export const Overview: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                <span className={`text-lg font-bold ${INK}`}>60%</span>
+                {(() => {
+                  const total = assetUtilization.reduce((sum, a) => sum + a.value, 0);
+                  const borrowed = assetUtilization.find(a => a.name === 'Borrowed')?.value || 0;
+                  const pct = total === 0 ? 0 : Math.round((borrowed / total) * 100);
+                  return <span className={`text-lg font-bold ${INK}`}>{pct}%</span>;
+                })()}
               </div>
             </div>
             <div className="flex-1 space-y-2.5">
