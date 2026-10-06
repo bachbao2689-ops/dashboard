@@ -8,9 +8,11 @@ export interface PersonalTask {
   title: string;
   status: string | null;
   priority: string | null;
+  description: string | null;
   due_date: string | null;
   created_at: string;
   updated_at: string;
+  project?: { id?: string; name?: string | null } | null;
 }
 
 export interface PersonalBorrowRequest {
@@ -38,7 +40,7 @@ export function useProfileWorkload() {
       }
       setLoading(true);
       const [taskResult, borrowResult] = await Promise.all([
-        supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, created_at, updated_at').eq('assignee_id', profileId).order('updated_at', { ascending: false }),
+        supabase.from('tasks').select('id, task_ref, title, status, priority, description, due_date, created_at, updated_at, project:project_id(id,name)').eq('assignee_id', profileId).order('updated_at', { ascending: false }),
         supabase.from('borrow_requests').select('id, approval_status, requested_at, created_at, asset:asset_id(name)').eq('requester_id', profileId).order('created_at', { ascending: false }),
       ]);
       if (!active) return;

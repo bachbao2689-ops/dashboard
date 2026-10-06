@@ -7,12 +7,14 @@ import { ProfileActivityTab } from '../components/features/profile/ProfileActivi
 import { ProfilePermissionTab } from '../components/features/profile/ProfilePermissionTab';
 import { ProfileTeamTab } from '../components/features/profile/ProfileTeamTab';
 import { ProfileSettingsTab } from '../components/features/profile/ProfileSettingsTab';
+import { ActivityTaskCard } from '../components/features/profile/ActivityTaskCard';
+import { useAuthStore } from '../store/authStore';
 
 export type ProfileTab = 'info' | 'activity' | 'permission' | 'team' | 'settings';
 
 export const MyTasks: React.FC = () => {
-  
-  const isManager = true;
+  const profile = useAuthStore(state => state.profile);
+  const isManager = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const role = isManager ? 'manager' : 'staff';
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('info');
@@ -29,6 +31,7 @@ export const MyTasks: React.FC = () => {
     <div className="w-full space-y-6">
       <ProfileHeader role={role} onTabChange={setActiveTab} />
       <ProfileKpis role={role} />
+      <ActivityTaskCard />
       
       {/* Tabs Navigation */}
       <div className="flex bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-2xl w-full md:w-fit overflow-x-auto hide-scrollbar gap-1 shadow-sm">

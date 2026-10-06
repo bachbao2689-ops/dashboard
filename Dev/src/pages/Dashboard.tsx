@@ -2,9 +2,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
+import { useNavigate } from 'react-router-dom';
+import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportDrawer';
+import type { ReportReference } from '../components/features/reports/WeeklyReportDrawer';
 
 /* Design tokens */
 const INK = 'text-gray-900 dark:text-white';
@@ -97,7 +100,10 @@ void UPCOMING_PROJECTS;
 void TEAM_MEMBERS;
 
 const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-const MONTH_LABELS = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
+const toYmd = (value: Date) => value.toISOString().slice(0, 10);
+const startOfCurrentWeek = () => { const value = new Date(); const weekday = value.getDay() || 7; value.setDate(value.getDate() - weekday + 1); value.setHours(0, 0, 0, 0); return value; };
+const dayKey = (value?: string | null) => value ? new Date(value).toISOString().slice(0, 10) : '';
+const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <span className={`block text-xs font-semibold tracking-[1.8px] uppercase ${MUTED} ${className}`}>{children}</span>
@@ -112,8 +118,12 @@ const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; cl
 export const Dashboard: React.FC = () => {
   const isDark = useUiStore(state => state.theme) === 'dark';
   const { tasks, users, loading } = useWorkspaceData();
+  const navigate = useNavigate();
   const [activeId, setActiveId] = useState('s1');
-  const [range, setRange] = useState<'weekly' | 'monthly'>('weekly');
+  const [range, setRange] = useState<'weekly' | 'custom'>('weekly');
+  const [customStart, setCustomStart] = useState(() => toYmd(startOfCurrentWeek()));
+  const [customEnd, setCustomEnd] = useState(() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); });
+  const [performanceOpen, setPerformanceOpen] = useState(false);
   const [openDept, setOpenDept] = useState<string | null>('DESIGN');
   
   const [search, setSearch] = useState('');
@@ -171,10 +181,43 @@ export const Dashboard: React.FC = () => {
   const pct = s ? Math.round((s.done / s.total) * 100) || 0 : 0;
   const trackRing = isDark ? '#334155' : '#edf3f8';
   const trackOrbit = isDark ? '#334155' : '#e8eff8';
-  const chartData = (s ? (range === 'weekly' ? s.week : s.month) : []).map((v, i) => ({
-    name: range === 'weekly' ? WEEK_LABELS[i] : MONTH_LABELS[i],
-    value: v,
-  }));
+  const rangeStart = range === 'weekly' ? toYmd(startOfCurrentWeek()) : customStart;
+  const rangeEnd = range === 'weekly' ? (() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); })() : customEnd;
+  const selectedTasks = useMemo(() => {
+    if (!s) return [];
+    if (s.type === 'staff') return tasks.filter(task => `user-${task.assignee_id}` === s.id);
+    if (s.type === 'department') return tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === s.name);
+    return tasks.filter(task => task.project?.name === s.name);
+  }, [s, tasks]);
+  const periodTasks = useMemo(() => selectedTasks.filter(task => {
+    const created = dayKey(task.created_at);
+    const due = dayKey(task.due_date);
+    return created <= rangeEnd && (!due || due >= rangeStart);
+  }), [selectedTasks, rangeStart, rangeEnd]);
+  const chartData = useMemo(() => {
+    if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
+    const start = new Date(`${rangeStart}T00:00:00`); const end = new Date(`${rangeEnd}T00:00:00`);
+    const days: Array<{ key: string; name: string; created: number; doing: number; done: number }> = [];
+    for (let cursor = new Date(start); cursor <= end && days.length < 31; cursor.setDate(cursor.getDate() + 1)) {
+      const key = toYmd(cursor);
+      days.push({ key, name: range === 'weekly' ? WEEK_LABELS[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isDone(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => isDone(task.status) && dayKey(task.updated_at || task.created_at) === key).length });
+    }
+    return days;
+  }, [rangeStart, rangeEnd, range, selectedTasks]);
+  const selectedReferences = useMemo<ReportReference[]>(() => {
+    const refs: Array<[string, ReportReference]> = [
+      ...selectedTasks.filter(task => task.project?.id).map(task => [`project-${task.project?.id}`, { id: task.project!.id!, name: task.project!.name || 'Project', kind: 'project' as const }] as [string, ReportReference]),
+      ...selectedTasks.filter(task => task.campaign?.id).map(task => [`campaign-${task.campaign?.id}`, { id: task.campaign!.id!, name: task.campaign!.name || 'Campaign', kind: 'campaign' as const }] as [string, ReportReference])
+    ];
+    return [...new Map<string, ReportReference>(refs).values()];
+  }, [selectedTasks]);
+  const openFilteredTasks = () => {
+    if (!s) return;
+    const query = new URLSearchParams({ start: rangeStart, end: rangeEnd });
+    if (s.type === 'staff') query.set('assignee', s.id.replace('user-', ''));
+    if (s.type === 'department') query.set('department', s.name);
+    navigate(`/tasks?${query.toString()}`);
+  };
 
   const filteredDepts = liveData.filter(d => d.type === 'department' && d.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -207,7 +250,7 @@ export const Dashboard: React.FC = () => {
   if (!s) return <div className="p-8 text-center text-gray-500">No task data is available yet.</div>;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
+    <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
       {/* ============ LEFT: PERFORMANCE PANEL ============ */}
       <section className={`${PANEL} p-4 sm:p-[16px] flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-gray-200 dark:border-slate-700 pb-4">
@@ -228,7 +271,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <ChevronDown size={14} className={MUTED} />
               </button>
-              <button className={`w-8 h-8 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`}>
+              <button onClick={() => setRange('custom')} className={`w-8 h-8 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`} title="Custom date range">
                 <Calendar size={15} />
               </button>
             </div>
@@ -294,7 +337,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
-              <TextButton className={INK}>Xem chi tiết {s.total} công việc</TextButton>
+              <TextButton onClick={openFilteredTasks} className={INK}>Xem chi tiết {s.total} công việc</TextButton>
             </div>
           </div>
 
@@ -337,7 +380,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="flex justify-between"><span className={MUTED}>Chưa có deadline</span><b className={INK}>{s.noDeadline}</b></div>
             </div>
-            <TextButton className={`mt-auto pt-2 !text-xs ${INK}`}>Xem task đang mở</TextButton>
+            <TextButton onClick={openFilteredTasks} className={`mt-auto pt-2 !text-xs ${INK}`}>Xem task đang mở</TextButton>
           </div>
 
           {/* Chart */}
@@ -348,24 +391,25 @@ export const Dashboard: React.FC = () => {
                 <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · 28/9/2026 — 4/10/2026</p>
               </div>
               <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
-                {(['weekly', 'monthly'] as const).map(r => (
+                {(['weekly', 'custom'] as const).map(r => (
                   <button
                     key={r}
                     onClick={() => setRange(r)}
                     className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
                   >
-                    {r === 'weekly' ? 'Weekly' : 'Monthly'}
+                    {r === 'weekly' ? 'Weekly' : 'Custom'}
                   </button>
                 ))}
               </div>
             </div>
+            {range === 'custom' && <div className="mt-3 flex flex-wrap items-center gap-2"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>đến</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /></div>}
             <div className="w-full mt-3 flex-1 min-h-[120px] 2xl:min-h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 14, right: 4, left: 4, bottom: 0 }}>
+                <BarChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ top: 14, right: 4, left: 4, bottom: 0 }}>
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: isDark ? '#94a3b8' : '#8a9bb0' }} />
                   <Tooltip
                     cursor={{ fill: 'transparent' }}
-                    formatter={(v) => [`${v} tasks`, '']}
+                    formatter={(v, name) => [`${v} tasks`, String(name).charAt(0).toUpperCase() + String(name).slice(1)]}
                     separator=""
                     contentStyle={{
                       fontSize: 11, borderRadius: 8,
@@ -374,14 +418,13 @@ export const Dashboard: React.FC = () => {
                       border: `1px solid ${isDark ? '#334155' : '#e0eaf8'}`,
                     }}
                   />
-                  <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={14} minPointSize={3}
-                    label={{ position: 'top', fontSize: 9, fill: isDark ? '#94a3b8' : '#6f84a1', formatter: (v: unknown) => (Number(v) > 0 ? String(v) : '') }}>
-                    {chartData.map((d, i) => <Cell key={i} fill={d.value > 0 ? '#7eaaf0' : (isDark ? '#334155' : '#dbe6f5')} />)}
-                  </Bar>
+                  <Bar dataKey="created" stackId="status" radius={[3, 3, 0, 0]} maxBarSize={18} fill="#8aa4c7" />
+                  <Bar dataKey="doing" stackId="status" maxBarSize={18} fill="#4099e5" />
+                  <Bar dataKey="done" stackId="status" radius={[3, 3, 0, 0]} maxBarSize={18} fill="#45a894" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className={`text-center text-xs mt-1 ${MUTED}`}>Theo ngày đến hạn · Không phải lịch sử hoàn thành</p>
+            <p className={`text-center text-xs mt-1 ${MUTED}`}>Hover để xem Created, Doing, Done · Click biểu đồ để xem Performance report</p>
           </div>
           
           {/* Insight strip */}
@@ -487,6 +530,7 @@ export const Dashboard: React.FC = () => {
           </section>
         </div>
       </div>
+      <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
     </div>
   );
 };

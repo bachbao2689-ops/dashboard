@@ -11,10 +11,12 @@ export type WorkspaceTask = {
   due_date: string | null;
   start_date: string | null;
   created_at: string;
+  updated_at: string | null;
   assignee_id: string | null;
   assignee?: { id: string; name: string; avatar_url?: string | null } | null;
   department?: { id: string; name: string } | null;
   project?: { id: string; name: string } | null;
+  campaign?: { id: string; name: string } | null;
 };
 
 export type WorkspaceData = {
@@ -57,7 +59,7 @@ export function useWorkspaceData(): WorkspaceData {
         return;
       }
       const departmentId = profile?.department_id;
-      let taskQuery = supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name)').order('created_at', { ascending: false });
+      let taskQuery = supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, updated_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name), campaign:campaign_id(id,name)').order('created_at', { ascending: false });
       let userQuery = supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department_id').eq('is_active', true).order('name');
       if (!canViewAllDepartments) {
         taskQuery = taskQuery.eq('department_id', departmentId!);

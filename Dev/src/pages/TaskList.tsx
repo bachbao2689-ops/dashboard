@@ -97,6 +97,9 @@ export const TaskList: React.FC = () => {
   };
 
   const shortcutScope = searchParams.get('scope');
+  const startParam = searchParams.get('start');
+  const endParam = searchParams.get('end');
+  const departmentParam = searchParams.get('department');
   const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
@@ -141,6 +144,9 @@ export const TaskList: React.FC = () => {
     (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
     (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
     (filters.assignee === 'all' || (filters.assignee === 'me' && String(t.assignee_id) === String(profileId)) || t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee) &&
+    (!departmentParam || t.department?.name === departmentParam) &&
+    (!startParam || !t.due_date || new Date(t.due_date) >= new Date(`${startParam}T00:00:00`)) &&
+    (!endParam || !t.due_date || new Date(t.due_date) <= new Date(`${endParam}T23:59:59`)) &&
     (!shortcutScope || (
       String(t.assignee_id) === String(profileId) &&
       (shortcutScope === 'mine' ||
