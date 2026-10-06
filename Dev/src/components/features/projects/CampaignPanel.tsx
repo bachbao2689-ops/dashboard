@@ -5,11 +5,14 @@ import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
+const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
+const statusClass = (value: string) => value === 'completed' ? 'bg-emerald-100 text-emerald-700' : value === 'active' ? 'bg-blue-100 text-blue-700' : value === 'planning' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
+const campaignPriority = (campaign: any) => campaign.priority || (Number(campaign.budget) >= 50000000 ? 'high' : Number(campaign.budget) >= 30000000 ? 'medium' : 'low');
 
-export const CampaignPanel: React.FC = () => {
+export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = ({ onSelect }) => {
   const profile = useAuthStore(s => s.profile);
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
-  const [open, setOpen] = useState(true);
+  const [expanded, setExpanded] = useState(true);
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   const load = async () => {
@@ -20,7 +23,11 @@ export const CampaignPanel: React.FC = () => {
     setCampaigns(data || []);
   };
 
-  useEffect(() => { void load(); }, [profile?.id, profile?.department_id]);
+  useEffect(() => {
+    void load();
+    window.addEventListener('campaigns:changed', load);
+    return () => window.removeEventListener('campaigns:changed', load);
+  }, [profile?.id, profile?.department_id]);
 
   const remove = async (campaign: any) => {
     if (!window.confirm(`Xóa Campaign “${campaign.name}”? Project liên kết vẫn được giữ.`)) return;
@@ -31,26 +38,27 @@ export const CampaignPanel: React.FC = () => {
   };
 
   return (
-    <section className="card-hub rounded-2xl overflow-hidden">
+    <section className="card-hub rounded-2xl overflow-hidden shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-        <button onClick={() => setOpen(!open)} className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
-          <ChevronDown className={`transition-transform ${open ? '' : '-rotate-90'}`} size={17} />
-          <Megaphone className="text-primary" size={18} /> Campaigns
-          <span className="text-xs font-medium text-gray-500">{campaigns.length}</span>
+        <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+          <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
+          <Megaphone className="text-primary" size={16} /> Campaigns
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{campaigns.length}</span>
         </button>
       </div>
-      {open && <div className="overflow-x-auto">
+      {expanded && <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
-            <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Budget</th><th>Status</th><th className="w-12" />
+            <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
           </tr></thead>
-          <tbody>{campaigns.map(c => <tr key={c.id} className="group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5">
+          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
             <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 line-clamp-1 mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
-            <td className="text-sm text-gray-700 dark:text-gray-300">{c.lead?.name || 'Chưa có owner'}</td>
+            <td><div className="flex -space-x-2"><span title={c.lead?.name || 'Chưa có owner'} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold text-primary">{c.lead?.name?.[0] || '?'}</span></div></td>
             <td className="text-sm text-gray-600 dark:text-gray-300">{formatDate(c.start_date)} – {formatDate(c.end_date)}</td>
-            <td className="text-sm text-gray-600 dark:text-gray-300">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
-            <td><span className="px-2 py-1 rounded-md text-xs bg-blue-50 text-primary capitalize">{c.status || 'planning'}</span></td>
-            <td>{canManage && <button onClick={() => void remove(c)} aria-label={`Xóa ${c.name}`} className="p-2 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"><Trash2 size={16} /></button>}</td>
+            <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
+            <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
+            <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(c.status || 'planning')}`}>{c.status || 'planning'}</span></td>
+            <td>{canManage && <button onClick={(event) => { event.stopPropagation(); void remove(c); }} aria-label={`Xóa ${c.name}`} className="p-2 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"><Trash2 size={16} /></button>}</td>
           </tr>)}</tbody>
         </table>
         {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">Chưa có Campaign.</p>}

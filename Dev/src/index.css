@@ -212,6 +212,15 @@ body {
   border-color: #334155;
 }
 
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); opacity: 0.35; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-slide-in {
+  animation: drawer-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Fallback for components still using old classes */
 .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
 .glass-panel {

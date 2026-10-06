@@ -29,7 +29,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: 'Projects', path: '/projects', icon: <FolderKanban size={18} /> },
+        { name: 'Projects/Campaigns', path: '/projects', icon: <FolderKanban size={18} /> },
         { name: 'Profile', path: '/my-tasks', icon: <User size={18} /> },
         { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: false },
       ]
