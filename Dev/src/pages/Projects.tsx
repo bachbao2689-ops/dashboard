@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ChevronDown, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar } from 'lucide-react';
+import { ChevronDown, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { CampaignPanel } from '../components/features/projects/CampaignPanel';
@@ -53,6 +53,19 @@ const MultiSelect = ({ options, value, onChange, placeholder }: any) => {
       )}
     </div>
   );
+};
+
+
+const getDueStatusColor = (endDateStr?: string | null) => {
+  if (!endDateStr) return 'border-transparent';
+  const end = new Date(endDateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays > 3) return 'border-green-500';
+  if (diffDays >= 2) return 'border-amber-500';
+  return 'border-red-500';
 };
 
 export const Projects: React.FC = () => {
@@ -108,7 +121,7 @@ export const Projects: React.FC = () => {
 
   const load = async () => {
     const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
-      supabase.from('projects').select('*, creator:created_by(name)').order('created_at', { ascending: false }),
+      supabase.from('projects').select('*, creator:created_by(name)').neq('status', 'archived').order('created_at', { ascending: false }),
       supabase.from('users').select('id,name,department_id,departments(name)').eq('is_active', true).order('name'),
       supabase.from('project_members').select('project_id,user_id'),
       supabase.from('project_comments').select('project_id'),
@@ -260,6 +273,16 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     setSelected({ ...selected, name: title, description, start_date: start || null, due_date: due || null, priority });
   };
 
+  
+  const archiveProject = async (project: Project) => {
+    if (!window.confirm(`Ẩn Project “${project.name}”?`)) return;
+    const { error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', project.id);
+    if (error) return toast.error('Không thể ẩn Project');
+    if (selected?.id === project.id) setSelected(null);
+    await load();
+    toast.success('Đã ẩn Project');
+  };
+
   const removeProject = async (project: Project) => {
     if (!window.confirm(`Xóa Project “${project.name}”? Subtask, PIC và comment của Project này cũng sẽ bị xóa.`)) return;
     const { error } = await supabase.from('projects').delete().eq('id', project.id);
@@ -315,10 +338,10 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     )}
   </div>
 </td>
-<td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td>
+<td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date)}`} title={`Hạn chót: ${dateValue(project.due_date)}`} />}</div></td>
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></td>
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(project.status || 'active')}`}>{project.status || 'active'}</span></td>
-<td>{canCreate && <button onClick={(event) => { event.stopPropagation(); void removeProject(project); }} aria-label={`Xóa ${project.name}`} className="p-2 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16}/></button>}</td>
+<td className="w-16 pr-4">{canCreate && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Ẩn"><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={16}/></button></div>}</td>
 </tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>}</section>
   
   
