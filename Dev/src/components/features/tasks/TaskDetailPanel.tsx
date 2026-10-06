@@ -11,6 +11,7 @@ interface TaskDetailPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskUpdated?: (task?: any) => void;
+  floating?: boolean;
 }
 
 type Comment = { id: string; body: string; created_at: string; is_edited: boolean; author?: { name?: string; avatar_url?: string | null } | null };
@@ -21,7 +22,7 @@ const priorityStyle = (priority?: string) => {
   return 'border-amber-400';
 };
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated }) => {
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false }) => {
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
   const [width, setWidth] = useState(500);
@@ -88,11 +89,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   };
 
   const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
-  return <div style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0 } : { width: isOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shadow-xl ${isOpen ? 'border-l-4 ' + priorityStyle(task?.priority) : 'border-l-0 border-transparent'} shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+  return <div style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0 } : { width: isOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shadow-xl ${isOpen ? 'border-l-4 ' + priorityStyle(task?.priority) : 'border-l-0 border-transparent'} shrink-0 ${floating ? 'fixed inset-y-0 right-0 z-[110]' : 'absolute md:relative right-0 top-0 z-[60]'} flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
     {isOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
     <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
       <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} priority</span></div>
-      <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5" /></button>
+      <button aria-label="Đóng chi tiết task" onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5" /></button>
     </div>
     {task && <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
       <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{task.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? 'Completed' : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span></div></section>
