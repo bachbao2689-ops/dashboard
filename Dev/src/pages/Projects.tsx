@@ -126,7 +126,7 @@ export const Projects: React.FC = () => {
 
   const load = async () => {
     const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
-      supabase.from('projects').select('*, creator:created_by(name)').neq('status', 'archived').order('created_at', { ascending: false }),
+      supabase.from('projects').select('*, creator:created_by(name)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('users').select('id,name,department_id,departments(name)').eq('is_active', true).order('name'),
       supabase.from('project_members').select('project_id,user_id'),
       supabase.from('project_comments').select('project_id'),

@@ -33,7 +33,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   const load = async () => {
-    let query = supabase.from('campaigns').select('*, lead:lead_id(name), creator:created_by(name)').neq('status', 'archived').order('created_at', { ascending: false });
+    let query = supabase.from('campaigns').select('*, lead:lead_id(name), creator:created_by(name)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false });
     if (profile?.role !== 'admin' && profile?.role !== 'manager' && profile?.department_id) query = query.eq('department_id', profile.department_id);
     const { data, error } = await query;
     if (error) { toast.error('Không thể tải Campaign'); return; }

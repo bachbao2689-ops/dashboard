@@ -52,7 +52,7 @@ export const ProfileHeader: React.FC<{ role: string, onTabChange: (tab: ProfileT
           </button>
           
           <button onClick={() => setIsTrashModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm text-red-600 hover:text-red-700">
-            <Trash2 size={16} /> Đã xóa
+            <Trash2 size={16} /> Log
           </button>
           <button onClick={() => onTabChange('settings')} className="p-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 shadow-sm">
             <Settings size={18} />
