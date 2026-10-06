@@ -104,7 +104,7 @@ export const AssetInventory: React.FC = () => {
                           asset.status === 'borrowed' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' : 
                           'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${asset.status === 'available' ? 'bg-emerald-500' : asset.status === 'borrowed' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
-                        {asset.status === 'available' ? 'Available' : asset.status === 'borrowed' ? 'Borrowed' : 'Maintenance'}
+                        {asset.status === 'available' ? 'Active' : asset.status === 'borrowed' ? 'Borrowed' : 'Maintenance'}
                       </span>
                     </td>
                     <td className="p-4">
