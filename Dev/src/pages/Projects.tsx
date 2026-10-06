@@ -169,13 +169,22 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     setSelected({ ...selected, name: title, description, start_date: start || null, due_date: due || null, priority });
   };
 
+  const removeProject = async (project: Project) => {
+    if (!window.confirm(`Xóa Project “${project.name}”? Subtask, PIC và comment của Project này cũng sẽ bị xóa.`)) return;
+    const { error } = await supabase.from('projects').delete().eq('id', project.id);
+    if (error) return toast.error('Không thể xóa Project');
+    if (selected?.id === project.id) setSelected(null);
+    await load();
+    toast.success('Đã xóa Project');
+  };
+
   const addSubtask = async () => { if (!selected || !newSubtask) return; await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask, assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: subtaskDue || null }); setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected }); };
   const addComment = async () => { if (!selected || !comment) return; await supabase.from('project_comments').insert({ project_id: selected.id, author_id: profile?.id || null, body: comment }); setComment(''); setSelected({ ...selected }); };
   return (
   <div className="h-full flex overflow-hidden relative">
     {/* Left Side: Projects List */}
     <div className={`h-full flex flex-col min-w-0 transition-all duration-300 flex-1 p-1 space-y-6 overflow-auto ${selected ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><CampaignPanel/><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { setEditMode(false); setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setCreateOpen(true); }} className="flex items-center space-x-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Tạo Project</span></button>}</div><CampaignPanel/><div className="card-hub rounded-2xl overflow-hidden"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => setSelected(project)} className="group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
 <td className="p-4">
   <div className="flex items-center gap-2">
     <b className="text-gray-900 dark:text-white">{project.name}</b>
@@ -201,6 +210,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <td className="text-sm text-gray-600 dark:text-gray-300">{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</td>
 <td><span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">{project.priority}</span></td>
 <td className="text-sm text-primary font-medium">{project.status}</td>
+<td>{canCreate && <button onClick={(event) => { event.stopPropagation(); void removeProject(project); }} aria-label={`Xóa ${project.name}`} className="p-2 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16}/></button>}</td>
 </tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>
   
   
