@@ -177,7 +177,7 @@ export const Projects: React.FC = () => {
       const strategyAsset = await resolveAttachmentUrl('campaigns');
       if (strategyAsset === undefined) return;
       const { data: campaign, error } = await supabase.from('campaigns').insert({
-        name: title.trim(), objective: campaignObjective || null, start_date: start || null, end_date: due || null,
+        name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due),
         budget: campaignBudget ? Number(campaignBudget) : null, channels: campaignChannels, lead_id: Number(primaryOwnerId), status: campaignStatus,
         department_id: profile?.department_id || null, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null
       }).select().single();
@@ -234,7 +234,17 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     toast.success('Đã xóa Project');
   };
 
-  const addSubtask = async () => { if (!selected || !newSubtask) return; await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask, assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: subtaskDue || null }); setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected }); };
+
+  const parseYMD = (dateStr: string) => {
+    if (!dateStr) return null;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const addSubtask = async () => { if (!selected || !newSubtask) return; await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask, assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: parseYMD(subtaskDue) }); setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected }); };
   const addComment = async () => { if (!selected || !comment) return; await supabase.from('project_comments').insert({ project_id: selected.id, author_id: profile?.id || null, body: comment }); setComment(''); setSelected({ ...selected }); };
   const addCampaignSubtask = async () => { if (!selectedCampaign || !campaignNewSubtask.trim()) return; const { error } = await supabase.from('campaign_subtasks').insert({ campaign_id: selectedCampaign.id, title: campaignNewSubtask.trim(), assignee_id: campaignSubtaskOwner ? Number(campaignSubtaskOwner) : null, due_date: campaignSubtaskDue || null }); if (error) return toast.error('Không thể tạo Subtask Campaign'); setCampaignNewSubtask(''); setCampaignSubtaskOwner(''); setCampaignSubtaskDue(''); setShowCampaignSubtaskForm(false); setSelectedCampaign({ ...selectedCampaign }); };
   const addCampaignComment = async () => { if (!selectedCampaign || !campaignComment.trim() || !profile?.id) return; const { error } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'comment', entity_type: 'campaign', entity_id: selectedCampaign.id, metadata: { body: campaignComment.trim() } }); if (error) return toast.error('Không thể gửi bình luận'); setCampaignComment(''); setSelectedCampaign({ ...selectedCampaign }); };
@@ -250,7 +260,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     <b className="text-gray-900 dark:text-white">{project.name}</b>
     {hasComments[project.id] && <span title="Có bình luận"><MessageSquare size={14} className="text-blue-500" /></span>}
   </div>
-  <p className="text-xs text-gray-500 line-clamp-1 mt-1">{project.description || 'No description'}</p>
+  <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{project.description || 'No description'}</p>
 </td>
 <td>
   <div className="flex items-center gap-2">
@@ -400,7 +410,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       {createOpen && <>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới</h3><button onClick={() => setCreateOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button></div>
-      <form onSubmit={createItem} className="flex flex-col h-full">
+      <form onSubmit={createItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
         <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 dark:bg-slate-900 p-1" role="tablist" aria-label="Loại khởi tạo">
           <button type="button" role="tab" aria-selected={creationType === 'campaign'} onClick={() => setCreationType('campaign')} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>🎯 Chiến dịch</button>

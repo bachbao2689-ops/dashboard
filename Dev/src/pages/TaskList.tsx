@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { FilterPanel } from '../components/common/FilterPanel';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -32,7 +32,7 @@ const mapPriority = (prio: string | undefined) => {
 export const TaskList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
   
@@ -255,9 +255,7 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => {
-                        if (String(task.id).startsWith('ps-') || String(task.id).startsWith('cs-')) { navigate('/projects'); } else { setSelectedTask(task as any); }
-                      }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 

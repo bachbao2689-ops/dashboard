@@ -52,7 +52,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
             <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
           </tr></thead>
           <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
-            <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 line-clamp-1 mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
+            <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
             <td><div className="flex -space-x-2"><span title={c.lead?.name || 'Chưa có owner'} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold text-primary">{c.lead?.name?.[0] || '?'}</span></div></td>
             <td className="text-sm text-gray-600 dark:text-gray-300">{formatDate(c.start_date)} – {formatDate(c.end_date)}</td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
