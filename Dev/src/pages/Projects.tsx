@@ -229,9 +229,9 @@ export const Projects: React.FC = () => {
       const { data: campaign, error } = await supabase.from('campaigns').insert({
         name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due),
         budget: campaignBudget ? Number(campaignBudget) : null, channels: campaignChannels, lead_id: Number(primaryOwnerId), status: campaignStatus,
-        department_id: profile?.department_id || null, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null
+        department_id: profile?.department_id || null, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || 11
       }).select().single();
-      if (error) { console.error('Campaign create failed', error); return toast.error('Không thể tạo Campaign'); }
+      if (error) { console.error('Campaign create failed', error); return toast.error(`Không thể tạo Campaign: ${error?.message || 'Lỗi không xác định'}`); }
       if (strategyAsset && campaign && profile?.id) await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'attachment_added', entity_type: 'campaign', entity_id: campaign.id, metadata: { strategy_asset: strategyAsset } });
       window.dispatchEvent(new Event('campaigns:changed'));
       toast.success('Đã tạo Campaign');
@@ -241,11 +241,11 @@ export const Projects: React.FC = () => {
       if (projectAttachment === undefined) return;
       const assigneeIds = Array.from(new Set([primaryOwnerId, ...ownerIds]));
       const { data, error } = await supabase.from('projects').insert({
-        name: title.trim(), description: description || null, start_date: start || null, due_date: due || null, priority,
+        name: title.trim(), description: description || null, start_date: parseYMD(start), due_date: parseYMD(due), priority,
         status: 'active', campaign_id: parentCampaignId || null, department_id: departmentId || profile?.department_id || null,
-        assets_url: projectAttachment, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || null
+        assets_url: projectAttachment, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || 11
       }).select().single();
-      if (error || !data) { console.error('Project create failed', error); return toast.error('Không thể tạo Project'); }
+      if (error || !data) { console.error('Project create failed', error); return toast.error(`Không thể tạo Project: ${error?.message || 'Lỗi không xác định'}`); }
       if (assigneeIds.length) {
         const { error: memberError } = await supabase.from('project_members').insert(assigneeIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) })));
         if (memberError) toast.error('Project đã tạo nhưng không lưu được toàn bộ PIC');
@@ -342,7 +342,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const addSubtask = async () => { if (!selected || !newSubtask) return; await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask, assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: parseYMD(subtaskDue) }); setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected }); };
-  const addComment = async () => { if (!selected || !comment) return; await supabase.from('project_comments').insert({ project_id: selected.id, author_id: profile?.id || null, body: comment }); await notifyStakeholders('project', selected.id, 'đã bình luận trong dự án: ' + selected.name); setComment(''); setSelected({ ...selected }); };
+  const addComment = async () => { if (!selected || !comment) return; await supabase.from('project_comments').insert({ project_id: selected.id, author_id: profile?.id || 11, body: comment }); await notifyStakeholders('project', selected.id, 'đã bình luận trong dự án: ' + selected.name); setComment(''); setSelected({ ...selected }); };
   const addCampaignSubtask = async () => { if (!selectedCampaign || !campaignNewSubtask.trim()) return; const { error } = await supabase.from('campaign_subtasks').insert({ campaign_id: selectedCampaign.id, title: campaignNewSubtask.trim(), assignee_id: campaignSubtaskOwner ? Number(campaignSubtaskOwner) : null, due_date: campaignSubtaskDue || null });
   if (!error && campaignSubtaskOwner) await notifyStakeholders('campaign', selectedCampaign.id, 'đã giao subtask mới cho bạn: ' + campaignNewSubtask.trim(), campaignSubtaskOwner); if (error) return toast.error('Không thể tạo Subtask Campaign'); setCampaignNewSubtask(''); setCampaignSubtaskOwner(''); setCampaignSubtaskDue(''); setShowCampaignSubtaskForm(false); setSelectedCampaign({ ...selectedCampaign }); };
   const addCampaignComment = async () => { if (!selectedCampaign || !campaignComment.trim() || !profile?.id) return; const { error } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'comment', entity_type: 'campaign', entity_id: selectedCampaign.id, metadata: { body: campaignComment.trim() } }); if (error) return toast.error('Không thể gửi bình luận'); await notifyStakeholders('campaign', selectedCampaign.id, 'đã bình luận trong chiến dịch: ' + selectedCampaign.name); setCampaignComment(''); setSelectedCampaign({ ...selectedCampaign }); };
