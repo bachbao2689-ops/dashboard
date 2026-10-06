@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FilterPanel } from '../components/common/FilterPanel';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -10,8 +10,6 @@ import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
-import { ProjectsKanban } from './ProjectsKanban';
-import { cn } from '../components/common/KpiCard';
 import { useAuthStore } from '../store/authStore';
 
 const mapStatus = (status: string) => {
@@ -32,8 +30,9 @@ const mapPriority = (prio: string | undefined) => {
 };
 
 export const TaskList: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'list'|'kanban'>('list');
-  const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
   
@@ -131,75 +130,68 @@ export const TaskList: React.FC = () => {
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
-          
-          <div className="flex bg-gray-100 dark:bg-slate-800/80 p-1 rounded-xl border border-gray-200 dark:border-slate-700">
-             <button 
-               onClick={() => setViewMode('list')} 
-               className={cn("px-4 py-1 rounded-lg text-sm font-semibold transition-all duration-300", viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300')}
-             >
-               List
-             </button>
-             <button 
-               onClick={() => setViewMode('kanban')} 
-               className={cn("px-4 py-1 rounded-lg text-sm font-semibold transition-all duration-300", viewMode === 'kanban' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300')}
-             >
-               Kanban
-             </button>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
+        <div className="flex items-center gap-3">
+          {/* Expanding Search */}
+          <div className="flex items-center relative h-10">
+            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
+                />
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)} 
+              className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+            >
+              <Search className="w-4 h-4" />
+            </button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-            <Download className="w-4 h-4" />
-            <span>Export</span>
+
+          {/* Group By Filter */}
+          <div className="flex items-center">
+            <select 
+              value={groupBy} 
+              onChange={(e) => setGroupBy(e.target.value)}
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+            >
+              <option value="none">Group by: None</option>
+              <option value="project">Group by: Project</option>
+              <option value="assignee">Group by: Assignee</option>
+              <option value="status">Group by: Status</option>
+            </select>
+          </div>
+
+          {/* Filters Panel Toggle */}
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Filters</span>
           </button>
-          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />
-              <span>New Task</span>
-            </button>}
+
+          <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1"></div>
+
+          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+            <Download className="w-4 h-4" />
+            <span className="text-sm font-medium">Export</span>
+          </button>
+          
+          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">New Task</span>
+          </button>}
         </div>
       </div>
 
       {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
 
-      <div className="card-hub rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 relative z-20">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search tasks by title, ref..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
-          />
-        </div>
-        
-        <div className="flex gap-2 items-center">
-          <div className="text-sm text-gray-500 mr-2">Group by:</div>
-          <select 
-            value={groupBy} 
-            onChange={(e) => setGroupBy(e.target.value)}
-            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="none">None</option>
-            <option value="project">Project</option>
-            <option value="assignee">Assignee</option>
-            <option value="status">Status</option>
-          </select>
-
-          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 px-4 py-2 border rounded-xl transition-colors ${filters.status !== 'all' || filters.priority !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'}`}>
-              <Filter className="w-4 h-4" />
-              <span>Filters {(filters.status !== 'all' || filters.priority !== 'all') && '•'}</span>
-            </button>
-            <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
-        </div>
-      </div>
+      <div><FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} /></div>
       
-      {viewMode === 'kanban' ? (
-        <div className="flex-1 flex flex-col min-h-[600px] mt-2"><ProjectsKanban hideHeader={true} /></div>
-      ) : (
-      <>
 
       {loading ? (
         <div className="card-hub rounded-2xl p-2"><TableSkeleton rows={8} /></div>
@@ -253,7 +245,7 @@ export const TaskList: React.FC = () => {
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Task Ref</th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Title</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">Project</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">Project/Campaign</th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Assignee</th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Priority</th>
@@ -263,7 +255,9 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                      <tr key={task.id} onClick={() => {
+                        if (task.project?.name) { navigate('/projects'); } else { setSelectedTask(task as any); }
+                      }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
@@ -339,8 +333,6 @@ export const TaskList: React.FC = () => {
         </div>
       )}
     
-      </>
-      )}
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
 </div>

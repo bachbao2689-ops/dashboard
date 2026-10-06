@@ -76,16 +76,51 @@ export function useTasks() {
 
       const canViewAllDepartments = true;
       if (!canViewAllDepartments) {
-        if (!profile.department_id) {
-          setTasks([]);
-          return;
-        }
+        if (!profile.department_id) { setTasks([]); return; }
         query = query.eq('department_id', profile.department_id);
       }
-      const { data, error } = await query;
+      
+      const [tasksRes, pSubRes, cSubRes] = await Promise.all([
+        query,
+        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name), assignee:assignee_id(id, name, avatar_url)'),
+        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name), assignee:assignee_id(id, name, avatar_url)')
+      ]);
 
-      if (error) throw error;
-      setTasks(data as any);
+      if (tasksRes.error) throw tasksRes.error;
+
+      let combined: any[] = [...(tasksRes.data || [])];
+
+      if (pSubRes.data) {
+        const pTasks = pSubRes.data.map((ps: any) => ({
+          id: `ps-${ps.id}`,
+          task_ref: null,
+          title: ps.title,
+          status: 'todo', // default for subtasks
+          priority: 'Medium',
+          due_date: ps.due_date,
+          project: ps.projects ? { name: ps.projects.name } : null,
+          assignee: ps.assignee,
+          assignee_id: ps.assignee?.id
+        }));
+        combined = [...combined, ...pTasks];
+      }
+
+      if (cSubRes.data) {
+        const cTasks = cSubRes.data.map((cs: any) => ({
+          id: `cs-${cs.id}`,
+          task_ref: null,
+          title: cs.title,
+          status: 'todo',
+          priority: 'Medium',
+          due_date: cs.due_date,
+          project: cs.campaigns ? { name: cs.campaigns.name } : null,
+          assignee: cs.assignee,
+          assignee_id: cs.assignee?.id
+        }));
+        combined = [...combined, ...cTasks];
+      }
+
+      setTasks(combined as any);
     } catch (err: any) {
       console.warn('Error fetching tasks, falling back to Google Sheets mock', err);
       // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS
