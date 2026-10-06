@@ -256,7 +256,7 @@ export const TaskList: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
                       <tr key={task.id} onClick={() => {
-                        if (task.project?.name) { navigate('/projects'); } else { setSelectedTask(task as any); }
+                        if (String(task.id).startsWith('ps-') || String(task.id).startsWith('cs-')) { navigate('/projects'); } else { setSelectedTask(task as any); }
                       }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">
                           <input 
