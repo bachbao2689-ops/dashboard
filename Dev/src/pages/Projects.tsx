@@ -11,7 +11,14 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 type Project = { id: string; name: string; description: string | null; status: string; start_date: string | null; due_date: string | null; priority: string; created_by: number | null; campaign_id?: string | null; department_id?: string | null };
 type Person = { id: number; name: string; department_id: string | null; departments?: { name: string } | null };
 
-const dateValue = (value: string) => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
+const strictFormatVN = (dateStr?: string | null) => {
+  if (!dateStr) return '—';
+  const ymd = dateStr.split('T')[0];
+  const parts = ymd.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return new Date(dateStr).toLocaleDateString('vi-VN');
+};
+const dateValue = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' || value === 'urgent' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
 const statusClass = (value: string) => value === 'completed' ? 'bg-emerald-100 text-emerald-700' : value === 'active' || value === 'in-progress' ? 'bg-blue-100 text-blue-700' : value === 'planning' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
 
