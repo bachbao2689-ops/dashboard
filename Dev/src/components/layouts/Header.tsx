@@ -29,7 +29,7 @@ export const Header: React.FC = () => {
       if (!profileId) { if (active) setNotifications([]); return; }
       const { data } = await supabase.from('notifications').select('id, type, message, entity_type, entity_id, is_read').eq('user_id', profileId).eq('is_read', false).order('created_at', { ascending: false }).limit(12);
       if (!active) return;
-      setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : 'Thông báo', message: notification.message, entity_type: notification.entity_type, entity_id: notification.entity_id })));
+      setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : notification.type === 'weekly_report' ? 'Weekly Report mới' : notification.type === 'report_reminder' ? 'Nhắc report' : 'Thông báo', message: notification.message, entity_type: notification.entity_type, entity_id: notification.entity_id })));
     };
     void loadNotifications();
     const channel = profileId

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-type TaskActivity = 'task_completed' | 'task_comment' | 'task_updated';
+type TaskActivity = 'task_completed' | 'task_comment' | 'task_updated' | 'weekly_report';
 
 export async function notifyTaskParticipants(task: any, actor: { id?: number; name?: string; department_id?: string | null }, type: TaskActivity) {
   if (!task?.id || !actor.id) return;
@@ -14,7 +14,7 @@ export async function notifyTaskParticipants(task: any, actor: { id?: number; na
   const taskLabel = `${taskRow?.task_ref || task.task_ref || 'Task'} · ${taskRow?.title || task.title || ''}`;
   const projectData: any = taskRow?.project;
   const project = Array.isArray(projectData) ? projectData[0]?.name : projectData?.name;
-  const action = type === 'task_completed' ? 'đã hoàn thành' : type === 'task_comment' ? 'đã bình luận tại' : 'đã cập nhật';
+  const action = type === 'task_completed' ? 'đã hoàn thành' : type === 'task_comment' ? 'đã bình luận tại' : type === 'weekly_report' ? 'đã cập nhật Weekly Report cho' : 'đã cập nhật';
   const message = `${actor.name || 'Một thành viên'} ${action} ${taskLabel}${project ? ` · ${project}` : ''}`;
   await supabase.from('notifications').insert(recipients.map(user_id => ({
     user_id, type, entity_type: 'task', entity_id: task.id, message,

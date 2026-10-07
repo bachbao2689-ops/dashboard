@@ -6,26 +6,18 @@ import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { WeeklyReportDrawer } from '../reports/WeeklyReportDrawer';
 import type { ReportReference, WeeklyReportTask } from '../reports/WeeklyReportDrawer';
+import { tasksForWeeklyReport, weeklyReportRange } from '../../../lib/weeklyReport';
+import type { WeekSelection } from '../../../lib/weeklyReport';
 
 type TeamMember = { id: number; name: string; avatar_url?: string | null; employment_level?: string | null; job_title?: string | null; department_id?: string | null };
 
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const initials = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(word => word[0]).join('').slice(0, 2).toUpperCase();
-const previousWeek = () => {
-  const now = new Date();
-  const day = now.getDay() || 7;
-  const end = new Date(now);
-  end.setDate(now.getDate() - day);
-  const start = new Date(end);
-  start.setDate(end.getDate() - 6);
-  const iso = (date: Date) => date.toISOString().slice(0, 10);
-  return { start: iso(start), end: iso(end) };
-};
-
 export const ProfileTeamTab: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
-  const [{ start: weekStart, end: weekEnd }] = useState(previousWeek);
+  const [weekSelection, setWeekSelection] = useState<WeekSelection>('previous');
+  const { start: weekStart, end: weekEnd } = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [taskCount, setTaskCount] = useState<Record<number, number>>({});
   const [search, setSearch] = useState('');
@@ -39,17 +31,19 @@ export const ProfileTeamTab: React.FC = () => {
   useEffect(() => {
     let active = true;
     const loadTeam = async () => {
-      if (!profile?.department_id) {
+      const canViewAll = profile?.role === 'admin' || profile?.role === 'manager';
+      if (!profile || (!canViewAll && !profile.department_id)) {
         if (active) { setMembers([]); setLoadingTeam(false); }
         return;
       }
       setLoadingTeam(true);
-      const { data, error } = await supabase.from('users')
+      let query = supabase.from('users')
         .select('id,name,avatar_url,employment_level,job_title,department_id')
-        .eq('department_id', profile.department_id)
         .eq('is_active', true)
         .neq('id', profile.id)
         .order('name');
+      if (!canViewAll && profile.department_id) query = query.eq('department_id', profile.department_id);
+      const { data, error } = await query;
       if (error) console.warn('Could not load team members:', error.message);
       const loadedMembers = (data || []) as TeamMember[];
       const counts = await Promise.all(loadedMembers.map(async member => {
@@ -63,28 +57,40 @@ export const ProfileTeamTab: React.FC = () => {
     };
     void loadTeam();
     return () => { active = false; };
-  }, [profile?.department_id, profile?.id]);
+  }, [profile?.department_id, profile?.id, profile?.role]);
 
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
+  const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
   const openReport = async (member: TeamMember) => {
     setSelectedMember(member);
     setLoadingReport(true);
     setMemberTasks([]);
     setReferences([]);
+    let projectQuery = supabase.from('projects').select('id,name,status,description').order('name');
+    let campaignQuery = supabase.from('campaigns').select('id,name,status,objective').order('name');
+    if (member.department_id) {
+      projectQuery = projectQuery.eq('department_id', member.department_id);
+      campaignQuery = campaignQuery.eq('department_id', member.department_id);
+    }
     const [taskResult, projectResult, campaignResult] = await Promise.all([
       supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,project:project_id(id,name)').eq('assignee_id', member.id).order('updated_at', { ascending: false }),
-      supabase.from('projects').select('id,name,status,description').eq('created_by', member.id).order('updated_at', { ascending: false }),
-      supabase.from('campaigns').select('id,name,status,description').eq('created_by', member.id).order('updated_at', { ascending: false }),
+      projectQuery,
+      campaignQuery,
     ]);
     if (taskResult.error) console.warn('Could not load member tasks:', taskResult.error.message);
     if (projectResult.error) console.warn('Could not load member projects:', projectResult.error.message);
     if (campaignResult.error) console.warn('Could not load member campaigns:', campaignResult.error.message);
     setMemberTasks((taskResult.data || []) as WeeklyReportTask[]);
-    setReferences([
-      ...(projectResult.data || []).map((item: any) => ({ ...item, kind: 'project' as const })),
-      ...(campaignResult.data || []).map((item: any) => ({ ...item, kind: 'campaign' as const })),
-    ]);
+    const referenceMap = new Map<string, ReportReference>();
+    (projectResult.data || []).forEach((item: any) => referenceMap.set(`project-${item.id}`, { ...item, kind: 'project' }));
+    (taskResult.data || []).forEach((task: any) => {
+      if (!task.project?.id) return;
+      const key = `project-${task.project.id}`;
+      if (!referenceMap.has(key)) referenceMap.set(key, { id: task.project.id, name: task.project.name || 'Project', kind: 'project' });
+    });
+    (campaignResult.data || []).forEach((item: any) => referenceMap.set(`campaign-${item.id}`, { id: item.id, name: item.name, status: item.status, description: item.objective, kind: 'campaign' }));
+    setReferences([...referenceMap.values()]);
     setLoadingReport(false);
   };
 
@@ -131,7 +137,7 @@ export const ProfileTeamTab: React.FC = () => {
           ))}
         </div>
       </section>
-      {selectedMember && !loadingReport && <WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} weekStart={weekStart} weekEnd={weekEnd} tasks={memberTasks} references={references} onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} />}
+      {selectedMember && !loadingReport && <WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} />}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}
     </>
   );

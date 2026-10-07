@@ -19,6 +19,7 @@ const labelFor = (type?: string | null) => {
   if (type === 'task_completed') return { label: 'Hoàn thành task', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' };
   if (type === 'task_comment') return { label: 'Bình luận mới', icon: MessageSquare, color: 'text-blue-600 bg-blue-50' };
   if (type === 'report_reminder') return { label: 'Nhắc report', icon: Clock3, color: 'text-amber-600 bg-amber-50' };
+  if (type === 'weekly_report') return { label: 'Weekly Report', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' };
   return { label: 'Cập nhật task', icon: Bell, color: 'text-violet-600 bg-violet-50' };
 };
 
@@ -56,7 +57,10 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean }> = ({ includeTe
       setLoading(false);
     };
     void load();
-    return () => { active = false; };
+    const channel = profile?.id ? supabase.channel(`profile-notification-log-${profile.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => { void load(); })
+      .subscribe() : null;
+    return () => { active = false; if (channel) void supabase.removeChannel(channel); };
   }, [includeTeam, profile?.department_id, profile?.id]);
 
   const subtitle = useMemo(() => includeTeam ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [includeTeam]);
