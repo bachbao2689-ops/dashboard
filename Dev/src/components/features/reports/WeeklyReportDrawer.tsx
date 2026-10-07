@@ -286,18 +286,34 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   };
 
   const leftColumn = <>
-    {showHeader && <header className="flex items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700 md:px-6">
-      <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Weekly Report</p><h2 className="truncate text-lg font-bold text-gray-900 dark:text-white">{ownerName}</h2><p className="mt-1 flex items-center gap-1 text-xs text-gray-500"><CalendarDays size={14} />{dateLabel(weekStart)} – {dateLabel(weekEnd)}</p></div>
-      <div className="flex shrink-0 items-center gap-1">{onRemindMember && pendingTasks.length > 0 && <button type="button" disabled={reminding || loadingReports} onClick={onRemindMember} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={19} /></button></div>
+    {showHeader && <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3 dark:border-slate-700 md:px-6 shrink-0 bg-white dark:bg-slate-800 z-10">
+      <div className="flex flex-col min-w-0">
+        <h2 className="truncate text-lg font-bold text-gray-900 dark:text-white">{ownerName}</h2>
+        <p className="flex items-center gap-1 text-[11px] font-semibold uppercase text-gray-500 tracking-wider mt-0.5"><CalendarDays size={12} />{dateLabel(weekStart)} – {dateLabel(weekEnd)}</p>
+      </div>
+      
+      <div className="flex shrink-0 items-center gap-2">
+        {showWeekSelection && weekSelection && onWeekSelectionChange && (
+          <div className="flex items-center gap-2 mr-2">
+            <div className="inline-flex rounded-lg bg-slate-100 p-1 dark:bg-slate-900/50">
+              {(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}
+            </div>
+            {canEdit && (
+              <>
+                <input ref={summaryUploadRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadSummaryImage(event.target.files?.[0])} />
+                <button type="button" onClick={() => summaryUploadRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 shadow-sm transition-all"><ImagePlus size={14}/> Thêm Hình</button>
+              </>
+            )}
+          </div>
+        )}
+        
+        {onRemindMember && pendingTasks.length > 0 && <button type="button" disabled={reminding || loadingReports} onClick={onRemindMember} className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}
+        
+        {variant !== 'inline' && <button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={19} /></button>}
+      </div>
     </header>}
     <main className="flex-1 min-h-0 custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
-      {showWeekSelection && weekSelection && onWeekSelectionChange && <div className="flex items-center gap-3">
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div>
-        {canEdit && <>
-          <input ref={summaryUploadRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadSummaryImage(event.target.files?.[0])} />
-          <button type="button" onClick={() => summaryUploadRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 shadow-sm transition-all"><ImagePlus size={14}/> Thêm Hình</button>
-        </>}
-      </div>}
+
       {summaryImage && <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm relative group max-h-[300px]">
         <img src={summaryImage} alt="Hình ảnh report tuần" className="w-full h-full object-cover" />
       </div>}

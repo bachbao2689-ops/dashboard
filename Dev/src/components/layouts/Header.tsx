@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
@@ -20,57 +20,13 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const scrollTravel = useRef(0);
-  const lastScrollY = useRef(0);
+  const isHeaderHidden = false;
+  
+  
   const canViewDashboard = true;
   const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
 
-  useEffect(() => {
-    const scrollContainer = document.getElementById('main-scroll-container');
-    if (!scrollContainer) return;
-    setIsHeaderHidden(false);
-    scrollTravel.current = 0;
-    lastScrollY.current = scrollContainer.scrollTop;
-    let activeScrollTarget: HTMLElement = scrollContainer;
-
-    const handleScroll = (event: Event) => {
-      const eventTarget = event.target;
-      const target = eventTarget instanceof HTMLElement && scrollContainer.contains(eventTarget)
-        ? eventTarget
-        : scrollContainer;
-
-      if (target !== activeScrollTarget) {
-        activeScrollTarget = target;
-        lastScrollY.current = Math.max(0, target.scrollTop);
-        scrollTravel.current = 0;
-        return;
-      }
-
-      const y = Math.max(0, target.scrollTop);
-      const delta = y - lastScrollY.current;
-      if (y <= 20) {
-        setIsHeaderHidden(false);
-        scrollTravel.current = 0;
-      } else {
-        if (delta && Math.sign(delta) !== Math.sign(scrollTravel.current)) scrollTravel.current = 0;
-        scrollTravel.current += delta;
-        if (scrollTravel.current > 18 && y > 60) {
-          setIsHeaderHidden(true);
-          scrollTravel.current = 0;
-        } else if (scrollTravel.current < -18) {
-          setIsHeaderHidden(false);
-          scrollTravel.current = 0;
-        }
-      }
-      lastScrollY.current = y;
-    };
-
-    // Capture nested scroll areas as well, so every dashboard tab follows the
-    // same top-bar behaviour instead of only pages that scroll the main shell.
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    return () => scrollContainer.removeEventListener('scroll', handleScroll, { capture: true });
-  }, [location.pathname]);
+  // Removed auto-hide header logic to fix scroll jumping
 
   useEffect(() => {
     let active = true;
