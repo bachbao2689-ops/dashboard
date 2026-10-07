@@ -2,7 +2,7 @@ import React from 'react';
 import { TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Clock, Users } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
 
-export const LeaderWorkload: React.FC = () => {
+export const LeaderWorkload: React.FC<{ activityTask?: React.ReactNode }> = ({ activityTask }) => {
   const { summary, tasks } = useProfileWorkload();
   
   const completedTasks = tasks.filter(t => ['done', 'completed', 'complete'].includes((t.status || '').toLowerCase()));
@@ -14,7 +14,6 @@ export const LeaderWorkload: React.FC = () => {
   const cycleTime = completedTasks.length ? "2.1 days" : "0 days"; // Simplification
   const utilization = tasks.length > 0 ? 85 : 0; // Simplification
 
-  const teamWorkload: any[] = [];
   const attentionRequired: any[] = [];
 
   return (
@@ -57,26 +56,7 @@ export const LeaderWorkload: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Workload Distribution Chart */}
-        <div className="card-hub p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50">
-           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 uppercase tracking-wider">Phân bổ Workload</h3>
-           <p className="text-xs text-gray-500 mb-6">Thống kê khối lượng công việc hiện tại của nhân sự</p>
-           
-           <div className="space-y-4">
-              {teamWorkload.length === 0 && <div className="text-sm text-gray-500 py-4 text-center">Không có dữ liệu workload đội ngũ.</div>}
-              {teamWorkload.map((member, idx) => (
-                 <div key={idx}>
-                    <div className="flex justify-between text-xs font-medium mb-1.5">
-                       <span className="text-gray-700 dark:text-gray-300">{member.name}</span>
-                       <span className={member.load > 90 ? 'text-red-500 font-bold' : 'text-gray-500'}>{member.load}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5">
-                       <div className={`\${member.color} h-2.5 rounded-full shadow-sm`} style={{ width: `\${member.load}%` }}></div>
-                    </div>
-                 </div>
-              ))}
-           </div>
-        </div>
+        {activityTask}
 
         {/* Attention Required */}
         <div className="card-hub rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 flex flex-col">
