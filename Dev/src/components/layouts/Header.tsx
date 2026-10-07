@@ -133,10 +133,10 @@ export const Header: React.FC = () => {
     <div
       aria-hidden={isHeaderHidden}
       className={cn(
-        'shrink-0 overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out',
+        'shrink-0 transition-[max-height,opacity,transform] duration-300 ease-out',
         isHeaderHidden
-          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none'
-          : 'max-h-20 translate-y-0 opacity-100',
+          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none overflow-hidden'
+          : 'max-h-24 translate-y-0 opacity-100 overflow-visible relative z-[100]',
       )}
     >
     <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
