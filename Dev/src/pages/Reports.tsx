@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useReports } from '../hooks/useReports';
 import type { TimeRange } from "../hooks/useReports";
 import { 
@@ -16,8 +16,43 @@ export const Reports: React.FC = () => {
   const role = (profile?.role || '').toLowerCase();
   const level = (profile?.employment_level || '').toLowerCase();
   const isLeader = role === 'leader' || (level === 'leader' && role !== 'admin');
+  const isAdmin = role === 'admin' || level === 'admin';
 
-  return isLeader ? <LeaderReports /> : <ManagerReports />;
+  if (isLeader) return <LeaderReports />;
+  if (isAdmin) return <AdminReports />;
+  return <ManagerReports />;
+};
+
+const AdminReports: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'analytics' | 'team-report'>('analytics');
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-2 border-b border-gray-200 px-6 pt-5 dark:border-gray-700" role="tablist" aria-label="Report views">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'analytics'}
+          onClick={() => setActiveTab('analytics')}
+          className={`border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${activeTab === 'analytics' ? 'border-primary text-primary dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+        >
+          Reports &amp; Analytics
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'team-report'}
+          onClick={() => setActiveTab('team-report')}
+          className={`border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${activeTab === 'team-report' ? 'border-primary text-primary dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
+        >
+          Team Weekly Report
+        </button>
+      </div>
+      <div role="tabpanel">
+        {activeTab === 'analytics' ? <ManagerReports /> : <LeaderReports />}
+      </div>
+    </div>
+  );
 };
 
 const ManagerReports: React.FC = () => {
