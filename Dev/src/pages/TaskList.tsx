@@ -171,8 +171,8 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="h-full flex">
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar pr-0 lg:pr-4 space-y-6 relative pb-12">
+    <div className="flex h-full min-h-0 min-w-0 overflow-hidden">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col space-y-6 overflow-y-auto custom-scrollbar pb-12 pr-0 transition-[flex-basis] duration-300 ease-out lg:pr-4">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
       <div className="flex justify-between items-center">
