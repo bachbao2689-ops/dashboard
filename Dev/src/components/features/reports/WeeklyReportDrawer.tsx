@@ -49,6 +49,7 @@ interface WeeklyReportDrawerProps {
   reminding?: boolean;
   variant?: 'drawer' | 'inline';
   showWeekSelection?: boolean;
+  showHeader?: boolean;
 }
 
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
@@ -57,7 +58,7 @@ const dateLabel = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateStr
 export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   isOpen, onClose, ownerName, userId, canEdit = false, weekStart, weekEnd,
   weekSelection, onWeekSelectionChange, tasks, references = [], onOpenTask,
-  onRemindTask, onRemindMember, reminding = false, variant = 'drawer', showWeekSelection = true,
+  onRemindTask, onRemindMember, reminding = false, variant = 'drawer', showWeekSelection = true, showHeader = true,
 }) => {
   const profile = useAuthStore(state => state.profile);
   const [reports, setReports] = useState<Record<string, ReportRow>>({});
@@ -215,10 +216,10 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   };
 
   const content = <>
-    <header className="flex items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700 md:px-6">
+    {showHeader && <header className="flex items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700 md:px-6">
       <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Weekly Report</p><h2 className="truncate text-lg font-bold text-gray-900 dark:text-white">{ownerName}</h2><p className="mt-1 flex items-center gap-1 text-xs text-gray-500"><CalendarDays size={14} />{dateLabel(weekStart)} – {dateLabel(weekEnd)}</p></div>
       <div className="flex shrink-0 items-center gap-1">{onRemindMember && pendingTasks.length > 0 && <button type="button" disabled={reminding || loadingReports} onClick={onRemindMember} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={19} /></button></div>
-    </header>
+    </header>}
     <main className="custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
       {showWeekSelection && weekSelection && onWeekSelectionChange && <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div>}
       <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20"><div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Tiến độ report</p><p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{loadingReports ? 'Đang tải…' : `${reportedTasks.length}/${tasks.length} task đã cập nhật`}</p></div><span className="text-lg font-bold text-primary">{reportProgress}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-slate-700"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${reportProgress}%` }} /></div></section>
@@ -228,6 +229,8 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     </main>
   </>;
 
-  if (variant === 'inline') return <section className="mt-5 overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800">{content}</section>;
+  if (variant === 'inline') return showHeader
+    ? <section className="mt-5 overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800">{content}</section>
+    : <div>{content}</div>;
   return <><button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" /><aside className="drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[620px] flex-col overflow-hidden rounded-l-3xl border-l-4 border-l-primary bg-white shadow-2xl dark:bg-slate-800 md:w-[min(620px,calc(100vw-2rem))]">{content}</aside></>;
 };
