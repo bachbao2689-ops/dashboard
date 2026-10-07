@@ -57,7 +57,7 @@ export const LeaderWorkload: React.FC<{ activityTask?: React.ReactNode }> = ({ a
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {activityTask}
 
-        <NotificationLog />
+        <NotificationLog includeTeam />
       </div>
     </div>
   );

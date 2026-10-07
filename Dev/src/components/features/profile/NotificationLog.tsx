@@ -22,7 +22,7 @@ const labelFor = (type?: string | null) => {
   return { label: 'Cập nhật task', icon: Bell, color: 'text-violet-600 bg-violet-50' };
 };
 
-export const NotificationLog: React.FC = () => {
+export const NotificationLog: React.FC<{ includeTeam?: boolean }> = ({ includeTeam = false }) => {
   const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
   const [entries, setEntries] = useState<NotificationEntry[]>([]);
@@ -37,7 +37,7 @@ export const NotificationLog: React.FC = () => {
         return;
       }
       setLoading(true);
-      const teamQuery = profile.department_id
+      const teamQuery = includeTeam && profile.department_id
         ? supabase.from('users').select('id,name').eq('department_id', profile.department_id).eq('is_active', true)
         : supabase.from('users').select('id,name').eq('id', profile.id);
       const { data: team, error: teamError } = await teamQuery;
@@ -57,9 +57,9 @@ export const NotificationLog: React.FC = () => {
     };
     void load();
     return () => { active = false; };
-  }, [profile?.department_id, profile?.id]);
+  }, [includeTeam, profile?.department_id, profile?.id]);
 
-  const subtitle = useMemo(() => profile?.employment_level === 'Leader' ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [profile?.employment_level]);
+  const subtitle = useMemo(() => includeTeam ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [includeTeam]);
 
   return (
     <section className="card-hub flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 shadow-sm dark:border-slate-700/50">
