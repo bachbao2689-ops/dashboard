@@ -343,8 +343,8 @@ export const Dashboard: React.FC = () => {
                     
                     {/* Hover Bubble / Popover */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] origin-bottom cursor-auto">
-                      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl saturate-150 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative">
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.15)] relative">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
                         <div className="relative z-10 p-3 flex flex-col max-h-[320px]">
                           <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
                             <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
