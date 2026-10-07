@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X } from 'lucide-react';
+import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
@@ -65,6 +65,10 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const [loadingReports, setLoadingReports] = useState(false);
   const [tab, setTab] = useState<ReportTab>('pending');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [summaryImage, setSummaryImage] = useState<string | null>(null);
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const summaryUploadRef = useRef<HTMLInputElement>(null);
+
   const [mode, setMode] = useState<ReportMode | null>(null);
   const [body, setBody] = useState('');
   const [blocker, setBlocker] = useState('');
@@ -161,8 +165,66 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     if (error) return toast.error('Không thể lưu weekly report');
     if (profile?.id === userId) void notifyTaskParticipants(selectedTask, { id: userId, name: ownerName, department_id: profile.department_id }, 'weekly_report');
     toast.success(reportMode === 'unchanged' ? 'Đã ghi nhận: Không thay đổi' : 'Đã lưu report');
-    setTab('reported');
     await loadReports();
+  };
+
+  const uploadSummaryImage = async (file?: File) => {
+    if (!file || !userId) return;
+    setSaving(true);
+    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const { data, error } = await supabase.storage.from('attachments').upload(`weekly-reports/${Date.now()}-${cleanName}`, file, { upsert: false });
+    if (!error && data) {
+      const url = supabase.storage.from('attachments').getPublicUrl(data.path).data.publicUrl;
+      setSummaryImage(url);
+      await supabase.from('activity_log').insert({
+        workspace_id: workspaceId, user_id: userId, action: 'weekly_summary_image', entity_type: 'user', entity_id: userId,
+        metadata: { image_url: url, week_start: weekStart, week_end: weekEnd }
+      });
+      toast.success('Đã tải lên hình ảnh báo cáo tuần');
+    } else toast.error('Lỗi tải ảnh');
+    setSaving(false);
+  };
+
+  const bulkCompleteTasks = async () => {
+    if (!userId || selectedTasks.size === 0) return;
+    setSaving(true);
+    const payloads = Array.from(selectedTasks).map(taskId => ({
+      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
+      metadata: { body: 'Đã hoàn thành', unchanged: false, week_start: weekStart, week_end: weekEnd }
+    }));
+    const { error } = await supabase.from('activity_log').insert(payloads);
+    setSaving(false);
+    if (!error) {
+      toast.success(`Đã đánh dấu hoàn thành ${selectedTasks.size} tasks`);
+      setSelectedTasks(new Set());
+      await loadReports();
+    }
+  };
+
+  const quickCompleteTask = async (taskId: string) => {
+    if (!userId) return;
+    setSaving(true);
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
+      metadata: { body: 'Đã hoàn thành', unchanged: false, week_start: weekStart, week_end: weekEnd }
+    });
+    setSaving(false);
+    if (!error) {
+      toast.success('Đã đánh dấu hoàn thành');
+      await loadReports();
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTasks.size === pendingTasks.length) setSelectedTasks(new Set());
+    else setSelectedTasks(new Set(pendingTasks.map(t => t.id)));
+  };
+  const toggleSelectTask = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = new Set(selectedTasks);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedTasks(next);
   };
 
   const uploadImage = async (file?: File) => {
@@ -182,11 +244,15 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     const report = reports[task.id];
     const expanded = activeTaskId === task.id;
     return <article key={task.id} className={`overflow-hidden rounded-xl border transition-colors ${expanded ? 'border-primary/30 bg-primary/[0.02]' : 'border-gray-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/30'}`}>
-      <button type="button" aria-expanded={expanded} onClick={() => setActiveTaskId(expanded ? null : task.id)} className="flex w-full items-center gap-3 p-3 text-left hover:bg-primary/[0.03]">
+      <div className="group flex w-full items-center gap-3 p-3 text-left hover:bg-primary/[0.03] relative cursor-pointer" onClick={() => setActiveTaskId(expanded ? null : task.id)}>
+        {!report && canEdit && <input type="checkbox" checked={selectedTasks.has(task.id)} onClick={(e) => toggleSelectTask(task.id, e)} className="shrink-0 w-4 h-4 rounded border-gray-300 text-primary cursor-pointer" />}
         <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        <span className="min-w-0 flex-1"><b className="block truncate text-sm text-gray-900 dark:text-white">{task.title}</b><span className="mt-1 block truncate text-[11px] text-gray-500">{task.project?.name || 'Task lẻ'} · {(task.status || 'todo').replaceAll('_', ' ')}</span></span>
-        <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${report ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'}`}>{report ? (report.metadata?.unchanged ? 'Không thay đổi' : 'Đã report') : 'Chưa report'}</span>
-      </button>
+        <span className="min-w-0 flex-1 pr-24"><b className="block truncate text-sm text-gray-900 dark:text-white">{task.title}</b><span className="mt-1 block truncate text-[11px] text-gray-500">{task.project?.name || 'Task lẻ'} · {(task.status || 'todo').replaceAll('_', ' ')}</span></span>
+        <div className="absolute right-3 flex items-center gap-2">
+          {!report && canEdit && <button onClick={(e) => { e.stopPropagation(); quickCompleteTask(task.id); }} className="opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm hover:bg-emerald-200">Hoàn thành</button>}
+          <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${report ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'}`}>{report ? (report.metadata?.unchanged ? 'Không thay đổi' : 'Đã report') : 'Chưa report'}</span>
+        </div>
+      </div>
       {expanded && <div className="space-y-3 border-t border-gray-100 p-3 dark:border-slate-700">
         {canEdit ? <>
           <div className="flex flex-wrap gap-2">
@@ -221,10 +287,37 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       <div className="flex shrink-0 items-center gap-1">{onRemindMember && pendingTasks.length > 0 && <button type="button" disabled={reminding || loadingReports} onClick={onRemindMember} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={19} /></button></div>
     </header>}
     <main className="custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
-      {showWeekSelection && weekSelection && onWeekSelectionChange && <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div>}
+      {showWeekSelection && weekSelection && onWeekSelectionChange && <div className="flex items-center gap-3">
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div>
+        {canEdit && <>
+          <input ref={summaryUploadRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadSummaryImage(event.target.files?.[0])} />
+          <button type="button" onClick={() => summaryUploadRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 shadow-sm transition-all"><ImagePlus size={14}/> Thêm Hình</button>
+        </>}
+      </div>}
+      {summaryImage && <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm relative group max-h-[300px]">
+        <img src={summaryImage} alt="Hình ảnh report tuần" className="w-full h-full object-cover" />
+      </div>}
       <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20"><div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Tiến độ report</p><p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{loadingReports ? 'Đang tải…' : `${reportedTasks.length}/${tasks.length} task đã cập nhật`}</p></div><span className="text-lg font-bold text-primary">{reportProgress}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-slate-700"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${reportProgress}%` }} /></div></section>
       {!canEdit && variant === 'inline' && imageReports.length > 0 && <section className="space-y-3"><h3 className="text-sm font-bold text-gray-900 dark:text-white">Hình ảnh report của PIC</h3><div className="grid grid-cols-1 gap-3 xl:grid-cols-2">{imageReports.map(({ task, report }) => <a key={report.id} href={report.metadata?.image_url || '#'} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-xl border border-gray-100 bg-white transition-colors hover:border-primary/30 dark:border-slate-700 dark:bg-slate-800"><img src={report.metadata?.image_url || ''} alt={`Minh chứng report: ${task.title}`} loading="lazy" className="h-44 w-full bg-slate-50 object-contain dark:bg-slate-900" /><span className="block truncate px-3 py-2 text-xs font-semibold text-gray-700 group-hover:text-primary dark:text-gray-200">{task.title}</span></a>)}</div></section>}
-      <section><div className="mb-3 flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50"><button type="button" aria-pressed={tab === 'pending'} onClick={() => { setTab('pending'); setActiveTaskId(null); }} className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${tab === 'pending' ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500'}`}>Cần cập nhật ({pendingTasks.length})</button><button type="button" aria-pressed={tab === 'reported'} onClick={() => { setTab('reported'); setActiveTaskId(null); }} className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${tab === 'reported' ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500'}`}>Đã cập nhật ({reportedTasks.length})</button></div><div className="space-y-2">{loadingReports ? <p className="rounded-xl p-5 text-center text-sm text-gray-500">Đang tải task report…</p> : visibleTasks.length ? visibleTasks.map(renderTask) : <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700">{tasks.length === 0 ? 'Không có task cần report trong tuần này.' : tab === 'pending' ? 'Đã cập nhật đủ task trong tuần.' : 'Chưa có task nào được cập nhật.'}</p>}</div></section>
+      <section>
+        <div className="mb-3 flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50"><button type="button" aria-pressed={tab === 'pending'} onClick={() => { setTab('pending'); setActiveTaskId(null); }} className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${tab === 'pending' ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500'}`}>Cần cập nhật ({pendingTasks.length})</button><button type="button" aria-pressed={tab === 'reported'} onClick={() => { setTab('reported'); setActiveTaskId(null); }} className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${tab === 'reported' ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500'}`}>Đã cập nhật ({reportedTasks.length})</button></div>
+        
+        {tab === 'pending' && canEdit && pendingTasks.length > 0 && (
+          <div className="flex items-center justify-between bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl p-2 mb-3">
+            <label className="flex items-center gap-2 px-2 text-xs font-semibold text-gray-700 dark:text-gray-200 cursor-pointer">
+              <input type="checkbox" checked={selectedTasks.size === pendingTasks.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-primary cursor-pointer" />
+              Chọn tất cả
+            </label>
+            {selectedTasks.size > 0 && (
+              <button type="button" onClick={bulkCompleteTasks} disabled={saving} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1">
+                <CheckSquare size={14}/> Hoàn thành {selectedTasks.size} task
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2">{loadingReports ? <p className="rounded-xl p-5 text-center text-sm text-gray-500">Đang tải task report…</p> : visibleTasks.length ? visibleTasks.map(renderTask) : <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700">{tasks.length === 0 ? 'Không có task cần report trong tuần này.' : tab === 'pending' ? 'Đã cập nhật đủ task trong tuần.' : 'Chưa có task nào được cập nhật.'}</p>}</div>
+      </section>
       <section className="overflow-hidden rounded-xl border border-gray-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/30"><button type="button" aria-expanded={referenceOpen} onClick={() => setReferenceOpen(value => !value)} className="flex w-full items-center justify-between gap-3 p-3 text-left"><span className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-white"><Layers3 size={16} className="text-primary" />Projects/Campaigns <span className="text-xs font-medium text-gray-400">{referenceGroups.project.length}/{referenceGroups.campaign.length}</span></span><ChevronDown size={16} className={`text-gray-400 transition-transform ${referenceOpen ? 'rotate-180' : ''}`} /></button>{referenceOpen && <div className="space-y-2 border-t border-gray-100 p-3 dark:border-slate-700"><p className="text-xs text-gray-500">Danh sách tham chiếu, không cần report lại tại đây.</p><input type="search" value={referenceSearch} onChange={event => setReferenceSearch(event.target.value)} placeholder="Tìm Project hoặc Campaign..." className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /><div className="max-h-56 space-y-1 overflow-y-auto">{visibleReferences.map(item => <div key={`${item.kind}-${item.id}`} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs dark:bg-slate-800"><span className="min-w-0 truncate font-medium text-gray-700 dark:text-gray-200">{item.name}</span><span className="shrink-0 text-gray-400">{item.kind === 'project' ? 'Project' : 'Campaign'} · {item.status || 'active'}</span></div>)}{visibleReferences.length === 0 && <p className="py-3 text-center text-xs text-gray-500">Không có mục phù hợp.</p>}</div></div>}</section>
     </main>
   </>;
