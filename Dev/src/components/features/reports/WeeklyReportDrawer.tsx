@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare } from 'lucide-react';
+import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare , Edit3} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
@@ -68,6 +68,39 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     const [summaryImage, setSummaryImage] = useState<string | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [reportedThisSession, setReportedThisSession] = useState<Set<string>>(new Set());
+  const [leftWidth, setLeftWidth] = useState(50);
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+      setLeftWidth(Math.max(30, Math.min(70, newWidth)));
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
+  const removeSummaryImage = async () => {
+    setSummaryImage(null);
+    if (!userId) return;
+    await supabase.from('activity_log').delete().match({
+      workspace_id: workspaceId, user_id: userId, action: 'weekly_summary_image', entity_id: userId
+    });
+  };
+
+  const submitFinalReport = () => {
+    toast.success('Đã gửi báo cáo tuần cho Leader!');
+  };
+
   const summaryUploadRef = useRef<HTMLInputElement>(null);
 
 
@@ -159,7 +192,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
         next_step: reportMode === 'progress' ? nextStep.trim() || null : null,
         image_url: reportMode === 'progress' ? imageUrl.trim() || null : null,
         unchanged: reportMode === 'unchanged',
-        week_start: weekStart,
+        entity_id: userId,
         week_end: weekEnd,
       },
     });
@@ -181,10 +214,10 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       setSummaryImage(url);
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId, user_id: userId, action: 'weekly_summary_image', entity_type: 'user', entity_id: userId,
-        metadata: { image_url: url, week_start: weekStart, week_end: weekEnd }
+        metadata: { image_url: url, entity_id: userId, week_end: weekEnd }
       });
       toast.success('Đã tải lên hình ảnh báo cáo tuần');
-    } else toast.error('Lỗi tải ảnh');
+    } else { console.error(error); toast.error('Lỗi tải ảnh: ' + (error?.message || 'Không rõ nguyên nhân')); }
     setSaving(false);
   };
 
@@ -193,7 +226,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(true);
     const payloads = Array.from(selectedTasks).map(taskId => ({
       workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
-      metadata: { body: 'Đã hoàn thành', unchanged: false, week_start: weekStart, week_end: weekEnd }
+      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_end: weekEnd }
     }));
     const { error } = await supabase.from('activity_log').insert(payloads);
     setSaving(false);
@@ -210,7 +243,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(true);
     const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
-      metadata: { body: 'Đã hoàn thành', unchanged: false, week_start: weekStart, week_end: weekEnd }
+      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_end: weekEnd }
     });
     setSaving(false);
     if (!error) {
@@ -344,12 +377,15 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
 
   const rightColumn = (
     <div className="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-900/50 h-full overflow-hidden border-l border-gray-100 dark:border-slate-700">
-      <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Layers3 size={18} className="text-primary" />
-          Bản nháp Báo cáo Tuần
-        </h2>
-        <p className="text-xs text-gray-500 mt-1">Preview các nội dung đã report. Bạn có thể copy nội dung này.</p>
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Layers3 size={18} className="text-primary" />
+            Bản nháp Báo cáo Tuần
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">Preview nội dung. Hover vào task để chỉnh sửa lại bên trái.</p>
+        </div>
+        <button onClick={submitFinalReport} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">Gửi Báo Cáo</button>
       </div>
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
@@ -369,8 +405,9 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
           </div>
           
           {summaryImage && (
-            <div className="mt-4">
+            <div className="mt-4 relative group">
               <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mb-2">Hình ảnh tổng kết</p>
+              <button onClick={removeSummaryImage} className="absolute top-8 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"><X size={16} /></button>
               <img src={summaryImage} alt="Summary" className="w-full rounded-xl border border-gray-200 dark:border-slate-700" />
             </div>
           )}
@@ -385,12 +422,15 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
               if (!r) return null;
               const isUnchanged = r.metadata?.unchanged;
               return (
-                <div key={task.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-16">{task.title}</h4>
-                  <span className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-md ${isUnchanged ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                    {isUnchanged ? 'Không đổi' : 'Đã report'}
-                  </span>
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24">{task.title}</h4>
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <button onClick={() => { setActiveTaskId(task.id); const el = document.getElementById(`task-item-${task.id}`); if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'}); }} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="Chỉnh sửa"><Edit3 size={14}/></button>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${isUnchanged ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                      {isUnchanged ? 'Không đổi' : 'Đã report'}
+                    </span>
+                  </div>
                   
                   <div className="space-y-2 mt-3 text-sm">
                     {r.metadata?.body && (
@@ -431,9 +471,13 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   );
 
   const content = (
-    <div className="flex h-full w-full">
-      <div className="flex-1 min-w-0 flex flex-col">{leftColumn}</div>
-      <div className="hidden lg:flex flex-1 min-w-0 flex-col">{rightColumn}</div>
+    <div ref={containerRef} className={`flex h-full w-full ${isResizing ? 'select-none pointer-events-none' : ''}`}>
+      <div style={{ width: `${leftWidth}%` }} className={`min-w-[30%] flex flex-col ${isResizing ? 'pointer-events-auto' : ''}`}>{leftColumn}</div>
+      <div 
+        onMouseDown={() => setIsResizing(true)}
+        className="hidden lg:flex w-1.5 cursor-col-resize hover:bg-primary/50 bg-gray-100 dark:bg-slate-700 transition-colors z-20 shrink-0 pointer-events-auto"
+      />
+      <div style={{ width: `${100 - leftWidth}%` }} className={`hidden lg:flex min-w-[30%] flex-col ${isResizing ? 'pointer-events-auto' : ''}`}>{rightColumn}</div>
     </div>
   );
 
