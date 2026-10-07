@@ -14,6 +14,7 @@ export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
+  const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || role.toLowerCase() === 'leader';
    
    
    
@@ -49,7 +50,7 @@ export const Sidebar: React.FC = () => {
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
         { name: 'Members', path: '/members', icon: <Users size={18} /> },
-        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: role === 'member' || role === 'staff' },
+        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: (role === 'member' || role === 'staff') && !isLeader },
       ]
     }
   ];

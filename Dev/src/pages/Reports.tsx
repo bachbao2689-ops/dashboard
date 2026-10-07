@@ -6,10 +6,21 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { Download, CheckCircle, Clock, TrendingUp, Activity } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { LeaderReports } from '../components/features/reports/LeaderReports';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export const Reports: React.FC = () => {
+  const profile = useAuthStore(state => state.profile);
+  const role = (profile?.role || '').toLowerCase();
+  const level = (profile?.employment_level || '').toLowerCase();
+  const isLeader = role === 'leader' || (level === 'leader' && role !== 'admin' && role !== 'manager');
+
+  return isLeader ? <LeaderReports /> : <ManagerReports />;
+};
+
+const ManagerReports: React.FC = () => {
   const { data, isLoading, timeRange, setTimeRange, exportCSV } = useReports();
 
   if (isLoading) {
