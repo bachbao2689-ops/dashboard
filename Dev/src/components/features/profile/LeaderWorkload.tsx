@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Clock, Users } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
+import { NotificationLog } from './NotificationLog';
 
 export const LeaderWorkload: React.FC<{ activityTask?: React.ReactNode }> = ({ activityTask }) => {
   const { summary, tasks } = useProfileWorkload();
@@ -13,8 +14,6 @@ export const LeaderWorkload: React.FC<{ activityTask?: React.ReactNode }> = ({ a
   const overdueItems = summary.overdue || 0;
   const cycleTime = completedTasks.length ? "2.1 days" : "0 days"; // Simplification
   const utilization = tasks.length > 0 ? 85 : 0; // Simplification
-
-  const attentionRequired: any[] = [];
 
   return (
     <div className="space-y-6">
@@ -58,30 +57,7 @@ export const LeaderWorkload: React.FC<{ activityTask?: React.ReactNode }> = ({ a
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {activityTask}
 
-        {/* Attention Required */}
-        <div className="card-hub rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 flex flex-col">
-           <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-800/50">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2"><AlertTriangle size={16} className="text-amber-500"/> Cần xử lý gấp (Attention)</h3>
-           </div>
-           <div className="p-2 flex-1">
-              {attentionRequired.length === 0 && <div className="text-sm text-gray-500 p-4 text-center">Chưa có báo cáo cần chú ý.</div>}
-              {attentionRequired.map((item, idx) => (
-                 <div key={idx} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors cursor-pointer group">
-                    <div>
-                       <p className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">{item.name}</p>
-                       <p className="text-xs text-gray-500 mt-1 flex gap-2 items-center">
-                          <span className="uppercase text-[10px] font-bold bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{item.type}</span>
-                          <span>•</span>
-                          <span>PIC: {item.assignee}</span>
-                       </p>
-                    </div>
-                    <div className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md">
-                       {item.issue}
-                    </div>
-                 </div>
-              ))}
-           </div>
-        </div>
+        <NotificationLog />
       </div>
     </div>
   );
