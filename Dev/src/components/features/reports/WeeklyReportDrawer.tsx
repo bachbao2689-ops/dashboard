@@ -290,7 +290,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Weekly Report</p><h2 className="truncate text-lg font-bold text-gray-900 dark:text-white">{ownerName}</h2><p className="mt-1 flex items-center gap-1 text-xs text-gray-500"><CalendarDays size={14} />{dateLabel(weekStart)} – {dateLabel(weekEnd)}</p></div>
       <div className="flex shrink-0 items-center gap-1">{onRemindMember && pendingTasks.length > 0 && <button type="button" disabled={reminding || loadingReports} onClick={onRemindMember} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="rounded-xl p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={19} /></button></div>
     </header>}
-    <main className="custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
+    <main className="flex-1 min-h-0 custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
       {showWeekSelection && weekSelection && onWeekSelectionChange && <div className="flex items-center gap-3">
         <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => onWeekSelectionChange(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div>
         {canEdit && <>
@@ -417,13 +417,13 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const content = (
     <div className="flex h-full w-full">
       <div className="flex-1 min-w-0 flex flex-col">{leftColumn}</div>
-      {variant !== 'inline' && <div className="hidden lg:flex flex-1 min-w-0 flex-col">{rightColumn}</div>}
+      <div className="hidden lg:flex flex-1 min-w-0 flex-col">{rightColumn}</div>
     </div>
   );
 
 
   if (variant === 'inline') return showHeader
-    ? <section className="mt-5 overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800">{content}</section>
-    : <div>{content}</div>;
+    ? <section className="mt-5 h-[800px] max-h-[85vh] flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800 shadow-sm">{content}</section>
+    : <div className="h-[800px] max-h-[85vh] flex flex-col overflow-hidden">{content}</div>;
   return <><button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" /><aside className="drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[620px] flex-col overflow-hidden rounded-l-3xl border-l-4 border-l-primary bg-white shadow-2xl dark:bg-slate-800 md:w-[min(1200px,calc(100vw-2rem))]">{content}</aside></>;
 };
