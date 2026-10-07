@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
@@ -20,8 +20,42 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const scrollTravel = useRef(0);
+  const lastScrollY = useRef(0);
   const canViewDashboard = true;
   const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
+
+  useEffect(() => {
+    const scrollContainer = document.getElementById('main-scroll-container');
+    if (!scrollContainer) return;
+    setIsHeaderHidden(false);
+    scrollTravel.current = 0;
+    lastScrollY.current = scrollContainer.scrollTop;
+
+    const handleScroll = () => {
+      const y = Math.max(0, scrollContainer.scrollTop);
+      const delta = y - lastScrollY.current;
+      if (y <= 20) {
+        setIsHeaderHidden(false);
+        scrollTravel.current = 0;
+      } else {
+        if (delta && Math.sign(delta) !== Math.sign(scrollTravel.current)) scrollTravel.current = 0;
+        scrollTravel.current += delta;
+        if (scrollTravel.current > 18 && y > 60) {
+          setIsHeaderHidden(true);
+          scrollTravel.current = 0;
+        } else if (scrollTravel.current < -18) {
+          setIsHeaderHidden(false);
+          scrollTravel.current = 0;
+        }
+      }
+      lastScrollY.current = y;
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
 
   useEffect(() => {
     let active = true;
@@ -108,6 +142,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
+    <div aria-hidden={isHeaderHidden} className={cn('shrink-0 overflow-hidden transition-[height,opacity,transform,margin] duration-300 ease-out', isHeaderHidden ? 'h-0 -translate-y-4 opacity-0 pointer-events-none' : 'h-20 opacity-100')}>
     <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
       
       {/* LEFT AREA */}
@@ -252,6 +287,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
     </header>
+    </div>
     </>
   );
 };
