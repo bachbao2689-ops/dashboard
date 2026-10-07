@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Archive, CalendarDays, Edit3, FileText, FolderKanban, History, ImagePlus, RefreshCcw, Save, X } from 'lucide-react';
+import { CalendarDays, Edit3, FileText, FolderKanban, History, ImagePlus, RefreshCcw, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
