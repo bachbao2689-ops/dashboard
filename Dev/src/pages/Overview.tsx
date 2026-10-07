@@ -41,6 +41,14 @@ const Trend: React.FC<{ v: number }> = ({ v }) => (
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const profile = useAuthStore(s => s.profile);
+  const role = profile?.role || 'member';
+
+  useEffect(() => {
+    if (role !== 'admin') {
+      navigate('/my-tasks', { replace: true });
+    }
+  }, [role, navigate]);
   const { data, loading, error, refetch } = useDashboard();
   const theme = useUiStore(state => state.theme);
   const isDark = theme === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));

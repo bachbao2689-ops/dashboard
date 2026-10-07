@@ -3,10 +3,13 @@ import { NavLink } from 'react-router-dom';
 import { Home, CheckSquare, Package, User } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
+import { useAuthStore } from '../../store/authStore';
 
 export const MobileNav: React.FC = () => {
   const { t } = useTranslation();
   const [isHidden, setIsHidden] = useState(false);
+  const profile = useAuthStore(s => s.profile);
+  const role = profile?.role || 'member';
   
   // Track scroll travel logic to avoid jitter
   const travelRef = useRef(0);
@@ -14,7 +17,7 @@ export const MobileNav: React.FC = () => {
   
   const navItems = [
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} /> },
-    { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} /> },
+    { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} />, hidden: role !== 'admin' },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
     { name: 'Profile', path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },
   ];
