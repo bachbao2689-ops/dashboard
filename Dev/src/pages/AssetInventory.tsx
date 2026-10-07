@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../i18n/translations';
 import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
@@ -16,6 +17,7 @@ const getIcon = (cat: string | undefined) => {
 };
 
 export const AssetInventory: React.FC = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
@@ -47,7 +49,7 @@ export const AssetInventory: React.FC = () => {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
             <input 
               type="text" 
-              placeholder="Search assets..." 
+              placeholder={t("assets.search")} 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 shadow-sm"

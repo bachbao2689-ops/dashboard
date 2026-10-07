@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../i18n/translations';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -17,6 +18,7 @@ const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const initials = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(word => word[0]).join('').slice(0, 2).toUpperCase();
 const formatReportDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('vi-VN');
 export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
+  const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
   const [weekSelection, setWeekSelection] = useState<WeekSelection>('previous');
@@ -226,7 +228,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
 
   // @ts-ignore
   const allTeamReportView = <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm">
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div><h3 className="text-sm font-bold text-gray-900 dark:text-white">Tất cả report của team</h3><p className="mt-1 text-xs text-gray-500">Task và hình ảnh được tổng hợp theo từng PIC.</p></div><div className="tw-calendar-picker relative flex items-center">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div><h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('reports.allReports')}</h3><p className="mt-1 text-xs text-gray-500">{t('reports.allReportsSubtitle')}</p></div><div className="tw-calendar-picker relative flex items-center">
       <CalendarDays size={14} className="absolute left-2.5 text-gray-500 pointer-events-none" />
       <input
         type="text"
@@ -249,15 +251,15 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       {(embedded || !selectedMember) && <section className={embedded ? 'card-hub min-w-0 rounded-2xl p-4 shadow-sm md:p-5' : 'card-hub rounded-2xl p-6 shadow-sm'}>
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />Tổng report team</h3>
-            <p className="mt-1 text-sm text-gray-500">Chọn thành viên để kiểm tra weekly report và nhắc cập nhật.</p>
+            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />{t('reports.summaryTitle')}</h3>
+            <p className="mt-1 text-sm text-gray-500">{t('reports.summarySubtitle')}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => setWeekSelection(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div><button type="button" onClick={() => setSelectedMember(null)} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${!selectedMember ? 'bg-primary text-white shadow-sm' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}><FileText size={15} />See All</button><span className="text-xs font-semibold text-gray-500">{members.length} PIC</span></div>
+          <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => setWeekSelection(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div><button type="button" onClick={() => setSelectedMember(null)} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${!selectedMember ? 'bg-primary text-white shadow-sm' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}><FileText size={15} />{t('reports.seeAll')}</button><span className="text-xs font-semibold text-gray-500">{members.length} PIC</span></div>
         </div>
-        <div className="mb-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/25"><b className="block text-lg text-primary">{teamReported}/{teamTotal}</b><span className="text-xs text-gray-500">Task đã report</span></div><div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/25"><b className="block text-lg text-amber-700 dark:text-amber-300">{Math.max(teamTotal - teamReported, 0)}</b><span className="text-xs text-gray-500">Cần cập nhật</span></div></div>
+        <div className="mb-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/25"><b className="block text-lg text-primary">{teamReported}/{teamTotal}</b><span className="text-xs text-gray-500">{t('reports.reportedTasks')}</span></div><div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/25"><b className="block text-lg text-amber-700 dark:text-amber-300">{Math.max(teamTotal - teamReported, 0)}</b><span className="text-xs text-gray-500">{t('reports.needsUpdate')}</span></div></div>
         <div className="relative mb-5 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Tìm thành viên..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+          <input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder={t("reports.search")} className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
         </div>
         <div className="space-y-2">
           {loadingTeam ? <p className="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-slate-900">Đang tải đội ngũ…</p> : visibleMembers.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">Chưa có thành viên khác trong phòng ban.</p> : visibleMembers.map(member => {

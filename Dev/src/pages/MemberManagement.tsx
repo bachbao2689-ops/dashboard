@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react';
 import { useMembers } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
+import { useTranslation } from '../i18n/translations';
 import { Search, Plus, MoreVertical, User, ChevronDown, ChevronRight } from 'lucide-react';
 
 export function MemberManagement() {
+  const { t } = useTranslation();
   const { members, loading, inviteMember } = useMembers();
   const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -29,7 +31,7 @@ export function MemberManagement() {
   const memberGroups = useMemo(() => {
     if (!canManageAll) return [[profile?.department_name || 'Phòng ban của tôi', filteredMembers] as const];
     return Object.entries(filteredMembers.reduce<Record<string, typeof filteredMembers>>((groups, member) => {
-      const key = member.department?.name || 'Chưa phân phòng ban';
+      const key = member.department?.name || t('members.unassigned');
       (groups[key] ||= []).push(member);
       return groups;
     }, {})).sort(([a], [b]) => a.localeCompare(b));
@@ -58,8 +60,8 @@ export function MemberManagement() {
     <div className="p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-50">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Member Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Manage your team members and roles</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('members.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{t('members.subtitle')}</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -69,7 +71,7 @@ export function MemberManagement() {
             </button>
             <input
               type="text"
-              placeholder="Search members..."
+              placeholder={t("members.search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -81,7 +83,7 @@ export function MemberManagement() {
             onChange={(e) => setRoleFilter(e.target.value)}
             className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
-            <option value="">All Roles</option>
+            <option value="">{t('members.allRoles')}</option>
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="team_lead">Team Lead</option>
@@ -93,7 +95,7 @@ export function MemberManagement() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
-            <option value="">All Status</option>
+            <option value="">{t('members.allStatus')}</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
@@ -104,7 +106,7 @@ export function MemberManagement() {
             className="flex items-center gap-2 h-10 px-4 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm font-semibold text-sm"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">Invite Member</span>
+            <span className="hidden sm:inline">{t('members.invite')}</span>
           </button>}
         </div>
       </div>
@@ -114,15 +116,15 @@ export function MemberManagement() {
           <table className="w-full text-left">
             <thead className="bg-black/5 dark:bg-white/5 border-b border-white/10">
               <tr>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Member</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Contact</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Team</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Chức danh</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Cấp bậc</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Quyền</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Joined</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Actions</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.member')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.contact')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.team')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.title')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.level')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.role')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.status')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.joined')}</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">{t('members.col.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5 dark:divide-white/5">

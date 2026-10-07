@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useTeamWorkload } from '../hooks/useTeamWorkload';
 import type { TeamMemberWorkload } from "../hooks/useTeamWorkload";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTranslation } from '../i18n/translations';
 import { Users, AlertTriangle, Activity, Calendar } from 'lucide-react';
 
 export const TeamWorkload: React.FC = () => {
+  const { t } = useTranslation();
   const { workloads, isLoading } = useTeamWorkload();
   const [selectedMember, setSelectedMember] = useState<TeamMemberWorkload | null>(null);
 
@@ -36,8 +38,8 @@ export const TeamWorkload: React.FC = () => {
     <div className="p-6 w-full space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Team Workload</h1>
-          <p className="text-gray-500 dark:text-gray-400">Visualize team capacity and task distribution</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('workload.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400">{t('workload.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
           <Calendar className="w-4 h-4 text-gray-500" />
@@ -51,7 +53,7 @@ export const TeamWorkload: React.FC = () => {
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Members</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('workload.totalMembers')}</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalMembers}</p>
           </div>
         </div>
@@ -60,7 +62,7 @@ export const TeamWorkload: React.FC = () => {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Average Tasks/Person</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('workload.avgTasks')}</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{averageLoad}</p>
           </div>
         </div>
@@ -82,7 +84,7 @@ export const TeamWorkload: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 glass-panel p-6 rounded-xl">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Tasks per Person</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">{t('workload.tasksPerPerson')}</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -103,7 +105,7 @@ export const TeamWorkload: React.FC = () => {
           </div>
 
           <div className="glass-panel p-6 rounded-xl overflow-y-auto max-h-[400px]">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Capacity Breakdown</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('workload.capacityBreakdown')}</h2>
             <div className="space-y-4">
               {workloads.map(member => (
                 <div 
