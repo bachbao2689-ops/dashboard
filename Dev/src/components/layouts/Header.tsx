@@ -32,9 +32,22 @@ export const Header: React.FC = () => {
     setIsHeaderHidden(false);
     scrollTravel.current = 0;
     lastScrollY.current = scrollContainer.scrollTop;
+    let activeScrollTarget: HTMLElement = scrollContainer;
 
-    const handleScroll = () => {
-      const y = Math.max(0, scrollContainer.scrollTop);
+    const handleScroll = (event: Event) => {
+      const eventTarget = event.target;
+      const target = eventTarget instanceof HTMLElement && scrollContainer.contains(eventTarget)
+        ? eventTarget
+        : scrollContainer;
+
+      if (target !== activeScrollTarget) {
+        activeScrollTarget = target;
+        lastScrollY.current = Math.max(0, target.scrollTop);
+        scrollTravel.current = 0;
+        return;
+      }
+
+      const y = Math.max(0, target.scrollTop);
       const delta = y - lastScrollY.current;
       if (y <= 20) {
         setIsHeaderHidden(false);
@@ -53,8 +66,10 @@ export const Header: React.FC = () => {
       lastScrollY.current = y;
     };
 
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    // Capture nested scroll areas as well, so every dashboard tab follows the
+    // same top-bar behaviour instead of only pages that scroll the main shell.
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll, { capture: true });
   }, [location.pathname]);
 
   useEffect(() => {
@@ -142,7 +157,15 @@ export const Header: React.FC = () => {
 
   return (
     <>
-    <div aria-hidden={isHeaderHidden} className={cn('shrink-0 overflow-hidden transition-[height,opacity,transform,margin] duration-300 ease-out', isHeaderHidden ? 'h-0 -translate-y-4 opacity-0 pointer-events-none' : 'h-20 opacity-100')}>
+    <div
+      aria-hidden={isHeaderHidden}
+      className={cn(
+        'shrink-0 overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out',
+        isHeaderHidden
+          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none'
+          : 'max-h-20 translate-y-0 opacity-100',
+      )}
+    >
     <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
       
       {/* LEFT AREA */}

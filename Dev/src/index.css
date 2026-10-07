@@ -40,6 +40,14 @@ body {
   overflow: hidden;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -178,13 +186,26 @@ body {
 .dark .hover\:bg-white\/50:hover { background-color: rgba(15, 23, 42, 0.7); }
 .dark .hover\:bg-white\/60:hover { background-color: rgba(15, 23, 42, 0.8); }
 
-/* Globally hide scrollbars as requested */
+/*
+ * Dashboard scrolling stays functional, but the browser must never reserve or
+ * paint a scrollbar. Keeping this global also covers drawers, tables and nested
+ * panels that use their own overflow container.
+ */
 * {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
 }
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.dashboard-scroll-surface {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Dashboard 2: fluid scale so the layout fills large screens evenly (same idea as UI HUB body zoom) */
