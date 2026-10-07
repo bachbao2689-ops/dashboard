@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -43,17 +43,15 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     setTeamPanelWidth(Math.min(65, Math.max(30, ((clientX - bounds.left) / bounds.width) * 100)));
   };
 
-  useEffect(() => {
-    let active = true;
-    const loadTeam = async () => {
+  const loadTeam = useCallback(async (silent = false) => {
       const normalizedRole = (profile?.role || '').toLowerCase();
       const normalizedLevel = (profile?.employment_level || '').toLowerCase();
       const canViewAll = normalizedRole === 'admin' || normalizedLevel === 'admin' || normalizedLevel === 'manager' || (normalizedRole === 'manager' && normalizedLevel !== 'leader');
       if (!profile || (!canViewAll && !profile.department_id)) {
-        if (active) { setMembers([]); setLoadingTeam(false); }
+        setMembers([]); if(!silent) if(!silent) setLoadingTeam(false);
         return;
       }
-      setLoadingTeam(true);
+      if(!silent) setLoadingTeam(true);
       let query = supabase.from('users')
         .select('id,name,avatar_url,employment_level,job_title,department_id')
         .eq('is_active', true)
@@ -97,8 +95,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         if (!latestReports[key]) latestReports[key] = row as TeamReportRow;
       });
       const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
-      if (!active) return;
-      setMembers(loadedMembers);
+            setMembers(loadedMembers);
       setTaskCount(counts);
       setReportProgress(progress);
       setWeeklyTasksByMember(groupedTasks);
@@ -110,24 +107,24 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         }
       });
       setSummaryImages(imgMap);
-      setLoadingTeam(false);
-    };
-    void loadTeam();
-    return () => { active = false; };
+      if(!silent) setLoadingTeam(false);
   }, [profile?.department_id, profile?.id, profile?.role, weekEnd, weekStart]);
+
+  useEffect(() => {
+    void loadTeam();
+  }, [loadTeam]);
 
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
   useEffect(() => {
-    if (!selectedMember) return;
-    const channel = supabase.channel(`team-report-${selectedMember.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${selectedMember.id}` }, () => {
-        void openReport(selectedMember, true);
+    const channel = supabase.channel('team-report-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+        void loadTeam(true);
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [selectedMember?.id, weekStart, weekEnd]);
+  }, [loadTeam]);
 
   const openReport = async (member: TeamMember, silent = false) => {
     setSelectedMember(member);

@@ -216,7 +216,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       setSummaryImage(url);
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId, user_id: userId, action: 'weekly_summary_image', entity_type: 'user', entity_id: userId,
-        metadata: { image_url: url, entity_id: userId, week_end: weekEnd }
+        metadata: { image_url: url, entity_id: userId, week_start: weekStart, week_end: weekEnd }
       });
       toast.success('Đã tải lên hình ảnh báo cáo tuần');
     } else { console.error(error); toast.error('Lỗi tải ảnh: ' + (error?.message || 'Không rõ nguyên nhân')); }
