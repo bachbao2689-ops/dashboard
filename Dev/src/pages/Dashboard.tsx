@@ -8,6 +8,7 @@ import { useWorkspaceData } from '../hooks/useWorkspaceData';
 import { useNavigate } from 'react-router-dom';
 import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportDrawer';
 import type { ReportReference } from '../components/features/reports/WeeklyReportDrawer';
+import { tasksForWeeklyReport } from '../lib/weeklyReport';
 
 /* Design tokens */
 const INK = 'text-gray-900 dark:text-white';
@@ -189,11 +190,7 @@ export const Dashboard: React.FC = () => {
     if (s.type === 'department') return tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === s.name);
     return tasks.filter(task => task.project?.name === s.name);
   }, [s, tasks]);
-  const periodTasks = useMemo(() => selectedTasks.filter(task => {
-    const created = dayKey(task.created_at);
-    const due = dayKey(task.due_date);
-    return created <= rangeEnd && (!due || due >= rangeStart);
-  }), [selectedTasks, rangeStart, rangeEnd]);
+  const periodTasks = useMemo(() => tasksForWeeklyReport(selectedTasks, rangeStart, rangeEnd), [selectedTasks, rangeStart, rangeEnd]);
   const chartData = useMemo(() => {
     if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
     const start = new Date(`${rangeStart}T00:00:00`); const end = new Date(`${rangeEnd}T00:00:00`);
@@ -539,7 +536,7 @@ export const Dashboard: React.FC = () => {
           </section>
         </div>
       </div>
-      <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
+      <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={s?.type === 'staff' ? Number(s.id.replace('user-', '')) : undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
     </div>
   );
 };
