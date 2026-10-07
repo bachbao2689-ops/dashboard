@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
@@ -20,6 +20,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const { start: weekStart, end: weekEnd } = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [taskCount, setTaskCount] = useState<Record<number, number>>({});
+  const [reportProgress, setReportProgress] = useState<Record<number, { total: number; reported: number }>>({});
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberTasks, setMemberTasks] = useState<WeeklyReportTask[]>([]);
@@ -46,18 +47,38 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       const { data, error } = await query;
       if (error) console.warn('Could not load team members:', error.message);
       const loadedMembers = (data || []) as TeamMember[];
-      const counts = await Promise.all(loadedMembers.map(async member => {
-        const { count } = await supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assignee_id', member.id);
-        return [member.id, count || 0] as const;
+      const memberIds = loadedMembers.map(member => member.id);
+      const [taskResult] = memberIds.length ? await Promise.all([
+        supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,assignee_id,project:project_id(id,name)').in('assignee_id', memberIds),
+      ]) : [{ data: [], error: null } as any];
+      if (taskResult.error) console.warn('Could not load team report tasks:', taskResult.error.message);
+      const allMemberTasks = (taskResult.data || []) as WeeklyReportTask[];
+      const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
+      const weeklyTaskIds = weeklyTasks.map((task: any) => task.id);
+      const { data: reportRows, error: reportError } = weeklyTaskIds.length
+        ? await supabase.from('activity_log').select('user_id,entity_id,metadata').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds)
+        : { data: [], error: null };
+      if (reportError) console.warn('Could not load team report status:', reportError.message);
+      const taskIdsByMember = new Map<number, string[]>();
+      weeklyTasks.forEach((task: any) => {
+        const memberId = Number(task.assignee_id);
+        taskIdsByMember.set(memberId, [...(taskIdsByMember.get(memberId) || []), task.id]);
+      });
+      const reportedKeys = new Set((reportRows || []).filter((row: any) => row.metadata?.week_start === weekStart && row.metadata?.week_end === weekEnd).map((row: any) => `${row.user_id}:${row.entity_id}`));
+      const progress = Object.fromEntries(loadedMembers.map(member => {
+        const ids = taskIdsByMember.get(member.id) || [];
+        return [member.id, { total: ids.length, reported: ids.filter(id => reportedKeys.has(`${member.id}:${id}`)).length }];
       }));
+      const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
       if (!active) return;
       setMembers(loadedMembers);
-      setTaskCount(Object.fromEntries(counts));
+      setTaskCount(counts);
+      setReportProgress(progress);
       setLoadingTeam(false);
     };
     void loadTeam();
     return () => { active = false; };
-  }, [profile?.department_id, profile?.id, profile?.role]);
+  }, [profile?.department_id, profile?.id, profile?.role, weekEnd, weekStart]);
 
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
@@ -114,16 +135,20 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     toast.success(task ? 'Đã nhắc report cho task' : `Đã nhắc ${selectedMember.name} cập nhật report`);
   };
 
+  const teamTotal = Object.values(reportProgress).reduce((total, item) => total + item.total, 0);
+  const teamReported = Object.values(reportProgress).reduce((total, item) => total + item.reported, 0);
+
   return (
-    <>
-      {(!embedded || !selectedMember) && <section className={embedded ? 'rounded-xl border border-gray-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/30' : 'card-hub rounded-2xl p-6 shadow-sm'}>
+    <div className={embedded ? 'grid min-w-0 gap-4 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)]' : 'space-y-4'}>
+      {(embedded || !selectedMember) && <section className={embedded ? 'card-hub min-w-0 rounded-2xl p-4 shadow-sm md:p-5' : 'card-hub rounded-2xl p-6 shadow-sm'}>
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />Đội ngũ ({members.length} thành viên)</h3>
+            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />Tổng report team</h3>
             <p className="mt-1 text-sm text-gray-500">Chọn thành viên để kiểm tra weekly report và nhắc cập nhật.</p>
           </div>
-          <span className="inline-flex items-center gap-1.5 self-start rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary sm:self-auto"><FileText size={15} />Báo cáo tuần</span>
+          <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => setWeekSelection(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div><span className="inline-flex items-center gap-1.5 rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary"><FileText size={15} />{members.length} PIC</span></div>
         </div>
+        <div className="mb-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/25"><b className="block text-lg text-primary">{teamReported}/{teamTotal}</b><span className="text-xs text-gray-500">Task đã report</span></div><div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/25"><b className="block text-lg text-amber-700 dark:text-amber-300">{Math.max(teamTotal - teamReported, 0)}</b><span className="text-xs text-gray-500">Cần cập nhật</span></div></div>
         <div className="relative mb-5 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Tìm thành viên..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
@@ -132,13 +157,14 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
           {loadingTeam ? <p className="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-slate-900">Đang tải đội ngũ…</p> : visibleMembers.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">Chưa có thành viên khác trong phòng ban.</p> : visibleMembers.map(member => (
             <button key={member.id} type="button" onClick={() => void openReport(member)} className="group flex w-full items-center justify-between rounded-2xl border border-transparent p-3 text-left transition-colors hover:border-gray-200 hover:bg-gray-50 dark:hover:border-slate-700 dark:hover:bg-slate-700/50">
               <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="mt-0.5 block truncate text-xs text-gray-500">{member.job_title || 'Nhân viên'} · {member.employment_level || 'Staff'}</span></span></span>
-              <span className="flex shrink-0 items-center gap-3"><span className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-300">{taskCount[member.id] || 0} tasks</span><ChevronRight size={18} className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" /></span>
+              <span className="flex shrink-0 items-center gap-2"><span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">{reportProgress[member.id]?.reported || 0}/{reportProgress[member.id]?.total || 0} report</span><span className="hidden rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-300 sm:inline-flex">{taskCount[member.id] || 0} tasks</span><ChevronRight size={18} className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" /></span>
             </button>
           ))}
         </div>
       </section>}
-      {selectedMember && !loadingReport && <div>{embedded && <button type="button" onClick={() => setSelectedMember(null)} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={16} />Danh sách đội ngũ</button>}<WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} variant={embedded ? 'inline' : 'drawer'} onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} /></div>}
+      {selectedMember && !loadingReport && <div className={embedded ? 'card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm' : ''}>{embedded && <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{selectedMember.avatar_url ? <img src={selectedMember.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(selectedMember.name)}</span><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{selectedMember.name}</p><p className="truncate text-xs text-gray-500">{selectedMember.job_title || 'Nhân viên'} · {reportProgress[selectedMember.id]?.reported || 0}/{reportProgress[selectedMember.id]?.total || 0} task đã report</p></div></div><button type="button" onClick={() => setSelectedMember(null)} aria-label="Bỏ chọn PIC" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronDown size={17} /></button></div>}<WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} showWeekSelection={!embedded} tasks={reportTasks} references={references} variant="inline" onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} /></div>}
+      {embedded && !selectedMember && !loadingTeam && <section className="card-hub flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700"><UsersRound size={28} className="text-primary/60" /><h3 className="mt-3 font-bold text-gray-800 dark:text-white">Chọn PIC để xem report</h3><p className="mt-1 max-w-sm text-sm text-gray-500">Nội dung report theo từng task và hình minh chứng của thành viên sẽ hiển thị tại đây.</p></section>}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}
-    </>
+    </div>
   );
 };

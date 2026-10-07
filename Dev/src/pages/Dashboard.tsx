@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
-, X } from 'lucide-react';
+} from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
@@ -126,55 +126,7 @@ export const Dashboard: React.FC = () => {
   const [customStart, setCustomStart] = useState(() => toYmd(startOfCurrentWeek()));
   const [customEnd, setCustomEnd] = useState(() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); });
     const [performanceOpen, setPerformanceOpen] = useState(false);
-  const [previewType, setPreviewType] = useState<string | null>(null);
-
-  // Quick Preview Modal
-  const QuickPreviewModal = () => {
-    if (!previewType) return null;
-    
-    let title = '';
-    let items: any[] = [];
-    
-    if (previewType === 'open') {
-      title = 'Task đang mở';
-      items = selectedTasks.filter(t => !isDone(t.status));
-    } else if (previewType === 'done') {
-      title = 'Task hoàn tất';
-      items = selectedTasks.filter(t => isDone(t.status));
-    } else if (previewType === 'projects') {
-      title = s.projectsLabel;
-      items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
-    }
-
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setPreviewType(null)}>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-          <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
-            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">{title} <span className="bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full">{previewType === 'projects' ? s.projects : items.length}</span></h3>
-            <button onClick={() => setPreviewType(null)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"><X size={18}/></button>
-          </div>
-          <div className="overflow-y-auto p-4 flex-1">
-            {items.length === 0 ? (
-              <p className="text-center text-gray-500 text-sm py-4">Không có dữ liệu</p>
-            ) : (
-              <div className="space-y-2">
-                {items.map((item, idx) => (
-                  <div key={item.id || idx} className="p-3 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-blue-200 transition-colors cursor-pointer" onClick={() => { setPreviewType(null); openFilteredTasks(); }}>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">{item.title || item.name}</p>
-                    {item.status !== 'info' && <p className="text-xs text-gray-500 mt-1 uppercase font-medium">{item.status || 'Active'}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-4 border-t border-gray-100 dark:border-slate-700 pt-3">
-              <button onClick={() => { setPreviewType(null); openFilteredTasks(); }} className="w-full py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-xl transition-colors">Xem toàn bộ {title.toLowerCase()} chi tiết →</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
+  
   const [openDept, setOpenDept] = useState<string | null>('DESIGN');
   
   const [search, setSearch] = useState('');
@@ -374,13 +326,51 @@ export const Dashboard: React.FC = () => {
             <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
             <div className={`text-xs mt-2 ${MUTED}`}>{s.dept}</div>
 
-            <div className="grid grid-cols-3 w-full gap-[5px] my-6">
-              {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type], i) => (
-                <button key={l as string} onClick={() => setPreviewType(type as string)} className={`text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-lg p-2 -m-2 transition-colors ${i < 2 ? 'border-r border-gray-50 dark:border-slate-700' : ''}`}>
-                  <strong className={`block text-xl 2xl:text-2xl font-semibold ${INK}`}>{v}</strong>
-                  <span className={`block text-xs mt-0.5 ${MUTED}`}>{l}</span>
-                </button>
-              ))}
+            <div className="flex w-full bg-gray-50/80 dark:bg-slate-900/50 rounded-[14px] p-2 my-6 border border-gray-100 dark:border-slate-700 shadow-sm relative">
+              {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
+                let items: any[] = [];
+                if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
+                else if (type === 'done') items = selectedTasks.filter(t => isDone(t.status));
+                else if (type === 'projects') items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
+                
+                const previewItems = items.slice(0, 5);
+                const hasMore = items.length > 5;
+
+                return (
+                  <div key={l as string} className="group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-default">
+                    <strong className={`block text-xl 2xl:text-2xl font-bold ${INK}`}>{v}</strong>
+                    <span className={`block text-[11px] mt-0.5 font-medium ${MUTED}`}>{l}</span>
+                    
+                    {/* Hover Bubble / Popover */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] pointer-events-none origin-bottom">
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-b border-r border-gray-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                      <div className="relative z-10 p-3 flex flex-col max-h-[300px] overflow-hidden">
+                        <div className="flex items-center justify-between mb-2.5 px-1">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
+                          <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
+                        </div>
+                        {items.length === 0 ? (
+                          <p className="text-center text-gray-400 text-xs py-4 font-medium">Không có dữ liệu</p>
+                        ) : (
+                          <div className="space-y-1.5 flex-1 overflow-hidden">
+                            {previewItems.map((item, idx) => (
+                              <div key={item.id || idx} className="px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-900/30 text-left border border-transparent hover:border-gray-100 dark:hover:border-slate-700 transition-colors">
+                                <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
+                                {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
+                              </div>
+                            ))}
+                            {hasMore && (
+                              <p className="text-center text-[10px] text-blue-500 font-semibold pt-1 pb-0.5">
+                                + {items.length - 5} mục khác...
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
@@ -586,7 +576,6 @@ export const Dashboard: React.FC = () => {
           </section>
         </div>
       </div>
-      <QuickPreviewModal />
       <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={s?.type === 'staff' ? Number(s.id.replace('user-', '')) : undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
     </div>
   );

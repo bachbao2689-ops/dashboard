@@ -15,7 +15,7 @@ export const Reports: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const role = (profile?.role || '').toLowerCase();
   const level = (profile?.employment_level || '').toLowerCase();
-  const isLeader = role === 'leader' || (level === 'leader' && role !== 'admin' && role !== 'manager');
+  const isLeader = role === 'leader' || (level === 'leader' && role !== 'admin');
 
   return isLeader ? <LeaderReports /> : <ManagerReports />;
 };
