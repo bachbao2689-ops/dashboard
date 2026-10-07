@@ -333,8 +333,8 @@ export const Dashboard: React.FC = () => {
                 else if (type === 'done') items = selectedTasks.filter(t => isDone(t.status));
                 else if (type === 'projects') items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
                 
-                const previewItems = items.slice(0, 5);
-                const hasMore = items.length > 5;
+                
+                
 
                 return (
                   <div key={l as string} className="group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white/70 dark:hover:bg-slate-800/60 hover:backdrop-blur-lg hover:shadow-[0_2px_10px_rgb(0,0,0,0.04)] hover:border hover:border-white/80 dark:hover:border-slate-700/50 border border-transparent transition-all cursor-default">
@@ -342,30 +342,27 @@ export const Dashboard: React.FC = () => {
                     <span className={`block text-[11px] mt-0.5 font-medium ${MUTED}`}>{l}</span>
                     
                     {/* Hover Bubble / Popover */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/75 dark:bg-slate-800/75 backdrop-blur-xl saturate-150 border border-white/60 dark:border-slate-600/50 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] pointer-events-none origin-bottom">
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-r border-white/60 dark:border-slate-600/50 transform rotate-45 rounded-sm"></div>
-                      <div className="relative z-10 p-3 flex flex-col max-h-[300px] overflow-hidden">
-                        <div className="flex items-center justify-between mb-2.5 px-1">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
-                          <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
-                        </div>
-                        {items.length === 0 ? (
-                          <p className="text-center text-gray-400 text-xs py-4 font-medium">Không có dữ liệu</p>
-                        ) : (
-                          <div className="space-y-1.5 flex-1 overflow-hidden">
-                            {previewItems.map((item, idx) => (
-                              <div key={item.id || idx} className="px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/70 dark:hover:bg-slate-800/60 shadow-sm transition-colors">
-                                <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
-                                {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
-                              </div>
-                            ))}
-                            {hasMore && (
-                              <p className="text-center text-[10px] text-blue-500 font-semibold pt-1 pb-0.5">
-                                + {items.length - 5} mục khác...
-                              </p>
-                            )}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] origin-bottom cursor-auto">
+                      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl saturate-150 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                        <div className="relative z-10 p-3 flex flex-col max-h-[320px]">
+                          <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
+                            <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
                           </div>
-                        )}
+                          {items.length === 0 ? (
+                            <p className="text-center text-gray-400 text-xs py-4 font-medium">Không có dữ liệu</p>
+                          ) : (
+                            <div className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
+                              {items.map((item, idx) => (
+                                <button key={item.id || idx} onClick={() => { if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
+                                  <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
+                                  {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
