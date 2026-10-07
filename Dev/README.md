@@ -1,5 +1,9 @@
 # React + TypeScript + Vite
 
+## Preview deployments
+
+Push feature work to a non-production branch to create a Vercel Preview Deployment. The `main` branch is reserved for Production. Preview deployments currently use the same Supabase project as Production, so avoid destructive or test writes when reviewing a preview.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
