@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
@@ -13,7 +13,7 @@ type TeamMember = { id: number; name: string; avatar_url?: string | null; employ
 
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const initials = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(word => word[0]).join('').slice(0, 2).toUpperCase();
-export const ProfileTeamTab: React.FC = () => {
+export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
   const [weekSelection, setWeekSelection] = useState<WeekSelection>('previous');
@@ -116,7 +116,7 @@ export const ProfileTeamTab: React.FC = () => {
 
   return (
     <>
-      <section className="card-hub rounded-2xl p-6 shadow-sm">
+      {(!embedded || !selectedMember) && <section className={embedded ? 'rounded-xl border border-gray-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/30' : 'card-hub rounded-2xl p-6 shadow-sm'}>
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />Đội ngũ ({members.length} thành viên)</h3>
@@ -136,8 +136,8 @@ export const ProfileTeamTab: React.FC = () => {
             </button>
           ))}
         </div>
-      </section>
-      {selectedMember && !loadingReport && <WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} />}
+      </section>}
+      {selectedMember && !loadingReport && <div>{embedded && <button type="button" onClick={() => setSelectedMember(null)} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={16} />Danh sách đội ngũ</button>}<WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} variant={embedded ? 'inline' : 'drawer'} onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} /></div>}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}
     </>
   );
