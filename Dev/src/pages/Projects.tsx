@@ -118,7 +118,9 @@ export const Projects: React.FC = () => {
   const removeComment = async (id: string) => { await supabase.from('project_comments').delete().eq('id', id); setComments(comments.filter(c => c.id !== id)); };
   const saveEditedComment = async (id: string) => { await supabase.from('project_comments').update({ body: editingCommentText }).eq('id', id); setComments(comments.map(c => c.id === id ? { ...c, body: editingCommentText } : c)); setEditingCommentId(null); };
   const [newSubtask, setNewSubtask] = useState(''); const [editMode, setEditMode] = useState(false); const [showSubtaskForm, setShowSubtaskForm] = useState(false); const [width, setWidth] = useState(500); const [resizing, setResizing] = useState(false); const [subtaskOwner, setSubtaskOwner] = useState(''); const [subtaskDue, setSubtaskDue] = useState(''); const [comment, setComment] = useState('');
+
   const panelOpen = Boolean(selected || selectedCampaign);
+
 
   useEffect(() => {
     if (!resizing) return;
@@ -155,6 +157,20 @@ export const Projects: React.FC = () => {
   };
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
   const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
+
+  const canViewAll = profile?.role === 'admin' || profile?.employment_level?.toLowerCase() === 'admin' || profile?.employment_level?.toLowerCase() === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+  const isLeader = profile?.employment_level === 'Leader';
+
+  const visibleProjects = useMemo(() => {
+    if (canViewAll) return projects;
+    return projects.filter(p => {
+      if (isLeader) return p.department_id === profile?.department_id;
+      const isMember = (members[p.id] || []).includes(String(profile?.id));
+      const hasSubtask = (subtaskMembers[p.id] || []).includes(String(profile?.id));
+      return isMember || hasSubtask;
+    });
+  }, [projects, profile, canViewAll, isLeader, members, subtaskMembers]);
+
 
   const load = async () => {
     const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
@@ -422,7 +438,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   <div className="h-full flex overflow-hidden relative">
     {/* Left Side: Projects List */}
     <div className={`h-full flex flex-col min-w-0 transition-all duration-300 flex-1 p-1 ${panelOpen ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex items-center justify-between mb-6 shrink-0"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects/Campaigns</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, campaign, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} className="flex items-center gap-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Add</span></button>}</div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-20 pr-1"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-primary" size={16}/> Projects <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{projects.length}</span></button></div>{projectsExpanded && <div className="overflow-x-auto"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{projects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
+      <div className="flex items-center justify-between mb-6 shrink-0"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects/Campaigns</h1><p className="text-sm text-gray-500 mt-1">Theo dõi project, campaign, PIC, subtask và trao đổi.</p></div>{canCreate && <button onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} className="flex items-center gap-2 bg-[#002e6d] text-white px-4 py-2 rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm"><Plus className="w-4 h-4" /><span>Add</span></button>}</div><div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-20 pr-1"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-primary" size={16}/> Projects <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{visibleProjects.length}</span></button></div>{projectsExpanded && <div className="overflow-x-auto"><table className="w-full text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover:bg-primary/5">
 <td className="p-4">
   <div className="flex items-center gap-2">
     <b className="text-gray-900 dark:text-white">{project.name}</b>

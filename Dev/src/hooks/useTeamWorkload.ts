@@ -32,10 +32,19 @@ export const useTeamWorkload = () => {
       }
 
       // The dashboard stores its members in public.users, not auth profiles.
-      const { data: usersData, error: usersError } = await supabase
+      const profile = useAuthStore.getState().profile;
+      const canViewAll = profile?.role === 'admin' || profile?.employment_level?.toLowerCase() === 'admin' || profile?.employment_level?.toLowerCase() === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+      
+      let usersQuery = supabase
         .from('users')
-        .select('id, name, email, avatar_url')
+        .select('id, name, email, avatar_url, department_id')
         .eq('is_active', true);
+        
+      if (!canViewAll && profile?.department_id) {
+        usersQuery = usersQuery.eq('department_id', profile.department_id);
+      }
+
+      const { data: usersData, error: usersError } = await usersQuery;
         
       if (usersError) throw usersError;
 

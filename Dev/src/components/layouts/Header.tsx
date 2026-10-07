@@ -228,12 +228,17 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-2 md:gap-4">
         <div className="relative group hidden sm:block" >
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" />
-          <div
-            className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 transition-all text-gray-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800"
-          >
-            {t('header.search')}
-          </div>
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono">⌘K</kbd>
+          <input
+            type="text"
+            placeholder={t('header.search')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
+              }
+            }}
+            className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 focus:w-64 transition-all text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono pointer-events-none">⌘K</kbd>
         </div>
         
         <div className="flex items-center gap-1 md:gap-3 text-gray-600 dark:text-gray-300">
@@ -252,7 +257,7 @@ export const Header: React.FC = () => {
           </button>
 
           
-          <button  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
+          <button onClick={() => navigate("/tasks")} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
           
           <div className="relative" ref={notifRef}>
             <button 

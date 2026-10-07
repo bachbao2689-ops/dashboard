@@ -32,11 +32,11 @@ const mapPriority = (prio: string | undefined) => {
 };
 
 export const TaskList: React.FC = () => {
-    const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   // const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
-  const [searchParams] = useSearchParams();
   
   const profileId = useAuthStore(state => state.profile?.id);
   const canCreateTask = true;
@@ -60,6 +60,12 @@ export const TaskList: React.FC = () => {
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
   const handleNewTask = () => setIsModalOpen(true);
+
+  useEffect(() => {
+    if (searchParams.has('search')) {
+      setSearchTerm(searchParams.get('search') || '');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setFilters(current => ({ ...current, status: searchParams.get('status') || 'all', priority: searchParams.get('priority') || 'all', assignee: searchParams.get('assignee') || 'all' }));
@@ -177,7 +183,7 @@ export const TaskList: React.FC = () => {
       
       <div className="flex justify-between items-center mb-6 shrink-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative z-50">
           {/* Expanding Search */}
           <div className="flex items-center relative h-10">
             <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
@@ -207,10 +213,10 @@ export const TaskList: React.FC = () => {
               onChange={(e) => setGroupBy(e.target.value)}
               className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
-              <option value="none">Group by: None</option>
-              <option value="project">Group by: Project</option>
-              <option value="assignee">Group by: Assignee</option>
-              <option value="status">Group by: Status</option>
+              <option value="none">None</option>
+              <option value="project">Project</option>
+              <option value="assignee">Assignee</option>
+              <option value="status">Status</option>
             </select>
           </div>
 
@@ -231,12 +237,11 @@ export const TaskList: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span className="text-sm font-medium">New Task</span>
           </button>}
+          <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
         </div>
       </div>
 
-      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
-
-      <div><FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} /></div>
+      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
       
       <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-12 pr-1">
       
@@ -260,7 +265,7 @@ export const TaskList: React.FC = () => {
                   className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
                   onClick={() => toggleGroup(groupName)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 relative z-50">
                     <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center">
                       {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>

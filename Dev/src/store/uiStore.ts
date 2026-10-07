@@ -11,7 +11,7 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   theme: 'light',
-  lang: 'en',
+  lang: 'vi',
   isSidebarOpen: true,
   toggleTheme: () => set((state) => {
     const newTheme = state.theme === 'light' ? 'dark' : 'light';

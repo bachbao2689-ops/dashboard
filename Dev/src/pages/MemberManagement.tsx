@@ -9,6 +9,7 @@ export function MemberManagement() {
   const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
@@ -55,56 +56,56 @@ export function MemberManagement() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-50">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Member Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your team members and roles</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Member Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Manage your team members and roles</p>
         </div>
-        {canManageAll && <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-lg"
-        >
-          <Plus size={20} />
-          <span>Invite Member</span>
-        </button>}
-      </div>
-
-      <div className="glass-panel p-6 rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
+            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
+              <Search className="w-5 h-5" />
+            </button>
             <input
               type="text"
               placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
+              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
           </div>
-          <div className="flex gap-4">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
-            >
-              <option value="">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
-              <option value="team_lead">Team Lead</option>
-              <option value="staff">Staff</option>
-              <option value="viewer">Viewer</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-white/20 bg-white/50 dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="suspended">Suspended</option>
-            </select>
-          </div>
+
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+          >
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="team_lead">Team Lead</option>
+            <option value="staff">Staff</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="suspended">Suspended</option>
+          </select>
+
+          {canManageAll && <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center gap-2 h-10 px-4 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm font-semibold text-sm"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Invite Member</span>
+          </button>}
         </div>
       </div>
 
