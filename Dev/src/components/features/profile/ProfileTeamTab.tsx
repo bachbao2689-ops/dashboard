@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BellRing, CalendarDays, ChevronRight, FileText, Search, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,14 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [loadingTeam, setLoadingTeam] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reminding, setReminding] = useState(false);
+  const [teamPanelWidth, setTeamPanelWidth] = useState(42);
+  const reportGridRef = useRef<HTMLDivElement>(null);
+
+  const resizeTeamPanel = (clientX: number) => {
+    const bounds = reportGridRef.current?.getBoundingClientRect();
+    if (!bounds || bounds.width === 0) return;
+    setTeamPanelWidth(Math.min(65, Math.max(30, ((clientX - bounds.left) / bounds.width) * 100)));
+  };
 
   useEffect(() => {
     let active = true;
@@ -142,7 +150,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const teamReported = Object.values(reportProgress).reduce((total, item) => total + item.reported, 0);
 
   return (
-    <div className={embedded ? 'grid min-w-0 gap-4 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)]' : 'space-y-4'}>
+    <div ref={reportGridRef} style={embedded ? { '--team-panel-width': `${teamPanelWidth}%` } as React.CSSProperties : undefined} className={embedded ? 'grid min-w-0 gap-4 lg:grid-cols-[minmax(280px,var(--team-panel-width))_8px_minmax(0,1fr)]' : 'space-y-4'}>
       {(embedded || !selectedMember) && <section className={embedded ? 'card-hub min-w-0 rounded-2xl p-4 shadow-sm md:p-5' : 'card-hub rounded-2xl p-6 shadow-sm'}>
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
@@ -165,8 +173,9 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
           ))}
         </div>
       </section>}
+      {embedded && <div role="separator" aria-orientation="vertical" aria-label="Kéo để thay đổi độ rộng hai bảng report" aria-valuemin={30} aria-valuemax={65} aria-valuenow={Math.round(teamPanelWidth)} tabIndex={0} title="Kéo để thay đổi độ rộng hai bảng" onPointerDown={event => { if (event.pointerType === 'mouse' || event.pointerType === 'pen' || event.pointerType === 'touch') { event.currentTarget.setPointerCapture(event.pointerId); resizeTeamPanel(event.clientX); } }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeTeamPanel(event.clientX); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onKeyDown={event => { if (event.key === 'ArrowLeft') { event.preventDefault(); setTeamPanelWidth(width => Math.max(30, width - 2)); } else if (event.key === 'ArrowRight') { event.preventDefault(); setTeamPanelWidth(width => Math.min(65, width + 2)); } else if (event.key === 'Home') { event.preventDefault(); setTeamPanelWidth(30); } else if (event.key === 'End') { event.preventDefault(); setTeamPanelWidth(65); } }} className="group hidden cursor-col-resize touch-none items-center justify-center rounded-full outline-none transition-colors hover:bg-primary/10 focus-visible:bg-primary/10 lg:flex"><span className="h-12 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-primary/50 group-focus-visible:bg-primary dark:bg-slate-700" /></div>}
       {selectedMember && !loadingReport && <div className={embedded ? 'card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm' : ''}>{embedded && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{selectedMember.avatar_url ? <img src={selectedMember.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(selectedMember.name)}</span><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{selectedMember.name}</p><p className="truncate text-xs text-gray-500">{selectedMember.job_title || 'Nhân viên'} · {selectedMember.employment_level || 'Staff'}</p></div></div><div className="flex shrink-0 items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-gray-500 sm:inline-flex"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span>{(reportProgress[selectedMember.id]?.total || 0) > (reportProgress[selectedMember.id]?.reported || 0) && <button type="button" disabled={reminding} onClick={() => void notify()} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" onClick={() => setSelectedMember(null)} aria-label="Bỏ chọn PIC" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={17} /></button></div></div>}<WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} showWeekSelection={!embedded} showHeader={!embedded} tasks={reportTasks} references={references} variant="inline" onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} reminding={reminding} /></div>}
-      {embedded && !selectedMember && !loadingTeam && <section className="card-hub flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700"><UsersRound size={28} className="text-primary/60" /><h3 className="mt-3 font-bold text-gray-800 dark:text-white">Chọn PIC để xem report</h3><p className="mt-1 max-w-sm text-sm text-gray-500">Nội dung report theo từng task và hình minh chứng của thành viên sẽ hiển thị tại đây.</p></section>}
+      {embedded && !selectedMember && !loadingTeam && <section className="card-hub col-start-3 flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700"><UsersRound size={28} className="text-primary/60" /><h3 className="mt-3 font-bold text-gray-800 dark:text-white">Chọn PIC để xem report</h3><p className="mt-1 max-w-sm text-sm text-gray-500">Nội dung report theo từng task và hình minh chứng của thành viên sẽ hiển thị tại đây.</p></section>}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}
     </div>
   );
