@@ -88,8 +88,8 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
               if (!r) return null;
               const isUnchanged = r.metadata?.unchanged;
               return (
-                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
+                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative hover:z-50">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24">{task.title}</h4>
                   <div className="absolute top-4 right-4 flex items-center gap-2">
                     {onEditTask && (
@@ -120,8 +120,10 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
                       </div>
                     )}
                     {r.metadata?.image_url && (
-                      <div className="mt-3">
-                        <img src={r.metadata.image_url} alt="Minh chứng" className="h-32 object-contain rounded-lg border border-gray-200 dark:border-slate-700" />
+                      <div className="mt-3 relative z-10 flex">
+                        <a href={r.metadata.image_url} target="_blank" rel="noreferrer" className="block relative z-10">
+                          <img src={r.metadata.image_url} alt="Minh chứng" className="h-32 object-contain rounded-lg border border-gray-200 dark:border-slate-700 transition-transform duration-300 origin-bottom-left hover:scale-[1.8] hover:shadow-2xl hover:z-50 relative" title="Nhấp để xem ảnh đầy đủ" />
+                        </a>
                       </div>
                     )}
                   </div>
