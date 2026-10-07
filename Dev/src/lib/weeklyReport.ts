@@ -1,4 +1,4 @@
-export type WeekSelection = 'current' | 'previous';
+export type WeekSelection = 'current' | 'previous' | string;
 
 type ReportTask = {
   status?: string | null;
@@ -9,6 +9,10 @@ type ReportTask = {
 const dateKey = (date: Date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 
 export const weeklyReportRange = (selection: WeekSelection) => {
+  if (selection !== 'current' && selection !== 'previous') {
+    const parts = selection.split('|');
+    if (parts.length === 2) return { start: parts[0], end: parts[1] };
+  }
   const monday = new Date();
   monday.setHours(12, 0, 0, 0);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) - (selection === 'previous' ? 7 : 0));

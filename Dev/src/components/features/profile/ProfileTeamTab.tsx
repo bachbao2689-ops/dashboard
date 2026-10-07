@@ -126,6 +126,25 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     return () => { void supabase.removeChannel(channel); };
   }, [loadTeam]);
 
+  useEffect(() => {
+    const el = document.getElementById('team-report-calendar');
+    const handleChange = (e: any) => {
+      const val = e.target.value;
+      if (val && val.includes(' - ')) {
+        const [d1, d2] = val.split(' - ');
+        const parse = (d: string) => d.split('/').reverse().join('-');
+        setWeekSelection(`${parse(d1)}|${parse(d2)}`);
+      }
+    };
+    el?.addEventListener('change', handleChange);
+    return () => el?.removeEventListener('change', handleChange);
+  }, []);
+
+  const openCal = (e: React.MouseEvent) => {
+    if ((window as any).openCalendar) {
+      (window as any).openCalendar({ displayId: 'team-report-calendar', mode: 'range' }, e);
+    }
+  };
   const openReport = async (member: TeamMember, silent = false) => {
     setSelectedMember(member);
     if (!silent) setLoadingReport(true);
@@ -207,7 +226,17 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
 
   // @ts-ignore
   const allTeamReportView = <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm">
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div><h3 className="text-sm font-bold text-gray-900 dark:text-white">Tất cả report của team</h3><p className="mt-1 text-xs text-gray-500">Task và hình ảnh được tổng hợp theo từng PIC.</p></div><span className="flex items-center gap-1.5 text-xs text-gray-500"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div><h3 className="text-sm font-bold text-gray-900 dark:text-white">Tất cả report của team</h3><p className="mt-1 text-xs text-gray-500">Task và hình ảnh được tổng hợp theo từng PIC.</p></div><div className="tw-calendar-picker relative flex items-center">
+      <CalendarDays size={14} className="absolute left-2.5 text-gray-500 pointer-events-none" />
+      <input
+        type="text"
+        id="team-report-calendar"
+        readOnly
+        onClick={openCal}
+        value={`${formatReportDate(weekStart)} - ${formatReportDate(weekEnd)}`}
+        className="w-[185px] py-1.5 pl-8 pr-2 rounded-lg bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer outline-none focus:border-primary transition-colors text-center"
+      />
+    </div></div>
     <div className="custom-scrollbar max-h-[calc(100vh-220px)] space-y-3 overflow-y-auto p-4 md:p-5">{visibleMembers.map(member => {
       const tasks = weeklyTasksByMember[member.id] || [];
       const reported = tasks.filter(task => Boolean(reportFor(member.id, task.id)));
