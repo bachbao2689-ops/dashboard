@@ -20,8 +20,22 @@ const getDueStatusColor = (endDateStr?: string | null) => {
   end.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays > 3) return 'border-green-500';
-  if (diffDays >= 2) return 'border-amber-500';
+  if (diffDays >= 1) return 'border-amber-500';
   return 'border-red-500';
+};
+
+const getDueStatusLabel = (endDateStr?: string | null) => {
+  if (!endDateStr) return null;
+  const end = new Date(endDateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const color = diffDays > 3 ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30' : diffDays >= 1 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+  const label = diffDays < 0 ? `Trễ ${Math.abs(diffDays)} ngày` : diffDays === 0 ? 'Hôm nay' : `Còn ${diffDays} ngày`;
+  
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
 
 export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = ({ onSelect }) => {
@@ -102,7 +116,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
           <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
             <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
             <td><div className="flex -space-x-2"><span title={c.lead?.name || 'Chưa có owner'} className="w-7 h-7 rounded-full bg-primary/15 border-2 border-white dark:border-slate-900 grid place-items-center text-[10px] font-bold text-primary">{c.lead?.name?.[0] || '?'}</span></div></td>
-            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`Hạn chót: ${formatDate(c.end_date)}`} />}</div></td>
+            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`Hạn chót: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date)}</div>}</div></td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
             <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(c.status || 'planning')}`}>{c.status || 'planning'}</span></td>

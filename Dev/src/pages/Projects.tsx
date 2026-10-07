@@ -67,8 +67,22 @@ const getDueStatusColor = (endDateStr?: string | null) => {
   end.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays > 3) return 'border-green-500';
-  if (diffDays >= 2) return 'border-amber-500';
+  if (diffDays >= 1) return 'border-amber-500';
   return 'border-red-500';
+};
+
+const getDueStatusLabel = (endDateStr?: string | null) => {
+  if (!endDateStr) return null;
+  const end = new Date(endDateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const color = diffDays > 3 ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30' : diffDays >= 1 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+  const label = diffDays < 0 ? `Trễ ${Math.abs(diffDays)} ngày` : diffDays === 0 ? 'Hôm nay' : `Còn ${diffDays} ngày`;
+  
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
 
 export const Projects: React.FC = () => {
@@ -424,7 +438,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     )}
   </div>
 </td>
-<td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date)}`} title={`Hạn chót: ${dateValue(project.due_date)}`} />}</div></td>
+<td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="flex items-center gap-1.5"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date)}`} title={`Hạn chót: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date)}</div>}</div></td>
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></td>
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(project.status || 'active')}`}>{project.status || 'active'}</span></td>
 <td className="w-16 pr-4">{canCreate && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Ẩn"><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={16}/></button></div>}</td>
