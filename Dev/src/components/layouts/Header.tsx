@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
@@ -13,6 +14,16 @@ export const Header: React.FC = () => {
     const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotifs(false);
+      }
+    };
+    if (showNotifs) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifs]);
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -64,7 +75,13 @@ export const Header: React.FC = () => {
     setNotifications(current => current.filter(item => item.id !== notification.id));
     await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', notification.id);
     setShowNotifs(false);
-    if (notification.entity_type === 'task' && notification.entity_id) navigate(`/tasks?task=${notification.entity_id}`);
+    if (notification.entity_type === 'task' && notification.entity_id) {
+      navigate(`/tasks?task=${notification.entity_id}`);
+    } else if (notification.entity_type === 'project_subtask') {
+      navigate(`/projects`);
+    } else if (notification.entity_type === 'weekly_report') {
+      navigate(`/profile`);
+    }
   };
 
   const navGroups = [
@@ -237,7 +254,7 @@ export const Header: React.FC = () => {
           
           <button  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
           
-          <div className="relative">
+          <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setShowNotifs(!showNotifs)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
