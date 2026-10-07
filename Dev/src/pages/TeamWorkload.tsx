@@ -36,7 +36,7 @@ export const TeamWorkload: React.FC = () => {
 
   return (
     <div className="p-6 w-full space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('workload.title')}</h1>
           <p className="text-gray-500 dark:text-gray-400">{t('workload.subtitle')}</p>

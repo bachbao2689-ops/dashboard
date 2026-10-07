@@ -113,7 +113,7 @@ export function MemberManagement() {
 
       <div className="glass-panel rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full min-w-max text-left">
             <thead className="bg-black/5 dark:bg-white/5 border-b border-white/10">
               <tr>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">{t('members.col.member')}</th>

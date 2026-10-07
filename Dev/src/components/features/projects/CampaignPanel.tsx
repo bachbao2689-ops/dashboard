@@ -132,7 +132,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
         </button>
       </div>
       {expanded && <div className="overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full min-w-max text-left">
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
             <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
           </tr></thead>

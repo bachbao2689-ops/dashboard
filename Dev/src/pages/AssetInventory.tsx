@@ -19,6 +19,7 @@ const getIcon = (cat: string | undefined) => {
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [qrAsset, setQrAsset] = useState<any>(null);
@@ -42,28 +43,32 @@ export const AssetInventory: React.FC = () => {
         onSuccess={refetch} 
       />
       
-      <div className="flex justify-between items-center mb-6 px-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-2 relative z-50">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Asset Inventory</h2>
-        <div className="flex gap-3">
-          <div className="relative group hidden sm:block">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-            <input 
-              type="text" 
-              placeholder={t("assets.search")} 
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
+            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
+              <Search className="w-5 h-5" />
+            </button>
+            <input
+              type="text"
+              placeholder={t("assets.search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 shadow-sm"
+              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
           </div>
-          <button onClick={handleNewAsset} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm flex items-center gap-2">
-            <Plus size={16} /> <span className="hidden sm:inline">Add Asset</span>
+          
+          <button onClick={handleNewAsset} className="flex items-center gap-2 h-10 px-4 bg-[#002e6d] hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+            <Plus size={18} /> <span className="hidden sm:inline">Add Asset</span>
           </button>
         </div>
       </div>
 
       <div className="card-hub rounded-2xl overflow-hidden flex-1 shadow-sm">
         <div className="overflow-x-auto h-full">
-          <table className="w-full text-left">
+          <table className="w-full min-w-max text-left">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset Code</th>
