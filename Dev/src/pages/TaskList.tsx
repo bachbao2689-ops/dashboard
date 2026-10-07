@@ -172,10 +172,10 @@ export const TaskList: React.FC = () => {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 overflow-hidden">
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col space-y-6 overflow-y-auto custom-scrollbar pb-12 pr-0 transition-[flex-basis] duration-300 ease-out lg:pr-4">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 lg:pr-4">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6 shrink-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
         <div className="flex items-center gap-3">
           {/* Expanding Search */}
@@ -237,6 +237,8 @@ export const TaskList: React.FC = () => {
       {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
 
       <div><FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} /></div>
+      
+      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-12 pr-1">
       
 
       {loading ? (
@@ -375,7 +377,7 @@ export const TaskList: React.FC = () => {
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
-      )}
+      )}</div>
     
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
