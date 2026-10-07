@@ -13,6 +13,7 @@ import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import { recordTaskDeletion } from '../services/taskDeletionLog';
 
 const mapStatus = (status: string) => {
   const s = status.toLowerCase();
@@ -113,16 +114,30 @@ export const TaskList: React.FC = () => {
   const handleBulkDelete = async () => {
     let deletedCount = 0;
     for (const taskId of selectedTasks) {
+      const task = tasks.find(item => item.id === taskId);
+      let entityType: 'task' | 'project_subtask' | 'campaign_subtask';
+      let rawId = taskId;
+      let error: any;
       if (taskId.startsWith('ps-')) {
-        await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('ps-', ''));
+        entityType = 'project_subtask'; rawId = taskId.replace('ps-', '');
+        ({ error } = await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', rawId));
       } else if (taskId.startsWith('cs-')) {
-        await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('cs-', ''));
+        entityType = 'campaign_subtask'; rawId = taskId.replace('cs-', '');
+        ({ error } = await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', rawId));
       } else {
-        await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId);
+        entityType = 'task';
+        ({ error } = await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId));
       }
-      deletedCount++;
+      if (!error) {
+        deletedCount++;
+        if (profileId && task) {
+          const { error: logError } = await recordTaskDeletion({ userId: profileId, taskId: rawId, entityType, title: task.title, parentName: task.project?.name, parentType: entityType === 'project_subtask' ? 'project' : entityType === 'campaign_subtask' ? 'campaign' : null });
+          if (logError) toast.error(`Đã xóa "${task.title}" nhưng chưa ghi được vào Log`);
+        }
+      }
     }
-    toast.success(`Đã chuyển ${deletedCount} task vào thùng rác`);
+    if (deletedCount) toast.success(`Đã chuyển ${deletedCount} task vào thùng rác`);
+    if (deletedCount < selectedTasks.length) toast.error(`Không xóa được ${selectedTasks.length - deletedCount} task`);
     setSelectedTasks([]);
     setIsBulkDeleteModalOpen(false);
     window.dispatchEvent(new Event('tasks:changed'));
@@ -132,12 +147,23 @@ export const TaskList: React.FC = () => {
   const handleSingleDelete = async () => {
     if (!taskToDelete) return;
     const taskId = taskToDelete.id;
+    let entityType: 'task' | 'project_subtask' | 'campaign_subtask';
+    let rawId = taskId;
+    let error: any;
     if (taskId.startsWith('ps-')) {
-      await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('ps-', ''));
+      entityType = 'project_subtask'; rawId = taskId.replace('ps-', '');
+      ({ error } = await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', rawId));
     } else if (taskId.startsWith('cs-')) {
-      await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', taskId.replace('cs-', ''));
+      entityType = 'campaign_subtask'; rawId = taskId.replace('cs-', '');
+      ({ error } = await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', rawId));
     } else {
-      await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId);
+      entityType = 'task';
+      ({ error } = await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId));
+    }
+    if (error) { toast.error('Không thể xóa task'); return; }
+    if (profileId) {
+      const { error: logError } = await recordTaskDeletion({ userId: profileId, taskId: rawId, entityType, title: taskToDelete.title, parentName: taskToDelete.project?.name, parentType: entityType === 'project_subtask' ? 'project' : entityType === 'campaign_subtask' ? 'campaign' : null });
+      if (logError) toast.error('Task đã xóa nhưng chưa ghi được vào Log');
     }
     toast.success(`Đã chuyển task vào thùng rác`);
     setTaskToDelete(null);
