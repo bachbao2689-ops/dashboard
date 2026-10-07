@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarDays, ChevronDown, ChevronRight, FileText, Images, Search, UsersRound, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { WeeklyReportDrawer } from '../reports/WeeklyReportDrawer';
+import { WeeklyReportPreview } from '../reports/WeeklyReportPreview';
 import type { ReportReference, WeeklyReportTask } from '../reports/WeeklyReportDrawer';
 import { tasksForWeeklyReport, weeklyReportRange } from '../../../lib/weeklyReport';
 import type { WeekSelection } from '../../../lib/weeklyReport';
@@ -25,6 +26,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [reportProgress, setReportProgress] = useState<Record<number, { total: number; reported: number }>>({});
   const [weeklyTasksByMember, setWeeklyTasksByMember] = useState<Record<number, WeeklyReportTask[]>>({});
   const [teamReports, setTeamReports] = useState<Record<string, TeamReportRow>>({});
+  const [summaryImages, setSummaryImages] = useState<Record<number, string | null>>({});
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberTasks, setMemberTasks] = useState<WeeklyReportTask[]>([]);
@@ -70,8 +72,12 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
       const weeklyTaskIds = weeklyTasks.map((task: any) => task.id);
       const { data: reportRows, error: reportError } = weeklyTaskIds.length
-        ? await supabase.from('activity_log').select('id,user_id,entity_id,created_at,metadata').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds).order('created_at', { ascending: false })
+        ? await supabase.from('activity_log').select('id,user_id,entity_id,created_at,metadata,action').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds).order('created_at', { ascending: false })
         : { data: [], error: null };
+        
+      const { data: imageRows } = memberIds.length
+        ? await supabase.from('activity_log').select('user_id,metadata').eq('action', 'weekly_summary_image').in('user_id', memberIds).order('created_at', { ascending: false })
+        : { data: [] };
       if (reportError) console.warn('Could not load team report status:', reportError.message);
       const taskIdsByMember = new Map<number, string[]>();
       weeklyTasks.forEach((task: any) => {
@@ -97,6 +103,13 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       setReportProgress(progress);
       setWeeklyTasksByMember(groupedTasks);
       setTeamReports(latestReports);
+      const imgMap: Record<number, string | null> = {};
+      (imageRows || []).forEach((row: any) => {
+        if (row.metadata?.week_start === weekStart && row.metadata?.week_end === weekEnd) {
+          if (!imgMap[row.user_id]) imgMap[row.user_id] = row.metadata.image_url;
+        }
+      });
+      setSummaryImages(imgMap);
       setLoadingTeam(false);
     };
     void loadTeam();
@@ -164,30 +177,26 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const selectedWeeklyTasks = selectedMember ? (weeklyTasksByMember[selectedMember.id] || reportTasks) : [];
   const selectedReportedTasks = selectedMember ? selectedWeeklyTasks.filter(task => Boolean(reportFor(selectedMember.id, task.id))) : [];
 
-  const reportFields = (report?: TeamReportRow) => {
-    if (!report) return null;
-    const metadata = report.metadata || {};
-    return <div className="grid gap-2 md:grid-cols-3">
-      <div className="rounded-xl bg-blue-50/70 p-3 dark:bg-blue-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Kết quả tuần này</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.unchanged ? 'Không thay đổi' : metadata.body || '—'}</p></div>
-      <div className="rounded-xl bg-amber-50/70 p-3 dark:bg-amber-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Vướng mắc / hỗ trợ</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.blocker || 'Không có'}</p></div>
-      <div className="rounded-xl bg-violet-50/70 p-3 dark:bg-violet-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Việc tiếp theo</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.next_step || 'Chưa cập nhật'}</p></div>
-    </div>;
-  };
-
   // @ts-ignore
-  const selectedReportView = selectedMember && <div className="space-y-5 p-4 md:p-5">
-    <section>
-      <div className="mb-3 flex items-center justify-between gap-3"><h4 className="text-sm font-bold text-gray-900 dark:text-white">Chi tiết report ({selectedReportedTasks.length})</h4><span className="text-xs text-gray-400">Các trường được tracking từ PIC</span></div>
-      <div className="space-y-3">{selectedReportedTasks.length ? selectedReportedTasks.map(task => {
-        const report = reportFor(selectedMember.id, task.id);
-        return <article key={task.id} className="rounded-2xl border border-gray-100 p-3 dark:border-slate-700"><div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{task.title}</p><p className="mt-0.5 truncate text-[11px] text-gray-500">{task.project?.name || 'Task lẻ'} · {(task.status || 'todo').replaceAll('_', ' ')}</p></div><button type="button" onClick={() => navigate(`/tasks?task=${task.id}`)} className="shrink-0 text-xs font-semibold text-primary hover:underline">Mở task</button></div>{reportFields(report)}</article>;
-      }) : <p className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-slate-700">PIC chưa cập nhật report trong tuần này.</p>}</div>
-    </section>
-    <section>
-      <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><Images size={16} className="text-primary" />Hình ảnh minh chứng</h4>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{selectedReportedTasks.filter(task => reportFor(selectedMember.id, task.id)?.metadata?.image_url).map(task => { const imageUrl = reportFor(selectedMember.id, task.id)?.metadata?.image_url || ''; return <a key={task.id} href={imageUrl} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800"><img src={imageUrl} alt={`Minh chứng ${task.title}`} className="h-36 w-full bg-slate-50 object-cover transition-transform group-hover:scale-[1.02] dark:bg-slate-900" /><p className="truncate px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{task.title}</p></a>; })}{!selectedReportedTasks.some(task => reportFor(selectedMember.id, task.id)?.metadata?.image_url) && <p className="col-span-full rounded-xl border border-dashed border-gray-200 p-5 text-center text-xs text-gray-500 dark:border-slate-700">Chưa có hình ảnh minh chứng.</p>}</div>
-    </section>
-  </div>;
+  const reportsRecord = selectedReportedTasks.reduce((acc, task) => {
+    const r = reportFor(selectedMember?.id || 0, task.id);
+    if (r) acc[task.id] = r;
+    return acc;
+  }, {} as Record<string, any>);
+
+  const selectedReportView = selectedMember && (
+    <WeeklyReportPreview
+      isLeaderView
+      ownerName={selectedMember.name}
+      weekStart={weekStart}
+      weekEnd={weekEnd}
+      reportProgress={reportProgress[selectedMember.id]?.total ? Math.round((reportProgress[selectedMember.id].reported / reportProgress[selectedMember.id].total) * 100) : 0}
+      reportedTasks={selectedReportedTasks}
+      totalTasks={reportProgress[selectedMember.id]?.total || 0}
+      summaryImage={summaryImages[selectedMember.id]}
+      reports={reportsRecord}
+    />
+  );
 
   // @ts-ignore
   const allTeamReportView = <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm">
@@ -229,7 +238,11 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         </div>
       </section>}
       {embedded && <div role="separator" aria-orientation="vertical" aria-label="Kéo để thay đổi độ rộng hai bảng report" aria-valuemin={30} aria-valuemax={65} aria-valuenow={Math.round(teamPanelWidth)} tabIndex={0} title="Kéo để thay đổi độ rộng hai bảng" onPointerDown={event => { if (event.pointerType === 'mouse' || event.pointerType === 'pen' || event.pointerType === 'touch') { event.currentTarget.setPointerCapture(event.pointerId); resizeTeamPanel(event.clientX); } }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeTeamPanel(event.clientX); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onKeyDown={event => { if (event.key === 'ArrowLeft') { event.preventDefault(); setTeamPanelWidth(width => Math.max(30, width - 2)); } else if (event.key === 'ArrowRight') { event.preventDefault(); setTeamPanelWidth(width => Math.min(65, width + 2)); } else if (event.key === 'Home') { event.preventDefault(); setTeamPanelWidth(30); } else if (event.key === 'End') { event.preventDefault(); setTeamPanelWidth(65); } }} className="group relative z-10 -mx-[5px] hidden w-3 cursor-col-resize touch-none items-center justify-center rounded-full outline-none lg:flex"><span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-primary/50 group-focus-visible:bg-primary dark:group-hover:bg-primary/70" /><span className="relative h-8 w-1 rounded-full bg-transparent transition-colors group-hover:bg-primary group-focus-visible:bg-primary" /></div>}
-      {selectedMember && !loadingReport && embedded && <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{selectedMember.avatar_url ? <img src={selectedMember.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(selectedMember.name)}</span><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{selectedMember.name}</p><p className="truncate text-xs text-gray-500">{selectedMember.job_title || 'Nhân viên'} · {selectedMember.employment_level || 'Staff'}</p></div></div><div className="flex shrink-0 items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-gray-500 sm:inline-flex"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span>{(reportProgress[selectedMember.id]?.total || 0) > (reportProgress[selectedMember.id]?.reported || 0) && <button type="button" disabled={reminding} onClick={() => void notify()} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" onClick={() => setSelectedMember(null)} aria-label="Xem tất cả report" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={17} /></button></div></div>{selectedReportView}</section>}
+      {selectedMember && !loadingReport && embedded && (
+        <div className="min-w-0 flex flex-col h-[calc(100vh-140px)] rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden shadow-sm">
+          {selectedReportView}
+        </div>
+      )}
       {selectedMember && !loadingReport && !embedded && <WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} variant="inline" onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} />}
       {embedded && !selectedMember && !loadingTeam && allTeamReportView}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}

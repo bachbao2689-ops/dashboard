@@ -1,5 +1,6 @@
+import { WeeklyReportPreview } from './WeeklyReportPreview';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare , Edit3} from 'lucide-react';
+import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare , } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
@@ -376,98 +377,22 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   </>;
 
   const rightColumn = (
-    <div className="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-900/50 h-full overflow-hidden border-l border-gray-100 dark:border-slate-700">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Layers3 size={18} className="text-primary" />
-            Bản nháp Báo cáo Tuần
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">Preview nội dung. Hover vào task để chỉnh sửa lại bên trái.</p>
-        </div>
-        <button onClick={submitFinalReport} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">Gửi Báo Cáo</button>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-        {/* Summary Info */}
-        <div className="space-y-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-          <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-3">
-            <h3 className="font-bold text-gray-900 dark:text-white">Tổng quan báo cáo</h3>
-            <span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-600 rounded-md">Tuần {dateLabel(weekStart)} – {dateLabel(weekEnd)}</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">Tiến độ</p>
-              <p className="text-2xl font-bold text-primary mt-1">{reportProgress}%</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{reportedTasks.length} / {tasks.length} task đã report</p>
-            </div>
-          </div>
-          
-          {summaryImage && (
-            <div className="mt-4 relative group">
-              <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mb-2">Hình ảnh tổng kết</p>
-              <button onClick={removeSummaryImage} className="absolute top-8 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"><X size={16} /></button>
-              <img src={summaryImage} alt="Summary" className="w-full rounded-xl border border-gray-200 dark:border-slate-700" />
-            </div>
-          )}
-        </div>
-        
-        {/* Reported Tasks List */}
-        {reportedTasks.length > 0 ? (
-          <div className="space-y-4">
-            <h3 className="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wider">Chi tiết Task ({reportedTasks.length})</h3>
-            {reportedTasks.map(task => {
-              const r = reports[task.id];
-              if (!r) return null;
-              const isUnchanged = r.metadata?.unchanged;
-              return (
-                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24">{task.title}</h4>
-                  <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <button onClick={() => { setActiveTaskId(task.id); const el = document.getElementById(`task-item-${task.id}`); if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'}); }} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="Chỉnh sửa"><Edit3 size={14}/></button>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${isUnchanged ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                      {isUnchanged ? 'Không đổi' : 'Đã report'}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 mt-3 text-sm">
-                    {r.metadata?.body && (
-                      <div>
-                        <span className="text-xs text-gray-500 font-semibold uppercase">Nội dung:</span>
-                        <p className="text-gray-700 dark:text-gray-300 mt-0.5 whitespace-pre-wrap">{r.metadata.body}</p>
-                      </div>
-                    )}
-                    {r.metadata?.blocker && (
-                      <div className="bg-red-50 dark:bg-red-900/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30">
-                        <span className="text-xs text-red-600 dark:text-red-400 font-semibold uppercase">Vướng mắc:</span>
-                        <p className="text-red-700 dark:text-red-300 mt-0.5 whitespace-pre-wrap">{r.metadata.blocker}</p>
-                      </div>
-                    )}
-                    {r.metadata?.next_step && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                        <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase">Tiếp theo:</span>
-                        <p className="text-blue-700 dark:text-blue-300 mt-0.5 whitespace-pre-wrap">{r.metadata.next_step}</p>
-                      </div>
-                    )}
-                    {r.metadata?.image_url && (
-                      <div className="mt-3">
-                        <img src={r.metadata.image_url} alt="Minh chứng" className="h-32 object-contain rounded-lg border border-gray-200 dark:border-slate-700" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl">
-            <p className="text-sm text-gray-500 font-medium">Chưa có thông tin report</p>
-          </div>
-        )}
-      </div>
-    </div>
+    <WeeklyReportPreview
+      weekStart={weekStart}
+      weekEnd={weekEnd}
+      reportProgress={reportProgress}
+      reportedTasks={reportedTasks}
+      totalTasks={tasks.length}
+      summaryImage={summaryImage}
+      reports={reports}
+      onRemoveSummaryImage={removeSummaryImage}
+      onSubmitReport={submitFinalReport}
+      onEditTask={(taskId) => {
+        setActiveTaskId(taskId);
+        const el = document.getElementById(`task-item-${taskId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }}
+    />
   );
 
   const content = (
