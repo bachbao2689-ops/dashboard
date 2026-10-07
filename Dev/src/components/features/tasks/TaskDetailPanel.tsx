@@ -53,7 +53,17 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const move = (event: MouseEvent) => { const next = document.body.clientWidth - event.clientX; if (next >= 360 && next <= 800) setWidth(next); };
     const up = () => setResizing(false);
     document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
-    return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+    useEffect(() => {
+    if (!task?.id) return;
+    const channel = supabase.channel(`realtime-activity_log-${task?.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `entity_id=eq.${task?.id}` }, () => {
+        void loadComments();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [task?.id, loadComments]);
+
+  return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
   }, [resizing]);
 
   const saveDescription = async () => {

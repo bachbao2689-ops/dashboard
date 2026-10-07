@@ -194,6 +194,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
         image_url: reportMode === 'progress' ? imageUrl.trim() || null : null,
         unchanged: reportMode === 'unchanged',
         entity_id: userId,
+        week_start: weekStart,
         week_end: weekEnd,
       },
     });
@@ -227,7 +228,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(true);
     const payloads = Array.from(selectedTasks).map(taskId => ({
       workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
-      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_end: weekEnd }
+      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_start: weekStart, week_end: weekEnd }
     }));
     const { error } = await supabase.from('activity_log').insert(payloads);
     setSaving(false);
@@ -244,7 +245,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(true);
     const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
-      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_end: weekEnd }
+      metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_start: weekStart, week_end: weekEnd }
     });
     setSaving(false);
     if (!error) {

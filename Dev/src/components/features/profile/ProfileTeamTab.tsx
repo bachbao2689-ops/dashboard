@@ -119,9 +119,19 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
-  const openReport = async (member: TeamMember) => {
+  useEffect(() => {
+    if (!selectedMember) return;
+    const channel = supabase.channel(`team-report-${selectedMember.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${selectedMember.id}` }, () => {
+        void openReport(selectedMember, true);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [selectedMember?.id, weekStart, weekEnd]);
+
+  const openReport = async (member: TeamMember, silent = false) => {
     setSelectedMember(member);
-    setLoadingReport(true);
+    if (!silent) setLoadingReport(true);
     setMemberTasks([]);
     setReferences([]);
     let projectQuery = supabase.from('projects').select('id,name,status,description').order('name');
@@ -148,7 +158,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     });
     (campaignResult.data || []).forEach((item: any) => referenceMap.set(`campaign-${item.id}`, { id: item.id, name: item.name, status: item.status, description: item.objective, kind: 'campaign' }));
     setReferences([...referenceMap.values()]);
-    setLoadingReport(false);
+    if (!silent) setLoadingReport(false);
   };
 
   const notify = async (task?: WeeklyReportTask) => {

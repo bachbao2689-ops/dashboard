@@ -170,6 +170,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
+  useEffect(() => {
+    if (!subtask?.id) return;
+    const channel = supabase.channel(`realtime-activity_log-${subtask?.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `entity_id=eq.${subtask?.id}` }, () => {
+        void reload();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [subtask?.id, reload]);
+
   return (
     <aside className="drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-[560px] flex-col overflow-hidden rounded-l-3xl border-l-4 border-l-emerald-400 bg-white shadow-2xl dark:bg-slate-800 md:w-[min(560px,calc(100vw-2rem))]">
       <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-700">
