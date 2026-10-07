@@ -46,13 +46,8 @@ export const ActivityTaskCard: React.FC = () => {
     })();
   }, [profile?.id]);
 
-  const reportTasks = useMemo(() => tasks.filter(task => {
-    const created = task.created_at?.slice(0, 10) || '';
-    const updated = task.updated_at?.slice(0, 10) || '';
-    const due = task.due_date?.slice(0, 10) || '';
-    const inWeek = (date: string) => Boolean(date && date >= week.start && date <= week.end);
-    return inWeek(created) || inWeek(updated) || inWeek(due) || (created <= week.end && !done(task.status) && (!due || due >= week.start));
-  }), [tasks, week]);
+  // Report luôn cho PIC cập nhật toàn bộ task đang theo dõi; phần KPI trong report vẫn tính theo tuần đã chọn.
+  const reportTasks = useMemo(() => tasks, [tasks]);
 
   const groups: Array<{ id: Group; label: string; icon: React.ReactNode; items: any[] }> = [
     { id: 'task', label: 'Task lẻ', icon: <FileText className="h-4 w-4" />, items: tasks },
