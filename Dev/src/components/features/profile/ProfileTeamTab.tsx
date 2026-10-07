@@ -32,7 +32,9 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   useEffect(() => {
     let active = true;
     const loadTeam = async () => {
-      const canViewAll = profile?.role === 'admin' || profile?.role === 'manager';
+      const normalizedRole = (profile?.role || '').toLowerCase();
+      const normalizedLevel = (profile?.employment_level || '').toLowerCase();
+      const canViewAll = normalizedRole === 'admin' || normalizedLevel === 'admin' || normalizedLevel === 'manager' || (normalizedRole === 'manager' && normalizedLevel !== 'leader');
       if (!profile || (!canViewAll && !profile.department_id)) {
         if (active) { setMembers([]); setLoadingTeam(false); }
         return;
