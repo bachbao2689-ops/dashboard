@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarDays, ChevronRight, FileText, Search, UsersRound, X } from 'lucide-react';
+import { BellRing, CalendarDays, ChevronDown, ChevronRight, FileText, Images, Search, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
@@ -10,6 +10,7 @@ import { tasksForWeeklyReport, weeklyReportRange } from '../../../lib/weeklyRepo
 import type { WeekSelection } from '../../../lib/weeklyReport';
 
 type TeamMember = { id: number; name: string; avatar_url?: string | null; employment_level?: string | null; job_title?: string | null; department_id?: string | null };
+type TeamReportRow = { id: string; user_id: number; entity_id: string; created_at?: string | null; metadata?: { body?: string; blocker?: string | null; next_step?: string | null; image_url?: string | null; unchanged?: boolean; week_start?: string; week_end?: string } | null };
 
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const initials = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(word => word[0]).join('').slice(0, 2).toUpperCase();
@@ -22,6 +23,8 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [taskCount, setTaskCount] = useState<Record<number, number>>({});
   const [reportProgress, setReportProgress] = useState<Record<number, { total: number; reported: number }>>({});
+  const [weeklyTasksByMember, setWeeklyTasksByMember] = useState<Record<number, WeeklyReportTask[]>>({});
+  const [teamReports, setTeamReports] = useState<Record<string, TeamReportRow>>({});
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberTasks, setMemberTasks] = useState<WeeklyReportTask[]>([]);
@@ -67,7 +70,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
       const weeklyTaskIds = weeklyTasks.map((task: any) => task.id);
       const { data: reportRows, error: reportError } = weeklyTaskIds.length
-        ? await supabase.from('activity_log').select('user_id,entity_id,metadata').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds)
+        ? await supabase.from('activity_log').select('id,user_id,entity_id,created_at,metadata').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds).order('created_at', { ascending: false })
         : { data: [], error: null };
       if (reportError) console.warn('Could not load team report status:', reportError.message);
       const taskIdsByMember = new Map<number, string[]>();
@@ -80,11 +83,20 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         const ids = taskIdsByMember.get(member.id) || [];
         return [member.id, { total: ids.length, reported: ids.filter(id => reportedKeys.has(`${member.id}:${id}`)).length }];
       }));
+      const groupedTasks = Object.fromEntries(loadedMembers.map(member => [member.id, weeklyTasks.filter((task: any) => Number(task.assignee_id) === member.id)]));
+      const latestReports: Record<string, TeamReportRow> = {};
+      (reportRows || []).forEach((row: any) => {
+        if (row.metadata?.week_start !== weekStart || row.metadata?.week_end !== weekEnd) return;
+        const key = `${row.user_id}:${row.entity_id}`;
+        if (!latestReports[key]) latestReports[key] = row as TeamReportRow;
+      });
       const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
       if (!active) return;
       setMembers(loadedMembers);
       setTaskCount(counts);
       setReportProgress(progress);
+      setWeeklyTasksByMember(groupedTasks);
+      setTeamReports(latestReports);
       setLoadingTeam(false);
     };
     void loadTeam();
@@ -148,6 +160,44 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
 
   const teamTotal = Object.values(reportProgress).reduce((total, item) => total + item.total, 0);
   const teamReported = Object.values(reportProgress).reduce((total, item) => total + item.reported, 0);
+  const reportFor = (memberId: number, taskId: string) => teamReports[`${memberId}:${taskId}`];
+  const selectedWeeklyTasks = selectedMember ? (weeklyTasksByMember[selectedMember.id] || reportTasks) : [];
+  const selectedReportedTasks = selectedMember ? selectedWeeklyTasks.filter(task => Boolean(reportFor(selectedMember.id, task.id))) : [];
+
+  const reportFields = (report?: TeamReportRow) => {
+    if (!report) return null;
+    const metadata = report.metadata || {};
+    return <div className="grid gap-2 md:grid-cols-3">
+      <div className="rounded-xl bg-blue-50/70 p-3 dark:bg-blue-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Kết quả tuần này</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.unchanged ? 'Không thay đổi' : metadata.body || '—'}</p></div>
+      <div className="rounded-xl bg-amber-50/70 p-3 dark:bg-amber-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Vướng mắc / hỗ trợ</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.blocker || 'Không có'}</p></div>
+      <div className="rounded-xl bg-violet-50/70 p-3 dark:bg-violet-950/20"><p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Việc tiếp theo</p><p className="mt-1 text-xs leading-5 text-gray-700 dark:text-gray-200">{metadata.next_step || 'Chưa cập nhật'}</p></div>
+    </div>;
+  };
+
+  // @ts-ignore
+  const selectedReportView = selectedMember && <div className="space-y-5 p-4 md:p-5">
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-3"><h4 className="text-sm font-bold text-gray-900 dark:text-white">Chi tiết report ({selectedReportedTasks.length})</h4><span className="text-xs text-gray-400">Các trường được tracking từ PIC</span></div>
+      <div className="space-y-3">{selectedReportedTasks.length ? selectedReportedTasks.map(task => {
+        const report = reportFor(selectedMember.id, task.id);
+        return <article key={task.id} className="rounded-2xl border border-gray-100 p-3 dark:border-slate-700"><div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{task.title}</p><p className="mt-0.5 truncate text-[11px] text-gray-500">{task.project?.name || 'Task lẻ'} · {(task.status || 'todo').replaceAll('_', ' ')}</p></div><button type="button" onClick={() => navigate(`/tasks?task=${task.id}`)} className="shrink-0 text-xs font-semibold text-primary hover:underline">Mở task</button></div>{reportFields(report)}</article>;
+      }) : <p className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-slate-700">PIC chưa cập nhật report trong tuần này.</p>}</div>
+    </section>
+    <section>
+      <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><Images size={16} className="text-primary" />Hình ảnh minh chứng</h4>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{selectedReportedTasks.filter(task => reportFor(selectedMember.id, task.id)?.metadata?.image_url).map(task => { const imageUrl = reportFor(selectedMember.id, task.id)?.metadata?.image_url || ''; return <a key={task.id} href={imageUrl} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800"><img src={imageUrl} alt={`Minh chứng ${task.title}`} className="h-36 w-full bg-slate-50 object-cover transition-transform group-hover:scale-[1.02] dark:bg-slate-900" /><p className="truncate px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{task.title}</p></a>; })}{!selectedReportedTasks.some(task => reportFor(selectedMember.id, task.id)?.metadata?.image_url) && <p className="col-span-full rounded-xl border border-dashed border-gray-200 p-5 text-center text-xs text-gray-500 dark:border-slate-700">Chưa có hình ảnh minh chứng.</p>}</div>
+    </section>
+  </div>;
+
+  // @ts-ignore
+  const allTeamReportView = <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div><h3 className="text-sm font-bold text-gray-900 dark:text-white">Tất cả report của team</h3><p className="mt-1 text-xs text-gray-500">Task và hình ảnh được tổng hợp theo từng PIC.</p></div><span className="flex items-center gap-1.5 text-xs text-gray-500"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span></div>
+    <div className="custom-scrollbar max-h-[calc(100vh-220px)] space-y-3 overflow-y-auto p-4 md:p-5">{visibleMembers.map(member => {
+      const tasks = weeklyTasksByMember[member.id] || [];
+      const reported = tasks.filter(task => Boolean(reportFor(member.id, task.id)));
+      return <article key={member.id} className="rounded-2xl border border-gray-100 p-3 dark:border-slate-700"><button type="button" onClick={() => void openReport(member)} className="mb-3 flex w-full items-center justify-between gap-3 text-left"><span className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="block truncate text-[11px] text-gray-500">{reported.length}/{tasks.length} task đã report</span></span></span><ChevronRight size={16} className="text-gray-400" /></button><div className="grid gap-2 xl:grid-cols-2">{tasks.length ? tasks.map(task => { const report = reportFor(member.id, task.id); const imageUrl = report?.metadata?.image_url; return <div key={task.id} className="flex min-w-0 gap-2 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/40">{imageUrl && <img src={imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}<span className="min-w-0 flex-1"><b className="block truncate text-xs text-gray-800 dark:text-gray-200">{task.title}</b><span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${report ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{report ? (report.metadata?.unchanged ? 'Không thay đổi' : 'Đã report') : 'Chưa report'}</span></span></div>; }) : <p className="col-span-full py-2 text-center text-xs text-gray-400">Không có task trong tuần.</p>}</div></article>;
+    })}</div>
+  </section>;
 
   return (
     <div ref={reportGridRef} style={embedded ? { '--team-panel-width': `${teamPanelWidth}%` } as React.CSSProperties : undefined} className={embedded ? 'grid min-w-0 gap-x-2 gap-y-4 lg:grid-cols-[minmax(280px,var(--team-panel-width))_2px_minmax(0,1fr)]' : 'space-y-4'}>
@@ -157,7 +207,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
             <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><UsersRound size={19} className="text-primary" />Tổng report team</h3>
             <p className="mt-1 text-sm text-gray-500">Chọn thành viên để kiểm tra weekly report và nhắc cập nhật.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => setWeekSelection(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div><span className="inline-flex items-center gap-1.5 rounded-xl bg-primary/5 px-3 py-2 text-xs font-semibold text-primary"><FileText size={15} />{members.length} PIC</span></div>
+          <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50">{(['current', 'previous'] as const).map(option => <button key={option} type="button" aria-pressed={weekSelection === option} onClick={() => setWeekSelection(option)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${weekSelection === option ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary'}`}>{option === 'current' ? 'Tuần này' : 'Tuần trước'}</button>)}</div><button type="button" onClick={() => setSelectedMember(null)} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${!selectedMember ? 'bg-primary text-white shadow-sm' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}><FileText size={15} />See All</button><span className="text-xs font-semibold text-gray-500">{members.length} PIC</span></div>
         </div>
         <div className="mb-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/25"><b className="block text-lg text-primary">{teamReported}/{teamTotal}</b><span className="text-xs text-gray-500">Task đã report</span></div><div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/25"><b className="block text-lg text-amber-700 dark:text-amber-300">{Math.max(teamTotal - teamReported, 0)}</b><span className="text-xs text-gray-500">Cần cập nhật</span></div></div>
         <div className="relative mb-5 max-w-md">
@@ -165,17 +215,23 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
           <input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Tìm thành viên..." className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
         </div>
         <div className="space-y-2">
-          {loadingTeam ? <p className="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-slate-900">Đang tải đội ngũ…</p> : visibleMembers.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">Chưa có thành viên khác trong phòng ban.</p> : visibleMembers.map(member => (
-            <button key={member.id} type="button" onClick={() => void openReport(member)} className="group flex w-full items-center justify-between rounded-2xl border border-transparent p-3 text-left transition-colors hover:border-gray-200 hover:bg-gray-50 dark:hover:border-slate-700 dark:hover:bg-slate-700/50">
-              <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="mt-0.5 block truncate text-xs text-gray-500">{member.job_title || 'Nhân viên'} · {member.employment_level || 'Staff'}</span></span></span>
-              <span className="flex shrink-0 items-center gap-2"><span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">{reportProgress[member.id]?.reported || 0}/{reportProgress[member.id]?.total || 0} report</span><span className="hidden rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-300 sm:inline-flex">{taskCount[member.id] || 0} tasks</span><ChevronRight size={18} className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" /></span>
-            </button>
-          ))}
+          {loadingTeam ? <p className="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-slate-900">Đang tải đội ngũ…</p> : visibleMembers.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">Chưa có thành viên khác trong phòng ban.</p> : visibleMembers.map(member => {
+            const expanded = selectedMember?.id === member.id;
+            const compactTasks = weeklyTasksByMember[member.id] || [];
+            return <div key={member.id} className={`overflow-hidden rounded-2xl border transition-colors ${expanded ? 'border-primary/20 bg-primary/[0.02]' : 'border-transparent'}`}>
+              <button type="button" onClick={() => expanded ? setSelectedMember(null) : void openReport(member)} className="group flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="mt-0.5 block truncate text-xs text-gray-500">{member.job_title || 'Nhân viên'} · {member.employment_level || 'Staff'}</span></span></span>
+                <span className="flex shrink-0 items-center gap-2"><span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">{reportProgress[member.id]?.reported || 0}/{reportProgress[member.id]?.total || 0} report</span><span className="hidden rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-300 sm:inline-flex">{taskCount[member.id] || 0} tasks</span><ChevronDown size={18} className={`text-gray-400 transition-transform ${expanded ? 'rotate-180 text-primary' : ''}`} /></span>
+              </button>
+              {embedded && expanded && <div className="max-h-72 space-y-1 overflow-y-auto border-t border-gray-100 p-2 dark:border-slate-700">{compactTasks.length ? compactTasks.map(task => { const report = reportFor(member.id, task.id); return <button key={task.id} type="button" onClick={() => navigate(`/tasks?task=${task.id}`)} className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left hover:bg-white dark:hover:bg-slate-800"><span className="min-w-0"><b className="block truncate text-[11px] text-gray-700 dark:text-gray-200">{task.title}</b><span className="block truncate text-[10px] text-gray-400">{task.project?.name || 'Task lẻ'}</span></span><span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold ${report ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{report ? 'Đã report' : 'Chưa report'}</span></button>; }) : <p className="p-3 text-center text-xs text-gray-400">Không có task trong tuần.</p>}</div>}
+            </div>;
+          })}
         </div>
       </section>}
       {embedded && <div role="separator" aria-orientation="vertical" aria-label="Kéo để thay đổi độ rộng hai bảng report" aria-valuemin={30} aria-valuemax={65} aria-valuenow={Math.round(teamPanelWidth)} tabIndex={0} title="Kéo để thay đổi độ rộng hai bảng" onPointerDown={event => { if (event.pointerType === 'mouse' || event.pointerType === 'pen' || event.pointerType === 'touch') { event.currentTarget.setPointerCapture(event.pointerId); resizeTeamPanel(event.clientX); } }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeTeamPanel(event.clientX); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onKeyDown={event => { if (event.key === 'ArrowLeft') { event.preventDefault(); setTeamPanelWidth(width => Math.max(30, width - 2)); } else if (event.key === 'ArrowRight') { event.preventDefault(); setTeamPanelWidth(width => Math.min(65, width + 2)); } else if (event.key === 'Home') { event.preventDefault(); setTeamPanelWidth(30); } else if (event.key === 'End') { event.preventDefault(); setTeamPanelWidth(65); } }} className="group relative z-10 -mx-[5px] hidden w-3 cursor-col-resize touch-none items-center justify-center rounded-full outline-none lg:flex"><span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-primary/50 group-focus-visible:bg-primary dark:group-hover:bg-primary/70" /><span className="relative h-8 w-1 rounded-full bg-transparent transition-colors group-hover:bg-primary group-focus-visible:bg-primary" /></div>}
-      {selectedMember && !loadingReport && <div className={embedded ? 'card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm' : ''}>{embedded && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{selectedMember.avatar_url ? <img src={selectedMember.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(selectedMember.name)}</span><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{selectedMember.name}</p><p className="truncate text-xs text-gray-500">{selectedMember.job_title || 'Nhân viên'} · {selectedMember.employment_level || 'Staff'}</p></div></div><div className="flex shrink-0 items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-gray-500 sm:inline-flex"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span>{(reportProgress[selectedMember.id]?.total || 0) > (reportProgress[selectedMember.id]?.reported || 0) && <button type="button" disabled={reminding} onClick={() => void notify()} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" onClick={() => setSelectedMember(null)} aria-label="Bỏ chọn PIC" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={17} /></button></div></div>}<WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} showWeekSelection={!embedded} showHeader={!embedded} tasks={reportTasks} references={references} variant="inline" onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} reminding={reminding} /></div>}
-      {embedded && !selectedMember && !loadingTeam && <section className="card-hub lg:col-start-3 flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 p-8 text-center dark:border-slate-700"><UsersRound size={28} className="text-primary/60" /><h3 className="mt-3 font-bold text-gray-800 dark:text-white">Chọn PIC để xem report</h3><p className="mt-1 max-w-sm text-sm text-gray-500">Nội dung report theo từng task và hình minh chứng của thành viên sẽ hiển thị tại đây.</p></section>}
+      {selectedMember && !loadingReport && embedded && <section className="card-hub min-w-0 overflow-hidden rounded-2xl shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{selectedMember.avatar_url ? <img src={selectedMember.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(selectedMember.name)}</span><div className="min-w-0"><p className="truncate text-sm font-bold text-gray-900 dark:text-white">{selectedMember.name}</p><p className="truncate text-xs text-gray-500">{selectedMember.job_title || 'Nhân viên'} · {selectedMember.employment_level || 'Staff'}</p></div></div><div className="flex shrink-0 items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-gray-500 sm:inline-flex"><CalendarDays size={14} />{formatReportDate(weekStart)} – {formatReportDate(weekEnd)}</span>{(reportProgress[selectedMember.id]?.total || 0) > (reportProgress[selectedMember.id]?.reported || 0) && <button type="button" disabled={reminding} onClick={() => void notify()} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"><BellRing size={14} />Nhắc PIC</button>}<button type="button" onClick={() => setSelectedMember(null)} aria-label="Xem tất cả report" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={17} /></button></div></div>{selectedReportView}</section>}
+      {selectedMember && !loadingReport && !embedded && <WeeklyReportDrawer isOpen onClose={() => setSelectedMember(null)} ownerName={selectedMember.name} userId={selectedMember.id} weekStart={weekStart} weekEnd={weekEnd} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} variant="inline" onOpenTask={taskId => navigate(`/tasks?task=${taskId}`)} onRemindTask={task => void notify(task)} onRemindMember={() => void notify()} reminding={reminding} />}
+      {embedded && !selectedMember && !loadingTeam && allTeamReportView}
       {selectedMember && loadingReport && <div className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/10"><div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-gray-700 shadow-xl dark:bg-slate-800 dark:text-white">Đang tải weekly report của {selectedMember.name}…</div></div>}
     </div>
   );

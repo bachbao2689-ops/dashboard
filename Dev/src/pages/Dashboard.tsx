@@ -326,7 +326,7 @@ export const Dashboard: React.FC = () => {
             <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
             <div className={`text-xs mt-2 ${MUTED}`}>{s.dept}</div>
 
-            <div className="flex w-full bg-gray-50/80 dark:bg-slate-900/50 rounded-[14px] p-2 my-6 border border-gray-100 dark:border-slate-700 shadow-sm relative">
+            <div className="flex w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 my-6 border border-white/60 dark:border-slate-700/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative">
               {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
                 let items: any[] = [];
                 if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
@@ -337,13 +337,13 @@ export const Dashboard: React.FC = () => {
                 const hasMore = items.length > 5;
 
                 return (
-                  <div key={l as string} className="group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all cursor-default">
+                  <div key={l as string} className="group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white/70 dark:hover:bg-slate-800/60 hover:backdrop-blur-lg hover:shadow-[0_2px_10px_rgb(0,0,0,0.04)] hover:border hover:border-white/80 dark:hover:border-slate-700/50 border border-transparent transition-all cursor-default">
                     <strong className={`block text-xl 2xl:text-2xl font-bold ${INK}`}>{v}</strong>
                     <span className={`block text-[11px] mt-0.5 font-medium ${MUTED}`}>{l}</span>
                     
                     {/* Hover Bubble / Popover */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] pointer-events-none origin-bottom">
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-b border-r border-gray-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/75 dark:bg-slate-800/75 backdrop-blur-xl saturate-150 border border-white/60 dark:border-slate-600/50 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] pointer-events-none origin-bottom">
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-r border-white/60 dark:border-slate-600/50 transform rotate-45 rounded-sm"></div>
                       <div className="relative z-10 p-3 flex flex-col max-h-[300px] overflow-hidden">
                         <div className="flex items-center justify-between mb-2.5 px-1">
                           <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
@@ -354,7 +354,7 @@ export const Dashboard: React.FC = () => {
                         ) : (
                           <div className="space-y-1.5 flex-1 overflow-hidden">
                             {previewItems.map((item, idx) => (
-                              <div key={item.id || idx} className="px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-slate-900/30 text-left border border-transparent hover:border-gray-100 dark:hover:border-slate-700 transition-colors">
+                              <div key={item.id || idx} className="px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/70 dark:hover:bg-slate-800/60 shadow-sm transition-colors">
                                 <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
                                 {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
                               </div>
