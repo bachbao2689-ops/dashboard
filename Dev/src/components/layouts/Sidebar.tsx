@@ -25,7 +25,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} />, hidden: role !== 'admin' },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: role !== 'admin' && role !== 'leader' && role !== 'manager' }
+        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) }
       ]
     },
     {
