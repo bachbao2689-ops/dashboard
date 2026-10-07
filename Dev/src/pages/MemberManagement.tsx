@@ -64,7 +64,7 @@ export function MemberManagement() {
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{t('members.subtitle')}</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide w-full sm:w-auto">
           <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
               <Search className="w-5 h-5" />
@@ -81,7 +81,7 @@ export function MemberManagement() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+            className="h-8 sm:h-10 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
             <option value="">{t('members.allRoles')}</option>
             <option value="admin">Admin</option>
@@ -93,7 +93,7 @@ export function MemberManagement() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+            className="h-8 sm:h-10 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
             <option value="">{t('members.allStatus')}</option>
             <option value="active">Active</option>

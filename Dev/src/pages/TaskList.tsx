@@ -183,10 +183,10 @@ export const TaskList: React.FC = () => {
       
       <div className="flex justify-between items-center mb-6 shrink-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
-        <div className="flex items-center gap-3 relative z-50">
+        <div className="flex items-center gap-2 sm:gap-3 relative z-50 overflow-x-auto scrollbar-hide w-full sm:w-auto">
           {/* Expanding Search */}
           <div className="flex items-center relative h-10">
-            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
+            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-40 sm:w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
               <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -233,9 +233,9 @@ export const TaskList: React.FC = () => {
             <span className="text-sm font-medium">Export</span>
           </button>
           
-          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-2 bg-primary text-white px-4 py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
+          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-1 sm:space-x-2 bg-primary text-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex-shrink-0">
             <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">New Task</span>
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
           </button>}
           <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
         </div>
@@ -265,7 +265,7 @@ export const TaskList: React.FC = () => {
                   className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
                   onClick={() => toggleGroup(groupName)}
                 >
-                  <div className="flex items-center gap-3 relative z-50">
+                  <div className="flex items-center gap-2 sm:gap-3 relative z-50 overflow-x-auto scrollbar-hide w-full sm:w-auto">
                     <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center">
                       {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>
@@ -319,7 +319,7 @@ export const TaskList: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
                         <td className="p-4">
-                          <div className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-primary transition-colors">{task.title}</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-primary transition-colors line-clamp-2">{task.title}</div>
                           {task.department && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.department.name}</div>}
                         </td>
                         <td className="p-4 text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">{task.project?.name || '---'}</td>

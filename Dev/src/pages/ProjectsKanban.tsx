@@ -30,7 +30,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
         </div>
       )}
       
-      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 leading-snug">{task.title}</h4>
+      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 leading-snug line-clamp-2">{task.title}</h4>
       <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-md ${task.priority?.toLowerCase().includes('high') || task.priority?.toLowerCase().includes('urgent') ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : task.priority?.toLowerCase().includes('low') ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{task.priority || 'Medium'}</span>
       {task.description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>}
       

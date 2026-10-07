@@ -14,6 +14,7 @@ export const Header: React.FC = () => {
     const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const [showNotifs, setShowNotifs] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -31,7 +32,41 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const isHeaderHidden = false;
+    const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const travelRef = useRef(0);
+  const lastYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target || !target.clientHeight || target.clientHeight < 300) return;
+
+      const y = Math.max(0, target.scrollTop);
+      const delta = y - lastYRef.current;
+      
+      if (y <= 20) {
+        setIsHeaderHidden(false);
+        travelRef.current = 0;
+      } else {
+        if (delta && Math.sign(delta) !== Math.sign(travelRef.current)) {
+          travelRef.current = 0;
+        }
+        travelRef.current += delta;
+        
+        if (travelRef.current > 15 && y > 60) {
+          setIsHeaderHidden(true);
+          travelRef.current = 0;
+        } else if (travelRef.current < -15) {
+          setIsHeaderHidden(false);
+          travelRef.current = 0;
+        }
+      }
+      lastYRef.current = y;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+  }, []);
   
   
   const canViewDashboard = true;
@@ -133,10 +168,10 @@ export const Header: React.FC = () => {
     <div
       aria-hidden={isHeaderHidden}
       className={cn(
-        'shrink-0 transition-[max-height,opacity,transform] duration-300 ease-out',
+        'shrink-0 transition-[max-height,opacity,transform] duration-300 ease-out z-[100] relative',
         isHeaderHidden
-          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none overflow-hidden'
-          : 'max-h-24 translate-y-0 opacity-100 overflow-visible relative z-[100]',
+          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none overflow-hidden md:max-h-24 md:translate-y-0 md:opacity-100 md:pointer-events-auto md:overflow-visible'
+          : 'max-h-24 translate-y-0 opacity-100 overflow-visible',
       )}
     >
     <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
@@ -150,7 +185,7 @@ export const Header: React.FC = () => {
             
           </div>
         ) : (
-          <div className="hidden md:flex items-center gap-1 overflow-x-auto hide-scrollbar w-full">
+          <div className="hidden md:flex items-center gap-1 overflow-x-auto scrollbar-hide w-full">
             {navGroups.map(group => (
               <div 
                 key={group.title} 
@@ -219,7 +254,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* CENTER AREA (Mobile Logo) */}
-      <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+      <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
         <img src="/logo-light.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md block dark:hidden" />
         <img src="/logo-dark.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md hidden dark:block" />
       </div>
@@ -257,7 +292,24 @@ export const Header: React.FC = () => {
           </button>
 
           
-          <button onClick={() => navigate("/tasks")} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all block sm:hidden"><Search size={20} /></button>
+          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent'} border rounded-xl overflow-hidden h-9`}>
+            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
+              <Search size={18} />
+            </button>
+            <input
+              type="text"
+              placeholder={t("header.search")}
+              autoFocus={isSearchExpanded}
+              onBlur={() => setIsSearchExpanded(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                  navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
+                  setIsSearchExpanded(false);
+                }
+              }}
+              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            />
+          </div>
           
           <div className="relative" ref={notifRef}>
             <button 

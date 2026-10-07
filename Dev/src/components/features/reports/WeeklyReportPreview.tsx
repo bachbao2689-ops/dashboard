@@ -90,7 +90,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
               return (
                 <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative hover:z-50">
                   <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24">{task.title}</h4>
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24 line-clamp-2">{task.title}</h4>
                   <div className="absolute top-4 right-4 flex items-center gap-2">
                     {onEditTask && (
                       <button onClick={() => onEditTask(task.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="Chỉnh sửa"><Edit3 size={14}/></button>

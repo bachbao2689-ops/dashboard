@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, Package, User, BarChart2 } from 'lucide-react';
+import { Home, CheckSquare, Package, User } from 'lucide-react';
+import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
@@ -17,11 +18,13 @@ export const MobileNav: React.FC = () => {
   const lastYRef = useRef(0);
   
   const navItems = [
-    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={23} strokeWidth={1.8} /> },
-    { name: t('nav.home'), path: '/', icon: <Home size={23} strokeWidth={1.8} />, hidden: role !== 'admin' },
-    { name: t('nav.assets'), path: '/assets', icon: <Package size={23} strokeWidth={1.8} /> },
-    { name: 'Profile', path: '/my-tasks', icon: <User size={23} strokeWidth={1.8} /> },
-    { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={23} strokeWidth={1.8} />, hidden: !isLeader },
+    { name: t('nav.home'), path: '/', icon: <Home size={20} strokeWidth={1.8} />, hidden: role !== 'admin' },
+    { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
+    { name: 'Projects', path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
+    { name: 'Dashboard', path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, isCenter: true },
+    { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} /> },
+    { name: 'Profile', path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
+    { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
 
   useEffect(() => {
@@ -73,7 +76,7 @@ export const MobileNav: React.FC = () => {
           background: linear-gradient(to top, rgba(17,24,39,0.9), rgba(17,24,39,0));
         }
         .mobile-nav-container {
-          max-width: 350px;
+          max-width: 400px;
           margin: 0 auto;
           bottom: calc(24px + env(safe-area-inset-bottom));
           transform-origin: bottom center;
@@ -109,10 +112,12 @@ export const MobileNav: React.FC = () => {
             key={item.name}
             to={item.path}
             className={({ isActive }) => cn(
-              "flex flex-col items-center justify-center w-12 h-[44px] rounded-full transition-transform duration-300",
-              isActive 
-                ? "text-primary bg-gray-100 dark:bg-slate-700 scale-105 shadow-sm" 
-                : "text-gray-500 dark:text-gray-400"
+              "flex flex-col items-center justify-center transition-all duration-300 relative",
+              (item as any).isCenter 
+                ? "w-[48px] h-[48px] rounded-full bg-primary text-white shadow-lg -translate-y-2 hover:scale-105" 
+                : "flex-1 h-[44px] rounded-full",
+              !((item as any).isCenter) && isActive ? "text-primary bg-primary/10 dark:bg-slate-700 scale-105" : "",
+              !((item as any).isCenter) && !isActive ? "text-gray-500 hover:text-primary dark:text-gray-400" : ""
             )}
           >
             {item.icon}
