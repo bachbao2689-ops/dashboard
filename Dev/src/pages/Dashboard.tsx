@@ -101,9 +101,10 @@ void UPCOMING_PROJECTS;
 void TEAM_MEMBERS;
 
 const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-const toYmd = (value: Date) => value.toISOString().slice(0, 10);
+const toYmd = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-');
 const startOfCurrentWeek = () => { const value = new Date(); const weekday = value.getDay() || 7; value.setDate(value.getDate() - weekday + 1); value.setHours(0, 0, 0, 0); return value; };
-const dayKey = (value?: string | null) => value ? new Date(value).toISOString().slice(0, 10) : '';
+const dayKey = (value?: string | null) => value ? toYmd(new Date(value)) : '';
+const displayDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('vi-VN');
 const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
@@ -385,7 +386,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <strong className={`text-sm ${INK}`}>Lịch phân bổ task</strong>
-                <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · 28/9/2026 — 4/10/2026</p>
+                <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
               </div>
               <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
                 {(['weekly', 'custom'] as const).map(r => (
