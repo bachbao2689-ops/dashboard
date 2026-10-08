@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Avatar } from "../../common/Avatar";
+
 import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Reply, Save, Send, User, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
@@ -191,7 +193,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       <main className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6 md:px-8">
         <div className="flex gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${completed ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-primary'}`}>{completed ? 'Completed' : 'In progress'}</span></div>
         <section className="grid grid-cols-2 gap-3 rounded-2xl border border-blue-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/50">
-          <div><p className="text-[10px] uppercase text-gray-400"><User className="mr-1 inline h-3.5 w-3.5" />PIC</p><p className="mt-1 font-semibold">{subtask.assignee?.name || 'Unassigned'}</p></div>
+          <div><p className="text-[10px] uppercase text-gray-400"><User className="mr-1 inline h-3.5 w-3.5" />PIC</p><p className="mt-1 font-semibold flex items-center gap-1.5"><Avatar name={subtask.assignee?.name || 'Unassigned'} src={(subtask.assignee as any)?.avatar_url} className="w-5 h-5 text-[10px]" /> {subtask.assignee?.name || 'Unassigned'}</p></div>
           <div><p className="text-[10px] uppercase text-gray-400"><Calendar className="mr-1 inline h-3.5 w-3.5" />Due date</p><p className="mt-1 font-semibold">{displayDate(subtask.due_date)}</p></div>
         </section>
         <section>
