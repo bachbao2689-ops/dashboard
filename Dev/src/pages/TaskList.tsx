@@ -411,7 +411,7 @@ export const TaskList: React.FC = () => {
                           )}
                         </td>
                         <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit status coming soon', { icon: '🚧' }); }}>
-                          <StatusBadge status={mapStatus(task.status) as any} />
+                          <StatusBadge status={task.status} />
                         </td>
                         <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit priority coming soon', { icon: '🚧' }); }}>
                           <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold

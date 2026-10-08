@@ -278,6 +278,8 @@ export const Header: React.FC = () => {
           </button>
           <button 
             onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
+            aria-pressed={theme === 'dark'}
             className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all text-gray-600 dark:text-gray-300"
           >
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -318,6 +320,8 @@ export const Header: React.FC = () => {
           
           <button 
             onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
+            aria-pressed={theme === 'dark'}
             className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden md:block"
           >
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}

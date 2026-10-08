@@ -1,3 +1,4 @@
+import { StatusBadge } from '../../common/StatusBadge';
 import React, { useEffect, useState } from 'react';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, Megaphone, Trash2, EyeOff } from 'lucide-react';
@@ -16,7 +17,6 @@ const strictFormatVN = (dateStr?: string | null) => {
 };
 const formatDate = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
-const statusClass = (value: string) => value === 'completed' ? 'bg-emerald-100 text-emerald-700' : value === 'active' ? 'bg-blue-100 text-blue-700' : value === 'planning' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
 const campaignPriority = (campaign: any) => campaign.priority || (Number(campaign.budget) >= 50000000 ? 'high' : Number(campaign.budget) >= 30000000 ? 'medium' : 'low');
 
 
@@ -169,7 +169,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
             <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`Hạn chót: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date)}</div>}</div></td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
             <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
-            <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(c.status || 'planning')}`}>{c.status || 'planning'}</span></td>
+            <td><StatusBadge status={c.status || 'planning'} /></td>
             <td className="w-16 pr-4">{canManage && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Ẩn"><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={16}/></button></div>}</td>
           </tr>)}</tbody>
         </table>

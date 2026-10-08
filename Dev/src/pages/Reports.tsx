@@ -9,7 +9,8 @@ import { Download, CheckCircle, Clock, TrendingUp, Activity } from 'lucide-react
 import { useAuthStore } from '../store/authStore';
 import { LeaderReports } from '../components/features/reports/LeaderReports';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+import { statusMeta, priorityColor } from '../utils/statusTheme';
+const chartTooltip = { backgroundColor: 'var(--chart-tooltip)', border: '1px solid var(--chart-border)', borderRadius: '12px', color: 'var(--chart-text)', boxShadow: '0 12px 32px #0003' };
 
 export const Reports: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
@@ -73,7 +74,7 @@ const ManagerReports: React.FC = () => {
     : 0;
 
   return (
-    <div className="p-6 w-full space-y-6">
+    <div className="p-4 lg:p-6 w-full space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
@@ -157,12 +158,12 @@ const ManagerReports: React.FC = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={completionTrend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="name" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6' }}
+                  contentStyle={chartTooltip}
                 />
-                <Line type="monotone" dataKey="completed" stroke="#002e6d" strokeWidth={3} dot={{ r: 4, fill: '#002e6d' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="completed" name="Hoàn thành" stroke="var(--chart-success)" strokeWidth={3} dot={{ r: 4, fill: 'var(--chart-success)' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -174,19 +175,19 @@ const ManagerReports: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={statusDistribution}
+                  data={statusDistribution.map(entry => ({ ...entry, name: statusMeta(entry.name).label }))}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
+                  stroke="var(--chart-tooltip)" strokeWidth={3} innerRadius={62}
                   outerRadius={90}
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {statusDistribution.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={statusMeta(entry.name).color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6' }} />
+                <Tooltip contentStyle={chartTooltip} />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
@@ -198,12 +199,12 @@ const ManagerReports: React.FC = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={priorityBreakdown} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6' }} />
-                <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]}>
-                  {priorityBreakdown.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <XAxis dataKey="name" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={chartTooltip} />
+                <Bar dataKey="count" name="Số công việc" fill="#38bdf8" radius={[4, 4, 0, 0]}>
+                  {priorityBreakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={priorityColor(entry.name)} />
                   ))}
                 </Bar>
               </BarChart>
@@ -216,10 +217,10 @@ const ManagerReports: React.FC = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topPerformers} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
-                <XAxis type="number" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} width={100} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6' }} />
-                <Bar dataKey="completed" fill="#00C49F" radius={[0, 4, 4, 0]} />
+                <XAxis allowDecimals={false} type="number" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} width={100} />
+                <Tooltip contentStyle={chartTooltip} />
+                <Bar dataKey="completed" name="Hoàn thành" fill="var(--chart-success)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

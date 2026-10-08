@@ -4,7 +4,7 @@ import { Avatar } from "../components/common/Avatar";
 import {
   ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
 import { useNavigate } from 'react-router-dom';
@@ -446,13 +446,13 @@ export const Dashboard: React.FC = () => {
                 <AreaChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isDark ? '#38bdf8' : '#093570'} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={isDark ? '#38bdf8' : '#093570'} stopOpacity={0} />
+                    <stop offset="5%" stopColor={isDark ? '#b4a3ff' : '#6953bd'} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={isDark ? '#b4a3ff' : '#6953bd'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#f1f5f9'} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} dy={8} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} />
                 <Tooltip
                   cursor={{ stroke: isDark ? '#334155' : '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }}
                   formatter={(v, name) => [v + ' tasks', String(name).charAt(0).toUpperCase() + String(name).slice(1)]}
@@ -465,13 +465,14 @@ export const Dashboard: React.FC = () => {
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   }}
                 />
-                <Area type="monotone" dataKey="created" stroke={isDark ? '#38bdf8' : '#093570'} fill="url(#colorCreated)" strokeWidth={2.5} />
-                <Area type="monotone" dataKey="doing" stroke="#f59e0b" fill="transparent" strokeDasharray="3 3" strokeWidth={2} />
-                <Area type="monotone" dataKey="done" stroke="#45a894" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
+                <Legend iconType="plainline" iconSize={16} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+                <Area type="monotone" dataKey="created" name="Tạo mới" stroke={isDark ? '#b4a3ff' : '#6953bd'} fill="url(#colorCreated)" strokeWidth={2.5} />
+                <Area type="monotone" dataKey="doing" name="Đang thực hiện" stroke="#38bdf8" fill="transparent" strokeDasharray="3 3" strokeWidth={2} />
+                <Area type="monotone" dataKey="done" name="Hoàn thành" stroke="#4eb648" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
               </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className={`text-center text-xs mt-1 ${MUTED}`}>Hover để xem Created, Doing, Done · Click biểu đồ để xem Performance report</p>
+            <p className={`text-center text-xs mt-1 ${MUTED}`}>Di chuột để xem số công việc · Chọn biểu đồ để xem báo cáo hiệu suất</p>
           </div>
           
           {/* Insight strip */}

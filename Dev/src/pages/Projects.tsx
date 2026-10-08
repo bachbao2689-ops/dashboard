@@ -1,3 +1,4 @@
+import { StatusBadge } from '../components/common/StatusBadge';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar } from "../components/common/Avatar";
 
@@ -24,7 +25,6 @@ const strictFormatVN = (dateStr?: string | null) => {
 };
 const dateValue = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' || value === 'urgent' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
-const statusClass = (value: string) => value === 'completed' ? 'bg-emerald-100 text-emerald-700' : value === 'active' || value === 'in-progress' ? 'bg-blue-100 text-blue-700' : value === 'planning' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
 
 
 const MultiSelect = ({ options, value, onChange, placeholder }: any) => {
@@ -493,7 +493,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 </td>
 <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="flex items-center gap-1.5"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date)}`} title={`Hạn chót: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date)}</div>}</div></td>
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></td>
-<td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClass(project.status || 'active')}`}>{project.status || 'active'}</span></td>
+<td><StatusBadge status={project.status || 'active'} /></td>
 <td className="w-16 pr-4">{canCreate && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Ẩn"><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={16}/></button></div>}</td>
 </tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">Chưa có Project nào.</div>}</div>}</section>
   
