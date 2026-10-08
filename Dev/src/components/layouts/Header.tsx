@@ -348,11 +348,11 @@ export const Header: React.FC = () => {
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
             >
               <Bell size={20} />
-              {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
+              {notifications.length > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{notifications.length > 99 ? "99+" : notifications.length}</span>}
             </button>
             
             {showNotifs && (
-              <div className="fixed inset-x-4 top-[80px] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden">
                 <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
                   <span>Notifications</span>
                   <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>Mark all as read</span>
