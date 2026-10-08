@@ -77,9 +77,9 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
   }, [rangeOpen, monthPickerOpen, showNotifications]);
 
-  const filtered = useMemo(() => items.filter(item => {
+  const preFiltered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');
-    if (!((filter === 'all' || category(item) === filter) && text.includes(query.trim().toLocaleLowerCase('vi')))) return false;
+    if (!text.includes(query.trim().toLocaleLowerCase('vi'))) return false;
     
     const s = (item.status || '').toLowerCase();
     const isDeleted = s === 'deleted';
@@ -88,15 +88,27 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     if (status === 'deleted') return isDeleted;
     if (status === 'hidden') return isHidden;
     
-    // Hide deleted/hidden from normal views
     if (isDeleted || isHidden) return false;
-    
-    if (status === 'all') return true;
     if (status === 'open') return !isCalendarDone(s);
     if (status === 'done') return isCalendarDone(s);
     if (status === 'overdue') return isCalendarOverdue(item, today);
-    return false;
-  }), [items, filter, query, status, today]);
+    return true;
+  }), [items, query, status, today]);
+
+  const filtered = useMemo(() => preFiltered.filter(item => filter === 'all' || category(item) === filter), [preFiltered, filter]);
+
+  const dynamicTabs = useMemo(() => {
+    const countAll = preFiltered.length;
+    const countTask = preFiltered.filter(item => category(item) === 'task').length;
+    const countProj = preFiltered.filter(item => category(item) === 'project').length;
+    const countCamp = preFiltered.filter(item => category(item) === 'campaign').length;
+    return [
+      { id: 'all' as const, label: `Tất cả (${countAll})` },
+      { id: 'task' as const, label: `Tasks (${countTask})` },
+      { id: 'project' as const, label: `Projects (${countProj})` },
+      { id: 'campaign' as const, label: `Campaigns (${countCamp})` }
+    ];
+  }, [preFiltered]);
   const days = useMemo(() => monthDays(cursor.getFullYear(), cursor.getMonth()), [cursor]);
   const rangeOffset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
   const rangeLength = range === 'today' ? 1 : range === 'three' ? 3 : range === 'week' ? 7 : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
@@ -179,7 +191,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
-            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
+            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
             {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[320px] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog 
               includeTeam={includeTeamNotifications} 
               inline 
@@ -202,12 +214,12 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               }}
             /></div>}
           </div>
-          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
+          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">
-          {filters.map(option => {
+          {dynamicTabs.map(option => {
             let activeClass = 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white';
             if (option.id === 'task') activeClass = 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50';
             if (option.id === 'project') activeClass = 'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50';

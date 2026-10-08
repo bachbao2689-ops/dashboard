@@ -296,10 +296,13 @@ export const TaskList: React.FC = () => {
           </div>
 
           {/* Filters Panel Toggle */}
-          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
-            <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium">Filters</span>
-          </button>
+          <div className="relative">
+            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">Filters</span>
+            </button>
+            <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
+          </div>
 
           <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1"></div>
 
@@ -312,7 +315,6 @@ export const TaskList: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
           </button>}
-          <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
         </div>
       </div>
 

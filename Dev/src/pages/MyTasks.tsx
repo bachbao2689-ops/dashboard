@@ -1,7 +1,7 @@
 import { ProjectCampaignDetailPanel } from '../components/features/projects/ProjectCampaignDetailPanel';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
-import { Filter } from 'lucide-react';
+import { Filter, User } from 'lucide-react';
 
 
 import { ProfileHeader } from '../components/features/profile/ProfileHeader';
@@ -65,17 +65,21 @@ export const MyTasks: React.FC = () => {
           includeTeamNotifications={isManager}
           extraFilters={
             isManager && (
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-              <Filter size={16} className="text-gray-400 ml-2" />
-              <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300">
-                <option value="">Tất cả phòng ban</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-              <div className="w-px h-5 bg-gray-200 dark:bg-slate-700" />
-              <select value={filterPic} onChange={e => setFilterPic(e.target.value)} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300">
-                <option value="">{filterDept ? 'Tất cả nhân sự' : 'Chọn nhân sự (PIC)'}</option>
-                {visibleUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
+                <Filter size={15} className="text-gray-400" />
+                <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <option value="">Tất cả phòng ban</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
+                <User size={15} className="text-gray-400" />
+                <select value={filterPic} onChange={e => setFilterPic(e.target.value)} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <option value="">{filterDept ? 'Tất cả nhân sự' : 'Chọn nhân sự (PIC)'}</option>
+                  {visibleUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
             </div>
             )
           }
