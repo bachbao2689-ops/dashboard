@@ -169,7 +169,7 @@ export const Dashboard: React.FC = () => {
       `user-${user.id}`,
       'staff',
       user.name,
-      user.job_title ? `${user.employment_level || 'Nhân viên'} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : 'Thành viên'),
+      user.job_title ? `${user.employment_level || (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Nhân viên')} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Thành viên'),
       user.department?.name || 'Chưa cập nhật team',
       tasks.filter(task => String(task.assignee_id) === String(user.id))
     ));
