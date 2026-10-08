@@ -244,7 +244,7 @@ body,
 .dark .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
 .dark .glass-panel {
   background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
-  /* Removed border-color: #334155 so it inherits #2b3d53 from theme.css */
+  border-color: #6384b6; /* User specifically requested this brighter border for outer cards */
 }
 
 /* ===== UI Shape Rules ===== */
