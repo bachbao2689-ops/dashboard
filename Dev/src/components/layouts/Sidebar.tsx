@@ -93,8 +93,8 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="mt-auto pt-4 px-6 text-center">
-        <p className="text-xs font-semibold text-gray-500 tracking-wider">
-          Making by <span className="text-primary">K COFFEE</span>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
+          Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
         </p>
       </div>
     </aside>
