@@ -28,14 +28,14 @@ type CalendarRange = (typeof ranges)[number]['id'] | 'custom';
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
-  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-transparent dark:bg-[#9dff9633] dark:text-[#63f858]'
+  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-transparent dark:!bg-[#9dff9633] dark:!text-[#63f858]'
   : isCalendarOverdue(item, today)
-    ? 'border-red-200 bg-red-50 text-red-700 dark:border-transparent dark:bg-[#ff002033] dark:text-[#ff324b]'
+    ? 'border-red-200 bg-red-50 text-red-700 dark:border-transparent dark:!bg-[#ff002033] dark:!text-[#ff324b]'
     : item.kind === 'campaign' || item.kind === 'campaign_subtask'
-      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-transparent dark:bg-[#c48a0085] dark:text-[#ffb500]'
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-transparent dark:!bg-[#c48a0085] dark:!text-[#ffb500]'
       : item.kind === 'project' || item.kind === 'project_subtask'
-        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:bg-[#6c2bff33] dark:text-white'
-        : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:bg-[#8ad5ff30] dark:text-[#61baff]';
+        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:!bg-[#6c2bff33] dark:!text-white'
+        : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:!bg-[#8ad5ff30] dark:!text-[#61baff]';
 
 export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications, extraFilters }: Props) {
   const [today, setToday] = useState(() => localDay(new Date()));
@@ -188,7 +188,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   return <section className="profile-calendar card-hub overflow-hidden rounded-xl shadow-sm" aria-label="Lịch công việc cá nhân" aria-busy={loading}>
     <div className="space-y-4 border-b border-gray-100 p-4 dark:border-slate-700 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
+        <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:!text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
             <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
@@ -220,7 +220,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">
           {dynamicTabs.map(option => {
-            let activeClass = 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white';
+            let activeClass = 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:!text-white';
             if (option.id === 'task') activeClass = 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50';
             if (option.id === 'project') activeClass = 'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50';
             if (option.id === 'campaign') activeClass = 'bg-amber-50 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
@@ -266,7 +266,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </label>
         <div className="relative" ref={monthMenuRef}>
           <button type="button" onClick={() => { setPickerYear(cursor.getFullYear()); setMonthPickerOpen(!monthPickerOpen); setRangeOpen(false); }} className="group flex items-center gap-1.5 text-left">
-            <p className="text-base font-bold text-gray-900 dark:text-white transition-colors group-hover:text-primary">{periodTitle}</p>
+            <p className="text-base font-bold text-gray-900 dark:!text-white transition-colors group-hover:text-primary">{periodTitle}</p>
             <ChevronDown size={14} className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
           <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p>
@@ -274,7 +274,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           {monthPickerOpen && <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-3 flex items-center justify-between">
               <button type="button" onClick={() => setPickerYear(y => y - 1)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={16}/></button>
-              <span className="font-bold text-gray-900 dark:text-white">{pickerYear}</span>
+              <span className="font-bold text-gray-900 dark:!text-white">{pickerYear}</span>
               <button type="button" onClick={() => setPickerYear(y => y + 1)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronRight size={16}/></button>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -289,8 +289,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-slate-800">
-          <button type="button" onClick={() => setViewMode('grid')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><LayoutGrid size={15}/></button>
-          <button type="button" onClick={() => setViewMode('list')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><List size={15}/></button>
+          <button type="button" onClick={() => setViewMode('grid')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><LayoutGrid size={15}/></button>
+          <button type="button" onClick={() => setViewMode('list')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><List size={15}/></button>
         </div>
         <div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="rounded-l-xl p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
           <button type="button" onClick={() => { setPickerMonth(cursor.getMonth()); setPickerYear(cursor.getFullYear()); setRangeOpen(value => !value); setMonthPickerOpen(false); }} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">
@@ -303,7 +303,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             <div className="p-3 sm:flex-1">
               <div className="mb-2 flex items-center justify-between">
                 <button type="button" onClick={() => { let m = pickerMonth - 1; let y = pickerYear; if (m < 0) { m = 11; y--; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={14}/></button>
-                <span className="text-xs font-bold text-gray-900 dark:text-white">Tháng {pickerMonth + 1}, {pickerYear}</span>
+                <span className="text-xs font-bold text-gray-900 dark:!text-white">Tháng {pickerMonth + 1}, {pickerYear}</span>
                 <button type="button" onClick={() => { let m = pickerMonth + 1; let y = pickerYear; if (m > 11) { m = 0; y++; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronRight size={14}/></button>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center">
@@ -464,7 +464,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           return (
             <div key={day} className={`flex flex-col sm:flex-row gap-4 border-b border-gray-100 dark:border-slate-800 p-4 sm:p-5 ${day === today ? 'bg-blue-50/40 dark:bg-slate-800/40' : ''}`}>
               <div className="w-28 shrink-0">
-                <div className="text-sm font-bold text-gray-900 dark:text-white">{date.getDate()} Th{date.getMonth() + 1}</div>
+                <div className="text-sm font-bold text-gray-900 dark:!text-white">{date.getDate()} Th{date.getMonth() + 1}</div>
                 <div className="text-xs font-semibold text-gray-500">{weekdayLabels[wDay]}</div>
               </div>
               <div className="flex-1 flex flex-wrap gap-4">
@@ -504,7 +504,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{calendarKindLabel[item.kind]}</span>
                           {daysLeftLabel && <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold shadow-sm ${daysLeftColor}`}>{daysLeftLabel}</span>}
                         </div>
-                        <h4 className="font-bold text-gray-900 dark:text-white line-clamp-2 text-sm leading-snug">{item.title}</h4>
+                        <h4 className="font-bold text-gray-900 dark:!text-white line-clamp-2 text-sm leading-snug">{item.title}</h4>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 border-t border-black/5 dark:border-white/5 pt-2.5">
                         <span className="font-medium flex items-center gap-1">⏱ {item.due ? formatCalendarDay(item.due) : '—'}</span>
@@ -533,7 +533,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       </div>
     )}
 
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400 dark:bg-[#61baff]" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400 dark:bg-[#6c2bff]" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 dark:bg-[#ffb500]" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 dark:bg-[#63f858]" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 dark:bg-[#ff324b]" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
-    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400 dark:!bg-[#61baff]" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400 dark:!bg-[#6c2bff]" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 dark:!bg-[#ffb500]" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 dark:!bg-[#63f858]" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 dark:!bg-[#ff324b]" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
+    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:!text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }
