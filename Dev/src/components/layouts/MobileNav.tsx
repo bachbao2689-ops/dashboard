@@ -11,7 +11,7 @@ export const MobileNav: React.FC = () => {
   const [isHidden, setIsHidden] = useState(false);
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
-  const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || role.toLowerCase() === 'leader';
+  const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
   
   // Track scroll travel logic to avoid jitter
   const travelRef = useRef(0);
