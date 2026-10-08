@@ -76,9 +76,23 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
 
   const filtered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');
-    return (filter === 'all' || category(item) === filter)
-      && text.includes(query.trim().toLocaleLowerCase('vi'))
-      && (status === 'all' || (status === 'open' ? !isCalendarDone(item.status) : status === 'done' ? isCalendarDone(item.status) : isCalendarOverdue(item, today)));
+    if (!((filter === 'all' || category(item) === filter) && text.includes(query.trim().toLocaleLowerCase('vi')))) return false;
+    
+    const s = (item.status || '').toLowerCase();
+    const isDeleted = s === 'deleted';
+    const isHidden = s === 'hidden' || s === 'archived';
+    
+    if (status === 'deleted') return isDeleted;
+    if (status === 'hidden') return isHidden;
+    
+    // Hide deleted/hidden from normal views
+    if (isDeleted || isHidden) return false;
+    
+    if (status === 'all') return true;
+    if (status === 'open') return !isCalendarDone(s);
+    if (status === 'done') return isCalendarDone(s);
+    if (status === 'overdue') return isCalendarOverdue(item, today);
+    return false;
   }), [items, filter, query, status, today]);
   const days = useMemo(() => monthDays(cursor.getFullYear(), cursor.getMonth()), [cursor]);
   const rangeOffset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;

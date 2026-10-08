@@ -52,10 +52,10 @@ export function useProfileCalendar() {
         const projectIds = [...new Set([...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
         const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name)').in('id', projectIds).order('id')) : [];
         const linkedProjectMembers = projectIds.length ? await allRows(supabase.from('project_members').select('project_id,user:user_id(name)').in('project_id', projectIds).order('project_id')) : [];
-        const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()].filter(row => isCalendarVisible(row.status));
+        const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()];
         const campaignIds = [...new Set([...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
         const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name)').in('id', campaignIds).order('id')) : [];
-        const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()].filter(row => isCalendarVisible(row.status));
+        const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()];
         const projectMap = new Map(projects.map(row => [row.id, row]));
         const campaignMap = new Map(campaigns.map(row => [row.id, row]));
         const projectMemberNames = new Map<string, string[]>();
@@ -78,7 +78,7 @@ export function useProfileCalendar() {
           };
         };
         const items = [
-          ...tasks.filter(row => isCalendarVisible(row.status)).map(row => makeItem(row, 'task')),
+          ...tasks.map(row => makeItem(row, 'task')),
           ...projects.map(row => makeItem(row, 'project')),
           ...campaigns.map(row => makeItem(row, 'campaign')),
           ...projectSubtasks.filter(row => isCalendarVisible(row.status) && projectMap.has(row.project_id)).map(row => makeItem(row, 'project_subtask')),
