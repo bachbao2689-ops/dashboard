@@ -22,7 +22,7 @@ interface Props {
 
 const filters = [{ id: 'all', label: 'Tất cả' }, { id: 'task', label: 'Tasks' }, { id: 'project', label: 'Projects' }, { id: 'campaign', label: 'Campaigns' }] as const;
 const ranges = [{ id: 'today', label: 'Hôm nay' }, { id: 'three', label: '3 ngày' }, { id: 'week', label: '1 tuần' }, { id: 'month', label: '1 tháng' }] as const;
-type CalendarRange = (typeof ranges)[number]['id'];
+type CalendarRange = (typeof ranges)[number]['id'] | 'custom';
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
@@ -44,6 +44,10 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [cursor, setCursor] = useState(() => new Date());
   const [range, setRange] = useState<CalendarRange>('today');
   const [rangeOpen, setRangeOpen] = useState(false);
+  const [customStart, setCustomStart] = useState<Date | null>(null);
+  const [customEnd, setCustomEnd] = useState<Date | null>(null);
+  const [dragStart, setDragStart] = useState<Date | null>(null);
+  const [dragHover, setDragHover] = useState<Date | null>(null);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
@@ -79,8 +83,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const days = useMemo(() => monthDays(cursor.getFullYear(), cursor.getMonth()), [cursor]);
   const rangeOffset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
   const rangeLength = range === 'today' ? 1 : range === 'three' ? 3 : range === 'week' ? 7 : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
-  const rangeStartDate = range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12) : new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - rangeOffset, 12);
-  const rangeEndDate = range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 12) : new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth(), rangeStartDate.getDate() + rangeLength - 1, 12);
+  const rangeStartDate = range === 'custom' && customStart ? customStart : (range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12) : new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - rangeOffset, 12));
+  const rangeEndDate = range === 'custom' && customEnd ? customEnd : (range === 'custom' && customStart ? customStart : (range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 12) : new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth(), rangeStartDate.getDate() + rangeLength - 1, 12)));
   const visibleStart = localDay(rangeStartDate);
   const visibleEnd = localDay(rangeEndDate);
   const monthStart = localDay(new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12));
@@ -98,7 +102,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     setCursor(next); setExpandedDays(new Set()); setHovered(null);
   };
   const selectRange = (next: CalendarRange) => { setRange(next); setCursor(new Date()); setRangeOpen(false); setExpandedDays(new Set()); setHovered(null); };
-  const selectedRangeLabel = range === 'today' && localDay(cursor) !== today ? formatCalendarDay(localDay(cursor)) : ranges.find(option => option.id === range)?.label;
+  const selectedRangeLabel = range === 'custom' && customStart && customEnd ? `${formatCalendarDay(localDay(customStart))} - ${formatCalendarDay(localDay(customEnd))}` : range === 'today' && localDay(cursor) !== today ? formatCalendarDay(localDay(cursor)) : ranges.find(option => option.id === range)?.label;
   const periodTitle = `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}`;
   const showHover = (item: CalendarItem, element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
@@ -220,12 +224,52 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                   const offset = (firstDay + 6) % 7;
                   const days = [];
                   for (let i = 0; i < offset; i++) days.push(<div key={`e-${i}`} />);
+                  
+                  const activeStart = dragStart || (range === 'custom' ? customStart : cursor);
+                  const activeEnd = dragStart ? dragHover : (range === 'custom' ? customEnd : null);
+                  const s = activeStart && activeEnd ? (activeStart < activeEnd ? activeStart : activeEnd) : activeStart;
+                  const e = activeStart && activeEnd ? (activeStart > activeEnd ? activeStart : activeEnd) : activeEnd;
+                  const sStr = s ? localDay(s) : null;
+                  const eStr = e ? localDay(e) : null;
+
                   for (let i = 1; i <= daysInMonth; i++) {
-                    const isSelected = cursor.getDate() === i && cursor.getMonth() === pickerMonth && cursor.getFullYear() === pickerYear && range === 'today';
+                    const date = new Date(pickerYear, pickerMonth, i, 12);
+                    const dateStr = localDay(date);
+                    
+                    let isSelected = false;
+                    let isRange = false;
+                    
+                    if (range === 'custom' || dragStart) {
+                      if (sStr === dateStr || eStr === dateStr) isSelected = true;
+                      if (sStr && eStr && dateStr > sStr && dateStr < eStr) isRange = true;
+                    } else if (range === 'today') {
+                      isSelected = cursor.getDate() === i && cursor.getMonth() === pickerMonth && cursor.getFullYear() === pickerYear;
+                    }
+                    
                     days.push(
-                      <button key={i} type="button" onClick={() => { setCursor(new Date(pickerYear, pickerMonth, i)); setRange('today'); setRangeOpen(false); }} className={`h-7 w-7 rounded-full text-xs font-medium transition-colors ${isSelected ? 'bg-primary text-white shadow-md' : 'text-gray-700 hover:bg-primary/10 dark:text-gray-200 dark:hover:bg-slate-700'}`}>
-                        {i}
-                      </button>
+                      <div key={i} className={`relative ${isRange ? 'bg-primary/10 dark:bg-primary/20' : ''} ${(isSelected && eStr && dateStr === sStr && sStr !== eStr) ? 'rounded-l-full bg-primary/10 dark:bg-primary/20' : ''} ${(isSelected && sStr && dateStr === eStr && sStr !== eStr) ? 'rounded-r-full bg-primary/10 dark:bg-primary/20' : ''}`}>
+                        <button type="button" 
+                          onPointerEnter={() => { if (dragStart) setDragHover(date); }}
+                          onClick={() => {
+                            if (!dragStart) {
+                              setDragStart(date);
+                              setDragHover(date);
+                              setRange('custom');
+                            } else {
+                              let start = dragStart;
+                              let end = date;
+                              if (end < start) { start = date; end = dragStart; }
+                              setCustomStart(start);
+                              setCustomEnd(end);
+                              setDragStart(null);
+                              setDragHover(null);
+                              setCursor(start);
+                            }
+                          }} 
+                          className={`relative z-10 h-7 w-full rounded-full text-xs font-medium transition-colors ${isSelected ? 'bg-primary text-white shadow-md' : 'text-gray-700 hover:bg-primary/20 dark:text-gray-200 dark:hover:bg-slate-700'}`}>
+                          {i}
+                        </button>
+                      </div>
                     );
                   }
                   return days;
@@ -234,12 +278,19 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             </div>
 
             {/* Presets */}
-            <div className="flex flex-row border-t border-gray-100 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-900 sm:w-28 sm:flex-col sm:border-l sm:border-t-0">
-              {ranges.map(option => (
-                <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`flex-1 rounded-lg px-3 py-2 text-left text-xs font-semibold sm:flex-none ${range === option.id ? 'bg-white text-primary shadow-sm dark:bg-slate-800' : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-slate-700'}`}>
-                  {option.label}
+            <div className="flex flex-col border-t border-gray-100 bg-gray-50 dark:border-slate-700 dark:bg-slate-900 sm:w-32 sm:border-l sm:border-t-0">
+              <div className="flex-1 p-2 space-y-1 overflow-y-auto">
+                {ranges.map(option => (
+                  <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-white text-primary shadow-sm dark:bg-slate-800' : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-slate-700'}`}>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="p-2 border-t border-gray-200 dark:border-slate-700">
+                <button type="button" onClick={() => setRangeOpen(false)} className="w-full rounded-lg bg-primary py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary/90">
+                  Áp dụng
                 </button>
-              ))}
+              </div>
             </div>
             
           </div>}
