@@ -58,14 +58,14 @@ export function useProfileCalendar() {
         const projectMap = new Map(projects.map(row => [row.id, row]));
         const campaignMap = new Map(campaigns.map(row => [row.id, row]));
         const makeItem = (record: any, kind: CalendarKind): CalendarItem => {
-          const parent = kind === 'campaign_subtask' ? campaignMap.get(record.campaign_id) : projectMap.get(record.project_id);
+          const parent = kind === 'campaign_subtask' ? campaignMap.get(record.campaign_id) : projectMap.get(record.project_id) || campaignMap.get(record.campaign_id);
           return {
             key: `${kind}:${record.id}`, id: record.id, kind, title: record.title || record.name,
             status: record.status, priority: record.priority, description: record.description || record.objective,
             ...calendarDates(record, kind), parentId: parent?.id, parentName: parent?.name || record.project?.name,
             campaignId: record.campaign_id || parent?.campaign_id,
             owner: record.assignee?.name || record.lead?.name || record.creator?.name,
-            record,
+            record: { ...record, campaign: campaignMap.get(record.campaign_id) || null },
           };
         };
         const items = [
