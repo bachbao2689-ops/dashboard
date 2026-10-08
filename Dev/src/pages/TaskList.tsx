@@ -171,22 +171,71 @@ export const TaskList: React.FC = () => {
     refetch();
   };
 
-  const filteredTasks = tasks.filter(t => 
-    (filters.status === 'done' || !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((t.status || '').toLowerCase())) &&
-    (filters.status === 'all' || mapStatus(t.status) === filters.status || t.status === filters.status) &&  
-    (filters.priority === 'all' || mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase()) &&
-    (filters.assignee === 'all' || (filters.assignee === 'me' && String(t.assignee_id) === String(profileId)) || t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee) &&
-    (!departmentParam || t.department?.name === departmentParam) &&
-    (!startParam || !t.due_date || new Date(t.due_date) >= new Date(`${startParam}T00:00:00`)) &&
-    (!endParam || !t.due_date || new Date(t.due_date) <= new Date(`${endParam}T23:59:59`)) &&
-    (!shortcutScope || (
-      String(t.assignee_id) === String(profileId) &&
-      (shortcutScope === 'mine' ||
-        (shortcutScope === 'due-soon' && isOpenTask(t) && t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays) ||
-        (shortcutScope === 'overdue' && isOpenTask(t) && t.due_date && new Date(t.due_date) < today))
-    )) &&
-    (t.title?.toLowerCase().includes(searchTerm.toLowerCase()) || t.task_ref?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTasks = tasks.filter(t => {
+    // 1. Status Filter
+    let statusMatch = true;
+    if (filters.status !== 'all') {
+      const ms = mapStatus(t.status || '');
+      const mapped = ms === 'in-progress' ? 'in_progress' : ms;
+      statusMatch = (mapped === filters.status) || (t.status?.toLowerCase() === filters.status.toLowerCase());
+    }
+    
+    // 2. Priority
+    let priorityMatch = true;
+    if (filters.priority !== 'all') {
+      priorityMatch = mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase();
+    }
+    
+    // 3. Assignee
+    let assigneeMatch = true;
+    if (filters.assignee !== 'all') {
+      if (filters.assignee === 'me') {
+        assigneeMatch = String(t.assignee_id) === String(profileId);
+      } else if (filters.assignee === 'unassigned') {
+        assigneeMatch = !t.assignee_id && !t.assignee;
+      } else {
+        assigneeMatch = t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee;
+      }
+    }
+    
+    // 4. Department
+    let deptMatch = true;
+    if (departmentParam) {
+      deptMatch = t.department?.name === departmentParam;
+    }
+    
+    // 5. Date Range
+    let dateMatch = true;
+    if (startParam && t.due_date) {
+      dateMatch = dateMatch && new Date(t.due_date) >= new Date(`${startParam}T00:00:00`);
+    }
+    if (endParam && t.due_date) {
+      dateMatch = dateMatch && new Date(t.due_date) <= new Date(`${endParam}T23:59:59`);
+    }
+
+    // 6. Shortcut scope
+    let shortcutMatch = true;
+    if (shortcutScope) {
+      if (String(t.assignee_id) !== String(profileId)) {
+        shortcutMatch = false;
+      } else {
+        if (shortcutScope === 'due-soon') {
+          shortcutMatch = isOpenTask(t) && !!t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays;
+        } else if (shortcutScope === 'overdue') {
+          shortcutMatch = isOpenTask(t) && !!t.due_date && new Date(t.due_date) < today;
+        }
+      }
+    }
+
+    // 7. Search
+    let searchMatch = true;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      searchMatch = (t.title?.toLowerCase().includes(term) || t.task_ref?.toLowerCase().includes(term));
+    }
+
+    return statusMatch && priorityMatch && assigneeMatch && deptMatch && dateMatch && shortcutMatch && searchMatch;
+  });
 
   const groupedTasks = useMemo(() => {
     if (groupBy === 'none') return { 'All Tasks': filteredTasks };
