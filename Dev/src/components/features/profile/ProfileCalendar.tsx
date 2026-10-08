@@ -44,6 +44,9 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [cursor, setCursor] = useState(() => new Date());
   const [range, setRange] = useState<CalendarRange>('today');
   const [rangeOpen, setRangeOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
   const [filter, setFilter] = useState<(typeof filters)[number]['id']>('all');
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -51,14 +54,21 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
   const rangeMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const monthMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!rangeOpen) return;
-    const closeOutside = (event: PointerEvent) => { if (!rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); };
-    const closeEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setRangeOpen(false); };
+    const closeOutside = (event: PointerEvent) => { 
+      if (rangeOpen && !rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); 
+      if (monthPickerOpen && !monthMenuRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
+      if (showNotifications && !notifRef.current?.contains(event.target as Node)) setShowNotifications(false);
+    };
+    const closeEscape = (event: KeyboardEvent) => { 
+      if (event.key === 'Escape') { setRangeOpen(false); setMonthPickerOpen(false); setShowNotifications(false); }
+    };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);
     return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
-  }, [rangeOpen]);
+  }, [rangeOpen, monthPickerOpen, showNotifications]);
 
   const filtered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');
@@ -112,7 +122,10 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo{unread.length > 0 && <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{unread.length}</span>}</button>
+          <div className="relative" ref={notifRef}>
+            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo{unread.length > 0 && <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{unread.length}</span>}</button>
+            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[320px] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog includeTeam={includeTeamNotifications} inline onClose={() => setShowNotifications(false)} /></div>}
+          </div>
           <button type="button" onClick={onReport} aria-expanded={reportOpen} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
         </div>
       </div>
@@ -145,10 +158,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     </div>
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 bg-red-50 px-5 py-3 text-xs text-red-700 dark:bg-red-950/30"><span className="flex items-center gap-2"><AlertCircle size={16} />{error}</span><button type="button" onClick={onRefresh} className="shrink-0 font-semibold underline">Thử lại</button></div>}
-    {showNotifications && createPortal(<div role="dialog" aria-modal="true" aria-label="Thông báo nội bộ" className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      <button type="button" aria-label="Đóng thông báo" onClick={() => setShowNotifications(false)} className="absolute inset-0 bg-slate-950/30 backdrop-blur-sm" />
-      <div className="relative max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl shadow-xl bg-white dark:bg-slate-900"><NotificationLog includeTeam={includeTeamNotifications} onClose={() => setShowNotifications(false)} /></div>
-    </div>, document.body)}
+
 
     <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
       <div className="flex items-center gap-3">
@@ -157,7 +167,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             <span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span>
             <b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b>
           </div>
-          <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`} onChange={(e) => {
+          <input type="date" onClick={(e) => { try { (e.target as any).showPicker?.(); } catch (err) {} }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`} onChange={(e) => {
             if (e.target.value) {
               const [y, m, d] = e.target.value.split('-');
               setCursor(new Date(Number(y), Number(m) - 1, Number(d)));
@@ -165,37 +175,75 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             }
           }} />
         </label>
-        <div>
-          <label className="group relative cursor-pointer block">
-            <div className="flex items-center gap-1.5">
-              <p className="text-base font-bold text-gray-900 dark:text-white transition-colors group-hover:text-primary">{periodTitle}</p>
-              <ChevronDown size={14} className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
-            <input type="month" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`} onChange={(e) => {
-              if (e.target.value) {
-                const [y, m] = e.target.value.split('-');
-                setCursor(new Date(Number(y), Number(m) - 1, 1));
-              }
-            }} />
-          </label>
+        <div className="relative" ref={monthMenuRef}>
+          <button type="button" onClick={() => { setPickerYear(cursor.getFullYear()); setMonthPickerOpen(!monthPickerOpen); setRangeOpen(false); }} className="group flex items-center gap-1.5 text-left">
+            <p className="text-base font-bold text-gray-900 dark:text-white transition-colors group-hover:text-primary">{periodTitle}</p>
+            <ChevronDown size={14} className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
           <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p>
+          
+          {monthPickerOpen && <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 flex items-center justify-between">
+              <button type="button" onClick={() => setPickerYear(y => y - 1)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={16}/></button>
+              <span className="font-bold text-gray-900 dark:text-white">{pickerYear}</span>
+              <button type="button" onClick={() => setPickerYear(y => y + 1)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronRight size={16}/></button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({length: 12}).map((_, i) => (
+                <button key={i} type="button" onClick={() => { setCursor(new Date(pickerYear, i, 1)); setMonthPickerOpen(false); }} className={`rounded-xl py-2 text-xs font-semibold transition-colors ${cursor.getMonth() === i && cursor.getFullYear() === pickerYear ? 'bg-primary text-white' : 'text-gray-700 hover:bg-primary/10 dark:text-gray-300 dark:hover:bg-slate-700'}`}>
+                  Tháng {i + 1}
+                </button>
+              ))}
+            </div>
+          </div>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setRangeOpen(value => !value)} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">{selectedRangeLabel}<ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} /></button>{rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-40 rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            {ranges.map(option => <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary/5 dark:text-gray-300'}`}>{option.label}</button>)}
-            <div className="my-1 border-t border-gray-100 dark:border-slate-700"></div>
-            <label className="relative flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold text-gray-600 hover:bg-primary/5 dark:text-gray-300">
-              Chọn ngày cụ thể
-              <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => {
-                if (e.target.value) {
-                  const [y, m, d] = e.target.value.split('-');
-                  setCursor(new Date(Number(y), Number(m) - 1, Number(d)));
-                  setRange('today');
-                  setRangeOpen(false);
-                }
-              }} />
-            </label>
-          </div>}</div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
+      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
+          <button type="button" onClick={() => { setPickerMonth(cursor.getMonth()); setPickerYear(cursor.getFullYear()); setRangeOpen(value => !value); setMonthPickerOpen(false); }} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">
+            {selectedRangeLabel}
+            <ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:w-[320px] sm:flex-row">
+            
+            {/* Calendar Grid */}
+            <div className="p-3 sm:flex-1">
+              <div className="mb-2 flex items-center justify-between">
+                <button type="button" onClick={() => { let m = pickerMonth - 1; let y = pickerYear; if (m < 0) { m = 11; y--; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={14}/></button>
+                <span className="text-xs font-bold text-gray-900 dark:text-white">Tháng {pickerMonth + 1}, {pickerYear}</span>
+                <button type="button" onClick={() => { let m = pickerMonth + 1; let y = pickerYear; if (m > 11) { m = 0; y++; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronRight size={14}/></button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {['T2','T3','T4','T5','T6','T7','CN'].map(d => <div key={d} className="text-[10px] font-semibold text-gray-400">{d}</div>)}
+                {(() => {
+                  const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                  const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+                  const offset = (firstDay + 6) % 7;
+                  const days = [];
+                  for (let i = 0; i < offset; i++) days.push(<div key={`e-${i}`} />);
+                  for (let i = 1; i <= daysInMonth; i++) {
+                    const isSelected = cursor.getDate() === i && cursor.getMonth() === pickerMonth && cursor.getFullYear() === pickerYear && range === 'today';
+                    days.push(
+                      <button key={i} type="button" onClick={() => { setCursor(new Date(pickerYear, pickerMonth, i)); setRange('today'); setRangeOpen(false); }} className={`h-7 w-7 rounded-full text-xs font-medium transition-colors ${isSelected ? 'bg-primary text-white shadow-md' : 'text-gray-700 hover:bg-primary/10 dark:text-gray-200 dark:hover:bg-slate-700'}`}>
+                        {i}
+                      </button>
+                    );
+                  }
+                  return days;
+                })()}
+              </div>
+            </div>
+
+            {/* Presets */}
+            <div className="flex flex-row border-t border-gray-100 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-900 sm:w-28 sm:flex-col sm:border-l sm:border-t-0">
+              {ranges.map(option => (
+                <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`flex-1 rounded-lg px-3 py-2 text-left text-xs font-semibold sm:flex-none ${range === option.id ? 'bg-white text-primary shadow-sm dark:bg-slate-800' : 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-slate-700'}`}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            
+          </div>}
+        </div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
     {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
