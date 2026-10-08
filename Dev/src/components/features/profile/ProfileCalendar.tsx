@@ -176,8 +176,28 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
-            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo{unread.length > 0 && <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{unread.length}</span>}</button>
-            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[320px] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog includeTeam={includeTeamNotifications} inline onClose={() => setShowNotifications(false)} /></div>}
+            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
+            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[320px] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog 
+              includeTeam={includeTeamNotifications} 
+              inline 
+              onClose={() => setShowNotifications(false)} 
+              onOpenEntity={(type, id) => {
+                const item = items.find(i => i.id === id && (i.kind === type || (type === 'task' && (i.kind === 'project_subtask' || i.kind === 'campaign_subtask'))));
+                if (item) {
+                  const d = item.start || item.due;
+                  if (d) {
+                    const [y, m, dayDate] = d.split('-');
+                    setCursor(new Date(Number(y), Number(m) - 1, Number(dayDate), 12));
+                    setRange('today');
+                    setExpandedDays(current => new Set([...current, localDay(new Date(Number(y), Number(m) - 1, Number(dayDate)))]));
+                  }
+                  onOpen(item);
+                  setShowNotifications(false);
+                  return true;
+                }
+                return false;
+              }}
+            /></div>}
           </div>
           <button type="button" onClick={onReport} aria-expanded={reportOpen} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
         </div>
