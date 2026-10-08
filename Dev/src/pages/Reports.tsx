@@ -28,7 +28,7 @@ const AdminReports: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-2 border-b border-gray-200 px-6 pt-5 dark:border-[#8fa8d0]" role="tablist" aria-label="Report views">
+      <div className="flex gap-2 border-b border-gray-200 px-6 pt-5 dark:border-gray-700" role="tablist" aria-label="Report views">
         <button
           type="button"
           role="tab"
@@ -81,7 +81,7 @@ const ManagerReports: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-[#8fa8d0] p-1">
+          <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-1">
             {(['week', 'month', 'quarter', 'all'] as TimeRange[]).map((range) => (
               <button
                 key={range}

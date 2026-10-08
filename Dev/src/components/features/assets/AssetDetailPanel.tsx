@@ -60,7 +60,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
 
       <div className="w-full h-full flex flex-col overflow-hidden" style={{ minWidth: isOpen ? (window.innerWidth >= 768 ? 320 : '100%') : 0 }}>
         
-        <div className="flex justify-between items-center px-6 py-4 border-b border-white/20 dark:border-[#8fa8d0]/50 shrink-0">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-white/20 dark:border-gray-700/50 shrink-0">
           <div className="flex items-center gap-1">
             <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white dark:hover:bg-gray-700/50 text-gray-500 transition-colors flex items-center gap-1 text-xs font-medium" title="Close side peek">
               <ChevronsRight className="w-4 h-4" />

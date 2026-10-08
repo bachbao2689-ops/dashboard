@@ -10,7 +10,7 @@ const teams = [
 
 export const CrossTeamCapacity: React.FC = () => {
   return (
-    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-[#8fa8d0] rounded-xl p-6 shadow-sm">
+    <div className="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl p-6 shadow-sm">
       <h3 className="font-bold text-gray-900 dark:text-white mb-4">Cross-Team Capacity</h3>
       <div className="space-y-4">
         {teams.map(team => {

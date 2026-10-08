@@ -41,7 +41,7 @@ export const TeamWorkload: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('workload.title')}</h1>
           <p className="text-gray-500 dark:text-gray-400">{t('workload.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-[#8fa8d0]">
+        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
           <Calendar className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Week of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
@@ -110,7 +110,7 @@ export const TeamWorkload: React.FC = () => {
               {workloads.map(member => (
                 <div 
                   key={member.id} 
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedMember?.id === member.id ? 'bg-gray-50 dark:bg-gray-800 border-blue-500' : 'border-gray-100 dark:border-[#8fa8d0] hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedMember?.id === member.id ? 'bg-gray-50 dark:bg-gray-800 border-blue-500' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                   onClick={() => setSelectedMember(member === selectedMember ? null : member)}
                 >
                   <div className="flex justify-between items-center mb-2">
@@ -136,7 +136,7 @@ export const TeamWorkload: React.FC = () => {
                   </div>
                   
                   {selectedMember?.id === member.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#8fa8d0]">
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Active Tasks</h4>
                       {member.tasks.length === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400">No active tasks</p>

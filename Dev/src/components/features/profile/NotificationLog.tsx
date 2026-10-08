@@ -78,8 +78,8 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
   };
 
   return (
-    <section className={inline ? 'flex flex-col' : 'card-hub flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 shadow-sm dark:border-[#8fa8d0]/50'}>
-      <div className={`border-b border-gray-100 bg-gray-50/50 dark:border-[#8fa8d0]/50 dark:bg-slate-800/50 ${inline ? 'px-4 py-3 sm:px-5' : 'px-6 py-5'}`}>
+    <section className={inline ? 'flex flex-col' : 'card-hub flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 shadow-sm dark:border-slate-700/50'}>
+      <div className={`border-b border-gray-100 bg-gray-50/50 dark:border-slate-700/50 dark:bg-slate-800/50 ${inline ? 'px-4 py-3 sm:px-5' : 'px-6 py-5'}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white"><Bell size={16} className="text-primary" />Log thông báo</h3>

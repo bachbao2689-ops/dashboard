@@ -13,7 +13,7 @@ export const DepartmentHealth: React.FC = () => {
       {departments.map(dept => (
         <div 
           key={dept.name} 
-          className={`bg-white border border-gray-200 dark:bg-slate-800 dark:border-[#8fa8d0] rounded-xl p-4 flex flex-col gap-3 shadow-sm ${
+          className={`bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl p-4 flex flex-col gap-3 shadow-sm ${
             dept.name === 'E-Commerce' ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-900' : ''
           }`}
         >

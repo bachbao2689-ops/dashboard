@@ -86,7 +86,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
       {/* 5. Middle 2-Column Grid: Trend Chart + Workload Heatmap */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {/* Weekly Trend vs Target */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Tỷ lệ hoàn thành theo tuần so với mục tiêu
@@ -127,7 +127,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
                   content={({ active, payload, label }) => {
                     if (!active || !payload || !payload.length) return null;
                     return (
-                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-lg shadow-lg p-2 text-xs">
+                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2 text-xs">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">
                           Tuần {label}
                         </p>
@@ -178,11 +178,11 @@ export const OverallView: React.FC<OverallViewProps> = ({
       </div>
 
       {/* 6. Cross-Department Project Progress Card */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Tiến độ project
         </p>
-        <div className="divide-y divide-gray-100 dark:divide-[#8fa8d0]/60">
+        <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
           {data.projects.map((proj) => {
             const badge = getStatusBadge(proj.status);
             return (

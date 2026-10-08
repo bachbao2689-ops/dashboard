@@ -30,7 +30,7 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(137,135,129,0.18)';
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
@@ -98,7 +98,7 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
                 if (!active || !payload || !payload.length) return null;
                 const d = payload[0].payload as DepartmentComparisonItem;
                 return (
-                  <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-lg shadow-lg p-2.5 text-xs z-50">
+                  <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2.5 text-xs z-50">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1.5 flex items-center justify-between gap-4">
                       <span>{d.name}</span>
                       <span className="text-blue-600 dark:text-blue-400 font-bold">{d.completionPct}% hoàn thành</span>
@@ -128,7 +128,7 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
                         </span>
                         <b className="text-red-600 dark:text-red-400 font-bold">{d.late}</b>
                       </div>
-                      <div className="pt-1.5 border-t border-gray-100 dark:border-[#8fa8d0] text-[10px] text-blue-500 font-medium text-center">
+                      <div className="pt-1.5 border-t border-gray-100 dark:border-slate-800 text-[10px] text-blue-500 font-medium text-center">
                         Nhấp để xem chi tiết →
                       </div>
                     </div>

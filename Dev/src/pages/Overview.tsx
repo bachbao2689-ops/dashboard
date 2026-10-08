@@ -16,8 +16,8 @@ import { supabase } from '../services/supabase';
 const INK = 'text-gray-900 dark:text-white';
 const MUTED = 'text-gray-500 dark:text-gray-400';
 const LINK = 'text-blue-600 dark:text-blue-400';
-const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-[#8fa8d0]';
-const INNER = 'border border-gray-200 dark:border-[#8fa8d0]';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
+const INNER = 'border border-gray-200 dark:border-slate-700';
 const LABEL = 'text-xs font-bold tracking-[0.12em] uppercase text-gray-500 dark:text-gray-400';
 
 const Ring: React.FC<{ pct: number; color: string; size?: number; track: string }> = ({ pct, color, size = 60, track }) => {

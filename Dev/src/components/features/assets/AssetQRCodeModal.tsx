@@ -19,7 +19,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      <div className="relative bg-[#f4f6f8] dark:bg-[#1e2330] border border-white/60 dark:border-[#8fa8d0]/80 rounded-[32px] w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
+      <div className="relative bg-[#f4f6f8] dark:bg-[#1e2330] border border-white/60 dark:border-slate-700/80 rounded-[32px] w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
         
         <button 
           onClick={onClose}

@@ -136,7 +136,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
 
   return (
     <section className="card-hub rounded-2xl overflow-hidden shrink-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-[#8fa8d0]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
         <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
           <Megaphone className="text-amber-500" size={16} /> Campaigns
@@ -148,7 +148,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
             <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
           </tr></thead>
-          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-[#8fa8d0] hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
+          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
             <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
             <td>
   <div className="flex items-center gap-2">

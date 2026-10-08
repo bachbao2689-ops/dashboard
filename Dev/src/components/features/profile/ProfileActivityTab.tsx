@@ -58,8 +58,8 @@ export const ProfileActivityTab: React.FC = () => {
         <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 dark:before:via-slate-600 before:to-transparent">
           {visibleActivities.map(item => (
             <div key={item.id} className="relative flex items-center gap-4">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-[#8fa8d0] shrink-0 shadow-sm ${item.color} z-10`}>{item.icon}</div>
-              <div className="flex-1 p-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] shadow-sm">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-slate-800 shrink-0 shadow-sm ${item.color} z-10`}>{item.icon}</div>
+              <div className="flex-1 p-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm">
                 <time className="text-xs font-medium text-gray-500 dark:text-gray-400">{formatDate(item.time)}</time>
                 <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mt-1">{item.title}</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{item.desc}</p>

@@ -103,10 +103,10 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
         <div className="order-3 w-full min-w-0 xl:order-2 xl:w-auto xl:min-w-[420px] xl:flex-[1.35]"><ProfileKpis role={role} /></div>
 
         <div className="order-2 ml-auto flex flex-wrap items-center justify-end gap-2 xl:order-3">
-          <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-[#8fa8d0] text-sm font-medium shadow-sm">
+          <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm">
             <Edit3 size={16} /> Edit Profile
           </button>
-          <button onClick={signOut} aria-label="Đăng xuất" className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-[#8fa8d0] text-gray-500 shadow-sm">
+          <button onClick={signOut} aria-label="Đăng xuất" className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-gray-500 shadow-sm">
             <LogOut size={18} />
           </button>
         </div>

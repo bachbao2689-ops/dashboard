@@ -20,7 +20,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group ${task.priority?.toLowerCase().includes('high') || task.priority?.toLowerCase().includes('urgent') ? 'border-l-4 border-l-rose-400 border-gray-200 dark:border-[#8fa8d0]' : task.priority?.toLowerCase().includes('low') ? 'border-l-4 border-l-sky-400 border-gray-200 dark:border-[#8fa8d0]' : 'border-l-4 border-l-amber-300 border-gray-200 dark:border-[#8fa8d0]'}`}
+      className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative overflow-hidden group ${task.priority?.toLowerCase().includes('high') || task.priority?.toLowerCase().includes('urgent') ? 'border-l-4 border-l-rose-400 border-gray-200 dark:border-slate-700' : task.priority?.toLowerCase().includes('low') ? 'border-l-4 border-l-sky-400 border-gray-200 dark:border-slate-700' : 'border-l-4 border-l-amber-300 border-gray-200 dark:border-slate-700'}`}
       onClick={onClick}>
       
       {task.project && (
@@ -39,7 +39,7 @@ const SortableTaskItem = ({ task, onClick }: { task: KanbanTask, onClick: () => 
           {task.assignee ? (
             <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-slate-700 border-2 border-white dark:border-[#8fa8d0] flex items-center justify-center text-[10px] text-gray-500">?</div>
+            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-slate-700 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] text-gray-500">?</div>
           )}
         </div>
         <div className="flex items-center space-x-3 text-gray-400">
@@ -127,7 +127,7 @@ export const ProjectsKanban: React.FC<{hideHeader?: boolean}> = ({hideHeader = f
                 </SortableContext>
                 {/* Empty drop zone placeholder */}
                 {column.tasks.length === 0 && (
-                  <div id={column.id} className="h-full w-full border-2 border-dashed border-gray-200 dark:border-[#8fa8d0] rounded-lg" />
+                  <div id={column.id} className="h-full w-full border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg" />
                 )}
               </div>
             </div>

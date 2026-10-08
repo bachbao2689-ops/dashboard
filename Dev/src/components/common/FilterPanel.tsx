@@ -37,9 +37,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
       
       {/* Dropdown Popover (like a Calendar) */}
       <div 
-        className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-[#8fa8d0] z-[70] flex flex-col overflow-hidden animate-fade-in-up origin-top-right"
+        className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 z-[70] flex flex-col overflow-hidden animate-fade-in-up origin-top-right"
       >
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-[#8fa8d0] bg-gray-50 dark:bg-slate-800">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
           <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold text-sm">
             <Filter className="w-4 h-4" />
             <span>Advanced Filters</span>
@@ -85,7 +85,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
             <select 
               value={localFilters.assignee}
               onChange={(e) => setLocalFilters({ ...localFilters, assignee: e.target.value })}
-              className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none text-gray-700 dark:text-gray-300"
+              className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none text-gray-700 dark:text-gray-300"
             >
               <option value="all">Any Assignee</option>
               <option value="me">Assigned to Me</option>
@@ -94,7 +94,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filte
           </div>
         </div>
 
-        <div className="p-3 border-t border-gray-200 dark:border-[#8fa8d0] bg-gray-50 dark:bg-slate-800 flex justify-between items-center gap-2">
+        <div className="p-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex justify-between items-center gap-2">
           <button 
             onClick={handleReset}
             className="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors w-1/3"

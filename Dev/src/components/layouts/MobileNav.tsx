@@ -103,7 +103,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-4 right-4 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-[#8fa8d0] mobile-nav-container",
+          "md:hidden fixed left-4 right-4 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-slate-700 mobile-nav-container",
           isHidden && "nav-hidden"
         )}
       >

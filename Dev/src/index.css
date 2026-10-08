@@ -257,7 +257,7 @@ body,
 }
 .dark .card-hub {
   background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.12) 0%, transparent 60%), #0f172a;
-  border-color: #8fa8d0 !important;
+  border-color: rgba(59, 130, 246, 0.1) !important;
 }
 
 /* Status-tracked shapes */
@@ -268,7 +268,7 @@ body,
 }
 .dark .card-status-task {
   background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.15) 0%, transparent 60%), #0f172a !important;
-  border-color: #8fa8d0 !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
 }
 
 .card-status-project {
@@ -278,7 +278,7 @@ body,
 }
 .dark .card-status-project {
   background: radial-gradient(ellipse at 100% 110%, rgba(139, 92, 246, 0.15) 0%, transparent 60%), #0f172a !important;
-  border-color: #8fa8d0 !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
 }
 
 .card-status-campaign {
@@ -288,7 +288,7 @@ body,
 }
 .dark .card-status-campaign {
   background: radial-gradient(ellipse at 100% 110%, rgba(245, 158, 11, 0.15) 0%, transparent 60%), #0f172a !important;
-  border-color: #8fa8d0 !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
 }
 
 .card-status-done {

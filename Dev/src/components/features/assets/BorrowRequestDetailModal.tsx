@@ -19,7 +19,7 @@ export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> =
         onClick={onClose}
       />
       
-      <div className="relative bg-[#f4f6f8] dark:bg-[#1e2330] border border-gray-200 dark:border-[#8fa8d0]/80 rounded-[32px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
+      <div className="relative bg-[#f4f6f8] dark:bg-[#1e2330] border border-gray-200 dark:border-slate-700/80 rounded-[32px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
         
         <button 
           onClick={onClose}
@@ -49,7 +49,7 @@ export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> =
           </p>
 
           {/* Info Card */}
-          <div className="w-full bg-[#ffffff] dark:bg-[#141414] rounded-3xl border border-gray-100 dark:border-[#8fa8d0] shadow-sm p-6 md:p-8">
+          <div className="w-full bg-[#ffffff] dark:bg-[#141414] rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm p-6 md:p-8">
             
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Thông tin thiết bị</h3>
@@ -60,31 +60,31 @@ export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> =
 
             <div className="space-y-4">
               {/* Key-Values */}
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Tên:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">{request.requester?.name || 'Bùi Bách Bảo'}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Phòng ban:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">{request.department?.name || 'Design Team'}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Số lượng:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">01</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Mã thiết bị:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white uppercase">{request.asset?.name || 'MAYANHSONY01'}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Lý do mượn:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">{request.notes || 'Chụp ảnh Campaign tháng 9'}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Tình trạng hiện tại:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">Nguyên 100%</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-[#8fa8d0] border-dashed mb-4">
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/10 border-dashed mb-4">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Khả dụng:</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">Có thể mượn</span>
               </div>
@@ -101,7 +101,7 @@ export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> =
             </div>
 
             {/* Footer Action */}
-            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-[#8fa8d0] flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
               <span className="text-sm font-bold text-gray-900 dark:text-white">
                 Trạng thái yêu cầu
               </span>

@@ -110,14 +110,14 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50">
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-[#8fa8d0] flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Account Settings</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors text-gray-500">
             <X size={20} />
           </button>
         </div>
-        <div className="flex border-b border-gray-200 dark:border-[#8fa8d0] bg-gray-50 dark:bg-slate-900/50">
+        <div className="flex border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
           <button 
             onClick={() => setActiveTab('profile')}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'profile' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
@@ -183,23 +183,23 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-              <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
+              <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" />
             </div>
 
-            <div className="pt-2 border-t border-gray-200 dark:border-[#8fa8d0] space-y-4 mt-2">
+            <div className="pt-2 border-t border-gray-200 dark:border-slate-700 space-y-4 mt-2">
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Email (Read-only)</label>
-                <input type="text" value={user?.email || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-[#8fa8d0] rounded-xl text-gray-500 cursor-not-allowed" />
+                <input type="text" value={user?.email || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Department (Read-only)</label>
-                <input type="text" value={profile?.department_name || 'Chưa phân team'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-[#8fa8d0] rounded-xl text-gray-500 cursor-not-allowed" />
+                <input type="text" value={profile?.department_name || 'Chưa phân team'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Lock size={12} /> Job title & level (Read-only)</label>
-                <input type="text" value={[profile?.job_title, profile?.employment_level].filter(Boolean).join(' · ') || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-[#8fa8d0] rounded-xl text-gray-500 cursor-not-allowed" />
+                <input type="text" value={[profile?.job_title, profile?.employment_level].filter(Boolean).join(' · ') || 'Chưa cập nhật'} disabled className="w-full px-4 py-2 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 cursor-not-allowed" />
               </div>
             </div>
           </div>
@@ -214,7 +214,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
                   value={passwords.new} 
                   onChange={e => setPasswords({...passwords, new: e.target.value})} 
                   placeholder="At least 6 characters"
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
                 />
               </div>
               <div>
@@ -224,7 +224,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
                   value={passwords.confirm} 
                   onChange={e => setPasswords({...passwords, confirm: e.target.value})} 
                   placeholder="Repeat new password"
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark:text-white" 
                 />
               </div>
               
@@ -238,7 +238,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-[#8fa8d0] bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-xl transition-colors">
             Cancel
           </button>

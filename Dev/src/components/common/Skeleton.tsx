@@ -12,7 +12,7 @@ export const TableSkeleton = ({ rows = 5, cols = 6 }) => {
   return (
     <div className="w-full">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 py-4 px-4 border-b border-gray-100 dark:border-[#8fa8d0]">
+        <div key={i} className="flex items-center gap-4 py-4 px-4 border-b border-gray-100 dark:border-gray-800">
           <SkeletonLine className="h-4 w-6" />
           <div className="flex-1 space-y-2">
             <SkeletonLine className="h-4 w-3/4" />

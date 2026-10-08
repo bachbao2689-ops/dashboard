@@ -98,7 +98,7 @@ export const Departments2: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {view === 'overall' ? 'Departments' : currentDetailData.name}
             </h1>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#8fa8d0]">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Làm mới sau {formattedTime}</span>
               <button
@@ -120,7 +120,7 @@ export const Departments2: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -134,7 +134,7 @@ export const Departments2: React.FC = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0]">
+          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
             {(
               [
                 ['week', 'Tuần'],

@@ -34,7 +34,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
   ];
 
   return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Chỉ số công việc cá nhân">
-    {metrics.map(metric => <div key={metric.label} className="min-w-0 rounded-xl border border-primary/10 bg-white/70 px-3 py-2.5 dark:border-[#8fa8d0] dark:bg-slate-800/80">
+    {metrics.map(metric => <div key={metric.label} className="min-w-0 rounded-xl border border-primary/10 bg-white/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/80">
       <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${metric.tone}`}>{metric.icon}<span className="truncate">{metric.label}</span></div>
       <strong className="mt-1 block truncate text-lg font-bold leading-tight text-gray-900 dark:text-white">{loading ? '—' : metric.value}</strong>
     </div>)}
