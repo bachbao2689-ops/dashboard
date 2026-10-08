@@ -83,11 +83,37 @@ export function useKanban() {
         .select(`
           id, task_ref, title, description, comments_count, attachments_count, column_id, position, priority,
           project:project_id(name),
-          assignee:assignee_id(name, avatar_url)
+          assignee:assignee_id(name, avatar_url), assignee_id, department_id, project_id, campaign_id
         `)
         .order('position', { ascending: true });
 
       if (tasksErr) throw tasksErr;
+      
+      const profile = useAuthStore.getState().profile;
+      let combined = tasksData || [];
+
+      if (profile) {
+        const isAdminOrManager = ['admin', 'manager'].includes(profile.role?.toLowerCase() || '');
+        const isLeader = profile.employment_level === 'Leader' || profile.role?.toLowerCase() === 'leader';
+        
+        if (!isAdminOrManager) {
+          const [memRes, projRes, campRes] = await Promise.all([
+            supabase.from('project_members').select('project_id').eq('user_id', profile.id),
+            supabase.from('projects').select('id').eq('created_by', profile.id),
+            supabase.from('campaigns').select('id').or(`lead_id.eq.${profile.id},created_by.eq.${profile.id}`)
+          ]);
+          const validProjects = new Set([...(memRes.data?.map(m => m.project_id) || []), ...(projRes.data?.map(p => p.id) || [])]);
+          const validCampaigns = new Set(campRes.data?.map(c => c.id) || []);
+
+          combined = combined.filter(t => {
+            if (String(t.assignee_id) === String(profile.id)) return true;
+            if (t.project_id && validProjects.has(t.project_id)) return true;
+            if (t.campaign_id && validCampaigns.has(t.campaign_id)) return true;
+            if (isLeader && String(t.department_id) === String(profile.department_id)) return true;
+            return false;
+          });
+        }
+      }
 
       // Group tasks by column
       const board = colsData.map(col => ({
@@ -95,7 +121,7 @@ export function useKanban() {
         name: col.name,
         color: col.color,
         position: col.position,
-        tasks: (tasksData as any[]).filter(t => t.column_id === col.id).sort((a, b) => a.position - b.position)
+        tasks: (combined as any[]).filter(t => t.column_id === col.id).sort((a, b) => a.position - b.position)
       }));
 
       setColumns(board);

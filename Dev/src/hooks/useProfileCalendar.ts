@@ -20,9 +20,10 @@ async function allRows(query: any): Promise<any[]> {
   }
 }
 
-export function useProfileCalendar() {
-  const profileId = useAuthStore(state => state.profile?.id);
-  const [snapshot, setSnapshot] = useState<{ userId?: number; items: CalendarItem[]; notifications: CalendarNotification[]; updatedAt: Date | null }>({ items: [], notifications: [], updatedAt: null });
+export function useProfileCalendar(targetUserId?: string | number) {
+  const myProfileId = useAuthStore(state => state.profile?.id);
+  const profileId = targetUserId || myProfileId;
+  const [snapshot, setSnapshot] = useState<{ userId?: string | number; items: CalendarItem[]; notifications: CalendarNotification[]; updatedAt: Date | null }>({ items: [], notifications: [], updatedAt: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const reloadRef = useRef<() => void>(() => {});

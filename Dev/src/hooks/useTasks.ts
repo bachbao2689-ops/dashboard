@@ -66,7 +66,7 @@ export function useTasks() {
       let query = supabase
         .from('tasks')
         .select(`
-          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id,
+          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id, project_id, campaign_id,
           project:project_id(name),
           assignee:assignee_id(id, name, avatar_url),
           department:department_id(name),
@@ -74,11 +74,7 @@ export function useTasks() {
         `)
         .neq('status', 'deleted').order('created_at', { ascending: false });
 
-      const canViewAllDepartments = true;
-      if (!canViewAllDepartments) {
-        if (!profile.department_id) { setTasks([]); return; }
-        query = query.eq('department_id', profile.department_id);
-      }
+
       
       const [tasksRes, pSubRes, cSubRes] = await Promise.all([
         query,
@@ -88,6 +84,7 @@ export function useTasks() {
 
       if (tasksRes.error) throw tasksRes.error;
 
+
       let combined: any[] = [...(tasksRes.data || [])];
 
       if (pSubRes.data) {
@@ -95,12 +92,13 @@ export function useTasks() {
           id: `ps-${ps.id}`,
           task_ref: null,
           title: ps.title,
-          status: 'todo', // default for subtasks
+          status: 'todo',
           priority: 'Medium',
           due_date: ps.due_date,
           project: ps.projects ? { name: ps.projects.name } : null,
           assignee: ps.assignee,
-          assignee_id: ps.assignee?.id
+          assignee_id: ps.assignee?.id,
+          department_id: ps.department_id // fake, subtasks don't have this, we rely on assignee_id
         }));
         combined = [...combined, ...pTasks];
       }
@@ -118,6 +116,38 @@ export function useTasks() {
           assignee_id: cs.assignee?.id
         }));
         combined = [...combined, ...cTasks];
+      }
+
+      // --- NEW RBAC FILTERING ---
+      const isAdminOrManager = ['admin', 'manager'].includes(profile.role?.toLowerCase() || '');
+      const isLeader = profile.employment_level === 'Leader' || profile.role?.toLowerCase() === 'leader';
+      
+      if (!isAdminOrManager) {
+        // Fetch projects/campaigns owned or member of
+        const [memRes, projRes, campRes] = await Promise.all([
+          supabase.from('project_members').select('project_id').eq('user_id', profile.id),
+          supabase.from('projects').select('id').eq('created_by', profile.id),
+          supabase.from('campaigns').select('id').or(`lead_id.eq.${profile.id},created_by.eq.${profile.id}`)
+        ]);
+        const validProjects = new Set([
+          ...(memRes.data?.map(m => m.project_id) || []),
+          ...(projRes.data?.map(p => p.id) || [])
+        ]);
+        const validCampaigns = new Set(campRes.data?.map(c => c.id) || []);
+
+        combined = combined.filter(t => {
+          
+          // If explicitly assigned
+          if (String(t.assignee_id) === String(profile.id)) return true;
+          // If owns/is member of the parent project/campaign
+          if (t.project_id && validProjects.has(t.project_id)) return true;
+          if (t.campaign_id && validCampaigns.has(t.campaign_id)) return true;
+
+          if (String(t.assignee_id) === String(profile.id)) return true;
+          // If Leader, see everything in their department
+          if (isLeader && String(t.department_id) === String(profile.department_id)) return true;
+          return false;
+        });
       }
 
       setTasks(combined as any);

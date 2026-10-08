@@ -170,10 +170,12 @@ export const Projects: React.FC = () => {
   const visibleProjects = useMemo(() => {
     if (canViewAll) return projects;
     return projects.filter(p => {
-      if (isLeader) return p.department_id === profile?.department_id;
+      const isOwner = String(p.created_by) === String(profile?.id);
       const isMember = (members[p.id] || []).includes(String(profile?.id));
       const hasSubtask = (subtaskMembers[p.id] || []).includes(String(profile?.id));
-      return isMember || hasSubtask;
+      if (isOwner || isMember || hasSubtask) return true;
+      if (isLeader && String(p.department_id) === String(profile?.department_id)) return true;
+      return false;
     });
   }, [projects, profile, canViewAll, isLeader, members, subtaskMembers]);
 
