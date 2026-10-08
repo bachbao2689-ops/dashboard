@@ -112,11 +112,11 @@ function calSave(){
   if(displayId) {
     const el = document.getElementById(displayId);
     if(el) {
-       if(mode==='range') {
-          el.value = start ? (end ? `${dFmt(start)} - ${dFmt(end)}` : dFmt(start)) : '';
-       } else {
-          el.value = start ? dFmt(start) : '';
-       }
+       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+       const val = mode==='range' ? (start ? (end ? `${dFmt(start)} - ${dFmt(end)}` : dFmt(start)) : '') : (start ? dFmt(start) : '');
+       if(nativeSetter) nativeSetter.call(el, val);
+       else el.value = val;
+       el.dispatchEvent(new Event('input',{bubbles:true}));
        el.dispatchEvent(new Event('change',{bubbles:true}));
     }
   }
@@ -136,7 +136,7 @@ function calRender(){
   
   const diffDays = (start && end) ? Math.round((end.getTime() - start.getTime()) / 86400000) : 0;
   
-  document.getElementById('cal-badge-container').innerHTML = (start && end) ? `<span class="cal-trip-badge">${diffDays} ngày</span>` : `<span class="cal-trip-badge" style="background:#f0f4f9;color:#7e94b1">Chọn ngày</span>`;
+  document.getElementById('cal-badge-container').innerHTML = (start && end) ? `<span class="cal-trip-badge">${diffDays} ngày</span>` : `<span class="cal-trip-badge cal-trip-badge-empty">Chọn ngày</span>`;
   
   document.getElementById('cal-inputs-container').innerHTML = `
       <div class="cal-input-box">

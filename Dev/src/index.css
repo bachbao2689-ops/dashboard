@@ -137,6 +137,7 @@ body,
 .dark body {
   background-color: #0b1120;
   color: #f1f5f9;
+  color-scheme: dark;
 }
 
 .dark .liquid-bg-container {

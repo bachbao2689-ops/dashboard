@@ -57,3 +57,27 @@
 .cal-dropdown[data-mode="single"] .cal-input-box:first-child{display:none}
 .cal-dropdown[data-mode="single"] .cal-inputs-row{display:none}
 .cal-dropdown[data-mode="single"] .cal-presets{display:none}
+/* Dark mode support */
+html.dark .cal-popup { background: #1e293b; border-color: #334155; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+html.dark .cal-trip-title { color: #f8fafc; }
+html.dark .cal-inputs-row { background: #0f172a; border-color: #334155; }
+html.dark .cal-input-box:first-child { border-color: #334155; }
+html.dark .cal-input-label { color: #94a3b8; }
+html.dark .cal-input-val { color: #e2e8f0; }
+html.dark .cal-input-val.empty { color: #64748b; }
+html.dark .cal-month-title { color: #f8fafc; }
+html.dark .cal-nav { color: #94a3b8; }
+html.dark .cal-nav:hover { background: #334155; color: #f8fafc; }
+html.dark .cal-weekdays { color: #94a3b8; }
+html.dark .cal-day { color: #e2e8f0; }
+html.dark .cal-day:not(.cal-empty):hover { background: #334155; color: #f8fafc; }
+html.dark .cal-today { color: #60a5fa; }
+html.dark .cal-preset { background: #0f172a; border-color: #334155; color: #94a3b8; }
+html.dark .cal-preset:hover { border-color: #475569; color: #f8fafc; }
+html.dark .cal-clear { color: #94a3b8; }
+html.dark .cal-clear:hover { background: #334155; color: #f8fafc; }
+html.dark .cal-dismiss { background: #0f172a; color: #60a5fa; }
+html.dark .cal-apply { background: #2563eb; color: #ffffff; }
+
+.cal-trip-badge-empty { background: #f0f4f9; color: #7e94b1; }
+html.dark .cal-trip-badge-empty { background: #334155; color: #cbd5e1; }
