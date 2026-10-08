@@ -258,7 +258,7 @@ export const TaskList: React.FC = () => {
       
       <div className="flex justify-between items-center mb-6 shrink-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
-        <div className="flex items-center gap-2 sm:gap-3 relative z-50 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
           {/* Expanding Search */}
           <div className="flex items-center relative h-10">
             <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-40 sm:w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
@@ -342,7 +342,7 @@ export const TaskList: React.FC = () => {
                   className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
                   onClick={() => toggleGroup(groupName)}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 relative z-50 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
                     <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center">
                       {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>
