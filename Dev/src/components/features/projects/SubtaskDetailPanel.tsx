@@ -42,6 +42,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [draftDescription, setDraftDescription] = useState('');
   const [draftImageUrl, setDraftImageUrl] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [width, setWidth] = useState(560);
+  const [resizing, setResizing] = useState(false);
+  
+  useEffect(() => {
+    if (!resizing) return;
+    const move = (e: MouseEvent) => setWidth(Math.max(400, Math.min(window.innerWidth - e.clientX, 800)));
+    const up = () => setResizing(false);
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  }, [resizing]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const commentRef = useRef<HTMLTextAreaElement>(null);
@@ -185,7 +195,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const completed = isDone(subtask.status);
 
   return (
-    <aside className="drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-[560px] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 md:w-[min(560px,calc(100vw-2rem))]">
+    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+      <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-700">
         <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Subtask</p><h2 className={`truncate text-xl font-bold text-gray-900 dark:text-white ${completed ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{subtask.title}</h2></div>
         <button onClick={onClose} className="rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-slate-700" aria-label="Đóng subtask"><X className="h-5 w-5 text-gray-500" /></button>
