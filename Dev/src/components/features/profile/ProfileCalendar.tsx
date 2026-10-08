@@ -92,7 +92,42 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const monthItems = filtered.filter(item => (item.start && item.end && item.start <= monthEnd && item.end >= monthStart) || (today >= monthStart && today <= monthEnd && occursOnCalendar(item, today, today)));
   const unread = notifications.filter(notification => !notification.is_read);
   const unreadKeys = new Set(unread.map(notification => `${notification.entity_type}:${notification.entity_id}`));
-  const ordered = (rows: CalendarItem[], day = today) => [...rows].sort((a, b) => Number(isCalendarDone(a.status)) - Number(isCalendarDone(b.status)) || Number(b.due === day) - Number(a.due === day) || (a.due || '9999').localeCompare(b.due || '9999') || a.title.localeCompare(b.title, 'vi'));
+
+  const slotMap = useMemo(() => {
+    const slots: Record<string, string[]> = {};
+    days.forEach(d => { slots[localDay(d)] = []; });
+    
+    const sorted = [...filtered].sort((a, b) => {
+      const aMulti = (a.kind === 'project' || a.kind === 'campaign') && a.start && a.end && a.start !== a.end ? 1 : 0;
+      const bMulti = (b.kind === 'project' || b.kind === 'campaign') && b.start && b.end && b.start !== b.end ? 1 : 0;
+      if (aMulti !== bMulti) return bMulti - aMulti;
+      const startA = a.start || a.due || '9999';
+      const startB = b.start || b.due || '9999';
+      if (startA !== startB) return startA.localeCompare(startB);
+      const endA = a.end || a.due || '0000';
+      const endB = b.end || b.due || '0000';
+      return endB.localeCompare(endA);
+    });
+
+    sorted.forEach(item => {
+      const spannedDays = days.map(d => localDay(d)).filter(day => occursOnCalendar(item, day, today));
+      if (spannedDays.length === 0) return;
+      let slotIndex = 0;
+      while(true) {
+        let free = true;
+        for (const d of spannedDays) {
+          if (slots[d][slotIndex] !== undefined) { free = false; break; }
+        }
+        if (free) break;
+        slotIndex++;
+      }
+      for (const d of spannedDays) {
+        while (slots[d].length <= slotIndex) slots[d].push(undefined as any);
+        slots[d][slotIndex] = item.key;
+      }
+    });
+    return slots;
+  }, [filtered, days, today]);
 
   const move = (direction: number) => {
     const step = range === 'today' ? 1 : range === 'three' ? 3 : 7;
@@ -301,19 +336,51 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
       <div className="calendar-days grid grid-cols-7">{days.map(date => {
         const day = localDay(date);
-        const rows = ordered(filtered.filter(item => occursOnCalendar(item, day, today)), day);
+        const dayKeys = slotMap[day] || [];
+        const itemsMap = new Map(filtered.map(i => [i.key, i]));
+        const rows = dayKeys.map(k => k ? (itemsMap.get(k) || null) : null);
+        const actualItemCount = rows.filter(Boolean).length;
+        
         const muted = date.getMonth() !== cursor.getMonth();
         const inSelectedRange = day >= visibleStart && day <= visibleEnd;
         const visibleRows = expandedDays.has(day) ? rows : rows.slice(0, 3);
+        const visibleItemCount = visibleRows.filter(Boolean).length;
+        const hiddenCount = actualItemCount - visibleItemCount;
         return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : inSelectedRange && range !== 'month' ? 'bg-blue-50/20 dark:bg-blue-950/10' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
           <div className="mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span></div>
-          <div className="calendar-event-list space-y-1">{visibleRows.map(item => {
+          <div className="calendar-event-list space-y-1">{visibleRows.map((item, index) => {
+            if (!item) return <div key={`empty-${index}`} className="h-[26px]" />;
+            
             const Icon = iconFor(item);
-            return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 py-1 text-left text-[11px] font-medium transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${eventColor(item, today)}`}>
-              {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
+            const isMultiDay = (item.kind === 'project' || item.kind === 'campaign') && item.start && item.end && item.start !== item.end;
+            
+            if (!isMultiDay) {
+              return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex h-[26px] w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${hovered?.item.key === item.key ? 'brightness-[0.85] shadow-sm ring-1 ring-primary/30 z-20 relative' : 'hover:brightness-[0.90]'} ${eventColor(item, today)}`}>
+                {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
+              </button>;
+            }
+
+            const prev = new Date(date); prev.setDate(prev.getDate() - 1);
+            const next = new Date(date); next.setDate(next.getDate() + 1);
+            const connectsLeft = occursOnCalendar(item, localDay(prev), today) && date.getDay() !== 1;
+            const connectsRight = occursOnCalendar(item, localDay(next), today) && date.getDay() !== 0;
+
+            const wClass = (connectsLeft && connectsRight) ? "w-[calc(100%+18px)]" : (connectsLeft || connectsRight) ? "w-[calc(100%+9px)]" : "w-full";
+            const isHovered = hovered?.item.key === item.key;
+            const baseMargin = `relative flex h-[26px] min-w-0 items-center gap-1 border-y text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isHovered ? 'z-[30] brightness-[0.85] shadow-sm shadow-black/5 ring-1 ring-primary/30' : 'z-[20] hover:brightness-[0.90]'} ${eventColor(item, today)}`;
+            const ml = connectsLeft ? "-ml-[9px] pl-[9px] rounded-l-none !border-l-transparent" : "rounded-l-[6px] border-l pl-1.5";
+            const mr = connectsRight ? "pr-[9px] rounded-r-none !border-r-transparent" : "rounded-r-[6px] border-r pr-1.5";
+            const showTitle = !connectsLeft;
+
+            return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`${baseMargin} ${wClass} ${ml} ${mr}`}>
+              {showTitle && <>
+                {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}
+                <span className="truncate">{item.title}</span>
+                {unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
+              </>}
             </button>;
-          })}{rows.length > visibleRows.length && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{rows.length - visibleRows.length} công việc</button>}{expandedDays.has(day) && rows.length > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
-          <span className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{rows.length > 0 ? `${rows.length} việc` : '—'}</span>
+          })}{hiddenCount > 0 && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{hiddenCount} công việc</button>}{expandedDays.has(day) && actualItemCount > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
+          <span className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? `${actualItemCount} việc` : '—'}</span>
         </div>;
       })}</div>
     </>}
