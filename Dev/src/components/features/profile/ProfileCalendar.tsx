@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Bell, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, Search, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { AlertCircle, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, Search } from 'lucide-react';
 import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone, isCalendarOverdue, localDay, monthDays, occursOnCalendar } from '../../../lib/profileCalendar';
 import type { CalendarNotification } from '../../../hooks/useProfileCalendar';
+import { NotificationLog } from './NotificationLog';
 import './ProfileCalendar.css';
 
 interface Props {
@@ -13,12 +15,14 @@ interface Props {
   updatedAt: Date | null;
   onRefresh: () => void;
   onOpen: (item: CalendarItem) => void;
-  onReadNotification: (notification: CalendarNotification) => void;
   onReport: () => void;
   reportOpen: boolean;
+  includeTeamNotifications: boolean;
 }
 
 const filters = [{ id: 'all', label: 'Tất cả' }, { id: 'task', label: 'Tasks' }, { id: 'project', label: 'Projects' }, { id: 'campaign', label: 'Campaigns' }] as const;
+const ranges = [{ id: 'today', label: 'Hôm nay' }, { id: 'three', label: '3 ngày' }, { id: 'week', label: '1 tuần' }, { id: 'month', label: '1 tháng' }] as const;
+type CalendarRange = (typeof ranges)[number]['id'];
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
@@ -31,25 +35,30 @@ const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.st
         ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300'
         : 'border-blue-200 bg-blue-50 text-primary dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300';
 
-export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReadNotification, onReport, reportOpen }: Props) {
+export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications }: Props) {
   const [today, setToday] = useState(() => localDay(new Date()));
   useEffect(() => {
     const timer = setInterval(() => setToday(localDay(new Date())), 60000);
     return () => clearInterval(timer);
   }, []);
   const [cursor, setCursor] = useState(() => new Date());
-  const [selectedDay, setSelectedDay] = useState(today);
-  const [view, setView] = useState<'month' | 'week' | 'list'>('month');
+  const [range, setRange] = useState<CalendarRange>('today');
+  const [rangeOpen, setRangeOpen] = useState(false);
   const [filter, setFilter] = useState<(typeof filters)[number]['id']>('all');
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showUndated, setShowUndated] = useState(false);
   const [status, setStatus] = useState('all');
-  const agendaRef = useRef<HTMLDivElement>(null);
-  const focusDay = (day: string) => {
-    setSelectedDay(day); setShowUndated(false);
-    agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
+  const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
+  const rangeMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!rangeOpen) return;
+    const closeOutside = (event: PointerEvent) => { if (!rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); };
+    const closeEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setRangeOpen(false); };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeEscape);
+    return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
+  }, [rangeOpen]);
 
   const filtered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');
@@ -58,36 +67,44 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       && (status === 'all' || (status === 'open' ? !isCalendarDone(item.status) : status === 'done' ? isCalendarDone(item.status) : isCalendarOverdue(item, today)));
   }), [items, filter, query, status, today]);
   const days = useMemo(() => {
-    if (view !== 'week') return monthDays(cursor.getFullYear(), cursor.getMonth());
-    const offset = (cursor.getDay() + 6) % 7;
-    return Array.from({ length: 7 }, (_, index) => new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - offset + index, 12));
-  }, [cursor, view]);
-  const visibleStart = view === 'week' ? localDay(days[0]) : localDay(new Date(cursor.getFullYear(), cursor.getMonth(), 1));
-  const visibleEnd = view === 'week' ? localDay(days[6]) : localDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0));
+    if (range === 'month') return monthDays(cursor.getFullYear(), cursor.getMonth());
+    const offset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
+    const length = range === 'today' ? 1 : range === 'three' ? 3 : 7;
+    return Array.from({ length }, (_, index) => new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - offset + index, 12));
+  }, [cursor, range]);
+  const visibleStart = range === 'month' ? localDay(new Date(cursor.getFullYear(), cursor.getMonth(), 1)) : localDay(days[0]);
+  const visibleEnd = range === 'month' ? localDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)) : localDay(days[days.length - 1]);
   const inPeriod = filtered.filter(item => (item.start && item.end && item.start <= visibleEnd && item.end >= visibleStart) || (today >= visibleStart && today <= visibleEnd && occursOnCalendar(item, today, today)));
-  const undated = filtered.filter(item => !item.record.start_date && !item.due);
   const unread = notifications.filter(notification => !notification.is_read);
   const unreadKeys = new Set(unread.map(notification => `${notification.entity_type}:${notification.entity_id}`));
   const ordered = (rows: CalendarItem[], day = today) => [...rows].sort((a, b) => Number(isCalendarDone(a.status)) - Number(isCalendarDone(b.status)) || Number(b.due === day) - Number(a.due === day) || (a.due || '9999').localeCompare(b.due || '9999') || a.title.localeCompare(b.title, 'vi'));
-  const selectedItems = ordered(showUndated ? undated : filtered.filter(item => occursOnCalendar(item, selectedDay, today)), selectedDay);
 
   const move = (direction: number) => {
-    const next = view === 'week'
-      ? new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + direction * 7, 12)
-      : new Date(cursor.getFullYear(), cursor.getMonth() + direction, 1, 12);
-    setCursor(next); setSelectedDay(localDay(next)); setShowUndated(false);
+    const step = range === 'today' ? 1 : range === 'three' ? 3 : 7;
+    const next = range === 'month'
+      ? new Date(cursor.getFullYear(), cursor.getMonth() + direction, 1, 12)
+      : new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + direction * step, 12);
+    setCursor(next); setExpandedDays(new Set()); setHovered(null);
   };
-  const goToday = () => { const now = new Date(); setCursor(now); setSelectedDay(localDay(now)); setShowUndated(false); };
+  const selectRange = (next: CalendarRange) => { setRange(next); setCursor(new Date()); setRangeOpen(false); setExpandedDays(new Set()); setHovered(null); };
+  const selectedRangeLabel = range === 'today' && localDay(cursor) !== today ? formatCalendarDay(localDay(cursor)) : ranges.find(option => option.id === range)?.label;
+  const periodTitle = range === 'month' ? `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}` : range === 'week' ? `Tuần ${formatCalendarDay(visibleStart)} – ${formatCalendarDay(visibleEnd)}` : range === 'three' ? `3 ngày từ ${formatCalendarDay(visibleStart)}` : localDay(cursor) === today ? 'Hôm nay' : formatCalendarDay(localDay(cursor));
+  const showHover = (item: CalendarItem, element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    setHovered({ item, left: Math.max(12, Math.min(rect.left, window.innerWidth - 300)), top: rect.bottom + 180 > window.innerHeight ? Math.max(12, rect.top - 172) : rect.bottom + 8 });
+  };
+  useEffect(() => {
+    if (!hovered) return;
+    const hide = () => setHovered(null);
+    window.addEventListener('scroll', hide, true);
+    return () => window.removeEventListener('scroll', hide, true);
+  }, [hovered]);
 
-  const renderRow = (item: CalendarItem) => {
-    const Icon = iconFor(item);
-    return <button key={item.key} type="button" onClick={() => onOpen(item)} className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white/60 p-3 text-left transition-colors hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-900/30">
-      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${eventColor(item, today)}`}><Icon size={16} /></span>
-      <span className="min-w-0 flex-1"><span className={`block truncate text-sm font-semibold ${isCalendarDone(item.status) ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>{item.title}</span><span className="mt-1 block truncate text-xs text-gray-500">{calendarKindLabel[item.kind]}{item.parentName ? ` · ${item.parentName}` : ''} · {item.due ? `Hạn ${formatCalendarDay(item.due)}` : 'Chưa có deadline'}</span></span>
-      {unreadKeys.has(item.key) && <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Có thông báo mới" />}
-      <span className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold ${isCalendarDone(item.status) ? 'bg-emerald-50 text-emerald-700' : isCalendarOverdue(item, today) ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-primary'}`}>{isCalendarDone(item.status) ? 'Hoàn thành' : isCalendarOverdue(item, today) ? 'Quá hạn' : item.status || 'todo'}</span>
-      <ChevronRight size={15} className="shrink-0 text-gray-400" />
-    </button>;
+  const gridColumns = range === 'month' || range === 'week' ? 'grid-cols-7' : range === 'three' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1';
+  const weekdayLabels = range === 'month' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : days.map(date => date.toLocaleDateString('vi-VN', { weekday: 'short' }));
+  const ownerLabel = (item: CalendarItem) => {
+    const members = item.record.memberNames as string[] | undefined;
+    return members?.length ? members.join(', ') : item.owner || 'Chưa phân công';
   };
 
   return <section className="profile-calendar card-hub overflow-hidden rounded-xl shadow-sm" aria-label="Lịch công việc cá nhân" aria-busy={loading}>
@@ -109,40 +126,34 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     </div>
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 bg-red-50 px-5 py-3 text-xs text-red-700 dark:bg-red-950/30"><span className="flex items-center gap-2"><AlertCircle size={16} />{error}</span><button type="button" onClick={onRefresh} className="shrink-0 font-semibold underline">Thử lại</button></div>}
-    {showNotifications && <div className="border-b border-gray-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/30">
-      <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-semibold">Thông báo công việc <span className="font-normal text-gray-400">· 50 gần nhất</span></h3><button type="button" aria-label="Đóng thông báo lịch" onClick={() => setShowNotifications(false)} className="rounded-lg p-1.5 hover:bg-primary/5"><X size={16} /></button></div>
-      <div className="max-h-64 space-y-1 overflow-y-auto">{notifications.length === 0 ? <p className="py-6 text-center text-sm text-gray-400">Chưa có thông báo.</p> : notifications.map(notification => {
-        const target = items.find(item => item.id === notification.entity_id && item.kind === notification.entity_type);
-        return <button key={notification.id} type="button" onClick={() => { onReadNotification(notification); if (target) onOpen(target); }} className={`flex w-full items-start gap-3 rounded-lg p-3 text-left hover:bg-primary/5 ${!notification.is_read ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}><Bell size={15} className={`mt-1 shrink-0 ${notification.is_read ? 'text-gray-400' : 'text-primary'}`} /><span className="min-w-0"><span className="block text-sm">{notification.message}</span><time className="mt-1 block text-[11px] text-gray-400">{new Date(notification.created_at).toLocaleString('vi-VN')}</time>{!target && <span className="text-[11px] text-gray-400">Không có công việc tương ứng trong lịch cá nhân.</span>}</span></button>;
-      })}</div>
-    </div>}
+    {showNotifications && <div className="border-b border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-900/30"><NotificationLog includeTeam={includeTeamNotifications} inline onClose={() => setShowNotifications(false)} /></div>}
 
     <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
-      <div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900"><span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span><b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b></div><div><label className="calendar-month-label relative block cursor-pointer text-base font-bold text-gray-900 dark:text-white">Tháng {cursor.getMonth() + 1}, {cursor.getFullYear()}<input type="month" aria-label="Chọn tháng và năm" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`} onChange={event => { const [year, month] = event.target.value.split('-').map(Number); if (year && month) { const date = new Date(year, month - 1, 1, 12); setCursor(date); setSelectedDay(localDay(date)); setShowUndated(false); } }} className="absolute inset-0 w-full cursor-pointer opacity-0" /></label><p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(visibleStart)} – {formatCalendarDay(visibleEnd)} · {inPeriod.length} công việc</p></div></div>
-      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label={view === 'week' ? 'Tuần trước' : 'Tháng trước'} onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><button type="button" onClick={goToday} className="border-x border-gray-200 px-3 text-xs font-semibold hover:bg-primary/5 dark:border-slate-700">Hôm nay</button><button type="button" aria-label={view === 'week' ? 'Tuần sau' : 'Tháng sau'} onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><select aria-label="Chế độ xem lịch" value={view} onChange={event => setView(event.target.value as typeof view)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"><option value="month">Theo tháng</option><option value="week">Theo tuần</option><option value="list">Danh sách</option></select><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
+      <div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900"><span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span><b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b></div><div><p className="text-base font-bold text-gray-900 dark:text-white">{periodTitle}</p><p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(visibleStart)} – {formatCalendarDay(visibleEnd)} · {inPeriod.length} công việc</p></div></div>
+      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setRangeOpen(value => !value)} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">{selectedRangeLabel}<ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} /></button>{rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-36 rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800">{ranges.map(option => <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary/5 dark:text-gray-300'}`}>{option.label}</button>)}</div>}</div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
-    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : view === 'list' ? <div className="space-y-2 border-t border-gray-100 p-4 dark:border-slate-700 sm:p-5">{undated.length > 0 && <button type="button" onClick={() => { setShowUndated(true); requestAnimationFrame(() => agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} className="mb-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-primary dark:border-slate-700">Chưa lên lịch ({undated.length})</button>}{ordered(inPeriod).map(renderRow)}{inPeriod.length === 0 && <p className="py-12 text-center text-sm text-gray-400">Không có công việc phù hợp trong tháng này.</p>}</div> : <>
-      <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
-      <div className="calendar-days grid grid-cols-7">{days.map(date => {
+    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
+      <div className={`grid ${gridColumns} border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40`}>{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold capitalize text-gray-500">{day}</div>)}</div>
+      <div className={`calendar-days grid ${gridColumns}`}>{days.map(date => {
         const day = localDay(date);
         const rows = ordered(filtered.filter(item => occursOnCalendar(item, day, today)), day);
-        const muted = date.getMonth() !== cursor.getMonth();
-        const active = day === selectedDay && !showUndated;
-        return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${active ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
-          <button type="button" aria-label={`Xem ${rows.length} công việc ngày ${formatCalendarDay(day)}`} aria-pressed={active} onClick={() => focusDay(day)} className={`mb-2 grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold transition-colors ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400 hover:bg-primary/10' : 'text-gray-700 hover:bg-primary/10 dark:text-gray-200'}`}>{date.getDate()}</button>
-          <div className="calendar-event-list space-y-1">{rows.slice(0, 3).map(item => {
+        const muted = range === 'month' && date.getMonth() !== cursor.getMonth();
+        const visibleRows = expandedDays.has(day) ? rows : rows.slice(0, range === 'month' ? 3 : 8);
+        return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
+          <div className="mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span>{range !== 'month' && <span className="text-xs font-semibold capitalize text-gray-500">{date.toLocaleDateString('vi-VN', { weekday: 'long' })}</span>}</div>
+          <div className="calendar-event-list space-y-1">{visibleRows.map(item => {
             const Icon = iconFor(item);
-            return <button key={item.key} type="button" title={`${item.title} · ${calendarKindLabel[item.kind]}${item.due ? ` · Hạn ${formatCalendarDay(item.due)}` : ''}`} onClick={() => onOpen(item)} className={`flex w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 py-1 text-left text-[11px] font-medium transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${eventColor(item, today)}`}>
+            return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 py-1 text-left text-[11px] font-medium transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${eventColor(item, today)}`}>
               {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
             </button>;
-          })}{rows.length > 3 && <button type="button" onClick={() => focusDay(day)} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{rows.length - 3} công việc</button>}</div>
-          <button type="button" onClick={() => focusDay(day)} aria-label={`${rows.length} công việc ngày ${formatCalendarDay(day)}`} className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{rows.length > 0 ? `${rows.length} việc` : '—'}</button>
+          })}{rows.length > visibleRows.length && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{rows.length - visibleRows.length} công việc</button>}{expandedDays.has(day) && rows.length > (range === 'month' ? 3 : 8) && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
+          <span className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{rows.length > 0 ? `${rows.length} việc` : '—'}</span>
         </div>;
       })}</div>
     </>}
 
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-700 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
-    {(view !== 'list' || showUndated) && <div ref={agendaRef} className="scroll-mt-4 border-t border-gray-100 p-4 dark:border-slate-700 sm:p-5"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-gray-900 dark:text-white">{showUndated ? 'Chưa lên lịch' : `Ngày ${formatCalendarDay(selectedDay)}`} <span className="ml-1 font-normal text-gray-400">· {selectedItems.length} công việc</span></h3>{undated.length > 0 && <button type="button" onClick={() => setShowUndated(value => !value)} aria-pressed={showUndated} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-primary dark:border-slate-700">{showUndated ? 'Về ngày đã chọn' : `Chưa lên lịch (${undated.length})`}</button>}</div><div className="max-h-80 space-y-2 overflow-y-auto">{selectedItems.map(renderRow)}{selectedItems.length === 0 && <p className="py-7 text-center text-sm text-gray-400">{items.length ? 'Không có công việc phù hợp trong ngày này.' : 'Chưa có công việc được giao. Lịch sẽ cập nhật khi có công việc mới.'}</p>}</div><p className="mt-3 text-[11px] leading-5 text-gray-400">Lịch dùng ngày bắt đầu và deadline. Nếu chưa có ngày bắt đầu, dùng ngày tạo công việc; ngày giao lại chưa được lưu riêng.</p></div>}
+    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200">{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }

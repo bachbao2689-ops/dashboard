@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Bell, Edit3, Shield, Mail, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit3, Shield, Mail, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { EditProfileModal } from './EditProfileModal';
-import { NotificationLog } from './NotificationLog';
 import { ProfileKpis } from './ProfileKpis';
 
 export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
@@ -10,13 +9,6 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  useEffect(() => {
-    if (!isNotificationsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsNotificationsOpen(false); };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [isNotificationsOpen]);
   const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
   const title = profile?.job_title || (profile?.employment_level === 'Leader' ? 'Team Lead' : 'Staff');
@@ -56,10 +48,6 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
           <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm">
             <Edit3 size={16} /> Edit Profile
           </button>
-          <button onClick={() => setIsNotificationsOpen(true)} className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
-            <Bell size={16} /> Thông báo nội bộ
-          </button>
-          
           <button onClick={signOut} aria-label="Đăng xuất" className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-gray-500 shadow-sm">
             <LogOut size={18} />
           </button>
@@ -67,10 +55,6 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
       </div>
     </div>
     <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
-    {isNotificationsOpen && <div role="dialog" aria-modal="true" aria-label="Thông báo nội bộ" className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      <button type="button" aria-label="Đóng thông báo" onClick={() => setIsNotificationsOpen(false)} className="absolute inset-0 bg-slate-950/30 backdrop-blur-sm" />
-      <div className="relative max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl shadow-xl"><NotificationLog includeTeam={role === 'manager'} onClose={() => setIsNotificationsOpen(false)} /></div>
-    </div>}
     </>
   );
 };
