@@ -353,9 +353,6 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     </header>}
     <main className="flex-1 min-h-0 custom-scrollbar space-y-5 overflow-y-auto p-5 md:p-6">
 
-      {summaryImage && <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm relative group max-h-[300px]">
-        <img src={summaryImage} alt="Hình ảnh report tuần" className="w-full h-full object-cover" />
-      </div>}
       <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20"><div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Tiến độ report</p><p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{loadingReports ? 'Đang tải…' : `${reportedTasks.length}/${tasks.length} task đã cập nhật`}</p></div><span className="text-lg font-bold text-primary">{reportProgress}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100 dark:bg-slate-700"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${reportProgress}%` }} /></div></section>
       {!canEdit && variant === 'inline' && imageReports.length > 0 && <section className="space-y-3"><h3 className="text-sm font-bold text-gray-900 dark:text-white">Hình ảnh report của PIC</h3><div className="grid grid-cols-1 gap-3 xl:grid-cols-2">{imageReports.map(({ task, report }) => <a key={report.id} href={report.metadata?.image_url || '#'} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-xl border border-gray-100 bg-white transition-colors hover:border-primary/30 dark:border-slate-700 dark:bg-slate-800"><img src={report.metadata?.image_url || ''} alt={`Minh chứng report: ${task.title}`} loading="lazy" className="h-44 w-full bg-slate-50 object-contain dark:bg-slate-900" /><span className="block truncate px-3 py-2 text-xs font-semibold text-gray-700 group-hover:text-primary dark:text-gray-200">{task.title}</span></a>)}</div></section>}
       <section>
@@ -401,13 +398,13 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   );
 
   const content = (
-    <div ref={containerRef} className={`flex h-full w-full ${isResizing ? 'select-none pointer-events-none' : ''}`}>
-      <div style={{ width: `${leftWidth}%` }} className={`min-w-[30%] flex flex-col ${isResizing ? 'pointer-events-auto' : ''}`}>{leftColumn}</div>
+    <div ref={containerRef} className={`flex h-full w-full min-h-0 ${isResizing ? 'select-none pointer-events-none' : ''}`}>
+      <div style={{ width: `${leftWidth}%` }} className={`min-w-[30%] h-full flex flex-col min-h-0 ${isResizing ? 'pointer-events-auto' : ''}`}>{leftColumn}</div>
       <div 
         onMouseDown={() => setIsResizing(true)}
-        className="hidden lg:flex w-1.5 cursor-col-resize hover:bg-primary/50 bg-gray-100 dark:bg-slate-700 transition-colors z-20 shrink-0 pointer-events-auto"
+        className="hidden lg:flex h-full w-1.5 cursor-col-resize hover:bg-primary/50 bg-gray-100 dark:bg-slate-700 transition-colors z-20 shrink-0 pointer-events-auto"
       />
-      <div style={{ width: `${100 - leftWidth}%` }} className={`hidden lg:flex min-w-[30%] flex-col ${isResizing ? 'pointer-events-auto' : ''}`}>{rightColumn}</div>
+      <div style={{ width: `${100 - leftWidth}%` }} className={`hidden lg:flex min-w-[30%] h-full flex-col min-h-0 ${isResizing ? 'pointer-events-auto' : ''}`}>{rightColumn}</div>
     </div>
   );
 
