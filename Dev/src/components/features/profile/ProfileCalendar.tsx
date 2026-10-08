@@ -117,7 +117,26 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">{filters.map(option => <button type="button" key={option.id} aria-pressed={filter === option.id} onClick={() => setFilter(option.id)} className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${filter === option.id ? 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-primary dark:text-gray-400'}`}>{option.label}</button>)}</div>
+        <div className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">
+          {filters.map(option => {
+            let activeClass = 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:text-white';
+            if (option.id === 'task') activeClass = 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50';
+            if (option.id === 'project') activeClass = 'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50';
+            if (option.id === 'campaign') activeClass = 'bg-amber-50 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
+            
+            return (
+              <button 
+                type="button" 
+                key={option.id} 
+                aria-pressed={filter === option.id} 
+                onClick={() => setFilter(option.id)} 
+                className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${filter === option.id ? activeClass : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <label className="relative min-w-0 flex-1"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-gray-400" /><input aria-label="Tìm công việc trong lịch" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tìm công việc..." className="h-10 w-full min-w-0 rounded-xl border border-gray-200 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-primary dark:border-slate-700" /></label>
           <select aria-label="Lọc trạng thái" value={status} onChange={event => setStatus(event.target.value)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"><option value="all">Mọi trạng thái</option><option value="open">Chưa hoàn thành</option><option value="done">Đã hoàn thành</option><option value="overdue">Quá hạn</option></select>
@@ -126,11 +145,57 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     </div>
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 bg-red-50 px-5 py-3 text-xs text-red-700 dark:bg-red-950/30"><span className="flex items-center gap-2"><AlertCircle size={16} />{error}</span><button type="button" onClick={onRefresh} className="shrink-0 font-semibold underline">Thử lại</button></div>}
-    {showNotifications && <div className="border-b border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-900/30"><NotificationLog includeTeam={includeTeamNotifications} inline onClose={() => setShowNotifications(false)} /></div>}
+    {showNotifications && createPortal(<div role="dialog" aria-modal="true" aria-label="Thông báo nội bộ" className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <button type="button" aria-label="Đóng thông báo" onClick={() => setShowNotifications(false)} className="absolute inset-0 bg-slate-950/30 backdrop-blur-sm" />
+      <div className="relative max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl shadow-xl bg-white dark:bg-slate-900"><NotificationLog includeTeam={includeTeamNotifications} onClose={() => setShowNotifications(false)} /></div>
+    </div>, document.body)}
 
     <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
-      <div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900"><span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span><b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b></div><div><p className="text-base font-bold text-gray-900 dark:text-white">{periodTitle}</p><p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p></div></div>
-      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setRangeOpen(value => !value)} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">{selectedRangeLabel}<ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} /></button>{rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-36 rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800">{ranges.map(option => <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary/5 dark:text-gray-300'}`}>{option.label}</button>)}</div>}</div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
+      <div className="flex items-center gap-3">
+        <label className="group relative cursor-pointer block">
+          <div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900 transition-colors group-hover:bg-blue-100 dark:group-hover:bg-slate-800">
+            <span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span>
+            <b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b>
+          </div>
+          <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`} onChange={(e) => {
+            if (e.target.value) {
+              const [y, m, d] = e.target.value.split('-');
+              setCursor(new Date(Number(y), Number(m) - 1, Number(d)));
+              setRange('today');
+            }
+          }} />
+        </label>
+        <div>
+          <label className="group relative cursor-pointer block">
+            <div className="flex items-center gap-1.5">
+              <p className="text-base font-bold text-gray-900 dark:text-white transition-colors group-hover:text-primary">{periodTitle}</p>
+              <ChevronDown size={14} className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <input type="month" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`} onChange={(e) => {
+              if (e.target.value) {
+                const [y, m] = e.target.value.split('-');
+                setCursor(new Date(Number(y), Number(m) - 1, 1));
+              }
+            }} />
+          </label>
+          <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setRangeOpen(value => !value)} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">{selectedRangeLabel}<ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} /></button>{rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-40 rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            {ranges.map(option => <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary/5 dark:text-gray-300'}`}>{option.label}</button>)}
+            <div className="my-1 border-t border-gray-100 dark:border-slate-700"></div>
+            <label className="relative flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold text-gray-600 hover:bg-primary/5 dark:text-gray-300">
+              Chọn ngày cụ thể
+              <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => {
+                if (e.target.value) {
+                  const [y, m, d] = e.target.value.split('-');
+                  setCursor(new Date(Number(y), Number(m) - 1, Number(d)));
+                  setRange('today');
+                  setRangeOpen(false);
+                }
+              }} />
+            </label>
+          </div>}</div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
     {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
