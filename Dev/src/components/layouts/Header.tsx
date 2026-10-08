@@ -32,47 +32,63 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-    const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
   const travelRef = useRef(0);
-  const lastYRef = useRef(0);
+  const headerHiddenRef = useRef(false);
+  const animationLockUntilRef = useRef(0);
 
   useEffect(() => {
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (!target || !target.clientHeight || target.clientHeight < 300) return;
+    const scrollContainer = document.getElementById('main-scroll-container');
+    if (!scrollContainer) return;
 
-      const y = Math.max(0, target.scrollTop);
-      const delta = y - lastYRef.current;
-      
-      if (y <= 20) {
-        setIsHeaderHidden(false);
-        travelRef.current = 0;
-      } else {
-        if (delta && Math.sign(delta) !== Math.sign(travelRef.current)) {
+    let lastY = scrollContainer.scrollTop;
+    let frame = 0;
+
+    const handleScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const y = Math.max(0, scrollContainer.scrollTop);
+        const delta = y - lastY;
+        lastY = y;
+
+        if (y <= 12) {
+          travelRef.current = 0;
+          animationLockUntilRef.current = 0;
+          headerHiddenRef.current = false;
+          setIsHeaderHidden(false);
+          return;
+        }
+
+        // Ignore tiny wheel/touch fluctuations and scroll adjustments while the
+        // header is animating; both were causing the bar to flicker in place.
+        if (Math.abs(delta) < 3 || performance.now() < animationLockUntilRef.current) return;
+        if (travelRef.current && Math.sign(delta) !== Math.sign(travelRef.current)) {
           travelRef.current = 0;
         }
         travelRef.current += delta;
-        
-        if (travelRef.current > 15 && y > 60) {
-          setIsHeaderHidden(true);
+
+        const shouldHide = !headerHiddenRef.current && travelRef.current >= 36;
+        const shouldShow = headerHiddenRef.current && travelRef.current <= -22;
+        if (shouldHide || shouldShow) {
+          headerHiddenRef.current = shouldHide;
+          setIsHeaderHidden(shouldHide);
           travelRef.current = 0;
-        } else if (travelRef.current < -15) {
-          setIsHeaderHidden(false);
-          travelRef.current = 0;
+          animationLockUntilRef.current = performance.now() + 320;
         }
-      }
-      lastYRef.current = y;
+      });
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
   
   
   const canViewDashboard = true;
   const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
-
-  // Removed auto-hide header logic to fix scroll jumping
 
   useEffect(() => {
     let active = true;
@@ -168,10 +184,10 @@ export const Header: React.FC = () => {
     <div
       aria-hidden={isHeaderHidden}
       className={cn(
-        'shrink-0 transition-[max-height,opacity,transform] duration-300 ease-out z-[100] relative',
+        'shrink-0 overflow-hidden transition-[height,opacity,transform] duration-300 ease-out z-[100] relative motion-reduce:transition-none',
         isHeaderHidden
-          ? 'max-h-0 -translate-y-full opacity-0 pointer-events-none overflow-hidden md:max-h-24 md:translate-y-0 md:opacity-100 md:pointer-events-auto md:overflow-visible'
-          : 'max-h-24 translate-y-0 opacity-100 overflow-visible',
+          ? 'h-0 -translate-y-3 opacity-0 pointer-events-none'
+          : 'h-24 translate-y-0 opacity-100',
       )}
     >
     <header className="h-16 flex items-center justify-between px-4 md:px-8 mx-4 mt-4 rounded-2xl card-hub shadow-sm z-[100] relative">
