@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutGrid, List, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, Search } from 'lucide-react';
 import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone, isCalendarOverdue, localDay, monthDays, occursOnCalendar } from '../../../lib/profileCalendar';
 import type { CalendarNotification } from '../../../hooks/useProfileCalendar';
@@ -43,6 +43,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   }, []);
   const [cursor, setCursor] = useState(() => new Date());
   const [range, setRange] = useState<CalendarRange>('month');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);
@@ -271,7 +272,12 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           </div>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2"><div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="rounded-l-xl p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-slate-800">
+          <button type="button" onClick={() => setViewMode('grid')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><LayoutGrid size={15}/></button>
+          <button type="button" onClick={() => setViewMode('list')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><List size={15}/></button>
+        </div>
+        <div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="rounded-l-xl p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
           <button type="button" onClick={() => { setPickerMonth(cursor.getMonth()); setPickerYear(cursor.getFullYear()); setRangeOpen(value => !value); setMonthPickerOpen(false); }} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">
             {selectedRangeLabel}
             <ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
@@ -366,7 +372,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="rounded-r-xl p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
-    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
+    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : viewMode === 'grid' ? <>
       <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
       <div className="calendar-days grid grid-cols-7">{days.map(date => {
         const day = localDay(date);
@@ -424,7 +430,83 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           <span className="relative z-10 calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? `${actualItemCount} việc` : '—'}</span>
         </div>;
       })}</div>
-    </>}
+    </> : (
+      <div className="flex flex-col border-y border-gray-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 max-h-[800px] overflow-y-auto custom-scrollbar">
+        {days.filter(d => {
+          const dayStr = localDay(d);
+          return dayStr >= visibleStart && dayStr <= visibleEnd;
+        }).map(date => {
+          const day = localDay(date);
+          const dayKeys = slotMap[day] || [];
+          const itemsMap = new Map(filtered.map(i => [i.key, i]));
+          const dayItems = Array.from(new Set(dayKeys.filter(Boolean))).map(k => itemsMap.get(k!)).filter(Boolean) as CalendarItem[];
+          
+          if (dayItems.length === 0) return null;
+          
+          const wDay = date.getDay() === 0 ? 6 : date.getDay() - 1;
+          
+          return (
+            <div key={day} className={`flex flex-col sm:flex-row gap-4 border-b border-gray-100 dark:border-slate-800 p-4 sm:p-5 ${day === today ? 'bg-blue-50/40 dark:bg-slate-800/40' : ''}`}>
+              <div className="w-28 shrink-0">
+                <div className="text-sm font-bold text-gray-900 dark:text-white">{date.getDate()} Th{date.getMonth() + 1}</div>
+                <div className="text-xs font-semibold text-gray-500">{weekdayLabels[wDay]}</div>
+              </div>
+              <div className="flex-1 flex flex-wrap gap-4">
+                {dayItems.map(item => {
+                  let daysLeftLabel = null;
+                  let daysLeftColor = '';
+                  if (item.due) {
+                    const diffTime = new Date(item.due).getTime() - new Date(today).getTime();
+                    const daysLeft = Math.round(diffTime / (1000 * 3600 * 24));
+                    if (isCalendarDone(item.status)) {
+                      daysLeftLabel = 'Đã xong';
+                      daysLeftColor = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300';
+                    } else if (daysLeft < 0) {
+                      daysLeftLabel = `Trễ ${-daysLeft} ngày`;
+                      daysLeftColor = 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300';
+                    } else if (daysLeft === 0) {
+                      daysLeftLabel = 'Hôm nay';
+                      daysLeftColor = 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300';
+                    } else {
+                      daysLeftLabel = `Còn ${daysLeft} ngày`;
+                      daysLeftColor = 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300';
+                    }
+                  }
+                  
+                  const cardBg = isCalendarDone(item.status) ? 'border-emerald-200 bg-emerald-50 dark:border-transparent dark:bg-emerald-500/10' : item.kind.includes('campaign') ? 'border-amber-200 bg-amber-50 dark:border-transparent dark:bg-amber-500/10' : item.kind.includes('project') ? 'border-violet-200 bg-violet-50 dark:border-transparent dark:bg-violet-500/10' : 'border-blue-200 bg-blue-50 dark:border-transparent dark:bg-blue-500/10';
+                  
+                  return (
+                    <button key={`${day}-${item.key}`} onClick={() => onOpen(item)} className={`group relative flex w-full sm:w-[260px] flex-col justify-between gap-3 rounded-2xl border p-3.5 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${cardBg}`}>
+                      <div>
+                        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{calendarKindLabel[item.kind]}</span>
+                          {daysLeftLabel && <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold shadow-sm ${daysLeftColor}`}>{daysLeftLabel}</span>}
+                        </div>
+                        <h4 className="font-bold text-gray-900 dark:text-white line-clamp-2 text-sm leading-snug">{item.title}</h4>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 border-t border-black/5 dark:border-white/5 pt-2.5">
+                        <span className="font-medium flex items-center gap-1">⏱ {item.due ? formatCalendarDay(item.due) : '—'}</span>
+                        <span className="font-semibold truncate max-w-[100px] text-right" title={ownerLabel(item)}>👤 {ownerLabel(item)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        {days.filter(d => {
+          const dayStr = localDay(d);
+          return dayStr >= visibleStart && dayStr <= visibleEnd;
+        }).every(date => {
+          const dayKeys = slotMap[localDay(date)] || [];
+          const dayItems = dayKeys.filter(Boolean);
+          return dayItems.length === 0;
+        }) && (
+          <div className="py-20 text-center text-sm font-medium text-gray-400">Không có công việc nào trong khoảng thời gian này</div>
+        )}
+      </div>
+    )}
 
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
     {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200">{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
