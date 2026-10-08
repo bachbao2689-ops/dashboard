@@ -360,9 +360,16 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         const visibleRows = expandedDays.has(day) ? rows : rows.slice(0, 3);
         const visibleItemCount = visibleRows.filter(Boolean).length;
         const hiddenCount = actualItemCount - visibleItemCount;
-        return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : inSelectedRange && range !== 'month' ? 'bg-blue-50/20 dark:bg-blue-950/10' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
-          <div className="mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span></div>
-          <div className="calendar-event-list space-y-1">{visibleRows.map((item, index) => {
+        const isSelectedRange = inSelectedRange && range !== 'month';
+        const isRangeStart = day === visibleStart || date.getDay() === 1;
+        const isRangeEnd = day === visibleEnd || date.getDay() === 0;
+
+        return <div key={day} className={`calendar-day relative min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${!isSelectedRange && day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
+          {isSelectedRange && (
+            <div className={`absolute inset-0 pointer-events-none z-0 border-y-2 border-primary bg-primary/[0.08] dark:border-primary/60 dark:bg-primary/20 ${isRangeStart ? 'border-l-2 rounded-l-lg' : 'border-l-0'} ${isRangeEnd ? 'border-r-2 rounded-r-lg' : 'border-r-0 -mr-[1px]'}`} />
+          )}
+          <div className="relative z-10 mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span></div>
+          <div className="relative z-10 calendar-event-list space-y-1">{visibleRows.map((item, index) => {
             if (!item) return <div key={`empty-${index}`} className="h-[26px]" />;
             
             const Icon = iconFor(item);
@@ -394,7 +401,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               </>}
             </button>;
           })}{hiddenCount > 0 && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{hiddenCount} công việc</button>}{expandedDays.has(day) && actualItemCount > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
-          <span className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? `${actualItemCount} việc` : '—'}</span>
+          <span className="relative z-10 calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? `${actualItemCount} việc` : '—'}</span>
         </div>;
       })}</div>
     </>}
