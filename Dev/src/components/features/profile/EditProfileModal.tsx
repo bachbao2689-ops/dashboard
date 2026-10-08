@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
+import { CropModal } from '../../common/CropModal';
 import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
@@ -25,17 +26,32 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
     }
   }, [isOpen, user?.user_metadata?.full_name, profile?.name, profile?.avatar_url]);
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) return toast.error('Vui lòng chọn file ảnh');
-    if (file.size > 3 * 1024 * 1024) return toast.error('Ảnh tối đa 3MB');
+    if (file.size > 5 * 1024 * 1024) return toast.error('Ảnh tối đa 5MB');
+    
+    const reader = new FileReader();
+    reader.addEventListener('load', () => setCropImageSrc(reader.result?.toString() || null));
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCropSubmit = async (croppedBlob: Blob) => {
+    if (!user) return;
+    setCropImageSrc(null);
     setIsSaving(true);
+    
     try {
-      const extension = file.name.split('.').pop() || 'jpg';
-      const path = `${user.id}/${Date.now()}.${extension}`;
-      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+      const path = `${user.id}/${Date.now()}.jpg`;
+      const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+      
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: 'image/jpeg' });
       if (error) throw error;
+      
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       await updateUserMetadata({ avatar_url: data.publicUrl });
       setAvatarUrl(data.publicUrl);
@@ -206,6 +222,13 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           )}
         </div>
       </div>
+      {cropImageSrc && (
+        <CropModal
+          imageSrc={cropImageSrc}
+          onClose={() => setCropImageSrc(null)}
+          onCropComplete={handleCropSubmit}
+        />
+      )}
     </div>
   );
 };

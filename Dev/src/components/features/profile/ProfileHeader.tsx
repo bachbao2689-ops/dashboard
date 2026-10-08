@@ -5,6 +5,7 @@ import { Camera } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { toast } from 'react-hot-toast';
 import { EditProfileModal } from './EditProfileModal';
+import { CropModal } from '../../common/CropModal';
 import { ProfileKpis } from './ProfileKpis';
 
 export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
@@ -13,30 +14,41 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
     if (!file.type.startsWith('image/')) return toast.error('Vui lòng chọn file ảnh');
-    if (file.size > 3 * 1024 * 1024) return toast.error('Ảnh tối đa 3MB');
+    if (file.size > 5 * 1024 * 1024) return toast.error('Ảnh tối đa 5MB');
     
+    const reader = new FileReader();
+    reader.addEventListener('load', () => setCropImageSrc(reader.result?.toString() || null));
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCropSubmit = async (croppedBlob: Blob) => {
+    if (!user) return;
+    setCropImageSrc(null);
     setIsUploading(true);
+    
     try {
-      const extension = file.name.split('.').pop() || 'jpg';
-      const path = `${user.id}/${Date.now()}.${extension}`;
-      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+      const path = `${user.id}/${Date.now()}.jpg`;
+      const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+      
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: 'image/jpeg' });
       if (error) throw error;
       
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       await updateUserMetadata({ avatar_url: data.publicUrl });
       toast.success('Đã cập nhật ảnh đại diện');
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải ảnh lên. (Đảm bảo Supabase bucket "avatars" đã được public)');
+      toast.error(error.message || 'Không thể tải ảnh lên.');
     } finally { 
       setIsUploading(false); 
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
   const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
@@ -101,6 +113,13 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
       </div>
     </div>
     <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
+    {cropImageSrc && (
+      <CropModal
+        imageSrc={cropImageSrc}
+        onClose={() => setCropImageSrc(null)}
+        onCropComplete={handleCropSubmit}
+      />
+    )}
     </>
   );
 };
