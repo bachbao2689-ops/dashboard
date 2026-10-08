@@ -41,14 +41,27 @@ export const Header: React.FC = () => {
     const scrollContainer = document.getElementById('main-scroll-container');
     if (!scrollContainer) return;
 
+    let activeScrollTarget: HTMLElement = scrollContainer;
     let lastY = scrollContainer.scrollTop;
     let frame = 0;
+    let pendingScrollTarget: HTMLElement = scrollContainer;
 
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const eventTarget = event.target;
+      pendingScrollTarget = eventTarget instanceof HTMLElement && scrollContainer.contains(eventTarget)
+        ? eventTarget
+        : scrollContainer;
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        const y = Math.max(0, scrollContainer.scrollTop);
+        const target = pendingScrollTarget;
+        const y = Math.max(0, target.scrollTop);
+        if (target !== activeScrollTarget) {
+          activeScrollTarget = target;
+          lastY = y;
+          travelRef.current = 0;
+          return;
+        }
         const delta = y - lastY;
         lastY = y;
 
@@ -79,9 +92,11 @@ export const Header: React.FC = () => {
       });
     };
 
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    // Capture scroll events from nested page panels too (for example the
+    // Profile calendar), while ignoring scrolls outside the page content.
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollContainer.removeEventListener('scroll', handleScroll, { capture: true });
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
