@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Edit3, Shield, Mail, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
+import { Camera } from 'lucide-react';
+import { supabase } from '../../../services/supabase';
+import { toast } from 'react-hot-toast';
 import { EditProfileModal } from './EditProfileModal';
 import { ProfileKpis } from './ProfileKpis';
 
@@ -9,6 +12,33 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) return toast.error('Vui lòng chọn file ảnh');
+    if (file.size > 3 * 1024 * 1024) return toast.error('Ảnh tối đa 3MB');
+    
+    setIsUploading(true);
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const path = `${user.id}/${Date.now()}.${extension}`;
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      await updateUserMetadata({ avatar_url: data.publicUrl });
+      toast.success('Đã cập nhật ảnh đại diện');
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải ảnh lên. (Đảm bảo Supabase bucket "avatars" đã được public)');
+    } finally { 
+      setIsUploading(false); 
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
   const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
   const dbRole = profile?.role || 'member';
@@ -25,8 +55,22 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
       <div className="relative z-10 flex flex-wrap items-center gap-4">
         
         <div className="order-1 flex min-w-0 flex-1 items-center gap-4 sm:min-w-[240px]">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-2xl font-bold text-white shadow-sm">
-            {profile?.avatar_url ? <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" /> : initials}
+          <div className="relative group">
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-2xl font-bold text-white shadow-sm transition-all hover:ring-2 hover:ring-primary hover:ring-offset-2"
+            >
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" /> : initials}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity">
+                {isUploading ? (
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Camera size={20} className="text-white" />
+                )}
+              </div>
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
           
           <div className="min-w-0">
