@@ -19,6 +19,7 @@ interface Props {
   onReport: () => void;
   reportOpen: boolean;
   includeTeamNotifications: boolean;
+  extraFilters?: React.ReactNode;
 }
 
 const filters = [{ id: 'all', label: 'Tất cả' }, { id: 'task', label: 'Tasks' }, { id: 'project', label: 'Projects' }, { id: 'campaign', label: 'Campaigns' }] as const;
@@ -36,7 +37,7 @@ const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.st
         ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:bg-violet-500/20 dark:text-violet-300'
         : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:bg-blue-500/20 dark:text-blue-300';
 
-export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications }: Props) {
+export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications, extraFilters }: Props) {
   const [today, setToday] = useState(() => localDay(new Date()));
   useEffect(() => {
     const timer = setInterval(() => setToday(localDay(new Date())), 60000);
@@ -227,6 +228,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <label className="relative min-w-0 flex-1"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-gray-400" /><input aria-label="Tìm công việc trong lịch" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tìm công việc..." className="h-10 w-full min-w-0 rounded-xl border border-gray-200 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-primary dark:border-slate-700" /></label>
+          {extraFilters}
           <select aria-label="Lọc trạng thái" value={status} onChange={event => setStatus(event.target.value)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"><option value="all">Mọi trạng thái</option><option value="open">Chưa hoàn thành</option><option value="done">Đã hoàn thành</option><option value="overdue">Quá hạn</option><option value="hidden">Đã ẩn / Lưu trữ</option><option value="deleted">Đã xóa</option></select>
         </div>
       </div>

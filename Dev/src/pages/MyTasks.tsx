@@ -54,10 +54,18 @@ export const MyTasks: React.FC = () => {
   return (
     <div className="relative flex h-full min-h-0 min-w-0">
       <div className="min-w-0 flex-1 space-y-6 overflow-y-auto custom-scrollbar pb-6 pr-0 lg:pr-4">
-                <div className="flex justify-between items-center mb-6">
-          <ProfileHeader role={role} />
-          {isManager && (
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+                <ProfileHeader role={role} />
+        {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
+        <ProfileCalendar 
+          {...calendar} 
+          onRefresh={calendar.refresh} 
+          onOpen={item => setSelectedKey(item.key)} 
+          onReport={() => setReportOpen(value => !value)} 
+          reportOpen={reportOpen} 
+          includeTeamNotifications={isManager}
+          extraFilters={
+            isManager && (
+              <div className="flex items-center gap-3 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
               <Filter size={16} className="text-gray-400 ml-2" />
               <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300">
                 <option value="">Tất cả phòng ban</option>
@@ -69,10 +77,9 @@ export const MyTasks: React.FC = () => {
                 {visibleUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
-          )}
-        </div>
-        {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
-        <ProfileCalendar {...calendar} onRefresh={calendar.refresh} onOpen={item => setSelectedKey(item.key)} onReport={() => setReportOpen(value => !value)} reportOpen={reportOpen} includeTeamNotifications={isManager} />
+            )
+          }
+        />
         {reportOpen && <div ref={reportRef}><WeeklyReportDrawer isOpen variant="inline" onClose={() => setReportOpen(false)} ownerName={profile?.name || 'Report của tôi'} userId={profile?.id} canEdit weekStart={week.start} weekEnd={week.end} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} onOpenTask={id => setSelectedKey(`task:${id}`)} /></div>}
       </div>
       <TaskDetailPanel task={selected?.kind === 'task' ? selected.record : null} isOpen={selected?.kind === 'task'} onClose={() => setSelectedKey(null)} onTaskUpdated={calendar.refresh} />
