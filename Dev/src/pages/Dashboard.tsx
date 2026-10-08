@@ -16,7 +16,7 @@ import { tasksForWeeklyReport } from '../lib/weeklyReport';
 const INK = 'text-gray-900 dark:text-white';
 const MUTED = 'text-gray-500 dark:text-gray-400';
 const LINK = 'text-blue-600 dark:text-blue-400';
-const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:!border-[#6384b6]';
 const INNER = 'border border-gray-200 dark:border-slate-700';
 
 interface PerfData {

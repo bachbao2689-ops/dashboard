@@ -244,7 +244,7 @@ body,
 .dark .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
 .dark .glass-panel {
   background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
-  border-color: #6384b6; /* User specifically requested this brighter border for outer cards */
+  /* Removed border-color from here so it only applies to Dashboard via Tailwind classes */
 }
 
 /* ===== UI Shape Rules ===== */

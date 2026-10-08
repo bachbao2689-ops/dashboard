@@ -28,14 +28,14 @@ type CalendarRange = (typeof ranges)[number]['id'] | 'custom';
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
-  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-transparent dark:bg-emerald-500/20 dark:text-emerald-300'
+  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-transparent dark:bg-[#9dff9633] dark:text-[#63f858]'
   : isCalendarOverdue(item, today)
-    ? 'border-red-200 bg-red-50 text-red-700 dark:border-transparent dark:bg-red-500/20 dark:text-red-300'
+    ? 'border-red-200 bg-red-50 text-red-700 dark:border-transparent dark:bg-[#ff002033] dark:text-[#ff324b]'
     : item.kind === 'campaign' || item.kind === 'campaign_subtask'
-      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-transparent dark:bg-amber-500/20 dark:text-amber-300'
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-transparent dark:bg-[#c48a0085] dark:text-[#ffb500]'
       : item.kind === 'project' || item.kind === 'project_subtask'
-        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:bg-violet-500/20 dark:text-violet-300'
-        : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:bg-blue-500/20 dark:text-blue-300';
+        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:bg-[#6c2bff33] dark:text-white'
+        : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:bg-[#8ad5ff30] dark:text-[#61baff]';
 
 export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications, extraFilters }: Props) {
   const [today, setToday] = useState(() => localDay(new Date()));
@@ -533,7 +533,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       </div>
     )}
 
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400 dark:bg-[#61baff]" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400 dark:bg-[#6c2bff]" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 dark:bg-[#ffb500]" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 dark:bg-[#63f858]" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 dark:bg-[#ff324b]" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
     {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }
