@@ -42,19 +42,19 @@ export function useProfileCalendar() {
         const [tasks, memberships, projectSubtasks, campaignSubtasks, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
           allRows(supabase.from('tasks').select('*,project:project_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)').eq('assignee_id', profileId).order('id')),
           allRows(supabase.from('project_members').select('project_id,user:user_id(name)').eq('user_id', profileId).order('project_id')),
-          allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name)').eq('assignee_id', profileId).order('id')),
-          allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name)').eq('assignee_id', profileId).order('id')),
-          allRows(supabase.from('projects').select('*,creator:created_by(name)').eq('created_by', profileId).order('id')),
-          allRows(supabase.from('campaigns').select('*,lead:lead_id(name)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
+          allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).order('id')),
+          allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).order('id')),
+          allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').eq('created_by', profileId).order('id')),
+          allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
           supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
         ]);
         if (notificationResult.error) throw notificationResult.error;
         const projectIds = [...new Set([...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
-        const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name)').in('id', projectIds).order('id')) : [];
+        const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').in('id', projectIds).order('id')) : [];
         const linkedProjectMembers = projectIds.length ? await allRows(supabase.from('project_members').select('project_id,user:user_id(name)').in('project_id', projectIds).order('project_id')) : [];
         const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()];
         const campaignIds = [...new Set([...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
-        const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name)').in('id', campaignIds).order('id')) : [];
+        const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').in('id', campaignIds).order('id')) : [];
         const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()];
         const projectMap = new Map(projects.map(row => [row.id, row]));
         const campaignMap = new Map(campaigns.map(row => [row.id, row]));

@@ -5,6 +5,7 @@ import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone, isCalendarOverdue, localDay, monthDays, occursOnCalendar } from '../../../lib/profileCalendar';
 import type { CalendarNotification } from '../../../hooks/useProfileCalendar';
 import { NotificationLog } from './NotificationLog';
+import { Avatar } from '../../common/Avatar';
 import './ProfileCalendar.css';
 
 interface Props {
@@ -492,7 +493,10 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 border-t border-black/5 dark:border-white/5 pt-2.5">
                         <span className="font-medium flex items-center gap-1">⏱ {item.due ? formatCalendarDay(item.due) : '—'}</span>
-                        <span className="font-semibold truncate max-w-[100px] text-right" title={ownerLabel(item)}>👤 {ownerLabel(item)}</span>
+                        <div className="flex items-center gap-1.5" title={ownerLabel(item)}>
+                          <Avatar name={ownerLabel(item)} src={item.record.assignee?.avatar_url || item.record.lead?.avatar_url || item.record.creator?.avatar_url} className="h-4 w-4 text-[9px] shadow-sm ring-1 ring-white dark:ring-slate-800" />
+                          <span className="font-semibold truncate max-w-[90px]">{ownerLabel(item)}</span>
+                        </div>
                       </div>
                     </button>
                   );
@@ -515,6 +519,6 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     )}
 
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
-    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200">{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
+    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }
