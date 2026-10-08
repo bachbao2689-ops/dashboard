@@ -25,6 +25,7 @@ const isDone = (status?: string | null) => ['done', 'complete', 'completed'].inc
 const displayDate = (date?: string | null) => date ? new Date(date).toLocaleDateString('vi-VN') : 'Chưa đặt hạn';
 
 interface SubtaskDetailPanelProps {
+  entityType?: 'project_subtask' | 'campaign_subtask';
   subtask: Subtask | null;
   profile: { id?: number; name?: string } | null;
   people: Person[];
@@ -32,7 +33,7 @@ interface SubtaskDetailPanelProps {
   onUpdated: (subtask?: Subtask) => void;
 }
 
-export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated }) => {
+export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask' }) => {
   const [comments, setComments] = useState<ActivityComment[]>([]);
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -50,14 +51,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       supabase
         .from('activity_log')
         .select('id,user_id,created_at,metadata,user:user_id(name)')
-        .eq('entity_type', 'project_subtask')
+        .eq('entity_type', entityType)
         .eq('entity_id', subtask.id)
         .eq('action', 'comment')
         .order('created_at', { ascending: true }),
       supabase
         .from('activity_log')
         .select('metadata')
-        .eq('entity_type', 'project_subtask')
+        .eq('entity_type', entityType)
         .eq('entity_id', subtask.id)
         .eq('action', 'details_updated')
         .order('created_at', { ascending: false })
@@ -68,7 +69,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const details = detailsResult.data?.[0]?.metadata || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
-  }, [subtask?.id]);
+  }, [subtask?.id, entityType]);
 
   useEffect(() => {
     setCommentText('');
@@ -95,7 +96,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       user_id: person.id,
       type: 'system',
       message: `${profile.name || 'Một thành viên'} đã nhắc bạn trong subtask: ${subtask.title}`,
-      entity_type: 'project_subtask',
+      entity_type: entityType,
       entity_id: subtask.id
     })));
   };
@@ -108,7 +109,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       workspace_id: workspaceId,
       user_id: profile.id,
       action: 'comment',
-      entity_type: 'project_subtask',
+      entity_type: entityType,
       entity_id: subtask.id,
       metadata: { body }
     });
@@ -133,7 +134,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       workspace_id: workspaceId,
       user_id: profile.id,
       action: 'details_updated',
-      entity_type: 'project_subtask',
+      entity_type: entityType,
       entity_id: subtask.id,
       metadata: { description: draftDescription.trim(), image_url: draftImageUrl.trim() || null }
     });
@@ -160,7 +161,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const complete = async () => {
     if (!subtask || isDone(subtask.status)) return;
     setSaving(true);
-    const { error } = await supabase.from('project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
+    const { error } = await supabase.from(entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
     setSaving(false);
     if (error) return toast.error('Không thể hoàn thành subtask');
     const updated = { ...subtask, status: 'completed' };
@@ -168,8 +169,6 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     toast.success('Đã hoàn thành subtask');
   };
 
-  if (!subtask) return null;
-  const completed = isDone(subtask.status);
   useEffect(() => {
     if (!subtask?.id) return;
     const channel = supabase.channel(`realtime-activity_log-${subtask?.id}`)
@@ -179,6 +178,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [subtask?.id, reload]);
+
+  if (!subtask) return null;
+  const completed = isDone(subtask.status);
 
   return (
     <aside className="drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-[560px] flex-col overflow-hidden rounded-l-3xl border-l-4 border-l-emerald-400 bg-white shadow-2xl dark:bg-slate-800 md:w-[min(560px,calc(100vw-2rem))]">

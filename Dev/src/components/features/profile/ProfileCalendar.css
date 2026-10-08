@@ -1,0 +1,10 @@
+.profile-calendar { container-type: inline-size; container-name: profile-calendar; }
+.calendar-day { min-height: 148px; }
+.calendar-day:nth-child(7n) { border-right: 0; }
+.calendar-compact-count { display: none; }
+.calendar-month-label input::-webkit-calendar-picker-indicator { width: 100%; cursor: pointer; }
+@container profile-calendar (max-width: 620px) {
+  .calendar-day { min-height: 78px; padding: 6px 3px; }
+  .calendar-event-list { display: none; }
+  .calendar-compact-count { display: block; }
+}
