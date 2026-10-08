@@ -11,7 +11,7 @@ import type { ReportReference, WeeklyReportTask } from '../reports/WeeklyReportD
 import { tasksForWeeklyReport, weeklyReportRange } from '../../../lib/weeklyReport';
 import type { WeekSelection } from '../../../lib/weeklyReport';
 
-type TeamMember = { id: number; name: string; avatar_url?: string | null; employment_level?: string | null; job_title?: string | null; department_id?: string | null };
+type TeamMember = { id: number; name: string; avatar_url?: string | null; employment_level?: string | null; job_title?: string | null; department_id?: string | null; role?: string | null; };
 type TeamReportRow = { id: string; user_id: number; entity_id: string; created_at?: string | null; metadata?: { body?: string; blocker?: string | null; next_step?: string | null; image_url?: string | null; unchanged?: boolean; week_start?: string; week_end?: string } | null };
 
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
@@ -55,7 +55,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       }
       if(!silent) setLoadingTeam(true);
       let query = supabase.from('users')
-        .select('id,name,avatar_url,employment_level,job_title,department_id')
+        .select('id,name,avatar_url,employment_level,job_title,department_id,role')
         .eq('is_active', true)
         .neq('id', profile.id)
         .order('name');
@@ -267,7 +267,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
             const compactTasks = weeklyTasksByMember[member.id] || [];
             return <div key={member.id} className={`overflow-hidden rounded-2xl border transition-colors ${expanded ? 'border-primary/20 bg-primary/[0.02]' : 'border-transparent'}`}>
               <button type="button" onClick={() => expanded ? setSelectedMember(null) : void openReport(member)} className="group flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="mt-0.5 block truncate text-xs text-gray-500">{member.job_title || 'Nhân viên'} · {member.employment_level || 'Staff'}</span></span></span>
+                <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">{member.avatar_url ? <img src={member.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(member.name)}</span><span className="min-w-0"><b className="block truncate text-sm text-gray-900 dark:text-white">{member.name}</b><span className="mt-0.5 block truncate text-xs text-gray-500">{member.job_title || (member.role === 'admin' ? 'Admin' : member.role === 'manager' ? 'Manager' : member.role === 'leader' ? 'Leader' : 'Nhân viên')} · {member.employment_level || 'Staff'}</span></span></span>
                 <span className="flex shrink-0 items-center gap-2"><span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">{reportProgress[member.id]?.reported || 0}/{reportProgress[member.id]?.total || 0} report</span><span className="hidden rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-300 sm:inline-flex">{taskCount[member.id] || 0} tasks</span><ChevronDown size={18} className={`text-gray-400 transition-transform ${expanded ? 'rotate-180 text-primary' : ''}`} /></span>
               </button>
               {embedded && expanded && <div className="max-h-72 space-y-1 overflow-y-auto border-t border-gray-100 p-2 dark:border-slate-700">{compactTasks.length ? compactTasks.map(task => { const report = reportFor(member.id, task.id); return <button key={task.id} type="button" onClick={() => navigate(`/tasks?task=${task.id}`)} className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left hover:bg-white dark:hover:bg-slate-800"><span className="min-w-0"><b className="block truncate text-[11px] text-gray-700 dark:text-gray-200">{task.title}</b><span className="block truncate text-[10px] text-gray-400">{task.project?.name || 'Task lẻ'}</span></span><span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold ${report ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{report ? 'Đã report' : 'Chưa report'}</span></button>; }) : <p className="p-3 text-center text-xs text-gray-400">Không có task trong tuần.</p>}</div>}
