@@ -393,7 +393,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             if (!item) return <div key={`empty-${index}`} className="h-[26px]" />;
             
             const Icon = iconFor(item);
-            const isMultiDay = (item.kind === 'project' || item.kind === 'campaign') && item.start && item.end && item.start !== item.end;
+            const isMultiDay = item.start && item.end && item.start !== item.end;
             
             if (!isMultiDay) {
               return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex h-[26px] w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${hovered?.item.key === item.key ? 'brightness-[0.85] shadow-sm ring-1 ring-primary/30 z-20 relative' : 'hover:brightness-[0.90]'} ${eventColor(item, today)}`}>
