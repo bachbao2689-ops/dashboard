@@ -413,5 +413,5 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   if (variant === 'inline') return showHeader
     ? <section className="mt-5 h-[calc(100vh-80px)] min-h-[700px] flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800 shadow-sm">{content}</section>
     : <div className="h-[calc(100vh-80px)] min-h-[700px] flex flex-col overflow-hidden">{content}</div>;
-  return <><button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" /><aside className="drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[620px] flex-col overflow-hidden rounded-l-3xl border-l-4 border-l-primary bg-white shadow-2xl dark:bg-slate-800 md:w-[min(1200px,calc(100vw-2rem))]">{content}</aside></>;
+  return <><button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" /><aside className="drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[620px] flex-col overflow-hidden rounded-l-3xl border-l border-primary/20 shadow-drawer-task bg-white dark:bg-slate-800 md:w-[min(1200px,calc(100vw-2rem))]">{content}</aside></>;
 };

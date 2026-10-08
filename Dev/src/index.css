@@ -310,3 +310,14 @@ body,
   background: radial-gradient(ellipse at 100% 110%, rgba(239, 68, 68, 0.15) 0%, transparent 60%), #0f172a !important;
   border-color: rgba(239, 68, 68, 0.2) !important;
 }
+
+/* Colored Drawer Shadows */
+.shadow-drawer-campaign { box-shadow: -10px 0 30px -5px rgba(245, 158, 11, 0.35); }
+.shadow-drawer-project { box-shadow: -10px 0 30px -5px rgba(139, 92, 246, 0.35); }
+.shadow-drawer-task { box-shadow: -10px 0 30px -5px rgba(59, 130, 246, 0.35); }
+.shadow-drawer-subtask { box-shadow: -10px 0 30px -5px rgba(16, 185, 129, 0.35); }
+
+.dark .shadow-drawer-campaign { box-shadow: -10px 0 30px -5px rgba(245, 158, 11, 0.25); }
+.dark .shadow-drawer-project { box-shadow: -10px 0 30px -5px rgba(139, 92, 246, 0.25); }
+.dark .shadow-drawer-task { box-shadow: -10px 0 30px -5px rgba(59, 130, 246, 0.25); }
+.dark .shadow-drawer-subtask { box-shadow: -10px 0 30px -5px rgba(16, 185, 129, 0.25); }

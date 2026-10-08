@@ -15,12 +15,6 @@ interface TaskDetailPanelProps {
 }
 
 type Comment = { id: string; body: string; created_at: string; is_edited: boolean; author?: { name?: string; avatar_url?: string | null } | null };
-const priorityStyle = (priority?: string) => {
-  const value = (priority || 'medium').toLowerCase();
-  if (value.includes('urgent') || value.includes('high') || value.includes('cao')) return 'border-red-400';
-  if (value.includes('low') || value.includes('thấp')) return 'border-blue-400';
-  return 'border-amber-400';
-};
 
 export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false }) => {
   const profileId = useAuthStore(state => state.profile?.id);
@@ -100,7 +94,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   };
 
   const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
-  return <div inert={!isOpen} aria-hidden={!isOpen} style={{ '--task-panel-width': `${width}px` } as React.CSSProperties} className={`h-full max-h-full min-h-0 bg-white dark:bg-slate-800 rounded-l-3xl shadow-xl ${isOpen ? `w-full md:w-[var(--task-panel-width)] md:min-w-[var(--task-panel-width)] border-l-4 ${priorityStyle(task?.priority)}` : 'w-0 min-w-0 border-l-0 border-transparent'} shrink-0 ${floating ? 'fixed inset-y-0 right-0 z-[110]' : 'absolute md:relative right-0 top-0 z-[60]'} flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
+  return <div inert={!isOpen} aria-hidden={!isOpen} style={{ '--task-panel-width': `${width}px` } as React.CSSProperties} className={`h-full max-h-full min-h-0 bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${isOpen ? `w-full md:w-[var(--task-panel-width)] md:min-w-[var(--task-panel-width)] shadow-drawer-task border-l border-blue-500/20` : 'w-0 min-w-0 border-l-0 border-transparent shadow-none'} ${floating ? 'fixed inset-y-0 right-0 z-[110]' : 'absolute md:relative right-0 top-0 z-[60]'} flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
     {isOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
     <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
       <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} priority</span></div>
