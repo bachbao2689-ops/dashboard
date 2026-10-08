@@ -13,6 +13,7 @@ interface WeeklyReportPreviewProps {
   reports: Record<string, any>;
   onRemoveSummaryImage?: () => void;
   onSubmitReport?: () => void;
+  onClose?: () => void;
   onEditTask?: (taskId: string) => void;
   isLeaderView?: boolean;
 }
@@ -31,6 +32,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
   onRemoveSummaryImage,
   onSubmitReport,
   onEditTask,
+  onClose,
   isLeaderView = false
 }) => {
   return (
@@ -45,11 +47,18 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
             {isLeaderView ? 'Tracking báo cáo tuần của thành viên.' : 'Preview nội dung. Hover vào task để chỉnh sửa lại bên trái.'}
           </p>
         </div>
-        {onSubmitReport && (
-          <button onClick={onSubmitReport} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">
-            Gửi Báo Cáo
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onSubmitReport && (
+            <button onClick={onSubmitReport} className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors">
+              Gửi Báo Cáo
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose} aria-label="Đóng báo cáo" className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-500 dark:text-gray-300 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">

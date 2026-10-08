@@ -418,7 +418,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             const baseMargin = `relative flex h-[26px] min-w-0 items-center gap-1 border-y text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isHovered ? 'z-[30] brightness-[0.85] shadow-sm shadow-black/5 ring-1 ring-primary/30 dark:ring-white/20' : 'z-[20] hover:brightness-[0.90] dark:hover:brightness-110'} ${eventColor(item, today)}`;
             const ml = connectsLeft ? "-ml-[9px] pl-[9px] rounded-l-none !border-l-transparent" : "rounded-l-[6px] border-l pl-1.5";
             const mr = connectsRight ? "pr-[9px] rounded-r-none !border-r-transparent" : "rounded-r-[6px] border-r pr-1.5";
-            const showTitle = !connectsLeft;
+            const isStartDay = localDay(date) === item.start;
+            const showTitle = isStartDay;
 
             return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`${baseMargin} ${wClass} ${ml} ${mr}`}>
               {showTitle && <>

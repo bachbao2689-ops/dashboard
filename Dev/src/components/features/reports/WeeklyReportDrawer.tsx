@@ -389,6 +389,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       reports={reports}
       onRemoveSummaryImage={removeSummaryImage}
       onSubmitReport={submitFinalReport}
+      onClose={onClose}
       onEditTask={(taskId) => {
         setActiveTaskId(taskId);
         const el = document.getElementById(`task-item-${taskId}`);
