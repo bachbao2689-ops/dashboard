@@ -199,7 +199,8 @@ export const Header: React.FC = () => {
     <div
       aria-hidden={isHeaderHidden}
       className={cn(
-        'shrink-0 overflow-hidden transition-[height,opacity,transform] duration-300 ease-out z-[100] relative motion-reduce:transition-none',
+        'shrink-0 transition-[height,opacity,transform] duration-300 ease-out z-[100] relative motion-reduce:transition-none',
+        (!isHeaderHidden && showNotifs) ? 'overflow-visible' : 'overflow-hidden',
         isHeaderHidden
           ? 'h-0 -translate-y-3 opacity-0 pointer-events-none'
           : 'h-24 translate-y-0 opacity-100',
