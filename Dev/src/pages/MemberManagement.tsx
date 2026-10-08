@@ -24,24 +24,45 @@ export function MemberManagement() {
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
       const matchesStatus = statusFilter ? member.status === statusFilter : true;
+      if (!member.department?.name) return false; // Ẩn admin
       return inVisibleDepartment && matchesSearch && matchesRole && matchesStatus;
     });
   }, [members, searchTerm, roleFilter, statusFilter, canManageAll, profile?.department_id, profile?.department_name]);
 
   const memberGroups = useMemo(() => {
-    if (!canManageAll) return [[profile?.department_name || 'Phòng ban của tôi', filteredMembers] as const];
+    if (!canManageAll) return [[profile?.department_name || 'Phòng ban của tôi', [...filteredMembers].sort((a, b) => {
+      if (a.name?.includes('Thái Đặng') && !b.name?.includes('Thái Đặng')) return -1;
+      if (!a.name?.includes('Thái Đặng') && b.name?.includes('Thái Đặng')) return 1;
+      const isALeader = ['team_lead', 'leader', 'manager'].includes(a.role?.toLowerCase());
+      const isBLeader = ['team_lead', 'leader', 'manager'].includes(b.role?.toLowerCase());
+      if (isALeader && !isBLeader) return -1;
+      if (!isALeader && isBLeader) return 1;
+      return (a.created_at ? new Date(a.created_at).getTime() : 0) - (b.created_at ? new Date(b.created_at).getTime() : 0);
+    })] as [string, typeof filteredMembers]];
+    const sortMembers = (a: any, b: any) => {
+      if (a.name?.includes('Thái Đặng') && !b.name?.includes('Thái Đặng')) return -1;
+      if (!a.name?.includes('Thái Đặng') && b.name?.includes('Thái Đặng')) return 1;
+      const isALeader = ['team_lead', 'leader', 'manager'].includes(a.role?.toLowerCase());
+      const isBLeader = ['team_lead', 'leader', 'manager'].includes(b.role?.toLowerCase());
+      if (isALeader && !isBLeader) return -1;
+      if (!isALeader && isBLeader) return 1;
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateA - dateB;
+    };
     return Object.entries(filteredMembers.reduce<Record<string, typeof filteredMembers>>((groups, member) => {
       const key = member.department?.name || t('members.unassigned');
       (groups[key] ||= []).push(member);
       return groups;
-    }, {})).sort(([a], [b]) => a.localeCompare(b));
-  }, [canManageAll, filteredMembers, profile?.department_name]);
+    }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([dept, mbrs]) => [dept, mbrs.sort(sortMembers)] as [string, typeof filteredMembers]);
+  }, [canManageAll, filteredMembers, profile?.department_name, t]);
 
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
       case 'manager': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'team_lead': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300';
+      case 'team_lead':
+      case 'leader': return 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 shadow-sm font-bold';
       case 'viewer': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
       default: return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
     }

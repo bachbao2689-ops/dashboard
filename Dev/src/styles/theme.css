@@ -84,13 +84,13 @@ button:disabled { cursor: not-allowed; }
 .dark .bg-primary.text-white { color: #fff; }
 .app-sidebar.card-hub { overflow: hidden; }
 .sidebar-link { border: 1px solid transparent; position: relative; }
-.sidebar-link-idle { color: #4b5563; }
-.sidebar-link-idle:hover { color: #111827; background: #f3f4f6; }
+.sidebar-link-idle { color: var(--color-primary); }
+.sidebar-link-idle:hover { color: var(--color-primary); background: rgba(0, 46, 109, 0.05); }
 .sidebar-link-active {
   color: #fff;
-  background: linear-gradient(105deg, #4eb648, #3d9f38);
-  border-color: #439f3e;
-  box-shadow: 0 5px 16px #4eb6482e;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(0, 46, 109, 0.2);
 }
 .dark .app-sidebar.card-hub { background: linear-gradient(170deg, #172b32, #101c2c 42%, #101a29) !important; }
 .dark .sidebar-link-idle { color: #c3d2e5; }
