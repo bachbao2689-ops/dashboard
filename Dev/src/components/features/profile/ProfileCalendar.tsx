@@ -66,15 +66,16 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       && text.includes(query.trim().toLocaleLowerCase('vi'))
       && (status === 'all' || (status === 'open' ? !isCalendarDone(item.status) : status === 'done' ? isCalendarDone(item.status) : isCalendarOverdue(item, today)));
   }), [items, filter, query, status, today]);
-  const days = useMemo(() => {
-    if (range === 'month') return monthDays(cursor.getFullYear(), cursor.getMonth());
-    const offset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
-    const length = range === 'today' ? 1 : range === 'three' ? 3 : 7;
-    return Array.from({ length }, (_, index) => new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - offset + index, 12));
-  }, [cursor, range]);
-  const visibleStart = range === 'month' ? localDay(new Date(cursor.getFullYear(), cursor.getMonth(), 1)) : localDay(days[0]);
-  const visibleEnd = range === 'month' ? localDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)) : localDay(days[days.length - 1]);
-  const inPeriod = filtered.filter(item => (item.start && item.end && item.start <= visibleEnd && item.end >= visibleStart) || (today >= visibleStart && today <= visibleEnd && occursOnCalendar(item, today, today)));
+  const days = useMemo(() => monthDays(cursor.getFullYear(), cursor.getMonth()), [cursor]);
+  const rangeOffset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
+  const rangeLength = range === 'today' ? 1 : range === 'three' ? 3 : range === 'week' ? 7 : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  const rangeStartDate = range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12) : new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - rangeOffset, 12);
+  const rangeEndDate = range === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 12) : new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth(), rangeStartDate.getDate() + rangeLength - 1, 12);
+  const visibleStart = localDay(rangeStartDate);
+  const visibleEnd = localDay(rangeEndDate);
+  const monthStart = localDay(new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12));
+  const monthEnd = localDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 12));
+  const monthItems = filtered.filter(item => (item.start && item.end && item.start <= monthEnd && item.end >= monthStart) || (today >= monthStart && today <= monthEnd && occursOnCalendar(item, today, today)));
   const unread = notifications.filter(notification => !notification.is_read);
   const unreadKeys = new Set(unread.map(notification => `${notification.entity_type}:${notification.entity_id}`));
   const ordered = (rows: CalendarItem[], day = today) => [...rows].sort((a, b) => Number(isCalendarDone(a.status)) - Number(isCalendarDone(b.status)) || Number(b.due === day) - Number(a.due === day) || (a.due || '9999').localeCompare(b.due || '9999') || a.title.localeCompare(b.title, 'vi'));
@@ -88,7 +89,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   };
   const selectRange = (next: CalendarRange) => { setRange(next); setCursor(new Date()); setRangeOpen(false); setExpandedDays(new Set()); setHovered(null); };
   const selectedRangeLabel = range === 'today' && localDay(cursor) !== today ? formatCalendarDay(localDay(cursor)) : ranges.find(option => option.id === range)?.label;
-  const periodTitle = range === 'month' ? `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}` : range === 'week' ? `Tuần ${formatCalendarDay(visibleStart)} – ${formatCalendarDay(visibleEnd)}` : range === 'three' ? `3 ngày từ ${formatCalendarDay(visibleStart)}` : localDay(cursor) === today ? 'Hôm nay' : formatCalendarDay(localDay(cursor));
+  const periodTitle = `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}`;
   const showHover = (item: CalendarItem, element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
     setHovered({ item, left: Math.max(12, Math.min(rect.left, window.innerWidth - 300)), top: rect.bottom + 180 > window.innerHeight ? Math.max(12, rect.top - 172) : rect.bottom + 8 });
@@ -100,8 +101,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     return () => window.removeEventListener('scroll', hide, true);
   }, [hovered]);
 
-  const gridColumns = range === 'month' || range === 'week' ? 'grid-cols-7' : range === 'three' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1';
-  const weekdayLabels = range === 'month' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : days.map(date => date.toLocaleDateString('vi-VN', { weekday: 'short' }));
+  const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
   const ownerLabel = (item: CalendarItem) => {
     const members = item.record.memberNames as string[] | undefined;
     return members?.length ? members.join(', ') : item.owner || 'Chưa phân công';
@@ -129,25 +129,26 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     {showNotifications && <div className="border-b border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-900/30"><NotificationLog includeTeam={includeTeamNotifications} inline onClose={() => setShowNotifications(false)} /></div>}
 
     <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
-      <div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900"><span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span><b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b></div><div><p className="text-base font-bold text-gray-900 dark:text-white">{periodTitle}</p><p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(visibleStart)} – {formatCalendarDay(visibleEnd)} · {inPeriod.length} công việc</p></div></div>
+      <div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900"><span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span><b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b></div><div><p className="text-base font-bold text-gray-900 dark:text-white">{periodTitle}</p><p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p></div></div>
       <div className="flex flex-wrap items-center gap-2"><div className="inline-flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700"><button type="button" onClick={() => setRangeOpen(value => !value)} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">{selectedRangeLabel}<ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} /></button>{rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-36 rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800">{ranges.map(option => <button key={option.id} type="button" onClick={() => selectRange(option.id)} className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold ${range === option.id ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary/5 dark:text-gray-300'}`}>{option.label}</button>)}</div>}</div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
     {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
-      <div className={`grid ${gridColumns} border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40`}>{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold capitalize text-gray-500">{day}</div>)}</div>
-      <div className={`calendar-days grid ${gridColumns}`}>{days.map(date => {
+      <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
+      <div className="calendar-days grid grid-cols-7">{days.map(date => {
         const day = localDay(date);
         const rows = ordered(filtered.filter(item => occursOnCalendar(item, day, today)), day);
-        const muted = range === 'month' && date.getMonth() !== cursor.getMonth();
-        const visibleRows = expandedDays.has(day) ? rows : rows.slice(0, range === 'month' ? 3 : 8);
-        return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
-          <div className="mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span>{range !== 'month' && <span className="text-xs font-semibold capitalize text-gray-500">{date.toLocaleDateString('vi-VN', { weekday: 'long' })}</span>}</div>
+        const muted = date.getMonth() !== cursor.getMonth();
+        const inSelectedRange = day >= visibleStart && day <= visibleEnd;
+        const visibleRows = expandedDays.has(day) ? rows : rows.slice(0, 3);
+        return <div key={day} className={`calendar-day min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : inSelectedRange && range !== 'month' ? 'bg-blue-50/20 dark:bg-blue-950/10' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
+          <div className="mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span></div>
           <div className="calendar-event-list space-y-1">{visibleRows.map(item => {
             const Icon = iconFor(item);
             return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 py-1 text-left text-[11px] font-medium transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${eventColor(item, today)}`}>
               {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
             </button>;
-          })}{rows.length > visibleRows.length && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{rows.length - visibleRows.length} công việc</button>}{expandedDays.has(day) && rows.length > (range === 'month' ? 3 : 8) && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
+          })}{rows.length > visibleRows.length && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{rows.length - visibleRows.length} công việc</button>}{expandedDays.has(day) && rows.length > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
           <span className="calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{rows.length > 0 ? `${rows.length} việc` : '—'}</span>
         </div>;
       })}</div>
