@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Avatar } from "../components/common/Avatar";
+
 import {
   ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
 } from 'lucide-react';
@@ -35,6 +37,7 @@ interface PerfData {
   noDeadline: number;
   week: number[];
   month: number[];
+  avatar_url?: string | null;
 }
 
 const DATA: PerfData[] = [
@@ -147,7 +150,7 @@ export const Dashboard: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const plusThree = new Date(today); plusThree.setDate(today.getDate() + 3);
-    const stats = (id: string, type: PerfData['type'], name: string, role: string, dept: string, list: any[]): PerfData => {
+    const stats = (id: string, type: PerfData['type'], name: string, role: string, dept: string, list: any[], avatar_url?: string | null): PerfData => {
       const done = list.filter(task => task.status === 'done').length;
       const open = list.length - done;
       const overdue = list.filter(task => task.status !== 'done' && task.due_date && new Date(task.due_date) < today).length;
@@ -163,7 +166,7 @@ export const Dashboard: React.FC = () => {
         const date = new Date(today.getFullYear(), today.getMonth() - 3 + offset, 1);
         return list.filter(task => task.due_date && new Date(task.due_date).getFullYear() === date.getFullYear() && new Date(task.due_date).getMonth() === date.getMonth()).length;
       });
-      return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: 'Dự án', total: list.length, overdue, due3, urgent, noDeadline, week, month };
+      return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: 'Dự án', total: list.length, overdue, due3, urgent, noDeadline, week, month, avatar_url };
     };
     const members = users.map(user => stats(
       `user-${user.id}`,
@@ -171,7 +174,8 @@ export const Dashboard: React.FC = () => {
       user.name,
       user.job_title ? `${user.employment_level || (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Nhân viên')} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Thành viên'),
       user.department?.name || 'Chưa cập nhật team',
-      tasks.filter(task => String(task.assignee_id) === String(user.id))
+      tasks.filter(task => String(task.assignee_id) === String(user.id)),
+      user.avatar_url
     ));
     const deptNames = [...new Set(tasks.map(task => task.department?.name || 'Chưa phân phòng'))];
     const depts = deptNames.map(name => stats(`dept-${name}`, 'department', name, 'Phòng ban', 'Phòng ban', tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === name)));
@@ -242,7 +246,7 @@ export const Dashboard: React.FC = () => {
   const teams = [...new Set(users.map(user => user.department?.name || 'Chưa cập nhật team'))].map(name => ({
     name,
     id: `team-${name}`,
-    members: liveData.filter(member => member.type === 'staff' && users.find(user => `user-${user.id}` === member.id)?.department?.name === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open })),
+    members: liveData.filter(member => member.type === 'staff' && users.find(user => `user-${user.id}` === member.id)?.department?.name === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open, a: member.avatar_url })),
   }));
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading dashboard data...</div>;
@@ -317,7 +321,7 @@ export const Dashboard: React.FC = () => {
                 className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
                 style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
               >
-                <div className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 grid place-items-center text-3xl 2xl:text-5xl font-bold ${INK}`}>{s.initial}</div>
+                <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 text-3xl 2xl:text-5xl ${INK}`} />
                 <span className="absolute bottom-0 right-1 w-[22px] h-[22px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={14} strokeWidth={3} /></span>
               </div>
             </div>
@@ -553,7 +557,7 @@ export const Dashboard: React.FC = () => {
                       <div className="overflow-hidden">
                         {d.members.map(m => (
                           <button key={m.id} onClick={() => setActiveId(m.id)} className="w-full text-left flex items-center gap-2 pb-2 hover:opacity-70 transition-opacity">
-                            <span className="w-[24px] h-[24px] rounded-full bg-blue-50 dark:bg-slate-700 text-[#2a6fc1] dark:text-sky-300 grid place-items-center text-xs font-bold">{m.i}</span>
+                            <Avatar name={m.n} src={m.a || undefined} className="w-[24px] h-[24px] rounded-full text-[#2a6fc1] dark:text-sky-300 text-[10px]" />
                             <div className="flex-1 min-w-0">
                               <strong className={`block text-xs truncate ${LINK}`}>{m.n}</strong>
                               <small className={`block text-xs ${MUTED}`}>{m.r}</small>
