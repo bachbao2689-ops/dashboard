@@ -23,7 +23,7 @@ interface AuthState {
   initialize: () => void;
   signOut: () => Promise<void>;
   devLogin: (rememberMe?: boolean) => void;
-  updateUserMetadata: (data: { full_name?: string; avatar_url?: string }) => Promise<void>;
+  updateUserMetadata: (data: { full_name?: string; avatar_url?: string | null }) => Promise<void>;
 }
 
 let authListenerStarted = false;
@@ -167,15 +167,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const fullName = data.full_name?.trim() || profile?.name;
       if (!user || !fullName) throw new Error('Full name is required');
       if (user.id === 'dev-admin-id') {
-        set({ user: { ...user, user_metadata: { ...user.user_metadata, full_name: fullName, avatar_url: data.avatar_url || user.user_metadata?.avatar_url } } as User });
+        set({ user: { ...user, user_metadata: { ...user.user_metadata, full_name: fullName, avatar_url: 'avatar_url' in data ? data.avatar_url : user.user_metadata?.avatar_url } } as User });
         return;
       }
 
-      const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName, ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) } });
+      const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName, ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) } });
       if (authError) throw authError;
       const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title';
       const { data: updatedProfile, error: profileError } = await supabase.from('users')
-        .update({ name: fullName, initials: initialsFromName(fullName), ...(data.avatar_url ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
+        .update({ name: fullName, initials: initialsFromName(fullName), ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
       const nextProfile = updatedProfile ? { ...updatedProfile, department_name: profile?.department_name || null } as StaffProfile : profile;
       set({ profile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });

@@ -137,15 +137,46 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           {activeTab === 'profile' ? (
             <>
 
-          <div className="flex justify-center">
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group cursor-pointer">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-sm ring-4 ring-gray-50 dark:ring-slate-900/50">
                 {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" /> : (formData.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U')}
               </div>
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={24} className="text-white" />
               </div>
-            </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()} 
+                className="px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 rounded-lg transition-colors"
+              >
+                Đổi ảnh
+              </button>
+              {avatarUrl && (
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    if (!confirm('Bạn có chắc muốn xoá ảnh đại diện?')) return;
+                    setIsSaving(true);
+                    try {
+                      await updateUserMetadata({ avatar_url: null });
+                      setAvatarUrl('');
+                      toast.success('Đã xoá ảnh đại diện');
+                    } catch (e) {
+                      toast.error('Có lỗi xảy ra khi xoá ảnh');
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }} 
+                  className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 rounded-lg transition-colors"
+                >
+                  Xoá ảnh
+                </button>
+              )}
+            </div>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
 
