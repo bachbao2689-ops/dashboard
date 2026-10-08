@@ -42,7 +42,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     return () => clearInterval(timer);
   }, []);
   const [cursor, setCursor] = useState(() => new Date());
-  const [range, setRange] = useState<CalendarRange>('today');
+  const [range, setRange] = useState<CalendarRange>('month');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);
@@ -54,7 +54,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [filter, setFilter] = useState<(typeof filters)[number]['id']>('all');
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState('open');
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
   const rangeMenuRef = useRef<HTMLDivElement>(null);
