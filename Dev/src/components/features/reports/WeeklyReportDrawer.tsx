@@ -71,6 +71,20 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [reportedThisSession, setReportedThisSession] = useState<Set<string>>(new Set());
   const [leftWidth, setLeftWidth] = useState(50);
+  const [drawerWidth, setDrawerWidth] = useState(900);
+  const [isResizingDrawer, setIsResizingDrawer] = useState(false);
+
+  useEffect(() => {
+    if (!isResizingDrawer) return;
+    const move = (e: MouseEvent) => setDrawerWidth(Math.max(400, Math.min(window.innerWidth - e.clientX, 1200)));
+    const up = () => setIsResizingDrawer(false);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    return () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+  }, [isResizingDrawer]);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -413,5 +427,16 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   if (variant === 'inline') return showHeader
     ? <section className="mt-5 h-[calc(100vh-80px)] min-h-[700px] flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-800 shadow-sm">{content}</section>
     : <div className="h-[calc(100vh-80px)] min-h-[700px] flex flex-col overflow-hidden">{content}</div>;
-  return <><button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" /><aside className="drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[620px] flex-col overflow-hidden rounded-l-3xl border-l border-primary/20 shadow-drawer-task bg-white dark:bg-slate-800 md:w-[min(1200px,calc(100vw-2rem))]">{content}</aside></>;
+    return (
+    <>
+      <button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" />
+      <aside 
+        style={{ '--panel-width': `${drawerWidth}px` } as React.CSSProperties}
+        className={`drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[100vw] flex-col overflow-hidden rounded-l-3xl border-l border-primary/20 shadow-drawer-task bg-white dark:bg-slate-800 md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${!isResizingDrawer ? 'transition-[width,min-width] duration-300' : ''}`}
+      >
+        <div onMouseDown={() => setIsResizingDrawer(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-[120]" />
+        {content}
+      </aside>
+    </>
+  );
 };
