@@ -366,7 +366,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
 
         return <div key={day} className={`calendar-day relative min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${!isSelectedRange && day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
           {isSelectedRange && (
-            <div className={`absolute inset-0 pointer-events-none z-0 border-y-2 border-primary bg-primary/[0.08] dark:border-primary/60 dark:bg-primary/20 ${isRangeStart ? 'border-l-2 rounded-l-lg' : 'border-l-0'} ${isRangeEnd ? 'border-r-2 rounded-r-lg' : 'border-r-0 -mr-[1px]'}`} />
+            <div className={`absolute inset-0 pointer-events-none z-0 border-y border-primary/40 bg-blue-50/60 dark:border-primary/40 dark:bg-blue-900/20 ${isRangeStart ? 'border-l' : 'border-l-0'} ${isRangeEnd ? 'border-r' : 'border-r-0 -mr-[1px]'}`} />
           )}
           <div className="relative z-10 mb-2 flex items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-semibold ${day === today ? 'bg-primary text-white' : muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{date.getDate()}</span></div>
           <div className="relative z-10 calendar-event-list space-y-1">{visibleRows.map((item, index) => {
