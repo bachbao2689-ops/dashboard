@@ -127,8 +127,8 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
         <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
-          <Megaphone className="text-primary" size={16} /> Campaigns
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{campaigns.length}</span>
+          <Megaphone className="text-amber-500" size={16} /> Campaigns
+          <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">{campaigns.length}</span>
         </button>
       </div>
       {expanded && <div className="overflow-x-auto">
