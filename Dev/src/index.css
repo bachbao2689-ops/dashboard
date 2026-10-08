@@ -117,11 +117,7 @@ body,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.card-hub {
-  background: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, transparent 55%), linear-gradient(130deg, #fff, #fcfdff) !important;
-  border: 1px solid #dce8fa !important;
-  border-radius: 18px !important;
-}
+
 
 /* Custom Scrollbar for Glass UI */
 
@@ -159,10 +155,6 @@ body,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.dark .card-hub {
-  background: radial-gradient(ellipse at 100% 110%, rgba(30, 58, 100, 0.3) 0%, transparent 55%), #1e293b !important;
-  border-color: #334155 !important;
-}
 
 .dark .text-gray-900 { color: #f8fafc; }
 .dark .text-gray-800 { color: #f1f5f9; }
@@ -218,20 +210,9 @@ body,
 @media (max-width: 1023px) { .dashboard-scale { min-height: 0; } }
 
 
-/* ===== UI Hub card shape ===== */
-.card-hub {
-  background-image: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, rgba(234, 243, 255, 0) 55%);
-  background-color: #ffffff;
-  border: 1px solid #dce8fa;
-  border-radius: 18px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
 
-.dark .card-hub {
-  background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
-  background-color: #1e293b;
-  border-color: #334155;
-}
+
+
 
 @keyframes drawer-slide-in {
   from { transform: translateX(100%); opacity: 0.35; }
@@ -263,4 +244,68 @@ body,
 .dark .glass-panel {
   background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
   border-color: #334155;
+}
+
+/* ===== UI Shape Rules ===== */
+/* Basic card shape */
+.card-hub {
+  background: radial-gradient(ellipse at 100% 110%, #eff6ff 0%, transparent 60%), #ffffff;
+  border: 1px solid #dbeafe !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.dark .card-hub {
+  background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.12) 0%, transparent 60%), #0f172a;
+  border-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Status-tracked shapes */
+.card-status-task {
+  background: radial-gradient(ellipse at 100% 110%, #eff6ff 0%, transparent 60%), #ffffff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 16px !important;
+}
+.dark .card-status-task {
+  background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.15) 0%, transparent 60%), #0f172a !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.card-status-project {
+  background: radial-gradient(ellipse at 100% 110%, #f5f3ff 0%, transparent 60%), #ffffff !important;
+  border: 1px solid #ddd6fe !important;
+  border-radius: 16px !important;
+}
+.dark .card-status-project {
+  background: radial-gradient(ellipse at 100% 110%, rgba(139, 92, 246, 0.15) 0%, transparent 60%), #0f172a !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.card-status-campaign {
+  background: radial-gradient(ellipse at 100% 110%, #fffbeb 0%, transparent 60%), #ffffff !important;
+  border: 1px solid #fde68a !important;
+  border-radius: 16px !important;
+}
+.dark .card-status-campaign {
+  background: radial-gradient(ellipse at 100% 110%, rgba(245, 158, 11, 0.15) 0%, transparent 60%), #0f172a !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.card-status-done {
+  background: radial-gradient(ellipse at 100% 110%, #ecfdf5 0%, transparent 60%), #ffffff !important;
+  border: 1px solid #a7f3d0 !important;
+  border-radius: 16px !important;
+}
+.dark .card-status-done {
+  background: radial-gradient(ellipse at 100% 110%, rgba(16, 185, 129, 0.15) 0%, transparent 60%), #0f172a !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.card-status-overdue {
+  background: radial-gradient(ellipse at 100% 110%, #fef2f2 0%, transparent 60%), #ffffff !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 16px !important;
+}
+.dark .card-status-overdue {
+  background: radial-gradient(ellipse at 100% 110%, rgba(239, 68, 68, 0.15) 0%, transparent 60%), #0f172a !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
 }

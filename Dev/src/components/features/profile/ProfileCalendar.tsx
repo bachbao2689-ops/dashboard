@@ -473,10 +473,16 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                     }
                   }
                   
-                  const cardBg = isCalendarDone(item.status) ? 'border-emerald-200 bg-emerald-50 dark:border-transparent dark:bg-emerald-500/10' : item.kind.includes('campaign') ? 'border-amber-200 bg-amber-50 dark:border-transparent dark:bg-amber-500/10' : item.kind.includes('project') ? 'border-violet-200 bg-violet-50 dark:border-transparent dark:bg-violet-500/10' : 'border-blue-200 bg-blue-50 dark:border-transparent dark:bg-blue-500/10';
+                  let statusClass = 'card-status-task';
+                  if (isCalendarDone(item.status)) statusClass = 'card-status-done';
+                  else if (isCalendarOverdue(item, today)) statusClass = 'card-status-overdue';
+                  else if (item.kind.includes('campaign')) statusClass = 'card-status-campaign';
+                  else if (item.kind.includes('project')) statusClass = 'card-status-project';
+                  
+                  const cardBg = statusClass;
                   
                   return (
-                    <button key={`${day}-${item.key}`} onClick={() => onOpen(item)} className={`group relative flex w-full sm:w-[260px] flex-col justify-between gap-3 rounded-2xl border p-3.5 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${cardBg}`}>
+                    <button key={`${day}-${item.key}`} onClick={() => onOpen(item)} className={`group relative flex w-full sm:w-[260px] flex-col justify-between gap-3 p-3.5 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${cardBg}`}>
                       <div>
                         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{calendarKindLabel[item.kind]}</span>
