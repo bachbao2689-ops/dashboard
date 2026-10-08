@@ -26,14 +26,14 @@ type CalendarRange = (typeof ranges)[number]['id'] | 'custom';
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
-  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-transparent dark:bg-emerald-500/20 dark:text-emerald-300'
   : isCalendarOverdue(item, today)
-    ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300'
+    ? 'border-red-200 bg-red-50 text-red-700 dark:border-transparent dark:bg-red-500/20 dark:text-red-300'
     : item.kind === 'campaign' || item.kind === 'campaign_subtask'
-      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300'
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-transparent dark:bg-amber-500/20 dark:text-amber-300'
       : item.kind === 'project' || item.kind === 'project_subtask'
-        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300'
-        : 'border-blue-200 bg-blue-50 text-primary dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300';
+        ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-transparent dark:bg-violet-500/20 dark:text-violet-300'
+        : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:bg-blue-500/20 dark:text-blue-300';
 
 export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications }: Props) {
   const [today, setToday] = useState(() => localDay(new Date()));
@@ -367,7 +367,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     </div>
 
     {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : <>
-      <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
+      <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
       <div className="calendar-days grid grid-cols-7">{days.map(date => {
         const day = localDay(date);
         const dayKeys = slotMap[day] || [];
@@ -384,7 +384,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         const isRangeStart = day === visibleStart || date.getDay() === 1;
         const isRangeEnd = day === visibleEnd || date.getDay() === 0;
 
-        return <div key={day} className={`calendar-day relative min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-700 ${!isSelectedRange && day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-blue-950/20' : muted ? 'bg-slate-50/70 dark:bg-slate-900/40' : 'bg-white/40 dark:bg-slate-800/20'}`}>
+        return <div key={day} className={`calendar-day relative min-w-0 border-b border-r border-gray-100 p-2 dark:border-slate-800 ${!isSelectedRange && day === today ? 'bg-blue-50/40 ring-1 ring-inset ring-primary/25 dark:bg-slate-800 dark:ring-slate-700' : muted ? 'bg-slate-50/70 dark:bg-slate-950' : 'bg-white/40 dark:bg-slate-900'}`}>
           {isSelectedRange && (
             <div className={`absolute inset-0 pointer-events-none z-0 border-y border-primary/40 bg-blue-50/60 dark:border-primary/40 dark:bg-blue-900/20 ${isRangeStart ? 'border-l' : 'border-l-0'} ${isRangeEnd ? 'border-r' : 'border-r-0 -mr-[1px]'}`} />
           )}
@@ -396,7 +396,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             const isMultiDay = item.start && item.end && item.start !== item.end;
             
             if (!isMultiDay) {
-              return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex h-[26px] w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${hovered?.item.key === item.key ? 'brightness-[0.85] shadow-sm ring-1 ring-primary/30 z-20 relative' : 'hover:brightness-[0.90]'} ${eventColor(item, today)}`}>
+              return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex h-[26px] w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${hovered?.item.key === item.key ? 'brightness-[0.85] shadow-sm ring-1 ring-primary/30 dark:ring-white/20 z-20 relative' : 'hover:brightness-[0.90] dark:hover:brightness-110'} ${eventColor(item, today)}`}>
                 {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
               </button>;
             }
@@ -408,7 +408,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
 
             const wClass = (connectsLeft && connectsRight) ? "w-[calc(100%+18px)]" : (connectsLeft || connectsRight) ? "w-[calc(100%+9px)]" : "w-full";
             const isHovered = hovered?.item.key === item.key;
-            const baseMargin = `relative flex h-[26px] min-w-0 items-center gap-1 border-y text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isHovered ? 'z-[30] brightness-[0.85] shadow-sm shadow-black/5 ring-1 ring-primary/30' : 'z-[20] hover:brightness-[0.90]'} ${eventColor(item, today)}`;
+            const baseMargin = `relative flex h-[26px] min-w-0 items-center gap-1 border-y text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isHovered ? 'z-[30] brightness-[0.85] shadow-sm shadow-black/5 ring-1 ring-primary/30 dark:ring-white/20' : 'z-[20] hover:brightness-[0.90] dark:hover:brightness-110'} ${eventColor(item, today)}`;
             const ml = connectsLeft ? "-ml-[9px] pl-[9px] rounded-l-none !border-l-transparent" : "rounded-l-[6px] border-l pl-1.5";
             const mr = connectsRight ? "pr-[9px] rounded-r-none !border-r-transparent" : "rounded-r-[6px] border-r pr-1.5";
             const showTitle = !connectsLeft;
@@ -426,7 +426,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       })}</div>
     </>}
 
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-700 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
     {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200">{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }
