@@ -66,14 +66,14 @@ export const MyTasks: React.FC = () => {
           extraFilters={
             isManager && (
               <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-[#8fa8d0]">
                 <Filter size={15} className="text-gray-400" />
                 <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
                   <option value="">Tất cả phòng ban</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
-              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-[#8fa8d0]">
                 <User size={15} className="text-gray-400" />
                 <select value={filterPic} onChange={e => setFilterPic(e.target.value)} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
                   <option value="">{filterDept ? 'Tất cả nhân sự' : 'Chọn nhân sự (PIC)'}</option>

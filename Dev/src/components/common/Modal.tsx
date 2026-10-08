@@ -33,9 +33,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         onClick={onClose}
       />
       
-      <div className={`relative bg-white dark:bg-slate-800 shadow-xl border border-gray-200 dark:border-slate-700 w-full overflow-hidden flex flex-col ${variant === 'drawer' ? 'max-w-[620px] h-full rounded-l-3xl border-l border-blue-500/20 shadow-drawer-task drawer-slide-in' : 'max-w-2xl rounded-3xl max-h-[95vh] animate-in fade-in zoom-in-95 duration-200'}`}>
+      <div className={`relative bg-white dark:bg-slate-800 shadow-xl border border-gray-200 dark:border-[#8fa8d0] w-full overflow-hidden flex flex-col ${variant === 'drawer' ? 'max-w-[620px] h-full rounded-l-3xl border-l border-blue-500/20 shadow-drawer-task drawer-slide-in' : 'max-w-2xl rounded-3xl max-h-[95vh] animate-in fade-in zoom-in-95 duration-200'}`}>
         
-        <div className={`flex items-center justify-between p-6 md:px-8 ${variant === 'drawer' ? 'py-4 border-b border-gray-200 dark:border-slate-700' : 'pt-8'}`}>
+        <div className={`flex items-center justify-between p-6 md:px-8 ${variant === 'drawer' ? 'py-4 border-b border-gray-200 dark:border-[#8fa8d0]' : 'pt-8'}`}>
           <h3 className={`${variant === 'drawer' ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-white`}>{title}</h3>
           <button 
             onClick={onClose}

@@ -85,7 +85,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       case 'todo':
         return {
           label: 'Chưa bắt đầu',
-          cls: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-600',
+          cls: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#8fa8d0]',
         };
     }
   };
@@ -111,7 +111,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       <DepartmentKpiCards kpis={data.kpis} isOverall={false} />
 
       {/* 4. Active Projects Grid (Project đang chạy) */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Project đang chạy
         </p>
@@ -123,7 +123,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
             return (
               <div
                 key={proj.id}
-                className="bg-gray-50/70 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 flex flex-col justify-between"
+                className="bg-gray-50/70 dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-xl p-3 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -149,7 +149,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                     <span>Hạn {proj.deadline}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-1 pt-1.5 border-t border-gray-200/50 dark:border-slate-700/50">
+                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-1 pt-1.5 border-t border-gray-200/50 dark:border-[#8fa8d0]/50">
                   <span>Phụ trách: {proj.manager}</span>
                   {proj.overdueCount > 0 ? (
                     <span className="text-red-700 dark:text-red-400 font-semibold">
@@ -166,7 +166,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       </div>
 
       {/* 5. Active Tasks Table with Filter Chips */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
             Task đang hoạt động
@@ -197,7 +197,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         </div>
 
         {/* Table Header */}
-        <div className="grid grid-cols-[minmax(0,1fr)_96px_36px_84px_52px] gap-2.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 pb-1.5 px-1 border-b border-gray-100 dark:border-slate-700">
+        <div className="grid grid-cols-[minmax(0,1fr)_96px_36px_84px_52px] gap-2.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 pb-1.5 px-1 border-b border-gray-100 dark:border-[#8fa8d0]">
           <div>Task</div>
           <div>Trạng thái</div>
           <div className="text-center">PIC</div>
@@ -206,7 +206,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         </div>
 
         {/* Table Body (Internal Scroll Container for zero layout shift) */}
-        <div className="divide-y divide-gray-100 dark:divide-slate-700/60 max-h-[160px] overflow-y-auto scrollbar-hide">
+        <div className="divide-y divide-gray-100 dark:divide-[#8fa8d0]/60 max-h-[160px] overflow-y-auto scrollbar-hide">
           {filteredTasks.map((t) => {
             const statusStyle = getTaskStatusStyle(t.status);
             const isLate = t.status === 'late';
@@ -272,7 +272,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       {/* 6. Burndown & Member Workload 2-Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {/* Burndown Chart Card */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Burndown: task còn lại
@@ -312,7 +312,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                   content={({ active, payload, label }) => {
                     if (!active || !payload || !payload.length) return null;
                     return (
-                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2 text-xs">
+                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-lg shadow-lg p-2 text-xs">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">
                           Tuần {label}
                         </p>
@@ -354,7 +354,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         </div>
 
         {/* Member Workload Card */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px] justify-between">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm flex flex-col h-[260px] justify-between">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
               Mức tải theo thành viên (% công suất)
@@ -412,11 +412,11 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       </div>
 
       {/* 7. Recent Activity Feed Card */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
           Hoạt động gần đây
         </p>
-        <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
+        <div className="divide-y divide-gray-100 dark:divide-[#8fa8d0]/60">
           {data.activities.map((act) => (
             <div
               key={act.id}

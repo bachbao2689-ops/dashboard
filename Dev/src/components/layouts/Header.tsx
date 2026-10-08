@@ -223,7 +223,7 @@ export const Header: React.FC = () => {
                 className={cn(
                   "flex items-center rounded-xl border transition-all duration-300 overflow-hidden flex-shrink-0",
                   expandedGroup === group.title 
-                    ? "bg-gray-50/80 dark:bg-slate-800/80 border-gray-200 dark:border-slate-700 shadow-sm" 
+                    ? "bg-gray-50/80 dark:bg-slate-800/80 border-gray-200 dark:border-[#8fa8d0] shadow-sm" 
                     : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-800"
                 )}
               >
@@ -302,9 +302,9 @@ export const Header: React.FC = () => {
                 navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
               }
             }}
-            className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 focus:w-64 transition-all text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20"
+            className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-xl text-sm w-32 md:w-56 focus:w-64 transition-all text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono pointer-events-none">⌘K</kbd>
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-[#8fa8d0] font-mono pointer-events-none">⌘K</kbd>
         </div>
         
         <div className="flex items-center gap-1 md:gap-3 text-gray-600 dark:text-gray-300">
@@ -323,7 +323,7 @@ export const Header: React.FC = () => {
           </button>
 
           
-          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent'} border rounded-xl overflow-hidden h-9`}>
+          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-[#8fa8d0] shadow-lg' : 'relative border-transparent'} border rounded-xl overflow-hidden h-9`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
               <Search size={18} />
             </button>
@@ -352,15 +352,15 @@ export const Header: React.FC = () => {
             </button>
             
             {showNotifs && (
-              <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden">
-                <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
+              <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-[#8fa8d0] z-[9999] overflow-hidden">
+                <div className="p-4 border-b border-gray-100 dark:border-[#8fa8d0] font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
                   <span>Notifications</span>
                   <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>Mark all as read</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-[#8fa8d0] hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
-                <div className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+                <div className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-[#8fa8d0] bg-gray-50 dark:bg-slate-800">
                   View all notifications
                 </div>
               </div>

@@ -269,13 +269,13 @@ export const TaskList: React.FC = () => {
                   placeholder="Search tasks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
+                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
                 />
               </div>
             </div>
             <button 
               onClick={() => setIsSearchExpanded(!isSearchExpanded)} 
-              className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+              className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-[#8fa8d0] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
             >
               <Search className="w-4 h-4" />
             </button>
@@ -286,7 +286,7 @@ export const TaskList: React.FC = () => {
             <select 
               value={groupBy} 
               onChange={(e) => setGroupBy(e.target.value)}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
               <option value="none">None</option>
               <option value="project">Project</option>
@@ -297,7 +297,7 @@ export const TaskList: React.FC = () => {
 
           {/* Filters Panel Toggle */}
           <div className="relative">
-            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-[#8fa8d0] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
             </button>
@@ -306,7 +306,7 @@ export const TaskList: React.FC = () => {
 
           <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1"></div>
 
-          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
             <span className="text-sm font-medium">Export</span>
           </button>
@@ -339,7 +339,7 @@ export const TaskList: React.FC = () => {
             <div key={groupName} className="card-hub rounded-2xl overflow-hidden">
               {groupBy !== 'none' && (
                 <div 
-                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
+                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-[#8fa8d0] flex justify-between items-center cursor-pointer transition-colors"
                   onClick={() => toggleGroup(groupName)}
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
@@ -347,7 +347,7 @@ export const TaskList: React.FC = () => {
                       {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                     </button>
                     <h3 className="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide text-sm">{groupName}</h3>
-                    <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-slate-600">{groupTasks.length} tasks</span>
+                    <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-[#8fa8d0]">{groupTasks.length} tasks</span>
                   </div>
                 </div>
               )}
@@ -355,7 +355,7 @@ export const TaskList: React.FC = () => {
                 <div className="overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+                    <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-[#8fa8d0]">
                       <th className="p-4 w-12">
                         <input 
                           type="checkbox" 
@@ -383,7 +383,7 @@ export const TaskList: React.FC = () => {
                       <th className="p-4"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  <tbody className="divide-y divide-gray-100 dark:divide-[#8fa8d0]">
                     {groupTasks.map((task) => (
                       <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-colors group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                         <td className="p-4">

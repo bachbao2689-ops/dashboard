@@ -16,8 +16,8 @@ import { tasksForWeeklyReport } from '../lib/weeklyReport';
 const INK = 'text-gray-900 dark:text-white';
 const MUTED = 'text-gray-500 dark:text-gray-400';
 const LINK = 'text-blue-600 dark:text-blue-400';
-const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700';
-const INNER = 'border border-gray-200 dark:border-slate-700';
+const PANEL = 'bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-[#8fa8d0]';
+const INNER = 'border border-gray-200 dark:border-[#8fa8d0]';
 
 interface PerfData {
   id: string;
@@ -256,18 +256,18 @@ export const Dashboard: React.FC = () => {
     <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
       {/* ============ LEFT: PERFORMANCE PANEL ============ */}
       <section className={`${PANEL} p-4 sm:p-[16px] flex flex-col`}>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-gray-200 dark:border-slate-700 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-gray-200 dark:border-[#8fa8d0] pb-4">
           <div>
             <Eyebrow className="!text-xs mb-[3px]">PERFORMANCE DASHBOARD</Eyebrow>
             <h2 className={`text-lg sm:text-xl font-bold ${INK}`}>Tổng quan hoạt động</h2>
           </div>
           
           <div className="relative z-[100]" ref={searchRef}>
-            <div className="flex items-center bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-lg p-1">
+            <div className="flex items-center bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-[#8fa8d0] rounded-lg p-1">
               <span className={`text-xs font-semibold px-2 ${MUTED}`}>Department:</span>
               <button 
                 onClick={() => setShowSearch(!showSearch)}
-                className="flex items-center justify-between min-w-[140px] gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm text-sm font-semibold border border-gray-200 dark:border-slate-600"
+                className="flex items-center justify-between min-w-[140px] gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm text-sm font-semibold border border-gray-200 dark:border-[#8fa8d0]"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <span className={INK}>{s.type === 'department' ? s.name : 'Chọn phòng ban'}</span>
@@ -280,13 +280,13 @@ export const Dashboard: React.FC = () => {
             </div>
             
             {showSearch && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col">
-                <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-xl shadow-xl overflow-hidden flex flex-col">
+                <div className="p-2 border-b border-gray-100 dark:border-[#8fa8d0]">
                   <div className="relative">
                     <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${MUTED}`} />
                     <input 
                       type="text" autoFocus placeholder="Tìm phòng ban..." 
-                      className={`w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-sm outline-none focus:border-blue-500 ${INK}`} 
+                      className={`w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-[#8fa8d0] rounded-lg pl-8 pr-3 py-1.5 text-sm outline-none focus:border-blue-500 ${INK}`} 
                       value={search} onChange={e => setSearch(e.target.value)} 
                     />
                   </div>
@@ -311,7 +311,7 @@ export const Dashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
           {/* Context Spotlight */}
-          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-[15px] py-[17px] bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
+          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-[#8fa8d0] rounded-2xl px-[15px] py-[17px] bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
             <div className="w-full flex items-center justify-between">
               <Eyebrow className="!text-xs !tracking-[1.6px]">{getEyebrow()}</Eyebrow>
             </div>
@@ -321,8 +321,8 @@ export const Dashboard: React.FC = () => {
                 className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
                 style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
               >
-                <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 text-3xl 2xl:text-5xl ${INK}`} />
-                <span className="absolute bottom-0 right-1 w-[22px] h-[22px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={14} strokeWidth={3} /></span>
+                <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-[#8fa8d0] text-3xl 2xl:text-5xl ${INK}`} />
+                <span className="absolute bottom-0 right-1 w-[22px] h-[22px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-[#8fa8d0] grid place-items-center text-white"><Check size={14} strokeWidth={3} /></span>
               </div>
             </div>
 
@@ -330,7 +330,7 @@ export const Dashboard: React.FC = () => {
             <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
             <div className={`text-xs mt-2 ${MUTED}`}>{s.dept}</div>
 
-            <div className="flex w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 my-6 border border-white/60 dark:border-slate-700/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative">
+            <div className="flex w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 my-6 border border-white/60 dark:border-[#8fa8d0]/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative">
               {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
                 let items: any[] = [];
                 if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
@@ -347,8 +347,8 @@ export const Dashboard: React.FC = () => {
                     
                     {/* Hover Bubble / Popover */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] origin-bottom cursor-auto">
-                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.15)] relative">
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-[#8fa8d0] rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.15)] relative">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-[#8fa8d0] transform rotate-45 rounded-sm"></div>
                         <div className="relative z-10 p-3 flex flex-col max-h-[320px]">
                           <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
                             <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
@@ -359,7 +359,7 @@ export const Dashboard: React.FC = () => {
                           ) : (
                             <div className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
                               {items.map((item, idx) => (
-                                <button key={item.id || idx} onClick={() => { if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
+                                <button key={item.id || idx} onClick={() => { if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-[#8fa8d0]/50 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
                                   <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
                                   {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
                                 </button>
@@ -374,7 +374,7 @@ export const Dashboard: React.FC = () => {
               })}
             </div>
 
-            <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
+            <div className="w-full border-t border-gray-200 dark:border-[#8fa8d0] pt-[13px]">
               <TextButton onClick={openFilteredTasks} className={INK}>Xem chi tiết {s.total} công việc</TextButton>
             </div>
           </div>
@@ -428,7 +428,7 @@ export const Dashboard: React.FC = () => {
                 <strong className={`text-sm ${INK}`}>Lịch phân bổ task</strong>
                 <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
               </div>
-              <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
+              <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-[#8fa8d0] rounded-lg p-0.5">
                 {(['weekly', 'custom'] as const).map(r => (
                   <button
                     key={r}
@@ -440,7 +440,7 @@ export const Dashboard: React.FC = () => {
                 ))}
               </div>
             </div>
-            {range === 'custom' && <div className="mt-3 flex flex-wrap items-center gap-2"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>đến</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /></div>}
+            {range === 'custom' && <div className="mt-3 flex flex-wrap items-center gap-2"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-[#8fa8d0] dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>đến</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-[#8fa8d0] dark:bg-slate-900" /></div>}
             <div className="w-full mt-3 flex-1 min-h-[120px] 2xl:min-h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ left: -20, right: 8, top: 4 }}>
@@ -475,7 +475,7 @@ export const Dashboard: React.FC = () => {
           </div>
           
           {/* Insight strip */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-4 mt-1">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-[#8fa8d0] rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-4 mt-1">
             <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
             <div className="min-w-0">
               <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
@@ -521,7 +521,7 @@ export const Dashboard: React.FC = () => {
                 <button 
                   key={p.id} 
                   onClick={() => setActiveId(p.id)} 
-                  className={`w-full text-left bg-gray-50 hover:bg-blue-50 dark:bg-slate-700/30 dark:hover:bg-slate-700/80 transition-colors border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl p-3`}
+                  className={`w-full text-left bg-gray-50 hover:bg-blue-50 dark:bg-slate-700/30 dark:hover:bg-slate-700/80 transition-colors border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-[#8fa8d0]'} rounded-xl p-3`}
                 >
                   <div className="flex items-center justify-between text-xs mb-2">
                     <b className={INK}>{p.code}</b>
@@ -548,7 +548,7 @@ export const Dashboard: React.FC = () => {
               {teams.map(d => {
                 const open = openDept === d.name;
                 return (
-                  <div key={d.name} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
+                  <div key={d.name} className="border-b border-gray-200 dark:border-[#8fa8d0] last:border-0">
                     <button onClick={() => setOpenDept(open ? null : d.name)} className="w-full flex items-center justify-between py-2">
                       <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>({d.members.length} PIC)</span></span>
                       <ChevronDown size={13} className={`${MUTED} transition-transform duration-300 ${open ? 'rotate-180' : '-rotate-90'}`} />

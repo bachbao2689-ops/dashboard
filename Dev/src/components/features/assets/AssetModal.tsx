@@ -125,7 +125,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               title="6-20 alphanumeric characters"
               value={assetCode}
               onChange={e => setAssetCode(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 uppercase"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 uppercase"
               placeholder="e.g. LENCANON01"
             />
           </div>
@@ -136,7 +136,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="e.g. Lens Canon 24-70mm"
             />
           </div>
@@ -149,7 +149,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               required
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="">Select Category</option>
               {categories.map(c => (
@@ -162,7 +162,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             <select 
               value={condition}
               onChange={e => setCondition(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
               <option value="Tốt 100%">Tốt 100%</option>
               <option value="Tốt 80%">Tốt 80%</option>
@@ -179,7 +179,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               type="text" 
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="e.g. Kho Công Ty"
             />
           </div>
@@ -189,7 +189,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               type="text" 
               value={serialNumber}
               onChange={e => setSerialNumber(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
         </div>
@@ -204,7 +204,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               onClick={(e) => openCal('asset-purchase-date', e)}
               value={purchaseDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer"
             />
           </div>
           <div>
@@ -213,7 +213,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
               type="number" 
               value={purchasePrice}
               onChange={e => setPurchasePrice(e.target.value)}
-              className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
         </div>
@@ -223,12 +223,12 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
           <textarea 
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[80px]"
+            className="w-full px-4 py-2.5 border border-black/10 dark:border-[#8fa8d0] rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[80px]"
             placeholder="Add details about this asset..."
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-[#8fa8d0]">
           <button 
             type="button" 
             onClick={onClose}

@@ -33,8 +33,8 @@ export const CropModal: React.FC<CropModalProps> = ({ imageSrc, onClose, onCropC
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-gray-100 dark:border-slate-700">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-gray-100 dark:border-[#8fa8d0]">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-[#8fa8d0] flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Chỉnh sửa ảnh đại diện</h2>
           <button onClick={onClose} disabled={isProcessing} className="p-2 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-full transition-colors text-gray-500 disabled:opacity-50">
             <X size={20} />
@@ -73,7 +73,7 @@ export const CropModal: React.FC<CropModalProps> = ({ imageSrc, onClose, onCropC
             />
           </div>
           
-          <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+          <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-[#8fa8d0]">
             <button 
               onClick={onClose} 
               disabled={isProcessing}

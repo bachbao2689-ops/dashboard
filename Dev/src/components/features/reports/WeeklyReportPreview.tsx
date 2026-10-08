@@ -36,8 +36,8 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
   isLeaderView = false
 }) => {
   return (
-    <div className="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-900/50 h-full overflow-hidden border-l border-gray-100 dark:border-slate-700">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
+    <div className="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-900/50 h-full overflow-hidden border-l border-gray-100 dark:border-[#8fa8d0]">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-[#8fa8d0] bg-white dark:bg-slate-800 shrink-0">
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Layers3 size={18} className="text-primary" />
@@ -63,8 +63,8 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
         {/* Summary Info */}
-        <div className="space-y-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-          <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-3">
+        <div className="space-y-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-[#8fa8d0] shadow-sm">
+          <div className="flex justify-between items-center border-b border-gray-100 dark:border-[#8fa8d0] pb-3">
             <h3 className="font-bold text-gray-900 dark:text-white">Tổng quan báo cáo</h3>
             <span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-600 rounded-md">Tuần {dateLabel(weekStart)} – {dateLabel(weekEnd)}</span>
           </div>
@@ -83,7 +83,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
               {onRemoveSummaryImage && (
                 <button onClick={onRemoveSummaryImage} className="absolute top-8 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"><X size={16} /></button>
               )}
-              <img src={summaryImage} alt="Summary" className="w-full rounded-xl border border-gray-200 dark:border-slate-700" />
+              <img src={summaryImage} alt="Summary" className="w-full rounded-xl border border-gray-200 dark:border-[#8fa8d0]" />
             </div>
           )}
         </div>
@@ -97,7 +97,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
               if (!r) return null;
               const isUnchanged = r.metadata?.unchanged;
               return (
-                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative hover:z-50">
+                <div key={task.id} className="group bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-[#8fa8d0] shadow-sm relative hover:z-50">
                   <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${isUnchanged ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2 pr-24 line-clamp-2">{task.title}</h4>
                   <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -131,7 +131,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
                     {r.metadata?.image_url && (
                       <div className="mt-3 relative z-10 flex">
                         <a href={r.metadata.image_url} target="_blank" rel="noreferrer" className="block relative z-10">
-                          <img src={r.metadata.image_url} alt="Minh chứng" className="h-32 object-contain rounded-lg border border-gray-200 dark:border-slate-700 transition-transform duration-300 origin-bottom-left hover:scale-[1.8] hover:shadow-2xl hover:z-50 relative" title="Nhấp để xem ảnh đầy đủ" />
+                          <img src={r.metadata.image_url} alt="Minh chứng" className="h-32 object-contain rounded-lg border border-gray-200 dark:border-[#8fa8d0] transition-transform duration-300 origin-bottom-left hover:scale-[1.8] hover:shadow-2xl hover:z-50 relative" title="Nhấp để xem ảnh đầy đủ" />
                         </a>
                       </div>
                     )}
@@ -141,7 +141,7 @@ export const WeeklyReportPreview: React.FC<WeeklyReportPreviewProps> = ({
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl">
+          <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-200 dark:border-[#8fa8d0] rounded-2xl">
             <p className="text-sm text-gray-500 font-medium">Chưa có thông tin report</p>
           </div>
         )}

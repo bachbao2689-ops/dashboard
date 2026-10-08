@@ -47,7 +47,7 @@ export const AssetInventory: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Asset Inventory</h2>
         
         <div className="flex flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-8 sm:h-10`}>
+          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-xl overflow-hidden shadow-sm h-8 sm:h-10`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-8 h-8 sm:w-10 sm:h-8 sm:h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
               <Search className="w-5 h-5" />
             </button>
@@ -70,7 +70,7 @@ export const AssetInventory: React.FC = () => {
         <div className="overflow-x-auto h-full">
           <table className="w-full min-w-max text-left">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-slate-700">
+              <tr className="border-b border-gray-100 dark:border-[#8fa8d0]">
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset Code</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
@@ -79,7 +79,7 @@ export const AssetInventory: React.FC = () => {
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+            <tbody className="divide-y divide-gray-100 dark:divide-[#8fa8d0]/50">
               {loading ? (
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading assets...</td></tr>
               ) : filteredAssets.length === 0 ? (
@@ -88,11 +88,11 @@ export const AssetInventory: React.FC = () => {
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
                     <td className="p-4">
-                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600">{asset.asset_code}</span>
+                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-[#8fa8d0]">{asset.asset_code}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-[#8fa8d0]">
                           {getIcon(asset.category?.name)}
                         </div>
                         <div>

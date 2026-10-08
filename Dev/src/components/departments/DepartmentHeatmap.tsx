@@ -12,7 +12,7 @@ export const DepartmentHeatmap: React.FC<DepartmentHeatmapProps> = ({
   onSelectDepartment,
 }) => {
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-full justify-between">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-[#8fa8d0] rounded-2xl p-4 shadow-sm flex flex-col h-full justify-between">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
           Mức tải công việc (% công suất)

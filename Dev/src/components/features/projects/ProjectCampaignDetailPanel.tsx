@@ -138,7 +138,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
   return (
     <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[60] flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-l-3xl border-l bg-white dark:bg-slate-800 md:relative md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${shadowClass} ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-[#8fa8d0] shrink-0">
         <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>
       </div>
@@ -146,28 +146,28 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
       <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
         {editMode ? (
           <div className="space-y-5">
-            <div><label className="text-xs font-semibold text-gray-500 uppercase">Tên</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div>
+            <div><label className="text-xs font-semibold text-gray-500 uppercase">Tên</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs font-semibold text-gray-500 uppercase">Bắt đầu</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div>
-              <div><label className="text-xs font-semibold text-gray-500 uppercase">Kết thúc</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div>
+              <div><label className="text-xs font-semibold text-gray-500 uppercase">Bắt đầu</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div>
+              <div><label className="text-xs font-semibold text-gray-500 uppercase">Kết thúc</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div>
             </div>
-            <div><label className="text-xs font-semibold text-gray-500 uppercase">Mô tả</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div>
-            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">Hủy</button><button onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">Lưu thay đổi</button></div>
+            <div><label className="text-xs font-semibold text-gray-500 uppercase">Mô tả</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div>
+            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-[#8fa8d0]"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">Hủy</button><button onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">Lưu thay đổi</button></div>
           </div>
         ) : (
           <div className="space-y-7">
             <div className="flex gap-2"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-100' : 'bg-blue-50 text-primary border-blue-100'} border capitalize`}>{kind}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{data.status || 'planning'}</span></div>
-            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm">
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-[#8fa8d0] text-sm">
               <div><p className="text-[10px] uppercase text-gray-400">Owner/Creator</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.creator?.name || data.lead?.name || '---'} src={data.creator?.avatar_url || data.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.creator?.name || data.lead?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400">Timeline</p><div className="mt-1 font-semibold">{dateValue(data.start_date)} – {dateValue(data.end_date || data.due_date)}</div></div>
             </div>
-            <section><h3 className="font-bold text-sm mb-2">Description</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || 'Chưa có mô tả.'}</div></section>
+            <section><h3 className="font-bold text-sm mb-2">Description</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-[#8fa8d0] text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || 'Chưa có mô tả.'}</div></section>
             
             <section>
               <h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> Subtasks</h3>
               <div className="space-y-2">
                 {subtasks.map(sub => (
-                  <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm flex justify-between items-start">
+                  <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-[#8fa8d0] text-sm flex justify-between items-start">
                     <div>
                       <b className="text-gray-900 dark:text-white">{sub.title}</b>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
@@ -181,11 +181,11 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
               </div>
               {!showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> Thêm Subtask</button>}
               {showSubtaskForm && (
-                <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
-                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder="Tên subtask..." className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-[#8fa8d0] space-y-3">
+                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder="Tên subtask..." className="w-full p-2 rounded-lg border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none text-sm"/>
                   <div className="grid grid-cols-2 gap-2">
-                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">Chọn PIC</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                    <input type="date" value={newSubtaskDue} onChange={e=>setNewSubtaskDue(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
+                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none text-sm"><option value="">Chọn PIC</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    <input type="date" value={newSubtaskDue} onChange={e=>setNewSubtaskDue(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none text-sm"/>
                   </div>
                   <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">Hủy</button><button onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">Thêm</button></div>
                 </div>
@@ -211,14 +211,14 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
                   );
                 })}
               </div>
-              <div className="mt-4"><textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder="Viết bình luận…" className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /></div>
+              <div className="mt-4"><textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder="Viết bình luận…" className="w-full p-3 rounded-xl border border-blue-100 dark:border-[#8fa8d0] bg-white dark:bg-slate-900 outline-none text-sm" /></div>
             </section>
           </div>
         )}
       </div>
       {!editMode && (
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800">
-          <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> Chỉnh sửa</button>
+        <div className="p-5 border-t border-gray-200 dark:border-[#8fa8d0] flex gap-3 shrink-0 bg-white dark:bg-slate-800">
+          <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-[#8fa8d0] rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> Chỉnh sửa</button>
           <button onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> Complete</button>
         </div>
       )}

@@ -27,7 +27,7 @@ export const StaffWorkload: React.FC = () => {
 
       {/* KPI Widgets */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-[#8fa8d0]/50 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">
             <PlayCircle size={16} className="text-blue-500" /> Hôm nay
           </div>
@@ -41,14 +41,14 @@ export const StaffWorkload: React.FC = () => {
           <div className="text-3xl font-bold text-red-600">{loading ? '—' : summary.overdue}</div>
         </div>
 
-        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-[#8fa8d0]/50 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">
             <Clock size={16} className="text-amber-500" /> Sắp đến hạn
           </div>
           <div className="text-3xl font-bold text-gray-900 dark:text-white">{loading ? '—' : dueSoon}</div>
         </div>
 
-        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="card-hub p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-[#8fa8d0]/50 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">
             <CheckCircle2 size={16} className="text-teal-500" /> Chờ duyệt
           </div>

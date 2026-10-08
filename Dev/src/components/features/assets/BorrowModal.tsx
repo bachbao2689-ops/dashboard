@@ -120,7 +120,7 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
             value={selectedAssetId}
             onChange={e => setSelectedAssetId(e.target.value)}
             disabled={!!assetId}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2 border border-gray-200 dark:border-[#8fa8d0] rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="">-- Choose available asset --</option>
             {assets.map(a => (
@@ -143,7 +143,7 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
               onClick={(e) => openCal('borrow-date-input', e)}
               value={borrowDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-[#8fa8d0] rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
           <div className="tw-calendar-picker relative">
@@ -156,7 +156,7 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
               onClick={(e) => openCal('due-date-input', e)}
               value={dueDate}
               placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-[#8fa8d0] rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
             />
           </div>
         </div>
@@ -168,7 +168,7 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
             maxLength={500}
             value={purpose}
             onChange={e => setPurpose(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px]"
+            className="w-full px-4 py-2 border border-gray-200 dark:border-[#8fa8d0] rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px]"
             placeholder="e.g. Chụp ngoại cảnh set quà 20.10"
           />
         </div>
@@ -178,12 +178,12 @@ export const BorrowModal: React.FC<BorrowModalProps> = ({ isOpen, onClose, onSuc
           <textarea 
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
+            className="w-full px-4 py-2 border border-gray-200 dark:border-[#8fa8d0] rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
             placeholder="Any special requirements..."
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-[#8fa8d0]">
           <button 
             type="button" 
             onClick={onClose}

@@ -40,7 +40,7 @@ export const BorrowRequests: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <select 
-            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white"
+            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-[#8fa8d0] text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white"
             value={filter}
             onChange={e => setFilter(e.target.value)}
           >
@@ -89,12 +89,12 @@ export const BorrowRequests: React.FC = () => {
                 </span>
               </div>
 
-              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-gray-700/50 flex-1">
+              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-[#8fa8d0]/50 flex-1">
                 <span className="font-medium text-gray-900 dark:text-gray-100">Purpose: </span>
                 {req.purpose || 'No purpose provided'}
               </div>
 
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
+              <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-[#8fa8d0]/50">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                     <Calendar size={12} />

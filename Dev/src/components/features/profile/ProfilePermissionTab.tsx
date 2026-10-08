@@ -14,7 +14,7 @@ export const ProfilePermissionTab: React.FC<{ role: string }> = ({ role }) => {
 
   return (
     <div className="card-hub p-6 rounded-2xl shadow-sm">
-      <div className="mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
+      <div className="mb-6 pb-4 border-b border-gray-200 dark:border-[#8fa8d0]">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">K COFFEE Workspace</h3>
         <p className="text-gray-500 dark:text-gray-400">
           Vai trò của bạn: <span className="font-semibold text-gray-900 dark:text-gray-200">{role === 'manager' ? '👑 MANAGER' : '👤 STAFF'}</span>

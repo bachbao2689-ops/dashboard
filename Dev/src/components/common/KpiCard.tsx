@@ -38,13 +38,13 @@ export const KpiCard: React.FC<KpiCardProps> = ({ title, value, trend, className
       
       <div className="flex justify-between items-start relative z-10">
         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{title}</span>
-        <div className={`p-1.5 rounded-xl bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm ${textColors[colorTheme]}`}>
+        <div className={`p-1.5 rounded-xl bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-[#8fa8d0] shadow-sm ${textColors[colorTheme]}`}>
           {isPositive ? <TrendingUp size={18} strokeWidth={2.5} /> : <TrendingDown size={18} strokeWidth={2.5} />}
         </div>
       </div>
       <div className="flex items-end justify-between mt-4 relative z-10">
         <h3 className="text-4xl font-bold text-gray-800 dark:text-white tracking-tight">{value}</h3>
-        <span className={`text-sm font-bold flex items-center px-2.5 py-1 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+        <span className={`text-sm font-bold flex items-center px-2.5 py-1 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-[#8fa8d0] ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
           {isPositive ? '+' : ''}{trend}%
         </span>
       </div>
