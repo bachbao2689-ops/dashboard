@@ -47,7 +47,6 @@ interface WeeklyReportDrawerProps {
   onOpenTask?: (taskId: string) => void;
   onRemindTask?: (task: WeeklyReportTask) => void;
   onRemindMember?: () => void;
-  onReportSaved?: () => void;
   reminding?: boolean;
   variant?: 'drawer' | 'inline';
   showWeekSelection?: boolean;
@@ -60,7 +59,7 @@ const dateLabel = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateStr
 export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   isOpen, onClose, ownerName, userId, canEdit = false, weekStart, weekEnd,
   weekSelection, onWeekSelectionChange, tasks, references = [], onOpenTask,
-  onRemindTask, onRemindMember, onReportSaved, reminding = false, variant = 'drawer', showWeekSelection = true, showHeader = true,
+  onRemindTask, onRemindMember, reminding = false, variant = 'drawer', showWeekSelection = true, showHeader = true,
 }) => {
   const profile = useAuthStore(state => state.profile);
   const [reports, setReports] = useState<Record<string, ReportRow>>({});
@@ -203,7 +202,6 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     if (error) return toast.error('Không thể lưu weekly report');
     if (profile?.id === userId) void notifyTaskParticipants(selectedTask, { id: userId, name: ownerName, department_id: profile.department_id }, 'weekly_report');
     toast.success(reportMode === 'unchanged' ? 'Đã ghi nhận: Không thay đổi' : 'Đã lưu report');
-    onReportSaved?.();
     setReportedThisSession(prev => new Set(prev).add(selectedTask.id));
     await loadReports();
   };
@@ -236,7 +234,6 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(false);
     if (!error) {
       toast.success(`Đã đánh dấu hoàn thành ${selectedTasks.size} tasks`);
-      onReportSaved?.();
       setSelectedTasks(new Set());
       setReportedThisSession(prev => new Set([...prev, ...Array.from(selectedTasks)]));
       await loadReports();
@@ -253,7 +250,6 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setSaving(false);
     if (!error) {
       toast.success('Đã đánh dấu hoàn thành');
-      onReportSaved?.();
       await loadReports();
     }
   };
