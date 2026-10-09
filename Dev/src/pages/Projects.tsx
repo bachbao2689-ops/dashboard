@@ -168,7 +168,7 @@ export const Projects: React.FC = () => {
       supabase.from('users').select('id,name,department_id,avatar_url,departments(name)').eq('is_active', true).order('name'),
       supabase.from('project_members').select('project_id,user_id'),
       supabase.from('project_comments').select('project_id'),
-      supabase.from('project_subtasks').select('project_id,assignee_id')
+      supabase.from('project_subtasks').select('project_id,assignee_id').neq('status', 'deleted')
     ]);
     if (projectRes.error) return toast.error('Không thể tải Project');
     setProjects(projectRes.data || []); setPeople((peopleRes.data as any) || []);
@@ -192,7 +192,16 @@ export const Projects: React.FC = () => {
     for (const pid in stMap) subtaskMembersRecord[pid] = Array.from(stMap[pid]);
     setSubtaskMembers(subtaskMembersRecord);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const channel = supabase.channel('projects_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_subtasks' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaign_subtasks' }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     const handleChange = (e: any) => {
@@ -235,13 +244,13 @@ export const Projects: React.FC = () => {
         const p = projects.find(x => x.id === entityId) || selected;
         if (p?.created_by) userIds.add(Number(p.created_by));
         (members[entityId] || []).forEach(m => userIds.add(Number(m)));
-        const { data: stData } = await supabase.from('project_subtasks').select('assignee_id').eq('project_id', entityId);
+        const { data: stData } = await supabase.from('project_subtasks').select('assignee_id').eq('project_id', entityId).neq('status', 'deleted');
         stData?.forEach(s => { if (s.assignee_id) userIds.add(Number(s.assignee_id)); });
       } else {
         const c = campaigns.find(x => x.id === entityId) || selectedCampaign;
         if (c?.created_by) userIds.add(Number(c.created_by));
         if (c?.lead_id) userIds.add(Number(c.lead_id));
-        const { data: stData } = await supabase.from('campaign_subtasks').select('assignee_id').eq('campaign_id', entityId);
+        const { data: stData } = await supabase.from('campaign_subtasks').select('assignee_id').eq('campaign_id', entityId).neq('status', 'deleted');
         stData?.forEach(s => { if (s.assignee_id) userIds.add(Number(s.assignee_id)); });
       }
     }

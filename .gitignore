@@ -8,3 +8,4 @@ Dev/node_modules/
 Dev/dist/
 # One-time Google Sheets import snapshot (local only)
 backend/.import-source.json
+File_Xoa/

@@ -75,7 +75,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
     
     if (!isAdminOrManager && data) {
-      const { data: subtasks } = await supabase.from('campaign_subtasks').select('campaign_id').eq('assignee_id', profile?.id);
+      const { data: subtasks } = await supabase.from('campaign_subtasks').select('campaign_id').eq('assignee_id', profile?.id).neq('status', 'deleted');
       const campaignIdsWithSubtasks = new Set((subtasks || []).map(s => s.campaign_id));
       
       const filteredData = data.filter(c => {
