@@ -205,15 +205,22 @@ export const Projects: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleChange = (e: any) => {
+    const handleDateUpdate = (e: any) => {
       const id = e.target?.id;
-      if (id === 'subtask-due-input') setSubtaskDue(e.target.value);
-      else if (id === 'campaign-subtask-due-input') setCampaignSubtaskDue(e.target.value);
-      else if (id && id.startsWith('edit-subtask-due-')) setEditSubtaskDue(e.target.value);
-      else if (id && id.startsWith('edit-campaign-subtask-due-')) setCampaignEditSubtaskDue(e.target.value);
+      const val = e.target?.value || '';
+      if (id === 'subtask-due-input') setSubtaskDue(val);
+      else if (id === 'campaign-subtask-due-input') setCampaignSubtaskDue(val);
+      else if (id && id.startsWith('edit-subtask-due-')) setEditSubtaskDue(val);
+      else if (id && id.startsWith('edit-campaign-subtask-due-')) setCampaignEditSubtaskDue(val);
+      else if (id === 'create-start-input') setStart(val);
+      else if (id === 'create-end-input') setDue(val);
     };
-    document.addEventListener('change', handleChange);
-    return () => document.removeEventListener('change', handleChange);
+    document.addEventListener('change', handleDateUpdate);
+    document.addEventListener('input', handleDateUpdate);
+    return () => {
+      document.removeEventListener('change', handleDateUpdate);
+      document.removeEventListener('input', handleDateUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -622,7 +629,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   </div>
   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 shrink-0" onClick={event => event.stopPropagation()}>
           {Number(s.assignee_id) === Number(profile?.id) && !['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) && <button onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title="Hoàn thành"><CheckCircle2 size={14}/></button>}
-          {canCreate && <><button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date || ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
+          {canCreate && <><button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
           <button onClick={()=>removeSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button></>}
         </div>
       </div>

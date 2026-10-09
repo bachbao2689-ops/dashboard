@@ -112,12 +112,15 @@ function calSave(){
   if(displayId) {
     const el = document.getElementById(displayId);
     if(el) {
-       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
        const val = mode==='range' ? (start ? (end ? `${dFmt(start)} - ${dFmt(end)}` : dFmt(start)) : '') : (start ? dFmt(start) : '');
-       if(nativeSetter) nativeSetter.call(el, val);
-       else el.value = val;
-       el.dispatchEvent(new Event('input',{bubbles:true}));
-       el.dispatchEvent(new Event('change',{bubbles:true}));
+       if(nativeSetter) {
+         nativeSetter.call(el, val);
+       } else {
+         el.value = val;
+       }
+       el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+       el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
     }
   }
   closeCalendar();
@@ -242,5 +245,7 @@ function calSelect(y,m,d){
     shouldClose = true;
   }
   calRender();
-  // Explicit Apply keeps touch selection predictable and avoids stale save timers.
+  if(shouldClose) {
+    calSave();
+  }
 }
