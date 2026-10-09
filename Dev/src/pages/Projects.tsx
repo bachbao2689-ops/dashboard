@@ -501,7 +501,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     </div></div>
 
     {/* Right Side: Detail Panel */}
-    <div style={window.innerWidth >= 768 ? { width: panelOpen ? width : 0, minWidth: panelOpen ? width : 0 } : { width: panelOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${panelOpen ? (selectedCampaign ? 'shadow-drawer-campaign border-l border-amber-500/20' : 'shadow-drawer-project border-l border-violet-500/20') : 'shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${panelOpen ? 'w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ' + (selectedCampaign ? 'shadow-drawer-campaign border-l border-amber-500/20' : 'shadow-drawer-project border-l border-violet-500/20') : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[60] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
       {panelOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       {selected && (
         <div className="flex flex-col h-full">
@@ -637,7 +637,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       )}
     </div>
 
-    <div style={window.innerWidth >= 768 ? { width: createOpen ? width : 0, minWidth: createOpen ? width : 0 } : { width: createOpen ? '100%' : 0 }} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${createOpen ? 'shadow-drawer-task border-l border-blue-500/20' : 'shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
+    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${createOpen ? 'w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--drawer-width)] md:min-w-[var(--drawer-width)] shadow-drawer-task border-l border-blue-500/20' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
       {createOpen && <>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới</h3><button onClick={() => setCreateOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button></div>

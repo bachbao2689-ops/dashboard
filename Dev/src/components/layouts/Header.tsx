@@ -328,7 +328,7 @@ export const Header: React.FC = () => {
           </button>
 
           
-          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent'} border rounded-xl overflow-hidden h-9`}>
+          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
               <Search size={18} />
             </button>
@@ -343,7 +343,7 @@ export const Header: React.FC = () => {
                   setIsSearchExpanded(false);
                 }
               }}
-              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 ${isSearchExpanded ? 'w-full opacity-100 pr-3' : 'w-0 opacity-0 pointer-events-none pr-0'}`}
             />
           </div>
           

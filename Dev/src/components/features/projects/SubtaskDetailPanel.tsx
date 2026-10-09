@@ -195,7 +195,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const completed = isDone(subtask.status);
 
   return (
-    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-700">
         <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Subtask</p><h2 className={`truncate text-xl font-bold text-gray-900 dark:text-white ${completed ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{subtask.title}</h2></div>

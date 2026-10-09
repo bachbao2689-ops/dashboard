@@ -432,7 +432,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       <button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-950/[0.04]" />
       <aside 
         style={{ '--panel-width': `${drawerWidth}px` } as React.CSSProperties}
-        className={`drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[100vw] flex-col overflow-hidden rounded-l-3xl border-l border-primary/20 shadow-drawer-task bg-white dark:bg-slate-800 md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${!isResizingDrawer ? 'transition-[width,min-width] duration-300' : ''}`}
+        className={`drawer-slide-in fixed inset-y-0 right-0 z-[110] flex h-full w-full max-w-[100vw] flex-col overflow-hidden rounded-l-3xl border-l border-primary/20 shadow-drawer-task bg-white dark:bg-slate-800 max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${!isResizingDrawer ? 'transition-[width,min-width] duration-300' : ''}`}
       >
         <div onMouseDown={() => setIsResizingDrawer(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-[120]" />
         {content}

@@ -256,7 +256,7 @@ export const TaskList: React.FC = () => {
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 lg:pr-4">
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
-      <div className="flex justify-between items-center mb-6 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 shrink-0 w-full">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
           {/* Expanding Search */}

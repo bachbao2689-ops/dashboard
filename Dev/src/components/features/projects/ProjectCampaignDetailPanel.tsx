@@ -136,7 +136,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
   if (!data) return null;
 
   return (
-    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[60] flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-l-3xl border-l bg-white dark:bg-slate-800 md:relative md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${shadowClass} ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[60] flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-l-3xl border-l bg-white dark:bg-slate-800 md:relative max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${shadowClass} ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
         <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>

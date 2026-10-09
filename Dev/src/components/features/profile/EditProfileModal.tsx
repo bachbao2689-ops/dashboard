@@ -238,7 +238,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
+        <div className="sticky bottom-0 p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex justify-end gap-3 z-10">
           <button onClick={onClose} className="px-5 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-xl transition-colors">
             Cancel
           </button>

@@ -228,7 +228,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="sticky bottom-[-1px] bg-white dark:bg-slate-800 flex justify-end gap-3 pt-4 pb-2 border-t border-gray-100 dark:border-slate-700 z-10">
           <button 
             type="button" 
             onClick={onClose}

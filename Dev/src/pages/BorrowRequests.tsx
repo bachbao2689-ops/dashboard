@@ -32,7 +32,7 @@ export const BorrowRequests: React.FC = () => {
         onSuccess={refetch} 
       />
       <BorrowRequestDetailModal isOpen={!!selectedRequest} onClose={() => setSelectedRequest(null)} request={selectedRequest} onApprove={() => { updateStatus(selectedRequest.id, 'approved'); setSelectedRequest(null); }} onReject={() => { updateStatus(selectedRequest.id, 'rejected'); setSelectedRequest(null); }} />
-      <div className="flex justify-between items-center mb-6 px-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 px-2 w-full">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Borrow Requests</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage equipment borrowing approvals</p>

@@ -27,7 +27,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 z-[100] flex ${variant === 'drawer' ? 'items-stretch justify-end' : 'items-center justify-center p-4 sm:p-6'}`}>
+    <div className={`fixed inset-0 z-[9999] flex ${variant === 'drawer' ? 'items-stretch justify-end' : 'items-center justify-center p-4 sm:p-6'}`}>
       <div 
         className="absolute inset-0 bg-slate-900/40 dark:bg-slate-900/70 transition-opacity"
         onClick={onClose}

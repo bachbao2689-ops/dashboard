@@ -30,7 +30,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberMod
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="card-hub w-full max-w-md p-6 rounded-3xl border border-white/20 bg-white dark:bg-black/40">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Invite Member</h2>

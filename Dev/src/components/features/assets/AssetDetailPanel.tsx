@@ -46,8 +46,8 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
 
   return (
     <div 
-      style={window.innerWidth >= 768 ? { width: isOpen ? width : 0, minWidth: isOpen ? width : 0, opacity: isOpen ? 1 : 0 } : { width: isOpen ? '100%' : 0, opacity: isOpen ? 1 : 0 }}
-      className={`h-full card-hub rounded-l-xl md:rounded-l-3xl !rounded-r-none border-l border-white/40 shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] shrink-0 absolute md:relative right-0 top-0 z-[60] flex flex-col ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
+      style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
+      className={`h-full card-hub rounded-l-xl md:rounded-l-3xl !rounded-r-none shrink-0 absolute md:relative right-0 top-0 z-[110] flex flex-col overflow-hidden ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--drawer-width)] md:min-w-[var(--drawer-width)] shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] border-l border-white/40 opacity-100' : 'w-0 min-w-0 opacity-0 border-l-0 shadow-none'} ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
     >
       {isOpen && (
         <div 
@@ -58,7 +58,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
         </div>
       )}
 
-      <div className="w-full h-full flex flex-col overflow-hidden" style={{ minWidth: isOpen ? (window.innerWidth >= 768 ? 320 : '100%') : 0 }}>
+      <div className="w-full h-full flex flex-col overflow-hidden" >
         
         <div className="flex justify-between items-center px-6 py-4 border-b border-white/20 dark:border-gray-700/50 shrink-0">
           <div className="flex items-center gap-1">
