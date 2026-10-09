@@ -120,7 +120,7 @@ export function useTasks() {
       }
 
       // --- NEW RBAC FILTERING ---
-      const isAdminOrManager = ['admin', 'manager'].includes(profile.role?.toLowerCase() || '');
+      const isAdminOrManager = ['admin'].includes(profile.role?.toLowerCase() || '') || (profile.role?.toLowerCase() === 'manager' && profile.employment_level !== 'Leader') || profile.employment_level === 'manager';
       const isLeader = profile.employment_level === 'Leader' || profile.role?.toLowerCase() === 'leader';
       
       if (!isAdminOrManager) {

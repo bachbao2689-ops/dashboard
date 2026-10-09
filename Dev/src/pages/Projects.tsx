@@ -152,7 +152,7 @@ export const Projects: React.FC = () => {
   }, [createOpen]);
 
   const visiblePeople = useMemo(() => {
-    if (profile?.role === 'admin' || profile?.role === 'manager') return people;
+    if (profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader')) return people;
     return people.filter(person => person.department_id === profile?.department_id);
   }, [people, profile?.role, profile?.department_id]);
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);

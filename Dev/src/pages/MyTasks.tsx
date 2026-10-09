@@ -17,7 +17,9 @@ import { useAuthStore } from '../store/authStore';
 
 export const MyTasks: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
-  const isManager = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const isGlobalManager = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+  const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
+  const isManager = isGlobalManager || isLeader;
   const role = isManager ? 'manager' : 'staff';
     const [departments, setDepartments] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -26,14 +28,17 @@ export const MyTasks: React.FC = () => {
 
   useEffect(() => {
     if (!isManager) return;
-    Promise.all([
-      supabase.from('departments').select('id, name'),
-      supabase.from('users').select('id, name, department_id').eq('is_active', true)
-    ]).then(([d, u]) => {
+    let deptQuery = supabase.from('departments').select('id, name');
+    let userQuery = supabase.from('users').select('id, name, department_id').eq('is_active', true);
+    if (!isGlobalManager && profile?.department_id) {
+      deptQuery = deptQuery.eq('id', profile.department_id);
+      userQuery = userQuery.eq('department_id', profile.department_id);
+    }
+    Promise.all([deptQuery, userQuery]).then(([d, u]) => {
       if (d.data) setDepartments(d.data);
       if (u.data) setUsers(u.data);
     });
-  }, [isManager]);
+  }, [isManager, isGlobalManager, profile?.department_id]);
 
   const visibleUsers = useMemo(() => {
     if (!filterDept) return users;

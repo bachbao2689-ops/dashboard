@@ -71,7 +71,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     });
     setSubtaskMap(stMap);
     
-    const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'manager';
+    const isAdminOrManager = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
     const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
     
     if (!isAdminOrManager && data) {

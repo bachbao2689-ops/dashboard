@@ -51,7 +51,7 @@ export function useWorkspaceData(): WorkspaceData {
         return;
       }
 
-      const canViewAllDepartments = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'manager';
+      const canViewAllDepartments = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
       if (!canViewAllDepartments && !profile?.department_id) {
         setTasks([]);
         setUsers([]);
