@@ -223,7 +223,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             {comments.map(item => {
               const mine = Number(item.user_id) === Number(profile?.id);
               return (
-                <div key={item.id} className={`flex gap-3 ${mine ? 'flex-row-reverse' : 'flex-row'} items-end group`}>
+                <div key={item.id} className={`flex gap-3 ${mine ? 'flex-row-reverse' : 'flex-row'} items-end group animate-slide-up`}>
                   {!mine && <Avatar name={item.user?.name || 'Staff'} src={(item.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
                   <div className={`flex flex-col max-w-[85%] ${mine ? 'items-end' : 'items-start'}`}>
                     <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${mine ? 'bg-[#002e6d] text-white rounded-br-sm' : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>

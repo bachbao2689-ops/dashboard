@@ -51,6 +51,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [campaignToHide, setCampaignToHide] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [subtaskMap, setSubtaskMap] = useState<Record<string, any[]>>({});
@@ -119,16 +120,21 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   
   const executeRemove = async () => {
     if (!campaignToDelete) return;
-    const { error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', campaignToDelete.id);
-    if (!error) {
-      await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('campaign_id', campaignToDelete.id);
-      toast.success('Đã chuyển Campaign vào thùng rác');
-      await load();
-      window.dispatchEvent(new Event('tasks:changed'));
-    } else {
-      toast.error('Lỗi khi xóa Campaign');
-    }
+    setDeletingIds(prev => [...prev, campaignToDelete.id]);
+    const cached = campaignToDelete;
     setCampaignToDelete(null);
+    setTimeout(async () => {
+      const { error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', cached.id);
+      if (!error) {
+        await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('campaign_id', cached.id);
+        toast.success('Đã chuyển Campaign vào thùng rác');
+        await load();
+        window.dispatchEvent(new Event('tasks:changed'));
+      } else {
+        toast.error('Lỗi khi xóa Campaign');
+      }
+      setDeletingIds(prev => prev.filter(id => id !== cached.id));
+    }, 300);
   };
 
   const remove = (campaign: any) => {
@@ -150,7 +156,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
             <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
           </tr></thead>
-          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 ${onSelect ? 'cursor-pointer' : ''}`}>
+          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover:bg-primary/5 transition-all duration-300 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
             <td className="p-4"><b className="text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
             <td>
   <div className="flex items-center gap-2">

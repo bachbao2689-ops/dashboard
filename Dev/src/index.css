@@ -323,3 +323,18 @@ body,
 .dark .shadow-drawer-project { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(139, 92, 246, 0.25) !important; }
 .dark .shadow-drawer-task { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(59, 130, 246, 0.25) !important; }
 .dark .shadow-drawer-subtask { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(16, 185, 129, 0.25) !important; }
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fadeOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(10px); }
+}
+.animate-fade-out {
+  animation: fadeOutDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

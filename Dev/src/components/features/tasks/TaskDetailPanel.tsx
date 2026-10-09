@@ -107,7 +107,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       <section><p className="text-sm font-bold mb-3"><Activity className="w-4 h-4 inline mr-2" />Activity & Comments</p><div className="space-y-3">{comments.length === 0 && <p className="text-sm text-gray-500">Chưa có bình luận. Hãy bắt đầu trao đổi về task này.</p>}<div className="space-y-4">{comments.map(comment => {
           const isMe = String(comment.author?.name) === String(profile?.name) || (comment as any).author_id === profile?.id;
           return (
-            <div key={comment.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end`}>
+            <div key={comment.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end animate-slide-up`}>
               {!isMe && <Avatar name={comment.author?.name || 'Staff'} src={comment.author?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
               <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
                 <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-[#002e6d] text-white rounded-br-sm' : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>
@@ -121,7 +121,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               {isMe && <Avatar name={comment.author?.name || 'Staff'} src={comment.author?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
             </div>
           )
-        })}</div></div><div className="mt-4"><textarea ref={commentInput} value={commentText} onChange={event => setCommentText(event.target.value)} rows={3} placeholder="Viết bình luận cho team..." className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" /><button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"><Send className="w-4 h-4 inline mr-1" />Gửi bình luận</button></div></section>
+        })}</div></div><div className="mt-4"><textarea ref={commentInput} value={commentText} onChange={event => setCommentText(event.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (e.nativeEvent.isComposing) return; if (commentText.trim()) void addComment(); } }} rows={3} placeholder="Viết bình luận cho team..." className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" /><button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"><Send className="w-4 h-4 inline mr-1" />Gửi bình luận</button></div></section>
     </div>}
     <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => commentInput.current?.focus()} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />Comment</button><button disabled={isDone || saving} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? 'Completed' : 'Complete'}</button></div>
   </div>;
