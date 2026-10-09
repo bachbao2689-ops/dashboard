@@ -19,26 +19,16 @@ export function MemberManagement() {
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
-      const inVisibleDepartment = canManageAll || (profile?.department_id && member.department?.name === profile.department_name);
       const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
       const matchesStatus = statusFilter ? member.status === statusFilter : true;
       if (!member.department?.name) return false; // Ẩn admin
-      return inVisibleDepartment && matchesSearch && matchesRole && matchesStatus;
+      return matchesSearch && matchesRole && matchesStatus;
     });
   }, [members, searchTerm, roleFilter, statusFilter, canManageAll, profile?.department_id, profile?.department_name]);
 
   const memberGroups = useMemo(() => {
-    if (!canManageAll) return [[profile?.department_name || 'Phòng ban của tôi', [...filteredMembers].sort((a, b) => {
-      if (a.name?.includes('Thái Đặng') && !b.name?.includes('Thái Đặng')) return -1;
-      if (!a.name?.includes('Thái Đặng') && b.name?.includes('Thái Đặng')) return 1;
-      const isALeader = ['team_lead', 'leader', 'manager'].includes(a.role?.toLowerCase());
-      const isBLeader = ['team_lead', 'leader', 'manager'].includes(b.role?.toLowerCase());
-      if (isALeader && !isBLeader) return -1;
-      if (!isALeader && isBLeader) return 1;
-      return (a.created_at ? new Date(a.created_at).getTime() : 0) - (b.created_at ? new Date(b.created_at).getTime() : 0);
-    })] as [string, typeof filteredMembers]];
     const sortMembers = (a: any, b: any) => {
       if (a.name?.includes('Thái Đặng') && !b.name?.includes('Thái Đặng')) return -1;
       if (!a.name?.includes('Thái Đặng') && b.name?.includes('Thái Đặng')) return 1;
@@ -159,7 +149,7 @@ export function MemberManagement() {
                 </tr>
               ) : (
                 memberGroups.flatMap(([departmentName, departmentMembers]) => [
-                  ...(canManageAll ? [<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={9} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>] : []),
+                  ...([<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={9} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>]),
                   ...(collapsedDepartments.includes(departmentName) ? [] : departmentMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
