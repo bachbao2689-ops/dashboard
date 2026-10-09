@@ -165,7 +165,7 @@ export const Projects: React.FC = () => {
   const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
 
   const canViewAll = profile?.role === 'admin' || profile?.employment_level?.toLowerCase() === 'admin' || profile?.employment_level?.toLowerCase() === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
-  const isLeader = profile?.employment_level === 'Leader';
+  const isLeader = profile?.employment_level === 'Leader' || profile?.role?.toLowerCase() === 'leader';
 
   const visibleProjects = useMemo(() => {
     if (canViewAll) return projects;

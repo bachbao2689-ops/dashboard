@@ -71,17 +71,19 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     });
     setSubtaskMap(stMap);
     
-    // Additional staff filter logic
-    const isLeader = profile?.employment_level === 'Leader';
-    if (!isLeader && profile?.role !== 'admin' && profile?.role !== 'manager' && data) {
-      // Fetch subtasks for these campaigns to check if staff is assigned
+    const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'manager';
+    const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
+    
+    if (!isAdminOrManager && data) {
       const { data: subtasks } = await supabase.from('campaign_subtasks').select('campaign_id').eq('assignee_id', profile?.id);
       const campaignIdsWithSubtasks = new Set((subtasks || []).map(s => s.campaign_id));
       
       const filteredData = data.filter(c => {
-        const isLead = String(c.lead_id) === String(profile?.id);
+        const isLead = String(c.lead_id) === String(profile?.id) || String(c.created_by) === String(profile?.id);
         const hasSubtask = campaignIdsWithSubtasks.has(c.id);
-        return isLead || hasSubtask;
+        if (isLead || hasSubtask) return true;
+        if (isLeader && String(c.department_id) === String(profile?.department_id)) return true;
+        return false;
       });
       setCampaigns(filteredData);
     } else {

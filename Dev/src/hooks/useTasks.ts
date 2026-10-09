@@ -66,7 +66,7 @@ export function useTasks() {
       let query = supabase
         .from('tasks')
         .select(`
-          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id, project_id, campaign_id,
+          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id, project_id, campaign_id, department_id,
           project:project_id(name),
           assignee:assignee_id(id, name, avatar_url),
           department:department_id(name),
@@ -78,8 +78,8 @@ export function useTasks() {
       
       const [tasksRes, pSubRes, cSubRes] = await Promise.all([
         query,
-        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted'),
-        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted')
+        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name, department_id), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted'),
+        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name, department_id), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted')
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
@@ -98,7 +98,7 @@ export function useTasks() {
           project: ps.projects ? { name: ps.projects.name } : null,
           assignee: ps.assignee,
           assignee_id: ps.assignee?.id,
-          department_id: ps.department_id // fake, subtasks don't have this, we rely on assignee_id
+          department_id: ps.projects?.department_id // subtasks get this from projects
         }));
         combined = [...combined, ...pTasks];
       }
@@ -113,7 +113,8 @@ export function useTasks() {
           due_date: cs.due_date,
           project: cs.campaigns ? { name: cs.campaigns.name } : null,
           assignee: cs.assignee,
-          assignee_id: cs.assignee?.id
+          assignee_id: cs.assignee?.id,
+          department_id: cs.campaigns?.department_id
         }));
         combined = [...combined, ...cTasks];
       }
