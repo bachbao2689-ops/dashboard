@@ -207,7 +207,9 @@ export const Projects: React.FC = () => {
     const handleChange = (e: any) => {
       const id = e.target?.id;
       if (id === 'subtask-due-input') setSubtaskDue(e.target.value);
+      else if (id === 'campaign-subtask-due-input') setCampaignSubtaskDue(e.target.value);
       else if (id && id.startsWith('edit-subtask-due-')) setEditSubtaskDue(e.target.value);
+      else if (id && id.startsWith('edit-campaign-subtask-due-')) setCampaignEditSubtaskDue(e.target.value);
     };
     document.addEventListener('change', handleChange);
     return () => document.removeEventListener('change', handleChange);
@@ -407,20 +409,20 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const saveEditedSubtask = async (id: string) => {
-    await supabase.from('project_subtasks').update({ title: editSubtaskTitle, assignee_id: editSubtaskOwner ? Number(editSubtaskOwner) : null, due_date: editSubtaskDue || null }).eq('id', id);
+    await supabase.from('project_subtasks').update({ title: editSubtaskTitle, assignee_id: editSubtaskOwner ? Number(editSubtaskOwner) : null, due_date: parseYMD(editSubtaskDue) }).eq('id', id);
     const { data } = await supabase.from('project_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('id', id).single();
     setSubtasks(subtasks.map(s => s.id === id ? data : s)); setEditingSubtaskId(null);
   };
 
   const saveInlineEdit = async () => {
     if (!title || !selected) return;
-    const { data, error } = await supabase.from('projects').update({ name: title, description, start_date: start || null, due_date: due || null, priority }).eq('id', selected.id).select().single();
+    const { data, error } = await supabase.from('projects').update({ name: title, description, start_date: parseYMD(start), due_date: parseYMD(due), priority }).eq('id', selected.id).select().single();
     if (error || !data) return toast.error('Lỗi cập nhật');
     await supabase.from('project_members').delete().eq('project_id', selected.id);
     if (ownerIds.length) await supabase.from('project_members').insert(ownerIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) })));
     setEditMode(false); load(); toast.success('Đã lưu thông tin');
     await notifyStakeholders('project', selected.id, 'đã cập nhật thông tin dự án: ' + title);
-    setSelected({ ...selected, name: title, description, start_date: start || null, due_date: due || null, priority });
+    setSelected({ ...selected, name: title, description, start_date: parseYMD(start), due_date: parseYMD(due), priority });
   };
 
   
@@ -497,14 +499,14 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     await notifyStakeholders('project', selected.id, 'đã bình luận trong dự án: ' + selected.name);
     setComment(''); setSelected({ ...selected });
   };
-  const addCampaignSubtask = async () => { if (!selectedCampaign || !campaignNewSubtask.trim()) return; const { error } = await supabase.from('campaign_subtasks').insert({ campaign_id: selectedCampaign.id, title: campaignNewSubtask.trim(), assignee_id: campaignSubtaskOwner ? Number(campaignSubtaskOwner) : null, due_date: campaignSubtaskDue || null });
+  const addCampaignSubtask = async () => { if (!selectedCampaign || !campaignNewSubtask.trim()) return; const { error } = await supabase.from('campaign_subtasks').insert({ campaign_id: selectedCampaign.id, title: campaignNewSubtask.trim(), assignee_id: campaignSubtaskOwner ? Number(campaignSubtaskOwner) : null, due_date: parseYMD(campaignSubtaskDue) });
   if (!error && campaignSubtaskOwner) await notifyStakeholders('campaign', selectedCampaign.id, 'đã giao subtask mới cho bạn: ' + campaignNewSubtask.trim(), campaignSubtaskOwner); if (error) return toast.error('Không thể tạo Subtask Campaign'); setCampaignNewSubtask(''); setCampaignSubtaskOwner(''); setCampaignSubtaskDue(''); setShowCampaignSubtaskForm(false); setSelectedCampaign({ ...selectedCampaign }); 
     supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at').then(res => setCampaignSubtasks(res.data || [])); };
   const addCampaignComment = async () => { if (!selectedCampaign || !campaignComment.trim() || !profile?.id) return; const { error } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'comment', entity_type: 'campaign', entity_id: selectedCampaign.id, metadata: { body: campaignComment.trim() } }); if (error) return toast.error('Không thể gửi bình luận'); await notifyStakeholders('campaign', selectedCampaign.id, 'đã bình luận trong chiến dịch: ' + selectedCampaign.name); setCampaignComment(''); setSelectedCampaign({ ...selectedCampaign }); 
     supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at').then(res => setCampaignComments(res.data || [])); };
   const completeCampaign = async () => { if (!selectedCampaign) return; const { error } = await supabase.from('campaigns').update({ status: 'completed' }).eq('id', selectedCampaign.id); if (error) return toast.error('Không thể hoàn thành Campaign'); const updated = { ...selectedCampaign, status: 'completed' }; setSelectedCampaign(updated); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã hoàn thành Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã đánh dấu hoàn thành chiến dịch: ' + selectedCampaign.name); };
-  const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim()) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), objective: campaignObjective || null, start_date: start || null, end_date: due || null, budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
+  const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim()) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
   return (
   <div className="h-full flex overflow-hidden relative">
