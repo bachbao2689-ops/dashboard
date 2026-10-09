@@ -1,4 +1,5 @@
 import { StatusBadge } from '../components/common/StatusBadge';
+import { MultiSelect } from '../components/common/MultiSelect';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar } from "../components/common/Avatar";
 
@@ -27,47 +28,6 @@ const dateValue = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' || value === 'urgent' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
 
 
-const MultiSelect = ({ options, value, onChange, placeholder }: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapperRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false); };
-    document.addEventListener('mousedown', handleClick); return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const filtered = options.filter((o: any) => o.label.toLowerCase().includes(search.toLowerCase()));
-
-  return (
-    <div className="relative" ref={wrapperRef}>
-      <div onClick={() => setIsOpen(!isOpen)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium cursor-pointer flex flex-wrap gap-1 min-h-[44px] shadow-sm">
-        {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
-        {value.map((v: string) => {
-           const opt = options.find((o: any) => o.value === v);
-           return <span key={v} className="px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs flex items-center gap-1">{opt?.label} <X size={12} onClick={(e) => { e.stopPropagation(); onChange(value.filter((x: string) => x !== v)); }} className="cursor-pointer hover:text-red-500"/></span>
-        })}
-      </div>
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-2">
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Tìm kiếm PIC..." className="w-full p-2 text-sm border-b border-gray-100 dark:border-slate-700 outline-none bg-transparent mb-2"/>
-          <div className="max-h-48 overflow-y-auto custom-scrollbar">
-             {filtered.map((o: any) => (
-               <label key={o.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer">
-                 <input type="checkbox" checked={value.includes(o.value)} onChange={(e) => {
-                    if (e.target.checked) onChange([...value, o.value]);
-                    else onChange(value.filter((v: string) => v !== o.value));
-                 }} className="rounded border-gray-300 text-primary focus:ring-primary"/>
-                 <span className="text-sm font-medium">{o.label}</span>
-               </label>
-             ))}
-             {filtered.length === 0 && <div className="text-center text-sm text-gray-400 p-2">Không tìm thấy</div>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 const getDueStatusColor = (endDateStr?: string | null) => {
@@ -99,12 +59,16 @@ const getDueStatusLabel = (endDateStr?: string | null) => {
 export const Projects: React.FC = () => {
   const { t } = useTranslation();
   const profile = useAuthStore(s => s.profile);
-  const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'leader' || profile?.employment_level === 'Leader';
   const [projects, setProjects] = useState<Project[]>([]); const [people, setPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const creationLock = React.useRef(false);
+  const [executionMemberIds, setExecutionMemberIds] = useState<string[]>([]);
+  const [projectPrimaryOwners, setProjectPrimaryOwners] = useState<Record<string, number>>({});
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [projectToHide, setProjectToHide] = useState<Project | null>(null);
   const [subtaskToDelete, setSubtaskToDelete] = useState<string | null>(null); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
@@ -154,7 +118,7 @@ export const Projects: React.FC = () => {
   const visiblePeople = useMemo(() => {
     if (profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader')) return people;
     return people.filter(person => person.department_id === profile?.department_id);
-  }, [people, profile?.role, profile?.department_id]);
+  }, [people, profile?.role, profile?.employment_level, profile?.department_id]);
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);
   const projectMentionQuery = useMemo(() => comment.match(/(?:^|\s)@([^\s@]*)$/)?.[1]?.toLowerCase() || null, [comment]);
   const projectMentionOptions = useMemo(() => projectMentionQuery === null ? [] : visiblePeople.filter(person => person.name.toLowerCase().includes(projectMentionQuery)).slice(0, 5), [projectMentionQuery, visiblePeople]);
@@ -213,8 +177,10 @@ export const Projects: React.FC = () => {
     const commentsMap: Record<string, boolean> = {};
     (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
     setHasComments(commentsMap);
-    const { data: campaignData } = await supabase.from('campaigns').select('id,name').order('name');
-    setCampaigns(campaignData || []);
+    const { data: campaignData } = await supabase.from('campaigns').select('id,name,start_date,end_date,lead_id,department_id').neq('status', 'archived').neq('status', 'deleted').order('name');
+    setCampaigns((campaignData || []).filter(c => canViewAll || (profile?.department_id && c.department_id === profile.department_id) || c.lead_id === profile?.id));
+    const { data: creationDetails } = await supabase.from('activity_log').select('entity_id,metadata').eq('entity_type', 'project').eq('action', 'creation_details');
+    setProjectPrimaryOwners(Object.fromEntries((creationDetails || []).map(row => [row.entity_id, row.metadata?.primary_owner_id])));
 
     const stMap: Record<string, Set<string>> = {};
     (subtaskRes.data || []).forEach(s => {
@@ -297,8 +263,22 @@ export const Projects: React.FC = () => {
   };
 
   const resetCreateForm = () => {
-    setTitle(''); setDescription(''); setStart(''); setDue(''); setPriority('medium'); setOwnerIds([]); setPrimaryOwnerId('');
+    setExecutionMemberIds([]);
+    setTitle(''); setDescription(''); setStart(new Date().toLocaleDateString('en-GB')); setDue(''); setPriority('medium'); setOwnerIds([]); setPrimaryOwnerId('');
     setParentCampaignId(''); setDepartmentId(profile?.department_id || ''); setCampaignObjective(''); setCampaignBudget(''); setCampaignStatus('planning'); setCampaignChannels([]); setAttachmentUrl(''); setAttachmentFile(null); setShowAdvanced(false);
+  };
+
+  const selectParentCampaign = (id: string) => {
+    setParentCampaignId(id);
+    const campaign = campaigns.find(item => item.id === id);
+    if (!campaign) { setDepartmentId(profile?.department_id || ''); return; }
+    if (!due && campaign.end_date) setDue(strictFormatVN(campaign.end_date));
+    if ((!start || start === new Date().toLocaleDateString('en-GB')) && campaign.start_date) setStart(strictFormatVN(campaign.start_date));
+    if (!primaryOwnerId && visiblePeople.some(person => person.id === campaign.lead_id)) {
+      setPrimaryOwnerId(String(campaign.lead_id));
+      setOwnerIds(ids => Array.from(new Set([...ids, String(campaign.lead_id)])));
+    }
+    setDepartmentId(campaign.department_id || profile?.department_id || '');
   };
 
   const resolveAttachmentUrl = async (scope: 'projects' | 'campaigns') => {
@@ -311,38 +291,74 @@ export const Projects: React.FC = () => {
   };
 
   const createItem = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!title.trim() || !primaryOwnerId) return;
-    if (creationType === 'campaign') {
-      const strategyAsset = await resolveAttachmentUrl('campaigns');
-      if (strategyAsset === undefined) return;
-      const { data: campaign, error } = await supabase.from('campaigns').insert({
-        name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due),
-        budget: campaignBudget ? Number(campaignBudget) : null, channels: campaignChannels, lead_id: Number(primaryOwnerId), status: campaignStatus,
-        department_id: profile?.department_id || null, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || 11
-      }).select().single();
-      if (error) { console.error('Campaign create failed', error); return toast.error(`Không thể tạo Campaign: ${error?.message || 'Lỗi không xác định'}`); }
-      if (strategyAsset && campaign && profile?.id) await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'attachment_added', entity_type: 'campaign', entity_id: campaign.id, metadata: { strategy_asset: strategyAsset } });
-      window.dispatchEvent(new Event('campaigns:changed'));
-      toast.success('Đã tạo Campaign');
-      await notifyStakeholders('campaign', campaign.id, 'đã tạo chiến dịch mới: ' + campaign.name);
-    } else {
-      const projectAttachment = await resolveAttachmentUrl('projects');
-      if (projectAttachment === undefined) return;
-      const assigneeIds = Array.from(new Set([primaryOwnerId, ...ownerIds]));
-      const { data, error } = await supabase.from('projects').insert({
-        name: title.trim(), description: description || null, start_date: parseYMD(start), due_date: parseYMD(due), priority,
-        status: 'active', campaign_id: parentCampaignId || null, department_id: departmentId || profile?.department_id || null,
-        assets_url: projectAttachment, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile?.id || 11
-      }).select().single();
-      if (error || !data) { console.error('Project create failed', error); return toast.error(`Không thể tạo Project: ${error?.message || 'Lỗi không xác định'}`); }
-      if (assigneeIds.length) {
-        const { error: memberError } = await supabase.from('project_members').insert(assigneeIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) })));
-        if (memberError) toast.error('Project đã tạo nhưng không lưu được toàn bộ PIC');
-      }
-      toast.success('Đã tạo Project');
-      await notifyStakeholders('project', data.id, 'đã tạo dự án mới: ' + data.name);
+    e.preventDefault();
+    if (creationLock.current) return;
+    if (!canCreate || !profile?.id) return toast.error('Bạn không có quyền tạo mới.');
+    if (!title.trim() || !primaryOwnerId) return toast.error('Nhập tên và chọn người phụ trách chính.');
+    const allowed = new Set(visiblePeople.map(person => String(person.id)));
+    const selectedPeople = creationType === 'project' ? [primaryOwnerId, ...ownerIds, ...executionMemberIds] : [primaryOwnerId];
+    if (selectedPeople.some(id => !allowed.has(id))) return toast.error('PIC nằm ngoài phạm vi được giao việc.');
+    const startDate = parseYMD(start), endDate = parseYMD(due);
+    if (startDate && endDate && endDate < startDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu trở đi.');
+    if (creationType === 'project' && parentCampaignId && !campaigns.some(c => c.id === parentCampaignId)) return toast.error('Chiến dịch không còn khả dụng.');
+    if (creationType === 'campaign' && campaignBudget && (!Number.isFinite(Number(campaignBudget)) || Number(campaignBudget) < 0)) return toast.error('Ngân sách phải là số không âm.');
+    if (attachmentUrl.trim()) {
+      try { const url = new URL(attachmentUrl.trim()); if (!['https:', 'http:'].includes(url.protocol)) throw new Error(); }
+      catch { return toast.error('Đính kèm cần là link http hoặc https hợp lệ.'); }
     }
-    setCreateOpen(false); resetCreateForm(); await load();
+    creationLock.current = true; setCreating(true);
+    try {
+      const asset = await resolveAttachmentUrl(creationType === 'project' ? 'projects' : 'campaigns');
+      if (asset === undefined) return;
+      if (creationType === 'campaign') {
+        const { data: campaign, error } = await supabase.from('campaigns').insert({
+          name: title.trim(), objective: campaignObjective || null, start_date: startDate, end_date: endDate,
+          budget: campaignBudget ? Number(campaignBudget) : null, channels: campaignChannels,
+          lead_id: Number(primaryOwnerId), status: campaignStatus,
+          department_id: profile.department_id || people.find(p => p.id === Number(primaryOwnerId))?.department_id || null,
+          workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile.id
+        }).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single();
+        if (error || !campaign) throw error || new Error('Không nhận được Campaign vừa tạo.');
+        setCreateOpen(false); resetCreateForm(); setSelected(null); setSelectedCampaign(campaign); setCampaignEditMode(false);
+        if (asset) {
+          const { error: assetError } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'attachment_added', entity_type: 'campaign', entity_id: campaign.id, metadata: { strategy_asset: asset } });
+          if (assetError) toast.error('Campaign đã tạo nhưng chưa lưu được link tài liệu.');
+        }
+        window.dispatchEvent(new Event('campaigns:changed'));
+        toast.success('Đã tạo Campaign');
+        const { error: notificationError } = await supabase.from('notifications').insert({ user_id: campaign.lead_id, type: 'system', message: profile.name + ' đã giao chiến dịch: ' + campaign.name, entity_type: 'campaign', entity_id: campaign.id });
+        if (notificationError) toast.error('Campaign đã tạo; thông báo chưa gửi được.');
+      } else {
+        const picIds = Array.from(new Set([primaryOwnerId, ...ownerIds]));
+        const participantIds = Array.from(new Set([...picIds, ...executionMemberIds]));
+        const { data: project, error } = await supabase.from('projects').insert({
+          name: title.trim(), description: description || null, start_date: startDate, due_date: endDate, priority,
+          status: 'active', campaign_id: parentCampaignId || null,
+          department_id: departmentId || profile.department_id || people.find(p => p.id === Number(primaryOwnerId))?.department_id || null,
+          assets_url: asset, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile.id
+        }).select('*, creator:created_by(name,avatar_url)').single();
+        if (error || !project) throw error || new Error('Không nhận được Project vừa tạo.');
+        // Once created, leave the create form so a retry cannot duplicate the project.
+        setCreateOpen(false); resetCreateForm(); setSelectedCampaign(null); setSelected(project); setEditMode(false);
+        const { error: memberError } = await supabase.from('project_members').insert(participantIds.map(user_id => ({ project_id: project.id, user_id: Number(user_id) })));
+        if (memberError) toast.error('Project đã tạo nhưng chưa lưu được PIC. Mở Chỉnh sửa để bổ sung.');
+        const { error: metadataError } = await supabase.from('activity_log').insert({
+          workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id,
+          entity_type: 'project', entity_id: project.id, action: 'creation_details',
+          metadata: { primary_owner_id: Number(primaryOwnerId), owner_ids: picIds.map(Number), member_ids: executionMemberIds.map(Number) }
+        });
+        if (metadataError) toast.error('Project đã tạo nhưng chưa lưu được phân loại PIC chính.');
+        if (!memberError) {
+          const { error: notificationError } = await supabase.from('notifications').insert(participantIds.map(id => ({ user_id: Number(id), type: 'system', message: profile.name + ' đã giao dự án: ' + project.name, entity_type: 'project', entity_id: project.id })));
+          if (notificationError) toast.error('Project đã tạo; thông báo chưa gửi được.');
+        }
+        toast.success('Đã tạo Project');
+        window.dispatchEvent(new Event('projects:changed'));
+      }
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tạo mới. Kiểm tra kết nối và thử lại.');
+    } finally { creationLock.current = false; setCreating(false); }
   };
 const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editSubtaskTitle, setEditSubtaskTitle] = useState('');
@@ -553,7 +569,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
             ) : (
 <div className="space-y-7 animate-in fade-in duration-200">
               <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-primary border border-blue-100">Project</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">{selected?.priority || 'medium'} Priority</span></div>
-      <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">Owners</p><div className="mt-1 flex flex-wrap gap-1">{(members[selected?.id || ''] || []).length > 0 ? (members[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}</span></div> : null }) : 'Unassigned'}</div></div><div><p className="text-[10px] uppercase text-gray-400">Timeline</p><div className="mt-1 font-semibold">{dateValue(selected?.start_date || '')} – {dateValue(selected?.due_date || '')}</div></div><div><p className="text-[10px] uppercase text-gray-400">Created by</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
+      <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">Owner / PIC</p><div className="mt-1 flex flex-wrap gap-1">{(members[selected?.id || ''] || []).length > 0 ? (members[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· Chính</span>}</span></div> : null }) : 'Unassigned'}</div></div><div><p className="text-[10px] uppercase text-gray-400">Timeline</p><div className="mt-1 font-semibold">{dateValue(selected?.start_date || '')} – {dateValue(selected?.due_date || '')}</div></div><div><p className="text-[10px] uppercase text-gray-400">Created by</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <section><h3 className="font-bold text-sm mb-2">Description</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || 'No description yet.'}</div></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> Subtasks</h3><div className="space-y-2">{subtasks.map(s=>(
   <div key={s.id} onClick={() => { const own = Number(s.assignee_id) === Number(profile?.id); if (own || canCreate) setSelectedSubtask(s); }} className={`p-3 rounded-xl border text-sm group relative transition-all ${(s.status || '').toLowerCase() === 'completed' ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer hover:border-primary/40 hover:shadow-sm' : ''}`}>
@@ -709,15 +725,16 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       )}
     </div>
 
-    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${createOpen ? 'w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--drawer-width)] md:min-w-[var(--drawer-width)] shadow-drawer-task border-l border-blue-500/20' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
+    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${createOpen ? 'w-full max-w-full md:w-[min(var(--drawer-width),100%)] md:min-w-0 shadow-drawer-task border-l border-blue-500/20' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute xl:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}>
       {createOpen && <>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới</h3><button onClick={() => setCreateOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button></div>
-      <form onSubmit={createItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới</h3><button disabled={creating} aria-label="Đóng tạo mới" onClick={() => setCreateOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button></div>
+      <form onSubmit={createItem} aria-busy={creating} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+        <fieldset disabled={creating} className="min-w-0 space-y-4">
         <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 dark:bg-slate-900 p-1" role="tablist" aria-label="Loại khởi tạo">
-          <button type="button" role="tab" aria-selected={creationType === 'campaign'} onClick={() => setCreationType('campaign')} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>🎯 Chiến dịch</button>
-          <button type="button" role="tab" aria-selected={creationType === 'project'} onClick={() => setCreationType('project')} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>📁 Dự án</button>
+          <button type="button" role="tab" aria-selected={creationType === 'campaign'} onClick={() => { setCreationType('campaign'); if (!campaignObjective) setCampaignObjective(description); }} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>🎯 Chiến dịch</button>
+          <button type="button" role="tab" aria-selected={creationType === 'project'} onClick={() => { setCreationType('project'); if (!description) setDescription(campaignObjective); if (primaryOwnerId) setOwnerIds(ids => Array.from(new Set([...ids, primaryOwnerId]))); }} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>📁 Dự án</button>
         </div>
 
         <div>
@@ -730,20 +747,25 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
           <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Ngày kết thúc</label><input type="text" id="create-end-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-end-input', mode: 'single' }, e); }} value={due} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
         </div>
 
-        <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Owner / PIC <span className="text-red-500">*</span></label><select required value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white"><option value="">Chọn người phụ trách</option>{visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name}{p.departments?.name ? ` (${p.departments.name})` : ''}</option>)}</select></div>
+        <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">Owner / PIC <span className="text-red-500">*</span></label>
+          {creationType === 'project' && <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder="Tìm và chọn các PIC..." />}
+          <MultiSelect options={visiblePeople.filter(p=>creationType === 'campaign' || ownerIds.includes(String(p.id))).map(p=>({value:String(p.id),label:p.name}))} value={primaryOwnerId ? [primaryOwnerId] : []} maxSelected={1} onChange={(ids: string[]) => setPrimaryOwnerId(ids[0] || '')} placeholder={creationType === 'campaign' ? 'Chọn người quản lý chiến dịch...' : 'Chọn PIC phụ trách chính...'} />
+          <p className="text-xs text-gray-500 dark:text-gray-400">PIC chính chịu trách nhiệm theo dõi tiến độ.</p>
+        </div>
 
         {creationType === 'campaign' ? <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Mục tiêu chính / KPI</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder="Mục tiêu chiến dịch..." /></div> : <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Mô tả</label><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder="Ghi chú nhanh..." /></div>}
 
         <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-semibold text-primary hover:underline">{showAdvanced ? 'Ẩn tùy chọn nâng cao' : 'Hiển thị thêm tùy chọn'}</button>
         {showAdvanced && (creationType === 'project' ? <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4">
-          <div><label className="block text-sm font-semibold mb-1">Thuộc Chiến dịch</label><select value={parentCampaignId} onChange={e=>setParentCampaignId(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="">Dự án độc lập</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div><label className="block text-sm font-semibold mb-1">Thuộc Chiến dịch</label><select value={parentCampaignId} onChange={e=>selectParentCampaign(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="">Dự án độc lập</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div><label className="block text-sm font-semibold mb-1">Mức độ ưu tiên</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
-          <div><label className="block text-sm font-semibold mb-1">Thành viên thực thi</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} onChange={setOwnerIds} placeholder="Tag thành viên tham gia..." /></div>
+          <div><label className="block text-sm font-semibold mb-1">Thành viên thực thi</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder="Tag thành viên tham gia..." /></div>
           <div><label className="block text-sm font-semibold mb-1">Đính kèm</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder="Dán link Brief, Drive, Figma..." className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : 'Hoặc chọn tài liệu từ máy'}</label></div>
         </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4"><div><label className="block text-sm font-semibold mb-1">Ngân sách tổng</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" placeholder="Nhập ngân sách dự kiến" /></div><div><label className="block text-sm font-semibold mb-2">Kênh triển khai</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-800 px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">Tệp chiến lược</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder="Dán link Strategy, Master Key Visual..." className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : 'Hoặc chọn tài liệu từ máy'}</label></div></div>)}
 
+        </fieldset>
       </div>
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800"><button type="button" onClick={() => setCreateOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Hủy</button><button type="submit" className="flex-1 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl">Tạo {creationType === 'project' ? 'dự án' : 'chiến dịch'}</button></div>
+        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800"><button type="button" disabled={creating} onClick={() => setCreateOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Hủy</button><button disabled={creating || !title.trim() || !primaryOwnerId} type="submit" className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl">{creating ? 'Đang tạo…' : `Tạo ${creationType === 'project' ? 'dự án' : 'chiến dịch'}`}</button></div>
       </form>
       </>}
     </div>
