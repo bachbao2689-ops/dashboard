@@ -1,6 +1,6 @@
 import toast from "react-hot-toast";
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../../common/Modal';
+import { X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -27,11 +27,43 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const [departments, setDepartments] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
 
+  const [width, setWidth] = useState(500);
+  const [resizing, setResizing] = useState(false);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const move = (e: MouseEvent) => setWidth(Math.max(400, Math.min(window.innerWidth - e.clientX, 800)));
+    const up = () => setResizing(false);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    return () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+  }, [resizing]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       fetchFormData();
-      // A department leader always creates work in their own department.
       if (!canChooseDepartment && profile?.department_id) setDepartmentId(profile.department_id);
+    } else {
+      // Reset form when closed
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setDueDate('');
+      setStartDate('');
+      setAssigneeId('');
+      setProjectId('');
+      if (canChooseDepartment) setDepartmentId('');
     }
   }, [isOpen, canChooseDepartment, profile?.department_id]);
 
@@ -42,12 +74,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }
   }, [departmentId, assigneeId, users]);
 
-
-
   const parseLocal = (s: string) => {
     if (!s) return null;
     const p = s.split(/[-/]/);
-    if(p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
+    if (p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
     return s;
   };
 
@@ -76,7 +106,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !departmentId) return;
+    if (!title.trim() || !departmentId) return;
     
     setLoading(true);
     try {
@@ -86,9 +116,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       const columnData = await supabase.from('columns').select('id').eq('workspace_id', wsData.id).eq('name', 'Yet to Start').single();
       const colId = columnData.data?.id || null;
 
-      await supabase.from('tasks').insert([{
-         title,
-         description,
+      const { error: insertError } = await supabase.from('tasks').insert([{
+         title: title.trim(),
+         description: description.trim(),
          priority,
          due_date: parseLocal(dueDate),
          start_date: parseLocal(startDate),
@@ -101,8 +131,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
          workspace_id: wsData.id,
          created_by: wsData.owner_id
       }]);
+
+      if (insertError) throw insertError;
       
       onSuccess();
+      window.dispatchEvent(new Event('tasks:changed'));
       toast.success('Task created successfully');
       onClose();
       // Reset form
@@ -114,9 +147,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       setAssigneeId('');
       setProjectId('');
       setDepartmentId('');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to create task');
+      toast.error(err?.message || 'Failed to create task');
     } finally {
       setLoading(false);
     }
@@ -139,137 +172,192 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const visibleProjects = projects;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Task Title <span className="text-red-500">*</span></label>
-          <input 
-            type="text" 
-            required
-            maxLength={500}
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-            placeholder="Describe task briefly"
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Department <span className="text-red-500">*</span></label>
-            <select 
-              required
-              value={departmentId}
-              onChange={e => setDepartmentId(e.target.value)}
-              disabled={!canChooseDepartment}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-            >
-              {canChooseDepartment && <option value="">Select Department</option>}
-              {visibleDepartments.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Assignee</label>
-            <select 
-              value={assigneeId}
-              onChange={e => setAssigneeId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-            >
-              <option value="">Unassigned</option>
-              {visibleUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+    <>
+      {isOpen && (
+        <div 
+          className="xl:hidden fixed inset-0 bg-slate-900/40 dark:bg-slate-900/60 z-[65] transition-opacity backdrop-blur-xs"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <div 
+        style={{ '--drawer-width': `${width}px` } as React.CSSProperties} 
+        className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${isOpen ? 'w-full max-w-full md:w-[min(var(--drawer-width),100%)] md:min-w-0 shadow-drawer-task border-l border-blue-500/20 drawer-slide-in' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute xl:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}
+      >
+        {isOpen && (
+          <>
+            <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
+            
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+              <div>
+                <h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới task</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Khởi tạo công việc mới vào hệ thống</p>
+              </div>
+              <button 
+                disabled={loading} 
+                aria-label="Đóng tạo mới task" 
+                onClick={onClose} 
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Priority</label>
-            <select 
-              value={priority}
-              onChange={e => setPriority(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Project</label>
-            <select 
-              value={projectId}
-              onChange={e => setProjectId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-            >
-              <option value="">No Project</option>
-              {visibleProjects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+            <form onSubmit={handleSubmit} aria-busy={loading} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                <fieldset disabled={loading} className="min-w-0 space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                      Task Title <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      required
+                      maxLength={500}
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      placeholder="Describe task briefly"
+                    />
+                  </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Start Date</label>
-            <input 
-              type="text" 
-              id="task-start-input"
-              readOnly
-              onClick={(e) => openCal('task-start-input', e)}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
-            />
-          </div>
-          <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Due Date</label>
-            <input 
-              type="text" 
-              id="task-due-input"
-              readOnly
-              onClick={(e) => openCal('task-due-input', e)}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              placeholder="dd/mm/yyyy"
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
-            />
-          </div>
-        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Department <span className="text-red-500">*</span>
+                      </label>
+                      <select 
+                        required
+                        value={departmentId}
+                        onChange={e => setDepartmentId(e.target.value)}
+                        disabled={!canChooseDepartment}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      >
+                        {canChooseDepartment && <option value="">Select Department</option>}
+                        {visibleDepartments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Assignee
+                      </label>
+                      <select 
+                        value={assigneeId}
+                        onChange={e => setAssigneeId(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      >
+                        <option value="">Unassigned</option>
+                        {visibleUsers.map(u => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
-          <textarea 
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm"
-            placeholder="Describe task details..."
-          />
-        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Priority
+                      </label>
+                      <select 
+                        value={priority}
+                        onChange={e => setPriority(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Project
+                      </label>
+                      <select 
+                        value={projectId}
+                        onChange={e => setProjectId(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      >
+                        <option value="">No Project</option>
+                        {visibleProjects.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-        <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="px-6 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm hover:shadow-md"
-          >
-            {loading ? 'Saving...' : 'Create Task'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="tw-calendar-picker relative">
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Start Date
+                      </label>
+                      <input 
+                        type="text" 
+                        id="task-start-input"
+                        readOnly
+                        onClick={(e) => openCal('task-start-input', e)}
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        placeholder="dd/mm/yyyy"
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
+                      />
+                    </div>
+                    <div className="tw-calendar-picker relative">
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        Due Date
+                      </label>
+                      <input 
+                        type="text" 
+                        id="task-due-input"
+                        readOnly
+                        onClick={(e) => openCal('task-due-input', e)}
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        placeholder="dd/mm/yyyy"
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                      Description
+                    </label>
+                    <textarea 
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm"
+                      placeholder="Describe task details..."
+                    />
+                  </div>
+                </fieldset>
+              </div>
+
+              <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800">
+                <button 
+                  type="button" 
+                  disabled={loading} 
+                  onClick={onClose} 
+                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  disabled={loading || !title.trim() || !departmentId} 
+                  type="submit" 
+                  className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
+                >
+                  {loading ? 'Đang tạo…' : 'Tạo task'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </>
   );
 };

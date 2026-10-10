@@ -61,7 +61,10 @@ export const TaskList: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
-  const handleNewTask = () => setIsModalOpen(true);
+  const handleNewTask = () => {
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     if (searchParams.has('search')) {
@@ -268,7 +271,6 @@ export const TaskList: React.FC = () => {
   return (
     <div className="flex h-full min-h-0 min-w-0 overflow-hidden">
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 lg:pr-4">
-      <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       
       <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 shrink-0 w-full">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
@@ -399,7 +401,7 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => setSelectedTask(task as any)} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`}>
+                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
@@ -477,6 +479,7 @@ export const TaskList: React.FC = () => {
     
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
+      <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title="Xóa các Task đã chọn" message={`Bạn có chắc muốn xóa ${selectedTasks.length} task đã chọn vào thùng rác?`} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
       <ConfirmDeleteModal isOpen={!!taskToDelete} title="Xóa Task" message={`Bạn có chắc muốn xóa task "${taskToDelete?.title}" vào thùng rác?`} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
     </div>
