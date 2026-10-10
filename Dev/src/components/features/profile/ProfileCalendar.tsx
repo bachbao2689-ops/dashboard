@@ -54,7 +54,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
-  const [filter, setFilter] = useState<(typeof filters)[number]['id']>('all');
+  const [filter, setFilter] = useState<(typeof filters)[number]['id']>('task');
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [status, setStatus] = useState('open');
