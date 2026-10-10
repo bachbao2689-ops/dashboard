@@ -88,14 +88,14 @@ button:disabled { cursor: not-allowed; }
 .sidebar-link-idle:hover { color: var(--color-primary); background: rgba(0, 46, 109, 0.05); }
 .sidebar-link-active {
   color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  background: #ffffff;
   border-color: var(--color-primary);
   box-shadow: none;
 }
 .dark .app-sidebar.card-hub { background: linear-gradient(170deg, #172b32, #101c2c 42%, #101a29) !important; }
 .dark .sidebar-link-idle { color: #c3d2e5; }
 .dark .sidebar-link-idle:hover { color: #fff; background: #263b53; }
-.dark .sidebar-link-active { color: #60a5fa; background: color-mix(in srgb, #60a5fa 12%, transparent); border-color: color-mix(in srgb, #60a5fa 40%, transparent); box-shadow: none; }
+.dark .sidebar-link-active { color: #60a5fa; background: transparent; border-color: color-mix(in srgb, #60a5fa 40%, transparent); box-shadow: none; }
 .dark .sidebar-link-active::before { content: ''; position: absolute; left: 0; top: 25%; bottom: 25%; width: 3px; border-radius: 4px; background: #60a5fa; }
 .status-badge { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; line-height: 1.5; background: color-mix(in srgb, currentColor 11%, transparent); }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
