@@ -501,7 +501,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <td className="p-4">
   <div className="flex items-center gap-2">
     <b className="text-gray-900 dark:text-white">{project.name}</b>
-    {hasComments[project.id] && <span title="Có thông báo mới" className="relative inline-flex"><MessageSquare size={14} className="text-blue-500" /><span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span></span>}
+    {hasComments[project.id] && <span title="Có bình luận" className="relative inline-flex"><MessageSquare size={14} className="text-blue-500" />{Number(project.lead_id) === Number(profile?.id) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
   </div>
   <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{project.description || 'No description'}</p>
 </td>
@@ -585,7 +585,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       <div className="flex justify-between items-center w-full">
   <div className="flex items-center gap-3 flex-1">
     <div className="flex-1">
-      <div className="flex items-center gap-2"><b className={`text-gray-900 dark:text-white block ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>{subtaskCommentCounts[s.id] > 0 && <span title={`${subtaskCommentCounts[s.id]} bình luận`} className="inline-flex items-center gap-1 text-xs text-primary"><span className="relative inline-flex"><MessageSquare size={13}/><span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span></span>{subtaskCommentCounts[s.id]}</span>}</div>
+      <div className="flex items-center gap-2"><b className={`text-gray-900 dark:text-white block ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>{subtaskCommentCounts[s.id] > 0 && <span title={`${subtaskCommentCounts[s.id]} bình luận`} className="inline-flex items-center gap-1 text-xs text-primary"><span className="relative inline-flex"><MessageSquare size={13}/>{Number(s.assignee_id) === Number(profile?.id) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}</span>{subtaskCommentCounts[s.id]}</span>}</div>
       <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
          <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 font-medium">
            {s.assignee ? (
