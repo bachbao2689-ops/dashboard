@@ -477,3 +477,11 @@ html.dark .hover-row-effect:hover {
   position: relative;
   z-index: 10;
 }
+
+@keyframes bounce-short {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25%); }
+}
+.animate-bounce-short {
+  animation: bounce-short 0.4s ease-in-out;
+}

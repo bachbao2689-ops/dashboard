@@ -60,12 +60,24 @@ export function useAssets() {
         .from('assets')
         .select(`
           id, asset_code, name, condition, location, status,
-          category:category_id(name, icon)
+          category:category_id(name, icon),
+          borrow_requests(id, due_date, approval_status, requester:requester_id(name, avatar_url))
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAssets(data as any);
+      
+      const mappedData = (data as any[]).map(asset => {
+        // Find active borrow request
+        const activeRequest = asset.borrow_requests?.find((r: any) => r.approval_status === 'approved' || r.approval_status === 'active' || r.approval_status === 'borrowed') || asset.borrow_requests?.find((r: any) => r.approval_status === 'pending');
+        return {
+          ...asset,
+          current_borrower: activeRequest ? { name: activeRequest.requester?.name || 'Unknown' } : null,
+          due_date: activeRequest ? activeRequest.due_date : null
+        };
+      });
+      setAssets(mappedData as any);
+
     } catch (err: any) {
       console.warn('Error fetching assets', err);
       // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS

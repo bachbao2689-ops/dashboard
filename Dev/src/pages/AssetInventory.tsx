@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Search, MoreHorizontal, Camera, Laptop, HardDrive, Box } from 'lucide-react';
+import { Plus, Search, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
 import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
-import { QrCode } from 'lucide-react';
+import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -24,6 +24,22 @@ export const AssetInventory: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [qrAsset, setQrAsset] = useState<any>(null);
   const { assets, loading, refetch } = useAssets();
+
+  const [cart, setCart] = useState<any[]>([]);
+  const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(false);
+  const [bounce, setBounce] = useState(false);
+
+  const toggleCart = (asset: any) => {
+    if (asset.status !== "available" && !cart.find(a => a.id === asset.id)) return;
+    if (cart.find(a => a.id === asset.id)) {
+      setCart(cart.filter(a => a.id !== asset.id));
+    } else {
+      setCart([...cart, asset]);
+      setBounce(true);
+      setTimeout(() => setBounce(false), 300);
+    }
+  };
+
 
   const handleNewAsset = () => {
     setIsModalOpen(true);
@@ -60,9 +76,15 @@ export const AssetInventory: React.FC = () => {
             />
           </div>
           
-          <button onClick={handleNewAsset} className="flex items-center gap-1 sm:gap-2 h-8 sm:h-8 sm:h-10 px-3 sm:px-4 bg-[#002e6d] flex-shrink-0 hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+          
+          <button onClick={() => setIsBorrowDrawerOpen(true)} className={`relative flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+            <Box size={18} /> <span className="hidden sm:inline">Mượn thiết bị</span>
+            {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm animate-bounce-short">{cart.length}</span>}
+          </button>
+          <button onClick={handleNewAsset} className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-[#002e6d] flex-shrink-0 hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
             <Plus size={18} /> <span className="hidden sm:inline">Add Asset</span>
           </button>
+
         </div>
       </div>
 
@@ -86,7 +108,7 @@ export const AssetInventory: React.FC = () => {
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">No assets found</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
-                  <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
+                  <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
                     <td className="p-4">
                       <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600">{asset.asset_code}</span>
                     </td>
@@ -101,28 +123,46 @@ export const AssetInventory: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">{asset.condition || 'N/A'}</span>
-                    </td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.condition || 'N/A'}</td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.location || 'N/A'}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${asset.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' : 
-                          asset.status === 'borrowed' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' : 
-                          'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${asset.status === 'available' ? 'bg-emerald-500' : asset.status === 'borrowed' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
-                        {asset.status === 'available' ? 'Active' : asset.status === 'borrowed' ? 'Borrowed' : 'Maintenance'}
-                      </span>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                      {(asset as any).current_borrower?.name ? <span className="font-semibold text-primary">{(asset as any).current_borrower.name}</span> : <span className="text-gray-400">---</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                      {(asset as any).due_date ? <span className="font-medium text-red-500">{new Date((asset as any).due_date).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400">---</span>}
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); setQrAsset(asset); }} className="p-2 text-primary hover:text-primary/80 transition-colors rounded-lg hover:bg-primary/10" title="View QR Code">
-                          <QrCode size={18} />
-                        </button>
-                        <button onClick={(e) => e.stopPropagation()} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                          <MoreHorizontal size={18} />
-                        </button>
-                      </div>
+                      {(() => {
+                        const inCart = cart.find(a => a.id === asset.id);
+                        if (inCart) {
+                          return (
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600">
+                              Đang trong giỏ
+                            </button>
+                          );
+                        }
+                        if (asset.status === 'borrowed') {
+                          return (
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-black shadow-sm opacity-90">
+                              Đang mượn
+                            </button>
+                          );
+                        }
+                        if (asset.status === 'maintenance' || asset.status === 'broken') {
+                          return (
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white shadow-sm opacity-90">
+                              Bảo trì
+                            </button>
+                          );
+                        }
+                        return (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
+                              Mượn thiết bị
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))
@@ -133,7 +173,8 @@ export const AssetInventory: React.FC = () => {
       </div>
     
       </div>
-      <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} />
+      <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} onOpenQR={() => setQrAsset(selectedAsset)} />
+      <BorrowDrawer isOpen={isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={() => { setCart([]); refetch(); }} />
       <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
 </div>
   );

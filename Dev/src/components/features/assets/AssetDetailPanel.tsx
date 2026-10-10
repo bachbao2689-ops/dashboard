@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Box, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive } from 'lucide-react';
+import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive } from 'lucide-react';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box className="w-5 h-5 text-gray-500" />;
@@ -14,9 +14,10 @@ interface AssetDetailPanelProps {
   asset: any | null;
   isOpen: boolean;
   onClose: () => void;
+  onOpenQR?: () => void;
 }
 
-export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpen, onClose }) => {
+export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpen, onClose, onOpenQR }) => {
   const [width, setWidth] = useState(480);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -85,7 +86,12 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{asset.name}</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{asset.asset_code}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.asset_code}</p>
+                      <button onClick={onOpenQR} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md transition-colors text-primary" title="View QR Code">
+                        <QrCode size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
