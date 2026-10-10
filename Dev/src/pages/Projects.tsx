@@ -14,7 +14,7 @@ import { CampaignPanel } from '../components/features/projects/CampaignPanel';
 import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
 
-type Project = { id: string; name: string; description: string | null; status: string; start_date: string | null; due_date: string | null; priority: string; created_by: number | null; campaign_id?: string | null; department_id?: string | null };
+type Project = { id: string; name: string; description: string | null; status: string; start_date: string | null; due_date: string | null; priority: string; created_by: number | null; campaign_id?: string | null; department_id?: string | null; lead_id?: number | null };
 type Person = { id: number; name: string; department_id: string | null; departments?: { name: string } | null };
 
 const strictFormatVN = (dateStr?: string | null) => {
