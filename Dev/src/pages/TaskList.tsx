@@ -327,7 +327,7 @@ export const TaskList: React.FC = () => {
             <span className="text-sm font-medium">Export</span>
           </button>
           
-          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-1 sm:space-x-2 bg-primary text-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex-shrink-0">
+          {canCreateTask && <button onClick={handleNewTask} className="flex items-center space-x-1 sm:space-x-2 text-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 transition-all shadow-sm flex-shrink-0 btn-new-task-light dark:bg-primary dark:rounded-xl dark:hover:bg-primary/90">
             <Plus className="w-4 h-4" />
             <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
           </button>}

@@ -398,3 +398,26 @@ html.dark .btn-add-new-dark:hover {
               0 0 50px rgb(0,140,255),
               0 0 100px rgb(0,140,255);
 }
+
+
+html:not(.dark) .btn-new-task-light {
+  border-radius: 100px;
+  background-color: #2ba8fb;
+  color: #ffffff;
+  font-weight: bold;
+  transition: all 0.5s;
+  border: 0;
+}
+
+html:not(.dark) .btn-new-task-light:hover {
+  background-color: #6fc5ff;
+  box-shadow: 0 0 20px #6fc5ff50;
+  transform: scale(1.1); /* 1.1 might be too big for our UI, but I'll stick close. Let's use 1.05 so it doesn't break layout too much */
+}
+
+html:not(.dark) .btn-new-task-light:active {
+  background-color: #3d94cf;
+  transition: all 0.25s;
+  box-shadow: none;
+  transform: scale(0.98);
+}
