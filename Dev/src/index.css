@@ -359,45 +359,7 @@ section.bg-white.border,
 }
 
 
-html:not(.dark) .btn-add-new {
-  will-change: box-shadow, transform !important;
-  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
-  box-shadow: 0px 0.01em 0.01em rgb(45 35 66 / 40%), 0px 0.3em 0.7em -0.01em rgb(45 35 66 / 30%), inset 0px -0.01em 0px rgb(58 65 111 / 50%) !important;
-  color: #fff !important;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 40%) !important;
-  transition: box-shadow 0.15s ease, transform 0.15s ease !important;
-  border: 0 !important;
-  outline: 0 !important;
-}
-
-html:not(.dark) .btn-add-new:hover {
-  box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0 !important;
-  transform: translateY(-0.1em) !important;
-}
-
-html:not(.dark) .btn-add-new:active {
-  box-shadow: inset 0px 0.1em 0.6em #3c4fe0 !important;
-  transform: translateY(0em) !important;
-}
-
-
-html.dark .btn-add-new {
-  background: rgb(0,140,255) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 2px !important;
-  font-weight: 700 !important;
-  box-shadow: 0 0 25px rgb(0,140,255) !important;
-  color: #fff !important;
-  transition: box-shadow 0.5s ease !important;
-  border: none !important;
-}
-
-html.dark .btn-add-new:hover {
-  box-shadow: 0 0 5px rgb(0,140,255),
-              0 0 25px rgb(0,140,255),
-              0 0 50px rgb(0,140,255),
-              0 0 100px rgb(0,140,255) !important;
-}
+html:not(.dark) 
 
 
 html:not(.dark) .btn-new-task {
@@ -439,13 +401,52 @@ html.dark .btn-header-dropdown-toggle:hover {
   @apply bg-slate-700;
 }
 
-.btn-add-new {
-  @apply flex items-center gap-1 sm:gap-2 text-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl transition-all shadow-sm flex-shrink-0;
-}
+
 
 .btn-new-task {
   @apply flex items-center space-x-1 sm:space-x-2 text-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 transition-all shadow-sm flex-shrink-0;
 }
 html.dark .btn-new-task {
-  @apply bg-primary rounded-xl hover:bg-primary/90;
+  @apply bg-primary rounded-xl;
+}
+html.dark .btn-new-task:hover {
+  @apply bg-primary opacity-90;
+}
+
+.btn-add-new {
+  @apply flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl transition-all shadow-sm flex-shrink-0;
+  @apply bg-primary text-white; /* Matches Report button */
+  border: 0 !important;
+  outline: 0 !important;
+  will-change: box-shadow, transform, background;
+  transition: all 0.3s ease !important;
+}
+
+/* Light Mode Hover */
+html:not(.dark) .btn-add-new:hover {
+  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
+  box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0 !important;
+  transform: translateY(-2px) !important;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 40%) !important;
+}
+
+html:not(.dark) .btn-add-new:active {
+  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
+  box-shadow: inset 0px 0.1em 0.6em #3c4fe0 !important;
+  transform: translateY(0px) !important;
+}
+
+/* Dark Mode Hover */
+html.dark .btn-add-new:hover {
+  background: rgb(0,140,255) !important;
+  box-shadow: 0 0 5px rgb(0,140,255),
+              0 0 25px rgb(0,140,255),
+              0 0 50px rgb(0,140,255),
+              0 0 100px rgb(0,140,255) !important;
+  transform: translateY(-2px) !important;
+}
+
+html.dark .btn-add-new:active {
+  box-shadow: 0 0 15px rgb(0,140,255) !important;
+  transform: translateY(0px) !important;
 }
