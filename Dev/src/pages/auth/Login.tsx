@@ -48,72 +48,80 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#002e6d] to-[#00173d] flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/20 backdrop-blur-md bg-white/10 shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
-          <p className="text-gray-500">Sign in to your K COFFEE dashboard</p>
+    <div 
+      className="relative min-h-screen w-full bg-cover bg-center bg-no-repeat overflow-hidden"
+      style={{ backgroundImage: `url('/bg-login-new.png')` }}
+    >
+      {/* Logos */}
+      <img src="/login-logo.svg" alt="Logo K Coffee" className="absolute top-10 left-1/2 -translate-x-1/2 md:top-12 md:left-12 md:translate-x-0 w-40 md:w-64 drop-shadow-xl z-0" />
+      <img src="/login-30.svg" alt="3 Không" className="absolute bottom-10 left-1/2 -translate-x-1/2 md:bottom-12 md:left-12 md:translate-x-0 w-48 md:w-64 drop-shadow-xl z-0" />
+
+      {/* Login Box */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[8%] lg:right-[10%] w-[90%] max-w-[420px] md:max-w-none md:w-[520px] lg:w-[580px] p-8 md:p-10 lg:p-14 rounded-[2.5rem] border border-white/30 backdrop-blur-2xl bg-gradient-to-br from-white/20 via-white/10 to-transparent shadow-[0_32px_80px_-15px_rgba(0,0,0,0.5)] z-10">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight drop-shadow-lg">Welcome Back</h1>
+          <p className="text-sm md:text-base text-gray-200 font-medium drop-shadow-md">Sign in to your K COFFEE dashboard</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6 md:space-y-7">
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
+            <label className="block text-sm font-bold text-white mb-3 drop-shadow-md">
               Email Address
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-white/70" />
               </div>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+                className="block w-full pl-14 pr-5 py-4 text-base border border-white/50 rounded-2xl bg-white/20 text-white placeholder-white/60 italic font-light focus:outline-none focus:ring-2 focus:ring-white/70 focus:bg-white/30 shadow-inner backdrop-blur-md transition-all duration-300"
                 placeholder="admin@kcoffee.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
+            <label className="block text-sm font-bold text-white mb-3 drop-shadow-md">
               Password
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-white/70" />
               </div>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white/50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+                className="block w-full pl-14 pr-5 py-4 text-base border border-white/50 rounded-2xl bg-white/20 text-white placeholder-white/60 italic font-light focus:outline-none focus:ring-2 focus:ring-white/70 focus:bg-white/30 shadow-inner backdrop-blur-md transition-all duration-300"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
               <input
                 id="remember-me"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 bg-white text-primary focus:ring-primary/50"
+                className="h-5 w-5 rounded-md border-white/50 bg-black/30 text-blue-500 focus:ring-white/50 cursor-pointer transition-colors"
+                onClick={(e) => e.stopPropagation()}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
+              <label htmlFor="remember-me" className="ml-3 block text-sm text-gray-200 font-bold cursor-pointer group-hover:text-white transition-colors drop-shadow-md">
                 Remember me
               </label>
             </div>
-            {/* Removed Forgot Password Link */}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-[#002e6d] hover:bg-[#002e6d]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#002e6d] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center items-center py-4 px-4 border border-white/20 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.5)] text-base font-extrabold text-white tracking-widest uppercase bg-gradient-to-r from-[#193266] to-[#0d1a36] hover:from-[#21438a] hover:to-[#152a56] focus:outline-none focus:ring-2 focus:ring-white/50 hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-8"
           >
             {loading ? (
               <span className="flex items-center">
@@ -124,9 +132,9 @@ export const Login: React.FC = () => {
                 Signing in...
               </span>
             ) : (
-              <span className="flex items-center">
-                <LogIn className="w-5 h-5 mr-2" />
-                Sign In
+              <span className="flex items-center drop-shadow-md">
+                <LogIn className="w-5 h-5 mr-3" />
+                SIGN IN
               </span>
             )}
           </button>
