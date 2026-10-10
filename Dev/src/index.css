@@ -359,7 +359,7 @@ section.bg-white.border,
 }
 
 
-html:not(.dark) .btn-add-new-light {
+html:not(.dark) .btn-add-new {
   will-change: box-shadow, transform !important;
   background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
   box-shadow: 0px 0.01em 0.01em rgb(45 35 66 / 40%), 0px 0.3em 0.7em -0.01em rgb(45 35 66 / 30%), inset 0px -0.01em 0px rgb(58 65 111 / 50%) !important;
@@ -370,18 +370,18 @@ html:not(.dark) .btn-add-new-light {
   outline: 0 !important;
 }
 
-html:not(.dark) .btn-add-new-light:hover {
+html:not(.dark) .btn-add-new:hover {
   box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0 !important;
   transform: translateY(-0.1em) !important;
 }
 
-html:not(.dark) .btn-add-new-light:active {
+html:not(.dark) .btn-add-new:active {
   box-shadow: inset 0px 0.1em 0.6em #3c4fe0 !important;
   transform: translateY(0em) !important;
 }
 
 
-html.dark .btn-add-new-dark {
+html.dark .btn-add-new {
   background: rgb(0,140,255) !important;
   text-transform: uppercase !important;
   letter-spacing: 2px !important;
@@ -392,7 +392,7 @@ html.dark .btn-add-new-dark {
   border: none !important;
 }
 
-html.dark .btn-add-new-dark:hover {
+html.dark .btn-add-new:hover {
   box-shadow: 0 0 5px rgb(0,140,255),
               0 0 25px rgb(0,140,255),
               0 0 50px rgb(0,140,255),
@@ -400,7 +400,7 @@ html.dark .btn-add-new-dark:hover {
 }
 
 
-html:not(.dark) .btn-new-task-light {
+html:not(.dark) .btn-new-task {
   border-radius: 100px !important;
   background-color: #2ba8fb !important;
   color: #ffffff !important;
@@ -409,13 +409,13 @@ html:not(.dark) .btn-new-task-light {
   border: 0 !important;
 }
 
-html:not(.dark) .btn-new-task-light:hover {
+html:not(.dark) .btn-new-task:hover {
   background-color: #6fc5ff !important;
   box-shadow: 0 0 20px #6fc5ff50 !important;
   transform: scale(1.1) !important; /* 1.1 might be too big for our UI, but I'll stick close. Let's use 1.05 so it doesn't break layout too much */
 }
 
-html:not(.dark) .btn-new-task-light:active {
+html:not(.dark) .btn-new-task:active {
   background-color: #3d94cf !important;
   transition: all 0.25s !important;
   box-shadow: none !important;
@@ -437,4 +437,15 @@ html.dark .btn-header-dropdown-toggle {
 }
 html.dark .btn-header-dropdown-toggle:hover {
   @apply bg-slate-700;
+}
+
+.btn-add-new {
+  @apply flex items-center gap-1 sm:gap-2 text-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl transition-all shadow-sm flex-shrink-0;
+}
+
+.btn-new-task {
+  @apply flex items-center space-x-1 sm:space-x-2 text-white px-2.5 py-1.5 sm:px-4 sm:py-2.5 transition-all shadow-sm flex-shrink-0;
+}
+html.dark .btn-new-task {
+  @apply bg-primary rounded-xl hover:bg-primary/90;
 }
