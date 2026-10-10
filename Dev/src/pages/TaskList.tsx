@@ -401,7 +401,7 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`}>
+                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''} ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
@@ -412,10 +412,18 @@ export const TaskList: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
                         <td className="p-4">
-                          <div className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-primary transition-colors line-clamp-2">{task.title}</div>
+                          <div className={`font-medium cursor-pointer hover:text-primary transition-colors line-clamp-2 ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{task.title}</div>
                           {task.department && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.department.name}</div>}
                         </td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">{task.project?.name || '---'}</td>
+                        <td className="p-4 text-sm hidden lg:table-cell">
+                          {task.project?.name ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span>
+                          ) : task.campaign?.name ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">---</span>
+                          )}
+                        </td>
                         <td className="p-4">
                           {task.assignee ? (
                             <div className="flex items-center space-x-2">
