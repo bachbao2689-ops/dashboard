@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Filter } from 'lucide-react';
 
 interface FilterPanelProps {
@@ -11,6 +11,9 @@ interface FilterPanelProps {
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ isOpen, onClose, filters, setFilters, onApply }) => {
   const [localFilters, setLocalFilters] = useState(filters);
+  useEffect(() => {
+    if (isOpen) setLocalFilters(filters);
+  }, [isOpen, filters]);
 
   const handleApply = () => {
     setFilters(localFilters);

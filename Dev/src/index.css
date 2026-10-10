@@ -362,31 +362,19 @@ section.bg-white.border,
 html:not(.dark) 
 
 
-html:not(.dark) .btn-new-task {
-  border-radius: 100px !important;
-  background-color: #2ba8fb !important;
-  color: #ffffff !important;
-  font-weight: bold !important;
-  transition: all 0.5s !important;
-  border: 0 !important;
-}
 
-html:not(.dark) .btn-new-task:hover {
-  background-color: #6fc5ff !important;
-  box-shadow: 0 0 20px #6fc5ff50 !important;
-  transform: scale(1.1) !important; /* 1.1 might be too big for our UI, but I'll stick close. Let's use 1.05 so it doesn't break layout too much */
-}
 
-html:not(.dark) .btn-new-task:active {
-  background-color: #3d94cf !important;
-  transition: all 0.25s !important;
-  box-shadow: none !important;
-  transform: scale(0.98) !important;
-}
+
+
+
 
 /* Component: Header Dropdown Toggle */
 .btn-header-dropdown-toggle {
-  @apply fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl border border-t-0 border-blue-100 bg-white text-primary shadow-md transition-[opacity,transform] duration-300 md:left-[calc(50%+136px)] motion-reduce:transition-none;
+  @apply fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl;
+  background-color: white;
+  border-width: 0 1px 1px 1px;
+  border-color: #dbeafe;
+  @apply text-primary shadow-md transition-[opacity,transform] duration-300 md:left-[calc(50%+136px)] motion-reduce:transition-none;
 }
 .btn-header-dropdown-toggle:hover {
   @apply bg-blue-50;

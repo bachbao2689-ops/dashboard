@@ -32,12 +32,31 @@ const mapPriority = (prio: string | undefined) => {
   return 'Medium';
 };
 
+
+const pillColors = [
+  'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
+  'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+  'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800',
+  'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
+  'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800',
+  'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800',
+  'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+];
+const getPillColor = (name: string) => {
+  if (!name) return pillColors[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return pillColors[Math.abs(hash) % pillColors.length];
+};
+
 export const TaskList: React.FC = () => {
   const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   // const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
+
+
   
   const profileId = useAuthStore(state => state.profile?.id);
   const canCreateTask = true;
@@ -48,6 +67,7 @@ export const TaskList: React.FC = () => {
     department: 'all', 
     dateRange: 'all' 
   });
+  const activeFiltersCount = Object.values(filters).filter(v => v !== 'all').length;
   const [groupBy, setGroupBy] = useState('none');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
@@ -97,8 +117,7 @@ export const TaskList: React.FC = () => {
     const headers = ['Task Ref', 'Title', 'Project', 'Assignee', 'Status', 'Priority', 'Due Date'];
     const csvContent = filteredTasks.map(t => {
       return [`"${t.task_ref || ''}"`, `"${t.title || ''}"`, `"${t.project?.name || ''}"`, `"${t.assignee?.name || ''}"`, `"${t.status || ''}"`, `"${t.priority || ''}"`, `"${t.due_date ? new Date(t.due_date).toLocaleDateString() : ''}"`].join(',');
-    });
-    const csvString = [headers.join(','), ...csvContent].join('\n');
+    });    const csvString = [headers.join(','), ...csvContent].join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -253,7 +272,6 @@ export const TaskList: React.FC = () => {
 
     return statusMatch && priorityMatch && assigneeMatch && deptMatch && dateMatch && shortcutMatch && searchMatch;
   });
-
   const groupedTasks = useMemo(() => {
     if (groupBy === 'none') return { 'All Tasks': filteredTasks };
     const groups: Record<string, typeof filteredTasks> = {};
@@ -264,8 +282,7 @@ export const TaskList: React.FC = () => {
       if (groupBy === 'status') key = mapStatus(t.status).toUpperCase();
       if (!groups[key]) groups[key] = [];
       groups[key].push(t);
-    });
-    return groups;
+    });    return groups;
   }, [filteredTasks, groupBy]);
 
   return (
@@ -313,9 +330,10 @@ export const TaskList: React.FC = () => {
 
           {/* Filters Panel Toggle */}
           <div className="relative">
-            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
+              {activeFiltersCount > 0 && <span className="ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full">{activeFiltersCount}</span>}
             </button>
             <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
           </div>
@@ -327,7 +345,7 @@ export const TaskList: React.FC = () => {
             <span className="text-sm font-medium">Export</span>
           </button>
           
-          {canCreateTask && <button onClick={handleNewTask} className="btn-new-task">
+          {canCreateTask && <button onClick={handleNewTask} className="btn-add-new">
             <Plus className="w-4 h-4" />
             <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
           </button>}
@@ -417,9 +435,9 @@ export const TaskList: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm hidden lg:table-cell">
                           {task.project?.name ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold border ${getPillColor(task.project.name)} max-w-full`}><span className="truncate">{task.project.name}</span></span>
                           ) : task.campaign?.name ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold border ${getPillColor(task.campaign.name)} max-w-full`}><span className="truncate">{task.campaign.name}</span></span>
                           ) : (
                             <span className="text-gray-400 dark:text-gray-500">---</span>
                           )}

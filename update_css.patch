@@ -1,0 +1,43 @@
+--- Dev/src/index.css
++++ Dev/src/index.css
+@@ -236,13 +236,13 @@
+ /* Fallback for components still using old classes */
+-div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
++.glass-panel,
++.card-hub,
++div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm) {
+-  background-image: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, rgba(234, 243, 255, 0) 55%);
+-  border-color: #dce8fa;
+-  border-radius: 18px;
++  background-image: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%);
++  background-color: #ffffff;
++  border: 1px solid #e0eaff;
++  border-radius: 16px;
++  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+ }
+-.dark .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
+-.dark .glass-panel {
+-  background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
+-  border-color: transparent; /* Turn off borders on outer cards for all other tabs */
+-}
+-
+-/* ===== UI Shape Rules ===== */
+-/* Basic card shape */
+-.card-hub {
+-  background: radial-gradient(ellipse at 100% 110%, #eff6ff 0%, transparent 60%), #ffffff;
+-  border: 1px solid #dbeafe !important;
+-  border-radius: 16px !important;
+-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
++.dark .glass-panel,
++.dark .card-hub,
++.dark div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm) {
++  background-image: radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0) 50%);
++  background-color: #0f172a;
++  border: 1px solid rgba(59, 130, 246, 0.15);
+ }
+-.dark .card-hub {
+-  background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.12) 0%, transparent 60%), #0f172a;
+-  border-color: rgba(59, 130, 246, 0.1) !important;
+-}
+ 
+ /* Status-tracked shapes */
