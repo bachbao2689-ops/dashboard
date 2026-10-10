@@ -438,3 +438,12 @@ html.dark .btn-add-new:active {
   box-shadow: 0 0 15px rgb(0,140,255) !important;
   transform: translateY(0px) !important;
 }
+
+html:not(.dark) .hover-row-effect:hover {
+  background-color: #ffffff !important;
+  outline: 1px solid rgba(59, 130, 246, 0.25) !important;
+  box-shadow: 0 8px 30px -10px rgba(59, 130, 246, 0.15), 0 -8px 30px -10px rgba(59, 130, 246, 0.15) !important;
+  transform: scale(1);
+  position: relative;
+  z-index: 10;
+}
