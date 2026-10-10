@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -36,6 +36,13 @@ export const Header: React.FC = () => {
   const travelRef = useRef(0);
   const headerHiddenRef = useRef(false);
   const animationLockUntilRef = useRef(0);
+
+  const revealHeader = () => {
+    headerHiddenRef.current = false;
+    travelRef.current = 0;
+    animationLockUntilRef.current = performance.now() + 700;
+    setIsHeaderHidden(false);
+  };
 
   useEffect(() => {
     const scrollContainer = document.getElementById('main-scroll-container');
@@ -377,6 +384,20 @@ export const Header: React.FC = () => {
       </div>
     </header>
     </div>
+    <button
+      type="button"
+      aria-label="Hiện thanh trên"
+      title="Hiện thanh trên"
+      aria-hidden={!isHeaderHidden}
+      tabIndex={isHeaderHidden ? 0 : -1}
+      onClick={revealHeader}
+      className={cn(
+        'fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl border border-t-0 border-blue-100 bg-white text-primary shadow-md transition-[opacity,transform] duration-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700 md:left-[calc(50%+136px)] motion-reduce:transition-none',
+        isHeaderHidden ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none',
+      )}
+    >
+      <ChevronDown size={20} aria-hidden="true" />
+    </button>
     </>
   );
 };
