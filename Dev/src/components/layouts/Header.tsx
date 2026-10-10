@@ -392,7 +392,7 @@ export const Header: React.FC = () => {
       tabIndex={isHeaderHidden ? 0 : -1}
       onClick={revealHeader}
       className={cn(
-        'fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl border border-t-0 border-blue-100 bg-white text-primary shadow-md transition-[opacity,transform] duration-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700 md:left-[calc(50%+136px)] motion-reduce:transition-none',
+        'btn-header-dropdown-toggle',
         isHeaderHidden ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none',
       )}
     >

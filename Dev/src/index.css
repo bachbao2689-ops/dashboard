@@ -360,64 +360,81 @@ section.bg-white.border,
 
 
 html:not(.dark) .btn-add-new-light {
-  will-change: box-shadow, transform;
-  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%);
-  box-shadow: 0px 0.01em 0.01em rgb(45 35 66 / 40%), 0px 0.3em 0.7em -0.01em rgb(45 35 66 / 30%), inset 0px -0.01em 0px rgb(58 65 111 / 50%);
-  color: #fff;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 40%);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-  border: 0;
-  outline: 0;
+  will-change: box-shadow, transform !important;
+  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
+  box-shadow: 0px 0.01em 0.01em rgb(45 35 66 / 40%), 0px 0.3em 0.7em -0.01em rgb(45 35 66 / 30%), inset 0px -0.01em 0px rgb(58 65 111 / 50%) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 40%) !important;
+  transition: box-shadow 0.15s ease, transform 0.15s ease !important;
+  border: 0 !important;
+  outline: 0 !important;
 }
 
 html:not(.dark) .btn-add-new-light:hover {
-  box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0;
-  transform: translateY(-0.1em);
+  box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0 !important;
+  transform: translateY(-0.1em) !important;
 }
 
 html:not(.dark) .btn-add-new-light:active {
-  box-shadow: inset 0px 0.1em 0.6em #3c4fe0;
-  transform: translateY(0em);
+  box-shadow: inset 0px 0.1em 0.6em #3c4fe0 !important;
+  transform: translateY(0em) !important;
 }
 
 
 html.dark .btn-add-new-dark {
-  background: rgb(0,140,255);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-weight: 700;
-  box-shadow: 0 0 25px rgb(0,140,255);
-  color: #fff;
-  transition: box-shadow 0.5s ease;
-  border: none;
+  background: rgb(0,140,255) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 25px rgb(0,140,255) !important;
+  color: #fff !important;
+  transition: box-shadow 0.5s ease !important;
+  border: none !important;
 }
 
 html.dark .btn-add-new-dark:hover {
   box-shadow: 0 0 5px rgb(0,140,255),
               0 0 25px rgb(0,140,255),
               0 0 50px rgb(0,140,255),
-              0 0 100px rgb(0,140,255);
+              0 0 100px rgb(0,140,255) !important;
 }
 
 
 html:not(.dark) .btn-new-task-light {
-  border-radius: 100px;
-  background-color: #2ba8fb;
-  color: #ffffff;
-  font-weight: bold;
-  transition: all 0.5s;
-  border: 0;
+  border-radius: 100px !important;
+  background-color: #2ba8fb !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  transition: all 0.5s !important;
+  border: 0 !important;
 }
 
 html:not(.dark) .btn-new-task-light:hover {
-  background-color: #6fc5ff;
-  box-shadow: 0 0 20px #6fc5ff50;
-  transform: scale(1.1); /* 1.1 might be too big for our UI, but I'll stick close. Let's use 1.05 so it doesn't break layout too much */
+  background-color: #6fc5ff !important;
+  box-shadow: 0 0 20px #6fc5ff50 !important;
+  transform: scale(1.1) !important; /* 1.1 might be too big for our UI, but I'll stick close. Let's use 1.05 so it doesn't break layout too much */
 }
 
 html:not(.dark) .btn-new-task-light:active {
-  background-color: #3d94cf;
-  transition: all 0.25s;
-  box-shadow: none;
-  transform: scale(0.98);
+  background-color: #3d94cf !important;
+  transition: all 0.25s !important;
+  box-shadow: none !important;
+  transform: scale(0.98) !important;
+}
+
+/* Component: Header Dropdown Toggle */
+.btn-header-dropdown-toggle {
+  @apply fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl border border-t-0 border-blue-100 bg-white text-primary shadow-md transition-[opacity,transform] duration-300 md:left-[calc(50%+136px)] motion-reduce:transition-none;
+}
+.btn-header-dropdown-toggle:hover {
+  @apply bg-blue-50;
+}
+.btn-header-dropdown-toggle:focus-visible {
+  @apply outline outline-2 outline-primary;
+}
+html.dark .btn-header-dropdown-toggle {
+  @apply border-slate-700 bg-slate-800 text-blue-300;
+}
+html.dark .btn-header-dropdown-toggle:hover {
+  @apply bg-slate-700;
 }
