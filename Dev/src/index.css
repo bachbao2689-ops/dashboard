@@ -308,18 +308,44 @@ section.bg-white.border,
   border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
-/* Colored Drawer Shadows */
-/* Light Mode: Solid border, no shadow glow */
-.shadow-drawer-campaign { border-left-color: #f59e0b !important; border-left-width: 2px !important; box-shadow: none !important; }
-.shadow-drawer-project { border-left-color: #8b5cf6 !important; border-left-width: 2px !important; box-shadow: none !important; }
-.shadow-drawer-task { border-left-color: #3b82f6 !important; border-left-width: 2px !important; box-shadow: none !important; }
-.shadow-drawer-subtask { border-left-color: #10b981 !important; border-left-width: 2px !important; box-shadow: none !important; }
+/* Colored Drawer Styles */
+.shadow-drawer-campaign {
+  border-left: 1px solid rgba(245, 158, 11, 0.25) !important;
+  box-shadow: -15px 0 40px -10px rgba(245, 158, 11, 0.12) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0) 70%) !important;
+}
+.shadow-drawer-project {
+  border-left: 1px solid rgba(139, 92, 246, 0.25) !important;
+  box-shadow: -15px 0 40px -10px rgba(139, 92, 246, 0.12) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0) 70%) !important;
+}
+.shadow-drawer-task {
+  border-left: 1px solid rgba(59, 130, 246, 0.25) !important;
+  box-shadow: -15px 0 40px -10px rgba(59, 130, 246, 0.12) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0) 70%) !important;
+}
+.shadow-drawer-subtask {
+  border-left: 1px solid rgba(16, 185, 129, 0.25) !important;
+  box-shadow: -15px 0 40px -10px rgba(16, 185, 129, 0.12) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%) !important;
+}
 
-/* Dark Mode: Shadow glow, thin border */
-.dark .shadow-drawer-campaign { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(245, 158, 11, 0.25) !important; }
-.dark .shadow-drawer-project { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(139, 92, 246, 0.25) !important; }
-.dark .shadow-drawer-task { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(59, 130, 246, 0.25) !important; }
-.dark .shadow-drawer-subtask { border-left-width: 1px !important; box-shadow: -10px 0 30px -5px rgba(16, 185, 129, 0.25) !important; }
+.dark .shadow-drawer-campaign {
+  box-shadow: -15px 0 40px -10px rgba(245, 158, 11, 0.25) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 70%) !important;
+}
+.dark .shadow-drawer-project {
+  box-shadow: -15px 0 40px -10px rgba(139, 92, 246, 0.25) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 70%) !important;
+}
+.dark .shadow-drawer-task {
+  box-shadow: -15px 0 40px -10px rgba(59, 130, 246, 0.25) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(59, 130, 246, 0.18) 0%, rgba(59, 130, 246, 0) 70%) !important;
+}
+.dark .shadow-drawer-subtask {
+  box-shadow: -15px 0 40px -10px rgba(16, 185, 129, 0.25) !important;
+  background-image: radial-gradient(circle at 20% 90%, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 70%) !important;
+}
 
 @keyframes slideUpFade {
   from { opacity: 0; transform: translateY(10px); }
