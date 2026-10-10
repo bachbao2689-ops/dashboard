@@ -513,8 +513,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
       <>
         <span className="text-gray-300 dark:text-gray-600 px-1">|</span>
-        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800">
-          <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
+        <div className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800">
+          <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
           <div className="flex -space-x-2">
             {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
           </div>
