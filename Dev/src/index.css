@@ -234,40 +234,37 @@ body,
   animation: subtask-complete-pulse 760ms ease-out both;
 }
 
-/* Fallback for components still using old classes */
-.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
-.glass-panel {
-  background-image: radial-gradient(ellipse at 100% 110%, #eaf3ff 0%, rgba(234, 243, 255, 0) 55%);
-  border-color: #dce8fa;
-  border-radius: 18px;
+/* Fallback and universal card shape */
+div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl:not(input)),
+section.bg-white.border,
+.glass-panel,
+.card-hub {
+  background: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%), #ffffff;
+  border-color: #e0eaff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
-.dark .bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl),
-.dark .glass-panel {
-  background-image: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 55%);
-  border-color: transparent; /* Turn off borders on outer cards for all other tabs */
+.card-hub, .glass-panel {
+  border-width: 1px;
+  border-style: solid;
 }
 
-/* ===== UI Shape Rules ===== */
-/* Basic card shape */
-.card-hub {
-  background: radial-gradient(ellipse at 100% 110%, #eff6ff 0%, transparent 60%), #ffffff;
-  border: 1px solid #dbeafe !important;
-  border-radius: 16px !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
+.dark div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl:not(input)),
+.dark section.bg-white.border,
+.dark .glass-panel,
 .dark .card-hub {
-  background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.12) 0%, transparent 60%), #0f172a;
-  border-color: rgba(59, 130, 246, 0.1) !important;
+  background: radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0) 50%), #0f172a;
+  border-color: rgba(59, 130, 246, 0.15);
 }
 
 /* Status-tracked shapes */
 .card-status-task {
-  background: radial-gradient(ellipse at 100% 110%, #eff6ff 0%, transparent 60%), #ffffff !important;
+  background: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%), #ffffff !important;
   border: 1px solid #bfdbfe !important;
   border-radius: 16px !important;
 }
 .dark .card-status-task {
-  background: radial-gradient(ellipse at 100% 110%, rgba(59, 130, 246, 0.15) 0%, transparent 60%), #0f172a !important;
+  background: radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0) 50%), #0f172a !important;
   border-color: rgba(59, 130, 246, 0.2) !important;
 }
 
