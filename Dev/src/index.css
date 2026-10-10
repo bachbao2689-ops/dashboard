@@ -447,3 +447,13 @@ html:not(.dark) .hover-row-effect:hover {
   position: relative;
   z-index: 10;
 }
+
+html.dark .hover-row-effect:hover {
+  background-color: #0f172a !important; /* deep slate */
+  background-image: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0) 100%) !important;
+  outline: 1px solid rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 8px 30px -10px rgba(59, 130, 246, 0.25), 0 -8px 30px -10px rgba(59, 130, 246, 0.25) !important;
+  transform: scale(1);
+  position: relative;
+  z-index: 10;
+}
