@@ -33,21 +33,6 @@ const mapPriority = (prio: string | undefined) => {
 };
 
 
-const pillColors = [
-  'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
-  'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
-  'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800',
-  'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
-  'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800',
-  'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800',
-  'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
-];
-const getPillColor = (name: string) => {
-  if (!name) return pillColors[0];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return pillColors[Math.abs(hash) % pillColors.length];
-};
 
 export const TaskList: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -435,9 +420,9 @@ export const TaskList: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm hidden lg:table-cell">
                           {task.project?.name ? (
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold border ${getPillColor(task.project.name)} max-w-full`}><span className="truncate">{task.project.name}</span></span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span>
                           ) : task.campaign?.name ? (
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold border ${getPillColor(task.campaign.name)} max-w-full`}><span className="truncate">{task.campaign.name}</span></span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span>
                           ) : (
                             <span className="text-gray-400 dark:text-gray-500">---</span>
                           )}

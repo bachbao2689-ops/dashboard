@@ -69,6 +69,7 @@ export function useTasks() {
         .select(`
           id, task_ref, title, status, priority, due_date, start_date, description, assignee_id, project_id, campaign_id, department_id,
           project:project_id(name),
+          campaign:campaign_id(name),
           assignee:assignee_id(id, name, avatar_url),
           department:department_id(name),
           column:column_id(name)
@@ -112,7 +113,7 @@ export function useTasks() {
           status: 'todo',
           priority: 'Medium',
           due_date: cs.due_date,
-          project: cs.campaigns ? { name: cs.campaigns.name } : null,
+          campaign: cs.campaigns ? { name: cs.campaigns.name } : null,
           assignee: cs.assignee,
           assignee_id: cs.assignee?.id,
           department_id: cs.campaigns?.department_id

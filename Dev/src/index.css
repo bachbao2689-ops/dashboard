@@ -439,6 +439,11 @@ html.dark .btn-add-new:active {
   transform: translateY(0px) !important;
 }
 
+
+.hover-row-effect {
+  outline: 1px solid transparent !important;
+}
+
 html:not(.dark) .hover-row-effect:hover {
   background-color: #ffffff !important;
   outline: 1px solid rgba(59, 130, 246, 0.25) !important;
