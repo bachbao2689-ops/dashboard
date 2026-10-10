@@ -404,7 +404,7 @@ export const TaskList: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover-row-effect hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''} ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20' : ''}`}>
+                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover-row-effect ${task.campaign?.name ? 'hover-row-campaign' : task.project?.name ? 'hover-row-project' : ''} hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''} ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20' : ''}`}>
                         <td className="p-4">
                           <input 
                             type="checkbox" 
