@@ -42,21 +42,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }
   }, [departmentId, assigneeId, users]);
 
-  useEffect(() => {
-    const startEl = document.getElementById('task-start-input');
-    const dueEl = document.getElementById('task-due-input');
 
-    const handleStartChange = (e: any) => setStartDate(e.target.value);
-    const handleDueChange = (e: any) => setDueDate(e.target.value);
-
-    startEl?.addEventListener('change', handleStartChange);
-    dueEl?.addEventListener('change', handleDueChange);
-
-    return () => {
-      startEl?.removeEventListener('change', handleStartChange);
-      dueEl?.removeEventListener('change', handleDueChange);
-    };
-  }, [isOpen]);
 
   const parseLocal = (s: string) => {
     if (!s) return null;
@@ -237,6 +223,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               readOnly
               onClick={(e) => openCal('task-start-input', e)}
               value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               placeholder="dd/mm/yyyy"
               className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
             />
@@ -249,6 +236,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
               readOnly
               onClick={(e) => openCal('task-due-input', e)}
               value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
               placeholder="dd/mm/yyyy"
               className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
             />

@@ -6,6 +6,7 @@ let _calState=null;
 function openCalendar(opts, event){
   const {displayId, startId, endId, mode='range'}=opts;
   const inputEl=document.getElementById(displayId);
+  if(!inputEl)return;
   const startEl=startId?document.getElementById(startId):null;
   const endEl=endId?document.getElementById(endId):null;
   const parseLocal = s => {
@@ -17,8 +18,12 @@ function openCalendar(opts, event){
     }
     return new Date(s);
   };
-  const sDate=startEl&&startEl.value?parseLocal(startEl.value):null;
-  const eDate=endEl&&endEl.value?parseLocal(endEl.value):null;
+  // Restore controlled field values before opening: dismissing an unchanged
+  // picker must not clear a previously selected deadline.
+  const displayDates=(inputEl.value||'').split(' - ');
+  const validDate=value=>{const d=parseLocal(value);return d&&!Number.isNaN(d.getTime())?d:null;};
+  const sDate=validDate(startEl?.value||displayDates[0]);
+  const eDate=validDate(endEl?.value||(mode==='range'?displayDates[1]:displayDates[0]));
   const initDate=sDate||new Date();
   
   _calState={month:initDate.getMonth(),year:initDate.getFullYear(),start:sDate,end:eDate,preset:null,displayId,startId,endId,mode,hover:null,compact:!!inputEl.closest('.tw-create-body')};

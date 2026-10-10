@@ -36,3 +36,11 @@ and opening the matching detail. No real records created by these tests.
 Form footer/overflow checked at 360×640, 1024×768, 1920×1080 and 1920×1200.
 The final 2K check and authenticated live writes still require acceptance testing on
 develop; do not promote to official without approval.
+
+## Calendar integration follow-up
+
+Integrated the updated React onChange bindings for task, project, campaign and
+subtask dates. Removed duplicate document-level date listeners. Reopening a
+picker restores its current date/range and month, so dismissal no longer clears
+an existing deadline. Five regression tests pass with
+`node --test tests/calendar-picker.test.cjs`; TypeScript and production build pass.
