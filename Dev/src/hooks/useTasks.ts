@@ -14,6 +14,7 @@ export interface Task {
   start_date?: string;
   description?: string;
   project?: { name: string };
+  campaign?: { name: string };
   assignee_id?: string;
   assignee?: { id?: string; name: string; avatar_url: string };
   department?: { name: string };

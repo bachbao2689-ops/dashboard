@@ -86,6 +86,7 @@ export const Projects: React.FC = () => {
   const [selectedSubtask, setSelectedSubtask] = useState<any | null>(null);
   const [subtaskCommentCounts, setSubtaskCommentCounts] = useState<Record<string, number>>({});
   const [recentlyCompletedSubtaskId, setRecentlyCompletedSubtaskId] = useState<string | null>(null);
+  const [refreshDetailTrigger, setRefreshDetailTrigger] = useState(0);
 
   const removeComment = async (id: string) => { await supabase.from('project_comments').delete().eq('id', id); setComments(comments.filter(c => c.id !== id)); };
   const saveEditedComment = async (id: string) => { await supabase.from('project_comments').update({ body: editingCommentText }).eq('id', id); setComments(comments.map(c => c.id === id ? { ...c, body: editingCommentText } : c)); setEditingCommentId(null); };
@@ -188,6 +189,8 @@ export const Projects: React.FC = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'project_subtasks' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campaign_subtasks' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_comments' }, () => { load(); setRefreshDetailTrigger(v => v + 1); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => { load(); setRefreshDetailTrigger(v => v + 1); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -207,8 +210,8 @@ export const Projects: React.FC = () => {
       const counts = (subtaskActivities || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
       setSubtaskCommentCounts(counts);
     })();
-  }, [selected]);
-  useEffect(() => { if (!selectedCampaign) return; (async () => { const [subtaskRes, commentRes] = await Promise.all([supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'), supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at')]); setCampaignSubtasks(subtaskRes.data || []); setCampaignComments(commentRes.data || []); })(); }, [selectedCampaign]);
+  }, [selected, refreshDetailTrigger]);
+  useEffect(() => { if (!selectedCampaign) return; (async () => { const [subtaskRes, commentRes] = await Promise.all([supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'), supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at')]); setCampaignSubtasks(subtaskRes.data || []); setCampaignComments(commentRes.data || []); })(); }, [selectedCampaign, refreshDetailTrigger]);
   
   
   const notifyStakeholders = async (type: 'project' | 'campaign', entityId: string, actionMsg: string, singleUserId?: string | number) => {
