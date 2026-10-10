@@ -13,7 +13,11 @@ type Subtask = {
   due_date?: string | null;
   assignee_id?: number | null;
   assignee?: { name?: string } | null;
+  project_id?: string | number | null;
+  campaign_id?: string | number | null;
+  priority?: string | null;
 };
+type ParentDetails = { name: string; priority?: string | null; departmentName?: string | null };
 type ActivityComment = {
   id: string;
   user_id: number;
@@ -36,6 +40,8 @@ interface SubtaskDetailPanelProps {
 }
 
 export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask' }) => {
+  const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
+  const [parentLoading, setParentLoading] = useState(false);
   const [comments, setComments] = useState<ActivityComment[]>([]);
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -56,6 +62,36 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [saving, setSaving] = useState(false);
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
+    if (!parentId) { setParentDetails(null); setParentLoading(false); return; }
+    let active = true;
+    setParentDetails(null);
+    setParentLoading(true);
+    const loadParent = async () => {
+      const table = entityType === 'campaign_subtask' ? 'campaigns' : 'projects';
+      const { data: parent, error } = await supabase.from(table).select('name,priority,department_id').eq('id', parentId).maybeSingle();
+      if (!active) return;
+      if (error || !parent) {
+        if (error) console.warn('Could not load subtask parent', error.message);
+        setParentLoading(false);
+        return;
+      }
+      let departmentName: string | null = null;
+      if (parent.department_id) {
+        const { data: department, error: departmentError } = await supabase.from('departments').select('name').eq('id', parent.department_id).maybeSingle();
+        if (departmentError) console.warn('Could not load parent department', departmentError.message);
+        departmentName = department?.name || null;
+      }
+      if (active) {
+        setParentDetails({ name: parent.name, priority: parent.priority, departmentName });
+        setParentLoading(false);
+      }
+    };
+    void loadParent();
+    return () => { active = false; };
+  }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType]);
 
   const reload = useCallback(async () => {
     if (!subtask?.id) return;
@@ -193,22 +229,23 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
+  const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
 
   return (
     <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-        <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">SUBTASK</span><span className="ml-2 text-xs capitalize text-gray-500">medium priority</span></div>
+        <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">SUBTASK</span><span className="ml-2 text-xs capitalize text-gray-500">{priority} priority</span></div>
         <button aria-label="Đóng chi tiết task" onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5" /></button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-        <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? 'Completed' : subtask.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />Medium</span></div></section>
+        <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? 'Completed' : subtask.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{priority}</span></div></section>
         
         <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
           <div><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />Assignee</p>{subtask.assignee ? <div className="flex items-center gap-2"><Avatar name={subtask.assignee.name || 'Unassigned'} src={(subtask.assignee as any)?.avatar_url} /><b className="text-sm">{subtask.assignee.name}</b></div> : <span className="text-sm text-gray-500">Unassigned</span>}</div>
           <div><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />Due date</p><b className="text-sm">{subtask.due_date ? displayDate(subtask.due_date) : 'Chưa đặt hạn'}</b></div>
-          <div><p className="text-xs text-gray-500 uppercase mb-2">Project / Campaign</p><b className="text-sm">Liên kết</b></div>
-          <div><p className="text-xs text-gray-500 uppercase mb-2">Department</p><b className="text-sm">N/A</b></div>
+          <div><p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? 'Campaign' : 'Project'}</p><b className={`text-sm ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.name || 'Chưa tìm thấy'}</b></div>
+          <div><p className="text-xs text-gray-500 uppercase mb-2">Department</p><b className={`text-sm ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.departmentName || 'Chưa phân phòng ban'}</b></div>
         </section>
 
         <section>

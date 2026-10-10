@@ -763,6 +763,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     </div>
       <SubtaskDetailPanel
         subtask={selectedSubtask}
+        entityType={selectedCampaign ? 'campaign_subtask' : 'project_subtask'}
         profile={profile}
         people={people}
         onClose={() => setSelectedSubtask(null)}
