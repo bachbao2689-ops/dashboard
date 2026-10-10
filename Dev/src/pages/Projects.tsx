@@ -741,8 +741,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         </div>
 
         <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">Owner / PIC <span className="text-red-500">*</span></label>
-          {creationType === 'project' && <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder="Tìm và chọn các PIC..." />}
-          <MultiSelect options={visiblePeople.filter(p=>creationType === 'campaign' || ownerIds.includes(String(p.id))).map(p=>({value:String(p.id),label:p.name}))} value={primaryOwnerId ? [primaryOwnerId] : []} maxSelected={1} onChange={(ids: string[]) => setPrimaryOwnerId(ids[0] || '')} placeholder={creationType === 'campaign' ? 'Chọn người quản lý chiến dịch...' : 'Chọn PIC phụ trách chính...'} />
+          {creationType === 'project' ? <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder="Tìm và chọn PIC..." /> : <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={primaryOwnerId ? [primaryOwnerId] : []} maxSelected={1} onChange={(ids: string[]) => setPrimaryOwnerId(ids[0] || '')} placeholder="Chọn người quản lý chiến dịch..." />}
           <p className="text-xs text-gray-500 dark:text-gray-400">PIC chính chịu trách nhiệm theo dõi tiến độ.</p>
         </div>
 
