@@ -156,10 +156,10 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
           </div>
         ) : (
           <div className="space-y-7">
-            <div className="flex gap-2"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-100' : 'bg-blue-50 text-primary border-blue-100'} border capitalize`}>{kind}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{data.status || 'planning'}</span></div>
+            <div className="flex gap-2"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{data.status || 'planning'}</span></div>
             <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm">
               <div><p className="text-[10px] uppercase text-gray-400">Owner/Creator</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.creator?.name || data.lead?.name || '---'} src={data.creator?.avatar_url || data.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.creator?.name || data.lead?.name || '---'}</span></div></div>
-              <div><p className="text-[10px] uppercase text-gray-400">Timeline</p><div className="mt-1 font-semibold">{dateValue(data.start_date)} – {dateValue(data.end_date || data.due_date)}</div></div>
+              <div><p className="text-[10px] uppercase text-gray-400 mb-1">Timeline</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
             <section><h3 className="font-bold text-sm mb-2">Description</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || 'Chưa có mô tả.'}</div></section>
             
@@ -172,7 +172,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
                       <b className="text-gray-900 dark:text-white">{sub.title}</b>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5"><Avatar name={sub.assignee?.name || 'Unassigned'} src={sub.assignee?.avatar_url} className="w-4 h-4 text-[9px]" /> {sub.assignee?.name || 'Unassigned'}</span>
-                        {sub.due_date && <span>{dateValue(sub.due_date)}</span>}
+                        {sub.due_date && <span className="font-bold text-red-600 dark:text-red-400">{dateValue(sub.due_date)}</span>}
                       </div>
                     </div>
                     <button onClick={() => removeSubtask(sub.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
