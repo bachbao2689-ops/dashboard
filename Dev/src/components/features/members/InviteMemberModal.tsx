@@ -1,97 +1,79 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import type { UserRole } from '../../../hooks/useMembers';
+import type { DepartmentOption, NewMember, UserRole } from '../../../hooks/useMembers';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onInvite: (data: { email: string; name: string; role: UserRole }) => Promise<boolean>;
+  onInvite: (data: NewMember) => Promise<boolean>;
+  departments: DepartmentOption[];
+  canAddAdmin: boolean;
 }
 
-export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberModalProps) {
+const fieldClass = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-primary';
+
+export function InviteMemberModal({ isOpen, onClose, onInvite, departments, canAddAdmin }: InviteMemberModalProps) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('staff');
+  const [role, setRole] = useState<UserRole>('member');
+  const [departmentId, setDepartmentId] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    const success = await onInvite({ email, name, role });
-    setIsSubmitting(false);
-    if (success) {
-      setEmail('');
-      setName('');
-      setRole('staff');
-      onClose();
+    try {
+      const success = await onInvite({ email, name, role, department_id: departmentId, job_title: jobTitle });
+      if (success) {
+        setEmail(''); setName(''); setRole('member'); setDepartmentId(''); setJobTitle('');
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="card-hub w-full max-w-md p-6 rounded-3xl border border-white/20 bg-white dark:bg-black/40">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Invite Member</h2>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 dark:text-gray-400">
-            <X size={20} />
-          </button>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => !isSubmitting && onClose()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="add-member-title" className="card-hub w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-3xl bg-white dark:bg-slate-800" onClick={event => event.stopPropagation()}>
+        <div className="flex justify-between items-center mb-5">
+          <h2 id="add-member-title" className="text-xl font-semibold text-gray-900 dark:text-white">Thêm thành viên</h2>
+          <button type="button" disabled={isSubmitting} onClick={onClose} aria-label="Đóng" className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-500"><X size={20} /></button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
-              placeholder="John Doe"
-            />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Họ và tên *
+            <input required value={name} onChange={event => setName(event.target.value)} className={`${fieldClass} mt-1`} placeholder="Nhập tên thành viên" />
+          </label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email *
+            <input type="email" required value={email} onChange={event => setEmail(event.target.value)} className={`${fieldClass} mt-1`} placeholder="ten@congty.com" />
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phòng ban *
+              <select required value={departmentId} onChange={event => setDepartmentId(event.target.value)} className={`${fieldClass} mt-1`}>
+                <option value="">Chọn phòng ban</option>
+                {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
+              </select>
+            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quyền *
+              <select value={role} onChange={event => setRole(event.target.value as UserRole)} className={`${fieldClass} mt-1`}>
+                <option value="member">Thành viên</option>
+                <option value="leader">Leader</option>
+                <option value="manager">Manager</option>
+                {canAddAdmin && <option value="admin">Admin</option>}
+              </select>
+            </label>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
-              placeholder="john@example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full px-4 py-2 rounded-xl border border-white/20 bg-white dark:bg-black/20 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002e6d]"
-            >
-              <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
-              <option value="team_lead">Team Lead</option>
-              <option value="staff">Staff</option>
-              <option value="viewer">Viewer</option>
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-3 mt-8">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl bg-[#002e6d] text-white hover:bg-[#001f4d] transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Inviting...' : 'Invite Member'}
-            </button>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Chức danh
+            <input value={jobTitle} onChange={event => setJobTitle(event.target.value)} className={`${fieldClass} mt-1`} placeholder="Ví dụ: Graphic Designer" />
+          </label>
+          <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">Thao tác này tạo hồ sơ nhân sự. Để đăng nhập, thành viên cần có tài khoản Supabase Auth cùng email.</p>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" disabled={isSubmitting} onClick={onClose} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">Hủy</button>
+            <button type="submit" disabled={isSubmitting || departments.length === 0} className="px-4 py-2.5 rounded-xl bg-[#002e6d] text-white hover:bg-[#001f4d] disabled:opacity-50">{isSubmitting ? 'Đang thêm...' : 'Thêm thành viên'}</button>
           </div>
         </form>
       </div>

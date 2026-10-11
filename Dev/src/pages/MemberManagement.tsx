@@ -1,20 +1,23 @@
 import { useState, useMemo } from 'react';
 import { useMembers } from '../hooks/useMembers';
+import type { Member } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
 import { useTranslation } from '../i18n/translations';
-import { Search, Plus, MoreVertical, User, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
 
 export function MemberManagement() {
   const { t } = useTranslation();
-  const { members, loading, inviteMember } = useMembers();
+  const { members, departments, loading, addMember, setMemberRemoved } = useMembers();
   const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+  const [savingMember, setSavingMember] = useState(false);
   const canManageAll = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
 
   const filteredMembers = useMemo(() => {
@@ -22,11 +25,10 @@ export function MemberManagement() {
       const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
-      const matchesStatus = statusFilter ? member.status === statusFilter : true;
-      if (!member.department?.name) return false; // Ẩn admin
+      const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [members, searchTerm, roleFilter, statusFilter, canManageAll, profile?.department_id, profile?.department_name]);
+  }, [members, searchTerm, roleFilter, statusFilter]);
 
   const memberGroups = useMemo(() => {
     const sortMembers = (a: any, b: any) => {
@@ -62,7 +64,7 @@ export function MemberManagement() {
     switch (status) {
       case 'active': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
       case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'suspended': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'removed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
   };
@@ -97,19 +99,17 @@ export function MemberManagement() {
             <option value="">{t('members.allRoles')}</option>
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
-            <option value="team_lead">Team Lead</option>
-            <option value="staff">Staff</option>
-            <option value="viewer">Viewer</option>
+            <option value="leader">Leader</option>
+            <option value="member">Thành viên</option>
           </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-8 sm:h-10 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
-            <option value="">{t('members.allStatus')}</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="suspended">Suspended</option>
+            <option value="all">{t('members.allStatus')}</option>
+            <option value="active">Đang hoạt động</option>
+            <option value="removed">Đã xóa</option>
           </select>
 
           {canManageAll && <button
@@ -117,7 +117,7 @@ export function MemberManagement() {
             className="flex items-center gap-2 h-10 px-4 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm font-semibold text-sm"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">{t('members.invite')}</span>
+            <span className="hidden sm:inline">Thêm thành viên</span>
           </button>}
         </div>
       </div>
@@ -175,23 +175,16 @@ export function MemberManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status || 'pending')}`}>
-                        {(member.status || 'pending').toUpperCase()}
+                        {member.status === 'active' ? 'ACTIVE' : 'ĐÃ XÓA'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                       {member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="relative group inline-block">
-                        <button className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 dark:text-gray-400">
-                          <MoreVertical size={20} />
-                        </button>
-                        <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-black/10 dark:border-white/10 py-1 hidden group-hover:block z-10">
-                          <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5">Edit Role</button>
-                          <button className="w-full text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-black/5 dark:hover:bg-white/5">Suspend</button>
-                          <button className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-black/5 dark:hover:bg-white/5">Remove</button>
-                        </div>
-                      </div>
+                      {canManageAll && member.id !== profile?.id && (member.status === 'active' ?
+                        <button type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"><Trash2 size={14} /> Xóa</button>
+                        : <button type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"><RotateCcw size={14} /> Khôi phục</button>)}
                     </td>
                   </tr>
                   )))
@@ -205,8 +198,20 @@ export function MemberManagement() {
       <InviteMemberModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
-        onInvite={inviteMember}
+        onInvite={addMember}
+        departments={departments}
+        canAddAdmin={profile?.role === 'admin'}
       />
+      {memberToRemove && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => !savingMember && setMemberToRemove(null)}>
+        <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
+          <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">Xóa thành viên?</h2>
+          <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300"><b>{memberToRemove.name}</b> sẽ rời danh sách hoạt động. Hồ sơ và lịch sử công việc được giữ lại; bạn có thể khôi phục trong bộ lọc “Đã xóa”.</p>
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Hủy</button>
+            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? 'Đang xóa...' : 'Xóa thành viên'}</button>
+          </div>
+        </div>
+      </div>}
     </div>
   );
 }

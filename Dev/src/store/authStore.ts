@@ -13,6 +13,7 @@ export interface StaffProfile {
   department_name: string | null;
   employment_level: string | null;
   job_title: string | null;
+  is_active: boolean;
 }
 
 interface AuthState {
@@ -34,7 +35,7 @@ const nameFromEmail = (email?: string | null) => (email || 'Staff').split('@')[0
 async function loadStaffProfile(authUser: User, markSignedIn = false): Promise<StaffProfile | null> {
   // department_id is imported data, not a PostgREST foreign-key relation.
   // Query it directly so a failed embedded relation never blocks login.
-  const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title';
+  const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, is_active';
   let { data: row, error } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
   if (error) throw error;
 
@@ -102,6 +103,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     try {
       const profile = await loadStaffProfile(authUser, markSignedIn);
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        set({ session: null, user: null, profile: null, loading: false });
+        return;
+      }
       set({ session, profile, user: enrichUser(authUser, profile), loading: false });
     } catch (error) {
       console.error('Could not load staff profile:', error);
@@ -109,9 +115,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
       // enrichment query fails. This direct fallback is especially important
       // for Admin accounts, which do not belong to a department.
       try {
-        const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title';
+        const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, is_active';
         const { data: fallback } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
         const profile = fallback ? { ...fallback, department_name: null } as StaffProfile : null;
+        if (profile?.is_active === false) {
+          await supabase.auth.signOut();
+          set({ session: null, profile: null, user: null, loading: false });
+          return;
+        }
         set({ session, profile, user: enrichUser(authUser, profile), loading: false });
       } catch {
         set({ session, profile: null, user: enrichUser(authUser, null), loading: false });
@@ -173,7 +184,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
       const { data: updatedAuth, error: authError } = await supabase.auth.updateUser({ data: { full_name: fullName, ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) } });
       if (authError) throw authError;
-      const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title';
+      const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, is_active';
       const { data: updatedProfile, error: profileError } = await supabase.from('users')
         .update({ name: fullName, initials: initialsFromName(fullName), ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
