@@ -109,13 +109,14 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-[60] md:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
       <div 
         style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
-        className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${isOpen ? 'w-full max-w-full md:w-[min(var(--drawer-width),100%)] md:min-w-[var(--drawer-width)] shadow-drawer-task border-l border-blue-500/20' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute md:relative right-0 top-0 z-[70] flex flex-col overflow-hidden transition-[width,min-width] duration-300 ease-out`}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[70] transition-[width,opacity] duration-300 ease-out`}
       >
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
           <h3 className="font-bold text-xl text-gray-900 dark:text-white">Phiếu mượn thiết bị</h3>
@@ -231,7 +232,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
           </form>
         </div>
 
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800">
+        <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <button 
             type="button" 
             disabled={loading} 

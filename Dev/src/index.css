@@ -360,38 +360,90 @@ section.bg-white.border,
   border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
+/* Unified Responsive Detail Drawer System (16:9, 16:10, 4:3, and zoom-resilient) */
+.dashboard-detail-drawer {
+  position: fixed;
+  right: 0;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  bottom: 0;
+  height: calc(100dvh - calc(56px + env(safe-area-inset-top, 0px)));
+  max-height: calc(100dvh - calc(56px + env(safe-area-inset-top, 0px)));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 70;
+  border-radius: 1rem 0 0 0;
+}
+
+@media (min-width: 768px) {
+  .dashboard-detail-drawer {
+    right: 0.75rem;
+    top: 76px;
+    bottom: 0.75rem;
+    height: calc(100dvh - 88px);
+    max-height: calc(100dvh - 88px);
+    border-radius: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 640px) {
+  .dashboard-detail-drawer {
+    top: 60px;
+    bottom: 0.5rem;
+    height: calc(100dvh - 68px);
+    max-height: calc(100dvh - 68px);
+    border-radius: 1rem;
+  }
+}
+
 /* Colored Drawer Styles */
 .shadow-drawer-campaign {
-  border-left: 1px solid rgba(245, 158, 11, 0.25) !important;
-  box-shadow: -15px 0 40px -10px rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 16px 48px -12px rgba(245, 158, 11, 0.18),
+              0 2px 12px -2px rgba(0, 0, 0, 0.06),
+              -12px 0 32px -8px rgba(245, 158, 11, 0.12) !important;
 }
 .shadow-drawer-project {
-  border-left: 1px solid rgba(139, 92, 246, 0.25) !important;
-  box-shadow: -15px 0 40px -10px rgba(139, 92, 246, 0.12) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 16px 48px -12px rgba(139, 92, 246, 0.18),
+              0 2px 12px -2px rgba(0, 0, 0, 0.06),
+              -12px 0 32px -8px rgba(139, 92, 246, 0.12) !important;
 }
 .shadow-drawer-task {
-  border-left: 1px solid rgba(59, 130, 246, 0.25) !important;
-  box-shadow: -15px 0 40px -10px rgba(59, 130, 246, 0.12) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 16px 48px -12px rgba(59, 130, 246, 0.18),
+              0 2px 12px -2px rgba(0, 0, 0, 0.06),
+              -12px 0 32px -8px rgba(59, 130, 246, 0.12) !important;
 }
 .shadow-drawer-subtask {
-  border-left: 1px solid rgba(16, 185, 129, 0.25) !important;
-  box-shadow: -15px 0 40px -10px rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 16px 48px -12px rgba(16, 185, 129, 0.18),
+              0 2px 12px -2px rgba(0, 0, 0, 0.06),
+              -12px 0 32px -8px rgba(16, 185, 129, 0.12) !important;
 }
 
 .dark .shadow-drawer-campaign {
-  box-shadow: -15px 0 40px -10px rgba(245, 158, 11, 0.25) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 20px 52px -12px rgba(0, 0, 0, 0.6),
+              0 0 28px -4px rgba(245, 158, 11, 0.22) !important;
   background-image: radial-gradient(circle at 20% 90%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 70%) !important;
 }
 .dark .shadow-drawer-project {
-  box-shadow: -15px 0 40px -10px rgba(139, 92, 246, 0.25) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 20px 52px -12px rgba(0, 0, 0, 0.6),
+              0 0 28px -4px rgba(139, 92, 246, 0.22) !important;
   background-image: radial-gradient(circle at 20% 90%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 70%) !important;
 }
 .dark .shadow-drawer-task {
-  box-shadow: -15px 0 40px -10px rgba(59, 130, 246, 0.25) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  box-shadow: 0 20px 52px -12px rgba(0, 0, 0, 0.6),
+              0 0 28px -4px rgba(59, 130, 246, 0.22) !important;
   background-image: radial-gradient(circle at 20% 90%, rgba(59, 130, 246, 0.18) 0%, rgba(59, 130, 246, 0) 70%) !important;
 }
 .dark .shadow-drawer-subtask {
-  box-shadow: -15px 0 40px -10px rgba(16, 185, 129, 0.25) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  box-shadow: 0 20px 52px -12px rgba(0, 0, 0, 0.6),
+              0 0 28px -4px rgba(16, 185, 129, 0.22) !important;
   background-image: radial-gradient(circle at 20% 90%, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 70%) !important;
 }
 

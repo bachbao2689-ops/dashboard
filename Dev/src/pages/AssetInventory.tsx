@@ -56,7 +56,7 @@ export const AssetInventory: React.FC = () => {
 
   return (
     <div className="relative z-10 flex min-h-full min-w-0">
-      <div className="flex min-w-0 flex-1 flex-col pr-0 lg:pr-4">
+      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedAsset || isBorrowDrawerOpen ? 'hidden md:flex xl:mr-[500px] pr-2' : 'pr-0 lg:pr-4'}`}>
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 

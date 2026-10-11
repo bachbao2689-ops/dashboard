@@ -271,8 +271,8 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="flex min-h-full min-w-0">
-      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-1 lg:pr-4">
+    <div className="relative flex min-h-full min-w-0">
+      <div className={`relative flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedTask ? 'hidden md:flex xl:mr-[516px] pr-2' : 'pr-1 lg:pr-4'}`}>
       
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 w-full">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">All Tasks</h1>

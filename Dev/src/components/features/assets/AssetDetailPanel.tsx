@@ -46,31 +46,37 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
   }, [isResizing]);
 
   return (
-    <div 
-      style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
-      className={`h-full card-hub rounded-l-xl md:rounded-l-3xl !rounded-r-none shrink-0 absolute md:relative right-0 top-0 z-[110] flex flex-col overflow-hidden ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--drawer-width)] md:min-w-[var(--drawer-width)] shadow-[-10px_0_30px_-15px_rgba(31,38,135,0.15)] border-l border-white/40 opacity-100' : 'w-0 min-w-0 opacity-0 border-l-0 shadow-none'} ${!isResizing ? 'transition-[width,min-width,opacity] duration-300 ease-in-out' : ''}`}
-    >
+    <>
       {isOpen && (
         <div 
-          className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 bg-transparent hover:bg-primary/20 cursor-col-resize z-50 transition-all -translate-x-1/2 group hidden md:flex items-center justify-center"
-          onMouseDown={startResizing}
-        >
-          <div className="h-12 w-1 bg-gray-400/50 dark:bg-slate-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
+          className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
       )}
+      <div 
+        style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[70] ${!isResizing ? 'transition-[width,opacity] duration-300 ease-in-out' : ''}`}
+      >
+        {isOpen && (
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-2 hover:w-3 bg-transparent hover:bg-primary/20 cursor-col-resize z-50 transition-all -translate-x-1/2 group hidden md:flex items-center justify-center"
+            onMouseDown={startResizing}
+          >
+            <div className="h-12 w-1 bg-gray-400/50 dark:bg-slate-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+        )}
 
-      <div className="w-full h-full flex flex-col overflow-hidden" >
-        
-        <div className="flex justify-between items-center px-6 py-4 border-b border-white/20 dark:border-gray-700/50 shrink-0">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-1">
-            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white dark:hover:bg-gray-700/50 text-gray-500 transition-colors flex items-center gap-1 text-xs font-medium" title="Close side peek">
+            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors flex items-center gap-1 text-xs font-medium" title="Close side peek">
               <ChevronsRight className="w-4 h-4" />
             </button>
-            <button className="p-1.5 rounded-md hover:bg-white dark:hover:bg-gray-700/50 text-gray-500 transition-colors" title="Open as page">
+            <button className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors" title="Open as page">
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white dark:hover:bg-gray-700/60 text-gray-500 hover:text-gray-800 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -81,7 +87,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
               
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-white/40 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 flex items-center justify-center">
                     {getIcon(asset.category?.name)}
                   </div>
                   <div>
@@ -128,7 +134,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
                   Maintenance Notes
                 </h3>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-white/50 shadow-glass-inset text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
+                <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
                   {asset.notes || 'No maintenance notes available.'}
                 </div>
               </div>
@@ -137,6 +143,6 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };

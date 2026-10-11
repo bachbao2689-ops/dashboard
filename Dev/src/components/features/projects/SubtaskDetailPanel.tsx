@@ -233,7 +233,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
 
   return (
-    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[90] flex h-full w-full max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] flex-col overflow-hidden rounded-l-3xl border-l border-emerald-500/20 bg-white shadow-drawer-subtask dark:bg-slate-800 ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    <>
+      <div 
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside 
+        style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+      >
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
         <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">SUBTASK</span><span className="ml-2 text-xs capitalize text-gray-500">{priority} priority</span></div>
@@ -292,4 +301,6 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         <button disabled={completed || saving} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? 'Completed' : 'Complete'}</button>
       </div>
     </aside>
-  );};
+  </>
+  );
+};

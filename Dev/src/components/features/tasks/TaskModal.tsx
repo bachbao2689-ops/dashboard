@@ -182,7 +182,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       )}
       <div 
         style={{ '--drawer-width': `${width}px` } as React.CSSProperties} 
-        className={`h-full bg-white dark:bg-slate-800 rounded-l-3xl shrink-0 ${isOpen ? 'w-full max-w-full md:w-[min(var(--drawer-width),100%)] md:min-w-0 shadow-drawer-task border-l border-blue-500/20 drawer-slide-in' : 'w-0 min-w-0 shadow-none border-l-0 border-transparent'} absolute xl:relative right-0 top-0 z-[70] flex flex-col overflow-hidden ${!resizing ? 'transition-[width,min-width] duration-300 ease-out' : ''}`}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
       >
         {isOpen && (
           <>
@@ -337,7 +337,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 </fieldset>
               </div>
 
-              <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800">
+              <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
                 <button 
                   type="button" 
                   disabled={loading} 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, CheckCircle2, MessageSquare, Trash2, Plus, Users } from 'lucide-react';
+import { X, Edit3, CheckCircle2, MessageSquare, Trash2, Plus, Users, Send } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
@@ -136,7 +136,16 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
   if (!data) return null;
 
   return (
-    <aside style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`drawer-slide-in absolute right-0 top-0 z-[60] flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-l-3xl border-l bg-white dark:bg-slate-800 md:relative max-w-full md:max-w-[calc(100vw-40px)] md:w-[var(--panel-width)] md:min-w-[var(--panel-width)] ${shadowClass} ${!resizing ? 'transition-[width,min-width] duration-300' : ''}`}>
+    <>
+      <div 
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside 
+        style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+      >
       <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
         <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
@@ -211,17 +220,21 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
                   );
                 })}
               </div>
-              <div className="mt-4"><textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder="Viết bình luận…" className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" /></div>
+              <div className="mt-4">
+                <textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder="Viết bình luận…" className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" />
+                <button type="button" disabled={!commentText.trim()} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"><Send className="mr-1 inline h-4 w-4" />Gửi bình luận</button>
+              </div>
             </section>
           </div>
         )}
       </div>
       {!editMode && (
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800">
+        <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> Chỉnh sửa</button>
           <button onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> Complete</button>
         </div>
       )}
     </aside>
+  </>
   );
 }
