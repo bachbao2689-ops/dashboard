@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -32,93 +32,6 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const travelRef = useRef(0);
-  const headerHiddenRef = useRef(false);
-  const animationLockUntilRef = useRef(0);
-
-  const revealHeader = () => {
-    headerHiddenRef.current = false;
-    travelRef.current = 0;
-    animationLockUntilRef.current = performance.now() + 700;
-    setIsHeaderHidden(false);
-  };
-
-  useEffect(() => {
-    const scrollContainer = document.getElementById('main-scroll-container');
-    if (!scrollContainer) return;
-
-    const mobileQuery = window.matchMedia('(max-width: 767px)');
-    const keepMobileHeaderVisible = () => {
-      if (!mobileQuery.matches) return;
-      headerHiddenRef.current = false;
-      travelRef.current = 0;
-      setIsHeaderHidden(false);
-    };
-    keepMobileHeaderVisible();
-    mobileQuery.addEventListener('change', keepMobileHeaderVisible);
-
-    let activeScrollTarget: HTMLElement = scrollContainer;
-    let lastY = scrollContainer.scrollTop;
-    let frame = 0;
-    let pendingScrollTarget: HTMLElement = scrollContainer;
-
-    const handleScroll = (event: Event) => {
-      if (mobileQuery.matches) return;
-      const eventTarget = event.target;
-      pendingScrollTarget = eventTarget instanceof HTMLElement && scrollContainer.contains(eventTarget)
-        ? eventTarget
-        : scrollContainer;
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        const target = pendingScrollTarget;
-        const y = Math.max(0, target.scrollTop);
-        if (target !== activeScrollTarget) {
-          activeScrollTarget = target;
-          lastY = y;
-          travelRef.current = 0;
-          return;
-        }
-        const delta = y - lastY;
-        lastY = y;
-
-        if (y <= 12) {
-          travelRef.current = 0;
-          animationLockUntilRef.current = 0;
-          headerHiddenRef.current = false;
-          setIsHeaderHidden(false);
-          return;
-        }
-
-        // Ignore tiny wheel/touch fluctuations and scroll adjustments while the
-        // header is animating; both were causing the bar to flicker in place.
-        if (Math.abs(delta) < 3 || performance.now() < animationLockUntilRef.current) return;
-        if (travelRef.current && Math.sign(delta) !== Math.sign(travelRef.current)) {
-          travelRef.current = 0;
-        }
-        travelRef.current += delta;
-
-        const shouldHide = !headerHiddenRef.current && travelRef.current >= 36;
-        const shouldShow = headerHiddenRef.current && travelRef.current <= -22;
-        if (shouldHide || shouldShow) {
-          headerHiddenRef.current = shouldHide;
-          setIsHeaderHidden(shouldHide);
-          travelRef.current = 0;
-          animationLockUntilRef.current = performance.now() + 320;
-        }
-      });
-    };
-
-    // Capture scroll events from nested page panels too (for example the
-    // Profile calendar), while ignoring scrolls outside the page content.
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    return () => {
-      mobileQuery.removeEventListener('change', keepMobileHeaderVisible);
-      scrollContainer.removeEventListener('scroll', handleScroll, { capture: true });
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
   
   
   const canViewDashboard = true;
@@ -215,17 +128,8 @@ export const Header: React.FC = () => {
   return (
     <>
     <div aria-hidden="true" className="mobile-header-mask pointer-events-none absolute inset-x-0 top-0 z-[99] backdrop-blur-[26px] backdrop-saturate-[170%] md:hidden" />
-    <div
-      aria-hidden={isHeaderHidden}
-      className={cn(
-        'absolute inset-x-0 top-0 z-[100] shrink-0 overflow-visible transition-[height,opacity,transform] duration-300 ease-out md:relative motion-reduce:transition-none',
-        (!isHeaderHidden && showNotifs) ? 'overflow-visible' : 'md:overflow-hidden',
-        isHeaderHidden
-          ? 'h-0 -translate-y-3 opacity-0 pointer-events-none'
-          : 'h-[calc(60px+env(safe-area-inset-top,0px))] md:h-24 translate-y-0 opacity-100',
-      )}
-    >
-    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-[calc(8px+env(safe-area-inset-top,0px))] flex h-12 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-4 md:h-16 md:rounded-2xl md:px-8 card-hub">
+    <div className="sticky md:relative top-0 inset-x-0 z-[100] shrink-0 h-[calc(56px+env(safe-area-inset-top,0px))] md:h-16 overflow-visible">
+    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-2.5 md:h-12 md:rounded-xl md:px-6 card-hub">
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
@@ -396,20 +300,6 @@ export const Header: React.FC = () => {
       </div>
     </header>
     </div>
-    <button
-      type="button"
-      aria-label="Hiện thanh trên"
-      title="Hiện thanh trên"
-      aria-hidden={!isHeaderHidden}
-      tabIndex={isHeaderHidden ? 0 : -1}
-      onClick={revealHeader}
-      className={cn(
-        'btn-header-dropdown-toggle',
-        isHeaderHidden ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none',
-      )}
-    >
-      <ChevronDown size={20} aria-hidden="true" />
-    </button>
     </>
   );
 };
