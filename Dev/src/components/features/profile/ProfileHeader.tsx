@@ -10,7 +10,7 @@ import { ProfileKpis } from './ProfileKpis';
 import { useTranslation } from '../../../i18n/translations';
 
 export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
@@ -56,9 +56,10 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
   const name = profile?.name || user?.user_metadata?.full_name || t('profile.notUpdated');
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
   const dbRole = profile?.role || 'member';
-  const roleDisplay = dbRole === 'admin' ? 'Admin' : dbRole === 'manager' ? 'Manager' : dbRole === 'leader' ? 'Leader' : 'Nhân viên';
-  const title = profile?.job_title || (profile?.employment_level === 'Leader' || dbRole === 'leader' ? 'Team Lead' : 'Staff');
+  const roleDisplay = dbRole === 'admin' ? 'Admin' : dbRole === 'manager' ? 'Manager' : dbRole === 'leader' ? 'Leader' : (lang === 'vi' ? 'Nhân viên' : 'Staff');
+  const title = profile?.job_title || (profile?.employment_level === 'Leader' || dbRole === 'leader' ? 'Team Lead' : (lang === 'vi' ? 'Nhân viên' : 'Staff'));
   const badge = profile?.employment_level || roleDisplay;
+  const teamDept = (!profile?.department_name || profile.department_name === 'Chưa phân team' || profile.department_name === 'Unassigned team') ? t('profile.noTeamAssigned') : profile.department_name;
 
   return (
     <>
@@ -97,7 +98,7 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
             
             <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-start gap-1.5"><Mail size={14} className="mt-0.5 shrink-0" /> <span className="break-all sm:truncate">{profile?.email || user?.email || t('profile.notUpdated')}</span></div>
-              <div className="flex items-start gap-1.5"><Shield size={14} className="mt-0.5 shrink-0" /> <span className="break-words sm:truncate">{profile?.department_name || t('profile.noTeamAssigned')} · {title}</span></div>
+              <div className="flex items-start gap-1.5"><Shield size={14} className="mt-0.5 shrink-0" /> <span className="break-words sm:truncate">{teamDept} · {title}</span></div>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { calendarKindLabel, formatCalendarDay, isCalendarDone, isCalendarOverdue
 import type { CalendarNotification } from '../../../hooks/useProfileCalendar';
 import { NotificationLog } from './NotificationLog';
 import { Avatar } from '../../common/Avatar';
+import { useTranslation } from '../../../i18n/translations';
 import './ProfileCalendar.css';
 
 interface Props {
@@ -22,9 +23,9 @@ interface Props {
   extraFilters?: React.ReactNode;
 }
 
-const filters = [{ id: 'all', label: 'Tất cả' }, { id: 'task', label: 'Tasks' }, { id: 'project', label: 'Projects' }, { id: 'campaign', label: 'Campaigns' }] as const;
-const ranges = [{ id: 'today', label: 'Hôm nay' }, { id: 'three', label: '3 ngày' }, { id: 'week', label: '1 tuần' }, { id: 'month', label: '1 tháng' }] as const;
-type CalendarRange = (typeof ranges)[number]['id'] | 'custom';
+const filterIds = ['all', 'task', 'project', 'campaign'] as const;
+const rangeIds = ['today', 'three', 'week', 'month'] as const;
+type CalendarRange = (typeof rangeIds)[number] | 'custom';
 const iconFor = (item: CalendarItem) => item.kind === 'project' ? FolderKanban : item.kind === 'campaign' ? Megaphone : FileText;
 const category = (item: CalendarItem) => item.kind.includes('subtask') ? 'task' : item.kind;
 const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.status)
@@ -38,6 +39,13 @@ const eventColor = (item: CalendarItem, today: string) => isCalendarDone(item.st
         : 'border-blue-200 bg-blue-50 text-primary dark:border-transparent dark:!bg-[#8ad5ff30] dark:!text-[#61baff]';
 
 export function ProfileCalendar({ items, notifications, loading, error, updatedAt, onRefresh, onOpen, onReport, reportOpen, includeTeamNotifications, extraFilters }: Props) {
+  const { t, lang } = useTranslation();
+  const ranges = useMemo(() => [
+    { id: 'today' as const, label: t('profile.rangeToday') },
+    { id: 'three' as const, label: t('profile.rangeThreeDays') },
+    { id: 'week' as const, label: t('profile.rangeOneWeek') },
+    { id: 'month' as const, label: t('profile.rangeOneMonth') },
+  ], [t]);
   const [today, setToday] = useState(() => localDay(new Date()));
   useEffect(() => {
     const timer = setInterval(() => setToday(localDay(new Date())), 60000);
@@ -54,7 +62,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
-  const [filter, setFilter] = useState<(typeof filters)[number]['id']>('task');
+  const [filter, setFilter] = useState<(typeof filterIds)[number]>('task');
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [status, setStatus] = useState('open');
@@ -103,12 +111,12 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     const countProj = preFiltered.filter(item => category(item) === 'project').length;
     const countCamp = preFiltered.filter(item => category(item) === 'campaign').length;
     return [
-      { id: 'all' as const, label: `Tất cả (${countAll})` },
-      { id: 'task' as const, label: `Tasks (${countTask})` },
-      { id: 'project' as const, label: `Projects (${countProj})` },
-      { id: 'campaign' as const, label: `Campaigns (${countCamp})` }
+      { id: 'all' as const, label: t('profile.tabAll', { count: countAll }) },
+      { id: 'task' as const, label: t('profile.tabTasks', { count: countTask }) },
+      { id: 'project' as const, label: t('profile.tabProjects', { count: countProj }) },
+      { id: 'campaign' as const, label: t('profile.tabCampaigns', { count: countCamp }) }
     ];
-  }, [preFiltered]);
+  }, [preFiltered, t]);
   const days = useMemo(() => monthDays(cursor.getFullYear(), cursor.getMonth()), [cursor]);
   const rangeOffset = range === 'week' ? (cursor.getDay() + 6) % 7 : 0;
   const rangeLength = range === 'today' ? 1 : range === 'three' ? 3 : range === 'week' ? 7 : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
@@ -167,7 +175,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   };
   const selectRange = (next: CalendarRange) => { setRange(next); setCursor(new Date()); setRangeOpen(false); setExpandedDays(new Set()); setHovered(null); };
   const selectedRangeLabel = range === 'custom' && customStart && customEnd ? `${formatCalendarDay(localDay(customStart))} - ${formatCalendarDay(localDay(customEnd))}` : range === 'today' && localDay(cursor) !== today ? formatCalendarDay(localDay(cursor)) : ranges.find(option => option.id === range)?.label;
-  const periodTitle = `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}`;
+  const periodTitle = lang === 'vi' ? `Tháng ${cursor.getMonth() + 1}, ${cursor.getFullYear()}` : `${cursor.toLocaleString('en-US', { month: 'long' })}, ${cursor.getFullYear()}`;
   const showHover = (item: CalendarItem, element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
     setHovered({ item, left: Math.max(12, Math.min(rect.left, window.innerWidth - 300)), top: rect.bottom + 180 > window.innerHeight ? Math.max(12, rect.top - 172) : rect.bottom + 8 });
@@ -179,19 +187,19 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     return () => window.removeEventListener('scroll', hide, true);
   }, [hovered]);
 
-  const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const weekdayLabels = lang === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const ownerLabel = (item: CalendarItem) => {
     const members = item.record.memberNames as string[] | undefined;
-    return members?.length ? members.join(', ') : item.owner || 'Chưa phân công';
+    return members?.length ? members.join(', ') : item.owner || t('common.unassigned');
   };
 
-  return <section className="profile-calendar card-hub overflow-hidden rounded-xl shadow-sm" aria-label="Lịch công việc cá nhân" aria-busy={loading}>
+  return <section className="profile-calendar card-hub overflow-hidden rounded-xl shadow-sm" aria-label={t('profile.calendarTitle')} aria-busy={loading}>
     <div className="space-y-4 border-b border-gray-100 p-4 dark:border-slate-700 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:!text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
+        <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:!text-white"><CalendarDays size={21} className="text-primary" />{t('profile.calendarTitle')}</h2><p className="mt-1 text-xs text-gray-500">{t('profile.calendarSubtitle')}</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
-            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="hover-magnetic-btn magnetic-blue inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
+            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="hover-magnetic-btn magnetic-blue inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />{t('profile.notifications')} <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
             {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[min(320px,calc(100vw-48px))] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog
               includeTeam={includeTeamNotifications} 
               inline 
@@ -214,7 +222,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               }}
             /></div>}
           </div>
-          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
+          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90"><FileText size={15} />{reportOpen ? t('profile.closeReport') : t('profile.myReport')}</button>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -239,9 +247,9 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           })}
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <label className="relative min-w-0 flex-1"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-gray-400" /><input aria-label="Tìm công việc trong lịch" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tìm công việc..." className="h-10 w-full min-w-0 rounded-xl border border-gray-200 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-primary dark:border-slate-700" /></label>
+          <label className="relative min-w-0 flex-1"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-gray-400" /><input aria-label={t('profile.searchWork')} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('profile.searchWork')} className="h-10 w-full min-w-0 rounded-xl border border-gray-200 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-primary dark:border-slate-700" /></label>
           {extraFilters}
-          <select aria-label="Lọc trạng thái" value={status} onChange={event => setStatus(event.target.value)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"><option value="all">Mọi trạng thái</option><option value="open">Chưa hoàn thành</option><option value="done">Đã hoàn thành</option><option value="overdue">Quá hạn</option><option value="hidden">Đã ẩn / Lưu trữ</option><option value="deleted">Đã xóa</option></select>
+          <select aria-label="Lọc trạng thái" value={status} onChange={event => setStatus(event.target.value)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"><option value="all">{t('profile.allStatus')}</option><option value="open">{t('profile.incomplete')}</option><option value="done">{t('profile.completed')}</option><option value="overdue">{t('profile.overdue')}</option><option value="hidden">{t('profile.archived')}</option><option value="deleted">{t('profile.deleted')}</option></select>
         </div>
       </div>
     </div>
@@ -253,7 +261,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       <div className="flex items-center gap-3">
         <label className="group relative cursor-pointer block">
           <div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900 transition-colors group-hover:bg-blue-100 dark:group-hover:bg-slate-800">
-            <span className="text-[9px] font-semibold uppercase text-gray-500">Tháng {cursor.getMonth() + 1}</span>
+            <span className="text-[9px] font-semibold uppercase text-gray-500">{lang === 'vi' ? `Tháng ${cursor.getMonth() + 1}` : cursor.toLocaleString('en-US', { month: 'short' })}</span>
             <b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b>
           </div>
           <input type="date" onClick={(e) => { try { (e.target as any).showPicker?.(); } catch (err) {} }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`} onChange={(e) => {
@@ -269,7 +277,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             <p className="text-base font-bold text-gray-900 dark:!text-white transition-colors group-hover:text-primary">{periodTitle}</p>
             <ChevronDown size={14} className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
-          <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {monthItems.length} công việc</p>
+          <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {t('profile.workItemsCount', { count: monthItems.length })}</p>
           
           {monthPickerOpen && <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-3 flex items-center justify-between">
@@ -280,7 +288,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             <div className="grid grid-cols-3 gap-2">
               {Array.from({length: 12}).map((_, i) => (
                 <button key={i} type="button" onClick={() => { setCursor(new Date(pickerYear, i, 1)); setMonthPickerOpen(false); }} className={`rounded-xl py-2 text-xs font-semibold transition-colors ${cursor.getMonth() === i && cursor.getFullYear() === pickerYear ? 'bg-primary text-white' : 'text-gray-700 hover:bg-primary/10 dark:text-gray-300 dark:hover:bg-slate-700'}`}>
-                  Tháng {i + 1}
+                  {lang === 'vi' ? `Tháng ${i + 1}` : new Date(2000, i, 1).toLocaleString('en-US', { month: 'short' })}
                 </button>
               ))}
             </div>
@@ -303,11 +311,11 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             <div className="p-3 sm:flex-1">
               <div className="mb-2 flex items-center justify-between">
                 <button type="button" onClick={() => { let m = pickerMonth - 1; let y = pickerYear; if (m < 0) { m = 11; y--; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={14}/></button>
-                <span className="text-xs font-bold text-gray-900 dark:!text-white">Tháng {pickerMonth + 1}, {pickerYear}</span>
+                <span className="text-xs font-bold text-gray-900 dark:!text-white">{lang === 'vi' ? `Tháng ${pickerMonth + 1}, ${pickerYear}` : `${new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long' })}, ${pickerYear}`}</span>
                 <button type="button" onClick={() => { let m = pickerMonth + 1; let y = pickerYear; if (m > 11) { m = 0; y++; }; setPickerMonth(m); setPickerYear(y); }} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronRight size={14}/></button>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center">
-                {['T2','T3','T4','T5','T6','T7','CN'].map(d => <div key={d} className="text-[10px] font-semibold text-gray-400">{d}</div>)}
+                {(lang === 'vi' ? ['T2','T3','T4','T5','T6','T7','CN'] : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']).map(d => <div key={d} className="text-[10px] font-semibold text-gray-400">{d}</div>)}
                 {(() => {
                   const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
                   const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
@@ -378,7 +386,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               </div>
               <div className="p-2 border-t border-gray-200 dark:border-slate-700">
                 <button type="button" onClick={() => setRangeOpen(false)} className="w-full rounded-lg bg-primary py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary/90">
-                  Áp dụng
+                  {t('profile.apply')}
                 </button>
               </div>
             </div>
@@ -387,7 +395,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="rounded-r-xl p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
     </div>
 
-    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">Đang tải lịch công việc…</div> : viewMode === 'grid' ? <>
+    {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">{t('profile.loadingCalendar')}</div> : viewMode === 'grid' ? <>
       <div className="grid grid-cols-7 border-y border-gray-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900">{weekdayLabels.map((day, index) => <div key={`${day}-${index}`} className="py-2 text-center text-xs font-semibold text-gray-500">{day}</div>)}</div>
       <div className="calendar-days grid grid-cols-7">{days.map(date => {
         const day = localDay(date);
@@ -418,7 +426,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             
             if (!isMultiDay) {
               return <button key={item.key} type="button" onMouseEnter={event => showHover(item, event.currentTarget)} onMouseLeave={() => setHovered(null)} onFocus={event => showHover(item, event.currentTarget)} onBlur={() => setHovered(null)} onClick={() => onOpen(item)} className={`flex h-[26px] w-full min-w-0 items-center gap-1 rounded-[6px] border px-1.5 text-left text-[11px] font-medium transition-[filter] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${hovered?.item.key === item.key ? 'brightness-[0.85] shadow-sm ring-1 ring-primary/30 dark:ring-white/20 z-20 relative' : 'hover:brightness-[0.90] dark:hover:brightness-110'} ${eventColor(item, today)}`}>
-                {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">Hạn</span>}
+                {isCalendarDone(item.status) ? <CheckCircle2 size={11} className="shrink-0" /> : <Icon size={11} className="shrink-0" />}<span className="truncate">{item.title}</span>{unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}{item.due === day && <span className="ml-auto shrink-0 text-[9px] font-bold">{t('common.due')}</span>}
               </button>;
             }
 
@@ -442,8 +450,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                 {unreadKeys.has(item.key) && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
               </>}
             </button>;
-          })}{hiddenCount > 0 && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">+{hiddenCount} công việc</button>}{expandedDays.has(day) && actualItemCount > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">Thu gọn</button>}</div>
-          <span className="relative z-10 calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? `${actualItemCount} việc` : '—'}</span>
+          })}{hiddenCount > 0 && <button type="button" onClick={() => setExpandedDays(current => new Set([...current, day]))} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">{t('profile.moreTasks', { count: hiddenCount })}</button>}{expandedDays.has(day) && actualItemCount > 3 && <button type="button" onClick={() => setExpandedDays(current => { const next = new Set(current); next.delete(day); return next; })} className="px-1 text-[11px] font-medium text-gray-500 hover:text-primary">{t('profile.collapse')}</button>}</div>
+          <span className="relative z-10 calendar-compact-count w-full rounded-md py-1 text-center text-[10px] font-semibold text-primary dark:text-blue-300">{actualItemCount > 0 ? t('profile.tasksUnit', { count: actualItemCount }) : '—'}</span>
         </div>;
       })}</div>
     </> : (
@@ -464,7 +472,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           return (
             <div key={day} className={`flex flex-col sm:flex-row gap-4 border-b border-gray-100 dark:border-slate-800 p-4 sm:p-5 ${day === today ? 'bg-blue-50/40 dark:bg-slate-800/40' : ''}`}>
               <div className="w-28 shrink-0">
-                <div className="text-sm font-bold text-gray-900 dark:!text-white">{date.getDate()} Th{date.getMonth() + 1}</div>
+                <div className="text-sm font-bold text-gray-900 dark:!text-white">{date.getDate()} {lang === 'vi' ? `Th${date.getMonth() + 1}` : date.toLocaleString('en-US', { month: 'short' })}</div>
                 <div className="text-xs font-semibold text-gray-500">{weekdayLabels[wDay]}</div>
               </div>
               <div className="flex-1 flex flex-wrap gap-4 p-1">
@@ -475,16 +483,16 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                     const diffTime = new Date(item.due).getTime() - new Date(today).getTime();
                     const daysLeft = Math.round(diffTime / (1000 * 3600 * 24));
                     if (isCalendarDone(item.status)) {
-                      daysLeftLabel = 'Đã xong';
+                      daysLeftLabel = t('profile.daysLeftDone');
                       daysLeftColor = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300';
                     } else if (daysLeft < 0) {
-                      daysLeftLabel = `Trễ ${-daysLeft} ngày`;
+                      daysLeftLabel = t('profile.daysLeftOverdue', { days: -daysLeft });
                       daysLeftColor = 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300';
                     } else if (daysLeft === 0) {
-                      daysLeftLabel = 'Hôm nay';
+                      daysLeftLabel = t('profile.daysLeftToday');
                       daysLeftColor = 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300';
                     } else {
-                      daysLeftLabel = `Còn ${daysLeft} ngày`;
+                      daysLeftLabel = t('profile.daysLeftRemaining', { days: daysLeft });
                       daysLeftColor = 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300';
                     }
                   }
@@ -542,12 +550,12 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           const dayItems = dayKeys.filter(Boolean);
           return dayItems.length === 0;
         }) && (
-          <div className="py-20 text-center text-sm font-medium text-gray-400">Không có công việc nào trong khoảng thời gian này</div>
+          <div className="py-20 text-center text-sm font-medium text-gray-400">{t('profile.noTasksInRange')}</div>
         )}
       </div>
     )}
 
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400 dark:!bg-[#61baff]" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400 dark:!bg-[#6c2bff]" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 dark:!bg-[#ffb500]" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 dark:!bg-[#63f858]" />Hoàn thành</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 dark:!bg-[#ff324b]" />Quá hạn</span></div><span role="status">{loading ? 'Đang đồng bộ…' : updatedAt ? `Cập nhật ${updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Chưa đồng bộ'}</span></div>
-    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:!text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Thuộc</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : 'Chưa có'}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-[11px] text-gray-500 dark:border-slate-800 sm:px-5"><div className="flex flex-wrap items-center gap-3"><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400 dark:!bg-[#61baff]" />Task</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-400 dark:!bg-[#6c2bff]" />Project</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400 dark:!bg-[#ffb500]" />Campaign</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 dark:!bg-[#63f858]" />{t('common.completed')}</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400 dark:!bg-[#ff324b]" />{t('profile.overdue')}</span></div><span role="status">{loading ? t('profile.syncing') : updatedAt ? t('profile.updatedAt', { time: updatedAt.toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) }) : t('profile.notSynced')}</span></div>
+    {hovered && createPortal(<div role="tooltip" style={{ left: hovered.left, top: hovered.top }} className="pointer-events-none fixed z-[180] w-72 rounded-xl border border-blue-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"><p className="line-clamp-2 text-sm font-bold text-gray-900 dark:!text-white">{hovered.item.title}</p><dl className="mt-2 space-y-1.5 text-xs"><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">{t('profile.belongsTo')}</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.parentName ? `${calendarKindLabel[hovered.item.kind]} · ${hovered.item.parentName}` : calendarKindLabel[hovered.item.kind]}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">Deadline</dt><dd className="font-medium text-gray-700 dark:text-gray-200">{hovered.item.due ? formatCalendarDay(hovered.item.due) : t('profile.noDeadline')}</dd></div><div className="flex gap-2"><dt className="w-20 shrink-0 text-gray-400">PIC</dt><dd className="line-clamp-2 font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1.5"><Avatar name={ownerLabel(hovered.item)} src={hovered.item.record.assignee?.avatar_url || hovered.item.record.lead?.avatar_url || hovered.item.record.creator?.avatar_url} className="h-4 w-4 text-[9px]" />{ownerLabel(hovered.item)}</dd></div></dl></div>, document.body)}
   </section>;
 }

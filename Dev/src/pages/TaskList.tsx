@@ -339,7 +339,7 @@ export const TaskList: React.FC = () => {
         </div>
       </div>
 
-      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
+      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">{t('tasks.filteringScope', { scope: shortcutScope === 'mine' ? t('tasks.filterMine') : shortcutScope === 'due-soon' ? t('tasks.filterDueSoon') : t('tasks.filterOverdue') })}</div>}
       
       <div className="space-y-6 pb-12 pr-1">
       

@@ -2,6 +2,7 @@ import toast from "react-hot-toast";
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../common/Modal';
 import { supabase } from '../../../services/supabase';
+import { useTranslation } from '../../../i18n/translations';
 
 interface AssetModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface AssetModalProps {
 }
 
 export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const [assetCode, setAssetCode] = useState('');
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -112,12 +114,12 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add New Asset">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('assets.modal.title')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Asset Code <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.code')} <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               required
@@ -130,7 +132,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Asset Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.name')} <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               required
@@ -144,29 +146,29 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Category <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.col.category')} <span className="text-red-500">*</span></label>
             <select 
               required
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
               className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
-              <option value="">Select Category</option>
+              <option value="">{t('assets.modal.selectCategory')}</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Condition</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.condition')}</label>
             <select 
               value={condition}
               onChange={e => setCondition(e.target.value)}
               className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500"
             >
-              <option value="Tốt 100%">Tốt 100%</option>
-              <option value="Tốt 80%">Tốt 80%</option>
-              <option value="Cần sửa">Cần sửa</option>
+              <option value="Tốt 100%">{t('assets.condGood100')}</option>
+              <option value="Tốt 80%">{t('assets.condGood80')}</option>
+              <option value="Cần sửa">{t('assets.condNeedRepair')}</option>
               <option value="N/A">N/A</option>
             </select>
           </div>
@@ -174,7 +176,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Location</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.location')}</label>
             <input 
               type="text" 
               value={location}
@@ -184,7 +186,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Serial Number</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.serialNumber')}</label>
             <input 
               type="text" 
               value={serialNumber}
@@ -196,7 +198,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
 
         <div className="grid grid-cols-2 gap-4">
           <div className="tw-calendar-picker relative">
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Purchase Date</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.purchaseDate')}</label>
             <input 
               type="text" 
               id="asset-purchase-date"
@@ -208,7 +210,7 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Purchase Price (VND)</label>
+            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.purchasePrice')}</label>
             <input 
               type="number" 
               value={purchasePrice}
@@ -219,12 +221,12 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Description</label>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('assets.modal.description')}</label>
           <textarea 
             value={description}
             onChange={e => setDescription(e.target.value)}
             className="w-full px-4 py-2.5 border border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-black/40 text-gray-900 dark:text-white font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[80px]"
-            placeholder="Add details about this asset..."
+            placeholder={t('assets.modal.descriptionPlaceholder')}
           />
         </div>
 
@@ -234,14 +236,14 @@ export const AssetModal: React.FC<AssetModalProps> = ({ isOpen, onClose, onSucce
             onClick={onClose}
             className="px-5 py-2 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button 
             type="submit" 
             disabled={loading}
             className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {loading ? 'Saving...' : 'Add Asset'}
+            {loading ? t('assets.modal.saving') : t('assets.modal.submit')}
           </button>
         </div>
       </form>

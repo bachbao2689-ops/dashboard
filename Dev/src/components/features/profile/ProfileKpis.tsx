@@ -1,12 +1,14 @@
 import React from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, PlayCircle, UsersRound } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
+import { useTranslation } from '../../../i18n/translations';
 
 const isDone = (status?: string | null) => ['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((status || '').toLowerCase());
 
 type Metric = { label: string; value: string; icon: React.ReactNode; tone: string };
 
 export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
+  const { t } = useTranslation();
   const { tasks, summary, loading } = useProfileWorkload();
   const now = new Date();
   const inThreeDays = new Date(now);
@@ -22,18 +24,18 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
   const dueSoon = tasks.filter(task => !isDone(task.status) && task.due_date && new Date(task.due_date) > now && new Date(task.due_date) <= inThreeDays).length;
 
   const metrics: Metric[] = manager ? [
-    { label: 'Đúng hạn', value: completed.length ? `${Math.round(completedOnTime / completed.length * 100)}%` : '—', icon: <CheckCircle2 size={14} />, tone: 'text-teal-600' },
-    { label: 'Điểm nghẽn', value: String(summary.overdue), icon: <AlertTriangle size={14} />, tone: 'text-red-600' },
-    { label: 'Vận tốc', value: completed.length ? `${cycleDays.toFixed(1)} ngày` : '—', icon: <Clock3 size={14} />, tone: 'text-blue-600' },
-    { label: 'Task đang mở', value: String(summary.open), icon: <UsersRound size={14} />, tone: 'text-violet-600' },
+    { label: t('profile.onTime'), value: completed.length ? `${Math.round(completedOnTime / completed.length * 100)}%` : '—', icon: <CheckCircle2 size={14} />, tone: 'text-teal-600' },
+    { label: t('profile.bottlenecks'), value: String(summary.overdue), icon: <AlertTriangle size={14} />, tone: 'text-red-600' },
+    { label: t('profile.velocity'), value: completed.length ? `${cycleDays.toFixed(1)} ${t('profile.daysUnit')}` : '—', icon: <Clock3 size={14} />, tone: 'text-blue-600' },
+    { label: t('profile.openTasks'), value: String(summary.open), icon: <UsersRound size={14} />, tone: 'text-violet-600' },
   ] : [
-    { label: 'Hôm nay', value: String(todayCount), icon: <PlayCircle size={14} />, tone: 'text-blue-600' },
-    { label: 'Quá hạn', value: String(summary.overdue), icon: <AlertTriangle size={14} />, tone: 'text-red-600' },
-    { label: 'Sắp đến hạn', value: String(dueSoon), icon: <Clock3 size={14} />, tone: 'text-amber-600' },
-    { label: 'Chờ duyệt', value: String(summary.pendingBorrow), icon: <CheckCircle2 size={14} />, tone: 'text-teal-600' },
+    { label: t('profile.today'), value: String(todayCount), icon: <PlayCircle size={14} />, tone: 'text-blue-600' },
+    { label: t('profile.overdue'), value: String(summary.overdue), icon: <AlertTriangle size={14} />, tone: 'text-red-600' },
+    { label: t('profile.dueSoon'), value: String(dueSoon), icon: <Clock3 size={14} />, tone: 'text-amber-600' },
+    { label: t('profile.pendingApproval'), value: String(summary.pendingBorrow), icon: <CheckCircle2 size={14} />, tone: 'text-teal-600' },
   ];
 
-  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 p-0.5" aria-label="Chỉ số công việc cá nhân">
+  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 p-0.5" aria-label={t('profile.kpiTitle')}>
     {metrics.map(metric => {
       let toneColor = 'magnetic-blue';
       if (metric.tone.includes('red')) toneColor = 'magnetic-rose';

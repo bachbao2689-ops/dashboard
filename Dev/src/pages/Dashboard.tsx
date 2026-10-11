@@ -104,11 +104,12 @@ void DATA;
 void UPCOMING_PROJECTS;
 void TEAM_MEMBERS;
 
-const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const WEEK_LABELS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const WEEK_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const toYmd = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-');
 const startOfCurrentWeek = () => { const value = new Date(); const weekday = value.getDay() || 7; value.setDate(value.getDate() - weekday + 1); value.setHours(0, 0, 0, 0); return value; };
 const dayKey = (value?: string | null) => value ? toYmd(new Date(value)) : '';
-const displayDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('vi-VN');
+const displayDate = (value: string, locale: string = 'vi-VN') => new Date(`${value}T00:00:00`).toLocaleDateString(locale);
 const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
@@ -122,7 +123,7 @@ const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; cl
 );
 
 export const Dashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const isDark = useUiStore(state => state.theme) === 'dark';
   const { tasks, users, loading } = useWorkspaceData();
   const navigate = useNavigate();
@@ -168,23 +169,23 @@ export const Dashboard: React.FC = () => {
         const date = new Date(today.getFullYear(), today.getMonth() - 3 + offset, 1);
         return list.filter(task => task.due_date && new Date(task.due_date).getFullYear() === date.getFullYear() && new Date(task.due_date).getMonth() === date.getMonth()).length;
       });
-      return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: 'Dự án', total: list.length, overdue, due3, urgent, noDeadline, week, month, avatar_url };
+      return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: t('dashboard.projects'), total: list.length, overdue, due3, urgent, noDeadline, week, month, avatar_url };
     };
     const members = users.map(user => stats(
       `user-${user.id}`,
       'staff',
       user.name,
-      user.job_title ? `${user.employment_level || (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Nhân viên')} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : 'Thành viên'),
-      user.department?.name || 'Chưa cập nhật team',
+      user.job_title ? `${user.employment_level || (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : t('dashboard.memberRole'))} · ${user.job_title}` : (user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : user.role === 'leader' ? 'Leader' : t('dashboard.memberGeneral')),
+      user.department?.name || t('dashboard.unassignedTeam'),
       tasks.filter(task => String(task.assignee_id) === String(user.id)),
       user.avatar_url
     ));
-    const deptNames = [...new Set(tasks.map(task => task.department?.name || 'Chưa phân phòng'))];
-    const depts = deptNames.map(name => stats(`dept-${name}`, 'department', name, 'Phòng ban', 'Phòng ban', tasks.filter(task => (task.department?.name || 'Chưa phân phòng') === name)));
+    const deptNames = [...new Set(tasks.map(task => task.department?.name || t('dashboard.unassignedDept')))];
+    const depts = deptNames.map(name => stats(`dept-${name}`, 'department', name, t('dashboard.department'), t('dashboard.department'), tasks.filter(task => (task.department?.name || t('dashboard.unassignedDept')) === name)));
     const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))] as string[];
-    const projects = projectNames.map(name => stats(`project-${name}`, 'project', name, 'Dự án', 'Dự án', tasks.filter(task => task.project?.name === name)));
+    const projects = projectNames.map(name => stats(`project-${name}`, 'project', name, t('dashboard.projects'), t('dashboard.projects'), tasks.filter(task => task.project?.name === name)));
     return [...members, ...depts, ...projects];
-  }, [tasks, users]);
+  }, [tasks, users, t]);
 
   const s = liveData.find(d => d.id === activeId) || liveData.find(d => d.type === 'department') || liveData[0];
   const pct = s ? Math.round((s.done / s.total) * 100) || 0 : 0;
@@ -203,12 +204,13 @@ export const Dashboard: React.FC = () => {
     if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
     const start = new Date(`${rangeStart}T00:00:00`); const end = new Date(`${rangeEnd}T00:00:00`);
     const days: Array<{ key: string; name: string; created: number; doing: number; done: number }> = [];
+    const weekLabels = lang === 'vi' ? WEEK_LABELS_VI : WEEK_LABELS_EN;
     for (let cursor = new Date(start); cursor <= end && days.length < 31; cursor.setDate(cursor.getDate() + 1)) {
       const key = toYmd(cursor);
-      days.push({ key, name: range === 'weekly' ? WEEK_LABELS[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isDone(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => isDone(task.status) && dayKey(task.updated_at || task.created_at) === key).length });
+      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isDone(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => isDone(task.status) && dayKey(task.updated_at || task.created_at) === key).length });
     }
     return days;
-  }, [rangeStart, rangeEnd, range, selectedTasks]);
+  }, [rangeStart, rangeEnd, range, selectedTasks, lang]);
   const selectedReferences = useMemo<ReportReference[]>(() => {
     const refs: Array<[string, ReportReference]> = [
       ...selectedTasks.filter(task => task.project?.id).map(task => [`project-${task.project?.id}`, { id: task.project!.id!, name: task.project!.name || 'Project', kind: 'project' as const }] as [string, ReportReference]),
@@ -227,9 +229,9 @@ export const Dashboard: React.FC = () => {
   const filteredDepts = liveData.filter(d => d.type === 'department' && d.name.toLowerCase().includes(search.toLowerCase()));
 
   const getEyebrow = () => {
-    if (s?.type === 'department') return 'DEPARTMENT INSIGHTS';
-    if (s?.type === 'project') return 'PROJECT OVERVIEW';
-    return 'STAFF SPOTLIGHT';
+    if (s?.type === 'department') return t('dashboard.deptInsights');
+    if (s?.type === 'project') return t('dashboard.projectOverview');
+    return t('dashboard.staffSpotlight');
   };
 
   const upcomingProjects = tasks
@@ -238,22 +240,22 @@ export const Dashboard: React.FC = () => {
     .slice(0, 2)
     .map(task => {
       const diffDays = Math.ceil((new Date(task.due_date!).getTime() - Date.now()) / 86400000);
-      const dueStr = diffDays < 0 ? `Quá hạn ${Math.abs(diffDays)} ngày` : diffDays === 0 ? 'Hôm nay' : `Còn ${diffDays} ngày`;
+      const dueStr = diffDays < 0 ? t('dashboard.overdueDays', { days: Math.abs(diffDays) }) : diffDays === 0 ? t('dashboard.today') : t('dashboard.daysLeft', { days: diffDays });
       return {
         id: `project-${task.project?.name || task.id}`,
         code: task.task_ref || '—',
         name: task.project?.name || task.title,
-        dept: task.department?.name || 'Chưa phân phòng',
-        date: new Date(task.due_date!).toLocaleDateString('vi-VN'),
+        dept: task.department?.name || t('dashboard.unassignedDept'),
+        date: new Date(task.due_date!).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US'),
         dueStr,
         isOverdue: diffDays < 0,
-        priority: task.priority === 'high' ? 'High' : 'Medium',
+        priority: task.priority === 'high' ? t('common.high') : t('common.medium'),
       };
     });
-  const teams = [...new Set(users.map(user => user.department?.name || 'Chưa cập nhật team'))].map(name => ({
+  const teams = [...new Set(users.map(user => user.department?.name || t('dashboard.unassignedTeam')))].map(name => ({
     name,
     id: `team-${name}`,
-    members: liveData.filter(member => member.type === 'staff' && users.find(user => `user-${user.id}` === member.id)?.department?.name === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open, a: member.avatar_url })),
+    members: liveData.filter(member => member.type === 'staff' && (users.find(user => `user-${user.id}` === member.id)?.department?.name || t('dashboard.unassignedTeam')) === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open, a: member.avatar_url })),
   }));
 
   if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>;
@@ -265,8 +267,8 @@ export const Dashboard: React.FC = () => {
       <section className={`${PANEL} p-3 sm:p-4 flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 border-b border-gray-200 dark:border-slate-700 pb-2.5">
           <div>
-            <Eyebrow className="!text-[11px] mb-[2px]">{t('dashboard.title')}</Eyebrow>
-            <h2 className={`text-base sm:text-lg font-bold ${INK}`}>{t('dashboard.subtitle')}</h2>
+            <Eyebrow className="!text-[11px] mb-[2px]">{t('dashboard.performanceOverview')}</Eyebrow>
+            <h2 className={`text-base sm:text-lg font-bold ${INK}`}>{t('dashboard.operationsOverview')}</h2>
           </div>
           
           <div className="relative z-[100]" ref={searchRef}>
@@ -281,7 +283,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <ChevronDown size={13} className={MUTED} />
               </button>
-              <button onClick={() => setRange('custom')} className={`w-7 h-7 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`} title="Custom date range">
+              <button onClick={() => setRange('custom')} className={`w-7 h-7 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`} title={t('dashboard.customDateRange')}>
                 <Calendar size={14} />
               </button>
             </div>
@@ -345,7 +347,7 @@ export const Dashboard: React.FC = () => {
                   let items: any[] = [];
                   if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
                   else if (type === 'done') items = selectedTasks.filter(t => isDone(t.status));
-                  else if (type === 'projects') items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
+                  else if (type === 'projects') items = [{ title: t('dashboard.relatedCount', { count: s.projects, label: s.projectsLabel.toLowerCase() }), status: 'info' }];
 
                   return (
                     <div
@@ -382,7 +384,7 @@ export const Dashboard: React.FC = () => {
                               <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
                             </div>
                             {items.length === 0 ? (
-                              <p className="text-center text-gray-400 text-xs py-3 font-medium">Không có dữ liệu</p>
+                              <p className="text-center text-gray-400 text-xs py-3 font-medium">{t('common.noData')}</p>
                             ) : (
                               <div className="space-y-1 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
                                 {items.map((item, idx) => (
@@ -453,7 +455,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <strong className={`text-sm ${INK}`}>{t('dashboard.taskAllocation')}</strong>
-                <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
+                <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart, lang === 'vi' ? 'vi-VN' : 'en-US')} — {displayDate(rangeEnd, lang === 'vi' ? 'vi-VN' : 'en-US')}</p>
               </div>
               <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
                 {(['weekly', 'custom'] as const).map(r => (
@@ -462,7 +464,7 @@ export const Dashboard: React.FC = () => {
                     onClick={() => setRange(r)}
                     className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
                   >
-                    {r === 'weekly' ? 'Weekly' : 'Custom'}
+                    {r === 'weekly' ? t('dashboard.weekly') : t('dashboard.custom')}
                   </button>
                 ))}
               </div>
@@ -482,7 +484,7 @@ export const Dashboard: React.FC = () => {
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} />
                 <Tooltip
                   cursor={{ stroke: isDark ? '#334155' : '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  formatter={(v, name) => [v + ' tasks', String(name).charAt(0).toUpperCase() + String(name).slice(1)]}
+                  formatter={(v, name) => [v + (lang === 'vi' ? ' việc' : ' tasks'), String(name).charAt(0).toUpperCase() + String(name).slice(1)]}
                   separator=" "
                   contentStyle={{
                     fontSize: 11, borderRadius: 8,
@@ -506,8 +508,8 @@ export const Dashboard: React.FC = () => {
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-3.5 mt-1">
             <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
             <div className="min-w-0">
-              <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
-              <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
+              <strong className={`text-sm font-semibold ${INK}`}>{t('dashboard.trackingIncomplete', { name: s.name, count: s.open })}</strong>
+              <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{t('dashboard.openNoDeadline', { count: s.noDeadline })}</p>
             </div>
             <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
           </div>
@@ -541,7 +543,7 @@ export const Dashboard: React.FC = () => {
               <h2 className={`text-sm font-bold ${INK}`}>{t('dashboard.upcomingProjects')}</h2>
               <p className={`text-xs mt-0.5 ${MUTED}`}>{t('dashboard.upcomingDesc')}</p>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">🔥 Urgent</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">{t('dashboard.urgentBadge')}</span>
           </div>
           <div className="space-y-3">
             {upcomingProjects.length ? upcomingProjects.map(p => (
@@ -577,7 +579,7 @@ export const Dashboard: React.FC = () => {
                 return (
                   <div key={d.name} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
                     <button onClick={() => setOpenDept(open ? null : d.name)} className="w-full flex items-center justify-between py-2">
-                      <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>({d.members.length} PIC)</span></span>
+                      <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>{t('dashboard.picsCount', { count: d.members.length })}</span></span>
                       <ChevronDown size={13} className={`${MUTED} transition-transform duration-300 ${open ? 'rotate-180' : '-rotate-90'}`} />
                     </button>
                     <div className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
