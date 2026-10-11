@@ -48,12 +48,23 @@ export const Header: React.FC = () => {
     const scrollContainer = document.getElementById('main-scroll-container');
     if (!scrollContainer) return;
 
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const keepMobileHeaderVisible = () => {
+      if (!mobileQuery.matches) return;
+      headerHiddenRef.current = false;
+      travelRef.current = 0;
+      setIsHeaderHidden(false);
+    };
+    keepMobileHeaderVisible();
+    mobileQuery.addEventListener('change', keepMobileHeaderVisible);
+
     let activeScrollTarget: HTMLElement = scrollContainer;
     let lastY = scrollContainer.scrollTop;
     let frame = 0;
     let pendingScrollTarget: HTMLElement = scrollContainer;
 
     const handleScroll = (event: Event) => {
+      if (mobileQuery.matches) return;
       const eventTarget = event.target;
       pendingScrollTarget = eventTarget instanceof HTMLElement && scrollContainer.contains(eventTarget)
         ? eventTarget
@@ -103,6 +114,7 @@ export const Header: React.FC = () => {
     // Profile calendar), while ignoring scrolls outside the page content.
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     return () => {
+      mobileQuery.removeEventListener('change', keepMobileHeaderVisible);
       scrollContainer.removeEventListener('scroll', handleScroll, { capture: true });
       if (frame) window.cancelAnimationFrame(frame);
     };

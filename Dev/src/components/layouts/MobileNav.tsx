@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Home, CheckSquare, Package, User } from 'lucide-react';
 import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 export const MobileNav: React.FC = () => {
   const { t } = useTranslation();
   const [isHidden, setIsHidden] = useState(false);
+  const location = useLocation();
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
   const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
@@ -16,16 +17,24 @@ export const MobileNav: React.FC = () => {
   // Track scroll travel logic to avoid jitter
   const travelRef = useRef(0);
   const lastYRef = useRef(0);
+  const scrollTargetRef = useRef<EventTarget | null>(null);
   
   const navItems = [
     { name: t('nav.home'), path: '/', icon: <Home size={20} strokeWidth={1.8} />, hidden: role !== 'admin' },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: 'Projects', path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
-    { name: 'Dashboard', path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, isCenter: true },
+    { name: 'Dashboard', path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} /> },
     { name: 'Profile', path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
+
+  useEffect(() => {
+    setIsHidden(false);
+    travelRef.current = 0;
+    lastYRef.current = 0;
+    scrollTargetRef.current = null;
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = (e: Event) => {
@@ -34,6 +43,12 @@ export const MobileNav: React.FC = () => {
       if (!target || !target.clientHeight || target.clientHeight < 300) return;
 
       const y = Math.max(0, target.scrollTop);
+      if (target !== scrollTargetRef.current) {
+        scrollTargetRef.current = target;
+        lastYRef.current = y;
+        travelRef.current = 0;
+        return;
+      }
       const delta = y - lastYRef.current;
       
       if (y <= 20) {
@@ -45,10 +60,10 @@ export const MobileNav: React.FC = () => {
         }
         travelRef.current += delta;
         
-        if (travelRef.current > 15 && y > 60) {
+        if (travelRef.current > 32 && y > 80) {
           setIsHidden(true);
           travelRef.current = 0;
-        } else if (travelRef.current < -15) {
+        } else if (travelRef.current < -24) {
           setIsHidden(false);
           travelRef.current = 0;
         }
@@ -70,17 +85,18 @@ export const MobileNav: React.FC = () => {
           -webkit-backdrop-filter: blur(16px) saturate(150%);
           mask-image: linear-gradient(to top, #000 25%, transparent 100%);
           -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 100%);
-          transition: opacity 0.3s ease;
+          transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .dark .mobile-nav-mask {
           background: linear-gradient(to top, rgba(17,24,39,0.9), rgba(17,24,39,0));
         }
         .mobile-nav-container {
-          max-width: 400px;
+          max-width: 440px;
           margin: 0 auto;
           bottom: calc(24px + env(safe-area-inset-bottom));
           transform-origin: bottom center;
-          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform, opacity;
+          transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .mobile-nav-container.nav-hidden {
           transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom)));
@@ -89,6 +105,9 @@ export const MobileNav: React.FC = () => {
         }
         .mobile-nav-mask.nav-hidden {
           opacity: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mobile-nav-container, .mobile-nav-mask { transition-duration: 0.01ms; }
         }
       `}</style>
       
@@ -103,7 +122,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-4 right-4 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-slate-700 mobile-nav-container",
+          "md:hidden fixed left-3 right-3 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-slate-700 mobile-nav-container",
           isHidden && "nav-hidden"
         )}
       >
@@ -111,14 +130,9 @@ export const MobileNav: React.FC = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            className={({ isActive }) => cn(
-              "flex flex-col items-center justify-center transition-all duration-300 relative",
-              (item as any).isCenter 
-                ? "w-[48px] h-[48px] rounded-full bg-primary text-white shadow-lg -translate-y-2 hover:scale-105" 
-                : "flex-1 h-[44px] rounded-full",
-              !((item as any).isCenter) && isActive ? "text-primary bg-primary/10 dark:bg-slate-700 scale-105" : "",
-              !((item as any).isCenter) && !isActive ? "text-gray-500 hover:text-primary dark:text-gray-400" : ""
-            )}
+            aria-label={item.name}
+            title={item.name}
+            className="flex min-w-0 flex-1 h-11 items-center justify-center rounded-full text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-white focus-visible:outline-2 focus-visible:outline-primary transition-colors"
           >
             {item.icon}
           </NavLink>

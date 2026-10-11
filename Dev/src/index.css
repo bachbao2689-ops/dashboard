@@ -370,7 +370,7 @@ html:not(.dark)
 
 /* Component: Header Dropdown Toggle */
 .btn-header-dropdown-toggle {
-  @apply fixed left-1/2 top-0 z-[120] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl;
+  @apply fixed left-1/2 top-0 z-[120] hidden md:flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-b-xl;
   background-color: white;
   border-width: 0 1px 1px 1px;
   border-color: #dbeafe;
