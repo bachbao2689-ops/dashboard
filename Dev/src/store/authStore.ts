@@ -28,6 +28,7 @@ interface AuthState {
 }
 
 let authListenerStarted = false;
+let staffValidationStarted = false;
 
 const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
 const nameFromEmail = (email?: string | null) => (email || 'Staff').split('@')[0];
@@ -156,6 +157,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
           supabase.auth.onAuthStateChange((event, nextSession) => {
             if (get().user?.id !== 'dev-admin-id') void applySession(nextSession, event === 'SIGNED_IN');
           });
+        }
+        if (!staffValidationStarted) {
+          staffValidationStarted = true;
+          window.setInterval(() => {
+            if (get().session && get().user?.id !== 'dev-admin-id') void applySession(get().session);
+          }, 60_000);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
