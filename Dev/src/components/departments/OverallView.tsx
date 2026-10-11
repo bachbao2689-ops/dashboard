@@ -17,6 +17,7 @@ import type {
   PeriodFilter,
   AlertLevel,
 } from '../../types/department';
+import { useTranslation } from '../../i18n/translations';
 import { DepartmentKpiCards } from './DepartmentKpiCards';
 import { DepartmentComparisonChart } from './DepartmentComparisonChart';
 import { DepartmentHeatmap } from './DepartmentHeatmap';
@@ -37,6 +38,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
   onSelectDepartment,
   isDark = false,
 }) => {
+  const { t } = useTranslation();
   const tickColor = isDark ? '#94a3b8' : '#52514e';
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(137,135,129,0.18)';
 
@@ -44,19 +46,19 @@ export const OverallView: React.FC<OverallViewProps> = ({
     switch (status) {
       case 'ok':
         return {
-          label: 'Đúng tiến độ',
+          label: t('departments.statusOk'),
           bg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
           bar: 'bg-emerald-500',
         };
       case 'risk':
         return {
-          label: 'Có rủi ro',
+          label: t('departments.statusRisk'),
           bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
           bar: 'bg-amber-500',
         };
       case 'late':
         return {
-          label: 'Trễ',
+          label: t('departments.statusLate'),
           bg: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
           bar: 'bg-red-500',
         };
@@ -89,16 +91,16 @@ export const OverallView: React.FC<OverallViewProps> = ({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-              Tỷ lệ hoàn thành theo tuần so với mục tiêu
+              {t('departments.weeklyTrendTitle')}
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
                 <i className="w-2.5 h-2.5 rounded-sm bg-[#2a78d6] inline-block" />
-                Thực tế
+                {t('departments.actual')}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <i className="w-2.5 h-0.5 bg-[#898781] inline-block border-b border-dashed border-[#898781]" />
-                Mục tiêu
+                {t('departments.target')}
               </span>
             </div>
           </div>
@@ -129,15 +131,15 @@ export const OverallView: React.FC<OverallViewProps> = ({
                     return (
                       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2 text-xs">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">
-                          Tuần {label}
+                          {t('departments.weekLabel', { label: String(label) })}
                         </p>
                         <div className="flex items-center justify-between gap-4 text-blue-600 dark:text-blue-400">
-                          <span>Thực tế:</span>
+                          <span>{t('departments.actual')}:</span>
                           <b>{payload[0].value}%</b>
                         </div>
                         {payload[1] && (
                           <div className="flex items-center justify-between gap-4 text-gray-500 dark:text-gray-400">
-                            <span>Mục tiêu:</span>
+                            <span>{t('departments.target')}:</span>
                             <b>{payload[1].value}%</b>
                           </div>
                         )}
@@ -148,7 +150,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="actual"
-                  name="Thực tế"
+                  name={t('departments.actual')}
                   stroke="#2a78d6"
                   strokeWidth={2}
                   dot={{ r: 3, fill: '#2a78d6' }}
@@ -157,7 +159,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="target"
-                  name="Mục tiêu"
+                  name={t('departments.target')}
                   stroke="#898781"
                   strokeWidth={2}
                   strokeDasharray="5 4"
@@ -180,7 +182,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
       {/* 6. Cross-Department Project Progress Card */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
-          Tiến độ project
+          {t('departments.projectProgress')}
         </p>
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
           {data.projects.map((proj) => {
@@ -190,7 +192,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
                 key={proj.id}
                 onClick={() => onSelectDepartment(proj.departmentId)}
                 className="grid grid-cols-[140px_1fr_64px_96px] gap-3 items-center py-1.5 text-xs cursor-pointer hover:bg-gray-50/60 dark:hover:bg-slate-700/30 rounded-lg px-1 transition-colors"
-                title={`Nhấp để xem phòng ban ${proj.department}`}
+                title={t('departments.clickToViewDept', { name: proj.department })}
               >
                 <div>
                   <span className="font-medium text-gray-900 dark:text-white truncate block">

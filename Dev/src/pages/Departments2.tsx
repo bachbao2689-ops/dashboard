@@ -8,11 +8,13 @@ import {
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { RotateCw } from 'lucide-react';
 import { useUiStore } from '../store/uiStore';
+import { useTranslation } from '../i18n/translations';
 import { OverallView } from '../components/departments/OverallView';
 import { DepartmentDetailView } from '../components/departments/DepartmentDetailView';
 
 export const Departments2: React.FC = () => {
   const isDark = useUiStore((state) => state.theme === 'dark');
+  const { t } = useTranslation();
   const [view, setView] = useState<'overall' | 'detail'>('overall');
   const [selectedDept, setSelectedDept] = useState<DepartmentId>('marketing');
   const [period, setPeriod] = useState<PeriodFilter>('month');
@@ -73,13 +75,13 @@ export const Departments2: React.FC = () => {
   }, []);
 
   const tabs: { id: 'overall' | DepartmentId; label: string }[] = [
-    { id: 'overall', label: 'Tổng quan' },
-    { id: 'marketing', label: 'Marketing' },
-    { id: 'sale', label: 'Sale' },
-    { id: 'ecommerce', label: 'E-commerce' },
-    { id: 'design', label: 'Design' },
-    { id: 'accounting', label: 'Kế toán' },
-    { id: 'hr', label: 'HR' },
+    { id: 'overall', label: t('departments.tabOverall') },
+    { id: 'marketing', label: t('departments.deptMarketing') },
+    { id: 'sale', label: t('departments.deptSale') },
+    { id: 'ecommerce', label: t('departments.deptEcommerce') },
+    { id: 'design', label: t('departments.deptDesign') },
+    { id: 'accounting', label: t('departments.deptAccounting') },
+    { id: 'hr', label: t('departments.deptHr') },
   ];
   const activeTab = view === 'overall' ? 'overall' : selectedDept;
   const segBtn = (active: boolean) =>
@@ -96,17 +98,17 @@ export const Departments2: React.FC = () => {
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {view === 'overall' ? 'Departments' : currentDetailData.name}
+              {view === 'overall' ? t('nav.departments') : currentDetailData.name}
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Làm mới sau {formattedTime}</span>
+              <span>{t('departments.refreshIn', { time: formattedTime })}</span>
               <button
                 type="button"
                 onClick={refreshNow}
                 disabled={isRefreshing}
                 className="ml-0.5 hover:text-gray-900 dark:hover:text-white transition-colors"
-                title="Làm mới ngay"
+                title={t('departments.refreshNow')}
               >
                 <RotateCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -114,32 +116,32 @@ export const Departments2: React.FC = () => {
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {view === 'overall'
-              ? 'Tổng quan hiệu suất công việc các phòng ban'
-              : 'Chi tiết hiệu suất phòng ban'}
+              ? t('departments.overallSubtitle')
+              : t('departments.detailSubtitle')}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
-            {tabs.map((t) => (
+            {tabs.map((tItem) => (
               <button
-                key={t.id}
+                key={tItem.id}
                 type="button"
                 onClick={() =>
-                  t.id === 'overall' ? handleBackToOverall() : handleSelectDepartment(t.id)
+                  tItem.id === 'overall' ? handleBackToOverall() : handleSelectDepartment(tItem.id)
                 }
-                className={segBtn(activeTab === t.id)}
+                className={segBtn(activeTab === tItem.id)}
               >
-                {t.label}
+                {tItem.label}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
             {(
               [
-                ['week', 'Tuần'],
-                ['month', 'Tháng'],
-                ['quarter', 'Quý'],
+                ['week', t('departments.periodWeek')],
+                ['month', t('departments.periodMonth')],
+                ['quarter', t('departments.periodQuarter')],
               ] as [PeriodFilter, string][]
             ).map(([p, label]) => (
               <button key={p} type="button" onClick={() => setPeriod(p)} className={segBtn(period === p)}>

@@ -10,6 +10,7 @@ import { useAuthStore } from '../store/authStore';
 import { LeaderReports } from '../components/features/reports/LeaderReports';
 
 import { statusMeta, priorityColor } from '../utils/statusTheme';
+import { useTranslation } from '../i18n/translations';
 const chartTooltip = { backgroundColor: 'var(--chart-tooltip)', border: '1px solid var(--chart-border)', borderRadius: '12px', color: 'var(--chart-text)', boxShadow: '0 12px 32px #0003' };
 
 export const Reports: React.FC = () => {
@@ -25,6 +26,7 @@ export const Reports: React.FC = () => {
 };
 
 const AdminReports: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'analytics' | 'team-report'>('analytics');
 
   return (
@@ -46,7 +48,7 @@ const AdminReports: React.FC = () => {
           onClick={() => setActiveTab('team-report')}
           className={`border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${activeTab === 'team-report' ? 'border-primary text-primary dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
         >
-          Team Weekly Report
+          {t('reports.title')}
         </button>
       </div>
       <div role="tabpanel">

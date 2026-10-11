@@ -100,7 +100,7 @@ export function MemberManagement() {
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="leader">Leader</option>
-            <option value="member">Thành viên</option>
+            <option value="member">{t('members.roleMember')}</option>
           </select>
           <select
             value={statusFilter}
@@ -108,8 +108,8 @@ export function MemberManagement() {
             className="h-10 px-3 text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
             <option value="all">{t('members.allStatus')}</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="removed">Đã xóa</option>
+            <option value="active">{t('members.active')}</option>
+            <option value="removed">{t('members.removed')}</option>
           </select>
 
           {canManageAll && <button
@@ -117,7 +117,7 @@ export function MemberManagement() {
             className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">Thêm thành viên</span>
+            <span className="hidden sm:inline">{t('members.invite')}</span>
           </button>}
         </div>
       </div>
@@ -141,11 +141,11 @@ export function MemberManagement() {
             <tbody className="divide-y divide-black/5 dark:divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">Loading members...</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">{t('common.loading')}</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">No members found</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">{t('members.noMembers')}</td>
                 </tr>
               ) : (
                 memberGroups.flatMap(([departmentName, departmentMembers]) => [
@@ -161,7 +161,7 @@ export function MemberManagement() {
                             <User size={20} className="text-gray-500" />
                           )}
                         </div>
-                        <span className="font-medium text-gray-900 dark:text-white">{member.name || 'Unknown'}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{member.name || t('common.unassigned')}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{member.email}</td>
@@ -175,7 +175,7 @@ export function MemberManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status || 'pending')}`}>
-                        {member.status === 'active' ? 'ACTIVE' : 'ĐÃ XÓA'}
+                        {member.status === 'active' ? t('members.active').toUpperCase() : t('members.removed').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
@@ -183,8 +183,8 @@ export function MemberManagement() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {canManageAll && member.id !== profile?.id && (member.status === 'active' ?
-                        <button type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"><Trash2 size={14} /> Xóa</button>
-                        : <button type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"><RotateCcw size={14} /> Khôi phục</button>)}
+                        <button type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"><Trash2 size={14} /> {t('common.delete')}</button>
+                        : <button type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"><RotateCcw size={14} /> {t('members.restore')}</button>)}
                     </td>
                   </tr>
                   )))
@@ -204,11 +204,11 @@ export function MemberManagement() {
       />
       {memberToRemove && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => !savingMember && setMemberToRemove(null)}>
         <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
-          <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">Xóa thành viên?</h2>
-          <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300"><b>{memberToRemove.name}</b> sẽ rời danh sách hoạt động. Hồ sơ và lịch sử công việc được giữ lại; bạn có thể khôi phục trong bộ lọc “Đã xóa”.</p>
+          <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">{t('members.removeTitle')}</h2>
+          <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{t('members.removeConfirm', { name: memberToRemove.name })}</p>
           <div className="mt-6 flex justify-end gap-2">
-            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Hủy</button>
-            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? 'Đang xóa...' : 'Xóa thành viên'}</button>
+            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">{t('common.cancel')}</button>
+            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? t('members.removing') : t('members.removeBtn')}</button>
           </div>
         </div>
       </div>}

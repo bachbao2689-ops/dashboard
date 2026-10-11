@@ -7,8 +7,10 @@ import { toast } from 'react-hot-toast';
 import { EditProfileModal } from './EditProfileModal';
 import { CropModal } from '../../common/CropModal';
 import { ProfileKpis } from './ProfileKpis';
+import { useTranslation } from '../../../i18n/translations';
 
 export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
+  const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
@@ -51,7 +53,7 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
       setIsUploading(false); 
     }
   };
-  const name = profile?.name || user?.user_metadata?.full_name || 'Chưa cập nhật';
+  const name = profile?.name || user?.user_metadata?.full_name || t('profile.notUpdated');
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
   const dbRole = profile?.role || 'member';
   const roleDisplay = dbRole === 'admin' ? 'Admin' : dbRole === 'manager' ? 'Manager' : dbRole === 'leader' ? 'Leader' : 'Nhân viên';
@@ -94,8 +96,8 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
             </div>
             
             <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex items-start gap-1.5"><Mail size={14} className="mt-0.5 shrink-0" /> <span className="break-all sm:truncate">{profile?.email || user?.email || 'Chưa cập nhật'}</span></div>
-              <div className="flex items-start gap-1.5"><Shield size={14} className="mt-0.5 shrink-0" /> <span className="break-words sm:truncate">{profile?.department_name || 'Chưa phân team'} · {title}</span></div>
+              <div className="flex items-start gap-1.5"><Mail size={14} className="mt-0.5 shrink-0" /> <span className="break-all sm:truncate">{profile?.email || user?.email || t('profile.notUpdated')}</span></div>
+              <div className="flex items-start gap-1.5"><Shield size={14} className="mt-0.5 shrink-0" /> <span className="break-words sm:truncate">{profile?.department_name || t('profile.noTeamAssigned')} · {title}</span></div>
             </div>
           </div>
         </div>
@@ -104,9 +106,9 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
 
         <div className="order-2 ml-auto flex flex-wrap items-center justify-end gap-2 xl:order-3">
           <button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-sm font-medium shadow-sm">
-            <Edit3 size={16} /> Edit Profile
+            <Edit3 size={16} /> {t('profile.editProfile')}
           </button>
-          <button onClick={signOut} aria-label="Đăng xuất" className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-gray-500 shadow-sm">
+          <button onClick={signOut} aria-label={t('profile.logout')} className="p-2 bg-white hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 text-gray-500 shadow-sm">
             <LogOut size={18} />
           </button>
         </div>

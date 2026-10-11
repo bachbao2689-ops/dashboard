@@ -14,6 +14,7 @@ import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
+import { useTranslation } from '../i18n/translations';
 
 const mapStatus = (status: string) => {
   const s = status.toLowerCase();
@@ -35,6 +36,7 @@ const mapPriority = (prio: string | undefined) => {
 
 
 export const TaskList: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -275,7 +277,7 @@ export const TaskList: React.FC = () => {
       <div className={`relative flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedTask ? 'hidden md:flex xl:mr-[516px] pr-2' : 'pr-1 lg:pr-4'}`}>
       
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">All Tasks</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('tasks.title')}</h1>
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 relative z-50 w-full sm:w-auto">
           {/* Expanding Search */}
           <div className="flex items-center relative h-10">
@@ -284,7 +286,7 @@ export const TaskList: React.FC = () => {
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search tasks..."
+                  placeholder={t('tasks.search')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full h-10 pl-9 pr-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
@@ -306,10 +308,10 @@ export const TaskList: React.FC = () => {
               onChange={(e) => setGroupBy(e.target.value)}
               className="h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
-              <option value="none">None</option>
-              <option value="project">Project</option>
-              <option value="assignee">Assignee</option>
-              <option value="status">Status</option>
+              <option value="none">{t('common.none')}</option>
+              <option value="project">{t('common.project')}</option>
+              <option value="assignee">{t('common.assignee')}</option>
+              <option value="status">{t('common.status')}</option>
             </select>
           </div>
 
@@ -317,7 +319,7 @@ export const TaskList: React.FC = () => {
           <div className="relative flex items-center">
             <button onClick={() => setShowFilters(!showFilters)} className={`hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 border px-3.5 sm:px-4 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
               <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Filters</span>
+              <span className="text-sm font-medium">{t('btn.filters')}</span>
               {activeFiltersCount > 0 && <span className="ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full">{activeFiltersCount}</span>}
             </button>
             <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
@@ -327,12 +329,12 @@ export const TaskList: React.FC = () => {
 
           <button onClick={exportCSV} className="hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-3.5 sm:px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
-            <span className="text-sm font-medium">Export</span>
+            <span className="text-sm font-medium">{t('common.export')}</span>
           </button>
           
           {canCreateTask && <button onClick={handleNewTask} className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm">
             <Plus className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('tasks.createBtn')}</span>
           </button>}
         </div>
       </div>
@@ -349,8 +351,8 @@ export const TaskList: React.FC = () => {
           <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No tasks found</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Try adjusting your filters or search term.</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('tasks.noTasksFound')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('tasks.adjustFilters')}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -385,11 +387,11 @@ export const TaskList: React.FC = () => {
                       <p className="ml-6 mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
                         <span className="shrink-0">#{task.task_ref || task.id.split('-')[0]}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="min-w-0 truncate">{task.assignee?.name || 'Chưa phân công'}</span>
+                        <span className="min-w-0 truncate">{task.assignee?.name || t('common.unassigned')}</span>
                       </p>
                       <div className="ml-6 mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                         <StatusBadge status={task.status} />
-                        <span className="min-w-0 truncate">{task.due_date ? `Hạn ${new Date(task.due_date).toLocaleDateString('vi-VN')}` : 'Chưa có hạn'}</span>
+                        <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${new Date(task.due_date).toLocaleDateString()}` : t('common.noDueDate')}</span>
                         {mapPriority(task.priority) === 'High' && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">High</span>}
                       </div>
                     </div>
@@ -416,13 +418,13 @@ export const TaskList: React.FC = () => {
                           className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Task Ref</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Title</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">Project/Campaign</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Assignee</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">Priority</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">Due Date</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.ref')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.title')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">{t('tasks.col.projectCampaign')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.assignee')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.status')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.priority')}</th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">{t('tasks.col.dueDate')}</th>
                       <th className="p-4"></th>
                     </tr>
                   </thead>
@@ -497,14 +499,14 @@ export const TaskList: React.FC = () => {
         <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-white shadow-2xl animate-fade-in-up sm:gap-6 sm:px-6 sm:py-3 md:bottom-6">
           <div className="flex items-center gap-2 border-r border-gray-700 pr-4">
             <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">{selectedTasks.length}</span>
-            <span className="text-sm font-medium">Selected</span>
+            <span className="text-sm font-medium">{t('common.selected')}</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white">
-              <CheckCircle2 className="w-4 h-4 text-green-400" /> Mark Done
+              <CheckCircle2 className="w-4 h-4 text-green-400" /> {t('tasks.markDone')}
             </button>
             <button onClick={() => setIsBulkDeleteModalOpen(true)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
-              <Trash2 className="w-4 h-4" /> Delete
+              <Trash2 className="w-4 h-4" /> {t('common.delete')}
             </button>
           </div>
           <button onClick={() => setSelectedTasks([])} className="ml-2 p-1 hover:bg-gray-800 rounded-full transition-colors">
@@ -516,8 +518,8 @@ export const TaskList: React.FC = () => {
       </div>
       <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
-      <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title="Xóa các Task đã chọn" message={`Bạn có chắc muốn xóa ${selectedTasks.length} task đã chọn vào thùng rác?`} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
-      <ConfirmDeleteModal isOpen={!!taskToDelete} title="Xóa Task" message={`Bạn có chắc muốn xóa task "${taskToDelete?.title}" vào thùng rác?`} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
+      <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title={t('tasks.deleteSelectedTitle')} message={t('tasks.deleteSelectedConfirm')} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
+      <ConfirmDeleteModal isOpen={!!taskToDelete} title={t('tasks.deleteTaskTitle')} message={t('tasks.deleteTaskConfirm')} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
     </div>
   );
 };

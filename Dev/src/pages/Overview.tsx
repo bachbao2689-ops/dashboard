@@ -281,19 +281,19 @@ export const Overview: React.FC = () => {
         {/* Most urgent tasks */}
         <div className={`${PANEL} p-5`}>
           <div className="flex items-center justify-between mb-3">
-            <p className={LABEL}>Most urgent</p>
-            <button onClick={() => navigate('/tasks')} className={`text-xs font-semibold ${LINK} flex items-center gap-0.5`}>All <ChevronRight size={12} /></button>
+            <p className={LABEL}>{t('overview.mostUrgent')}</p>
+            <button onClick={() => navigate('/tasks')} className={`text-xs font-semibold ${LINK} flex items-center gap-0.5`}>{t('common.all')} <ChevronRight size={12} /></button>
           </div>
           <div className="space-y-2">
             {data.upcomingTasks.length === 0 ? (
-              <div className={`py-6 text-center text-sm ${MUTED}`}>No upcoming tasks!</div>
+              <div className={`py-6 text-center text-sm ${MUTED}`}>{t('dashboard.noUpcoming')}</div>
             ) : data.upcomingTasks.slice(0, 3).map(task => (
               <div key={task.id} className={`${INNER} rounded-[12px] px-3 py-2.5 flex items-center gap-3`}>
                 <i className={`w-1.5 self-stretch rounded-full ${task.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-semibold truncate ${INK}`}>{task.title}</p>
                   <p className={`text-xs flex items-center gap-1 ${MUTED}`}>
-                    <Clock size={11} /> {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'} · {task.assignee?.name || 'Unassigned'}
+                    <Clock size={11} /> {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'} · {task.assignee?.name || t('common.unassigned')}
                   </p>
                 </div>
               </div>
@@ -339,12 +339,12 @@ export const Overview: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <p className={LABEL}>{t('overview.recentBorrow')}</p>
             {pendingApprovals > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">{pendingApprovals} pending</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">{pendingApprovals} {t('borrow.statusPending').toLowerCase()}</span>
             )}
           </div>
           <div className="space-y-2">
             {data.recentRequests.length === 0 ? (
-              <div className={`py-6 text-center text-sm ${MUTED}`}>No recent requests</div>
+              <div className={`py-6 text-center text-sm ${MUTED}`}>{t('borrow.noRequests')}</div>
             ) : data.recentRequests.slice(0, 2).map((req, i) => (
               <div key={i} className={`${INNER} rounded-[12px] p-3`}>
                 <p className={`text-sm ${INK}`}>
@@ -357,13 +357,13 @@ export const Overview: React.FC = () => {
                     <button onClick={() => void handleUpdateStatus(req.id, 'reject')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
                   </div>
                 ) : req.returned_at ? (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-slate-500"><CheckCircle size={13} /> Đã trả</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-slate-500"><CheckCircle size={13} /> {t('borrow.statusReturned')}</p>
                 ) : req.approval_status === 'approved' ? (
                   <p className="mt-2 flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle size={13} /> {t('overview.approved')}</p>
                 ) : req.approval_status === 'pending' ? (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Clock size={13} /> Đang chờ duyệt</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Clock size={13} /> {t('borrow.statusPending')}</p>
                 ) : (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500"><XCircle size={13} /> Rejected</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500"><XCircle size={13} /> {t('borrow.statusRejected')}</p>
                 )}
               </div>
             ))}

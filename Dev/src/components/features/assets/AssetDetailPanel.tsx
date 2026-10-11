@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive } from 'lucide-react';
+import { useTranslation } from '../../../i18n/translations';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box className="w-5 h-5 text-gray-500" />;
@@ -18,6 +19,7 @@ interface AssetDetailPanelProps {
 }
 
 export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpen, onClose, onOpenQR }) => {
+  const { t } = useTranslation();
   const [width, setWidth] = useState(480);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -103,11 +105,11 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
 
                 <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm mt-6">
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><Tag className="w-4 h-4" /> Category</div>
-                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.category?.name || 'Uncategorized'}</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><Tag className="w-4 h-4" /> {t('assets.category')}</div>
+                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.category?.name || t('common.unassigned')}</div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Trạng thái</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> {t('common.status')}</div>
                     <div>
                       <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
                         (asset.status || '') === 'available' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
@@ -115,27 +117,27 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                         (asset.status || '') === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       }`}>
-                        {asset.status === 'available' ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}
+                        {asset.status === 'available' ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
                       </span>
                     </div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><Hash className="w-4 h-4" /> Serial</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><Hash className="w-4 h-4" /> {t('assets.serial')}</div>
                     <div className="text-gray-900 dark:text-gray-100 font-mono text-xs">{asset.serial_number || 'N/A'}</div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><User className="w-4 h-4" /> {asset.status === 'reserved' ? 'Người yêu cầu' : 'Người mượn'}</div>
-                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.current_borrower?.name || asset.pending_requester?.name || 'Chưa có'}</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><User className="w-4 h-4" /> {asset.status === 'reserved' ? t('assets.requester') : t('assets.col.borrower')}</div>
+                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.current_borrower?.name || asset.pending_requester?.name || t('common.none')}</div>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                  Maintenance Notes
+                  {t('assets.maintenanceNotes')}
                 </h3>
                 <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
-                  {asset.notes || 'No maintenance notes available.'}
+                  {asset.notes || t('assets.noNotes')}
                 </div>
               </div>
 

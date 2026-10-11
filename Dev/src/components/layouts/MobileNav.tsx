@@ -22,10 +22,10 @@ export const MobileNav: React.FC = () => {
   const navItems = [
     { name: t('nav.home'), path: '/', icon: <Home size={20} strokeWidth={1.8} />, hidden: role !== 'admin' },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
-    { name: 'Projects', path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
-    { name: 'Dashboard', path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
+    { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
+    { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} /> },
-    { name: 'Profile', path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
+    { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
 

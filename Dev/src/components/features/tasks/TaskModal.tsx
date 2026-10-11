@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import { useTranslation } from '../../../i18n/translations';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface TaskModalProps {
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
   const canChooseDepartment = true;
   const [title, setTitle] = useState('');
@@ -190,12 +192,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
               <div>
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white">Tạo mới task</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Khởi tạo công việc mới vào hệ thống</p>
+                <h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('tasks.createTitle')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('tasks.createSubtitle')}</p>
               </div>
               <button 
                 disabled={loading} 
-                aria-label="Đóng tạo mới task" 
+                aria-label={t('common.close')} 
                 onClick={onClose} 
                 className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               >
@@ -208,7 +210,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 <fieldset disabled={loading} className="min-w-0 space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                      Task Title <span className="text-red-500">*</span>
+                      {t('tasks.taskTitle')} <span className="text-red-500">*</span>
                     </label>
                     <input 
                       type="text" 
@@ -217,14 +219,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                       value={title}
                       onChange={e => setTitle(e.target.value)}
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-                      placeholder="Describe task briefly"
+                      placeholder={t('tasks.titlePlaceholder')}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Department <span className="text-red-500">*</span>
+                        {t('common.department')} <span className="text-red-500">*</span>
                       </label>
                       <select 
                         required
@@ -233,7 +235,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                         disabled={!canChooseDepartment}
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       >
-                        {canChooseDepartment && <option value="">Select Department</option>}
+                        {canChooseDepartment && <option value="">{t('tasks.selectDepartment')}</option>}
                         {visibleDepartments.map(d => (
                           <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
@@ -241,14 +243,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Assignee
+                        {t('common.assignee')}
                       </label>
                       <select 
                         value={assigneeId}
                         onChange={e => setAssigneeId(e.target.value)}
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       >
-                        <option value="">Unassigned</option>
+                        <option value="">{t('common.unassigned')}</option>
                         {visibleUsers.map(u => (
                           <option key={u.id} value={u.id}>{u.name}</option>
                         ))}
@@ -259,29 +261,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Priority
+                        {t('common.priority')}
                       </label>
                       <select 
                         value={priority}
                         onChange={e => setPriority(e.target.value)}
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
+                        <option value="low">{t('common.low')}</option>
+                        <option value="medium">{t('common.medium')}</option>
+                        <option value="high">{t('common.high')}</option>
+                        <option value="urgent">{t('common.urgent')}</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Project
+                        {t('common.project')}
                       </label>
                       <select 
                         value={projectId}
                         onChange={e => setProjectId(e.target.value)}
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       >
-                        <option value="">No Project</option>
+                        <option value="">{t('tasks.noProject')}</option>
                         {visibleProjects.map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -292,7 +294,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="tw-calendar-picker relative">
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Start Date
+                        {t('common.startDate')}
                       </label>
                       <input 
                         type="text" 
@@ -307,7 +309,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     </div>
                     <div className="tw-calendar-picker relative">
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                        Due Date
+                        {t('common.dueDate')}
                       </label>
                       <input 
                         type="text" 
@@ -324,14 +326,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                      Description
+                      {t('common.description')}
                     </label>
                     <textarea 
                       value={description}
                       onChange={e => setDescription(e.target.value)}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm"
-                      placeholder="Describe task details..."
+                      placeholder={t('tasks.descPlaceholder')}
                     />
                   </div>
                 </fieldset>
@@ -344,14 +346,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                   onClick={onClose} 
                   className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button 
                   disabled={loading || !title.trim() || !departmentId} 
                   type="submit" 
                   className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
                 >
-                  {loading ? 'Đang tạo…' : 'Tạo task'}
+                  {loading ? t('tasks.creating') : t('tasks.createBtn')}
                 </button>
               </div>
             </form>

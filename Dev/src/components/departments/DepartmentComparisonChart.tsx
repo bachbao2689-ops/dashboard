@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from 'recharts';
 import type { DepartmentComparisonItem, DepartmentId } from '../../types/department';
+import { useTranslation } from '../../i18n/translations';
 
 interface DepartmentComparisonChartProps {
   data: DepartmentComparisonItem[];
@@ -21,6 +22,7 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
   onSelectDepartment,
   isDark = false,
 }) => {
+  const { t } = useTranslation();
   const chartData = data.map((d) => ({
     ...d,
     displayLabel: `${d.name}  ${d.completionPct}%`,
@@ -34,28 +36,28 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
       <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-            So sánh phòng ban (sắp theo số task quá hạn)
+            {t('departments.comparisonTitle')}
           </p>
           <span className="text-[11px] text-blue-600 dark:text-blue-400">
-            (Nhấp vào phòng ban để xem chi tiết drill-down)
+            {t('departments.comparisonHint')}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
           <span className="inline-flex items-center gap-1.5">
             <i className="w-2.5 h-2.5 rounded-sm bg-[#2a78d6] inline-block" />
-            Hoàn thành
+            {t('departments.kpiCompletion')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <i className="w-2.5 h-2.5 rounded-sm bg-[#85B7EB] inline-block" />
-            Đang làm
+            {t('departments.kpiInProgress')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <i className="w-2.5 h-2.5 rounded-sm bg-[#c3c2b7] dark:bg-[#64748b] inline-block" />
-            Chưa bắt đầu
+            {t('departments.filterTodo')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <i className="w-2.5 h-2.5 rounded-sm bg-[#d03b3b] inline-block" />
-            Quá hạn
+            {t('departments.kpiOverdue')}
           </span>
         </div>
       </div>
@@ -101,45 +103,45 @@ export const DepartmentComparisonChart: React.FC<DepartmentComparisonChartProps>
                   <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2.5 text-xs z-50">
                     <p className="font-semibold text-gray-900 dark:text-white mb-1.5 flex items-center justify-between gap-4">
                       <span>{d.name}</span>
-                      <span className="text-blue-600 dark:text-blue-400 font-bold">{d.completionPct}% hoàn thành</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">{d.completionPct}% {t('departments.completionSuffix')}</span>
                     </p>
                     <div className="space-y-1 text-gray-600 dark:text-gray-300">
                       <div className="flex justify-between gap-3">
                         <span className="flex items-center gap-1.5">
-                          <i className="w-2 h-2 rounded-full bg-[#2a78d6]" /> Hoàn thành:
+                          <i className="w-2 h-2 rounded-full bg-[#2a78d6]" /> {t('departments.kpiCompletion')}:
                         </span>
                         <b className="text-gray-900 dark:text-white">{d.done}</b>
                       </div>
                       <div className="flex justify-between gap-3">
                         <span className="flex items-center gap-1.5">
-                          <i className="w-2 h-2 rounded-full bg-[#85B7EB]" /> Đang làm:
+                          <i className="w-2 h-2 rounded-full bg-[#85B7EB]" /> {t('departments.kpiInProgress')}:
                         </span>
                         <b className="text-gray-900 dark:text-white">{d.doing}</b>
                       </div>
                       <div className="flex justify-between gap-3">
                         <span className="flex items-center gap-1.5">
-                          <i className="w-2 h-2 rounded-full bg-[#c3c2b7]" /> Chưa bắt đầu:
+                          <i className="w-2 h-2 rounded-full bg-[#c3c2b7]" /> {t('departments.filterTodo')}:
                         </span>
                         <b className="text-gray-900 dark:text-white">{d.todo}</b>
                       </div>
                       <div className="flex justify-between gap-3">
                         <span className="flex items-center gap-1.5">
-                          <i className="w-2 h-2 rounded-full bg-[#d03b3b]" /> Quá hạn:
+                          <i className="w-2 h-2 rounded-full bg-[#d03b3b]" /> {t('departments.kpiOverdue')}:
                         </span>
                         <b className="text-red-600 dark:text-red-400 font-bold">{d.late}</b>
                       </div>
                       <div className="pt-1.5 border-t border-gray-100 dark:border-slate-800 text-[10px] text-blue-500 font-medium text-center">
-                        Nhấp để xem chi tiết →
+                        {t('departments.clickForDetails')}
                       </div>
                     </div>
                   </div>
                 );
               }}
             />
-            <Bar dataKey="done" name="Hoàn thành" stackId="a" fill="#2a78d6" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="doing" name="Đang làm" stackId="a" fill="#85B7EB" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="todo" name="Chưa bắt đầu" stackId="a" fill={isDark ? '#64748b' : '#c3c2b7'} radius={[0, 0, 0, 0]} />
-            <Bar dataKey="late" name="Quá hạn" stackId="a" fill="#d03b3b" radius={[0, 2, 2, 0]} />
+            <Bar dataKey="done" name={t('departments.kpiCompletion')} stackId="a" fill="#2a78d6" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="doing" name={t('departments.kpiInProgress')} stackId="a" fill="#85B7EB" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="todo" name={t('departments.filterTodo')} stackId="a" fill={isDark ? '#64748b' : '#c3c2b7'} radius={[0, 0, 0, 0]} />
+            <Bar dataKey="late" name={t('departments.kpiOverdue')} stackId="a" fill="#d03b3b" radius={[0, 2, 2, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

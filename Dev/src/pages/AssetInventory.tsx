@@ -64,7 +64,7 @@ export const AssetInventory: React.FC = () => {
       />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">Kho thiết bị</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('assets.title')}</h2>
         
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
@@ -80,32 +80,32 @@ export const AssetInventory: React.FC = () => {
             />
           </div>
           
-          <button onClick={() => setIsBorrowDrawerOpen(true)} aria-label="Mở phiếu mượn" className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
-            <Box size={18} /> <span className="text-xs sm:text-sm">Phiếu mượn</span>
-            {cart.length > 0 && <span className="bg-white/20 text-white text-[11px] font-bold min-w-5 h-5 px-1 flex items-center justify-center rounded-full" aria-label={`${cart.length} thiết bị trong phiếu`}>{cart.length}</span>}
+          <button onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+            <Box size={18} /> <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
+            {cart.length > 0 && <span className="bg-white/20 text-white text-[11px] font-bold min-w-5 h-5 px-1 flex items-center justify-center rounded-full" aria-label={`${cart.length} ${t('assets.borrowSlip').toLowerCase()}`}>{cart.length}</span>}
           </button>
-          <button onClick={handleNewAsset} aria-label="Thêm thiết bị" className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
-            <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">Thêm</span><span className="hidden sm:inline">Thêm thiết bị</span></span>
+          <button onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
+            <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
           </button>
         </div>
       </div>
 
       <div className="card-hub flex-1 overflow-hidden rounded-2xl shadow-sm">
         <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
-          {loading ? <p className="p-6 text-center text-sm text-gray-500">Đang tải thiết bị...</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || 'Không tìm thấy thiết bị.'}</p> : filteredAssets.map(asset => {
+          {loading ? <p className="p-6 text-center text-sm text-gray-500">{t('assets.loading')}</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || t('assets.noAssets')}</p> : filteredAssets.map(asset => {
             const inCart = cart.some(item => item.id === asset.id);
             const canBorrow = asset.status === 'available' && asset.is_available !== false;
-            const statusLabel = canBorrow ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng';
+            const statusLabel = canBorrow ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable');
             return <div key={asset.id} className="px-3 py-3">
               <button type="button" onClick={() => setSelectedAsset(asset)} className="flex w-full min-w-0 items-center gap-2.5 text-left">
                 <span className="shrink-0">{getIcon(asset.category?.name)}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{asset.name}</span>
                 <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
               </button>
-              <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || 'Chưa phân loại'}</p>
+              <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || t('common.unassigned')}</p>
               <div className="ml-6 mt-2 flex min-w-0 items-center justify-between gap-2">
                 <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
-                {(canBorrow || inCart) ? <button type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? 'Bỏ khỏi phiếu' : 'Thêm vào phiếu'}</button> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">Hạn {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
+                {(canBorrow || inCart) ? <button type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</button> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
               </div>
             </div>;
           })}
@@ -114,21 +114,21 @@ export const AssetInventory: React.FC = () => {
           <table className="w-full min-w-max text-left">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset Code</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người mượn</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hạn trả</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thao tác</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.code')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.asset')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.condition')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.location')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.status')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.borrower')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.dueDate')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
               {loading ? (
-                <tr><td colSpan={8} className="p-8 text-center text-gray-500">Đang tải thiết bị...</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-gray-500">{t('assets.loading')}</td></tr>
               ) : filteredAssets.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center text-gray-500">{error || 'Không tìm thấy thiết bị.'}</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-gray-500">{error || t('assets.noAssets')}</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
@@ -142,7 +142,7 @@ export const AssetInventory: React.FC = () => {
                         </div>
                         <div>
                           <p className="max-w-[340px] truncate font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
-                          <p className="mt-0.5 max-w-[340px] truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Uncategorized'}</p>
+                          <p className="mt-0.5 max-w-[340px] truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || t('common.unassigned')}</p>
                         </div>
                       </div>
                     </td>
@@ -150,7 +150,7 @@ export const AssetInventory: React.FC = () => {
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.location || 'N/A'}</td>
                     <td className="p-4 text-sm">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {asset.status === 'available' && asset.is_available !== false ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}
+                        {asset.status === 'available' && asset.is_available !== false ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
@@ -165,34 +165,34 @@ export const AssetInventory: React.FC = () => {
                         if (inCart) {
                           return (
                             <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600">
-                              Đang trong giỏ
+                              {t('assets.inSlip')}
                             </button>
                           );
                         }
                         if (asset.status === 'reserved') {
-                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Đang chờ duyệt</span>;
+                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{t('assets.pendingApproval')}</span>;
                         }
                         if (asset.status === 'borrowed') {
                           return (
                             <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-black shadow-sm opacity-90">
-                              Đang mượn
+                              {t('assets.statusBorrowed')}
                             </button>
                           );
                         }
                         if (asset.status === 'maintenance' || asset.status === 'broken') {
                           return (
                             <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white shadow-sm opacity-90">
-                              Bảo trì
+                              {t('assets.maintenance')}
                             </button>
                           );
                         }
                         if (asset.status !== 'available' || asset.is_available === false) {
-                          return <span className="text-xs text-gray-500">Không khả dụng</span>;
+                          return <span className="text-xs text-gray-500">{t('assets.statusUnavailable')}</span>;
                         }
                         return (
                           <div className="flex items-center gap-1">
                             <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
-                              Thêm vào phiếu
+                              {t('assets.addToSlip')}
                             </button>
                           </div>
                         );

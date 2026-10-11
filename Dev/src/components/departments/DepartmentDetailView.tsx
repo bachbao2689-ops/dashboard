@@ -21,6 +21,7 @@ import type {
   TaskStatusFilter,
   AlertLevel,
 } from '../../types/department';
+import { useTranslation } from '../../i18n/translations';
 import { DepartmentKpiCards } from './DepartmentKpiCards';
 
 interface DepartmentDetailViewProps {
@@ -37,6 +38,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
   data,
   isDark = false,
 }) => {
+  const { t } = useTranslation();
   const [taskFilter, setTaskFilter] = useState<TaskStatusFilter>('all');
 
   const filteredTasks = useMemo(() => {
@@ -51,19 +53,19 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
     switch (status) {
       case 'ok':
         return {
-          label: 'Đúng tiến độ',
+          label: t('departments.statusOk'),
           bg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
           bar: 'bg-emerald-500',
         };
       case 'risk':
         return {
-          label: 'Có rủi ro',
+          label: t('departments.statusRisk'),
           bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
           bar: 'bg-amber-500',
         };
       case 'late':
         return {
-          label: 'Trễ',
+          label: t('departments.statusLate'),
           bg: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
           bar: 'bg-red-500',
         };
@@ -74,17 +76,17 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
     switch (status) {
       case 'late':
         return {
-          label: 'Quá hạn',
+          label: t('departments.filterLate'),
           cls: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800',
         };
       case 'doing':
         return {
-          label: 'Đang làm',
+          label: t('departments.filterDoing'),
           cls: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
         };
       case 'todo':
         return {
-          label: 'Chưa bắt đầu',
+          label: t('departments.filterTodo'),
           cls: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-600',
         };
     }
@@ -113,7 +115,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       {/* 4. Active Projects Grid (Project đang chạy) */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
-          Project đang chạy
+          {t('departments.activeProjects')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {data.projects.map((proj) => {
@@ -146,17 +148,17 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                     <span>
                       {proj.completedTasks}/{proj.totalTasks} task ({pct}%)
                     </span>
-                    <span>Hạn {proj.deadline}</span>
+                    <span>{t('departments.dueDeadline', { deadline: proj.deadline })}</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-1 pt-1.5 border-t border-gray-200/50 dark:border-slate-700/50">
-                  <span>Phụ trách: {proj.manager}</span>
+                  <span>{t('departments.manager', { manager: proj.manager })}</span>
                   {proj.overdueCount > 0 ? (
                     <span className="text-red-700 dark:text-red-400 font-semibold">
-                      {proj.overdueCount} quá hạn
+                      {t('departments.overdueCount', { count: proj.overdueCount })}
                     </span>
                   ) : (
-                    <span className="text-gray-400 dark:text-gray-500">Không quá hạn</span>
+                    <span className="text-gray-400 dark:text-gray-500">{t('departments.noOverdue')}</span>
                   )}
                 </div>
               </div>
@@ -169,15 +171,15 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-            Task đang hoạt động
+            {t('departments.activeTasks')}
           </p>
           <div className="flex items-center gap-1">
             {(
               [
-                { key: 'all', label: 'Tất cả' },
-                { key: 'late', label: 'Quá hạn' },
-                { key: 'doing', label: 'Đang làm' },
-                { key: 'todo', label: 'Chưa bắt đầu' },
+                { key: 'all', label: t('common.all') },
+                { key: 'late', label: t('departments.filterLate') },
+                { key: 'doing', label: t('departments.filterDoing') },
+                { key: 'todo', label: t('departments.filterTodo') },
               ] as const
             ).map((f) => (
               <button
@@ -198,31 +200,31 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
 
         {/* Table Header */}
         <div className="grid grid-cols-[minmax(0,1fr)_96px_36px_84px_52px] gap-2.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 pb-1.5 px-1 border-b border-gray-100 dark:border-slate-700">
-          <div>Task</div>
-          <div>Trạng thái</div>
-          <div className="text-center">PIC</div>
-          <div>Hạn</div>
-          <div>Ưu tiên</div>
+          <div>{t('tasks.col.title')}</div>
+          <div>{t('tasks.col.status')}</div>
+          <div className="text-center">{t('tasks.col.assignee')}</div>
+          <div>{t('tasks.col.dueDate')}</div>
+          <div>{t('tasks.col.priority')}</div>
         </div>
 
         {/* Table Body (Internal Scroll Container for zero layout shift) */}
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60 max-h-[160px] overflow-y-auto scrollbar-hide">
-          {filteredTasks.map((t) => {
-            const statusStyle = getTaskStatusStyle(t.status);
-            const isLate = t.status === 'late';
-            const isHighPriority = t.priority === 'Cao';
+          {filteredTasks.map((taskItem) => {
+            const statusStyle = getTaskStatusStyle(taskItem.status);
+            const isLate = taskItem.status === 'late';
+            const isHighPriority = taskItem.priority === 'Cao';
 
             return (
               <div
-                key={t.id}
+                key={taskItem.id}
                 className="grid grid-cols-[minmax(0,1fr)_96px_36px_84px_52px] gap-2.5 items-center py-2 text-xs px-1 hover:bg-gray-50/60 dark:hover:bg-slate-700/20 rounded transition-colors"
               >
                 <div className="min-w-0 pr-2">
                   <div className="font-medium text-gray-900 dark:text-white truncate">
-                    {t.name}
+                    {taskItem.name}
                   </div>
                   <div className="text-[11px] text-gray-400 dark:text-gray-500">
-                    {t.projectTag}
+                    {taskItem.projectTag}
                   </div>
                 </div>
                 <div>
@@ -235,9 +237,9 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                 <div className="flex justify-center">
                   <span
                     className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-semibold text-xs flex items-center justify-center shrink-0"
-                    title={t.assignee}
+                    title={taskItem.assignee}
                   >
-                    {t.assignee[0]}
+                    {taskItem.assignee[0]}
                   </span>
                 </div>
                 <span
@@ -247,7 +249,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                       : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
-                  {t.dueDate}
+                  {taskItem.dueDate}
                 </span>
                 <span
                   className={`text-xs font-medium ${
@@ -256,14 +258,14 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  {t.priority}
+                  {taskItem.priority}
                 </span>
               </div>
             );
           })}
           {filteredTasks.length === 0 && (
             <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500">
-              Không có task nào trong trạng thái này
+              {t('departments.noTasksInStatus')}
             </div>
           )}
         </div>
@@ -275,16 +277,16 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-              Burndown: task còn lại
+              {t('departments.burndownTitle')}
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
                 <i className="w-2.5 h-2.5 rounded-sm bg-[#2a78d6] inline-block" />
-                Thực tế
+                {t('departments.actual')}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <i className="w-2.5 h-0.5 bg-[#898781] inline-block border-b border-dashed border-[#898781]" />
-                Kế hoạch
+                {t('departments.planned')}
               </span>
             </div>
           </div>
@@ -314,15 +316,15 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                     return (
                       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2 text-xs">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">
-                          Tuần {label}
+                          {t('departments.weekLabel', { label: String(label) })}
                         </p>
                         <div className="flex items-center justify-between gap-4 text-blue-600 dark:text-blue-400">
-                          <span>Thực tế còn lại:</span>
+                          <span>{t('departments.actualRemaining')}</span>
                           <b>{payload[0].value} task</b>
                         </div>
                         {payload[1] && (
                           <div className="flex items-center justify-between gap-4 text-gray-500 dark:text-gray-400">
-                            <span>Kế hoạch:</span>
+                            <span>{t('departments.planned')}</span>
                             <b>{payload[1].value} task</b>
                           </div>
                         )}
@@ -333,7 +335,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="actual"
-                  name="Thực tế"
+                  name={t('departments.actual')}
                   stroke="#2a78d6"
                   strokeWidth={2}
                   dot={{ r: 3, fill: '#2a78d6' }}
@@ -342,7 +344,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="planned"
-                  name="Kế hoạch"
+                  name={t('departments.planned')}
                   stroke="#898781"
                   strokeWidth={2}
                   strokeDasharray="5 4"
@@ -357,10 +359,10 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px] justify-between">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-              Mức tải theo thành viên (% công suất)
+              {t('departments.memberWorkload')}
             </p>
             <span className="text-[10px] text-gray-400 dark:text-gray-500">
-              &gt;100% quá tải (đỏ)
+              {t('departments.overloadNotice')}
             </span>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -392,7 +394,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                     <span
                       className="absolute top-0 bottom-0 w-[1px] bg-gray-400 dark:bg-gray-500"
                       style={{ left: `${thresholdPos}%` }}
-                      title="Ngưỡng 100% công suất"
+                      title={t('departments.capacityThreshold')}
                     />
                   </div>
                   <span
@@ -414,7 +416,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
       {/* 7. Recent Activity Feed Card */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 mb-2">
-          Hoạt động gần đây
+          {t('departments.recentActivity')}
         </p>
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
           {data.activities.map((act) => (

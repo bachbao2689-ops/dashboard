@@ -2,7 +2,7 @@ import { ProjectCampaignDetailPanel } from '../components/features/projects/Proj
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Filter, User } from 'lucide-react';
-
+import { useTranslation } from '../i18n/translations';
 
 import { ProfileHeader } from '../components/features/profile/ProfileHeader';
 import { ProfileCalendar } from '../components/features/profile/ProfileCalendar';
@@ -16,6 +16,7 @@ import type { WeekSelection } from '../lib/weeklyReport';
 import { useAuthStore } from '../store/authStore';
 
 export const MyTasks: React.FC = () => {
+  const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
   const isGlobalManager = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
   const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
@@ -74,14 +75,14 @@ export const MyTasks: React.FC = () => {
               <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
                 <Filter size={15} className="text-gray-400" />
                 <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <option value="">Tất cả phòng ban</option>
+                  <option value="">{t('common.allDepartments')}</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
                 <User size={15} className="text-gray-400" />
                 <select value={filterPic} onChange={e => setFilterPic(e.target.value)} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <option value="">{filterDept ? 'Tất cả nhân sự' : 'Chọn nhân sự (PIC)'}</option>
+                  <option value="">{filterDept ? t('common.allStaff') : t('common.selectPic')}</option>
                   {visibleUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>

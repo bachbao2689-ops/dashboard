@@ -7,6 +7,7 @@ import { ConfirmHideModal } from '../../common/ConfirmHideModal';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import { useTranslation } from '../../../i18n/translations';
 
 const strictFormatVN = (dateStr?: string | null) => {
   if (!dateStr) return '—';
@@ -47,6 +48,7 @@ const getDueStatusLabel = (endDateStr?: string | null) => {
 };
 
 export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = ({ onSelect }) => {
+  const { t } = useTranslation();
   const profile = useAuthStore(s => s.profile);
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [expanded, setExpanded] = useState(true);
@@ -147,7 +149,7 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
         <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
-          <Megaphone className="text-amber-500" size={16} /> Campaigns
+          <Megaphone className="text-amber-500" size={16} /> {t('projects.campaigns')}
           <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">{campaigns.length}</span>
         </button>
       </div>
@@ -156,26 +158,26 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
         {campaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
           <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
             <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span><ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
-            <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || 'Chưa có mục tiêu'}</span>
+            <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
           </button>
           <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <StatusBadge status={c.status || 'planning'} />
-            <span className="min-w-0 truncate">{c.end_date ? `Hạn ${formatDate(c.end_date)}` : 'Chưa có hạn'}</span>
-            {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`Ẩn ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`Xóa ${c.name}`}><Trash2 size={15} /></button></div>}
+            <span className="min-w-0 truncate">{c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}</span>
+            {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
         </article>)}
-        {!campaigns.length && <p className="p-6 text-center text-sm text-gray-500">Chưa có Campaign.</p>}
+        {!campaigns.length && <p className="p-6 text-center text-sm text-gray-500">{t('projects.noCampaigns')}</p>}
       </div>
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-max text-left">
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
-            <th className="p-4">Campaign</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Budget</th><th>Status</th><th className="w-12" />
+            <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />
           </tr></thead>
           <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign hover:bg-primary/5 transition-all duration-300 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-            <td className="p-4"><b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || 'Chưa có mục tiêu'}</p></td>
+            <td className="p-4"><b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p></td>
             <td>
   <div className="flex items-center gap-2">
-    <div className="flex -space-x-2"><Avatar name={c.lead?.name || 'Unassigned'} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
+    <div className="flex -space-x-2"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
     {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
       <>
         <span className="text-gray-300 dark:text-gray-600 px-1">|</span>
@@ -189,14 +191,14 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     )}
   </div>
 </td>
-            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`Hạn chót: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date)}</div>}</div></td>
+            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date)}</div>}</div></td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
             <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
             <td><StatusBadge status={c.status || 'planning'} /></td>
-            <td className="w-16 pr-4">{canManage && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Ẩn"><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={16}/></button></div>}</td>
+            <td className="w-16 pr-4">{canManage && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
           </tr>)}</tbody>
         </table>
-        {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">Chưa có Campaign.</p>}
+        {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">{t('projects.noCampaigns')}</p>}
       </div></>}
     <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemove} onCancel={() => setCampaignToDelete(null)} />
     <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHide} onCancel={() => setCampaignToHide(null)} />

@@ -43,7 +43,7 @@ export const TeamWorkload: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
           <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Week of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('workload.weekOf')} {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export const TeamWorkload: React.FC = () => {
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Overloaded (&gt;80%)</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('workload.overloaded')}</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{overloadedCount}</p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export const TeamWorkload: React.FC = () => {
 
       {totalMembers === 0 ? (
         <div className="glass-panel p-8 text-center text-gray-500 dark:text-gray-400 rounded-xl">
-          No team members found.
+          {t('members.noMembers')}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,16 +130,16 @@ export const TeamWorkload: React.FC = () => {
                     <span className="text-xs text-gray-500 dark:text-gray-400">{member.capacityPercentage}% capacity</span>
                     {member.capacityPercentage >= 80 && (
                       <span className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> Warning
+                        <AlertTriangle className="w-3 h-3" /> {t('workload.warning')}
                       </span>
                     )}
                   </div>
                   
                   {selectedMember?.id === member.id && (
                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Active Tasks</h4>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">{t('dashboard.openTasks')}</h4>
                       {member.tasks.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">No active tasks</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.noUpcoming')}</p>
                       ) : (
                         <ul className="space-y-2">
                           {member.tasks.map(task => (

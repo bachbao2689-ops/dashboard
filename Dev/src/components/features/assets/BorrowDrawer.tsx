@@ -6,6 +6,7 @@ import type { Asset } from '../../../hooks/useAssets';
 import toast from 'react-hot-toast';
 import { CalendarDays, Grip, X, Search, Trash2 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
+import { useTranslation } from '../../../i18n/translations';
 
 interface BorrowDrawerProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ const toIsoDate = (displayDate: string) => {
 };
 
 export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, cartAssets, setCartAssets, onSuccess }) => {
+  const { t } = useTranslation();
   const width = window.innerWidth < 768 ? window.innerWidth : 480;
   
   const profile = useAuthStore(state => state.profile);
@@ -119,7 +121,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
         className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[70] transition-[width,opacity] duration-300 ease-out`}
       >
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white">Phiếu mượn thiết bị</h3>
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('borrow.slipTitle')}</h3>
           <button 
             disabled={loading}
             onClick={onClose} 
@@ -131,21 +133,21 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
           <section className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Thông tin người mượn</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">{t('borrow.borrowerInfo')}</h4>
             <div className="flex items-center gap-3">
               <Avatar name={profile?.name || ''} src={profile?.avatar_url || undefined} className="w-10 h-10 shadow-sm" />
               <div>
                 <b className="text-sm text-gray-900 dark:text-white">{profile?.name}</b>
-                <p className="text-xs text-gray-500">{profile?.department_name || 'Chưa có phòng ban'}</p>
+                <p className="text-xs text-gray-500">{profile?.department_name || t('borrow.noDepartment')}</p>
               </div>
             </div>
           </section>
 
           <section>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between gap-2">
-              <span>Danh sách thiết bị ({cartAssets.length})</span>
+              <span>{t('borrow.equipmentList')} ({cartAssets.length})</span>
               <button type="button" disabled={loading || cartAssets.length === 0} onClick={() => setCartAssets([])} className="normal-case tracking-normal text-xs font-semibold text-rose-500 hover:text-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0">
-                Xóa tất cả
+                {t('borrow.clearAll')}
               </button>
             </h4>
             
@@ -157,18 +159,18 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                   value={assetCodeInput}
                   onChange={e => setAssetCodeInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleAddByCode(); } }}
-                  placeholder="Nhập Asset Code và Enter..." 
+                  placeholder={t('borrow.enterCode')} 
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
                 />
               </div>
               <button type="button" onClick={handleAddByCode} className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
-                Thêm
+                {t('common.add')}
               </button>
             </div>
 
             <div className="h-[min(36vh,340px)] min-h-[180px] max-h-[60vh] resize-y overflow-y-auto custom-scrollbar p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/40">
               {cartAssets.length === 0 ? (
-                <p className="text-sm text-gray-500 italic text-center py-4">Chưa có thiết bị nào trong phiếu</p>
+                <p className="text-sm text-gray-500 italic text-center py-4">{t('borrow.noEquipment')}</p>
               ) : (
                 <div className="space-y-2">
                   {cartAssets.map(a => (
@@ -185,13 +187,13 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                 </div>
               )}
             </div>
-            <p className="flex items-center justify-end gap-1 mt-1 text-[11px] text-gray-500 dark:text-slate-400"><Grip className="w-3 h-3" /> Kéo góc dưới để xem thêm</p>
+            <p className="flex items-center justify-end gap-1 mt-1 text-[11px] text-gray-500 dark:text-slate-400"><Grip className="w-3 h-3" /> {t('borrow.dragToExpand')}</p>
           </section>
 
           <form id="borrow-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="min-w-0">
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Ngày mượn</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{t('borrow.borrowDate')}</label>
                 <input 
                   type="text"
                   value={toDisplayDate(localToday())}
@@ -200,7 +202,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                 />
               </div>
               <div className="tw-calendar-picker relative min-w-0">
-                <label htmlFor="borrow-due-date-input" className="block text-xs font-semibold text-gray-500 uppercase mb-1">Hạn trả <span className="text-red-500">*</span></label>
+                <label htmlFor="borrow-due-date-input" className="block text-xs font-semibold text-gray-500 uppercase mb-1">{t('borrow.returnDate')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <input 
                     type="text"
@@ -210,8 +212,8 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                     onClick={openDueDateCalendar}
                     onChange={e => setDueDate(toIsoDate(e.target.value))}
                     value={dueDate ? toDisplayDate(dueDate) : ''}
-                    placeholder="Chọn ngày trả"
-                    aria-label="Chọn hạn trả"
+                    placeholder={t('borrow.selectReturnDate')}
+                    aria-label={t('borrow.selectReturnDate')}
                     className="w-full pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 outline-none focus:border-primary cursor-pointer"
                   />
                   <CalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400" />
@@ -220,12 +222,12 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Lý do mượn <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{t('borrow.purpose')} <span className="text-red-500">*</span></label>
               <textarea 
                 required
                 value={purpose}
                 onChange={e => setPurpose(e.target.value)}
-                placeholder="Nhập lý do hoặc dự án sử dụng thiết bị..."
+                placeholder={t('borrow.purposePlaceholder')}
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none min-h-24 focus:border-primary"
               />
             </div>
@@ -239,7 +241,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
             onClick={onClose} 
             className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
-            Hủy
+            {t('common.cancel')}
           </button>
           <button 
             type="submit" 
@@ -247,7 +249,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
             disabled={loading || !profile || cartAssets.length === 0 || !dueDate || !purpose.trim()}
             className="flex-1 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
           >
-            {loading ? 'Đang gửi...' : 'Gửi yêu cầu mượn'}
+            {loading ? t('borrow.submitting') : t('borrow.submit')}
           </button>
         </div>
       </div>

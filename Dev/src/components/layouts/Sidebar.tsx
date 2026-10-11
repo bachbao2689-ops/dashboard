@@ -26,30 +26,30 @@ export const Sidebar: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} />, hidden: role !== 'admin' },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) }
+        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) }
       ]
     },
     {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: 'Projects/Campaigns', path: '/projects', icon: <FolderKanban size={18} /> },
-        { name: 'Profile', path: '/my-tasks', icon: <User size={18} /> },
-        { name: 'Departments 2', path: '/departments-2', icon: <Users size={18} />, hidden: role !== 'admin' },
+        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
+        { name: t('nav.profile'), path: '/my-tasks', icon: <User size={18} /> },
+        { name: t('nav.departments'), path: '/departments-2', icon: <Users size={18} />, hidden: role !== 'admin' },
       ]
     },
     {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: ['admin', 'manager'].includes(role) ? t('nav.borrow') : 'Phiếu mượn của tôi', path: ['admin', 'manager'].includes(role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
+        { name: ['admin', 'manager'].includes(role) ? t('nav.borrow') : t('nav.myBorrow'), path: ['admin', 'manager'].includes(role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
       ]
     },
     {
       title: t('nav.teamRep'),
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
-        { name: 'Members', path: '/members', icon: <Users size={18} /> },
+        { name: t('nav.members'), path: '/members', icon: <Users size={18} /> },
         { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: role !== 'admin' && (role === 'member' || role === 'staff') && !isLeader },
       ]
     }

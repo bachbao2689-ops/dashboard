@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -86,14 +86,15 @@ export const Header: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
-        { name: 'Dashboard', path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
+        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
       ]
     },
     {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: 'Profile', path: '/my-tasks', icon: <Users size={18} /> },
+        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
+        { name: t('nav.profile'), path: '/my-tasks', icon: <Users size={18} /> },
         { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]
     },
@@ -101,14 +102,14 @@ export const Header: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: profile && ['admin', 'manager'].includes(profile.role) ? t('nav.borrow') : 'Phiếu mượn của tôi', path: profile && ['admin', 'manager'].includes(profile.role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
+        { name: profile && ['admin', 'manager'].includes(profile.role) ? t('nav.borrow') : t('nav.myBorrow'), path: profile && ['admin', 'manager'].includes(profile.role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
       ]
     },
     {
       title: t('nav.teamRep'),
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
-        { name: 'Members', path: '/members', icon: <Users size={18} /> },
+        { name: t('nav.members'), path: '/members', icon: <Users size={18} /> },
         { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} /> },
       ]
     }

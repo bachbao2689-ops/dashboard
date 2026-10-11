@@ -1,6 +1,7 @@
 // src/components/departments/DepartmentKpiCards.tsx
 import React from 'react';
 import type { DepartmentKpis } from '../../types/department';
+import { useTranslation } from '../../i18n/translations';
 
 interface DepartmentKpiCardsProps {
   kpis: DepartmentKpis;
@@ -8,6 +9,7 @@ interface DepartmentKpiCardsProps {
 }
 
 export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, isOverall = false }) => {
+  const { t } = useTranslation();
   const budgetPct = Math.round((kpis.budgetActual / kpis.budgetTotal) * 100);
   const formattedActual = (kpis.budgetActual / 1000000).toLocaleString('vi-VN');
   const formattedTotal = (kpis.budgetTotal / 1000000).toLocaleString('vi-VN');
@@ -45,7 +47,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
       {/* 1. Hoàn thành */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Hoàn thành</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiCompletion')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
           {kpis.completionRate}%
         </b>
@@ -62,7 +64,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
 
       {/* 2. Quá hạn */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Quá hạn</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOverdue')}</span>
         <b className={`text-2xl font-bold tracking-tight leading-tight my-0.5 ${overdueValueColor}`}>
           {kpis.overdueTasks}
         </b>
@@ -73,7 +75,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
 
       {/* 3. Đang làm */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Đang làm</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiInProgress')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
           {kpis.inProgressTasks}
         </b>
@@ -84,7 +86,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
 
       {/* 4. Đúng hạn */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Đúng hạn</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOnTime')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
           {kpis.onTimeRate}%
         </b>
@@ -96,7 +98,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       {/* 5. Dự án rủi ro / Project */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
-          {isOverall ? 'Dự án rủi ro' : 'Project'}
+          {isOverall ? t('departments.kpiAtRisk') : t('departments.kpiProjects')}
         </span>
         <b className={`text-2xl font-bold tracking-tight leading-tight my-0.5 ${projectRiskColor}`}>
           {kpis.projectsAtRiskOrCount}
@@ -109,7 +111,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       {/* 6. Mandatory R1 Metric: Ngân sách (Budget vs Actual) */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Ngân sách</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiBudget')}</span>
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${budgetBadgeClass}`}>
             {budgetPct}%
           </span>
@@ -132,29 +134,29 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
           </div>
         </div>
         <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-          trên ₫{formattedTotal}M
+          {t('departments.kpiOfTotal', { total: formattedTotal })}
         </span>
       </div>
 
       {/* 7. Mandatory R1 Metric: Thời gian task TB */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Thời gian TB</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiAvgDuration')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
           {kpis.avgTaskDuration}d
         </b>
         <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-          Mục tiêu ≤ {kpis.avgTaskDurationTarget}d
+          {t('departments.kpiTargetDuration', { target: kpis.avgTaskDurationTarget })}
         </span>
       </div>
 
       {/* 8. Mandatory R1 Metric: Đánh giá hài lòng */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Độ hài lòng</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiSatisfaction')}</span>
         <b className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400 leading-tight my-0.5">
           {kpis.satisfactionScore} <span className="text-xs font-normal text-gray-400">/ 5.0</span>
         </b>
         <span className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-          ★ Tích cực (92%)
+          {t('departments.kpiPositive')}
         </span>
       </div>
     </div>
