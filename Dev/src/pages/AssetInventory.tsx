@@ -99,15 +99,15 @@ export const AssetInventory: React.FC = () => {
             const canBorrow = asset.status === 'available' && asset.is_available !== false;
             return <div key={asset.id} className="p-4">
               <button type="button" onClick={() => setSelectedAsset(asset)} className="w-full text-left">
-                <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{asset.asset_code}</span>
-                <span className="mt-1 flex items-start gap-2 break-words font-semibold text-gray-900 dark:text-gray-100">{getIcon(asset.category?.name)}<span className="min-w-0 break-words">{asset.name}</span></span>
-                <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Chưa phân loại'}</span>
+                <span className="block truncate font-mono text-xs text-gray-500 dark:text-gray-400">{asset.asset_code}</span>
+                <span className="mt-1 flex min-w-0 items-center gap-2 font-semibold text-gray-900 dark:text-gray-100"><span className="shrink-0">{getIcon(asset.category?.name)}</span><span className="min-w-0 truncate">{asset.name}</span></span>
+                <span className="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Chưa phân loại'}</span>
               </button>
               <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
-                <div><span className="block text-gray-500 dark:text-gray-400">Tình trạng</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.condition || 'N/A'}</span></div>
-                <div><span className="block text-gray-500 dark:text-gray-400">Vị trí</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.location || 'N/A'}</span></div>
+                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Tình trạng</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.condition || 'N/A'}</span></div>
+                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Vị trí</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.location || 'N/A'}</span></div>
                 <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{canBorrow ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}</span></div>
-                <div><span className="block text-gray-500 dark:text-gray-400">Người mượn</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.current_borrower?.name || '—'}</span></div>
+                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Người mượn</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.current_borrower?.name || '—'}</span></div>
                 <div><span className="block text-gray-500 dark:text-gray-400">Hạn trả</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{asset.due_date ? new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN') : '—'}</span></div>
               </div>
               {(canBorrow || inCart) && <button type="button" onClick={() => toggleCart(asset)} className={`mt-4 rounded-lg px-3 py-2 text-xs font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? 'Bỏ khỏi phiếu' : 'Thêm vào phiếu'}</button>}
@@ -145,8 +145,8 @@ export const AssetInventory: React.FC = () => {
                           {getIcon(asset.category?.name)}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{asset.category?.name || 'Uncategorized'}</p>
+                          <p className="max-w-[340px] truncate font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
+                          <p className="mt-0.5 max-w-[340px] truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Uncategorized'}</p>
                         </div>
                       </div>
                     </td>

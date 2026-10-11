@@ -501,13 +501,13 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const ownerNames = (members[project.id] || []).map(id => people.find(person => String(person.id) === id)?.name).filter(Boolean);
   return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
     <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
-      <span className="block break-words text-sm font-bold leading-5 text-gray-900 dark:text-white">{project.name}{hasComments[project.id] && <MessageSquare size={14} className="ml-1 inline text-blue-500" />}</span>
-      <span className="mt-1.5 block break-words text-xs leading-5 text-gray-600 dark:text-slate-300">{project.description || 'Chưa có mô tả'}</span>
+      <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 truncate">{project.name}</span>{hasComments[project.id] && <MessageSquare size={14} className="shrink-0 text-blue-500" />}</span>
+      <span className="mt-1.5 block truncate text-xs leading-5 text-gray-600 dark:text-slate-300">{project.description || 'Chưa có mô tả'}</span>
     </button>
     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
       <Users size={15} className="shrink-0 text-violet-500" />
-      <span className="min-w-0 break-words">{ownerNames.length ? ownerNames.join(', ') : 'Chưa có PIC'}</span>
-      {!!subtaskMembers[project.id]?.length && <span className="rounded-full bg-violet-50 px-2 py-1 font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">{subtaskMembers[project.id].length} subtask</span>}
+      <span className="min-w-0 flex-1 truncate">{ownerNames.length ? ownerNames.join(', ') : 'Chưa có PIC'}</span>
+      {!!subtaskMembers[project.id]?.length && <span className="shrink-0 rounded-full bg-violet-50 px-2 py-1 font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">{subtaskMembers[project.id].length} subtask</span>}
     </div>
     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-gray-100 pt-3 text-xs text-gray-600 dark:border-slate-700 dark:text-slate-300">
       <span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>
@@ -523,7 +523,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 })}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">Chưa có Project nào.</p>}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-max text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project hover:bg-primary/5 transition-all duration-300 ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
 <td className="p-4">
   <div className="flex items-center gap-2">
-    <b className="text-gray-900 dark:text-white">{project.name}</b>
+    <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{project.name}</b>
     {hasComments[project.id] && <span title="Có bình luận" className="relative inline-flex"><MessageSquare size={14} className="text-blue-500" />{Number(project.lead_id) === Number(profile?.id) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
   </div>
   <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{project.description || 'No description'}</p>

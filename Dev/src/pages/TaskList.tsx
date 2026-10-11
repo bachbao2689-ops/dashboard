@@ -378,14 +378,14 @@ export const TaskList: React.FC = () => {
                       <div className="flex items-start gap-3">
                         <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
                         <button type="button" onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className="min-w-0 flex-1 text-left">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">#{task.task_ref || task.id.split('-')[0]}</span>
-                          <span className="mt-1 block break-words font-semibold text-gray-900 dark:text-gray-100">{task.title}</span>
-                          {task.department && <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{task.department.name}</span>}
+                          <span className="block truncate text-xs font-medium text-gray-500 dark:text-gray-400">#{task.task_ref || task.id.split('-')[0]}</span>
+                          <span className="mt-1 block truncate font-semibold text-gray-900 dark:text-gray-100">{task.title}</span>
+                          {task.department && <span className="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400">{task.department.name}</span>}
                         </button>
                       </div>
-                      {(task.project?.name || task.campaign?.name) && <p className="mt-3 break-words text-xs text-gray-600 dark:text-gray-300">{task.project?.name || task.campaign?.name}</p>}
+                      {(task.project?.name || task.campaign?.name) && <p className="mt-3 truncate text-xs text-gray-600 dark:text-gray-300">{task.project?.name || task.campaign?.name}</p>}
                       <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
-                        <div><span className="block text-gray-500 dark:text-gray-400">Người phụ trách</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{task.assignee?.name || 'Chưa phân công'}</span></div>
+                        <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Người phụ trách</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{task.assignee?.name || 'Chưa phân công'}</span></div>
                         <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 inline-block"><StatusBadge status={task.status} /></span></div>
                         <div><span className="block text-gray-500 dark:text-gray-400">Ưu tiên</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{mapPriority(task.priority)}</span></div>
                         <div><span className="block text-gray-500 dark:text-gray-400">Hạn chót</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : 'Chưa có'}</span></div>
@@ -437,7 +437,7 @@ export const TaskList: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
                         <td className="p-4">
-                          <div className={`font-medium cursor-pointer hover:text-primary transition-colors line-clamp-2 ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{task.title}</div>
+                          <div className={`max-w-[360px] truncate font-medium cursor-pointer hover:text-primary transition-colors ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{task.title}</div>
                           {task.department && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.department.name}</div>}
                         </td>
                         <td className="p-4 text-sm hidden lg:table-cell">
