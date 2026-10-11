@@ -538,7 +538,7 @@ html.dark .btn-new-task:hover {
   opacity: 1;
 }
 
-/* Specific light mode hover for .btn-add-new */
+/* Specific light mode hover for .btn-add-new & .hover-magnetic-btn */
 html:not(.dark) .btn-add-new:hover,
 html:not(.dark) .btn-add-new.is-magnetic-active {
   background-color: #002250 !important;
@@ -547,13 +547,27 @@ html:not(.dark) .btn-add-new.is-magnetic-active {
               0 0 16px -2px rgba(56, 189, 248, 0.45) !important;
 }
 
-/* Specific dark mode hover for .btn-add-new */
+html:not(.dark) .hover-magnetic-btn:hover,
+html:not(.dark) .hover-magnetic-btn.is-magnetic-active {
+  border-color: rgba(var(--glow-color, 56, 189, 248), 0.5) !important;
+  box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.08),
+              0 0 14px -2px rgba(var(--glow-color, 56, 189, 248), 0.35) !important;
+}
+
+/* Specific dark mode hover for .btn-add-new & .hover-magnetic-btn */
 html.dark .btn-add-new:hover,
 html.dark .btn-add-new.is-magnetic-active {
   background-color: #002e6d !important;
   border-color: rgba(56, 189, 248, 0.6) !important;
   box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.55),
               0 0 20px -2px rgba(56, 189, 248, 0.55) !important;
+}
+
+html.dark .hover-magnetic-btn:hover,
+html.dark .hover-magnetic-btn.is-magnetic-active {
+  border-color: rgba(var(--glow-color, 56, 189, 248), 0.6) !important;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.45),
+              0 0 16px -2px rgba(var(--glow-color, 56, 189, 248), 0.4) !important;
 }
 
 /* Active pressed state */

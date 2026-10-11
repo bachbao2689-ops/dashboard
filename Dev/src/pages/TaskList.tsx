@@ -271,12 +271,12 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="flex min-h-full min-w-0 md:h-full md:min-h-0 md:overflow-hidden">
-      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 md:min-h-0 lg:pr-4">
+    <div className="flex min-h-full min-w-0 md:h-full md:min-h-0">
+      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-1 md:min-h-0 lg:pr-4">
       
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 shrink-0 w-full">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 w-full">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">All Tasks</h1>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 relative z-50 w-full sm:w-auto">
           {/* Expanding Search */}
           <div className="flex items-center relative h-10">
             <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-40 sm:w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
@@ -287,13 +287,13 @@ export const TaskList: React.FC = () => {
                   placeholder="Search tasks..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
+                  className="w-full h-10 pl-9 pr-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
                 />
               </div>
             </div>
             <button 
               onClick={() => setIsSearchExpanded(!isSearchExpanded)} 
-              className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+              className={`h-10 w-10 rounded-xl border transition-colors flex items-center justify-center shrink-0 ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
             >
               <Search className="w-4 h-4" />
             </button>
@@ -304,7 +304,7 @@ export const TaskList: React.FC = () => {
             <select 
               value={groupBy} 
               onChange={(e) => setGroupBy(e.target.value)}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+              className="h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
               <option value="none">None</option>
               <option value="project">Project</option>
@@ -314,8 +314,8 @@ export const TaskList: React.FC = () => {
           </div>
 
           {/* Filters Panel Toggle */}
-          <div className="relative">
-            <button onClick={() => setShowFilters(!showFilters)} className={`hover-magnetic-btn magnetic-blue flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+          <div className="relative flex items-center">
+            <button onClick={() => setShowFilters(!showFilters)} className={`hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 border px-3.5 sm:px-4 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
               {activeFiltersCount > 0 && <span className="ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full">{activeFiltersCount}</span>}
@@ -323,14 +323,14 @@ export const TaskList: React.FC = () => {
             <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
           </div>
 
-          <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1"></div>
+          <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5 sm:mx-1 self-center"></div>
 
-          <button onClick={exportCSV} className="hover-magnetic-btn magnetic-blue flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={exportCSV} className="hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-3.5 sm:px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
             <span className="text-sm font-medium">Export</span>
           </button>
           
-          {canCreateTask && <button onClick={handleNewTask} className="btn-add-new">
+          {canCreateTask && <button onClick={handleNewTask} className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm">
             <Plus className="w-4 h-4" />
             <span className="text-xs sm:text-sm font-medium hidden sm:inline">New Task</span>
           </button>}
