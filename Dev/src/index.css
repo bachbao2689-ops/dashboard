@@ -507,10 +507,10 @@ html.dark .btn-new-task:hover {
   );
 }
 
-.btn-add-new > *,
-.btn-new-task > *,
-.btn-magnetic > *,
-.hover-magnetic-btn > * {
+.btn-add-new > *:not([class*="absolute"]):not([class*="fixed"]),
+.btn-new-task > *:not([class*="absolute"]):not([class*="fixed"]),
+.btn-magnetic > *:not([class*="absolute"]):not([class*="fixed"]),
+.hover-magnetic-btn > *:not([class*="absolute"]):not([class*="fixed"]) {
   position: relative;
   z-index: 1;
 }
@@ -570,7 +570,6 @@ html.dark .btn-add-new.is-magnetic-active {
   --glow-color: 78, 182, 72;
   position: relative;
   isolation: isolate;
-  overflow: hidden;
   will-change: transform, box-shadow;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.35s ease,
@@ -596,8 +595,8 @@ html.dark .btn-add-new.is-magnetic-active {
   );
 }
 
-.hover-magnetic > *,
-.hover-magnetic-card > * {
+.hover-magnetic > *:not([class*="absolute"]):not([class*="fixed"]),
+.hover-magnetic-card > *:not([class*="absolute"]):not([class*="fixed"]) {
   position: relative;
   z-index: 1;
 }

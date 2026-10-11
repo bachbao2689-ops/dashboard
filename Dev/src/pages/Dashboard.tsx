@@ -316,66 +316,87 @@ export const Dashboard: React.FC = () => {
               <Eyebrow className="!text-xs !tracking-[1.6px]">{getEyebrow()}</Eyebrow>
             </div>
 
-            <div className="flex items-center justify-center w-full my-4">
-              <div
-                className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
-                style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
-              >
-                <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 text-3xl 2xl:text-5xl ${INK}`} />
-                <span className="absolute bottom-0 right-1 w-[22px] h-[22px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={14} strokeWidth={3} /></span>
+            <div className="flex flex-col items-center my-auto py-2">
+              <div className="flex items-center justify-center w-full my-3">
+                <div
+                  className="relative w-[112px] h-[112px] xl:w-[124px] xl:h-[124px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
+                  style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
+                >
+                  <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[6px] border-white dark:border-slate-800 text-3xl 2xl:text-5xl ${INK}`} />
+                  <span className="absolute bottom-0 right-1 w-[22px] h-[22px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={14} strokeWidth={3} /></span>
+                </div>
               </div>
+
+              <h3 className={`text-xl 2xl:text-2xl font-bold tracking-tight ${INK}`}>{s.name}</h3>
+              <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
+              <div className={`text-xs mt-1.5 ${MUTED}`}>{s.dept}</div>
             </div>
 
-            <h3 className={`text-xl 2xl:text-2xl font-bold tracking-tight ${INK}`}>{s.name}</h3>
-            <div className={`text-sm font-semibold mt-1 ${LINK}`}>{s.role}</div>
-            <div className={`text-xs mt-2 ${MUTED}`}>{s.dept}</div>
+            <div className="w-full mt-auto pt-2 space-y-4">
+              <div className="grid grid-cols-3 gap-2 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 border border-white/60 dark:border-slate-700/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative">
+                {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
+                  let items: any[] = [];
+                  if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
+                  else if (type === 'done') items = selectedTasks.filter(t => isDone(t.status));
+                  else if (type === 'projects') items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
 
-            <div className="flex w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 my-6 border border-white/60 dark:border-slate-700/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative">
-              {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
-                let items: any[] = [];
-                if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
-                else if (type === 'done') items = selectedTasks.filter(t => isDone(t.status));
-                else if (type === 'projects') items = [{ title: `Đang có ${s.projects} ${s.projectsLabel.toLowerCase()} liên quan.`, status: 'info' }];
-                
-                
-                
-
-                return (
-                  <div key={l as string} className={`group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover-magnetic-card ${type === 'done' ? 'magnetic-green' : type === 'projects' ? 'magnetic-violet' : 'magnetic-blue'} border border-transparent transition-all cursor-default`}>
-                    <strong className={`block text-xl 2xl:text-2xl font-bold ${INK}`}>{v}</strong>
-                    <span className={`block text-[11px] mt-0.5 font-medium ${MUTED}`}>{l}</span>
-                    
-                    {/* Hover Bubble / Popover */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] origin-bottom cursor-auto">
-                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.15)] relative">
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
-                        <div className="relative z-10 p-3 flex flex-col max-h-[320px]">
-                          <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
-                            <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
-                          </div>
-                          {items.length === 0 ? (
-                            <p className="text-center text-gray-400 text-xs py-4 font-medium">Không có dữ liệu</p>
-                          ) : (
-                            <div className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
-                              {items.map((item, idx) => (
-                                <button key={item.id || idx} onClick={() => { if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
-                                  <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
-                                  {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
-                                </button>
-                              ))}
+                  return (
+                    <div
+                      key={l as string}
+                      onClick={() => {
+                        if (type === 'open') openFilteredTasks();
+                        else if (type === 'done') openFilteredTasks();
+                        else navigate('/projects');
+                      }}
+                      className={`group relative flex flex-col items-center justify-center py-2.5 px-1 rounded-xl transition-all cursor-pointer ${
+                        type === 'done'
+                          ? 'hover:bg-emerald-500/10 hover:border-emerald-500/20'
+                          : type === 'projects'
+                          ? 'hover:bg-violet-500/10 hover:border-violet-500/20'
+                          : 'hover:bg-blue-500/10 hover:border-blue-500/20'
+                      } border border-transparent`}
+                    >
+                      <strong className={`block text-xl 2xl:text-2xl font-bold ${
+                        type === 'done' 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
+                          : type === 'projects' 
+                          ? 'text-violet-600 dark:text-violet-400' 
+                          : 'text-blue-600 dark:text-sky-400'
+                      }`}>{v}</strong>
+                      <span className={`block text-[11px] mt-0.5 font-medium ${MUTED} truncate max-w-full`}>{l}</span>
+                      
+                      {/* Hover Bubble / Popover */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] origin-bottom cursor-auto pointer-events-none group-hover:pointer-events-auto text-left">
+                        <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.18)] relative">
+                          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
+                          <div className="relative z-10 p-3 flex flex-col max-h-[320px]">
+                            <div className="flex items-center justify-between mb-2.5 px-1 shrink-0">
+                              <span className={`text-[10px] font-bold uppercase tracking-wider ${MUTED}`}>{l}</span>
+                              <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full text-[10px]">{items.length}</span>
                             </div>
-                          )}
+                            {items.length === 0 ? (
+                              <p className="text-center text-gray-400 text-xs py-4 font-medium">Không có dữ liệu</p>
+                            ) : (
+                              <div className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
+                                {items.map((item, idx) => (
+                                  <button key={item.id || idx} onClick={(e) => { e.stopPropagation(); if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-3 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
+                                    <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
+                                    {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
-              <TextButton onClick={openFilteredTasks} className={INK}>Xem chi tiết {s.total} công việc</TextButton>
+              <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-[13px]">
+                <TextButton onClick={openFilteredTasks} className={INK}>Xem chi tiết {s.total} công việc</TextButton>
+              </div>
             </div>
           </div>
 
