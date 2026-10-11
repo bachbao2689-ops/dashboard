@@ -79,16 +79,16 @@ export const MobileNav: React.FC = () => {
     <>
       <style>{`
         .mobile-nav-mask {
-          height: calc(104px + env(safe-area-inset-bottom));
-          background: linear-gradient(to top, rgba(237,246,255,0.66), rgba(237,246,255,0));
-          backdrop-filter: blur(18px) saturate(155%);
-          -webkit-backdrop-filter: blur(18px) saturate(155%);
-          mask-image: linear-gradient(to top, #000 18%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to top, #000 18%, transparent 100%);
+          height: calc(120px + env(safe-area-inset-bottom));
+          background: linear-gradient(to top, rgba(237,246,255,0.76) 0%, rgba(237,246,255,0.50) 68%, transparent 100%);
+          backdrop-filter: blur(32px) saturate(165%);
+          -webkit-backdrop-filter: blur(32px) saturate(165%);
+          mask-image: linear-gradient(to top, #000 0%, #000 68%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to top, #000 0%, #000 68%, transparent 100%);
           transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .dark .mobile-nav-mask {
-          background: linear-gradient(to top, rgba(5,18,38,0.7), rgba(5,18,38,0));
+          background: linear-gradient(to top, rgba(5,18,38,0.84) 0%, rgba(5,18,38,0.58) 68%, transparent 100%);
         }
         .mobile-nav-container {
           max-width: 440px;
@@ -130,11 +130,20 @@ export const MobileNav: React.FC = () => {
           <NavLink
             key={item.name}
             to={item.path}
+            end={item.path === '/'}
             aria-label={item.name}
             title={item.name}
-            className="flex min-w-0 flex-1 h-11 items-center justify-center rounded-full text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-white focus-visible:outline-2 focus-visible:outline-primary transition-colors"
+            className={({ isActive }) => cn(
+              'relative flex min-w-0 flex-1 h-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary',
+              isActive
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/70 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_3px_10px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40'
+                : 'text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-white'
+            )}
           >
-            {item.icon}
+            {({ isActive }) => <>
+              {item.icon}
+              {isActive && <span aria-hidden="true" className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-600 dark:bg-cyan-300" />}
+            </>}
           </NavLink>
         ))}
       </div>
