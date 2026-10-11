@@ -41,15 +41,15 @@ export const BorrowRequests: React.FC = () => {
         onReject={() => selectedId && void act(selectedId, 'reject')}
         onReturn={() => selectedId && void act(selectedId, 'return')}
       />
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-6 px-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Yêu cầu mượn thiết bị</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Theo dõi từ lúc gửi yêu cầu đến khi xác nhận trả.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">Yêu cầu mượn thiết bị</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Theo dõi từ lúc gửi yêu cầu đến khi xác nhận trả.</p>
           {mine && <p className="text-xs text-primary mt-1">Đang xem yêu cầu của tôi</p>}
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
           <select aria-label="Lọc trạng thái yêu cầu" value={filter} onChange={event => setFilter(event.target.value)}
-            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl px-3 py-2 text-gray-900 dark:text-white">
+            className="h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl px-3 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm cursor-pointer appearance-none">
             <option value="all">Tất cả</option>
             <option value="pending">Chờ duyệt</option>
             <option value="approved">Đang mượn</option>
@@ -57,7 +57,7 @@ export const BorrowRequests: React.FC = () => {
             <option value="rejected">Từ chối</option>
           </select>
           <button type="button" onClick={() => navigate('/assets?borrow=1')}
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 flex items-center gap-2">
+            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-medium transition-all shadow-sm">
             <Plus size={16} /> <span>Yêu cầu mới</span>
           </button>
         </div>

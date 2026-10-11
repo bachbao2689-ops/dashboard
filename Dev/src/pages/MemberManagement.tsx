@@ -70,14 +70,14 @@ export function MemberManagement() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-50">
+    <div className="p-1 sm:p-2 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 relative z-50">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('members.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{t('members.subtitle')}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('members.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm">{t('members.subtitle')}</p>
         </div>
         
-        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
               <Search className="w-5 h-5" />
@@ -94,7 +94,7 @@ export function MemberManagement() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-8 sm:h-10 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+            className="h-10 px-3 text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
             <option value="">{t('members.allRoles')}</option>
             <option value="admin">Admin</option>
@@ -105,7 +105,7 @@ export function MemberManagement() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8 sm:h-10 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
+            className="h-10 px-3 text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
           >
             <option value="all">{t('members.allStatus')}</option>
             <option value="active">Đang hoạt động</option>
@@ -114,7 +114,7 @@ export function MemberManagement() {
 
           {canManageAll && <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2 h-10 px-4 bg-[#002e6d] text-white rounded-xl hover:bg-[#001f4d] transition-colors shadow-sm font-semibold text-sm"
+            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm"
           >
             <Plus size={18} />
             <span className="hidden sm:inline">Thêm thành viên</span>

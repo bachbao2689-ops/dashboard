@@ -494,10 +494,26 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim()) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
   return (
-  <div className="relative flex min-h-full md:h-full md:overflow-hidden">
+  <div className="relative flex min-h-full md:h-full">
     {/* Left Side: Projects List */}
-    <div className={`flex min-w-0 flex-1 flex-col p-1 transition-all duration-300 md:h-full ${panelOpen ? 'hidden md:flex pr-4' : ''}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects/Campaigns</h1><p className="text-sm text-gray-500 mt-1">{t('projects.subtitle')}</p></div>{canCreate && <button onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} className="btn-add-new"><FolderKanban className="w-4 h-4" /><span>{t('projects.add')}</span></button>}</div><div className="space-y-6 pb-20 pr-1 md:min-h-0 md:flex-1 md:overflow-y-auto custom-scrollbar"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projects')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 md:hidden">{visibleProjects.map(project => {
+    <div className={`flex min-w-0 flex-1 flex-col p-1 transition-all duration-300 md:h-full ${panelOpen ? 'hidden md:flex pr-4' : 'pr-1'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 leading-none">
+            <FolderKanban className="text-primary"/> Projects/Campaigns
+          </h1>
+          <p className="text-sm text-gray-500 mt-1.5">{t('projects.subtitle')}</p>
+        </div>
+        {canCreate && (
+          <button 
+            onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
+            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-medium transition-all shadow-sm"
+          >
+            <FolderKanban className="w-4 h-4" />
+            <span>{t('projects.add')}</span>
+          </button>
+        )}
+      </div><div className="space-y-6 pb-20 pr-1 md:min-h-0 md:flex-1 md:overflow-y-auto custom-scrollbar"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projects')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 md:hidden">{visibleProjects.map(project => {
   return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
     <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
       <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{project.name}</span>{hasComments[project.id] && <MessageSquare size={14} className="shrink-0 text-blue-500" />}<ChevronRight size={15} className="shrink-0 text-gray-400" /></span>

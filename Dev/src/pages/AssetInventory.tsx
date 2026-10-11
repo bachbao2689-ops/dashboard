@@ -63,12 +63,12 @@ export const AssetInventory: React.FC = () => {
         onSuccess={refetch} 
       />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-2 relative z-50">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Kho thiết bị</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">Kho thiết bị</h2>
         
-        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-8 sm:h-10`}>
-            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-8 h-8 sm:w-10 sm:h-8 sm:h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
+            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
               <Search className="w-5 h-5" />
             </button>
             <input
@@ -80,15 +80,13 @@ export const AssetInventory: React.FC = () => {
             />
           </div>
           
-          
-          <button onClick={() => setIsBorrowDrawerOpen(true)} aria-label="Mở phiếu mượn" className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+          <button onClick={() => setIsBorrowDrawerOpen(true)} aria-label="Mở phiếu mượn" className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
             <Box size={18} /> <span className="text-xs sm:text-sm">Phiếu mượn</span>
             {cart.length > 0 && <span className="bg-white/20 text-white text-[11px] font-bold min-w-5 h-5 px-1 flex items-center justify-center rounded-full" aria-label={`${cart.length} thiết bị trong phiếu`}>{cart.length}</span>}
           </button>
-          <button onClick={handleNewAsset} aria-label="Thêm thiết bị" className="btn-add-new flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+          <button onClick={handleNewAsset} aria-label="Thêm thiết bị" className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
             <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">Thêm</span><span className="hidden sm:inline">Thêm thiết bị</span></span>
           </button>
-
         </div>
       </div>
 
