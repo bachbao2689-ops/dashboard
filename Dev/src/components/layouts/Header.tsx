@@ -222,10 +222,10 @@ export const Header: React.FC = () => {
         (!isHeaderHidden && showNotifs) ? 'overflow-visible' : 'md:overflow-hidden',
         isHeaderHidden
           ? 'h-0 -translate-y-3 opacity-0 pointer-events-none'
-          : 'h-[60px] md:h-24 translate-y-0 opacity-100',
+          : 'h-[calc(60px+env(safe-area-inset-top,0px))] md:h-24 translate-y-0 opacity-100',
       )}
     >
-    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-2 flex h-12 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-4 md:h-16 md:rounded-2xl md:px-8 card-hub">
+    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-[calc(8px+env(safe-area-inset-top,0px))] flex h-12 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-4 md:h-16 md:rounded-2xl md:px-8 card-hub">
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">

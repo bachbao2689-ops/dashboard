@@ -2,12 +2,12 @@
 
 Tài liệu tham chiếu cho nút điều hướng **đang chọn** trong thanh dưới trên mobile. Khi cần dùng lại kiểu này, lấy đúng nút, viền và lớp nền trong ảnh và code hiện tại; không tự thay màu hoặc độ sáng theo cảm tính.
 
-![Nút Dashboard đang chọn trong dark mode](./ui-button-reference-dark.jpg)
+![Nút Dashboard đang chọn trong dark mode](./GUIDELINE/ui-button-reference-dark.jpg)
 
 ## Vị trí nguồn
 
-- Component: [MobileNav.tsx](../Dev/src/components/layouts/MobileNav.tsx) (`NavLink`, `mobile-nav-container`, `mobile-nav-mask`).
-- Nền glass dùng chung: `.mobile-liquid-glass` trong [index.css](../Dev/src/index.css).
+- Component: [MobileNav.tsx](./Dev/src/components/layouts/MobileNav.tsx) (`NavLink`, `mobile-nav-container`, `mobile-nav-mask`).
+- Nền glass dùng chung: `.mobile-liquid-glass` trong [index.css](./Dev/src/index.css).
 - Kiểu này hiện áp dụng ở mobile, viewport dưới `768px`. Ảnh trên là dark mode; light mode dùng các class cùng component.
 
 ## Cấu trúc và kích thước
