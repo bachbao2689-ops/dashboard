@@ -191,7 +191,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:!text-white"><CalendarDays size={21} className="text-primary" />Calendar của tôi</h2><p className="mt-1 text-xs text-gray-500">Task, Project và Campaign bạn tham gia — cập nhật cùng lịch làm việc.</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
-            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
+            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="hover-magnetic-btn magnetic-blue inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
             {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[min(320px,calc(100vw-48px))] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog
               includeTeam={includeTeamNotifications} 
               inline 
@@ -214,7 +214,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               }}
             /></div>}
           </div>
-          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
+          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90"><FileText size={15} />{reportOpen ? 'Đóng report' : 'Report của tôi'}</button>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -447,7 +447,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div>;
       })}</div>
     </> : (
-      <div className="flex flex-col border-y border-gray-100 bg-slate-50/30 dark:border-slate-800 dark:bg-slate-900/20 md:max-h-[800px] md:overflow-y-auto md:custom-scrollbar">
+      <div className="flex flex-col border-y border-gray-100 bg-slate-50/30 dark:border-slate-800 dark:bg-slate-900/20">
         {days.filter(d => {
           const dayStr = localDay(d);
           return dayStr >= visibleStart && dayStr <= visibleEnd;
@@ -467,7 +467,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                 <div className="text-sm font-bold text-gray-900 dark:!text-white">{date.getDate()} Th{date.getMonth() + 1}</div>
                 <div className="text-xs font-semibold text-gray-500">{weekdayLabels[wDay]}</div>
               </div>
-              <div className="flex-1 flex flex-wrap gap-4">
+              <div className="flex-1 flex flex-wrap gap-4 p-1">
                 {dayItems.map(item => {
                   let daysLeftLabel = null;
                   let daysLeftColor = '';
@@ -490,15 +490,29 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                   }
                   
                   let statusClass = 'card-status-task';
-                  if (isCalendarDone(item.status)) statusClass = 'card-status-done';
-                  else if (isCalendarOverdue(item, today)) statusClass = 'card-status-overdue';
-                  else if (item.kind.includes('campaign')) statusClass = 'card-status-campaign';
-                  else if (item.kind.includes('project')) statusClass = 'card-status-project';
+                  let magneticColor = 'magnetic-blue';
+                  if (isCalendarDone(item.status)) {
+                    statusClass = 'card-status-done';
+                    magneticColor = 'magnetic-emerald';
+                  } else if (isCalendarOverdue(item, today)) {
+                    statusClass = 'card-status-overdue';
+                    magneticColor = 'magnetic-rose';
+                  } else if (item.kind.includes('campaign')) {
+                    statusClass = 'card-status-campaign';
+                    magneticColor = 'magnetic-amber';
+                  } else if (item.kind.includes('project')) {
+                    statusClass = 'card-status-project';
+                    magneticColor = 'magnetic-violet';
+                  }
                   
                   const cardBg = statusClass;
                   
                   return (
-                    <button key={`${day}-${item.key}`} onClick={() => onOpen(item)} className={`group relative flex w-full sm:w-[260px] flex-col justify-between gap-3 p-3.5 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${cardBg}`}>
+                    <button 
+                      key={`${day}-${item.key}`} 
+                      onClick={() => onOpen(item)} 
+                      className={`group relative flex w-full sm:w-[260px] flex-col justify-between gap-3 p-3.5 text-left rounded-2xl hover-magnetic-card cursor-pointer transition-all ${magneticColor} ${cardBg}`}
+                    >
                       <div>
                         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{calendarKindLabel[item.kind]}</span>

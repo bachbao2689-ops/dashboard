@@ -33,10 +33,20 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
     { label: 'Chờ duyệt', value: String(summary.pendingBorrow), icon: <CheckCircle2 size={14} />, tone: 'text-teal-600' },
   ];
 
-  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Chỉ số công việc cá nhân">
-    {metrics.map(metric => <div key={metric.label} className="min-w-0 rounded-xl border border-primary/10 bg-white/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/80">
-      <div className={`flex items-start gap-1.5 text-[10px] font-bold uppercase tracking-wide ${metric.tone}`}>{metric.icon}<span className="break-words sm:truncate">{metric.label}</span></div>
-      <strong className="mt-1 block break-words text-lg font-bold leading-tight text-gray-900 dark:text-white sm:truncate">{loading ? '—' : metric.value}</strong>
-    </div>)}
+  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 p-0.5" aria-label="Chỉ số công việc cá nhân">
+    {metrics.map(metric => {
+      let toneColor = 'magnetic-blue';
+      if (metric.tone.includes('red')) toneColor = 'magnetic-rose';
+      else if (metric.tone.includes('teal')) toneColor = 'magnetic-emerald';
+      else if (metric.tone.includes('amber')) toneColor = 'magnetic-amber';
+      else if (metric.tone.includes('violet')) toneColor = 'magnetic-violet';
+
+      return (
+        <div key={metric.label} className={`min-w-0 rounded-xl border border-primary/10 bg-white/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/80 hover-magnetic-card ${toneColor} transition-all`}>
+          <div className={`flex items-start gap-1.5 text-[10px] font-bold uppercase tracking-wide ${metric.tone}`}>{metric.icon}<span className="break-words sm:truncate">{metric.label}</span></div>
+          <strong className="mt-1 block break-words text-lg font-bold leading-tight text-gray-900 dark:text-white sm:truncate">{loading ? '—' : metric.value}</strong>
+        </div>
+      );
+    })}
   </div>;
 };
