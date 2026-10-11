@@ -309,31 +309,31 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-2.5 flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
           {/* Context Spotlight */}
-          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-3.5 py-3 bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
+          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-4 py-4 bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
             <div className="w-full flex items-center justify-between">
-              <Eyebrow className="!text-[11px] !tracking-[1.4px]">{getEyebrow()}</Eyebrow>
+              <Eyebrow className="!text-xs !tracking-[1.5px]">{getEyebrow()}</Eyebrow>
             </div>
 
-            <div className="flex flex-col items-center my-auto py-1">
-              <div className="flex items-center justify-center w-full my-2">
+            <div className="flex flex-col items-center my-auto py-3">
+              <div className="flex items-center justify-center w-full my-3">
                 <div
-                  className="relative w-[80px] h-[80px] xl:w-[92px] xl:h-[92px] rounded-full grid place-items-center p-[4px]"
+                  className="relative w-[120px] h-[120px] xl:w-[138px] xl:h-[138px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
                   style={{ background: `conic-gradient(#4099e5 ${pct}%, ${trackOrbit} 0)` }}
                 >
-                  <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[4px] border-white dark:border-slate-800 text-2xl xl:text-3xl ${INK}`} />
-                  <span className="absolute bottom-0 right-0.5 w-[18px] h-[18px] rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={11} strokeWidth={3} /></span>
+                  <Avatar name={s.name} src={s.avatar_url || undefined} className={`w-full h-full rounded-full bg-blue-50 dark:bg-slate-700 border-[5px] border-white dark:border-slate-800 text-3xl xl:text-4xl 2xl:text-5xl ${INK}`} />
+                  <span className="absolute bottom-0.5 right-1 w-[26px] h-[26px] xl:w-[28px] xl:h-[28px] 2xl:w-8 2xl:h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-800 grid place-items-center text-white"><Check size={15} strokeWidth={3} /></span>
                 </div>
               </div>
 
-              <h3 className={`text-base xl:text-lg font-bold tracking-tight ${INK}`}>{s.name}</h3>
-              <div className={`text-xs font-semibold mt-0.5 ${LINK}`}>{s.role}</div>
-              <div className={`text-[11px] mt-1 ${MUTED}`}>{s.dept}</div>
+              <h3 className={`text-xl xl:text-2xl 2xl:text-3xl font-bold tracking-tight ${INK}`}>{s.name}</h3>
+              <div className={`text-sm xl:text-base font-semibold mt-1.5 ${LINK}`}>{s.role}</div>
+              <div className={`text-xs xl:text-sm mt-1 ${MUTED}`}>{s.dept}</div>
             </div>
 
-            <div className="w-full mt-auto pt-1 space-y-2.5">
-              <div className="grid grid-cols-3 gap-1.5 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[12px] p-1.5 border border-white/60 dark:border-slate-700/50 shadow-sm relative">
+            <div className="w-full mt-auto pt-2 space-y-3">
+              <div className="grid grid-cols-3 gap-2 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 border border-white/60 dark:border-slate-700/50 shadow-sm relative">
                 {[[s.open, 'Đang mở', 'open'], [s.done, 'Hoàn tất', 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
                   let items: any[] = [];
                   if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
@@ -348,7 +348,7 @@ export const Dashboard: React.FC = () => {
                         else if (type === 'done') openFilteredTasks();
                         else navigate('/projects');
                       }}
-                      className={`group relative flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all cursor-pointer ${
+                      className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer ${
                         type === 'done'
                           ? 'hover:bg-emerald-500/10 hover:border-emerald-500/20'
                           : type === 'projects'
@@ -356,14 +356,14 @@ export const Dashboard: React.FC = () => {
                           : 'hover:bg-blue-500/10 hover:border-blue-500/20'
                       } border border-transparent`}
                     >
-                      <strong className={`block text-lg xl:text-xl font-bold ${
+                      <strong className={`block text-xl 2xl:text-2xl font-bold ${
                         type === 'done' 
                           ? 'text-emerald-600 dark:text-emerald-400' 
                           : type === 'projects' 
                           ? 'text-violet-600 dark:text-violet-400' 
                           : 'text-blue-600 dark:text-sky-400'
                       }`}>{v}</strong>
-                      <span className={`block text-[10px] mt-0.5 font-medium ${MUTED} truncate max-w-full`}>{l}</span>
+                      <span className={`block text-[11px] mt-0.5 font-medium ${MUTED} truncate max-w-full`}>{l}</span>
                       
                       {/* Hover Bubble / Popover */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] origin-bottom cursor-auto pointer-events-none group-hover:pointer-events-auto text-left">
@@ -394,43 +394,43 @@ export const Dashboard: React.FC = () => {
                 })}
               </div>
 
-              <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-2">
+              <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-2.5">
                 <TextButton onClick={openFilteredTasks} className={INK}>Xem chi tiết {s.total} công việc</TextButton>
               </div>
             </div>
           </div>
 
           {/* Progress */}
-          <div className={`${INNER} rounded-[14px] px-3.5 py-3 min-w-0 flex flex-col`}>
+          <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col`}>
             <div className="flex items-center justify-between">
-              <strong className={`text-xs sm:text-sm ${INK}`}>Tiến độ hoàn thành</strong>
+              <strong className={`text-sm ${INK}`}>Tiến độ hoàn thành</strong>
               <Info size={13} className={MUTED} />
             </div>
             <div
-              className="w-[84px] h-[84px] xl:w-[94px] xl:h-[94px] rounded-full mx-auto mt-2 mb-1 p-2"
+              className="w-[108px] h-[108px] 2xl:w-[136px] 2xl:h-[136px] rounded-full mx-auto mt-[13px] mb-[9px] p-[9px] 2xl:p-[11px]"
               style={{ background: `conic-gradient(#45a894 ${pct}%, ${trackRing} 0)` }}
             >
               <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex flex-col items-center justify-center">
-                <strong className={`text-xl xl:text-2xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-xs">%</small></strong>
-                <span className="text-[10px] text-[#92a0b1]">hoàn thành</span>
+                <strong className={`text-2xl 2xl:text-3xl leading-[1.1] tracking-tighter ${INK}`}>{pct}<small className="text-sm 2xl:text-base">%</small></strong>
+                <span className="text-xs text-[#92a0b1]">hoàn thành</span>
               </div>
             </div>
-            <p className={`text-center text-[11px] ${MUTED}`}>{s.done} / {s.total} task được giao</p>
-            <div className={`flex justify-center gap-2.5 text-[11px] mt-1.5 ${MUTED}`}>
+            <p className={`text-center text-xs ${MUTED}`}>{s.done} / {s.total} task được giao</p>
+            <div className={`flex justify-center gap-3 text-xs mt-2 ${MUTED}`}>
               <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-teal-500" />Done</span>
               <span className="flex items-center gap-1"><i className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-slate-600" />Đang mở</span>
             </div>
           </div>
 
           {/* Focus needed */}
-          <div className={`${INNER} rounded-[14px] px-3.5 py-3 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
+          <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
             <div className="flex items-center justify-between">
-              <strong className={`text-xs sm:text-sm ${INK}`}>Đẩy nhanh tiến độ</strong>
-              <Clock size={13} className={MUTED} />
+              <strong className={`text-sm ${INK}`}>Đẩy nhanh tiến độ</strong>
+              <Clock size={14} className={MUTED} />
             </div>
-            <div className="mt-1 text-3xl xl:text-4xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
-            <span className="mt-1 self-start text-[11px] font-semibold text-[#b0364b] bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
-            <div className="mt-2 space-y-1 text-xs">
+            <div className="mt-3 text-4xl 2xl:text-5xl leading-none font-bold text-[#b0364b] dark:text-rose-400">{s.overdue}</div>
+            <span className="mt-2 self-start text-xs font-semibold text-[#b0364b] bg-red-50 dark:bg-rose-500/15 dark:text-rose-300 rounded-md px-1.5 py-0.5">task quá hạn</span>
+            <div className="mt-4 space-y-2 text-xs">
               <div className="flex justify-between"><span className={MUTED}>Deadline trong 3 ngày</span><b className={INK}>{s.due3}</b></div>
               <div className="flex justify-between"><span className={MUTED}>Ưu tiên High / Urgent</span><b className={INK}>{s.urgent}</b></div>
               <div className="h-1 rounded-full bg-gray-100 dark:bg-slate-600 overflow-hidden flex">
@@ -442,28 +442,28 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Chart */}
-          <div className={`sm:col-span-2 ${INNER} rounded-[13px] px-3.5 pt-2.5 pb-2 flex flex-col min-w-0`}>
+          <div className={`sm:col-span-2 ${INNER} rounded-[13px] px-4 pt-[15px] pb-[10px] flex flex-col min-w-0`}>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <strong className={`text-xs sm:text-sm ${INK}`}>Lịch phân bổ task</strong>
-                <p className={`text-[11px] mt-0.5 ${MUTED}`}>{s.name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
+                <strong className={`text-sm ${INK}`}>Lịch phân bổ task</strong>
+                <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
               </div>
               <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
                 {(['weekly', 'custom'] as const).map(r => (
                   <button
                     key={r}
                     onClick={() => setRange(r)}
-                    className={`px-2 py-0.5 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
                   >
                     {r === 'weekly' ? 'Weekly' : 'Custom'}
                   </button>
                 ))}
               </div>
             </div>
-            {range === 'custom' && <div className="mt-2 flex flex-wrap items-center gap-1.5"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>đến</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /></div>}
-            <div className="w-full mt-1.5 flex-1 h-[115px] xl:h-[135px] max-h-[145px]">
+            {range === 'custom' && <div className="mt-3 flex flex-wrap items-center gap-2"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>đến</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /></div>}
+            <div className="w-full mt-3 flex-1 min-h-[150px] 2xl:min-h-[190px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ left: -20, right: 8, top: 2 }}>
+                <AreaChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={isDark ? '#b4a3ff' : '#6953bd'} stopOpacity={0.25} />
@@ -471,7 +471,7 @@ export const Dashboard: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#f1f5f9'} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} dy={4} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} dy={8} />
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#8a9bb0', fontSize: 10 }} />
                 <Tooltip
                   cursor={{ stroke: isDark ? '#334155' : '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }}
@@ -485,24 +485,24 @@ export const Dashboard: React.FC = () => {
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   }}
                 />
-                <Legend iconType="plainline" iconSize={14} wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
-                <Area type="monotone" dataKey="created" name="Tạo mới" stroke={isDark ? '#b4a3ff' : '#6953bd'} fill="url(#colorCreated)" strokeWidth={2} />
-                <Area type="monotone" dataKey="doing" name="Đang thực hiện" stroke="#38bdf8" fill="transparent" strokeDasharray="3 3" strokeWidth={1.5} />
-                <Area type="monotone" dataKey="done" name="Hoàn thành" stroke="#4eb648" fill="transparent" strokeDasharray="5 5" strokeWidth={2} />
+                <Legend iconType="plainline" iconSize={16} wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                <Area type="monotone" dataKey="created" name="Tạo mới" stroke={isDark ? '#b4a3ff' : '#6953bd'} fill="url(#colorCreated)" strokeWidth={2.5} />
+                <Area type="monotone" dataKey="doing" name="Đang thực hiện" stroke="#38bdf8" fill="transparent" strokeDasharray="3 3" strokeWidth={2} />
+                <Area type="monotone" dataKey="done" name="Hoàn thành" stroke="#4eb648" fill="transparent" strokeDasharray="5 5" strokeWidth={2.5} />
               </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className={`text-center text-[10px] mt-0.5 ${MUTED}`}>Di chuột để xem số công việc · Chọn biểu đồ để xem báo cáo hiệu suất</p>
+            <p className={`text-center text-xs mt-1 ${MUTED}`}>Di chuột để xem số công việc · Chọn biểu đồ để xem báo cáo hiệu suất</p>
           </div>
           
           {/* Insight strip */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-2.5 border border-blue-100 dark:border-slate-700 rounded-[12px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-3 py-2 mt-1">
-            <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={14} /></span>
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-3.5 mt-1">
+            <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
             <div className="min-w-0">
-              <strong className={`text-xs font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
-              <p className="text-[11px] text-[#7e94b1] dark:text-slate-400 mt-0.5">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
+              <strong className={`text-sm font-semibold ${INK}`}>{s.name} đang theo dõi {s.open} task chưa hoàn thành</strong>
+              <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{s.noDeadline} task đang mở chưa có deadline. Bổ sung hạn để theo dõi chính xác.</p>
             </div>
-            <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={14} /></button>
+            <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
           </div>
         </div>
       </section>
