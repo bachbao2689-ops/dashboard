@@ -1,139 +1,109 @@
 import React, { useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
-import { Check, X, Calendar, User } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, Plus, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
-import { BorrowModal } from '../components/features/assets/BorrowModal';
+import type { BorrowAction } from '../services/borrowWorkflow';
+import { borrowStatusLabel } from '../services/borrowWorkflow';
 import { BorrowRequestDetailModal } from '../components/features/assets/BorrowRequestDetailModal';
-import { Plus } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+
+const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('vi-VN');
 
 export const BorrowRequests: React.FC = () => {
   const [filter, setFilter] = useState('all');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const profileId = useAuthStore(state => state.profile?.id);
+  const navigate = useNavigate();
   const profile = useAuthStore(state => state.profile);
-  const { requests, loading, updateStatus, refetch } = useBorrowRequests();
+  const canManage = !!profile && ['admin', 'manager'].includes(profile.role);
+  const { requests, loading, error, busyId, updateStatus } = useBorrowRequests();
+  const mine = searchParams.get('scope') === 'mine';
+  const selectedRequest = requests.find(request => request.id === selectedId) || null;
 
-  const filtered = requests.filter(req => {
-    if (searchParams.get('scope') === 'mine' && String(req.requester_id) !== String(profileId)) return false;
+  const filtered = requests.filter(request => {
+    if (mine && request.requester_id !== profile?.id) return false;
     if (filter === 'all') return true;
-    return req.approval_status === filter;
+    if (filter === 'returned') return !!request.returned_at;
+    return !request.returned_at && request.approval_status === filter;
   });
 
-  if (profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile.employment_level === 'Leader') return <Navigate to="/" replace />;
+  const act = async (id: string, action: BorrowAction) => {
+    const ok = await updateStatus(id, action);
+    if (ok) setSelectedId(null);
+  };
 
   return (
     <div className="h-full flex flex-col z-10 relative">
-      <BorrowModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={refetch} 
+      <BorrowRequestDetailModal
+        isOpen={!!selectedRequest} request={selectedRequest} onClose={() => setSelectedId(null)}
+        canManage={canManage} busy={busyId === selectedId}
+        onApprove={() => selectedId && void act(selectedId, 'approve')}
+        onReject={() => selectedId && void act(selectedId, 'reject')}
+        onReturn={() => selectedId && void act(selectedId, 'return')}
       />
-      <BorrowRequestDetailModal isOpen={!!selectedRequest} onClose={() => setSelectedRequest(null)} request={selectedRequest} onApprove={() => { updateStatus(selectedRequest.id, 'approved'); setSelectedRequest(null); }} onReject={() => { updateStatus(selectedRequest.id, 'rejected'); setSelectedRequest(null); }} />
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 px-2 w-full">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-6 px-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Borrow Requests</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage equipment borrowing approvals</p>
-          {searchParams.get('scope') === 'mine' && <p className="text-xs text-primary mt-1">Đang lọc yêu cầu mượn của tôi</p>}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Yêu cầu mượn thiết bị</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Theo dõi từ lúc gửi yêu cầu đến khi xác nhận trả.</p>
+          {mine && <p className="text-xs text-primary mt-1">Đang xem yêu cầu của tôi</p>}
         </div>
         <div className="flex gap-3">
-          <select 
-            className="bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white"
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+          <select aria-label="Lọc trạng thái yêu cầu" value={filter} onChange={event => setFilter(event.target.value)}
+            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl px-3 py-2 text-gray-900 dark:text-white">
+            <option value="all">Tất cả</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="approved">Đang mượn</option>
+            <option value="returned">Đã trả</option>
+            <option value="rejected">Từ chối</option>
           </select>
-          
-          <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
-            <Plus size={16} /> <span className="hidden sm:inline">New Request</span>
+          <button type="button" onClick={() => navigate('/assets?borrow=1')}
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 flex items-center gap-2">
+            <Plus size={16} /> <span>Yêu cầu mới</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto pb-6">
         {loading ? (
-          <div className="col-span-full p-8 text-center text-gray-500">Loading requests...</div>
+          <div className="col-span-full p-8 text-center text-gray-500">Đang tải yêu cầu...</div>
+        ) : error ? (
+          <div className="col-span-full p-8 text-center text-red-600">{error}</div>
         ) : filtered.length === 0 ? (
-          <div className="col-span-full p-8 text-center text-gray-500">No requests found</div>
-        ) : (
-          filtered.map(req => (
-            <div key={req.id} onClick={() => setSelectedRequest(req)} className="glass-panel p-5 flex flex-col group hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold
-                    ${req.department?.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 
-                      req.department?.color === 'purple' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' :
-                      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
-                    {req.asset?.name?.charAt(0) || 'A'}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{req.asset?.name || 'Unknown Asset'}</h3>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      <User size={12} />
-                      <span>{req.requester?.name || 'Unknown'}</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] ml-1">{req.department?.name || 'N/A'}</span>
-                    </div>
-                  </div>
+          <div className="col-span-full p-8 text-center text-gray-500">Chưa có yêu cầu nào.</div>
+        ) : filtered.map(request => {
+          const status = borrowStatusLabel(request.approval_status, request.returned_at);
+          return (
+            <div key={request.id} onClick={() => setSelectedId(request.id)}
+              className="glass-panel p-5 flex flex-col group hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
+              <div className="flex justify-between items-start gap-3 mb-4">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">{request.asset?.name || 'Thiết bị'}</h3>
+                  <p className="text-xs text-gray-500 font-mono mt-1">{request.asset?.asset_code || '—'}</p>
+                  <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-2"><User size={12} />{request.requester?.name || 'Không rõ'}</p>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
-                  ${req.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 
-                    req.approval_status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 
-                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                  {req.approval_status}
-                </span>
+                <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${request.returned_at ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : request.approval_status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : request.approval_status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{status}</span>
               </div>
-
-              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-gray-700/50 flex-1">
-                <span className="font-medium text-gray-900 dark:text-gray-100">Purpose: </span>
-                {req.purpose || 'No purpose provided'}
-              </div>
-
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    <Calendar size={12} />
-                    <span>Req: {new Date(req.requested_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
-                    <Calendar size={12} />
-                    <span>Due: {new Date(req.due_date).toLocaleDateString()}</span>
-                  </div>
+              <p className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-gray-700/50 flex-1 line-clamp-3">
+                {request.purpose || 'Chưa ghi lý do mượn'}
+              </p>
+              <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  <p className="flex items-center gap-1.5"><Calendar size={12} />Gửi: {formatDate(request.requested_at)}</p>
+                  <p className="flex items-center gap-1.5"><Calendar size={12} />Hạn trả: {formatDate(request.due_date)}</p>
                 </div>
-
-                {req.approval_status === 'pending' && (
+                {canManage && request.approval_status === 'pending' && (
                   <div className="flex gap-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); updateStatus(req.id, 'rejected'); }}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-100 dark:border-red-900/30"
-                      title="Reject"
-                    >
-                      <X size={16} />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); updateStatus(req.id, 'approved'); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors shadow-lg shadow-emerald-500/20 text-sm font-medium"
-                    >
-                      <Check size={16} />
-                      Approve
-                    </button>
+                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'reject'); }} className="px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg disabled:opacity-50">Từ chối</button>
+                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'approve'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg disabled:opacity-50">Duyệt</button>
                   </div>
                 )}
-                
-                {req.approval_status === 'approved' && (
-                  <button className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg">
-                    Approved
-                  </button>
+                {canManage && request.approval_status === 'approved' && !request.returned_at && (
+                  <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'return'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-700 rounded-lg disabled:opacity-50">Xác nhận trả</button>
                 )}
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );

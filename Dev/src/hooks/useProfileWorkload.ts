@@ -21,6 +21,8 @@ export interface PersonalBorrowRequest {
   id: string;
   approval_status: string | null;
   requested_at: string | null;
+  approved_at: string | null;
+  returned_at: string | null;
   created_at: string;
   asset?: { name?: string | null } | null;
 }
@@ -43,7 +45,7 @@ export function useProfileWorkload() {
       setLoading(true);
       const [taskResult, borrowResult] = await Promise.all([
         supabase.from('tasks').select('id, task_ref, title, status, priority, description, due_date, created_at, updated_at, project:project_id(id,name), assignee:assignee_id(name,avatar_url), department:department_id(name)').eq('assignee_id', profileId).order('updated_at', { ascending: false }),
-        supabase.from('borrow_requests').select('id, approval_status, requested_at, created_at, asset:asset_id(name)').eq('requester_id', profileId).order('created_at', { ascending: false }),
+        supabase.from('borrow_requests').select('id, approval_status, requested_at, approved_at, returned_at, created_at, asset:asset_id(name)').eq('requester_id', profileId).order('created_at', { ascending: false }),
       ]);
       if (!active) return;
       if (taskResult.error) console.warn('Could not load personal tasks:', taskResult.error.message);

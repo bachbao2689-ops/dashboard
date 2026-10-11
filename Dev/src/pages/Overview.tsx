@@ -10,7 +10,8 @@ import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
-import { supabase } from '../services/supabase';
+import { transitionBorrowRequest } from '../services/borrowWorkflow';
+import type { BorrowAction } from '../services/borrowWorkflow';
 
 /* Shared design tokens (same as Dashboard / Departments 2) */
 const INK = 'text-gray-900 dark:text-white';
@@ -65,10 +66,14 @@ export const Overview: React.FC = () => {
     return () => el?.removeEventListener('change', handleChange);
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
-    await supabase.from('borrow_requests').update({ approval_status: status }).eq('id', id);
-    refetch();
-    toast.success('Request updated');
+  const handleUpdateStatus = async (id: string, action: BorrowAction) => {
+    try {
+      await transitionBorrowRequest(id, action, profile);
+      await refetch();
+      toast.success(action === 'approve' ? 'Đã duyệt yêu cầu mượn.' : 'Đã từ chối yêu cầu mượn.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không cập nhật được yêu cầu.');
+    }
   };
 
   const openCal = (e: React.MouseEvent) => {
@@ -348,9 +353,11 @@ export const Overview: React.FC = () => {
                 <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
                 {req.approval_status === 'pending' && isAdmin ? (
                   <div className="flex gap-2 mt-2.5">
-                    <button onClick={() => handleUpdateStatus(req.id, 'approved')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
-                    <button onClick={() => handleUpdateStatus(req.id, 'rejected')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
+                    <button onClick={() => void handleUpdateStatus(req.id, 'approve')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
+                    <button onClick={() => void handleUpdateStatus(req.id, 'reject')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>
                   </div>
+                ) : req.returned_at ? (
+                  <p className="mt-2 flex items-center gap-1 text-xs font-bold text-slate-500"><CheckCircle size={13} /> Đã trả</p>
                 ) : req.approval_status === 'approved' ? (
                   <p className="mt-2 flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle size={13} /> {t('overview.approved')}</p>
                 ) : req.approval_status === 'pending' ? (

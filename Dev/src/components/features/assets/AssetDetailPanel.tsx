@@ -101,14 +101,15 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                     <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.category?.name || 'Uncategorized'}</div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Status</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Trạng thái</div>
                     <div>
                       <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
                         (asset.status || '') === 'available' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        (asset.status || '') === 'in_use' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        (asset.status || '') === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        (asset.status || '') === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       }`}>
-                        {(asset.status || '').replace('_', ' ')}
+                        {asset.status === 'available' ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}
                       </span>
                     </div>
                   </div>
@@ -117,8 +118,8 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                     <div className="text-gray-900 dark:text-gray-100 font-mono text-xs">{asset.serial_number || 'N/A'}</div>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] items-center">
-                    <div className="text-gray-500 flex items-center gap-1.5"><User className="w-4 h-4" /> Assignee</div>
-                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.current_assignee?.name || 'Unassigned'}</div>
+                    <div className="text-gray-500 flex items-center gap-1.5"><User className="w-4 h-4" /> {asset.status === 'reserved' ? 'Người yêu cầu' : 'Người mượn'}</div>
+                    <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.current_borrower?.name || asset.pending_requester?.name || 'Chưa có'}</div>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, ArrowRightLeft, Package } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
+import { borrowStatusLabel } from '../../../services/borrowWorkflow';
 
 type ActivityFilter = 'All' | 'Tasks' | 'Assets';
 
@@ -30,9 +31,9 @@ export const ProfileActivityTab: React.FC = () => {
       type: 'asset',
       icon: <Package size={16} />,
       color: 'bg-blue-100 text-blue-600',
-      time: request.requested_at || request.created_at,
+      time: request.returned_at || request.approved_at || request.requested_at || request.created_at,
       title: `Yêu cầu mượn thiết bị: ${request.asset?.name || 'Thiết bị'}`,
-      desc: `Trạng thái: ${request.approval_status || 'pending'}`,
+      desc: `Trạng thái: ${borrowStatusLabel(request.approval_status || 'pending', request.returned_at)}`,
     }));
     return [...taskActivities, ...borrowActivities].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }, [tasks, borrowRequests]);

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
 import { Plus, Search, Camera, Laptop, HardDrive, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
+import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
 import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
@@ -23,18 +25,20 @@ export const AssetInventory: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [qrAsset, setQrAsset] = useState<any>(null);
-  const { assets, loading, refetch } = useAssets();
+  const { assets, loading, error, refetch } = useAssets();
+  const [searchParams] = useSearchParams();
 
-  const [cart, setCart] = useState<any[]>([]);
-  const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(false);
+  const [cart, setCart] = useState<Asset[]>([]);
+  const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(searchParams.get('borrow') === '1');
   const [bounce, setBounce] = useState(false);
 
-  const toggleCart = (asset: any) => {
-    if (asset.status !== "available" && !cart.find(a => a.id === asset.id)) return;
-    if (cart.find(a => a.id === asset.id)) {
-      setCart(cart.filter(a => a.id !== asset.id));
+  const toggleCart = (asset: Asset) => {
+    if (asset.status !== 'available' && !cart.some(a => a.id === asset.id)) return;
+    if (asset.is_available === false && !cart.some(a => a.id === asset.id)) return;
+    if (cart.some(a => a.id === asset.id)) {
+      setCart(current => current.filter(a => a.id !== asset.id));
     } else {
-      setCart([...cart, asset]);
+      setCart(current => [...current, asset]);
       setBounce(true);
       setTimeout(() => setBounce(false), 300);
     }
@@ -60,7 +64,7 @@ export const AssetInventory: React.FC = () => {
       />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-2 relative z-50">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Asset Inventory</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Kho thiết bị</h2>
         
         <div className="flex flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-8 sm:h-10`}>
@@ -78,11 +82,11 @@ export const AssetInventory: React.FC = () => {
           
           
           <button onClick={() => setIsBorrowDrawerOpen(true)} className={`relative flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
-            <Box size={18} /> <span className="hidden sm:inline">Mượn thiết bị</span>
+            <Box size={18} /> <span className="hidden sm:inline">Phiếu mượn</span>
             {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm animate-bounce-short">{cart.length}</span>}
           </button>
           <button onClick={handleNewAsset} className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-[#002e6d] flex-shrink-0 hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
-            <Plus size={18} /> <span className="hidden sm:inline">Add Asset</span>
+            <Plus size={18} /> <span className="hidden sm:inline">Thêm thiết bị</span>
           </button>
 
         </div>
@@ -97,15 +101,17 @@ export const AssetInventory: React.FC = () => {
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asset</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Condition</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người mượn</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hạn trả</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
               {loading ? (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading assets...</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-gray-500">Đang tải thiết bị...</td></tr>
               ) : filteredAssets.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-500">No assets found</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-gray-500">{error || 'Không tìm thấy thiết bị.'}</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => setSelectedAsset(asset)} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
@@ -125,11 +131,16 @@ export const AssetInventory: React.FC = () => {
                     </td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.condition || 'N/A'}</td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.location || 'N/A'}</td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
-                      {(asset as any).current_borrower?.name ? <span className="font-semibold text-primary">{(asset as any).current_borrower.name}</span> : <span className="text-gray-400">---</span>}
+                    <td className="p-4 text-sm">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {asset.status === 'available' && asset.is_available !== false ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}
+                      </span>
                     </td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
-                      {(asset as any).due_date ? <span className="font-medium text-red-500">{new Date((asset as any).due_date).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400">---</span>}
+                      {asset.current_borrower?.name ? <span className="font-semibold text-primary">{asset.current_borrower.name}</span> : <span className="text-gray-400">---</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                      {asset.due_date ? <span className="font-medium">{new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400">---</span>}
                     </td>
                     <td className="p-4">
                       {(() => {
@@ -140,6 +151,9 @@ export const AssetInventory: React.FC = () => {
                               Đang trong giỏ
                             </button>
                           );
+                        }
+                        if (asset.status === 'reserved') {
+                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Đang chờ duyệt</span>;
                         }
                         if (asset.status === 'borrowed') {
                           return (
@@ -155,10 +169,13 @@ export const AssetInventory: React.FC = () => {
                             </button>
                           );
                         }
+                        if (asset.status !== 'available' || asset.is_available === false) {
+                          return <span className="text-xs text-gray-500">Không khả dụng</span>;
+                        }
                         return (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1">
                             <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
-                              Mượn thiết bị
+                              Thêm vào phiếu
                             </button>
                           </div>
                         );
@@ -174,7 +191,7 @@ export const AssetInventory: React.FC = () => {
     
       </div>
       <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} onOpenQR={() => setQrAsset(selectedAsset)} />
-      <BorrowDrawer isOpen={isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={() => { setCart([]); refetch(); }} />
+      <BorrowDrawer isOpen={isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={refetch} />
       <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
 </div>
   );

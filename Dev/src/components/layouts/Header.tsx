@@ -110,7 +110,6 @@ export const Header: React.FC = () => {
   
   
   const canViewDashboard = true;
-  const isMarketingLead = profile?.department_id === 'dea85847-2e5d-4258-ba6d-900dde8f6ed0' && profile?.employment_level === 'Leader';
 
   useEffect(() => {
     let active = true;
@@ -177,7 +176,7 @@ export const Header: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: isMarketingLead },
+        { name: profile && ['admin', 'manager'].includes(profile.role) ? t('nav.borrow') : 'Phiếu mượn của tôi', path: profile && ['admin', 'manager'].includes(profile.role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
       ]
     },
     {
@@ -193,7 +192,7 @@ export const Header: React.FC = () => {
   // Auto expand the group that contains the current active route on mount or location change
   useEffect(() => {
     if (!isSidebarOpen) {
-      const activeGroup = navGroups.find(g => g.items.some(i => i.path === location.pathname));
+      const activeGroup = navGroups.find(g => g.items.some(i => i.path.split('?')[0] === location.pathname));
       if (activeGroup) {
         setExpandedGroup(activeGroup.title);
       }

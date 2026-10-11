@@ -1,23 +1,30 @@
 import toast from "react-hot-toast";
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { transitionBorrowRequest } from '../services/borrowWorkflow';
+import type { BorrowAction } from '../services/borrowWorkflow';
+import { useAuthStore } from '../store/authStore';
 
 export interface BorrowRequest {
   id: string;
-  requester_id?: string;
-  asset?: { name: string };
+  requester_id: number;
+  asset_id: string;
+  asset?: { id: string; name: string; asset_code: string; condition: string; status: string };
   requester?: { name: string };
-  department?: { name: string; color?: string };
+  department?: { name: string };
   borrow_date: string;
   due_date: string;
   requested_at: string;
   purpose: string;
   approval_status: string;
+  returned_at: string | null;
 }
 
 export function useBorrowRequests() {
   const [requests, setRequests] = useState<BorrowRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
@@ -37,11 +44,12 @@ export function useBorrowRequests() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('borrow_requests')
         .select(`
-          id, requester_id, borrow_date, due_date, requested_at, purpose, approval_status,
-          asset:asset_id(name),
+          id, asset_id, requester_id, borrow_date, due_date, requested_at, purpose, approval_status, returned_at,
+          asset:asset_id(id, name, asset_code, condition, status),
           requester:requester_id(name),
           department:department_id(name)
         `)
@@ -51,23 +59,29 @@ export function useBorrowRequests() {
       setRequests(data as any);
     } catch (err) {
       console.error('Error fetching borrow requests', err);
+      setError(err instanceof Error ? err.message : 'Không tải được yêu cầu mượn.');
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id: string, action: BorrowAction): Promise<boolean> => {
+    setBusyId(id);
     try {
-      await supabase
-        .from('borrow_requests')
-        .update({ approval_status: status })
-        .eq('id', id);
-      toast.success('Request updated');
+      await transitionBorrowRequest(id, action, useAuthStore.getState().profile);
+      toast.success(action === 'approve' ? 'Đã duyệt yêu cầu mượn.' : action === 'reject' ? 'Đã từ chối và mở lại thiết bị.' : 'Đã xác nhận trả thiết bị.');
+      await fetchRequests();
+      return true;
     } catch (err) {
       console.error('Update err', err);
-      toast.error('Failed to update request');
+      toast.error(err instanceof Error ? err.message : 'Không cập nhật được yêu cầu.');
+      await fetchRequests();
+      return false;
+    } finally {
+      setBusyId(null);
     }
   };
 
-  return { requests, loading, updateStatus, refetch: fetchRequests };
+  return { requests, loading, error, busyId, updateStatus, refetch: fetchRequests };
 }

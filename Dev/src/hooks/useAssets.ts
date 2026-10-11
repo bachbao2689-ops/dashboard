@@ -11,8 +11,11 @@ export interface Asset {
   condition: string;
   location: string;
   status: string;
+  is_available?: boolean;
+  due_date?: string | null;
   category?: { name: string; icon: string };
   current_borrower?: { name: string; department?: { name: string } };
+  pending_requester?: { name: string };
 }
 
 export function useAssets() {
@@ -56,43 +59,46 @@ export function useAssets() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('assets')
-        .select(`
-          id, asset_code, name, condition, location, status,
-          category:category_id(name, icon),
-          borrow_requests(id, due_date, approval_status, requester:requester_id(name, avatar_url))
-        `)
-        .order('created_at', { ascending: false });
+      const [assetResult, requestResult] = await Promise.all([
+        supabase.from('assets')
+          .select('id, asset_code, name, condition, location, status, is_available, category:category_id(name, icon)')
+          .order('created_at', { ascending: false }),
+        supabase.from('borrow_requests')
+          .select('asset_id, due_date, requested_at, approval_status, requester:requester_id(name)')
+          .in('approval_status', ['pending', 'approved']).is('returned_at', null)
+          .order('requested_at', { ascending: false }),
+      ]);
 
-      if (error) throw error;
+      if (assetResult.error) throw assetResult.error;
+      if (requestResult.error) throw requestResult.error;
+      const openRequests = (requestResult.data || []) as unknown as Array<{
+        asset_id: string;
+        due_date: string;
+        requested_at: string;
+        approval_status: string;
+        requester: { name: string } | null;
+      }>;
       
-      const mappedData = (data as any[]).map(asset => {
-        // Find active borrow request
-        const activeRequest = asset.borrow_requests?.find((r: any) => r.approval_status === 'approved' || r.approval_status === 'active' || r.approval_status === 'borrowed') || asset.borrow_requests?.find((r: any) => r.approval_status === 'pending');
+      const mappedData = (assetResult.data as any[]).map(asset => {
+        const requests = openRequests.filter(request => request.asset_id === asset.id);
+        const activeRequest = requests.find(r => r.approval_status === 'approved');
+        const pendingRequest = requests.find(r => r.approval_status === 'pending');
         return {
           ...asset,
-          current_borrower: activeRequest ? { name: activeRequest.requester?.name || 'Unknown' } : null,
-          due_date: activeRequest ? activeRequest.due_date : null
+          status: activeRequest ? 'borrowed' : pendingRequest ? 'reserved' : asset.status,
+          is_available: !activeRequest && !pendingRequest && asset.is_available,
+          current_borrower: activeRequest ? { name: activeRequest.requester?.name || 'Không rõ' } : undefined,
+          pending_requester: pendingRequest ? { name: pendingRequest.requester?.name || 'Không rõ' } : undefined,
+          due_date: activeRequest?.due_date || null,
         };
       });
       setAssets(mappedData as any);
 
     } catch (err: any) {
       console.warn('Error fetching assets', err);
-      // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS
-      const mapped = mockData.assets.map((a: any) => ({
-        id: a.id,
-        asset_code: a.asset_ref || a.id,
-        name: a.name,
-        condition: 'good',
-        location: 'Kho tổng',
-        status: 'available',
-        category: { name: 'Thiết bị', icon: 'Box' }
-      }));
-      setAssets(mapped as any);
-      setError(err.message || 'Offline Mode');
-      toast.error('Offline Mode: Loaded Assets from Google Sheets');
+      setAssets([]);
+      setError(err.message || 'Không tải được kho thiết bị.');
+      toast.error('Không tải được kho thiết bị từ Supabase.');
     } finally {
       setLoading(false);
     }

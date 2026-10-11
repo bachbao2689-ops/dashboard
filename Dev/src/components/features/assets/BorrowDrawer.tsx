@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import { localToday, submitBorrowRequests } from '../../../services/borrowWorkflow';
+import type { Asset } from '../../../hooks/useAssets';
 import toast from 'react-hot-toast';
-import { X, Search, Trash2, Calendar } from 'lucide-react';
+import { X, Search, Trash2 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 
 interface BorrowDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  cartAssets: any[];
-  setCartAssets: (assets: any[]) => void;
+  cartAssets: Asset[];
+  setCartAssets: React.Dispatch<React.SetStateAction<Asset[]>>;
   onSuccess: () => void;
 }
 
@@ -19,41 +21,27 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
   const profile = useAuthStore(state => state.profile);
 
   const [assetCodeInput, setAssetCodeInput] = useState('');
-  const [borrowDate, setBorrowDate] = useState(new Date().toLocaleDateString('vi-VN'));
   const [dueDate, setDueDate] = useState('');
   const [purpose, setPurpose] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      setBorrowDate(new Date().toLocaleDateString('vi-VN')); // auto fill current date
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const dueEl = document.getElementById('borrow-due-date-input');
-    const handleDueChange = (e: any) => setDueDate(e.target.value);
-    dueEl?.addEventListener('change', handleDueChange);
-    return () => dueEl?.removeEventListener('change', handleDueChange);
-  }, []);
-
   const handleAddByCode = async () => {
     if (!assetCodeInput.trim()) return;
     try {
-      const { data, error } = await supabase.from('assets').select('id, name, asset_code, status').eq('asset_code', assetCodeInput.trim()).single();
+      const { data, error } = await supabase.from('assets').select('id, name, asset_code, status, is_available').eq('asset_code', assetCodeInput.trim().toUpperCase()).maybeSingle();
       if (error || !data) {
         toast.error("Không tìm thấy thiết bị hoặc mã không hợp lệ");
         return;
       }
-      if (data.status !== 'available') {
-        toast.error(`Thiết bị này đang ở trạng thái: ${data.status}`);
+      if (data.status !== 'available' || !data.is_available) {
+        toast.error('Thiết bị hiện không sẵn sàng để mượn');
         return;
       }
       if (cartAssets.find(a => a.id === data.id)) {
         toast.error("Thiết bị này đã có trong danh sách mượn");
         return;
       }
-      setCartAssets([...cartAssets, data]);
+      setCartAssets(current => [...current, data as Asset]);
       setAssetCodeInput('');
     } catch (err) {
       toast.error("Lỗi khi tìm thiết bị");
@@ -61,7 +49,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
   };
 
   const removeAsset = (id: string) => {
-    setCartAssets(cartAssets.filter(a => a.id !== id));
+    setCartAssets(current => current.filter(a => a.id !== id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,57 +58,21 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
       toast.error('Vui lòng chọn ít nhất 1 thiết bị');
       return;
     }
-    if (!dueDate || !purpose) return;
-
-    const parseLocal = (s: string) => {
-      const p = s.split(/[-/]/);
-      if(p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
-      return s;
-    };
-    
-    const isoBorrow = parseLocal(borrowDate);
-    const isoDue = parseLocal(dueDate);
-
-    if (new Date(isoDue) < new Date(isoBorrow)) {
-      toast.error('Ngày trả không được trước ngày mượn');
-      return;
-    }
-
     setLoading(true);
     try {
-      const { data: wsData } = await supabase.from('workspaces').select('id').limit(1).single();
-      
-      const payload = cartAssets.map(asset => ({
-         asset_id: asset.id,
-         requester_id: profile?.id,
-         borrow_date: isoBorrow,
-         due_date: isoDue,
-         purpose,
-         notes: '',
-         approval_status: 'pending',
-         workspace_id: wsData?.id
-      }));
-
-      const { error } = await supabase.from('borrow_requests').insert(payload);
-      if (error) throw error;
+      await submitBorrowRequests({ assetIds: cartAssets.map(asset => asset.id), dueDate, purpose, profile });
       
       toast.success(`Đã gửi yêu cầu mượn ${cartAssets.length} thiết bị`);
-      setCartAssets([]); // clear cart
+      setCartAssets([]);
       setDueDate('');
       setPurpose('');
       onSuccess();
       onClose();
     } catch (err) {
-      console.error(err);
-      toast.error('Gửi yêu cầu thất bại');
+      toast.error(err instanceof Error ? err.message : 'Gửi yêu cầu thất bại');
+      onSuccess();
     } finally {
       setLoading(false);
-    }
-  };
-
-  const openCal = (id: string, e: React.MouseEvent) => {
-    if ((window as any).openCalendar) {
-      (window as any).openCalendar({ displayId: id, mode: 'single' }, e);
     }
   };
 
@@ -154,7 +106,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
               <Avatar name={profile?.name || ''} src={profile?.avatar_url || undefined} className="w-10 h-10 shadow-sm" />
               <div>
                 <b className="text-sm text-gray-900 dark:text-white">{profile?.name}</b>
-                <p className="text-xs text-gray-500">{profile?.department_id || '---'}</p>
+                <p className="text-xs text-gray-500">{profile?.department_name || 'Chưa có phòng ban'}</p>
               </div>
             </div>
           </section>
@@ -171,12 +123,12 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                   type="text" 
                   value={assetCodeInput}
                   onChange={e => setAssetCodeInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAddByCode()}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleAddByCode(); } }}
                   placeholder="Nhập Asset Code và Enter..." 
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
                 />
               </div>
-              <button onClick={handleAddByCode} className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+              <button type="button" onClick={handleAddByCode} className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                 Thêm
               </button>
             </div>
@@ -191,7 +143,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                       <b className="text-sm block line-clamp-1">{a.name}</b>
                       <span className="text-[10px] text-gray-500 font-mono bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mt-1 inline-block">{a.asset_code}</span>
                     </div>
-                    <button onClick={() => removeAsset(a.id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                    <button type="button" onClick={() => removeAsset(a.id)} aria-label={`Bỏ ${a.name} khỏi danh sách`} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -205,25 +157,23 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Ngày mượn</label>
                 <input 
-                  type="text" 
-                  value={borrowDate}
+                  type="date"
+                  value={localToday()}
                   disabled
                   className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 text-sm font-semibold text-gray-500 cursor-not-allowed"
                 />
               </div>
-              <div className="tw-calendar-picker relative">
+              <div className="relative">
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Hạn trả <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <Calendar className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                   <input 
-                    type="text"
+                    type="date"
                     id="borrow-due-date-input"
                     required
-                    readOnly
-                    onClick={(e) => openCal('borrow-due-date-input', e)}
+                    min={localToday()}
+                    onChange={e => setDueDate(e.target.value)}
                     value={dueDate}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none cursor-pointer focus:border-primary"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -254,7 +204,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
           <button 
             type="submit" 
             form="borrow-form"
-            disabled={loading || cartAssets.length === 0 || !dueDate || !purpose}
+            disabled={loading || !profile || cartAssets.length === 0 || !dueDate || !purpose.trim()}
             className="flex-1 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
           >
             {loading ? 'Đang gửi...' : 'Gửi yêu cầu mượn'}

@@ -42,7 +42,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: t('nav.borrow'), path: '/borrow-requests', icon: <History size={18} />, hidden: role === 'member' || role === 'staff' },
+        { name: ['admin', 'manager'].includes(role) ? t('nav.borrow') : 'Phiếu mượn của tôi', path: ['admin', 'manager'].includes(role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
       ]
     },
     {

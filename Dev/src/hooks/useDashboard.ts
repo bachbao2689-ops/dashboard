@@ -105,7 +105,6 @@ export function useDashboard() {
 
       const personalRequests = recent || [];
       const activeBorrowed = personalRequests.filter((request: any) => request.approval_status === 'approved' && !request.returned_at).length;
-      const pendingBorrowed = personalRequests.filter((request: any) => request.approval_status === 'pending').length;
       setData({
         myTasksCount: openTasks.length,
         dueSoonCount: dueSoon.length,
@@ -115,9 +114,10 @@ export function useDashboard() {
         recentRequests: personalRequests,
         tasks: myTasks,
         assetStatusData: [
-          { name: 'Borrowed', value: activeBorrowed, fill: '#093570' },
-          { name: 'Pending', value: pendingBorrowed, fill: '#f5a524' },
-          { name: 'Available inventory', value: assetCounts.available || 0, fill: '#45a894' },
+          { name: 'Borrowed', value: assetCounts.borrowed || 0, fill: '#38bdf8' },
+          { name: 'Pending', value: assetCounts.reserved || 0, fill: '#fbbf24' },
+          { name: 'Available inventory', value: assetCounts.available || 0, fill: '#4eb648' },
+          { name: 'Maintenance', value: (assetCounts.maintenance || 0) + (assetCounts.broken || 0), fill: '#fb7185' },
         ].filter(item => item.value > 0)
       });
     } catch (err: any) {
