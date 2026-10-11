@@ -214,7 +214,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-    <div aria-hidden="true" className="mobile-header-mask pointer-events-none absolute inset-x-0 top-0 z-[99] md:hidden" />
+    <div aria-hidden="true" className="mobile-header-mask pointer-events-none absolute inset-x-0 top-0 z-[99] backdrop-blur-[26px] backdrop-saturate-[170%] md:hidden" />
     <div
       aria-hidden={isHeaderHidden}
       className={cn(
@@ -225,7 +225,7 @@ export const Header: React.FC = () => {
           : 'h-[60px] md:h-24 translate-y-0 opacity-100',
       )}
     >
-    <header className="mobile-liquid-glass mobile-header-glass h-12 md:h-16 flex items-center justify-between px-3 md:px-8 mx-3 md:mx-4 mt-2 md:mt-4 rounded-full md:rounded-2xl card-hub shadow-sm z-[100] relative">
+    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-2 flex h-12 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-4 md:h-16 md:rounded-2xl md:px-8 card-hub">
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
