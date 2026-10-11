@@ -4,7 +4,7 @@ const calDays=['T2','T3','T4','T5','T6','T7','CN'];
 let _calState=null;
 
 function openCalendar(opts, event){
-  const {displayId, startId, endId, mode='range'}=opts;
+  const {displayId, startId, endId, mode='range', minDate}=opts;
   const inputEl=document.getElementById(displayId);
   if(!inputEl)return;
   const startEl=startId?document.getElementById(startId):null;
@@ -26,7 +26,7 @@ function openCalendar(opts, event){
   const eDate=validDate(endEl?.value||(mode==='range'?displayDates[1]:displayDates[0]));
   const initDate=sDate||new Date();
   
-  _calState={month:initDate.getMonth(),year:initDate.getFullYear(),start:sDate,end:eDate,preset:null,displayId,startId,endId,mode,hover:null,compact:!!inputEl.closest('.tw-create-body')};
+  _calState={month:initDate.getMonth(),year:initDate.getFullYear(),start:sDate,end:eDate,preset:null,displayId,startId,endId,mode,minDate:validDate(minDate),hover:null,compact:!!inputEl.closest('.tw-create-body')};
   
   let dropdown=document.getElementById('cal-dropdown');
   if(!dropdown){
@@ -180,7 +180,8 @@ function calRender(){
     let html = '';
     for(let i=0;i<startDay;i++)html+=`<span class="cal-day cal-empty"></span>`;
     for(let d=1;d<=daysInMonth;d++) {
-       html+=`<button type="button" id="cal-day-btn-${d}" class="cal-day" onclick="calSelect(${year},${month},${d})" onmouseenter="calHover(${year},${month},${d})">${d}</button>`;
+       const disabled=_calState.minDate&&new Date(year,month,d)<_calState.minDate;
+       html+=`<button type="button" id="cal-day-btn-${d}" class="cal-day" onclick="calSelect(${year},${month},${d})" onmouseenter="calHover(${year},${month},${d})" ${disabled?'disabled':''}>${d}</button>`;
     }
     grid.innerHTML = html;
     _calState.fullRender = false;
@@ -233,6 +234,7 @@ document.addEventListener('scroll',e=>{if(_calState&&!document.getElementById('c
 function calSelect(y,m,d){
   if(!_calState)return;
   const clicked = new Date(y,m,d);
+  if(_calState.minDate&&clicked<_calState.minDate)return;
   let shouldClose = false;
   if(_calState.mode==='range') {
     if(!_calState.start || (_calState.start && _calState.end)) {

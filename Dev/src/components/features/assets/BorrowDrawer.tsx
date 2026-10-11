@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { localToday, submitBorrowRequests } from '../../../services/borrowWorkflow';
 import type { Asset } from '../../../hooks/useAssets';
 import toast from 'react-hot-toast';
-import { X, Search, Trash2 } from 'lucide-react';
+import { CalendarDays, Grip, X, Search, Trash2 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 
 interface BorrowDrawerProps {
@@ -15,6 +15,21 @@ interface BorrowDrawerProps {
   onSuccess: () => void;
 }
 
+const toDisplayDate = (isoDate: string) => {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+const toIsoDate = (displayDate: string) => {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(displayDate);
+  if (!match) return '';
+  const [, day, month, year] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return date.getFullYear() === Number(year) && date.getMonth() + 1 === Number(month) && date.getDate() === Number(day)
+    ? `${year}-${month}-${day}`
+    : '';
+};
+
 export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, cartAssets, setCartAssets, onSuccess }) => {
   const width = window.innerWidth < 768 ? window.innerWidth : 480;
   
@@ -24,6 +39,20 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
   const [dueDate, setDueDate] = useState('');
   const [purpose, setPurpose] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const input = document.getElementById('borrow-due-date-input') as HTMLInputElement | null;
+    if (!input) return;
+    const syncCalendarDate = () => setDueDate(toIsoDate(input.value));
+    input.addEventListener('change', syncCalendarDate);
+    return () => input.removeEventListener('change', syncCalendarDate);
+  }, [isOpen]);
+
+  const openDueDateCalendar = (event: React.MouseEvent) => {
+    (window as Window & { openCalendar?: (options: { displayId: string; mode: string; minDate: string }, event: React.MouseEvent) => void })
+      .openCalendar?.({ displayId: 'borrow-due-date-input', mode: 'single', minDate: localToday() }, event);
+  };
 
   const handleAddByCode = async () => {
     if (!assetCodeInput.trim()) return;
@@ -112,8 +141,11 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
           </section>
 
           <section>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between gap-2">
               <span>Danh sách thiết bị ({cartAssets.length})</span>
+              <button type="button" disabled={loading || cartAssets.length === 0} onClick={() => setCartAssets([])} className="normal-case tracking-normal text-xs font-semibold text-rose-500 hover:text-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0">
+                Xóa tất cả
+              </button>
             </h4>
             
             <div className="flex gap-2 mb-3">
@@ -133,48 +165,55 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
               </button>
             </div>
 
-            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            <div className="h-[min(36vh,340px)] min-h-[180px] max-h-[60vh] resize-y overflow-y-auto custom-scrollbar p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/40">
               {cartAssets.length === 0 ? (
-                <p className="text-sm text-gray-500 italic text-center py-4 bg-gray-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">Chưa có thiết bị nào trong giỏ</p>
+                <p className="text-sm text-gray-500 italic text-center py-4">Chưa có thiết bị nào trong phiếu</p>
               ) : (
-                cartAssets.map(a => (
-                  <div key={a.id} className="flex justify-between items-center p-3 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm group">
-                    <div>
-                      <b className="text-sm block line-clamp-1">{a.name}</b>
-                      <span className="text-[10px] text-gray-500 font-mono bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mt-1 inline-block">{a.asset_code}</span>
+                <div className="space-y-2">
+                  {cartAssets.map(a => (
+                    <div key={a.id} className="flex items-start gap-2 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+                      <div className="min-w-0 flex-1">
+                        <b className="text-sm leading-5 block break-words text-gray-900 dark:text-slate-100">{a.name}</b>
+                        <span className="text-[11px] text-gray-500 dark:text-slate-400 font-mono bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mt-1 inline-block break-all">{a.asset_code}</span>
+                      </div>
+                      <button type="button" disabled={loading} onClick={() => removeAsset(a.id)} aria-label={`Bỏ ${a.name} khỏi danh sách`} className="shrink-0 w-8 h-8 flex items-center justify-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors disabled:opacity-50">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button type="button" onClick={() => removeAsset(a.id)} aria-label={`Bỏ ${a.name} khỏi danh sách`} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
+            <p className="flex items-center justify-end gap-1 mt-1 text-[11px] text-gray-500 dark:text-slate-400"><Grip className="w-3 h-3" /> Kéo góc dưới để xem thêm</p>
           </section>
 
           <form id="borrow-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0">
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Ngày mượn</label>
                 <input 
-                  type="date"
-                  value={localToday()}
+                  type="text"
+                  value={toDisplayDate(localToday())}
                   disabled
                   className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 text-sm font-semibold text-gray-500 cursor-not-allowed"
                 />
               </div>
-              <div className="relative">
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Hạn trả <span className="text-red-500">*</span></label>
+              <div className="tw-calendar-picker relative min-w-0">
+                <label htmlFor="borrow-due-date-input" className="block text-xs font-semibold text-gray-500 uppercase mb-1">Hạn trả <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <input 
-                    type="date"
+                    type="text"
                     id="borrow-due-date-input"
                     required
-                    min={localToday()}
-                    onChange={e => setDueDate(e.target.value)}
-                    value={dueDate}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
+                    readOnly
+                    onClick={openDueDateCalendar}
+                    onChange={e => setDueDate(toIsoDate(e.target.value))}
+                    value={dueDate ? toDisplayDate(dueDate) : ''}
+                    placeholder="Chọn ngày trả"
+                    aria-label="Chọn hạn trả"
+                    className="w-full pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 outline-none focus:border-primary cursor-pointer"
                   />
+                  <CalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400" />
                 </div>
               </div>
             </div>
