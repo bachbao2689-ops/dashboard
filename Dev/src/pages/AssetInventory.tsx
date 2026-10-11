@@ -55,8 +55,8 @@ export const AssetInventory: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex z-10 relative">
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 lg:pr-4">
+    <div className="relative z-10 flex min-h-full min-w-0 md:h-full">
+      <div className="flex min-w-0 flex-1 flex-col pr-0 md:overflow-hidden lg:pr-4">
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -92,8 +92,29 @@ export const AssetInventory: React.FC = () => {
         </div>
       </div>
 
-      <div className="card-hub rounded-2xl overflow-hidden flex-1 shadow-sm">
-        <div className="overflow-x-auto h-full">
+      <div className="card-hub flex-1 overflow-hidden rounded-2xl shadow-sm">
+        <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
+          {loading ? <p className="p-6 text-center text-sm text-gray-500">Đang tải thiết bị...</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || 'Không tìm thấy thiết bị.'}</p> : filteredAssets.map(asset => {
+            const inCart = cart.some(item => item.id === asset.id);
+            const canBorrow = asset.status === 'available' && asset.is_available !== false;
+            return <div key={asset.id} className="p-4">
+              <button type="button" onClick={() => setSelectedAsset(asset)} className="w-full text-left">
+                <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{asset.asset_code}</span>
+                <span className="mt-1 flex items-start gap-2 break-words font-semibold text-gray-900 dark:text-gray-100">{getIcon(asset.category?.name)}<span className="min-w-0 break-words">{asset.name}</span></span>
+                <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Chưa phân loại'}</span>
+              </button>
+              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
+                <div><span className="block text-gray-500 dark:text-gray-400">Tình trạng</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.condition || 'N/A'}</span></div>
+                <div><span className="block text-gray-500 dark:text-gray-400">Vị trí</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.location || 'N/A'}</span></div>
+                <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{canBorrow ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}</span></div>
+                <div><span className="block text-gray-500 dark:text-gray-400">Người mượn</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{asset.current_borrower?.name || '—'}</span></div>
+                <div><span className="block text-gray-500 dark:text-gray-400">Hạn trả</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{asset.due_date ? new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN') : '—'}</span></div>
+              </div>
+              {(canBorrow || inCart) && <button type="button" onClick={() => toggleCart(asset)} className={`mt-4 rounded-lg px-3 py-2 text-xs font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? 'Bỏ khỏi phiếu' : 'Thêm vào phiếu'}</button>}
+            </div>;
+          })}
+        </div>
+        <div className="hidden h-full overflow-x-auto md:block">
           <table className="w-full min-w-max text-left">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">

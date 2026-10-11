@@ -79,21 +79,21 @@ export const MobileNav: React.FC = () => {
     <>
       <style>{`
         .mobile-nav-mask {
-          height: calc(120px + env(safe-area-inset-bottom));
-          background: linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0));
-          backdrop-filter: blur(16px) saturate(150%);
-          -webkit-backdrop-filter: blur(16px) saturate(150%);
-          mask-image: linear-gradient(to top, #000 25%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 100%);
+          height: calc(104px + env(safe-area-inset-bottom));
+          background: linear-gradient(to top, rgba(237,246,255,0.66), rgba(237,246,255,0));
+          backdrop-filter: blur(18px) saturate(155%);
+          -webkit-backdrop-filter: blur(18px) saturate(155%);
+          mask-image: linear-gradient(to top, #000 18%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to top, #000 18%, transparent 100%);
           transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .dark .mobile-nav-mask {
-          background: linear-gradient(to top, rgba(17,24,39,0.9), rgba(17,24,39,0));
+          background: linear-gradient(to top, rgba(5,18,38,0.7), rgba(5,18,38,0));
         }
         .mobile-nav-container {
           max-width: 440px;
           margin: 0 auto;
-          bottom: calc(24px + env(safe-area-inset-bottom));
+          bottom: calc(16px + env(safe-area-inset-bottom));
           transform-origin: bottom center;
           will-change: transform, opacity;
           transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
@@ -122,7 +122,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-3 right-3 bg-white dark:bg-slate-800 rounded-full z-[99] flex items-center justify-between p-1.5 shadow-lg border border-gray-200 dark:border-slate-700 mobile-nav-container",
+          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between p-1.5 mobile-nav-container",
           isHidden && "nav-hidden"
         )}
       >

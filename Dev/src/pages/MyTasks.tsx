@@ -57,8 +57,8 @@ export const MyTasks: React.FC = () => {
   const reportTasks = useMemo(() => tasksForWeeklyReport(calendar.items.filter(item => item.kind === 'task').map(item => item.record as any), week.start, week.end), [calendar.items, week.start, week.end]);
   const references: ReportReference[] = calendar.items.filter(item => item.kind === 'project' || item.kind === 'campaign').map(item => ({ id: item.id, name: item.title, status: item.status, description: item.description, kind: item.kind as 'project' | 'campaign' }));
   return (
-    <div className="relative flex h-full min-h-0 min-w-0">
-      <div className="min-w-0 flex-1 space-y-6 overflow-y-auto custom-scrollbar pb-6 pr-0 lg:pr-4">
+    <div className="relative flex min-h-full min-w-0 md:h-full md:min-h-0">
+      <div className="min-w-0 flex-1 space-y-6 pb-6 pr-0 md:overflow-y-auto md:custom-scrollbar lg:pr-4">
                 <ProfileHeader role={role} />
         {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
         <ProfileCalendar 

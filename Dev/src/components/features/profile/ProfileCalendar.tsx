@@ -45,7 +45,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   }, []);
   const [cursor, setCursor] = useState(() => new Date());
   const [range, setRange] = useState<CalendarRange>('month');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'list' : 'grid');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);
@@ -192,7 +192,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
             <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />Thông báo <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
-            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[320px] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog 
+            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[min(320px,calc(100vw-48px))] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog
               includeTeam={includeTeamNotifications} 
               inline 
               onClose={() => setShowNotifications(false)} 
@@ -447,7 +447,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
         </div>;
       })}</div>
     </> : (
-      <div className="flex flex-col border-y border-gray-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 max-h-[800px] overflow-y-auto custom-scrollbar">
+      <div className="flex flex-col border-y border-gray-100 bg-slate-50/30 dark:border-slate-800 dark:bg-slate-900/20 md:max-h-[800px] md:overflow-y-auto md:custom-scrollbar">
         {days.filter(d => {
           const dayStr = localDay(d);
           return dayStr >= visibleStart && dayStr <= visibleEnd;

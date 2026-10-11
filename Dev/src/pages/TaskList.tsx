@@ -271,8 +271,8 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 overflow-hidden">
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 lg:pr-4">
+    <div className="flex min-h-full min-w-0 md:h-full md:min-h-0 md:overflow-hidden">
+      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-0 md:min-h-0 lg:pr-4">
       
       <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 shrink-0 w-full">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
@@ -339,7 +339,7 @@ export const TaskList: React.FC = () => {
 
       {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
       
-      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-12 pr-1">
+      <div className="space-y-6 pb-12 pr-1 md:flex-1 md:overflow-y-auto md:custom-scrollbar">
       
 
       {loading ? (
@@ -371,7 +371,29 @@ export const TaskList: React.FC = () => {
                 </div>
               )}
               {!collapsedGroups.includes(groupName) && (
-                <div className="overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200">
+                <>
+                <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
+                  {groupTasks.map(task => (
+                    <div key={task.id} className="p-4">
+                      <div className="flex items-start gap-3">
+                        <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
+                        <button type="button" onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className="min-w-0 flex-1 text-left">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">#{task.task_ref || task.id.split('-')[0]}</span>
+                          <span className="mt-1 block break-words font-semibold text-gray-900 dark:text-gray-100">{task.title}</span>
+                          {task.department && <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{task.department.name}</span>}
+                        </button>
+                      </div>
+                      {(task.project?.name || task.campaign?.name) && <p className="mt-3 break-words text-xs text-gray-600 dark:text-gray-300">{task.project?.name || task.campaign?.name}</p>}
+                      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
+                        <div><span className="block text-gray-500 dark:text-gray-400">Người phụ trách</span><span className="mt-1 block break-words font-medium text-gray-800 dark:text-gray-200">{task.assignee?.name || 'Chưa phân công'}</span></div>
+                        <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 inline-block"><StatusBadge status={task.status} /></span></div>
+                        <div><span className="block text-gray-500 dark:text-gray-400">Ưu tiên</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{mapPriority(task.priority)}</span></div>
+                        <div><span className="block text-gray-500 dark:text-gray-400">Hạn chót</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : 'Chưa có'}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200 md:block">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
@@ -461,6 +483,7 @@ export const TaskList: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              </>
               )}
             </div>
           ))}
@@ -469,7 +492,7 @@ export const TaskList: React.FC = () => {
 
       {/* Batch Actions Toolbar */}
       {selectedTasks.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-fade-in-up border border-gray-700">
+        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-white shadow-2xl animate-fade-in-up sm:gap-6 sm:px-6 sm:py-3 md:bottom-6">
           <div className="flex items-center gap-2 border-r border-gray-700 pr-4">
             <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">{selectedTasks.length}</span>
             <span className="text-sm font-medium">Selected</span>

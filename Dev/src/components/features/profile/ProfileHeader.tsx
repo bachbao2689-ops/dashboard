@@ -87,15 +87,15 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
           
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-bold text-gray-900 dark:text-white">{name}</h1>
+              <h1 className="break-words text-xl font-bold text-gray-900 dark:text-white sm:truncate">{name}</h1>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${profile?.employment_level === 'Leader' || dbRole === 'leader' || dbRole === 'manager' || dbRole === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
                 {badge}
               </span>
             </div>
             
             <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1.5 truncate"><Mail size={14} className="shrink-0" /> <span className="truncate">{profile?.email || user?.email || 'Chưa cập nhật'}</span></div>
-              <div className="flex items-center gap-1.5 truncate"><Shield size={14} className="shrink-0" /> <span className="truncate">{profile?.department_name || 'Chưa phân team'} · {title}</span></div>
+              <div className="flex items-start gap-1.5"><Mail size={14} className="mt-0.5 shrink-0" /> <span className="break-all sm:truncate">{profile?.email || user?.email || 'Chưa cập nhật'}</span></div>
+              <div className="flex items-start gap-1.5"><Shield size={14} className="mt-0.5 shrink-0" /> <span className="break-words sm:truncate">{profile?.department_name || 'Chưa phân team'} · {title}</span></div>
             </div>
           </div>
         </div>
