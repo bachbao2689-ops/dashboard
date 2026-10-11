@@ -441,54 +441,205 @@ html.dark .btn-new-task:hover {
   @apply bg-primary opacity-90;
 }
 
+/* ========================================================
+   MAGNETIC SPOTLIGHT HOVER EFFECT SYSTEM
+   Reference: Physics-based cursor follow with lerp easing
+   - On hover: scale up, deeper shadow, vibrant border & glow
+   - On mousemove: relative mouse position drives highlight layer
+     with fluid lerp easing (chasing cursor)
+   - On mouseleave: tweens back to center (50% 50%) & default scale
+   ======================================================== */
+
+:root {
+  --glow-color: 78, 182, 72; /* Default brand green matching reference image */
+}
+
+/* Color presets */
+.magnetic-green { --glow-color: 78, 182, 72; }
+.magnetic-emerald { --glow-color: 34, 197, 94; }
+.magnetic-blue { --glow-color: 56, 189, 248; }
+.magnetic-primary { --glow-color: 0, 46, 109; }
+.magnetic-amber { --glow-color: 245, 158, 11; }
+.magnetic-violet { --glow-color: 139, 92, 246; }
+.magnetic-rose { --glow-color: 244, 63, 94; }
+
+/* 1. BUTTONS (.btn-add-new, .btn-new-task, .btn-magnetic, .hover-magnetic-btn) */
+.btn-add-new,
+.btn-new-task,
+.btn-magnetic,
+.hover-magnetic-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  will-change: transform, box-shadow;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s ease,
+              border-color 0.35s ease,
+              background-color 0.3s ease !important;
+}
+
 .btn-add-new {
-  @apply flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl transition-all shadow-sm flex-shrink-0;
-  @apply bg-primary text-white; /* Matches Report button */
-  border: 0 !important;
+  @apply flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-xl shadow-sm flex-shrink-0;
+  @apply bg-primary text-white;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline: 0 !important;
-  will-change: box-shadow, transform, background;
-  transition: all 0.3s ease !important;
+  --glow-color: 56, 189, 248;
 }
 
-/* Light Mode Hover */
-html:not(.dark) .btn-add-new:hover {
-  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
-  box-shadow: 0px 0.1em 0.2em rgb(45 35 66 / 40%), 0px 0.4em 0.7em -0.1em rgb(45 35 66 / 30%), inset 0px -0.1em 0px #3c4fe0 !important;
-  transform: translateY(-2px) !important;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 40%) !important;
+/* Inner highlight / spotlight layer for buttons */
+.btn-add-new::before,
+.btn-new-task::before,
+.btn-magnetic::before,
+.hover-magnetic-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  background: radial-gradient(
+    circle 110px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--glow-color), 0.28) 0%,
+    rgba(var(--glow-color), 0.06) 50%,
+    transparent 80%
+  );
 }
 
-html:not(.dark) .btn-add-new:active {
-  background: radial-gradient(100% 100% at 100% 0%, #89E5FF 0%, #5468FF 100%) !important;
-  box-shadow: inset 0px 0.1em 0.6em #3c4fe0 !important;
-  transform: translateY(0px) !important;
+.btn-add-new > *,
+.btn-new-task > *,
+.btn-magnetic > *,
+.hover-magnetic-btn > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* Dark Mode Hover */
-html.dark .btn-add-new:hover {
-  background: rgb(0,140,255) !important;
-  box-shadow: 0 0 5px rgb(0,140,255),
-              0 0 25px rgb(0,140,255),
-              0 0 50px rgb(0,140,255),
-              0 0 100px rgb(0,140,255) !important;
-  transform: translateY(-2px) !important;
+/* Hover state on buttons */
+.btn-add-new:hover,
+.btn-new-task:hover,
+.btn-magnetic:hover,
+.hover-magnetic-btn:hover,
+.btn-add-new.is-magnetic-active,
+.btn-new-task.is-magnetic-active,
+.btn-magnetic.is-magnetic-active,
+.hover-magnetic-btn.is-magnetic-active {
+  transform: scale(1.025) translate(var(--mag-x, 0px), var(--mag-y, 0px)) !important;
 }
 
-html.dark .btn-add-new:active {
-  box-shadow: 0 0 15px rgb(0,140,255) !important;
-  transform: translateY(0px) !important;
+.btn-add-new:hover::before,
+.btn-new-task:hover::before,
+.btn-magnetic:hover::before,
+.hover-magnetic-btn:hover::before,
+.btn-add-new.is-magnetic-active::before,
+.btn-new-task.is-magnetic-active::before,
+.btn-magnetic.is-magnetic-active::before,
+.hover-magnetic-btn.is-magnetic-active::before {
+  opacity: 1;
 }
 
+/* Specific light mode hover for .btn-add-new */
+html:not(.dark) .btn-add-new:hover,
+html:not(.dark) .btn-add-new.is-magnetic-active {
+  background-color: #002250 !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 10px 24px -4px rgba(0, 46, 109, 0.35),
+              0 0 16px -2px rgba(56, 189, 248, 0.45) !important;
+}
 
+/* Specific dark mode hover for .btn-add-new */
+html.dark .btn-add-new:hover,
+html.dark .btn-add-new.is-magnetic-active {
+  background-color: #002e6d !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.55),
+              0 0 20px -2px rgba(56, 189, 248, 0.55) !important;
+}
 
+/* Active pressed state */
+.btn-add-new:active,
+.btn-magnetic:active,
+.hover-magnetic-btn:active {
+  transform: scale(0.98) translate(0px, 0px) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
 
+/* 2. CARDS & ACTION BUTTONS (.hover-magnetic, .hover-magnetic-card) - exactly like reference image! */
+.hover-magnetic,
+.hover-magnetic-card {
+  --glow-color: 78, 182, 72;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  will-change: transform, box-shadow;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s ease,
+              border-color 0.35s ease,
+              background-color 0.3s ease !important;
+}
 
+.hover-magnetic::before,
+.hover-magnetic-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  background: radial-gradient(
+    circle 150px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--glow-color), 0.16) 0%,
+    rgba(var(--glow-color), 0.04) 50%,
+    transparent 80%
+  );
+}
 
+.hover-magnetic > *,
+.hover-magnetic-card > * {
+  position: relative;
+  z-index: 1;
+}
 
+/* Light mode card hover */
+html:not(.dark) .hover-magnetic:hover,
+html:not(.dark) .hover-magnetic-card:hover,
+html:not(.dark) .hover-magnetic.is-magnetic-active,
+html:not(.dark) .hover-magnetic-card.is-magnetic-active {
+  transform: scale(1.02) translate(var(--mag-x, 0px), var(--mag-y, 0px)) !important;
+  border-color: rgba(var(--glow-color), 0.75) !important;
+  box-shadow: 0 10px 28px -6px rgba(var(--glow-color), 0.18),
+              0 4px 12px -2px rgba(0, 0, 0, 0.05),
+              inset 0 0 0 1px rgba(var(--glow-color), 0.25) !important;
+}
 
+/* Dark mode card hover */
+html.dark .hover-magnetic:hover,
+html.dark .hover-magnetic-card:hover,
+html.dark .hover-magnetic.is-magnetic-active,
+html.dark .hover-magnetic-card.is-magnetic-active {
+  transform: scale(1.02) translate(var(--mag-x, 0px), var(--mag-y, 0px)) !important;
+  border-color: rgba(var(--glow-color), 0.70) !important;
+  box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.5),
+              0 0 20px -3px rgba(var(--glow-color), 0.25),
+              inset 0 0 0 1px rgba(var(--glow-color), 0.3) !important;
+}
+
+.hover-magnetic:hover::before,
+.hover-magnetic-card:hover::before,
+.hover-magnetic.is-magnetic-active::before,
+.hover-magnetic-card.is-magnetic-active::before {
+  opacity: 1;
+}
+
+/* 3. TABLE / LIST ROWS (.hover-row-effect) */
 .hover-row-effect {
   --row-glow-color: 59, 130, 246; /* default blue for tasks */
   outline: 1px solid transparent !important;
+  transition: outline 0.3s ease,
+              box-shadow 0.3s ease,
+              background-color 0.25s ease !important;
 }
 .hover-row-campaign {
   --row-glow-color: 245, 158, 11; /* amber-500 */
@@ -498,22 +649,23 @@ html.dark .btn-add-new:active {
 }
 
 /* Light mode hover row */
-html:not(.dark) .hover-row-effect:hover {
+html:not(.dark) .hover-row-effect:hover,
+html:not(.dark) .hover-row-effect.is-magnetic-active {
   background-color: #ffffff !important;
-  outline: 1px solid rgba(var(--row-glow-color), 0.25) !important;
-  box-shadow: 0 8px 30px -10px rgba(var(--row-glow-color), 0.15), 0 -8px 30px -10px rgba(var(--row-glow-color), 0.15) !important;
-  transform: scale(1);
+  background-image: radial-gradient(circle 280px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--row-glow-color), 0.10) 0%, rgba(var(--row-glow-color), 0) 100%) !important;
+  outline: 1px solid rgba(var(--row-glow-color), 0.35) !important;
+  box-shadow: 0 8px 30px -10px rgba(var(--row-glow-color), 0.2), 0 -8px 30px -10px rgba(var(--row-glow-color), 0.2) !important;
   position: relative;
   z-index: 10;
 }
 
 /* Dark mode hover row */
-html.dark .hover-row-effect:hover {
-  background-color: #0f172a !important; /* deep slate */
-  background-image: radial-gradient(circle at 50% 50%, rgba(var(--row-glow-color), 0.15) 0%, rgba(var(--row-glow-color), 0) 100%) !important;
-  outline: 1px solid rgba(var(--row-glow-color), 0.4) !important;
-  box-shadow: 0 8px 30px -10px rgba(var(--row-glow-color), 0.25), 0 -8px 30px -10px rgba(var(--row-glow-color), 0.25) !important;
-  transform: scale(1);
+html.dark .hover-row-effect:hover,
+html.dark .hover-row-effect.is-magnetic-active {
+  background-color: #0f172a !important;
+  background-image: radial-gradient(circle 280px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--row-glow-color), 0.20) 0%, rgba(var(--row-glow-color), 0) 100%) !important;
+  outline: 1px solid rgba(var(--row-glow-color), 0.5) !important;
+  box-shadow: 0 8px 30px -10px rgba(var(--row-glow-color), 0.3), 0 -8px 30px -10px rgba(var(--row-glow-color), 0.3) !important;
   position: relative;
   z-index: 10;
 }

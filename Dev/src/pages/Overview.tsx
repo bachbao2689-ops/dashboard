@@ -148,10 +148,10 @@ export const Overview: React.FC = () => {
             />
             <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${MUTED}`}>▾</span>
           </div>
-          <button className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 dark:bg-sky-500 hover:opacity-90 text-white rounded-[10px] text-xs font-semibold transition-opacity">
+          <button className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 dark:bg-sky-500 hover-magnetic-btn magnetic-blue text-white rounded-[10px] text-xs font-semibold">
             <Bot size={14} /> {t('overview.aiSummary')}
           </button>
-          <button className={`flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] ${INK} hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}>
+          <button className={`flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 ${INNER} rounded-[10px] ${INK} hover-magnetic-btn transition-colors`}>
             <Download size={14} />
           </button>
         </div>
@@ -159,7 +159,7 @@ export const Overview: React.FC = () => {
 
       {/* KPI row – each card is clickable and has a mini visual */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <button onClick={() => navigate('/tasks?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/tasks?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-blue`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.myTasks')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.myTasksCount}</p>
@@ -171,7 +171,7 @@ export const Overview: React.FC = () => {
           </div>
         </button>
 
-        <button onClick={() => navigate('/tasks?scope=due-soon')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/tasks?scope=due-soon')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-amber`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.dueSoon')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.dueSoonCount}</p>
@@ -184,7 +184,7 @@ export const Overview: React.FC = () => {
           </div>
         </button>
 
-        <button onClick={() => navigate('/borrow-requests?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover:shadow-md transition-shadow`}>
+        <button onClick={() => navigate('/borrow-requests?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-violet`}>
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.borrowed')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.borrowedCount}</p>
@@ -198,7 +198,7 @@ export const Overview: React.FC = () => {
 
         <button
           onClick={() => navigate('/tasks?scope=overdue')}
-          className={`p-4 text-left rounded-[18px] border flex items-center justify-between gap-3 hover:shadow-md transition-shadow ${
+          className={`p-4 text-left rounded-[18px] border flex items-center justify-between gap-3 hover-magnetic-card magnetic-rose ${
             data.overdueCount > 0
               ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30'
               : `bg-white dark:bg-slate-800 ${INNER}`

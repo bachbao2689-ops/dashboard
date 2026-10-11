@@ -315,7 +315,7 @@ export const TaskList: React.FC = () => {
 
           {/* Filters Panel Toggle */}
           <div className="relative">
-            <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
+            <button onClick={() => setShowFilters(!showFilters)} className={`hover-magnetic-btn magnetic-blue flex items-center space-x-2 border px-4 py-2.5 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
               {activeFiltersCount > 0 && <span className="ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full">{activeFiltersCount}</span>}
@@ -325,7 +325,7 @@ export const TaskList: React.FC = () => {
 
           <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-1"></div>
 
-          <button onClick={exportCSV} className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={exportCSV} className="hover-magnetic-btn magnetic-blue flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-4 h-4" />
             <span className="text-sm font-medium">Export</span>
           </button>

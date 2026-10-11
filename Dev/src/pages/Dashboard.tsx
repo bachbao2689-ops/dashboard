@@ -341,7 +341,7 @@ export const Dashboard: React.FC = () => {
                 
 
                 return (
-                  <div key={l as string} className="group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white/70 dark:hover:bg-slate-800/60 hover:backdrop-blur-lg hover:shadow-[0_2px_10px_rgb(0,0,0,0.04)] hover:border hover:border-white/80 dark:hover:border-slate-700/50 border border-transparent transition-all cursor-default">
+                  <div key={l as string} className={`group relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl hover-magnetic-card ${type === 'done' ? 'magnetic-green' : type === 'projects' ? 'magnetic-violet' : 'magnetic-blue'} border border-transparent transition-all cursor-default`}>
                     <strong className={`block text-xl 2xl:text-2xl font-bold ${INK}`}>{v}</strong>
                     <span className={`block text-[11px] mt-0.5 font-medium ${MUTED}`}>{l}</span>
                     
@@ -522,7 +522,7 @@ export const Dashboard: React.FC = () => {
                 <button 
                   key={p.id} 
                   onClick={() => setActiveId(p.id)} 
-                  className={`w-full text-left bg-gray-50 hover:bg-blue-50 dark:bg-slate-700/30 dark:hover:bg-slate-700/80 transition-colors border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl p-3`}
+                  className={`w-full text-left bg-gray-50 dark:bg-slate-700/30 transition-all border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl p-3 hover-magnetic-card ${p.priority === 'High' ? 'magnetic-rose' : 'magnetic-amber'}`}
                 >
                   <div className="flex items-center justify-between text-xs mb-2">
                     <b className={INK}>{p.code}</b>
@@ -557,7 +557,7 @@ export const Dashboard: React.FC = () => {
                     <div className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="overflow-hidden">
                         {d.members.map(m => (
-                          <button key={m.id} onClick={() => setActiveId(m.id)} className="w-full text-left flex items-center gap-2 pb-2 hover:opacity-70 transition-opacity">
+                          <button key={m.id} onClick={() => setActiveId(m.id)} className="w-full text-left flex items-center gap-2 p-1.5 rounded-lg hover-magnetic-btn magnetic-blue transition-all">
                             <Avatar name={m.n} src={m.a || undefined} className="w-[24px] h-[24px] rounded-full text-[#2a6fc1] dark:text-sky-300 text-[10px]" />
                             <div className="flex-1 min-w-0">
                               <strong className={`block text-xs truncate ${LINK}`}>{m.n}</strong>
