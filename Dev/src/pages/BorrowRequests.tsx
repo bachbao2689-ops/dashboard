@@ -17,7 +17,7 @@ export const BorrowRequests: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const canManage = !!profile && ['admin', 'manager'].includes(profile.role);
   const { requests, loading, error, busyId, updateStatus } = useBorrowRequests();
-  const mine = searchParams.get('scope') === 'mine';
+  const mine = !canManage || searchParams.get('scope') === 'mine';
   const selectedRequest = requests.find(request => request.id === selectedId) || null;
 
   const filtered = requests.filter(request => {

@@ -21,6 +21,7 @@ export interface BorrowRequest {
 }
 
 export function useBorrowRequests() {
+  const profile = useAuthStore(state => state.profile);
   const [requests, setRequests] = useState<BorrowRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -39,13 +40,17 @@ export function useBorrowRequests() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.id, profile?.role]);
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
+      if (!profile?.id) {
+        setRequests([]);
+        return;
+      }
+      let query = supabase
         .from('borrow_requests')
         .select(`
           id, asset_id, requester_id, borrow_date, due_date, requested_at, purpose, approval_status, returned_at,
@@ -54,6 +59,8 @@ export function useBorrowRequests() {
           department:department_id(name)
         `)
         .order('requested_at', { ascending: false });
+      if (!['admin', 'manager'].includes(profile.role)) query = query.eq('requester_id', profile.id);
+      const { data, error } = await query;
 
       if (error) throw error;
       setRequests(data as any);
