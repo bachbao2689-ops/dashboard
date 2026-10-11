@@ -234,15 +234,20 @@ export const Dashboard: React.FC = () => {
     .filter(task => task.status !== 'done' && task.due_date)
     .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
     .slice(0, 2)
-    .map(task => ({
-      id: `project-${task.project?.name || task.id}`,
-      code: task.task_ref || '—',
-      name: task.project?.name || task.title,
-      dept: task.department?.name || 'Chưa phân phòng',
-      date: new Date(task.due_date!).toLocaleDateString('vi-VN'),
-      dueStr: Math.max(0, Math.ceil((new Date(task.due_date!).getTime() - Date.now()) / 86400000)) + ' ngày',
-      priority: task.priority === 'high' ? 'High' : 'Medium',
-    }));
+    .map(task => {
+      const diffDays = Math.ceil((new Date(task.due_date!).getTime() - Date.now()) / 86400000);
+      const dueStr = diffDays < 0 ? `Quá hạn ${Math.abs(diffDays)} ngày` : diffDays === 0 ? 'Hôm nay' : `Còn ${diffDays} ngày`;
+      return {
+        id: `project-${task.project?.name || task.id}`,
+        code: task.task_ref || '—',
+        name: task.project?.name || task.title,
+        dept: task.department?.name || 'Chưa phân phòng',
+        date: new Date(task.due_date!).toLocaleDateString('vi-VN'),
+        dueStr,
+        isOverdue: diffDays < 0,
+        priority: task.priority === 'high' ? 'High' : 'Medium',
+      };
+    });
   const teams = [...new Set(users.map(user => user.department?.name || 'Chưa cập nhật team'))].map(name => ({
     name,
     id: `team-${name}`,
@@ -508,11 +513,11 @@ export const Dashboard: React.FC = () => {
       </section>
 
       {/* ============ RIGHT STACK (compact) ============ */}
-      <div className="flex flex-col gap-4 min-w-0 h-full">
+      <div className="flex flex-col gap-4 min-w-0">
 
         {/* History */}
-        <section className={`${PANEL} px-4 pt-4 pb-[13px] flex flex-col flex-[3]`}>
-          <div className="flex items-center justify-between mb-[9px]">
+        <section className={`${PANEL} px-4 pt-4 pb-3 flex flex-col`}>
+          <div className="flex items-center justify-between mb-2">
             <div>
               <Eyebrow className="!text-xs mb-[3px]">HISTORY</Eyebrow>
               <h2 className={`text-base font-bold ${INK}`}>Lịch sử hoạt động</h2>
@@ -520,47 +525,46 @@ export const Dashboard: React.FC = () => {
             <i className="w-1.5 h-1.5 rounded-full bg-blue-400" />
           </div>
           <p className={`text-xs ${MUTED}`}>Chưa có lịch sử Task</p>
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
+          <div className="flex flex-col items-center justify-center text-center py-4">
             <FileText size={22} className="text-[#b9c6d8] dark:text-slate-500 mb-2" />
             <h3 className={`text-sm font-bold ${INK}`}>Chưa có hoạt động</h3>
             <p className={`text-xs mt-1 ${MUTED}`}>Nguồn dữ liệu chưa có nhật ký.</p>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-4 flex-[5]">
-          {/* Upcoming Projects */}
-          <section className={`${PANEL} px-[14px] py-[16px] flex flex-col`}>
-            <div className="flex items-start justify-between gap-1.5 mb-[11px]">
-              <div>
-                <h2 className={`text-sm font-bold ${INK}`}>Project tới hạn</h2>
-                <p className={`text-xs mt-1 ${MUTED}`}>Sắp tới deadline (5 ngày)</p>
-              </div>
-              <span className="text-xs font-semibold px-[5px] py-[3px] rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">🔥 Urgent</span>
+        {/* Upcoming Projects */}
+        <section className={`${PANEL} px-3.5 py-4 flex flex-col`}>
+          <div className="flex items-start justify-between gap-1.5 mb-3">
+            <div>
+              <h2 className={`text-sm font-bold ${INK}`}>Project tới hạn</h2>
+              <p className={`text-xs mt-0.5 ${MUTED}`}>Sắp tới deadline (5 ngày)</p>
             </div>
-            <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
-              {upcomingProjects.length ? upcomingProjects.map(p => (
-                <button 
-                  key={p.id} 
-                  onClick={() => setActiveId(p.id)} 
-                  className={`w-full text-left bg-gray-50 dark:bg-slate-700/30 transition-all border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl p-3 hover-magnetic-card ${p.priority === 'High' ? 'magnetic-rose' : 'magnetic-amber'}`}
-                >
-                  <div className="flex items-center justify-between text-xs mb-2">
-                    <b className={INK}>{p.code}</b>
-                    <span className={`px-1.5 py-0.5 rounded-md font-semibold ${p.priority === 'High' ? 'bg-red-50 text-red-600 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-amber-50 text-[#b7791f] dark:bg-amber-500/15 dark:text-amber-300'}`}>{p.priority}</span>
-                  </div>
-                  <h4 className={`text-sm font-bold ${INK}`}>{p.name}</h4>
-                  <div className={`text-xs mt-1 ${MUTED}`}>{p.dept}</div>
-                  <div className={`flex items-center justify-between mt-3`}>
-                    <div className={`flex items-center gap-1 text-xs ${MUTED}`}><Calendar size={10} className="text-[#b7791f] dark:text-amber-400" />{p.date}</div>
-                    <span className="text-xs font-semibold text-rose-500">Còn {p.dueStr}</span>
-                  </div>
-                </button>
-              )) : <p className={`text-xs ${MUTED}`}>Không có task mở có deadline.</p>}
-            </div>
-          </section>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-[#b7791f] border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30">🔥 Urgent</span>
+          </div>
+          <div className="space-y-3">
+            {upcomingProjects.length ? upcomingProjects.map(p => (
+              <button 
+                key={p.id} 
+                onClick={() => setActiveId(p.id)} 
+                className={`w-full text-left bg-gray-50/80 dark:bg-slate-800/60 transition-all border ${activeId === p.id ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700/80'} rounded-xl p-3 hover-magnetic-card ${p.priority === 'High' || p.priority === 'Urgent' ? 'magnetic-rose' : 'magnetic-amber'}`}
+              >
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <b className={INK}>{p.code}</b>
+                  <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[11px] ${p.priority === 'High' || p.priority === 'Urgent' ? 'bg-red-50 text-red-600 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-amber-50 text-[#b7791f] dark:bg-amber-500/15 dark:text-amber-300'}`}>{p.priority}</span>
+                </div>
+                <h4 className={`text-sm font-bold truncate ${INK}`}>{p.name}</h4>
+                <div className={`text-xs mt-1 ${MUTED}`}>{p.dept}</div>
+                <div className="flex items-center justify-between mt-3 text-xs">
+                  <div className={`flex items-center gap-1 ${MUTED}`}><Calendar size={12} className="text-[#b7791f] dark:text-amber-400" />{p.date}</div>
+                  <span className={`font-semibold ${p.isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>{p.dueStr}</span>
+                </div>
+              </button>
+            )) : <p className={`text-xs ${MUTED}`}>Không có task mở có deadline.</p>}
+          </div>
+        </section>
 
-          {/* TEAM accordion (OLD UI restored) */}
-          <section className={`${PANEL} px-[14px] py-[16px]`}>
+        {/* TEAM accordion (OLD UI restored) */}
+        <section className={`${PANEL} px-[14px] py-[16px]`}>
             <div className="flex items-center justify-between mb-[6px]">
               <h2 className={`text-sm font-bold ${INK}`}>TEAM</h2>
               <Eyebrow className="!text-xs !tracking-[.5px]">{users.length} PIC</Eyebrow>
@@ -597,8 +601,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </section>
         </div>
+        <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={s?.type === 'staff' ? Number(s.id.replace('user-', '')) : undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
       </div>
-      <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={s?.type === 'staff' ? Number(s.id.replace('user-', '')) : undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
-    </div>
-  );
-};
+    );
+  };

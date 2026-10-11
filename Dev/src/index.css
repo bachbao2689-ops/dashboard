@@ -603,6 +603,14 @@ html.dark .hover-magnetic-btn.is-magnetic-active {
               background-color 0.3s ease !important;
 }
 
+.hover-magnetic.magnetic-rose, .hover-magnetic-card.magnetic-rose { --glow-color: 244, 63, 94; }
+.hover-magnetic.magnetic-amber, .hover-magnetic-card.magnetic-amber { --glow-color: 245, 158, 11; }
+.hover-magnetic.magnetic-blue, .hover-magnetic-card.magnetic-blue { --glow-color: 56, 189, 248; }
+.hover-magnetic.magnetic-emerald, .hover-magnetic-card.magnetic-emerald { --glow-color: 34, 197, 94; }
+.hover-magnetic.magnetic-green, .hover-magnetic-card.magnetic-green { --glow-color: 78, 182, 72; }
+.hover-magnetic.magnetic-violet, .hover-magnetic-card.magnetic-violet { --glow-color: 139, 92, 246; }
+.hover-magnetic.magnetic-primary, .hover-magnetic-card.magnetic-primary { --glow-color: 0, 46, 109; }
+
 .hover-magnetic::before,
 .hover-magnetic-card::before {
   content: '';
