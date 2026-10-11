@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Search, Camera, Laptop, HardDrive, Box } from 'lucide-react';
+import { Plus, Search, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
@@ -81,12 +81,12 @@ export const AssetInventory: React.FC = () => {
           </div>
           
           
-          <button onClick={() => setIsBorrowDrawerOpen(true)} className={`flex shrink-0 items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
-            <Box size={18} /> <span className="hidden sm:inline">Phiếu mượn</span>
+          <button onClick={() => setIsBorrowDrawerOpen(true)} aria-label="Mở phiếu mượn" className={`flex shrink-0 items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+            <Box size={18} /> <span className="text-xs sm:text-sm">Phiếu mượn</span>
             {cart.length > 0 && <span className="bg-white/20 text-white text-[11px] font-bold min-w-5 h-5 px-1 flex items-center justify-center rounded-full" aria-label={`${cart.length} thiết bị trong phiếu`}>{cart.length}</span>}
           </button>
-          <button onClick={handleNewAsset} className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-[#002e6d] flex-shrink-0 hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
-            <Plus size={18} /> <span className="hidden sm:inline">Thêm thiết bị</span>
+          <button onClick={handleNewAsset} aria-label="Thêm thiết bị" className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 px-3 sm:px-4 bg-[#002e6d] flex-shrink-0 hover:bg-[#001f4d] text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+            <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">Thêm</span><span className="hidden sm:inline">Thêm thiết bị</span></span>
           </button>
 
         </div>
@@ -97,20 +97,18 @@ export const AssetInventory: React.FC = () => {
           {loading ? <p className="p-6 text-center text-sm text-gray-500">Đang tải thiết bị...</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || 'Không tìm thấy thiết bị.'}</p> : filteredAssets.map(asset => {
             const inCart = cart.some(item => item.id === asset.id);
             const canBorrow = asset.status === 'available' && asset.is_available !== false;
-            return <div key={asset.id} className="p-4">
-              <button type="button" onClick={() => setSelectedAsset(asset)} className="w-full text-left">
-                <span className="block truncate font-mono text-xs text-gray-500 dark:text-gray-400">{asset.asset_code}</span>
-                <span className="mt-1 flex min-w-0 items-center gap-2 font-semibold text-gray-900 dark:text-gray-100"><span className="shrink-0">{getIcon(asset.category?.name)}</span><span className="min-w-0 truncate">{asset.name}</span></span>
-                <span className="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || 'Chưa phân loại'}</span>
+            const statusLabel = canBorrow ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng';
+            return <div key={asset.id} className="px-3 py-3">
+              <button type="button" onClick={() => setSelectedAsset(asset)} className="flex w-full min-w-0 items-center gap-2.5 text-left">
+                <span className="shrink-0">{getIcon(asset.category?.name)}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{asset.name}</span>
+                <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
               </button>
-              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
-                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Tình trạng</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.condition || 'N/A'}</span></div>
-                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Vị trí</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.location || 'N/A'}</span></div>
-                <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{canBorrow ? 'Sẵn sàng' : asset.status === 'reserved' ? 'Chờ duyệt' : asset.status === 'borrowed' ? 'Đang mượn' : 'Không khả dụng'}</span></div>
-                <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Người mượn</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{asset.current_borrower?.name || '—'}</span></div>
-                <div><span className="block text-gray-500 dark:text-gray-400">Hạn trả</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{asset.due_date ? new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN') : '—'}</span></div>
+              <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || 'Chưa phân loại'}</p>
+              <div className="ml-6 mt-2 flex min-w-0 items-center justify-between gap-2">
+                <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
+                {(canBorrow || inCart) ? <button type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? 'Bỏ khỏi phiếu' : 'Thêm vào phiếu'}</button> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">Hạn {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
               </div>
-              {(canBorrow || inCart) && <button type="button" onClick={() => toggleCart(asset)} className={`mt-4 rounded-lg px-3 py-2 text-xs font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? 'Bỏ khỏi phiếu' : 'Thêm vào phiếu'}</button>}
             </div>;
           })}
         </div>

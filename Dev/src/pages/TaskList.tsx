@@ -374,21 +374,23 @@ export const TaskList: React.FC = () => {
                 <>
                 <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
                   {groupTasks.map(task => (
-                    <div key={task.id} className="p-4">
-                      <div className="flex items-start gap-3">
-                        <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="mt-1 rounded border-gray-300 text-primary focus:ring-primary" />
-                        <button type="button" onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className="min-w-0 flex-1 text-left">
-                          <span className="block truncate text-xs font-medium text-gray-500 dark:text-gray-400">#{task.task_ref || task.id.split('-')[0]}</span>
-                          <span className="mt-1 block truncate font-semibold text-gray-900 dark:text-gray-100">{task.title}</span>
-                          {task.department && <span className="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400">{task.department.name}</span>}
+                    <div key={task.id} className="px-3 py-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="shrink-0 rounded border-gray-300 text-primary focus:ring-primary" />
+                        <button type="button" onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                          <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
                         </button>
                       </div>
-                      {(task.project?.name || task.campaign?.name) && <p className="mt-3 truncate text-xs text-gray-600 dark:text-gray-300">{task.project?.name || task.campaign?.name}</p>}
-                      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
-                        <div className="min-w-0"><span className="block text-gray-500 dark:text-gray-400">Người phụ trách</span><span className="mt-1 block truncate font-medium text-gray-800 dark:text-gray-200">{task.assignee?.name || 'Chưa phân công'}</span></div>
-                        <div><span className="block text-gray-500 dark:text-gray-400">Trạng thái</span><span className="mt-1 inline-block"><StatusBadge status={task.status} /></span></div>
-                        <div><span className="block text-gray-500 dark:text-gray-400">Ưu tiên</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{mapPriority(task.priority)}</span></div>
-                        <div><span className="block text-gray-500 dark:text-gray-400">Hạn chót</span><span className="mt-1 block font-medium text-gray-800 dark:text-gray-200">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : 'Chưa có'}</span></div>
+                      <p className="ml-6 mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                        <span className="shrink-0">#{task.task_ref || task.id.split('-')[0]}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="min-w-0 truncate">{task.assignee?.name || 'Chưa phân công'}</span>
+                      </p>
+                      <div className="ml-6 mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                        <StatusBadge status={task.status} />
+                        <span className="min-w-0 truncate">{task.due_date ? `Hạn ${new Date(task.due_date).toLocaleDateString('vi-VN')}` : 'Chưa có hạn'}</span>
+                        {mapPriority(task.priority) === 'High' && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">High</span>}
                       </div>
                     </div>
                   ))}

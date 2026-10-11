@@ -1,7 +1,7 @@
 import { StatusBadge } from '../../common/StatusBadge';
 import React, { useEffect, useState } from 'react';
 import { Avatar } from '../../common/Avatar';
-import { ChevronDown, Megaphone, Trash2, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../../common/ConfirmHideModal';
 import toast from 'react-hot-toast';
@@ -153,26 +153,15 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
       </div>
       {expanded && <>
       <div className="space-y-3 p-3 md:hidden">
-        {campaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
+        {campaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
           <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
-            <span className="block truncate text-sm font-bold leading-5 text-gray-900 dark:text-white">{c.name}</span>
-            <span className="mt-1.5 block truncate text-xs leading-5 text-gray-600 dark:text-slate-300">{c.objective || 'Chưa có mục tiêu'}</span>
+            <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span><ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
+            <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || 'Chưa có mục tiêu'}</span>
           </button>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
-            <Avatar name={c.lead?.name || 'Unassigned'} src={c.lead?.avatar_url || undefined} className="h-6 w-6 shrink-0 text-[10px]" />
-            <span className="min-w-0 flex-1 truncate">{c.lead?.name || 'Chưa có PIC'}</span>
-            {!!subtaskMap[c.id]?.length && <span className="shrink-0 rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{subtaskMap[c.id].length} subtask</span>}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-gray-100 pt-3 text-xs text-gray-600 dark:border-slate-700 dark:text-slate-300">
-            <span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>
-            {getDueStatusLabel(c.end_date)}
-            <span className={`rounded-full px-2 py-1 font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span>
+          <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <StatusBadge status={c.status || 'planning'} />
-            {c.budget ? <span>Ngân sách: {new Intl.NumberFormat('vi-VN').format(c.budget)}</span> : null}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <button type="button" onClick={() => onSelect?.(c)} className="text-xs font-semibold text-primary dark:text-blue-300">Xem chi tiết →</button>
-            {canManage && <div className="flex items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-2 text-amber-600" aria-label={`Ẩn ${c.name}`}><EyeOff size={17} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-2 text-red-500" aria-label={`Xóa ${c.name}`}><Trash2 size={17} /></button></div>}
+            <span className="min-w-0 truncate">{c.end_date ? `Hạn ${formatDate(c.end_date)}` : 'Chưa có hạn'}</span>
+            {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`Ẩn ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`Xóa ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
         </article>)}
         {!campaigns.length && <p className="p-6 text-center text-sm text-gray-500">Chưa có Campaign.</p>}

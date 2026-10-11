@@ -5,7 +5,7 @@ import { Avatar } from "../components/common/Avatar";
 
 import toast from 'react-hot-toast';
 import { useTranslation } from '../i18n/translations';
-import { ChevronDown, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff, Reply } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff, Reply } from 'lucide-react';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../components/common/ConfirmHideModal';
 import { supabase } from '../services/supabase';
@@ -498,26 +498,15 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     {/* Left Side: Projects List */}
     <div className={`flex min-w-0 flex-1 flex-col p-1 transition-all duration-300 md:h-full ${panelOpen ? 'hidden md:flex pr-4' : ''}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0"><div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-primary"/> Projects/Campaigns</h1><p className="text-sm text-gray-500 mt-1">{t('projects.subtitle')}</p></div>{canCreate && <button onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} className="btn-add-new"><FolderKanban className="w-4 h-4" /><span>{t('projects.add')}</span></button>}</div><div className="space-y-6 pb-20 pr-1 md:min-h-0 md:flex-1 md:overflow-y-auto custom-scrollbar"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projects')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 md:hidden">{visibleProjects.map(project => {
-  const ownerNames = (members[project.id] || []).map(id => people.find(person => String(person.id) === id)?.name).filter(Boolean);
-  return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
+  return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
     <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
-      <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 truncate">{project.name}</span>{hasComments[project.id] && <MessageSquare size={14} className="shrink-0 text-blue-500" />}</span>
-      <span className="mt-1.5 block truncate text-xs leading-5 text-gray-600 dark:text-slate-300">{project.description || 'Chưa có mô tả'}</span>
+      <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{project.name}</span>{hasComments[project.id] && <MessageSquare size={14} className="shrink-0 text-blue-500" />}<ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
+      <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{project.description || 'Chưa có mô tả'}</span>
     </button>
-    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
-      <Users size={15} className="shrink-0 text-violet-500" />
-      <span className="min-w-0 flex-1 truncate">{ownerNames.length ? ownerNames.join(', ') : 'Chưa có PIC'}</span>
-      {!!subtaskMembers[project.id]?.length && <span className="shrink-0 rounded-full bg-violet-50 px-2 py-1 font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">{subtaskMembers[project.id].length} subtask</span>}
-    </div>
-    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-gray-100 pt-3 text-xs text-gray-600 dark:border-slate-700 dark:text-slate-300">
-      <span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>
-      {getDueStatusLabel(project.due_date)}
-      <span className={`rounded-full px-2 py-1 font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span>
+    <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
       <StatusBadge status={project.status || 'active'} />
-    </div>
-    <div className="mt-3 flex items-center justify-between gap-2">
-      <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="text-xs font-semibold text-primary dark:text-blue-300">Xem chi tiết →</button>
-      {canCreate && <div className="flex items-center gap-1"><button type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-2 text-amber-600" aria-label={`Ẩn ${project.name}`}><EyeOff size={17} /></button><button type="button" onClick={() => void removeProject(project)} className="rounded-lg p-2 text-red-500" aria-label={`Xóa ${project.name}`}><Trash2 size={17} /></button></div>}
+      <span className="min-w-0 truncate">{project.due_date ? `Hạn ${dateValue(project.due_date)}` : 'Chưa có hạn'}</span>
+      {canCreate && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`Ẩn ${project.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`Xóa ${project.name}`}><Trash2 size={15} /></button></div>}
     </div>
   </article>;
 })}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">Chưa có Project nào.</p>}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-max text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">Project</th><th>Owner</th><th>Dates</th><th>Priority</th><th>Status</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project hover:bg-primary/5 transition-all duration-300 ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
