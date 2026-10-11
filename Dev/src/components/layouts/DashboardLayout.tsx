@@ -22,9 +22,9 @@ export const DashboardLayout: React.FC = () => {
              <Sidebar />
           </div>
         </div>
-        <div className="relative flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+        <div className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
           <Header />
-          <main id="main-scroll-container" className="dashboard-scroll-surface min-h-0 flex-1 overflow-auto px-3 sm:px-4 pt-[calc(60px+env(safe-area-inset-top,0px))] md:pt-3.5 pb-[calc(112px+env(safe-area-inset-bottom,0px))] md:pb-4 relative">
+          <main id="main-scroll-container" className="dashboard-scroll-surface h-full w-full min-h-0 overflow-y-auto overflow-x-hidden px-3 sm:px-4 pt-[calc(60px+env(safe-area-inset-top,0px))] md:pt-[76px] pb-[calc(112px+env(safe-area-inset-bottom,0px))] md:pb-8 relative">
             <Outlet />
           </main>
         </div>

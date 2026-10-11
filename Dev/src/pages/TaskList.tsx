@@ -271,8 +271,8 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="flex min-h-full min-w-0 md:h-full md:min-h-0">
-      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-1 md:min-h-0 lg:pr-4">
+    <div className="flex min-h-full min-w-0">
+      <div className="relative flex min-w-0 flex-1 flex-col transition-[flex-basis] duration-300 ease-out pr-1 lg:pr-4">
       
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 w-full">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">All Tasks</h1>
@@ -339,7 +339,7 @@ export const TaskList: React.FC = () => {
 
       {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">Đang lọc: {shortcutScope === 'mine' ? 'task của tôi' : shortcutScope === 'due-soon' ? 'task của tôi sắp đến hạn' : 'task của tôi quá hạn'}.</div>}
       
-      <div className="space-y-6 pb-12 pr-1 md:flex-1 md:overflow-y-auto md:custom-scrollbar">
+      <div className="space-y-6 pb-12 pr-1">
       
 
       {loading ? (

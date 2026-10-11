@@ -127,9 +127,15 @@ export const Header: React.FC = () => {
 
   return (
     <>
-    <div aria-hidden="true" className="mobile-header-mask pointer-events-none absolute inset-x-0 top-0 z-[99] backdrop-blur-[26px] backdrop-saturate-[170%] md:hidden" />
-    <div className="sticky md:relative top-0 inset-x-0 z-[100] shrink-0 h-[calc(56px+env(safe-area-inset-top,0px))] md:h-16 overflow-visible">
-    <header className="mobile-liquid-glass mobile-header-glass relative z-[100] mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 shadow-sm backdrop-blur-[22px] backdrop-saturate-[170%] md:mx-4 md:mt-2.5 md:h-12 md:rounded-xl md:px-6 card-hub">
+    <div className="pointer-events-none absolute top-0 inset-x-0 z-40 select-none">
+      {/* Liquid Glass Top Depth Mask (fades from blur to transparent) */}
+      <div
+        aria-hidden="true"
+        className="liquid-glass-top-mask pointer-events-none absolute inset-x-0 top-0 z-10"
+      />
+      
+      {/* Floating Liquid Glass Top Header Pill */}
+      <header className="liquid-glass-header pointer-events-auto relative z-20 mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5">
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">

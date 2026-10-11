@@ -33,7 +33,7 @@ export const BorrowRequests: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col z-10 relative">
+    <div className="flex flex-col z-10 relative">
       <BorrowRequestDetailModal
         isOpen={!!selectedRequest} request={selectedRequest} onClose={() => setSelectedId(null)}
         canManage={canManage} busy={busyId === selectedId}
@@ -63,7 +63,7 @@ export const BorrowRequests: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto pb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-6">
         {loading ? (
           <div className="col-span-full p-8 text-center text-gray-500">Đang tải yêu cầu...</div>
         ) : error ? (

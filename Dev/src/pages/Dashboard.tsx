@@ -253,7 +253,7 @@ export const Dashboard: React.FC = () => {
   if (!s) return <div className="p-8 text-center text-gray-500">No task data is available yet.</div>;
 
   return (
-    <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch h-full">
+    <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch min-h-full">
       {/* ============ LEFT: PERFORMANCE PANEL ============ */}
       <section className={`${PANEL} p-3 sm:p-4 flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 border-b border-gray-200 dark:border-slate-700 pb-2.5">

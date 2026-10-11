@@ -55,8 +55,8 @@ export const AssetInventory: React.FC = () => {
   );
 
   return (
-    <div className="relative z-10 flex min-h-full min-w-0 md:h-full">
-      <div className="flex min-w-0 flex-1 flex-col pr-0 md:overflow-hidden lg:pr-4">
+    <div className="relative z-10 flex min-h-full min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col pr-0 lg:pr-4">
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
