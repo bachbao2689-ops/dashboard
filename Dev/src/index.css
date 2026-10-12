@@ -762,3 +762,13 @@ html.dark .hover-row-effect.is-magnetic-active {
 .animate-bounce-short {
   animation: bounce-short 0.4s ease-in-out;
 }
+
+/* Suppress unwanted browser extension elements */
+#autotdk_ext, [id*="autotdk"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+}

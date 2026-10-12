@@ -15,6 +15,16 @@
     <script>
       // Make openCalendar globally available for TypeScript
       window.openCalendar = window.openCalendar || function(){};
+
+      // Auto-remove extension injected elements (e.g., #autotdk_ext)
+      (function() {
+        const removeExt = () => {
+          document.querySelectorAll('#autotdk_ext, [id*="autotdk"]').forEach(el => el.remove());
+        };
+        removeExt();
+        const observer = new MutationObserver(removeExt);
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+      })();
     </script>
   </head>
   <body>
