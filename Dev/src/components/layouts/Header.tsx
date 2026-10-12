@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, Home, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban, Layers } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -85,7 +85,7 @@ export const Header: React.FC = () => {
     {
       title: t('nav.main'),
       items: [
-        { name: t('nav.home'), path: '/', icon: <Home size={18} /> },
+        { name: t('nav.home'), path: '/', icon: <Layers size={18} /> },
         { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
       ]
     },

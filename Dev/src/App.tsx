@@ -7,6 +7,7 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
+import { WorkflowManagement } from './pages/WorkflowManagement';
 import { Dashboard } from './pages/Dashboard';
 import { Departments2 } from './pages/Departments2';
 import { TaskList } from './pages/TaskList';
@@ -37,7 +38,8 @@ function App() {
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<Overview />} />
+            <Route index element={<WorkflowManagement />} />
+            <Route path="overview" element={<Overview />} />
             <Route path="ui-dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<Projects />} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Package, User } from 'lucide-react';
+import { CheckSquare, Package, User, Layers } from 'lucide-react';
 import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
@@ -20,7 +20,7 @@ export const MobileNav: React.FC = () => {
   const scrollTargetRef = useRef<EventTarget | null>(null);
   
   const navItems = [
-    { name: t('nav.home'), path: '/', icon: <Home size={20} strokeWidth={1.8} />, hidden: role !== 'admin' },
+    { name: t('nav.home'), path: '/', icon: <Layers size={20} strokeWidth={1.8} /> },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
