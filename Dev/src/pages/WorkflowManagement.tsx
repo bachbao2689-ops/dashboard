@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
@@ -79,6 +79,58 @@ export const WORKFLOW_STATUS_CONFIG: Record<WorkflowTaskStatus, {
     borderClass: 'border-gray-300 dark:border-slate-700'
   }
 };
+
+export interface MarketingStatusGuide {
+  status: WorkflowTaskStatus;
+  marketingTitle: string;
+  shortDesc: string;
+  usageRule: string;
+}
+
+export const MARKETING_STATUS_GUIDES: MarketingStatusGuide[] = [
+  {
+    status: 'backlog',
+    marketingTitle: 'Backlog (Ý tưởng & Chờ duyệt)',
+    shortDesc: 'Kho lưu trữ ý tưởng, đề xuất nội dung & hạng mục tiềm năng cho các chiến dịch tương lai, chưa xếp lịch đợt này.',
+    usageRule: 'Gán khi task mới nảy sinh ý tưởng hoặc đang xếp hàng chờ duyệt ngân sách / thời điểm.'
+  },
+  {
+    status: 'planned',
+    marketingTitle: 'Planned (Đã lên kế hoạch)',
+    shortDesc: 'Đã chốt đưa vào kế hoạch tuần/tháng hoặc chiến dịch sắp tới; đã phân bổ nhân sự nhưng chưa bắt đầu sản xuất ngay.',
+    usageRule: 'Gán khi đã chốt timeline & người phụ trách, chờ đến ngày bấm máy triển khai.'
+  },
+  {
+    status: 'scoping',
+    marketingTitle: 'Scoping (Làm rõ Brief & Phạm vi)',
+    shortDesc: 'Hoàn thiện creative brief, chốt mục tiêu, thông điệp truyền thông, tiêu chí nghiệm thu (acceptance criteria) trước khi làm.',
+    usageRule: 'Gán khi đang trao đổi brief với khách hàng / lead trước khi bắt tay thực thi.'
+  },
+  {
+    status: 'in_progress',
+    marketingTitle: 'In Progress (Đang triển khai)',
+    shortDesc: 'Đội ngũ Marketing / Design / Content / Media đang trực tiếp sản xuất nội dung, thiết kế ấn phẩm và thực thi chiến dịch.',
+    usageRule: 'Gán ngay khi nhân sự bắt đầu sản xuất nội dung / ấn phẩm truyền thông.'
+  },
+  {
+    status: 'in_qa',
+    marketingTitle: 'In QA (Rà soát & Duyệt nội dung)',
+    shortDesc: 'Bản nháp / ấn phẩm hoàn tất đang được Leader hoặc QC rà soát câu từ, visual và đối soát brand guidelines.',
+    usageRule: 'Gán khi nộp bản draft chờ Leader / khách hàng duyệt và phản hồi feedback.'
+  },
+  {
+    status: 'completed',
+    marketingTitle: 'Completed (Đã nghiệm thu & Hoàn tất)',
+    shortDesc: 'Ấn phẩm / chiến dịch đã được phê duyệt chính thức, xuất bản hoặc bàn giao đạt chuẩn yêu cầu ban đầu.',
+    usageRule: 'Gán khi đã hoàn thành nghiệm thu toàn bộ tiêu chí chất lượng.'
+  },
+  {
+    status: 'canceled',
+    marketingTitle: 'Canceled (Đã hủy bỏ)',
+    shortDesc: 'Dừng thực hiện do thay đổi định hướng chiến dịch, trùng lặp nội dung hoặc không còn phù hợp với mục tiêu kinh doanh.',
+    usageRule: 'Gán thay vì xóa task để lưu vết lịch sử quyết định và tài nguyên đã nghiên cứu.'
+  }
+];
 
 export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: number; className?: string }> = ({
   status,
@@ -323,6 +375,57 @@ export const WorkflowManagement: React.FC = () => {
   const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState<boolean>(false);
   const [searchEntityQuery, setSearchEntityQuery] = useState<string>('');
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [pinnedTooltip, setPinnedTooltip] = useState<string | null>(null);
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openTooltip = (id: string) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setActiveTooltip(id);
+  };
+
+  const scheduleCloseTooltip = () => {
+    if (pinnedTooltip) return;
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setActiveTooltip(null);
+      tooltipTimeoutRef.current = null;
+    }, 200);
+  };
+
+  const cancelCloseTooltip = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+  };
+
+  const togglePinTooltip = (id: string) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    if (pinnedTooltip === id) {
+      setPinnedTooltip(null);
+      setActiveTooltip(null);
+    } else {
+      setPinnedTooltip(id);
+      setActiveTooltip(id);
+    }
+  };
+
+  const closeAllTooltips = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setActiveTooltip(null);
+    setPinnedTooltip(null);
+  };
 
   // Raw data from DB
   const [allTasks, setAllTasks] = useState<any[]>([]);
@@ -855,12 +958,25 @@ export const WorkflowManagement: React.FC = () => {
   }, [phases, activePhaseIndex]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setActiveTooltip(null);
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('[data-tooltip-container]')) {
+        closeAllTooltips();
+      }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeAllTooltips();
+    };
+
+    if (activeTooltip) {
+      document.addEventListener('click', handleDocumentClick);
+    }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTooltip]);
 
   if (loading) {
     return (
@@ -879,15 +995,14 @@ export const WorkflowManagement: React.FC = () => {
       {/* Backdrop blur overlay when hovering or inspecting Health Core KPI tooltip (Requirement 3) */}
       {activeTooltip && (
         <div
-          className="fixed inset-0 z-[65] bg-slate-900/20 dark:bg-slate-950/45 backdrop-blur-[3px] transition-all duration-200 pointer-events-auto cursor-pointer animate-in fade-in"
-          onClick={() => setActiveTooltip(null)}
+          className="fixed inset-0 z-[65] bg-slate-900/20 dark:bg-slate-950/45 backdrop-blur-[3px] transition-all duration-200 pointer-events-none animate-in fade-in"
           aria-hidden="true"
         />
       )}
 
       {/* 1. HEADER: PROJECT INFO (LEFT) + 4 COMPACT HEALTH/KPI BOARDS (RIGHT) IN 1 UNIFIED CARD */}
       <div className={`card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch relative transition-all duration-200 ${
-        activeTooltip ? 'z-[70]' : 'z-20'
+        activeTooltip && activeTooltip !== 'task_statuses' ? 'z-[70]' : 'z-20'
       }`}>
         
         {/* Left Side: Filter buttons, Title dropdown, and Subtitle (4 cols) */}
@@ -1079,6 +1194,7 @@ export const WorkflowManagement: React.FC = () => {
         <div className="xl:col-span-8 2xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full">
           {/* Card 1: Tiến độ tổng thể */}
           <div
+            data-tooltip-container="true"
             className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'overall_progress'
                 ? 'z-[75] ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
@@ -1086,8 +1202,8 @@ export const WorkflowManagement: React.FC = () => {
                   ? 'opacity-60 z-10'
                   : 'z-10'
             }`}
-            onMouseEnter={() => setActiveTooltip('overall_progress')}
-            onMouseLeave={() => setActiveTooltip(null)}
+            onMouseEnter={() => openTooltip('overall_progress')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
@@ -1097,12 +1213,20 @@ export const WorkflowManagement: React.FC = () => {
               {/* Info Icon (i) */}
               <button
                 type="button"
+                data-tooltip-container="true"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTooltip(prev => prev === 'overall_progress' ? null : 'overall_progress');
+                  togglePinTooltip('overall_progress');
                 }}
-                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                onMouseEnter={() => openTooltip('overall_progress')}
+                onMouseLeave={scheduleCloseTooltip}
+                className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors focus:outline-none cursor-pointer shrink-0 ${
+                  activeTooltip === 'overall_progress'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
+                    : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+                }`}
                 aria-label="Thông tin chỉ số Tiến độ tổng thể"
+                title="Xem cơ chế & cách tính Tiến độ tổng thể"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -1125,8 +1249,11 @@ export const WorkflowManagement: React.FC = () => {
             {activeTooltip === 'overall_progress' && (
               <div
                 role="tooltip"
+                data-tooltip-container="true"
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+                onMouseEnter={cancelCloseTooltip}
+                onMouseLeave={scheduleCloseTooltip}
+                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
@@ -1160,6 +1287,7 @@ export const WorkflowManagement: React.FC = () => {
 
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
           <div
+            data-tooltip-container="true"
             className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'phase_health_gate'
                 ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
@@ -1167,8 +1295,8 @@ export const WorkflowManagement: React.FC = () => {
                   ? 'opacity-60 z-10'
                   : 'z-10'
             }`}
-            onMouseEnter={() => setActiveTooltip('phase_health_gate')}
-            onMouseLeave={() => setActiveTooltip(null)}
+            onMouseEnter={() => openTooltip('phase_health_gate')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
@@ -1178,12 +1306,20 @@ export const WorkflowManagement: React.FC = () => {
               {/* Info Icon (i) */}
               <button
                 type="button"
+                data-tooltip-container="true"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTooltip(prev => prev === 'phase_health_gate' ? null : 'phase_health_gate');
+                  togglePinTooltip('phase_health_gate');
                 }}
-                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                onMouseEnter={() => openTooltip('phase_health_gate')}
+                onMouseLeave={scheduleCloseTooltip}
+                className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors focus:outline-none cursor-pointer shrink-0 ${
+                  activeTooltip === 'phase_health_gate'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
+                    : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+                }`}
                 aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
+                title="Xem cơ chế & cách tính Sức khỏe & Cơ hội qua Phase"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -1208,8 +1344,11 @@ export const WorkflowManagement: React.FC = () => {
             {activeTooltip === 'phase_health_gate' && (
               <div
                 role="tooltip"
+                data-tooltip-container="true"
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+                onMouseEnter={cancelCloseTooltip}
+                onMouseLeave={scheduleCloseTooltip}
+                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
@@ -1243,6 +1382,7 @@ export const WorkflowManagement: React.FC = () => {
 
           {/* Card 3: Vận tốc (Velocity) */}
           <div
+            data-tooltip-container="true"
             className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'velocity'
                 ? 'z-[75] ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
@@ -1250,8 +1390,8 @@ export const WorkflowManagement: React.FC = () => {
                   ? 'opacity-60 z-10'
                   : 'z-10'
             }`}
-            onMouseEnter={() => setActiveTooltip('velocity')}
-            onMouseLeave={() => setActiveTooltip(null)}
+            onMouseEnter={() => openTooltip('velocity')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
@@ -1261,12 +1401,20 @@ export const WorkflowManagement: React.FC = () => {
               {/* Info Icon (i) */}
               <button
                 type="button"
+                data-tooltip-container="true"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTooltip(prev => prev === 'velocity' ? null : 'velocity');
+                  togglePinTooltip('velocity');
                 }}
-                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                onMouseEnter={() => openTooltip('velocity')}
+                onMouseLeave={scheduleCloseTooltip}
+                className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors focus:outline-none cursor-pointer shrink-0 ${
+                  activeTooltip === 'velocity'
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 ring-2 ring-indigo-400/40'
+                    : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+                }`}
                 aria-label="Thông tin chỉ số Vận tốc"
+                title="Xem cơ chế & cách tính Vận tốc"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -1289,8 +1437,11 @@ export const WorkflowManagement: React.FC = () => {
             {activeTooltip === 'velocity' && (
               <div
                 role="tooltip"
+                data-tooltip-container="true"
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-[85] left-0 sm:left-auto sm:right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+                onMouseEnter={cancelCloseTooltip}
+                onMouseLeave={scheduleCloseTooltip}
+                className="absolute z-[85] left-0 sm:left-auto sm:right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
@@ -1324,6 +1475,7 @@ export const WorkflowManagement: React.FC = () => {
 
           {/* Card 4: Đúng cam kết hạn */}
           <div
+            data-tooltip-container="true"
             className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'on_time_rate'
                 ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
@@ -1331,8 +1483,8 @@ export const WorkflowManagement: React.FC = () => {
                   ? 'opacity-60 z-10'
                   : 'z-10'
             }`}
-            onMouseEnter={() => setActiveTooltip('on_time_rate')}
-            onMouseLeave={() => setActiveTooltip(null)}
+            onMouseEnter={() => openTooltip('on_time_rate')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
@@ -1342,12 +1494,20 @@ export const WorkflowManagement: React.FC = () => {
               {/* Info Icon (i) */}
               <button
                 type="button"
+                data-tooltip-container="true"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTooltip(prev => prev === 'on_time_rate' ? null : 'on_time_rate');
+                  togglePinTooltip('on_time_rate');
                 }}
-                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                onMouseEnter={() => openTooltip('on_time_rate')}
+                onMouseLeave={scheduleCloseTooltip}
+                className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors focus:outline-none cursor-pointer shrink-0 ${
+                  activeTooltip === 'on_time_rate'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
+                    : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+                }`}
                 aria-label="Thông tin chỉ số Đúng cam kết hạn"
+                title="Xem cơ chế & cách tính Đúng cam kết hạn"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -1370,8 +1530,11 @@ export const WorkflowManagement: React.FC = () => {
             {activeTooltip === 'on_time_rate' && (
               <div
                 role="tooltip"
+                data-tooltip-container="true"
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-[85] right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+                onMouseEnter={cancelCloseTooltip}
+                onMouseLeave={scheduleCloseTooltip}
+                className="absolute z-[85] right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">
@@ -1407,7 +1570,9 @@ export const WorkflowManagement: React.FC = () => {
       </div>
 
       {/* 2. GỘP THÀNH 1 BOARD DUY NHẤT: LỘ TRÌNH GIAI ĐOẠN (BẤM VÀO MỚI HIỆN CHI TIẾT TASK & GATE) */}
-      <div className="card-hub p-5 rounded-2xl space-y-5 transition-all">
+      <div className={`card-hub p-5 rounded-2xl space-y-5 transition-all relative ${
+        activeTooltip === 'task_statuses' ? 'z-[70]' : 'z-10'
+      }`}>
         
         {/* Board Header with Task Status Bar, Dropdown Phase Selector & Collapse Toggle (Requirement 3) */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-700/80 pb-3">
@@ -1422,6 +1587,91 @@ export const WorkflowManagement: React.FC = () => {
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
                 Task tháng này:
               </span>
+
+              {/* Small (i) button for Staff guidance on Task Status mechanisms (Requirement 2) */}
+              <div className="relative inline-flex items-center mr-1" data-tooltip-container="true">
+                <button
+                  type="button"
+                  data-tooltip-container="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePinTooltip('task_statuses');
+                  }}
+                  onMouseEnter={() => openTooltip('task_statuses')}
+                  onMouseLeave={scheduleCloseTooltip}
+                  className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors focus:outline-none cursor-pointer shrink-0 ${
+                    activeTooltip === 'task_statuses'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
+                      : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+                  }`}
+                  aria-label="Cơ chế & quy chuẩn 7 trạng thái Task"
+                  title="Xem cơ chế & quy chuẩn 7 trạng thái Task (Marketing)"
+                >
+                  <Info size={11} strokeWidth={2.4} />
+                </button>
+
+                {/* Popover explaining the 7 statuses */}
+                {activeTooltip === 'task_statuses' && (
+                  <div
+                    role="tooltip"
+                    data-tooltip-container="true"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseEnter={cancelCloseTooltip}
+                    onMouseLeave={scheduleCloseTooltip}
+                    className="absolute z-[85] left-0 top-[calc(100%+8px)] w-[320px] sm:w-[480px] md:w-[540px] max-w-[92vw] p-4 sm:p-5 rounded-2xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-gray-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
+                          <Sparkles size={14} strokeWidth={2.4} />
+                        </span>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                            Cơ chế & Quy chuẩn 7 Trạng thái Task
+                          </h4>
+                          <span className="text-[10px] text-gray-500 dark:text-slate-400 block">
+                            Chuẩn hóa theo quy trình Marketing & Vận hành chiến dịch
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-200/60 dark:border-blue-700/50">
+                        Marketing Ops
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar text-[11px]">
+                      {MARKETING_STATUS_GUIDES.map((item) => {
+                        const cfg = WORKFLOW_STATUS_CONFIG[item.status];
+                        return (
+                          <div
+                            key={item.status}
+                            className="p-2.5 rounded-xl bg-gray-50/80 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700/70 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
+                          >
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <WorkflowHexagonIcon status={item.status} size={14} />
+                              <span className={`text-xs font-bold ${cfg.textColor}`}>
+                                {item.marketingTitle}
+                              </span>
+                            </div>
+                            <div className="text-[10.5px] text-gray-600 dark:text-slate-300 leading-relaxed mb-1">
+                              <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                              {item.shortDesc}
+                            </div>
+                            <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                              👉 {item.usageRule}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-gray-500 dark:text-slate-400">
+                      <span>💡 <b>Quy ước:</b> Nộp draft ấn phẩm chuyển <b>In QA</b> để Leader duyệt trước khi sang <b>Completed</b>.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[]).map(st => {
                 const count = taskCountsByStatus[st] || 0;
                 const cfg = WORKFLOW_STATUS_CONFIG[st];
