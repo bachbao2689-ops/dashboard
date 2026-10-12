@@ -132,6 +132,16 @@ export const MARKETING_STATUS_GUIDES: MarketingStatusGuide[] = [
   }
 ];
 
+export const STATUS_MARKETING_SUBTITLE: Record<WorkflowTaskStatus, string> = {
+  backlog: 'Ý tưởng & Chờ duyệt',
+  planned: 'Đã lên kế hoạch',
+  scoping: 'Làm rõ Brief & Phạm vi',
+  in_progress: 'Đang triển khai',
+  in_qa: 'Rà soát & Duyệt nội dung',
+  completed: 'Đã nghiệm thu & Hoàn tất',
+  canceled: 'Đã hủy bỏ'
+};
+
 export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: number; className?: string }> = ({
   status,
   size = 18,
@@ -963,12 +973,18 @@ export const WorkflowManagement: React.FC = () => {
       if (!target?.closest('[data-tooltip-container]')) {
         closeAllTooltips();
       }
+      if (!target?.closest('[data-status-picker]')) {
+        setStatusPickerTaskId(null);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeAllTooltips();
+      if (e.key === 'Escape') {
+        closeAllTooltips();
+        setStatusPickerTaskId(null);
+      }
     };
 
-    if (activeTooltip) {
+    if (activeTooltip || statusPickerTaskId) {
       document.addEventListener('click', handleDocumentClick);
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -976,7 +992,7 @@ export const WorkflowManagement: React.FC = () => {
       document.removeEventListener('click', handleDocumentClick);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeTooltip]);
+  }, [activeTooltip, statusPickerTaskId]);
 
   if (loading) {
     return (
@@ -2166,15 +2182,17 @@ export const WorkflowManagement: React.FC = () => {
                   )}
 
                   {/* Subtasks List */}
-                  <div className="space-y-2 max-h-[340px] overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-2">
                     {currentPhaseSubtasks.length === 0 ? (
                       <div className="text-center py-8 text-xs text-gray-400">
                         Chưa có đầu việc nào trong giai đoạn này. Bấm &quot;Thêm task&quot; để tạo đầu việc đầu tiên.
                       </div>
                     ) : (
-                      currentPhaseSubtasks.map(s => {
+                      currentPhaseSubtasks.map((s, idx) => {
                         const done = s.status === 'completed';
                         const isEditing = editingTaskId === s.id;
+                        const isPickerOpen = statusPickerTaskId === s.id;
+                        const isNearBottom = currentPhaseSubtasks.length > 1 && idx >= Math.max(1, Math.floor(currentPhaseSubtasks.length / 2));
 
                         if (isEditing) {
                           return (
@@ -2251,7 +2269,9 @@ export const WorkflowManagement: React.FC = () => {
                         return (
                           <div
                             key={s.id}
-                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group/task ${
+                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group/task relative ${
+                              isPickerOpen ? 'z-40' : 'z-10'
+                            } ${
                               done
                                 ? 'border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
                                 : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400/60 dark:hover:border-blue-500/60'
@@ -2268,30 +2288,51 @@ export const WorkflowManagement: React.FC = () => {
                               />
 
                               {/* Interactive Workflow Hexagon Status Badge */}
-                              <div className="relative shrink-0">
+                              <div className="relative shrink-0" data-status-picker="true">
                                 <button
                                   type="button"
+                                  data-status-picker="true"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setStatusPickerTaskId(statusPickerTaskId === s.id ? null : s.id);
+                                    setStatusPickerTaskId(isPickerOpen ? null : s.id);
                                   }}
-                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${WORKFLOW_STATUS_CONFIG[s.status].bgLight} ${WORKFLOW_STATUS_CONFIG[s.status].bgDark} ${WORKFLOW_STATUS_CONFIG[s.status].textColor} ${WORKFLOW_STATUS_CONFIG[s.status].borderClass} hover:opacity-85 shadow-2xs`}
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${WORKFLOW_STATUS_CONFIG[s.status].bgLight} ${WORKFLOW_STATUS_CONFIG[s.status].bgDark} ${WORKFLOW_STATUS_CONFIG[s.status].textColor} ${WORKFLOW_STATUS_CONFIG[s.status].borderClass} hover:opacity-90 shadow-2xs`}
                                   title="Bấm để đổi nhanh trạng thái"
                                 >
                                   <WorkflowHexagonIcon status={s.status} size={13} />
                                   <span>{WORKFLOW_STATUS_CONFIG[s.status].label}</span>
-                                  <ChevronDown size={10} className="opacity-60" />
+                                  <ChevronDown size={10} className={`opacity-60 transition-transform duration-200 ${isPickerOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Quick Status Selector Dropdown */}
-                                {statusPickerTaskId === s.id && (
+                                {isPickerOpen && (
                                   <div
+                                    data-status-picker="true"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="absolute left-0 top-full mt-1 z-50 w-44 p-1.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl space-y-0.5 animate-in fade-in zoom-in-95 text-left"
+                                    className={`absolute left-0 z-50 w-60 sm:w-64 p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] space-y-1 animate-in fade-in zoom-in-95 text-left ${
+                                      isNearBottom
+                                        ? 'bottom-[calc(100%+6px)]'
+                                        : 'top-[calc(100%+6px)]'
+                                    }`}
                                   >
-                                    <div className="text-[9px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1 border-b border-gray-100 dark:border-slate-800">
-                                      Đổi trạng thái task
+                                    <div className="flex items-center justify-between px-2 py-1 mb-1 border-b border-gray-100 dark:border-slate-800">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                                        <Sparkles size={11} className="text-primary" />
+                                        Đổi trạng thái task
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setStatusPickerTaskId(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                        aria-label="Đóng bảng đổi trạng thái"
+                                      >
+                                        <X size={12} />
+                                      </button>
                                     </div>
+
                                     {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => {
                                       const cfg = WORKFLOW_STATUS_CONFIG[st];
                                       const isCur = s.status === st;
@@ -2300,15 +2341,24 @@ export const WorkflowManagement: React.FC = () => {
                                           key={st}
                                           type="button"
                                           onClick={(e) => handleQuickChangeStatus(s.id, st, e)}
-                                          className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-xs transition-colors cursor-pointer ${
+                                          className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${
                                             isCur
-                                              ? 'bg-gray-100 dark:bg-slate-800 font-bold'
+                                              ? 'bg-blue-50/90 dark:bg-slate-800 font-bold ring-1 ring-blue-400/40'
                                               : 'hover:bg-gray-50 dark:hover:bg-slate-800/60 font-medium'
                                           }`}
                                         >
-                                          <WorkflowHexagonIcon status={st} size={13} />
-                                          <span className={`${cfg.textColor}`}>{cfg.label}</span>
-                                          {isCur && <Check size={12} className="ml-auto text-emerald-500" />}
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <WorkflowHexagonIcon status={st} size={15} />
+                                            <div className="flex flex-col min-w-0">
+                                              <span className={`text-[11px] font-bold ${cfg.textColor} leading-tight`}>
+                                                {cfg.label}
+                                              </span>
+                                              <span className="text-[9.5px] text-gray-500 dark:text-slate-400 leading-tight truncate">
+                                                {STATUS_MARKETING_SUBTITLE[st]}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {isCur && <Check size={13} className="text-emerald-500 shrink-0" />}
                                         </button>
                                       );
                                     })}
