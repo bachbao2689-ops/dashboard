@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
-  ChevronDown, ChevronUp, X, Globe, Code2, Info, Search
+  ChevronDown, ChevronUp, X, Globe, Code2, Info, Search,
+  Calendar, User, Edit3, Trash2, Eye, Check
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -10,6 +11,207 @@ import {
 } from 'recharts';
 import { supabase } from '../services/supabase';
 import toast from 'react-hot-toast';
+
+export type WorkflowTaskStatus = 'backlog' | 'planned' | 'scoping' | 'in_progress' | 'in_qa' | 'completed' | 'canceled';
+
+export const WORKFLOW_STATUS_CONFIG: Record<WorkflowTaskStatus, {
+  label: string;
+  color: string;
+  textColor: string;
+  bgLight: string;
+  bgDark: string;
+  borderClass: string;
+}> = {
+  backlog: {
+    label: 'Backlog',
+    color: '#D97706',
+    textColor: 'text-amber-700 dark:text-amber-300',
+    bgLight: 'bg-amber-50',
+    bgDark: 'dark:bg-amber-950/40',
+    borderClass: 'border-amber-300 dark:border-amber-700'
+  },
+  planned: {
+    label: 'Planned',
+    color: '#6B7280',
+    textColor: 'text-gray-600 dark:text-gray-300',
+    bgLight: 'bg-gray-50',
+    bgDark: 'dark:bg-slate-800',
+    borderClass: 'border-gray-300 dark:border-slate-600'
+  },
+  scoping: {
+    label: 'Scoping',
+    color: '#F43F5E',
+    textColor: 'text-rose-700 dark:text-rose-300',
+    bgLight: 'bg-rose-50',
+    bgDark: 'dark:bg-rose-950/40',
+    borderClass: 'border-rose-300 dark:border-rose-700'
+  },
+  in_progress: {
+    label: 'In Progress',
+    color: '#EAB308',
+    textColor: 'text-yellow-700 dark:text-yellow-300',
+    bgLight: 'bg-yellow-50',
+    bgDark: 'dark:bg-yellow-950/40',
+    borderClass: 'border-yellow-300 dark:border-yellow-700'
+  },
+  in_qa: {
+    label: 'In QA',
+    color: '#10B981',
+    textColor: 'text-emerald-700 dark:text-emerald-300',
+    bgLight: 'bg-emerald-50',
+    bgDark: 'dark:bg-emerald-950/40',
+    borderClass: 'border-emerald-300 dark:border-emerald-700'
+  },
+  completed: {
+    label: 'Completed',
+    color: '#6366F1',
+    textColor: 'text-indigo-700 dark:text-indigo-300',
+    bgLight: 'bg-indigo-50',
+    bgDark: 'dark:bg-indigo-950/40',
+    borderClass: 'border-indigo-300 dark:border-indigo-700'
+  },
+  canceled: {
+    label: 'Canceled',
+    color: '#4B5563',
+    textColor: 'text-gray-500 dark:text-gray-400',
+    bgLight: 'bg-gray-100',
+    bgDark: 'dark:bg-slate-800',
+    borderClass: 'border-gray-300 dark:border-slate-700'
+  }
+};
+
+export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: number; className?: string }> = ({
+  status,
+  size = 18,
+  className = ''
+}) => {
+  const hexPath = "M12 2.5 L20.2 7.2 L20.2 16.8 L12 21.5 L3.8 16.8 L3.8 7.2 Z";
+
+  switch (status) {
+    case 'backlog':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#D97706"
+            strokeWidth="2.2"
+            strokeDasharray="3.2 2.4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'planned':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#6B7280"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'scoping':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#F43F5E"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 12 L12 6.5 A5.5 5.5 0 0 1 17.5 12 Z"
+            fill="#F43F5E"
+          />
+        </svg>
+      );
+    case 'in_progress':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#EAB308"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 6.5 A5.5 5.5 0 0 1 12 17.5 Z"
+            fill="#EAB308"
+          />
+        </svg>
+      );
+    case 'in_qa':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 12 L12 6.5 A5.5 5.5 0 1 1 6.5 12 Z"
+            fill="#10B981"
+          />
+        </svg>
+      );
+    case 'completed':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="#6366F1"
+            stroke="#6366F1"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M7.8 12.2 L10.8 15.2 L16.2 9.5"
+            stroke="#FFFFFF"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      );
+    case 'canceled':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="#4B5563"
+            stroke="#4B5563"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5"
+            stroke="#FFFFFF"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
 
 interface Phase {
   id: number;
@@ -38,16 +240,16 @@ interface ProjectEntity {
   lead?: any;
 }
 
-interface WebsiteSubtask {
+interface WorkflowSubtask {
   id: string;
   phaseId: number;
   title: string;
   assignee: string;
-  status: 'todo' | 'in_progress' | 'completed';
+  status: WorkflowTaskStatus;
   due_date?: string;
 }
 
-// 5 Standard Phases for "Build Website" Workflow
+// 5 Standard Phases for "Build Website" Workflow (flexible count)
 const WEBSITE_BUILD_PHASES: Phase[] = [
   { id: 1, name: '1. Khảo sát & Đặc tả (Discovery)', desc: 'Sitemap, User Flow & Tech Stack', status: 'completed', progress: 100, gateChance: 100 },
   { id: 2, name: '2. Thiết kế UI/UX & Prototype', desc: 'Wireframe, Design System & Mockups', status: 'active', progress: 75, gateChance: 85 },
@@ -86,30 +288,30 @@ const WEBSITE_CRITERIA_MAP: Record<number, GateCriterion[]> = {
   ]
 };
 
-// Website Build specific subtasks grouped by phases
-const DEFAULT_WEBSITE_SUBTASKS: WebsiteSubtask[] = [
+// Website Build specific subtasks mapped with the 7 Status Workflow
+const DEFAULT_WEBSITE_SUBTASKS: WorkflowSubtask[] = [
   // Phase 1
-  { id: 'st_1', phaseId: 1, title: 'Khảo sát người dùng & phân tích yêu cầu tính năng', assignee: 'Bách Bảo', status: 'completed' },
-  { id: 'st_2', phaseId: 1, title: 'Lập sơ đồ cấu trúc Sitemap & User Flow', assignee: 'Thương Phạm', status: 'completed' },
-  { id: 'st_3', phaseId: 1, title: 'Viết tài liệu đặc tả chức năng kỹ thuật (SRS)', assignee: 'Admin', status: 'completed' },
+  { id: 'st_1', phaseId: 1, title: 'Khảo sát người dùng & phân tích yêu cầu tính năng', assignee: 'Bách Bảo', status: 'completed', due_date: '2026-10-05' },
+  { id: 'st_2', phaseId: 1, title: 'Lập sơ đồ cấu trúc Sitemap & User Flow', assignee: 'Thương Phạm', status: 'completed', due_date: '2026-10-08' },
+  { id: 'st_3', phaseId: 1, title: 'Viết tài liệu đặc tả chức năng kỹ thuật (SRS)', assignee: 'Admin', status: 'completed', due_date: '2026-10-10' },
   // Phase 2
-  { id: 'st_4', phaseId: 2, title: 'Thiết kế Wireframe cấu trúc layout các trang chính', assignee: 'Vũ Trần', status: 'completed' },
-  { id: 'st_5', phaseId: 2, title: 'Xây dựng Design System, Typography & Màu thương hiệu', assignee: 'LUNA', status: 'completed' },
-  { id: 'st_6', phaseId: 2, title: 'Thiết kế chi tiết High-Fidelity Desktop & Mobile', assignee: 'Nguyễn Văn A', status: 'completed' },
-  { id: 'st_7', phaseId: 2, title: 'Dựng bản mẫu tương tác Prototype và thử nghiệm UX', assignee: 'Hoàng Văn E', status: 'in_progress' },
+  { id: 'st_4', phaseId: 2, title: 'Thiết kế Wireframe cấu trúc layout các trang chính', assignee: 'Vũ Trần', status: 'completed', due_date: '2026-10-14' },
+  { id: 'st_5', phaseId: 2, title: 'Xây dựng Design System, Typography & Màu thương hiệu', assignee: 'LUNA', status: 'completed', due_date: '2026-10-16' },
+  { id: 'st_6', phaseId: 2, title: 'Thiết kế chi tiết High-Fidelity Desktop & Mobile', assignee: 'Nguyễn Văn A', status: 'completed', due_date: '2026-10-18' },
+  { id: 'st_7', phaseId: 2, title: 'Dựng bản mẫu tương tác Prototype và thử nghiệm UX', assignee: 'Hoàng Văn E', status: 'in_progress', due_date: '2026-10-22' },
   // Phase 3
-  { id: 'st_8', phaseId: 3, title: 'Cắt giao diện Front-end React Components theo Figma', assignee: 'Tech Lead', status: 'todo' },
-  { id: 'st_9', phaseId: 3, title: 'Thiết kế Database Schema & Phân quyền bảo mật RLS', assignee: 'Backend Dev', status: 'todo' },
-  { id: 'st_10', phaseId: 3, title: 'Lập trình API endpoints & tích hợp dữ liệu Supabase', assignee: 'Backend Dev', status: 'todo' },
-  { id: 'st_11', phaseId: 3, title: 'Tích hợp cổng thanh toán & hệ thống thông báo Email', assignee: 'Fullstack Dev', status: 'todo' },
+  { id: 'st_8', phaseId: 3, title: 'Cắt giao diện Front-end React Components theo Figma', assignee: 'Tech Lead', status: 'scoping', due_date: '2026-10-28' },
+  { id: 'st_9', phaseId: 3, title: 'Thiết kế Database Schema & Phân quyền bảo mật RLS', assignee: 'Backend Dev', status: 'planned', due_date: '2026-11-02' },
+  { id: 'st_10', phaseId: 3, title: 'Lập trình API endpoints & tích hợp dữ liệu Supabase', assignee: 'Backend Dev', status: 'planned', due_date: '2026-11-06' },
+  { id: 'st_11', phaseId: 3, title: 'Tích hợp cổng thanh toán & hệ thống thông báo Email', assignee: 'Fullstack Dev', status: 'backlog', due_date: '2026-11-12' },
   // Phase 4
-  { id: 'st_12', phaseId: 4, title: 'Kiểm thử chức năng toàn diện (Functional Testing)', assignee: 'QA Lead', status: 'todo' },
-  { id: 'st_13', phaseId: 4, title: 'Kiểm tra tương thích đa trình duyệt (Chrome, Safari, iOS)', assignee: 'QC Team', status: 'todo' },
-  { id: 'st_14', phaseId: 4, title: 'Tối ưu tốc độ tải trang & điểm SEO Google PageSpeed', assignee: 'Tech Lead', status: 'todo' },
+  { id: 'st_12', phaseId: 4, title: 'Kiểm thử chức năng toàn diện (Functional Testing)', assignee: 'QA Lead', status: 'in_qa', due_date: '2026-11-18' },
+  { id: 'st_13', phaseId: 4, title: 'Kiểm tra tương thích đa trình duyệt (Chrome, Safari, iOS)', assignee: 'QC Team', status: 'planned', due_date: '2026-11-22' },
+  { id: 'st_14', phaseId: 4, title: 'Tối ưu tốc độ tải trang & điểm SEO Google PageSpeed', assignee: 'Tech Lead', status: 'backlog', due_date: '2026-11-26' },
   // Phase 5
-  { id: 'st_15', phaseId: 5, title: 'Cấu hình Domain, chứng chỉ SSL & CDN Cloudflare', assignee: 'DevOps', status: 'todo' },
-  { id: 'st_16', phaseId: 5, title: 'Triển khai Production Server & Kiểm tra tải', assignee: 'DevOps', status: 'todo' },
-  { id: 'st_17', phaseId: 5, title: 'Soạn thảo tài liệu hướng dẫn CMS & Bàn giao hệ thống', assignee: 'Project Manager', status: 'todo' }
+  { id: 'st_15', phaseId: 5, title: 'Cấu hình Domain, chứng chỉ SSL & CDN Cloudflare', assignee: 'DevOps', status: 'backlog', due_date: '2026-12-02' },
+  { id: 'st_16', phaseId: 5, title: 'Triển khai Production Server & Kiểm tra tải', assignee: 'DevOps', status: 'backlog', due_date: '2026-12-06' },
+  { id: 'st_17', phaseId: 5, title: 'Soạn thảo tài liệu hướng dẫn CMS & Bàn giao hệ thống', assignee: 'Project Manager', status: 'backlog', due_date: '2026-12-12' }
 ];
 
 export const WorkflowManagement: React.FC = () => {
@@ -129,16 +331,37 @@ export const WorkflowManagement: React.FC = () => {
   const [phases, setPhases] = useState<Phase[]>(WEBSITE_BUILD_PHASES);
   const [activePhaseIndex, setActivePhaseIndex] = useState<number>(1); // Phase 2 (Design) by default
 
-  // Combined Board UX state: whether the detail task/gate drawer is expanded
-  const [isDetailOpen, setIsDetailOpen] = useState<boolean>(true);
+  // Combined Board UX state: whether the detail task/gate drawer is expanded (Default false per Requirement 4)
+  const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
   // Criteria for currently active/viewed phase
   const [criteria, setCriteria] = useState<GateCriterion[]>(WEBSITE_CRITERIA_MAP[2]);
   const [showAddCriteria, setShowAddCriteria] = useState<boolean>(false);
   const [newCriteriaLabel, setNewCriteriaLabel] = useState<string>('');
 
-  // Subtasks for website build
-  const [websiteSubtasks, setWebsiteSubtasks] = useState<WebsiteSubtask[]>(DEFAULT_WEBSITE_SUBTASKS);
+  // Subtasks with rich WorkflowTaskStatus (7 statuses from ./Status workflow)
+  const [subtasks, setSubtasks] = useState<WorkflowSubtask[]>(DEFAULT_WEBSITE_SUBTASKS);
+
+  // Task CRUD states
+  const [showAddTask, setShowAddTask] = useState<boolean>(false);
+  const [newTaskTitle, setNewTaskTitle] = useState<string>('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
+  const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
+  const [newTaskDue, setNewTaskDue] = useState<string>('');
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState<string>('');
+  const [editTaskAssignee, setEditTaskAssignee] = useState<string>('');
+  const [editTaskStatus, setEditTaskStatus] = useState<WorkflowTaskStatus>('in_progress');
+  const [editTaskDue, setEditTaskDue] = useState<string>('');
+
+  const [statusPickerTaskId, setStatusPickerTaskId] = useState<string | null>(null);
+
+  // Phase CRUD states (Add/Remove dynamic phases per Requirement 5)
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState<boolean>(false);
+  const [insertPhaseIndex, setInsertPhaseIndex] = useState<number>(1);
+  const [newPhaseName, setNewPhaseName] = useState<string>('');
+  const [newPhaseDesc, setNewPhaseDesc] = useState<string>('');
 
   // 1. Fetch campaigns, projects, and tasks from DB
   useEffect(() => {
@@ -237,6 +460,57 @@ export const WorkflowManagement: React.FC = () => {
     };
   }, [entities, selectedEntityId]);
 
+  const isCampaign = currentEntity.type === 'campaign';
+
+  // Lead Info per Requirement 1
+  const leadInfo = useMemo(() => {
+    if (currentEntity.lead?.name) {
+      return {
+        name: currentEntity.lead.name,
+        role: isCampaign ? 'Campaign Lead' : 'Project Lead',
+        avatar: currentEntity.lead.avatar_url
+      };
+    }
+    if (currentEntity.id === 'project_web') {
+      return {
+        name: 'Bách Bảo',
+        role: 'Tech Lead & Solution Architect',
+        avatar: undefined
+      };
+    }
+    return {
+      name: isCampaign ? 'Thương Phạm' : 'Tech Lead',
+      role: isCampaign ? 'Campaign Manager' : 'Project Lead',
+      avatar: undefined
+    };
+  }, [currentEntity, isCampaign]);
+
+  // Timeline formatted
+  const entityTimeline = useMemo(() => {
+    const start = currentEntity.start_date ? new Date(currentEntity.start_date).toLocaleDateString('vi-VN') : '01/10/2026';
+    const end = currentEntity.due_date ? new Date(currentEntity.due_date).toLocaleDateString('vi-VN') : '31/12/2026';
+    return `${start} – ${end}`;
+  }, [currentEntity]);
+
+  // Task distribution across the 7 Workflow Statuses (Requirement 1)
+  const taskCountsByStatus = useMemo(() => {
+    const counts: Record<WorkflowTaskStatus, number> = {
+      backlog: 0,
+      planned: 0,
+      scoping: 0,
+      in_progress: 0,
+      in_qa: 0,
+      completed: 0,
+      canceled: 0
+    };
+    subtasks.forEach(t => {
+      if (counts[t.status] !== undefined) {
+        counts[t.status]++;
+      }
+    });
+    return counts;
+  }, [subtasks]);
+
   // Active viewed phase object
   const activePhase = phases[activePhaseIndex] || phases[0];
 
@@ -251,8 +525,8 @@ export const WorkflowManagement: React.FC = () => {
 
   // Current Phase subtasks
   const currentPhaseSubtasks = useMemo(() => {
-    return websiteSubtasks.filter(st => st.phaseId === activePhase.id);
-  }, [websiteSubtasks, activePhase.id]);
+    return subtasks.filter(st => st.phaseId === activePhase.id);
+  }, [subtasks, activePhase.id]);
 
   const doneSubtasksCount = currentPhaseSubtasks.filter(s => s.status === 'completed').length;
   const totalSubtasksCount = currentPhaseSubtasks.length || 1;
@@ -260,9 +534,9 @@ export const WorkflowManagement: React.FC = () => {
   // Calculate task progress for viewed phase
   const phaseProgressPct = useMemo(() => {
     if (activePhase.status === 'completed') return 100;
-    if (totalSubtasksCount === 0) return 0;
+    if (currentPhaseSubtasks.length === 0) return 0;
     return Math.round((doneSubtasksCount / totalSubtasksCount) * 100);
-  }, [doneSubtasksCount, totalSubtasksCount, activePhase.status]);
+  }, [doneSubtasksCount, totalSubtasksCount, activePhase.status, currentPhaseSubtasks.length]);
 
   // Calculate Gate Pass Likelihood (%)
   const gatePassChancePct = useMemo(() => {
@@ -302,8 +576,9 @@ export const WorkflowManagement: React.FC = () => {
     }));
   }, [phaseProgressPct, gatePassChancePct, activePhaseIndex]);
 
-  // Overall project progress across all 5 phases
+  // Overall project progress across all phases
   const overallProjectProgressPct = useMemo(() => {
+    if (!phases.length) return 0;
     const total = phases.reduce((acc, curr) => acc + curr.progress, 0);
     return Math.round(total / phases.length);
   }, [phases]);
@@ -326,15 +601,152 @@ export const WorkflowManagement: React.FC = () => {
     toast.success('Đã thêm tiêu chí thẩm định');
   };
 
-  // Toggle Subtask Completion
+  // Toggle Subtask Completion via Checkbox
   const toggleSubtask = (id: string) => {
-    setWebsiteSubtasks(prev => prev.map(s => {
+    setSubtasks(prev => prev.map(s => {
       if (s.id === id) {
-        const nextStatus = s.status === 'completed' ? 'in_progress' : 'completed';
+        const nextStatus: WorkflowTaskStatus = s.status === 'completed' ? 'in_progress' : 'completed';
         return { ...s, status: nextStatus };
       }
       return s;
     }));
+  };
+
+  // Task CRUD Handlers (Requirement 6)
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) {
+      toast.error('Vui lòng nhập tiêu đề đầu việc');
+      return;
+    }
+    const newTask: WorkflowSubtask = {
+      id: `task_${Date.now()}`,
+      phaseId: activePhase.id,
+      title: newTaskTitle.trim(),
+      assignee: newTaskAssignee.trim() || 'Chưa phân công',
+      status: newTaskStatus,
+      due_date: newTaskDue || '2026-10-30'
+    };
+    setSubtasks(prev => [newTask, ...prev]);
+    setNewTaskTitle('');
+    setNewTaskAssignee('');
+    setNewTaskStatus('planned');
+    setNewTaskDue('');
+    setShowAddTask(false);
+    toast.success('Đã thêm đầu việc mới vào chặng');
+  };
+
+  const handleDeleteTask = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const t = subtasks.find(x => x.id === taskId);
+    if (!window.confirm(`Bạn có chắc muốn xóa đầu việc "${t?.title}"?`)) return;
+    setSubtasks(prev => prev.filter(x => x.id !== taskId));
+    toast.success('Đã xóa đầu việc');
+  };
+
+  const handleStartEditTask = (task: WorkflowSubtask, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title);
+    setEditTaskAssignee(task.assignee);
+    setEditTaskStatus(task.status);
+    setEditTaskDue(task.due_date || '');
+  };
+
+  const handleSaveEditTask = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editTaskTitle.trim()) {
+      toast.error('Tiêu đề không được để trống');
+      return;
+    }
+    setSubtasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          title: editTaskTitle.trim(),
+          assignee: editTaskAssignee.trim() || 'Chưa phân công',
+          status: editTaskStatus,
+          due_date: editTaskDue
+        };
+      }
+      return t;
+    }));
+    setEditingTaskId(null);
+    toast.success('Đã cập nhật đầu việc');
+  };
+
+  const handleQuickChangeStatus = (taskId: string, newStatus: WorkflowTaskStatus, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubtasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, status: newStatus };
+      }
+      return t;
+    }));
+    setStatusPickerTaskId(null);
+    toast.success(`Đã đổi trạng thái sang ${WORKFLOW_STATUS_CONFIG[newStatus].label}`);
+  };
+
+  // Phase CRUD Handlers (Requirement 5)
+  const handleOpenAddPhaseModal = (afterIdx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setInsertPhaseIndex(afterIdx);
+    setNewPhaseName('');
+    setNewPhaseDesc('');
+    setShowAddPhaseModal(true);
+  };
+
+  const handleCreatePhase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPhaseName.trim()) {
+      toast.error('Vui lòng nhập tên giai đoạn');
+      return;
+    }
+    const targetIdx = insertPhaseIndex;
+    const newPhase: Phase = {
+      id: targetIdx + 1,
+      name: `${targetIdx + 1}. ${newPhaseName.trim()}`,
+      desc: newPhaseDesc.trim() || 'Mô tả mục tiêu giai đoạn',
+      status: 'locked',
+      progress: 0,
+      gateChance: 0
+    };
+
+    const updated = [...phases];
+    updated.splice(targetIdx, 0, newPhase);
+    const reindexed = updated.map((p, i) => ({
+      ...p,
+      id: i + 1,
+      name: p.name.replace(/^\d+\.\s*/, `${i + 1}. `)
+    }));
+
+    setPhases(reindexed);
+    setShowAddPhaseModal(false);
+    setNewPhaseName('');
+    setNewPhaseDesc('');
+    toast.success(`Đã thêm giai đoạn: ${newPhase.name}`);
+  };
+
+  const handleDeletePhase = (indexToDelete: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phases.length <= 1) {
+      toast.error('Lộ trình cần tối thiểu 1 giai đoạn');
+      return;
+    }
+    const target = phases[indexToDelete];
+    if (!window.confirm(`Bạn có chắc muốn xóa giai đoạn "${target.name}"?`)) return;
+
+    const remaining = phases.filter((_, i) => i !== indexToDelete).map((p, i) => ({
+      ...p,
+      id: i + 1,
+      name: p.name.replace(/^\d+\.\s*/, `${i + 1}. `)
+    }));
+
+    setPhases(remaining);
+    if (activePhaseIndex >= remaining.length) {
+      setActivePhaseIndex(remaining.length - 1);
+    }
+    toast.success(`Đã xóa giai đoạn "${target.name}"`);
   };
 
   // Advance Phase (Gate Approval)
@@ -411,52 +823,41 @@ export const WorkflowManagement: React.FC = () => {
         
         {/* Left Side: Filter buttons, Title dropdown, and Subtitle (4 cols) */}
         <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2">
-          {/* Top Row: Button tách ra Campaign & Projects (Annotation 1) */}
+          {/* Top Row: Button trên title làm gọn lại (Projects / Campaigns) chuẩn Guideline (Requirement 2) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80">
+            <div className="inline-flex items-center p-1 rounded-xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <button
                 type="button"
                 onClick={() => handleFilterChange('project')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
                   entityFilter === 'project'
-                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
+                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/70 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <Globe size={13} />
-                Dự án (Projects)
+                <Globe size={13} className={entityFilter === 'project' ? 'text-blue-600 dark:text-blue-300' : ''} />
+                <span>Projects</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleFilterChange('campaign')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
                   entityFilter === 'campaign'
-                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
+                    ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/70 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/15 dark:!text-amber-100 dark:ring-amber-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <FolderKanban size={13} />
-                Chiến dịch (Campaigns)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFilterChange('all')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                  entityFilter === 'all'
-                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                }`}
-              >
-                Tất cả
+                <FolderKanban size={13} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
+                <span>Campaigns</span>
               </button>
             </div>
 
             <span className="text-xs text-gray-400 hidden sm:inline">
-              · Website Development Lifecycle
+              · {isCampaign ? 'Chiến dịch truyền thông & Tiếp thị' : 'Website Development Lifecycle'}
             </span>
           </div>
 
-          {/* Main Title as Filter Dropdown (Annotation 2) */}
+          {/* Main Title as Filter Dropdown */}
           <div className="relative inline-block">
             <button
               type="button"
@@ -464,8 +865,12 @@ export const WorkflowManagement: React.FC = () => {
               className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
               title="Bấm để chọn và lọc Project / Campaign"
             >
-              <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                {currentEntity.type === 'campaign' ? <FolderKanban size={22} /> : <Globe size={22} />}
+              <div className={`p-2 rounded-xl transition-colors ${
+                isCampaign
+                  ? 'bg-amber-500/10 text-amber-600 group-hover:bg-amber-500/20'
+                  : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+              }`}>
+                {isCampaign ? <FolderKanban size={22} /> : <Globe size={22} />}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
@@ -541,9 +946,59 @@ export const WorkflowManagement: React.FC = () => {
               </>
             )}
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Hệ thống quản trị lộ trình 5 giai đoạn, thẩm định Gate và đo lường vận tốc thực thi thời gian thực
-            </p>
+            {/* Thông tin Người Lead & UI Trạng thái Task 7 Statuses Workflow (Requirement 1) */}
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/80 space-y-2">
+              {/* Leader Info & Timeline */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 bg-gray-100/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-slate-700/60">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-xs ${
+                    isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-600'
+                  }`}>
+                    {leadInfo.name.charAt(0)}
+                  </div>
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                    {leadInfo.name}
+                  </span>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-md ${
+                    isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                  }`}>
+                    {leadInfo.role}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  <Calendar size={12} className="text-gray-400" />
+                  <span>{entityTimeline}</span>
+                </div>
+              </div>
+
+              {/* UI Task Status theo 7 Statuses từ ./Status workflow */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
+                  Tasks ({subtasks.length}):
+                </span>
+                {(['completed', 'in_progress', 'in_qa', 'scoping', 'planned', 'backlog', 'canceled'] as WorkflowTaskStatus[]).map(st => {
+                  const count = taskCountsByStatus[st] || 0;
+                  if (count === 0 && st === 'canceled') return null;
+                  const cfg = WORKFLOW_STATUS_CONFIG[st];
+                  return (
+                    <div
+                      key={st}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
+                      title={`${cfg.label}: ${count} tasks`}
+                    >
+                      <WorkflowHexagonIcon status={st} size={13} />
+                      <span className={`font-bold ${cfg.textColor}`}>
+                        {count}
+                      </span>
+                      <span className="text-[9px] text-gray-500 dark:text-gray-400 hidden sm:inline">
+                        {cfg.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -897,97 +1352,223 @@ export const WorkflowManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Timeline Connected Stepper Nodes (5 Chặng Build Website) */}
-        <div className="relative pt-2 pb-1 overflow-x-auto custom-scrollbar">
-          <div className="min-w-[720px] grid grid-cols-5 gap-3 relative">
-            
-            {/* Connecting horizontal line */}
-            <div className="absolute top-6 left-8 right-8 h-1 bg-gray-200 dark:bg-slate-700 -z-0" />
-
+        {/* Timeline Connected Stepper Nodes (Circular Gauge & Connecting Shape Links) */}
+        <div className="relative pt-2 pb-2 overflow-x-auto custom-scrollbar">
+          <div className="flex items-center min-w-max pb-2 pt-1 px-1">
             {phases.map((p, idx) => {
               const isSelected = idx === activePhaseIndex;
               const isCompleted = p.status === 'completed';
               const isActive = p.status === 'active';
 
               return (
-                <div
-                  key={p.id}
-                  onClick={() => handlePhaseClick(idx)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative z-10 flex flex-col justify-between ${
-                    isSelected
-                      ? 'border-primary ring-2 ring-primary/25 bg-primary/5 dark:bg-primary/10 shadow-md -translate-y-0.5'
-                      : isCompleted
-                      ? 'border-emerald-500/40 bg-white dark:bg-slate-800 hover:border-emerald-500/70'
-                      : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60 hover:border-primary/50'
-                  }`}
-                >
-                  {/* Top Node Indicator */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm transition-transform ${
-                      isSelected ? 'scale-110 ring-2 ring-primary/30' : ''
-                    } ${
+                <React.Fragment key={p.id}>
+                  {/* Circular Phase Node Card */}
+                  <div
+                    onClick={() => handlePhaseClick(idx)}
+                    className={`w-48 sm:w-56 p-3.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 ${
+                      isSelected
+                        ? isCampaign
+                          ? 'border-amber-500 ring-2 ring-amber-500/25 bg-amber-50/10 dark:bg-amber-950/15 shadow-md -translate-y-0.5'
+                          : 'border-blue-600 ring-2 ring-blue-600/25 bg-blue-50/10 dark:bg-blue-950/15 shadow-md -translate-y-0.5'
+                        : isCompleted
+                        ? 'border-emerald-500/40 bg-white dark:bg-slate-800 hover:border-emerald-500/70'
+                        : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60 hover:border-gray-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    {/* Header Row: Chặng order & Delete button */}
+                    <div className="w-full flex items-center justify-between mb-1">
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                        isCompleted
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : isActive
+                          ? isCampaign
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                          : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
+                      }`}>
+                        Chặng {idx + 1}/{phases.length}
+                      </span>
+
+                      {phases.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeletePhase(idx, e)}
+                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ml-auto"
+                          title={`Xóa giai đoạn: ${p.name}`}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Circular Progress Gauge */}
+                    <div className="relative w-20 h-20 flex items-center justify-center my-1.5">
+                      <svg className="w-20 h-20 -rotate-90 transform" viewBox="0 0 80 80">
+                        {/* Background track circle */}
+                        <circle
+                          cx="40"
+                          cy="40"
+                          r="32"
+                          className="stroke-gray-100 dark:stroke-slate-700/80 fill-none"
+                          strokeWidth="6"
+                        />
+                        {/* Progress ring */}
+                        <circle
+                          cx="40"
+                          cy="40"
+                          r="32"
+                          className={`fill-none transition-all duration-700 ease-out ${
+                            isCompleted
+                              ? 'stroke-emerald-500'
+                              : isActive
+                              ? (isCampaign ? 'stroke-amber-500' : 'stroke-blue-600')
+                              : 'stroke-gray-300 dark:stroke-slate-600'
+                          }`}
+                          strokeWidth="6"
+                          strokeDasharray={201.06}
+                          strokeDashoffset={201.06 * (1 - (isCompleted ? 100 : isActive ? p.progress : 0) / 100)}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+
+                      {/* Center node content */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        {isCompleted ? (
+                          <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                            <Check size={16} strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <>
+                            <span className={`text-xs font-extrabold ${
+                              isActive
+                                ? (isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400')
+                                : 'text-gray-400 dark:text-slate-500'
+                            }`}>
+                              {isActive ? `${p.progress}%` : `P${idx + 1}`}
+                            </span>
+                            {isActive && (
+                              <span className="text-[8px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-tighter">
+                                Đang chạy
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Status Pill */}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 ${
                       isCompleted
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                         : isActive
-                        ? 'bg-primary text-white ring-4 ring-primary/20 animate-pulse'
-                        : 'bg-gray-100 dark:bg-slate-700 text-gray-500'
+                        ? isCampaign
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
                     }`}>
-                      {isCompleted ? '✓' : p.id}
-                    </div>
-
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      isCompleted ? 'bg-emerald-500/10 text-emerald-500' : isActive ? 'bg-blue-500/10 text-blue-500' : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
-                    }`}>
-                      {isCompleted ? '100%' : isActive ? `${phaseProgressPct}%` : 'Chờ'}
+                      {isCompleted ? '✓ Hoàn thành' : isActive ? '● Đang triển khai' : '○ Chờ bắt đầu'}
                     </span>
-                  </div>
 
-                  {/* Title & Desc */}
-                  <b className={`text-xs block truncate ${isSelected ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
-                    {p.name}
-                  </b>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate mt-0.5">
-                    {p.desc}
-                  </span>
-
-                  {/* Dual Progress Bars under node */}
-                  <div className="mt-3 space-y-1.5 pt-2 border-t border-gray-100 dark:border-slate-700/60">
-                    <div>
-                      <div className="flex justify-between text-[9px] text-gray-400 mb-0.5">
-                        <span>Tiến độ</span>
-                        <span className="font-bold text-blue-500">{isCompleted ? 100 : isActive ? phaseProgressPct : 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-blue-500 h-1.5 rounded-full transition-all"
-                          style={{ width: `${isCompleted ? 100 : isActive ? phaseProgressPct : 0}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[9px] text-gray-400 mb-0.5">
-                        <span>Cơ hội Gate</span>
-                        <span className="font-bold text-emerald-500">{isCompleted ? 100 : isActive ? gatePassChancePct : 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-emerald-500 h-1.5 rounded-full transition-all"
-                          style={{ width: `${isCompleted ? 100 : isActive ? gatePassChancePct : 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Interaction hint */}
-                  <div className="mt-2 text-center">
-                    <span className="text-[9px] text-primary font-semibold hover:underline">
-                      {isSelected && isDetailOpen ? '▲ Đang xem chi tiết' : '▼ Bấm xem task'}
+                    {/* Phase Name & Desc */}
+                    <b className={`text-xs block line-clamp-1 w-full ${
+                      isSelected
+                        ? (isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400')
+                        : 'text-gray-900 dark:text-white'
+                    }`} title={p.name}>
+                      {p.name}
+                    </b>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block line-clamp-1 mt-0.5 w-full" title={p.desc}>
+                      {p.desc}
                     </span>
+
+                    {/* Gate chance info */}
+                    <div className="w-full mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-[10px]">
+                      <span className="text-gray-400">Cơ hội Gate:</span>
+                      <span className={`font-bold ${
+                        isCompleted ? 'text-emerald-500' : p.gateChance >= 80 ? 'text-emerald-500' : p.gateChance >= 50 ? 'text-amber-500' : 'text-gray-400'
+                      }`}>
+                        {isCompleted ? 100 : p.gateChance}%
+                      </span>
+                    </div>
+
+                    {/* Action button: Xem chi tiết */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isSelected) {
+                          setIsDetailOpen(!isDetailOpen);
+                        } else {
+                          handlePhaseClick(idx);
+                          setIsDetailOpen(true);
+                        }
+                      }}
+                      className={`w-full mt-2 py-1.5 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
+                        isSelected && isDetailOpen
+                          ? isCampaign
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                            : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                          : 'bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600'
+                      }`}
+                    >
+                      {isSelected && isDetailOpen ? (
+                        <>
+                          <ChevronUp size={13} />
+                          <span>Thu gọn</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={13} />
+                          <span>Xem chi tiết</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
+
+                  {/* Connecting Shape Link with (+) Center Bead between adjacent phases */}
+                  {idx < phases.length - 1 && (
+                    <div className="flex items-center justify-center self-center px-1 sm:px-2 shrink-0 relative group/connector">
+                      {/* Connecting capsule shape */}
+                      <div className={`h-2 w-8 sm:w-12 rounded-full transition-all ${
+                        isCompleted
+                          ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-xs'
+                          : isActive
+                          ? (isCampaign ? 'bg-gradient-to-r from-amber-400 to-amber-200 dark:to-slate-700' : 'bg-gradient-to-r from-blue-500 to-blue-200 dark:to-slate-700')
+                          : 'bg-gray-200 dark:bg-slate-700'
+                      }`} />
+
+                      {/* Center round shape (+) button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenAddPhaseModal(idx + 1, e)}
+                        className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
+                        title={`Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
+
+            {/* Add Phase End Card */}
+            <div className="flex flex-col items-center justify-center shrink-0 self-center p-3 ml-2 min-w-[120px]">
+              <button
+                type="button"
+                onClick={() => handleOpenAddPhaseModal(phases.length)}
+                className={`w-14 h-14 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-all hover:scale-105 shadow-sm group cursor-pointer ${
+                  isCampaign
+                    ? 'border-amber-400/70 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-amber-600 dark:text-amber-400'
+                    : 'border-blue-400/70 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-blue-600 dark:text-blue-400'
+                }`}
+                title="Thêm giai đoạn mới vào cuối lộ trình"
+              >
+                <Plus size={18} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-200" />
+                <span className="text-[8px] font-bold mt-0.5">Thêm chặng</span>
+              </button>
+              <span className="text-[9px] text-gray-400 mt-1 text-center">Tùy biến lộ trình</span>
+            </div>
           </div>
         </div>
 
@@ -1146,54 +1727,313 @@ export const WorkflowManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Danh Sách Đầu Việc Kỹ Thuật (Subtasks) của chặng (5 Cols) */}
+              {/* Right Column: Quản Lý Đầu Việc Kỹ Thuật (Subtasks) của chặng (5 Cols) */}
               <div className="lg:col-span-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
                 <div>
+                  {/* Column Header */}
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700/80 pb-2.5 mb-2.5">
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <Code2 size={15} className="text-primary" />
+                        <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-blue-600'} />
                         Đầu việc kỹ thuật ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
-                      <span className="text-[10px] text-gray-400">Tick hoàn thành để tự tính % tiến độ</span>
+                      <span className="text-[10px] text-gray-400">Thêm, sửa, xóa và chuyển đổi trạng thái task</span>
                     </div>
-                    <span className="text-xs font-bold text-primary">{phaseProgressPct}%</span>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-primary">{phaseProgressPct}%</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddTask(!showAddTask)}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                          isCampaign
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                        title="Thêm đầu việc mới vào chặng này"
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                        <span>Thêm task</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="space-y-2 max-h-[290px] overflow-y-auto custom-scrollbar pr-1">
-                    {currentPhaseSubtasks.map(s => {
-                      const done = s.status === 'completed';
-                      return (
-                        <div
-                          key={s.id}
-                          onClick={() => toggleSubtask(s.id)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${
-                            done
-                              ? 'border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
-                              : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-primary/40'
-                          }`}
+                  {/* Inline Add Task Form */}
+                  {showAddTask && (
+                    <form onSubmit={handleAddTask} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                          <Plus size={12} strokeWidth={2.5} /> Thêm đầu việc mới
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddTask(false)}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
                         >
-                          <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={done}
-                              onChange={() => {}}
-                              className="rounded text-primary focus:ring-0 cursor-pointer"
-                            />
-                            <span className={`text-xs truncate ${done ? 'line-through text-gray-400' : 'font-medium text-gray-900 dark:text-white'}`}>
-                              {s.title}
-                            </span>
-                          </label>
+                          <X size={13} />
+                        </button>
+                      </div>
 
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 ml-2 shrink-0">
-                            {s.assignee}
-                          </span>
-                        </div>
-                      );
-                    })}
+                      <input
+                        type="text"
+                        value={newTaskTitle}
+                        onChange={e => setNewTaskTitle(e.target.value)}
+                        placeholder="Nhập tên đầu việc kỹ thuật..."
+                        autoFocus
+                        className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                      />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          value={newTaskAssignee}
+                          onChange={e => setNewTaskAssignee(e.target.value)}
+                          placeholder="Người phụ trách..."
+                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                        />
+
+                        <input
+                          type="date"
+                          value={newTaskDue}
+                          onChange={e => setNewTaskDue(e.target.value)}
+                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                        />
+
+                        <select
+                          value={newTaskStatus}
+                          onChange={e => setNewTaskStatus(e.target.value as WorkflowTaskStatus)}
+                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                        >
+                          {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
+                            <option key={st} value={st}>
+                              {WORKFLOW_STATUS_CONFIG[st].label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddTask(false)}
+                          className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                        >
+                          Lưu đầu việc
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Subtasks List */}
+                  <div className="space-y-2 max-h-[340px] overflow-y-auto custom-scrollbar pr-1">
+                    {currentPhaseSubtasks.length === 0 ? (
+                      <div className="text-center py-8 text-xs text-gray-400">
+                        Chưa có đầu việc nào trong giai đoạn này. Bấm &quot;Thêm task&quot; để tạo đầu việc đầu tiên.
+                      </div>
+                    ) : (
+                      currentPhaseSubtasks.map(s => {
+                        const done = s.status === 'completed';
+                        const isEditing = editingTaskId === s.id;
+
+                        if (isEditing) {
+                          return (
+                            <div
+                              key={s.id}
+                              className="p-3 rounded-xl border border-blue-400 bg-white dark:bg-slate-900 shadow-sm space-y-2"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-blue-600 uppercase">Đang chỉnh sửa đầu việc</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTaskId(null)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+
+                              <input
+                                type="text"
+                                value={editTaskTitle}
+                                onChange={e => setEditTaskTitle(e.target.value)}
+                                className="w-full text-xs p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                              />
+
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editTaskAssignee}
+                                  onChange={e => setEditTaskAssignee(e.target.value)}
+                                  placeholder="Người phụ trách"
+                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                                />
+                                <input
+                                  type="date"
+                                  value={editTaskDue}
+                                  onChange={e => setNewTaskDue(e.target.value)}
+                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                                />
+                                <select
+                                  value={editTaskStatus}
+                                  onChange={e => setEditTaskStatus(e.target.value as WorkflowTaskStatus)}
+                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                                >
+                                  {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
+                                    <option key={st} value={st}>
+                                      {WORKFLOW_STATUS_CONFIG[st].label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="flex justify-end gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTaskId(null)}
+                                  className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleSaveEditTask(s.id, e)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
+                                >
+                                  <Check size={12} strokeWidth={2.5} /> Lưu thay đổi
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={s.id}
+                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group/task ${
+                              done
+                                ? 'border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                                : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400/60 dark:hover:border-blue-500/60'
+                            }`}
+                          >
+                            {/* Left: Checkbox + Status Hexagon + Title */}
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={done}
+                                onChange={() => toggleSubtask(s.id)}
+                                className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
+                                title="Đánh dấu hoàn thành"
+                              />
+
+                              {/* Interactive Workflow Hexagon Status Badge */}
+                              <div className="relative shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setStatusPickerTaskId(statusPickerTaskId === s.id ? null : s.id);
+                                  }}
+                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${WORKFLOW_STATUS_CONFIG[s.status].bgLight} ${WORKFLOW_STATUS_CONFIG[s.status].bgDark} ${WORKFLOW_STATUS_CONFIG[s.status].textColor} ${WORKFLOW_STATUS_CONFIG[s.status].borderClass} hover:opacity-85 shadow-2xs`}
+                                  title="Bấm để đổi nhanh trạng thái"
+                                >
+                                  <WorkflowHexagonIcon status={s.status} size={13} />
+                                  <span>{WORKFLOW_STATUS_CONFIG[s.status].label}</span>
+                                  <ChevronDown size={10} className="opacity-60" />
+                                </button>
+
+                                {/* Quick Status Selector Dropdown */}
+                                {statusPickerTaskId === s.id && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="absolute left-0 top-full mt-1 z-50 w-44 p-1.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl space-y-0.5 animate-in fade-in zoom-in-95 text-left"
+                                  >
+                                    <div className="text-[9px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1 border-b border-gray-100 dark:border-slate-800">
+                                      Đổi trạng thái task
+                                    </div>
+                                    {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => {
+                                      const cfg = WORKFLOW_STATUS_CONFIG[st];
+                                      const isCur = s.status === st;
+                                      return (
+                                        <button
+                                          key={st}
+                                          type="button"
+                                          onClick={(e) => handleQuickChangeStatus(s.id, st, e)}
+                                          className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-xs transition-colors cursor-pointer ${
+                                            isCur
+                                              ? 'bg-gray-100 dark:bg-slate-800 font-bold'
+                                              : 'hover:bg-gray-50 dark:hover:bg-slate-800/60 font-medium'
+                                          }`}
+                                        >
+                                          <WorkflowHexagonIcon status={st} size={13} />
+                                          <span className={`${cfg.textColor}`}>{cfg.label}</span>
+                                          {isCur && <Check size={12} className="ml-auto text-emerald-500" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Task Title */}
+                              <span
+                                className={`text-xs truncate flex-1 min-w-0 ${
+                                  done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
+                                }`}
+                                title={s.title}
+                              >
+                                {s.title}
+                              </span>
+                            </div>
+
+                            {/* Right: Assignee, Due date & Actions */}
+                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto ml-6 sm:ml-0">
+                              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300">
+                                <User size={10} className="text-gray-400" />
+                                <span className="truncate max-w-[80px]">{s.assignee}</span>
+                              </span>
+
+                              {s.due_date && (
+                                <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
+                                  <Calendar size={10} />
+                                  <span>{s.due_date.slice(5)}</span>
+                                </span>
+                              )}
+
+                              {/* Edit Action */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleStartEditTask(s, e)}
+                                className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                                title="Chỉnh sửa đầu việc"
+                              >
+                                <Edit3 size={12} />
+                              </button>
+
+                              {/* Delete Action */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteTask(s.id, e)}
+                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                title="Xóa đầu việc"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
 
+                {/* Footer summary */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
                   <span>Tiến độ hoàn thành chặng:</span>
                   <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} công việc xong</b>
@@ -1359,6 +2199,95 @@ export const WorkflowManagement: React.FC = () => {
         </div>
 
       </div>
+
+      {/* 5. ADD PHASE MODAL (Requirement 5) */}
+      {showAddPhaseModal && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowAddPhaseModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  isCampaign ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                }`}>
+                  <Plus size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                    Thêm giai đoạn mới
+                  </h3>
+                  <span className="text-[10px] text-gray-400">
+                    Chèn vào vị trí chặng số {insertPhaseIndex + 1} của lộ trình
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddPhaseModal(false)}
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePhase} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Tên giai đoạn <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newPhaseName}
+                  onChange={e => setNewPhaseName(e.target.value)}
+                  placeholder="VD: Kiểm toán bảo mật & Performance Tuning"
+                  autoFocus
+                  required
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Mô tả mục tiêu giai đoạn
+                </label>
+                <textarea
+                  rows={2}
+                  value={newPhaseDesc}
+                  onChange={e => setNewPhaseDesc(e.target.value)}
+                  placeholder="VD: Rà soát lỗ hổng OWASP, kiểm thử tải và tối ưu cơ sở dữ liệu"
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPhaseModal(false)}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isCampaign
+                      ? 'bg-amber-500 hover:bg-amber-600'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  <Plus size={14} strokeWidth={2.5} />
+                  <span>Tạo giai đoạn</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
