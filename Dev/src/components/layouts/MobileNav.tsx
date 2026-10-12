@@ -21,6 +21,7 @@ export const MobileNav: React.FC = () => {
   
   const navItems = [
     { name: t('nav.home'), path: '/', icon: <Layers size={20} strokeWidth={1.8} /> },
+    { name: 'Workflow 2', path: '/workflow-management-2', icon: <Layers size={20} strokeWidth={1.8} /> },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
@@ -122,7 +123,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between p-1.5 mobile-nav-container backdrop-blur-[22px] backdrop-saturate-[170%]",
+          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container backdrop-blur-[22px] backdrop-saturate-[170%]",
           isHidden && "nav-hidden"
         )}
       >
@@ -134,7 +135,7 @@ export const MobileNav: React.FC = () => {
             aria-label={item.name}
             title={item.name}
             className={({ isActive }) => cn(
-              'relative flex min-w-0 flex-1 h-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary',
+              'relative flex min-w-11 flex-1 shrink-0 h-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary',
               isActive
                 ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/70 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_3px_10px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40'
                 : 'text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-white'

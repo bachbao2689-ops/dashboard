@@ -26,6 +26,7 @@ export const Sidebar: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Layers size={18} /> },
+        { name: 'Workflow Management 2', path: '/workflow-management-2', icon: <Layers size={18} /> },
         { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) }
       ]
     },

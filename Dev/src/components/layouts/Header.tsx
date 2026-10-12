@@ -74,6 +74,8 @@ export const Header: React.FC = () => {
     setShowNotifs(false);
     if (notification.entity_type === 'task' && notification.entity_id) {
       navigate(`/tasks?task=${notification.entity_id}`);
+    } else if (notification.entity_type === 'workflow2') {
+      navigate(`/workflow-management-2`);
     } else if (notification.entity_type === 'project_subtask') {
       navigate(`/projects`);
     } else if (notification.entity_type === 'weekly_report') {
@@ -86,6 +88,7 @@ export const Header: React.FC = () => {
       title: t('nav.main'),
       items: [
         { name: t('nav.home'), path: '/', icon: <Layers size={18} /> },
+        { name: 'Workflow Management 2', path: '/workflow-management-2', icon: <Layers size={18} /> },
         { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
       ]
     },
