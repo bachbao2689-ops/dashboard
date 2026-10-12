@@ -3,7 +3,7 @@ import {
   FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
   ChevronDown, ChevronUp, X, Globe, Code2, Info, Search,
-  Calendar, User, Edit3, Trash2, Eye, Check
+  Calendar, User, Edit3, Trash2, Eye, Check, Clock
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -390,8 +390,20 @@ export const WorkflowManagement: React.FC = () => {
         lead: { name: 'Tech Lead - K COFFEE' }
       };
 
+      const defaultDemoCampaign: ProjectEntity = {
+        id: 'campaign_social_q4',
+        name: '[Demo] Always-on Social Q4',
+        type: 'campaign',
+        status: 'active',
+        start_date: '2026-10-10',
+        due_date: '2026-12-31',
+        budget: 85000000,
+        lead: { name: 'Lead Marketing' }
+      };
+
       const formatted: ProjectEntity[] = [
         defaultWebProject,
+        defaultDemoCampaign,
         ...(pData || []).map(p => ({
           id: `p_${p.id}`,
           name: p.name,
@@ -473,23 +485,57 @@ export const WorkflowManagement: React.FC = () => {
     }
     if (currentEntity.id === 'project_web') {
       return {
-        name: 'Bách Bảo',
-        role: 'Tech Lead & Solution Architect',
+        name: 'Tech Lead',
+        role: 'Project Lead',
         avatar: undefined
       };
     }
     return {
-      name: isCampaign ? 'Thương Phạm' : 'Tech Lead',
-      role: isCampaign ? 'Campaign Manager' : 'Project Lead',
+      name: isCampaign ? 'Lead Marketing' : 'Tech Lead',
+      role: isCampaign ? 'Campaign Lead' : 'Project Lead',
       avatar: undefined
     };
   }, [currentEntity, isCampaign]);
 
-  // Timeline formatted
+  // Sub-team members avatars tracking (Requirement 2)
+  const subTeamMembers = useMemo(() => {
+    if (isCampaign) {
+      return [
+        { id: 'sub_1', name: 'Bách Bảo', initials: 'BB', bg: 'from-amber-500 to-orange-500' },
+        { id: 'sub_2', name: 'Thương Phạm', initials: 'TP', bg: 'from-blue-500 to-indigo-500' },
+        { id: 'sub_3', name: 'Vũ Trần', initials: 'VT', bg: 'from-emerald-500 to-teal-500' },
+      ];
+    }
+    return [
+      { id: 'sub_1', name: 'Vũ Trần', initials: 'VT', bg: 'from-blue-600 to-cyan-600' },
+      { id: 'sub_2', name: 'Hoàng Long', initials: 'HL', bg: 'from-purple-600 to-pink-600' },
+      { id: 'sub_3', name: 'LUNA', initials: 'LU', bg: 'from-rose-500 to-orange-500' },
+    ];
+  }, [isCampaign]);
+
+  // Days remaining (Workload còn mấy ngày - Requirement 2)
+  const daysRemaining = useMemo(() => {
+    if (!currentEntity.due_date) return 82;
+    const now = new Date().getTime();
+    const target = new Date(currentEntity.due_date).getTime();
+    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }, [currentEntity.due_date]);
+
+  // Timeline formatted: DD/MM/YYYY - DD/MM/YYYY
   const entityTimeline = useMemo(() => {
-    const start = currentEntity.start_date ? new Date(currentEntity.start_date).toLocaleDateString('vi-VN') : '01/10/2026';
-    const end = currentEntity.due_date ? new Date(currentEntity.due_date).toLocaleDateString('vi-VN') : '31/12/2026';
-    return `${start} – ${end}`;
+    const formatDate = (dateStr?: string | null, defaultStr: string = '') => {
+      if (!dateStr) return defaultStr;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return defaultStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+    const start = formatDate(currentEntity.start_date, '10/10/2026');
+    const end = formatDate(currentEntity.due_date, '31/12/2026');
+    return `${start} - ${end}`;
   }, [currentEntity]);
 
   // Task distribution across the 7 Workflow Statuses (Requirement 1)
@@ -822,62 +868,62 @@ export const WorkflowManagement: React.FC = () => {
       <div className="card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch">
         
         {/* Left Side: Filter buttons, Title dropdown, and Subtitle (4 cols) */}
-        <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2">
-          {/* Top Row: Button trên title làm gọn lại (Projects / Campaigns) chuẩn Guideline (Requirement 2) */}
+        <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2.5">
+          {/* Top Row: Button trên title scale nhỏ 20% (Projects / Campaigns) & Description (Requirement 1) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex items-center p-1 rounded-xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <button
                 type="button"
                 onClick={() => handleFilterChange('project')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                   entityFilter === 'project'
-                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/70 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40'
+                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/20 dark:!text-blue-100 dark:ring-blue-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <Globe size={13} className={entityFilter === 'project' ? 'text-blue-600 dark:text-blue-300' : ''} />
+                <Globe size={11} className={entityFilter === 'project' ? 'text-blue-600 dark:text-blue-300' : ''} />
                 <span>Projects</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleFilterChange('campaign')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                   entityFilter === 'campaign'
-                    ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/70 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_8px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/15 dark:!text-amber-100 dark:ring-amber-300/40'
+                    ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <FolderKanban size={13} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
+                <FolderKanban size={11} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
                 <span>Campaigns</span>
               </button>
             </div>
 
-            <span className="text-xs text-gray-400 hidden sm:inline">
-              · {isCampaign ? 'Chiến dịch truyền thông & Tiếp thị' : 'Website Development Lifecycle'}
+            <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
+              • {isCampaign ? 'Chiến dịch truyền thông & Tiếp thị' : 'Website Development Lifecycle'}
             </span>
           </div>
 
           {/* Main Title as Filter Dropdown */}
-          <div className="relative inline-block">
+          <div className="relative inline-block my-0.5">
             <button
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
               className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
               title="Bấm để chọn và lọc Project / Campaign"
             >
-              <div className={`p-2 rounded-xl transition-colors ${
+              <div className={`p-1.5 rounded-xl transition-colors ${
                 isCampaign
                   ? 'bg-amber-500/10 text-amber-600 group-hover:bg-amber-500/20'
                   : 'bg-primary/10 text-primary group-hover:bg-primary/20'
               }`}>
-                {isCampaign ? <FolderKanban size={22} /> : <Globe size={22} />}
+                {isCampaign ? <FolderKanban size={20} /> : <Globe size={20} />}
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
                   {currentEntity.name}
                 </h1>
                 <ChevronDown
-                  size={20}
+                  size={18}
                   className={`text-gray-400 group-hover:text-primary transition-transform duration-200 ${
                     isTitleDropdownOpen ? 'rotate-180 text-primary' : ''
                   }`}
@@ -945,60 +991,64 @@ export const WorkflowManagement: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
 
-            {/* Thông tin Người Lead & UI Trạng thái Task 7 Statuses Workflow (Requirement 1) */}
-            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/80 space-y-2">
-              {/* Leader Info & Timeline */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-2 bg-gray-100/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-slate-700/60">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-xs ${
-                    isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-600'
-                  }`}>
-                    {leadInfo.name.charAt(0)}
-                  </div>
-                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                    {leadInfo.name}
-                  </span>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-md ${
-                    isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                  }`}>
-                    {leadInfo.role}
-                  </span>
-                </div>
+          {/* Time row: Timeline + Workload còn mấy ngày (Requirement 2) */}
+          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">
+            <span>{entityTimeline}</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <Clock size={10} />
+              <span>Còn {daysRemaining} ngày</span>
+            </span>
+          </div>
 
-                <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
-                  <Calendar size={12} className="text-gray-400" />
-                  <span>{entityTimeline}</span>
-                </div>
+          {/* Lead chính ở dưới time, Sub track avatars, and Project/Campaign status (Requirement 2) */}
+          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+            {/* Lead chính badge */}
+            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-full border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-xs ${
+                isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-600'
+              }`}>
+                {leadInfo.avatar ? (
+                  <img src={leadInfo.avatar} alt={leadInfo.name} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <User size={10} />
+                )}
               </div>
-
-              {/* UI Task Status theo 7 Statuses từ ./Status workflow */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
-                  Tasks ({subtasks.length}):
-                </span>
-                {(['completed', 'in_progress', 'in_qa', 'scoping', 'planned', 'backlog', 'canceled'] as WorkflowTaskStatus[]).map(st => {
-                  const count = taskCountsByStatus[st] || 0;
-                  if (count === 0 && st === 'canceled') return null;
-                  const cfg = WORKFLOW_STATUS_CONFIG[st];
-                  return (
-                    <div
-                      key={st}
-                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
-                      title={`${cfg.label}: ${count} tasks`}
-                    >
-                      <WorkflowHexagonIcon status={st} size={13} />
-                      <span className={`font-bold ${cfg.textColor}`}>
-                        {count}
-                      </span>
-                      <span className="text-[9px] text-gray-500 dark:text-gray-400 hidden sm:inline">
-                        {cfg.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">
+                {leadInfo.name}
+              </span>
+              <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-md ${
+                isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+              }`}>
+                {leadInfo.role}
+              </span>
             </div>
+
+            {/* Sub track avatars */}
+            <div className="flex items-center -space-x-1.5">
+              {subTeamMembers.map(sub => (
+                <div
+                  key={sub.id}
+                  title={`${sub.name} (Thành viên tham gia)`}
+                  className={`w-5 h-5 rounded-full bg-gradient-to-tr ${sub.bg} border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
+                >
+                  {sub.initials}
+                </div>
+              ))}
+            </div>
+
+            {/* Project / Campaign Status Pill */}
+            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+              currentEntity.status === 'completed'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                currentEntity.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+              }`} />
+              <span>{currentEntity.status === 'completed' ? 'Completed' : 'In-Progress'}</span>
+            </span>
           </div>
         </div>
 
@@ -1312,16 +1362,39 @@ export const WorkflowManagement: React.FC = () => {
       {/* 2. GỘP THÀNH 1 BOARD DUY NHẤT: LỘ TRÌNH GIAI ĐOẠN (BẤM VÀO MỚI HIỆN CHI TIẾT TASK & GATE) */}
       <div className="card-hub p-5 rounded-2xl space-y-5 transition-all">
         
-        {/* Board Header with Dropdown Phase Selector & Collapse Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-700/80 pb-3">
+        {/* Board Header with Task Status Bar, Dropdown Phase Selector & Collapse Toggle (Requirement 3) */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-700/80 pb-3">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles size={16} className="text-primary" />
               Lộ trình giai đoạn (Stage-Gate Stepper Timeline)
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Bấm vào bất kỳ chặng nào trên lộ trình để mở bảng chi tiết đầu việc và bộ tiêu chí thẩm định
-            </p>
+
+            {/* Thanh Task biểu hiện những Task trong đó (Requirement 3: move xuống bảng Lộ trình giai đoạn) */}
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
+                Task tháng này:
+              </span>
+              {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[]).map(st => {
+                const count = taskCountsByStatus[st] || 0;
+                const cfg = WORKFLOW_STATUS_CONFIG[st];
+                return (
+                  <div
+                    key={st}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
+                    title={`${cfg.label}: ${count} tasks`}
+                  >
+                    <WorkflowHexagonIcon status={st} size={13} />
+                    <span className={`font-bold ${cfg.textColor}`}>
+                      {count}
+                    </span>
+                    <span className="text-[9px] text-gray-500 dark:text-gray-400">
+                      {cfg.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
