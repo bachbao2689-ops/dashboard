@@ -109,13 +109,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     onTaskUpdated?.({ status: 'done' }); toast.success('Task đã hoàn thành');
   };
 
-  const changePhaseTaskStatus = async (stage: WorkflowTaskStatus) => {
+  const changePhaseTaskStatus = async (stage: WorkflowTaskStatus): Promise<void> => {
     if (!canEdit || !task) return;
     setSaving(true);
     const status = canonicalWorkflowStatus[stage];
     const { data, error } = await supabase.from('tasks').update({ status, workflow_status: stage, updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
     setSaving(false);
-    if (error || !data) return toast.error(error?.message || 'Bạn không còn quyền cập nhật task.');
+    if (error || !data) { toast.error(error?.message || 'Bạn không còn quyền cập nhật task.'); throw new Error('Task status update denied'); }
     onTaskUpdated?.({ status, workflow_status: stage });
     window.dispatchEvent(new Event('tasks:changed'));
   };

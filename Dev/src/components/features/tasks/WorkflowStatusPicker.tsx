@@ -286,9 +286,11 @@ export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:s
     if(!open) return;
     const close=(event:Event)=>{if(!button.current?.contains(event.target as Node)&&!popup.current?.contains(event.target as Node))setOpen(false);};
     const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setOpen(false);};
+    const resize=()=>setOpen(false);
     document.addEventListener('pointerdown',close);document.addEventListener('keydown',escape);
-    window.addEventListener('resize',close);
-    return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',escape);window.removeEventListener('resize',close);};
+    window.addEventListener('resize',resize);
+    document.addEventListener('scroll',close,true);
+    return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',escape);window.removeEventListener('resize',resize);document.removeEventListener('scroll',close,true);};
   },[open]);
   const toggle=()=>{
     const r=button.current!.getBoundingClientRect();
