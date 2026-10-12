@@ -1474,59 +1474,42 @@ export const WorkflowManagement: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Circular Progress Gauge */}
+                    {/* Soft Technical Liquid Glass Progress Pod (No harsh strokes) */}
                     <div className="relative w-20 h-20 flex items-center justify-center my-1.5">
-                      <svg className="w-20 h-20 -rotate-90 transform" viewBox="0 0 80 80">
-                        {/* Background track circle */}
-                        <circle
-                          cx="40"
-                          cy="40"
-                          r="32"
-                          className="stroke-gray-100 dark:stroke-slate-700/80 fill-none"
-                          strokeWidth="6"
-                        />
-                        {/* Progress ring */}
-                        <circle
-                          cx="40"
-                          cy="40"
-                          r="32"
-                          className={`fill-none transition-all duration-700 ease-out ${
-                            isCompleted
-                              ? 'stroke-emerald-500'
-                              : isActive
-                              ? (isCampaign ? 'stroke-amber-500' : 'stroke-blue-600')
-                              : 'stroke-gray-300 dark:stroke-slate-600'
-                          }`}
-                          strokeWidth="6"
-                          strokeDasharray={201.06}
-                          strokeDashoffset={201.06 * (1 - (isCompleted ? 100 : isActive ? p.progress : 0) / 100)}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-
-                      {/* Center node content - gentle glass visualization */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        {isCompleted ? (
-                          <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-500 text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_8px_rgba(16,185,129,0.3)] ring-1 ring-emerald-300/60 dark:ring-emerald-400/30">
-                            <Check size={16} strokeWidth={3} />
-                          </div>
-                        ) : isActive ? (
-                          <div className="w-12 h-12 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xs border border-white/80 dark:border-slate-700/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(30,90,170,0.12)] flex flex-col items-center justify-center">
-                            <span className={`text-xs font-black ${
-                              isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'
+                      {isCompleted ? (
+                        /* Chặng hoàn thành: Soft Emerald Glass Orb */
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400/90 via-emerald-500/90 to-teal-600/90 backdrop-blur-md flex items-center justify-center text-white shadow-[0_4px_16px_rgba(16,185,129,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.75)] transition-transform duration-300 hover:scale-105">
+                          <Check size={22} strokeWidth={2.5} />
+                        </div>
+                      ) : isActive ? (
+                        /* Chặng đang chạy: Soft Conic Liquid Glass Dial (No harsh strokes) */
+                        <div
+                          className="w-16 h-16 rounded-full p-[3.5px] flex items-center justify-center relative transition-transform duration-300 hover:scale-105 shadow-[0_4px_16px_rgba(37,99,235,0.22)]"
+                          style={{
+                            background: `conic-gradient(from 180deg, ${
+                              isCampaign ? '#f59e0b, #fbbf24' : '#2563eb, #38bdf8'
+                            } ${p.progress * 3.6}deg, rgba(148, 163, 184, 0.15) ${p.progress * 3.6}deg 360deg)`
+                          }}
+                        >
+                          <div className="w-full h-full rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_2px_8px_rgba(0,0,0,0.12)]">
+                            <span className={`text-xs font-black tracking-tight ${
+                              isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-cyan-400'
                             }`}>
                               {p.progress}%
                             </span>
-                            <span className="text-[7.5px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-tight">
+                            <span className="text-[7.5px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-tight">
                               Đang chạy
                             </span>
                           </div>
-                        ) : (
-                          <span className="text-xs font-extrabold text-gray-400 dark:text-slate-500">
+                        </div>
+                      ) : (
+                        /* Chặng chưa bắt đầu: Soft minimal glass pod */
+                        <div className="w-16 h-16 rounded-full p-[2.5px] bg-slate-200/50 dark:bg-slate-800/50 flex items-center justify-center">
+                          <div className="w-full h-full rounded-full bg-slate-100/80 dark:bg-slate-800/80 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-slate-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]">
                             P{idx + 1}
-                          </span>
-                        )}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Status Pill */}
@@ -2138,27 +2121,29 @@ export const WorkflowManagement: React.FC = () => {
               </span>
             </div>
 
-            {/* Donut Chart with Gentle Glass Center Hub */}
+            {/* Donut Chart with Gentle Glass Center Hub - Soft & Technical (No Stroke) */}
             <div className="h-56 relative flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={currentMonthTaskStats}
-                    innerRadius={56}
-                    outerRadius={82}
+                    innerRadius={58}
+                    outerRadius={84}
                     paddingAngle={3}
-                    cornerRadius={4}
+                    cornerRadius={5}
                     dataKey="value"
+                    stroke="none"
                   >
                     {currentMonthTaskStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                     ))}
                   </Pie>
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: 'rgba(15, 23, 42, 0.95)',
                       borderRadius: '12px',
-                      border: '1px solid #334155',
+                      border: 'none',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
                       color: '#fff',
                       fontSize: '12px'
                     }}
@@ -2166,9 +2151,9 @@ export const WorkflowManagement: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Center gentle glass hub */}
+              {/* Center gentle glass hub - Soft & Technical (No border stroke) */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="w-22 h-22 rounded-full bg-white/70 dark:bg-slate-800/80 backdrop-blur-xs border border-white/80 dark:border-slate-700/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_10px_rgba(0,0,0,0.06)] flex flex-col items-center justify-center">
+                <div className="w-22 h-22 rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_6px_20px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center">
                   <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">Hoàn thành</span>
                   <b className="text-xl font-extrabold text-emerald-500 dark:text-emerald-400">
                     {Math.round((currentMonthTaskStats[0].value / (totalMonthTasks || 1)) * 100)}%
