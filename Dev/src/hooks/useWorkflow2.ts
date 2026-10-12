@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
 import { useAuthStore } from "../store/authStore";
+import { workflowFiles } from "../lib/workflowFiles";
+import type { WorkflowFile } from "../lib/workflowFiles";
 import type {
   WorkflowKind,
   WorkflowRecord,
@@ -45,7 +47,15 @@ export function useWorkflow2() {
     tasks: WorkflowTask[];
     people: any[];
     history: WorkflowDecision[];
-  }>({ entities: [], workflows: [], tasks: [], people: [], history: [] });
+    files: WorkflowFile[];
+  }>({
+    entities: [],
+    workflows: [],
+    tasks: [],
+    people: [],
+    history: [],
+    files: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const role = (profile?.role || "").toLowerCase(),
@@ -62,7 +72,9 @@ export function useWorkflow2() {
         all(
           supabase
             .from("projects")
-            .select("id,name,department_id,workspace_id,status")
+            .select(
+              "id,name,department_id,workspace_id,status,campaign_id,assets_url",
+            )
             .order("id"),
         ),
         all(
@@ -102,9 +114,32 @@ export function useWorkflow2() {
             .select("*")
             .order("decided_at", { ascending: false }),
         ),
+        all(
+          supabase
+            .from("activity_log")
+            .select("id,entity_id,entity_type,action,metadata,created_at")
+            .in("action", ["attachment_added", "details_updated"])
+            .in("entity_type", [
+              "project",
+              "campaign",
+              "project_subtask",
+              "campaign_subtask",
+            ])
+            .order("created_at", { ascending: false })
+            .order("id"),
+        ),
       ]);
-      const [projects, campaigns, workflows, tasks, ps, cs, people, history] =
-        results;
+      const [
+        projects,
+        campaigns,
+        workflows,
+        tasks,
+        ps,
+        cs,
+        people,
+        history,
+        activities,
+      ] = results;
       const visible = (r: any) =>
         !["deleted", "archived"].includes(r.status || "") &&
         (global || r.department_id === profile.department_id);
@@ -157,6 +192,13 @@ export function useWorkflow2() {
             (global || p.department_id === profile.department_id),
         ),
         history,
+        files: workflowFiles(
+          projects.filter(visible),
+          campaigns.filter(visible),
+          ps,
+          cs,
+          activities,
+        ),
       });
       setError("");
     } catch (e: any) {
@@ -181,6 +223,7 @@ export function useWorkflow2() {
       "campaign_subtasks",
       "projects",
       "campaigns",
+      "activity_log",
     ].forEach((table) =>
       ch.on(
         "postgres_changes",

@@ -117,6 +117,17 @@ export function WorkflowManagement2() {
   const record = data.workflows.find(
     (w) => `${w.entity_type}:${w.entity_id}` === selected,
   );
+  const sourceFiles = data.files.filter(
+    (f) => f.entity_type === entity?.type && f.entity_id === entity?.id,
+  );
+  const unconfigured = data.entities.filter(
+    (e) =>
+      !data.workflows.some(
+        (w) => w.entity_type === e.type && w.entity_id === e.id,
+      ) &&
+      (type === "all" || e.type === type) &&
+      e.name.toLowerCase().includes(search.toLowerCase()),
+  );
   const tasks = useMemo(
     () =>
       data.tasks.filter(
@@ -136,7 +147,13 @@ export function WorkflowManagement2() {
     const w = data.workflows.find(
       (w) => w.entity_type === e.type && w.entity_id === e.id,
     );
-    if (!w) return;
+    if (!w) {
+      setSelected(`${e.type}:${e.id}`);
+      setDraft(null);
+      setDirty(false);
+      setConfigure(false);
+      return;
+    }
     setSelected(`${e.type}:${e.id}`);
     setDraft(structuredClone(w.document));
     setVersion(w.version);
@@ -457,11 +474,119 @@ export function WorkflowManagement2() {
           ))}
         </div>
       </div>
+      {!data.loading && unconfigured.length > 0 && (
+        <section
+          className="space-y-3"
+          aria-label="Dữ liệu từ Dự án và Chiến dịch"
+        >
+          <h2 className="font-bold">
+            Dự án / Chiến dịch đã kết nối{" "}
+            <span className="text-gray-500 font-normal">
+              ({unconfigured.length} chưa thiết lập phase)
+            </span>
+          </h2>
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {unconfigured.map((e) => (
+              <div key={`${e.type}:${e.id}`} className="card-hub p-4 space-y-3">
+                <button className="text-left w-full" onClick={() => open(e)}>
+                  <b className="block break-words">{e.name}</b>
+                  <span className="text-xs text-gray-500">
+                    {e.type} · Chưa thiết lập Workflow
+                  </span>
+                </button>
+                <p className="text-xs text-gray-500">
+                  {
+                    data.tasks.filter(
+                      (t) => t.entity_type === e.type && t.entity_id === e.id,
+                    ).length
+                  }{" "}
+                  task/subtask ·{" "}
+                  {
+                    data.files.filter(
+                      (f) => f.entity_type === e.type && f.entity_id === e.id,
+                    ).length
+                  }{" "}
+                  tài liệu
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  <button className={btn} onClick={() => open(e)}>
+                    Xem dữ liệu nguồn
+                  </button>
+                  {data.canEdit && (
+                    <button
+                      className={btn + " text-primary"}
+                      onClick={() => {
+                        setSetupEntity(`${e.type}:${e.id}`);
+                        setSetup(true);
+                      }}
+                    >
+                      Thiết lập phase
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {entity && (
+        <section className="card-hub p-5 space-y-4" aria-label="Tài liệu nguồn">
+          <div className="flex flex-wrap gap-3 justify-between">
+            <div>
+              <h2 className="font-bold">Tài liệu · {entity.name}</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Đồng bộ từ Brief, Strategy Assets và file của subtask. Campaign
+                bao gồm tài liệu của Project trực thuộc.
+              </p>
+            </div>
+            <button className={btn} onClick={() => void data.refresh()}>
+              <RefreshCw size={15} />
+              Đồng bộ
+            </button>
+          </div>
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {sourceFiles.map((f) => (
+              <a
+                key={f.id}
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-gray-200 dark:border-slate-700 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <b className="text-sm break-all">
+                  {f.name}
+                  <ExternalLink size={13} className="inline ml-2" />
+                </b>
+                <p className="text-xs text-gray-500 mt-2 break-words">
+                  {f.source}
+                </p>
+              </a>
+            ))}
+          </div>
+          {!sourceFiles.length && (
+            <p className="text-sm text-gray-400">
+              Mục này chưa có file đính kèm.
+            </p>
+          )}
+          {!record && data.canEdit && (
+            <button
+              className={btn + " bg-[#002e6d] text-white"}
+              onClick={() => {
+                setSetupEntity(selected);
+                setSetup(true);
+              }}
+            >
+              Thiết lập Workflow cho mục này
+            </button>
+          )}
+        </section>
+      )}
       {data.loading ? (
         <div className="card-hub h-40 animate-pulse" />
       ) : scoped.length === 0 ? (
         <div className="card-hub p-10 text-center text-gray-400">
-          Chưa có Workflow. Khởi tạo từ Project/Campaign hiện có.
+          Chưa có Workflow đã thiết lập. Chọn một Project/Campaign phía trên để
+          bắt đầu.
         </div>
       ) : view === "list" ? (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -824,6 +949,40 @@ export function WorkflowManagement2() {
                                 )
                               }
                             />
+                            {sourceFiles.length > 0 && (
+                              <select
+                                className={input}
+                                aria-label="Chọn minh chứng từ tài liệu nguồn"
+                                value={
+                                  sourceFiles.some((f) => f.url === m.evidence)
+                                    ? m.evidence
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  updatePhase(
+                                    (p) =>
+                                      (p.milestones[i].evidence =
+                                        e.target.value),
+                                  )
+                                }
+                              >
+                                <option value="">
+                                  Chọn từ file Dự án / Chiến dịch
+                                </option>
+                                {sourceFiles
+                                  .filter(
+                                    (f) =>
+                                      !m.taskKey ||
+                                      !f.taskKey ||
+                                      f.taskKey === m.taskKey,
+                                  )
+                                  .map((f) => (
+                                    <option key={f.id} value={f.url}>
+                                      {f.name} · {f.source}
+                                    </option>
+                                  ))}
+                              </select>
+                            )}
                             {phase.milestones.length > 1 && (
                               <button
                                 className="text-xs text-red-600"
@@ -893,6 +1052,17 @@ export function WorkflowManagement2() {
                         </span>
                         <span className="text-xs">{c.weight}%</span>
                       </label>
+                      {c.evidence && /^https?:\/\//.test(c.evidence) && (
+                        <a
+                          className="text-xs text-primary mt-2 inline-flex gap-1"
+                          href={c.evidence}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Minh chứng Gate
+                          <ExternalLink size={12} />
+                        </a>
+                      )}
                       {configure && (
                         <fieldset
                           disabled={!editable}
@@ -909,6 +1079,25 @@ export function WorkflowManagement2() {
                               )
                             }
                           />
+                          <select
+                            className={input}
+                            aria-label="Minh chứng Gate từ tài liệu nguồn"
+                            value={c.evidence || ""}
+                            onChange={(e) =>
+                              updatePhase(
+                                (p) =>
+                                  (p.gate.criteria[i].evidence =
+                                    e.target.value),
+                              )
+                            }
+                          >
+                            <option value="">Chưa chọn minh chứng Gate</option>
+                            {sourceFiles.map((f) => (
+                              <option key={f.id} value={f.url}>
+                                {f.name} · {f.source}
+                              </option>
+                            ))}
+                          </select>
                           <input
                             className={input}
                             aria-label="Trọng số tiêu chí"

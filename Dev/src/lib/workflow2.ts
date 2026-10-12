@@ -7,6 +7,7 @@ export interface Criterion {
   weight: number;
   checked: boolean;
   required: boolean;
+  evidence?: string;
 }
 export interface Milestone {
   id: string;

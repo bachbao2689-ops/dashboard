@@ -78,3 +78,16 @@ pre-created during testing.
 
 The migration is additive and does not backfill the earlier localStorage demo.
 Migration runner reads backend DATABASE_URL without logging credentials.
+
+## Project and Campaign source data
+
+All visible existing Projects/Campaigns appear as connected source records,
+including entities that have not yet initialized a workflow. These retain an
+explicit unconfigured state until a leader defines phases.
+Project assets_url, Campaign attachment_added strategy_asset, and the latest
+subtask details_updated image_url are loaded from their existing sources.
+Project documents are also included in their linked Campaign with provenance.
+URLs are HTTP(S) only and deduplicated within each parent; removed images and
+deleted subtasks are excluded. Source files can be selected as milestone/gate
+evidence; this stores references without duplicating files or task completion.
+Activity-log changes trigger refresh, with polling/focus refresh as fallback.
