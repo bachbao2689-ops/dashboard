@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { workflowLink } from '../../../lib/workflowHub';
 import { X, Edit3, CheckCircle2, MessageSquare, Trash2, Plus, Users, Send } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { supabase } from '../../../services/supabase';
@@ -10,8 +12,15 @@ const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : 
 
 export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: { item: any, kind: 'project' | 'campaign', onClose: () => void, onUpdated?: () => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const profile = useAuthStore(s => s.profile);
   const [data, setData] = useState<any>(item);
+  const [canManage, setCanManage] = useState(false);
+  useEffect(() => {
+    let active = true; setCanManage(false);
+    supabase.rpc('workflow_root', { k: kind, e: item.id }).then(({ data }) => { if (active) setCanManage(data === true); });
+    return () => { active = false; };
+  }, [kind, item.id, profile?.id]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -172,6 +181,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
               <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.creator?.name || data.lead?.name || '---'} src={data.creator?.avatar_url || data.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.creator?.name || data.lead?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
+            <button onClick={() => navigate(workflowLink(kind, item.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button>
             <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || t('tasks.noDescription')}</div></section>
             
             <section>
@@ -230,7 +240,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
           </div>
         )}
       </div>
-      {!editMode && (
+      {!editMode && canManage && (
         <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button>
           <button onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button>

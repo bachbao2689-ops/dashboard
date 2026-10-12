@@ -1,169 +1,66 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
-import mockData from '../data/mock_generated.json';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
 
 export interface Task {
-  id: string;
-  task_ref: string;
-  title: string;
-  status: string;
-  priority: string;
-  due_date: string;
-  start_date?: string;
-  description?: string;
-  project?: { name: string };
-  campaign?: { name: string };
-  assignee_id?: string;
-  assignee?: { id?: string; name: string; avatar_url: string };
-  department?: { name: string };
-  column?: { name: string };
+  id: string; task_ref: string; title: string; status: string; priority: string; due_date: string;
+  start_date?: string; completed_at?: string; description?: string; project_id?: string; campaign_id?: string;
+  department_id?: string; workflow_phase_id?: string; created_at?: string;
+  workflow_status?: string | null;
+  project?: { name: string }; campaign?: { name: string }; assignee_id?: string;
+  assignee?: { id?: string; name: string; avatar_url: string }; department?: { name: string }; column?: { name: string };
 }
-
+// Read all visible pages. RLS is authoritative for department + invitation scope.
+async function allRows(table: string, select: string) {
+  const result: any[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase.from(table).select(select).neq('status', 'deleted').neq('status', 'archived').order('created_at', { ascending: false }).order('id').range(offset, offset + 499);
+    if (error) throw error;
+    result.push(...(data || []));
+    if (!data || data.length < 500) return result;
+  }
+}
 export function useTasks() {
   const profile = useAuthStore(state => state.profile);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchTasks();
-    
-    // Subscribe to realtime changes
-    const channelName = `tasks_channel_${Math.random().toString(36).substr(2, 9)}`;
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        fetchTasks(); // Refresh list on change
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.department_id, profile?.role]);
-
+  const request = useRef(0);
   const fetchTasks = async () => {
+    const token = ++request.current;
+    setLoading(true); setError(null);
     try {
-      setLoading(true);
-      setError(null);
-
-      // INSTANT BYPASS FOR DEV ADMIN
-      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
-        setTasks(mockData.tasks as any);
-        setError('Instant Offline Mode');
-        return;
-      }
-
-      // Never request the shared task list while the signed-in user's profile is
-      // still loading. It prevents a department leader from briefly receiving
-      // another department's data before the department filter is available.
-      if (!profile) {
-        setTasks([]);
-        return;
-      }
-
-      let query = supabase
-        .from('tasks')
-        .select(`
-          id, task_ref, title, status, priority, due_date, start_date, description, assignee_id, project_id, campaign_id, department_id,
-          project:project_id(name),
-          campaign:campaign_id(name),
-          assignee:assignee_id(id, name, avatar_url),
-          department:department_id(name),
-          column:column_id(name)
-        `)
-        .neq('status', 'deleted').order('created_at', { ascending: false });
-
-
-      
-      const [tasksRes, pSubRes, cSubRes] = await Promise.all([
-        query,
-        supabase.from('project_subtasks').select('id, title, due_date, project_id, projects(name, department_id), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted'),
-        supabase.from('campaign_subtasks').select('id, title, due_date, campaign_id, campaigns(name, department_id), assignee:assignee_id(id, name, avatar_url)').neq('status', 'deleted')
+      if (!profile) { setTasks([]); return; }
+      const [real, projects, campaigns] = await Promise.all([
+        allRows('tasks', 'id,task_ref,title,status,priority,due_date,start_date,completed_at,created_at,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(name),campaign:campaign_id(name),assignee:assignee_id(id,name,avatar_url),department:department_id(name),column:column_id(name)'),
+        allRows('project_subtasks', 'id,title,status,due_date,created_at,project_id,workflow_phase_id,workflow_status,projects(name,department_id),assignee:assignee_id(id,name,avatar_url)'),
+        allRows('campaign_subtasks', 'id,title,status,due_date,created_at,campaign_id,workflow_phase_id,workflow_status,campaigns(name,department_id),assignee:assignee_id(id,name,avatar_url)')
       ]);
-
-      if (tasksRes.error) throw tasksRes.error;
-
-
-      let combined: any[] = [...(tasksRes.data || [])];
-
-      if (pSubRes.data) {
-        const pTasks = pSubRes.data.map((ps: any) => ({
-          id: `ps-${ps.id}`,
-          task_ref: null,
-          title: ps.title,
-          status: 'todo',
-          priority: 'Medium',
-          due_date: ps.due_date,
-          project: ps.projects ? { name: ps.projects.name } : null,
-          assignee: ps.assignee,
-          assignee_id: ps.assignee?.id,
-          department_id: ps.projects?.department_id // subtasks get this from projects
-        }));
-        combined = [...combined, ...pTasks];
-      }
-
-      if (cSubRes.data) {
-        const cTasks = cSubRes.data.map((cs: any) => ({
-          id: `cs-${cs.id}`,
-          task_ref: null,
-          title: cs.title,
-          status: 'todo',
-          priority: 'Medium',
-          due_date: cs.due_date,
-          campaign: cs.campaigns ? { name: cs.campaigns.name } : null,
-          assignee: cs.assignee,
-          assignee_id: cs.assignee?.id,
-          department_id: cs.campaigns?.department_id
-        }));
-        combined = [...combined, ...cTasks];
-      }
-
-      // --- NEW RBAC FILTERING ---
-      const isAdminOrManager = ['admin'].includes(profile.role?.toLowerCase() || '') || (profile.role?.toLowerCase() === 'manager' && profile.employment_level !== 'Leader') || profile.employment_level === 'manager';
-      const isLeader = profile.employment_level === 'Leader' || profile.role?.toLowerCase() === 'leader';
-      
-      if (!isAdminOrManager) {
-        // Fetch projects/campaigns owned or member of
-        const [memRes, projRes, campRes] = await Promise.all([
-          supabase.from('project_members').select('project_id').eq('user_id', profile.id),
-          supabase.from('projects').select('id').eq('created_by', profile.id),
-          supabase.from('campaigns').select('id').or(`lead_id.eq.${profile.id},created_by.eq.${profile.id}`)
-        ]);
-        const validProjects = new Set([
-          ...(memRes.data?.map(m => m.project_id) || []),
-          ...(projRes.data?.map(p => p.id) || [])
-        ]);
-        const validCampaigns = new Set(campRes.data?.map(c => c.id) || []);
-
-        combined = combined.filter(t => {
-          
-          // If explicitly assigned
-          if (String(t.assignee_id) === String(profile.id)) return true;
-          // If owns/is member of the parent project/campaign
-          if (t.project_id && validProjects.has(t.project_id)) return true;
-          if (t.campaign_id && validCampaigns.has(t.campaign_id)) return true;
-
-          if (String(t.assignee_id) === String(profile.id)) return true;
-          // If Leader, see everything in their department
-          if (isLeader && String(t.department_id) === String(profile.department_id)) return true;
-          return false;
-        });
-      }
-
-      setTasks(combined as any);
+      const legacy = (items: any[], kind: 'project' | 'campaign') => items.map(s => ({
+        id: `${kind === 'project' ? 'ps' : 'cs'}-${s.id}`, task_ref: '', title: s.title,
+        status: s.status || 'todo', priority: 'medium', due_date: s.due_date, created_at: s.created_at, workflow_phase_id: s.workflow_phase_id, workflow_status: s.workflow_status,
+        [`${kind}_id`]: s[`${kind}_id`], [kind]: s[`${kind}s`] ? { name: s[`${kind}s`].name } : null,
+        assignee: s.assignee, assignee_id: s.assignee?.id, department_id: s[`${kind}s`]?.department_id
+      }));
+      if (token === request.current) setTasks([...real, ...legacy(projects, 'project'), ...legacy(campaigns, 'campaign')] as Task[]);
     } catch (err: any) {
-      console.warn('Error fetching tasks, falling back to Google Sheets mock', err);
-      // OFFLINE FALLBACK TO IMPORTED GOOGLE SHEETS
-      setTasks(mockData.tasks as any);
-      setError(err.message || 'Offline Mode');
-      toast.error('Offline Mode: Loaded Tasks from Google Sheets');
-    } finally {
-      setLoading(false);
-    }
+      // Never substitute fixtures for real assignments after a request failure.
+      if (token === request.current) { setTasks([]); setError(err.message || 'Không thể tải Tasks. Vui lòng thử lại.'); }
+    } finally { if (token === request.current) setLoading(false); }
   };
-
+  useEffect(() => {
+    setTasks([]); void fetchTasks();
+    let channel = supabase.channel(`tasks-${profile?.id}-${Math.random()}`);
+    for (const table of ['tasks', 'project_subtasks', 'campaign_subtasks', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments']) {
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => { void fetchTasks(); });
+    }
+    channel.subscribe();
+    const refresh = () => { void fetchTasks(); };
+    const visibleRefresh = () => { if (document.visibilityState === 'visible') refresh(); };
+    const timer = setInterval(visibleRefresh, 60000);
+    window.addEventListener('focus', visibleRefresh);
+    window.addEventListener('tasks:changed', refresh);
+    return () => { request.current++; clearInterval(timer); window.removeEventListener('focus', visibleRefresh); void supabase.removeChannel(channel); window.removeEventListener('tasks:changed', refresh); };
+  }, [profile?.id, profile?.department_id, profile?.role]);
   return { tasks, loading, error, refetch: fetchTasks };
 }

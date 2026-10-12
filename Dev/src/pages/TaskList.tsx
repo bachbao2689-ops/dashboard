@@ -11,6 +11,7 @@ import { Avatar } from '../components/common/Avatar';
 import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
+import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
@@ -18,7 +19,7 @@ import { useTranslation } from '../i18n/translations';
 
 const mapStatus = (status: string) => {
   const s = status.toLowerCase();
-  if (s.includes('done') || s.includes('hoàn thành')) return 'done';
+  if (s.includes('done') || ['completed', 'complete'].includes(s) || s.includes('hoàn thành')) return 'done';
   if (s.includes('progress') || s.includes('đang')) return 'in-progress';
   if (s.includes('review')) return 'review';
   if (s.includes('overdue')) return 'overdue';
@@ -46,6 +47,7 @@ export const TaskList: React.FC = () => {
 
   
   const profileId = useAuthStore(state => state.profile?.id);
+  const profile = useAuthStore(state => state.profile);
   const canCreateTask = true;
   const [filters, setFilters] = useState({ 
     status: searchParams.get('status') || 'all', 
@@ -516,7 +518,7 @@ export const TaskList: React.FC = () => {
       )}</div>
     
       </div>
-      <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />
+      {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-')) ? <SubtaskDetailPanel subtask={{ ...selectedTask, id: selectedTask.id.slice(3) }} entityType={selectedTask.id.startsWith('ps-') ? 'project_subtask' : 'campaign_subtask'} parentName={selectedTask.project?.name || selectedTask.campaign?.name} profile={profile} people={tasks.filter(t => t.assignee_id && t.assignee?.name).map(t => ({ id: Number(t.assignee_id), name: t.assignee!.name })).filter((p, i, list) => list.findIndex(v => v.id === p.id) === i)} onClose={() => setSelectedTask(null)} onUpdated={updated => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated, id: current.id })); void refetch(); }} /> : <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />}
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title={t('tasks.deleteSelectedTitle')} message={t('tasks.deleteSelectedConfirm')} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
       <ConfirmDeleteModal isOpen={!!taskToDelete} title={t('tasks.deleteTaskTitle')} message={t('tasks.deleteTaskConfirm')} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />

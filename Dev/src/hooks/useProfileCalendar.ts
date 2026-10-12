@@ -40,8 +40,15 @@ export function useProfileCalendar(targetUserId?: string | number) {
       loadingNow = true;
       setLoading(true);
       try {
+        const [mentionRows, campaignMemberships] = await Promise.all([
+          allRows(supabase.from('comments').select('id,task_id').contains('mentions', [Number(profileId)]).order('id')),
+          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id'))
+        ]);
+        const mentionedIds = [...new Set(mentionRows.map(r => r.task_id))];
+        let personalTaskQuery = supabase.from('tasks').select('*,project:project_id(id,name),campaign:campaign_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)');
+        personalTaskQuery = mentionedIds.length ? personalTaskQuery.or(`assignee_id.eq.${profileId},id.in.(${mentionedIds.join(',')})`) : personalTaskQuery.eq('assignee_id', profileId);
         const [tasks, memberships, projectSubtasks, campaignSubtasks, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
-          allRows(supabase.from('tasks').select('*,project:project_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)').eq('assignee_id', profileId).order('id')),
+          allRows(personalTaskQuery.order('id')),
           allRows(supabase.from('project_members').select('project_id,user:user_id(name)').eq('user_id', profileId).order('project_id')),
           allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).neq('status', 'deleted').order('id')),
           allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).neq('status', 'deleted').order('id')),
@@ -54,7 +61,7 @@ export function useProfileCalendar(targetUserId?: string | number) {
         const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').in('id', projectIds).order('id')) : [];
         const linkedProjectMembers = projectIds.length ? await allRows(supabase.from('project_members').select('project_id,user:user_id(name)').in('project_id', projectIds).order('project_id')) : [];
         const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()];
-        const campaignIds = [...new Set([...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
+        const campaignIds = [...new Set([...campaignMemberships.map(row => row.campaign_id), ...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
         const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').in('id', campaignIds).order('id')) : [];
         const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()];
         const projectMap = new Map(projects.map(row => [row.id, row]));
@@ -99,7 +106,7 @@ export function useProfileCalendar(targetUserId?: string | number) {
     reloadRef.current = schedule;
     void load();
     const channel = profileId ? supabase.channel(`profile-calendar-${profileId}`) : null;
-    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_subtasks', 'notifications'].forEach(table => {
+    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'notifications', 'comments', 'workflow_phase_members'].forEach(table => {
       channel?.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
     });
     channel?.subscribe();
@@ -109,12 +116,14 @@ export function useProfileCalendar(targetUserId?: string | number) {
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('projects:changed', schedule);
     window.addEventListener('campaigns:changed', schedule);
+    window.addEventListener('tasks:changed', schedule);
     return () => {
       active = false; clearTimeout(debounce); clearInterval(interval);
       window.removeEventListener('focus', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('projects:changed', schedule);
       window.removeEventListener('campaigns:changed', schedule);
+      window.removeEventListener('tasks:changed', schedule);
       if (channel) void supabase.removeChannel(channel);
     };
   }, [profileId]);

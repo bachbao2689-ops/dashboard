@@ -60,7 +60,6 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
 
   const load = async () => {
     let query = supabase.from('campaigns').select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false });
-    if (profile?.role !== 'admin' && profile?.role !== 'manager' && profile?.department_id) query = query.eq('department_id', profile.department_id);
     const [{ data, error }, { data: allSubtasks }] = await Promise.all([
       query,
       supabase.from('campaign_subtasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').neq('status', 'deleted')
@@ -74,24 +73,8 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
     });
     setSubtaskMap(stMap);
     
-    const isAdminOrManager = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
-    const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
-    
-    if (!isAdminOrManager && data) {
-      const { data: subtasks } = await supabase.from('campaign_subtasks').select('campaign_id').eq('assignee_id', profile?.id).neq('status', 'deleted');
-      const campaignIdsWithSubtasks = new Set((subtasks || []).map(s => s.campaign_id));
-      
-      const filteredData = data.filter(c => {
-        const isLead = String(c.lead_id) === String(profile?.id) || String(c.created_by) === String(profile?.id);
-        const hasSubtask = campaignIdsWithSubtasks.has(c.id);
-        if (isLead || hasSubtask) return true;
-        if (isLeader && String(c.department_id) === String(profile?.department_id)) return true;
-        return false;
-      });
-      setCampaigns(filteredData);
-    } else {
-      setCampaigns(data || []);
-    }
+    // Do not re-filter by department: RLS already scopes explicit cross-team invites.
+    setCampaigns(data || []);
   };
 
   useEffect(() => {

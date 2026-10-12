@@ -6,6 +6,7 @@ import { notifyTaskParticipants } from '../../../services/taskNotifications';
 import { Avatar } from '../../common/Avatar';
 import { useTranslation } from '../../../i18n/translations';
 import toast from 'react-hot-toast';
+import { WorkflowStatusPicker, canonicalWorkflowStatus, type WorkflowTaskStatus } from './WorkflowStatusPicker';
 
 interface TaskDetailPanelProps {
   task: any | null;
@@ -13,13 +14,14 @@ interface TaskDetailPanelProps {
   onClose: () => void;
   onTaskUpdated?: (task?: any) => void;
   floating?: boolean;
+  embedded?: boolean;
 }
 
 type Comment = { id: string; body: string; created_at: string; is_edited: boolean; author?: { name?: string; avatar_url?: string | null } | null };
 
 
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false }) => {
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false, embedded = false }) => {
   const { t } = useTranslation();
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
@@ -30,11 +32,16 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [mentionPeople, setMentionPeople] = useState<{ id: number; name: string }[]>([]);
+  const [mentions, setMentions] = useState<{ id: number; name: string }[]>([]);
+  const mentionQuery = commentText.match(/(?:^|\s)@([^\s@]*)$/)?.[1];
+  const mentionOptions = mentionQuery === undefined ? [] : mentionPeople.filter(p => p.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
   const commentInput = useRef<HTMLTextAreaElement>(null);
 
   const loadComments = useCallback(async () => {
     if (!task?.id) return;
-    const { data, error } = await supabase.from('comments').select('id, body, created_at, is_edited, author:author_id(name, avatar_url)').eq('task_id', task.id).order('created_at', { ascending: true });
+    const { data, error } = await supabase.from('comments').select('id, author_id, body, created_at, is_edited, author:author_id(name, avatar_url)').eq('task_id', task.id).order('created_at', { ascending: true });
     if (error) { console.warn('Could not load task comments:', error.message); return; }
     setComments((data || []) as Comment[]);
   }, [task?.id]);
@@ -43,7 +50,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     setDescription(task?.description || '');
     setEditingDescription(false);
     setCommentText('');
+    setMentions([]);
+    setCanEdit(false);
+    let active = true;
+    if (task?.id && !task.id.startsWith('ps-') && !task.id.startsWith('cs-')) supabase.rpc('workflow_task_access', { tid: task.id, editing: true }).then(({ data }) => { if (active) setCanEdit(data === true); });
+    if (isOpen) supabase.from('users').select('id,name').eq('is_active', true).order('name').then(({ data }) => { if (active) setMentionPeople(data || []); });
     void loadComments();
+    return () => { active = false; };
   }, [task?.id, task?.description, loadComments]);
 
   useEffect(() => {
@@ -68,9 +81,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const saveDescription = async () => {
     if (!task) return;
     setSaving(true);
-    const { error } = await supabase.from('tasks').update({ description, updated_at: new Date().toISOString() }).eq('id', task.id);
+    const { data, error } = await supabase.from('tasks').update({ description, updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
     setSaving(false);
-    if (error) return toast.error('Không thể lưu mô tả');
+    if (error || !data) return toast.error('Không thể lưu mô tả. Kiểm tra lại quyền task.');
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_updated');
     setEditingDescription(false); onTaskUpdated?.({ description }); toast.success('Đã lưu mô tả');
   };
@@ -79,28 +92,38 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const body = commentText.trim();
     if (!task || !profileId || !body) return;
     setSaving(true);
-    const { error } = await supabase.from('comments').insert({ task_id: task.id, author_id: profileId, body });
-    if (!error) await supabase.from('tasks').update({ comments_count: comments.length + 1, updated_at: new Date().toISOString() }).eq('id', task.id);
+    const { error } = await supabase.from('comments').insert({ task_id: task.id, author_id: profileId, body, mentions: mentions.filter(p => body.includes(`@${p.name.replace(/\s+/g, '')}`)).map(p => p.id) });
     setSaving(false);
     if (error) return toast.error('Không thể gửi bình luận');
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_comment');
-    setCommentText(''); await loadComments(); onTaskUpdated?.({ comments_count: comments.length + 1 }); toast.success('Đã gửi bình luận');
+    setCommentText(''); setMentions([]); await loadComments(); onTaskUpdated?.({ comments_count: comments.length + 1 }); toast.success('Đã gửi bình luận');
   };
 
   const completeTask = async () => {
     if (!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
     setSaving(true);
-    const { error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id);
+    const { data, error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
     setSaving(false);
-    if (error) return toast.error('Không thể hoàn thành task');
+    if (error || !data) return toast.error('Không thể hoàn thành task. Kiểm tra lại quyền task.');
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_completed');
     onTaskUpdated?.({ status: 'done' }); toast.success('Task đã hoàn thành');
+  };
+
+  const changePhaseTaskStatus = async (stage: WorkflowTaskStatus) => {
+    if (!canEdit || !task) return;
+    setSaving(true);
+    const status = canonicalWorkflowStatus[stage];
+    const { data, error } = await supabase.from('tasks').update({ status, workflow_status: stage, updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
+    setSaving(false);
+    if (error || !data) return toast.error(error?.message || 'Bạn không còn quyền cập nhật task.');
+    onTaskUpdated?.({ status, workflow_status: stage });
+    window.dispatchEvent(new Event('tasks:changed'));
   };
 
   const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
   return (
     <>
-      {isOpen && (
+      {isOpen && !embedded && (
         <div 
           className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
           onClick={onClose}
@@ -110,18 +133,18 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       <div 
         inert={!isOpen} 
         aria-hidden={!isOpen} 
-        style={{ '--task-panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--task-panel-width)] xl:max-w-[min(var(--task-panel-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} ${floating ? 'z-[110]' : 'z-[70]'} ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
+        style={{ '--task-panel-width': `${width}px` } as React.CSSProperties}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-slate-800' : `dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--task-panel-width)] xl:max-w-[min(var(--task-panel-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} ${floating ? 'z-[110]' : 'z-[70]'} ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
       >
-        {isOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
+        {isOpen && !embedded && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
           <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
           <button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5" /></button>
         </div>
         {task && <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-          <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{task.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? t('common.completed') : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span></div></section>
+          <section><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{task.title}</h2><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? t('common.completed') : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span></div>{task.workflow_phase_id && <div className="mt-4"><WorkflowStatusPicker status={task.status} stage={task.workflow_status} disabled={!canEdit} onChange={changePhaseTaskStatus}/></div>}</section>
           <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700"><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{task.assignee ? <div className="flex items-center gap-2"><Avatar name={task.assignee.name} src={task.assignee.avatar_url || undefined} /><b className="text-sm">{task.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>{task.start_date ? <div className="text-sm flex items-center gap-1.5 flex-wrap"><span className="font-normal text-gray-700 dark:text-gray-300">{new Date(task.start_date).toLocaleDateString('vi-VN')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</span></div> : <b className="text-sm font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>{task.project?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span> : task.campaign?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span> : <b className="text-sm text-gray-400">{t('common.unlinked')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className="text-sm">{task.department?.name || 'N/A'}</b></div></section>
-          <section><div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editingDescription && <button onClick={() => setEditingDescription(true)} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>{editingDescription ? <><textarea value={description} onChange={event => setDescription(event.target.value)} rows={5} className="w-full p-4 rounded-2xl border border-primary/40 bg-white dark:bg-slate-900 outline-none" placeholder={t('tasks.descPlaceholder')} /><div className="flex gap-2 mt-2 justify-end"><button onClick={() => { setDescription(task.description || ''); setEditingDescription(false); }} className="px-3 py-2 text-sm">{t('common.cancel')}</button><button disabled={saving} onClick={saveDescription} className="px-3 py-2 text-sm bg-primary text-white rounded-lg"><Save className="w-4 h-4 inline mr-1" />{t('common.save')}</button></div></> : <div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>}</section>
+          <section><div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{canEdit && !editingDescription && <button onClick={() => setEditingDescription(true)} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>{editingDescription ? <><textarea value={description} onChange={event => setDescription(event.target.value)} rows={5} className="w-full p-4 rounded-2xl border border-primary/40 bg-white dark:bg-slate-900 outline-none" placeholder={t('tasks.descPlaceholder')} /><div className="flex gap-2 mt-2 justify-end"><button onClick={() => { setDescription(task.description || ''); setEditingDescription(false); }} className="px-3 py-2 text-sm">{t('common.cancel')}</button><button disabled={saving} onClick={saveDescription} className="px-3 py-2 text-sm bg-primary text-white rounded-lg"><Save className="w-4 h-4 inline mr-1" />{t('common.save')}</button></div></> : <div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>}</section>
           <section><p className="text-sm font-bold mb-3"><Activity className="w-4 h-4 inline mr-2" />{t('common.activityComments')}</p><div className="space-y-3">{comments.length === 0 && <p className="text-sm text-gray-500">{t('common.noComments')}</p>}<div className="space-y-4">{comments.map(comment => {
               const isMe = String(comment.author?.name) === String(profile?.name) || (comment as any).author_id === profile?.id;
               return (
@@ -139,9 +162,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                   {isMe && <Avatar name={comment.author?.name || 'Staff'} src={comment.author?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
                 </div>
               )
-            })}</div></div><div className="mt-4"><textarea ref={commentInput} value={commentText} onChange={event => setCommentText(event.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (e.nativeEvent.isComposing) return; if (commentText.trim()) void addComment(); } }} rows={3} placeholder={t('common.commentPlaceholder')} className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" /><button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"><Send className="w-4 h-4 inline mr-1" />{t('common.sendComment')}</button></div></section>
+            })}</div></div><div className="mt-4 relative">{mentionOptions.length > 0 && <div className="rounded-xl border border-blue-100 dark:border-slate-700 p-1 mb-2 bg-white dark:bg-slate-800">{mentionOptions.map(p => <button key={p.id} onClick={() => { setMentions(v => [...v.filter(x => x.id !== p.id), p]); setCommentText(v => v.replace(/@[^\s@]*$/, `@${p.name.replace(/\s+/g, '')} `)); commentInput.current?.focus(); }} className="block w-full text-left p-2 text-sm rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700">@{p.name}</button>)}</div>}<textarea ref={commentInput} value={commentText} onChange={event => setCommentText(event.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (e.nativeEvent.isComposing) return; if (commentText.trim()) void addComment(); } }} rows={3} placeholder="Viết bình luận… Gõ @ để nhắc PIC" className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" /><button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold"><Send className="w-4 h-4 inline mr-1" />{t('common.sendComment')}</button></div></section>
         </div>}
-        <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => commentInput.current?.focus()} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button><button disabled={isDone || saving} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary hover:bg-emerald-600 dark:hover:bg-emerald-500 px-3 py-2 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:hover:bg-primary"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? t('common.completed') : t('common.complete')}</button></div>
+        <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => commentInput.current?.focus()} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button><button disabled={isDone || saving || !canEdit} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary hover:bg-emerald-600 dark:hover:bg-emerald-500 px-3 py-2 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:hover:bg-primary"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? t('common.completed') : t('common.complete')}</button></div>
       </div>
     </>
   );

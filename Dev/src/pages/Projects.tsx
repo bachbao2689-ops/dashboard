@@ -1,6 +1,8 @@
 import { StatusBadge } from '../components/common/StatusBadge';
 import { MultiSelect } from '../components/common/MultiSelect';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { workflowLink } from '../lib/workflowHub';
 import { Avatar } from "../components/common/Avatar";
 
 import toast from 'react-hot-toast';
@@ -58,11 +60,21 @@ const getDueStatusLabel = (endDateStr?: string | null) => {
 
 export const Projects: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const profile = useAuthStore(s => s.profile);
   const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'leader' || profile?.employment_level === 'Leader';
   const [projects, setProjects] = useState<Project[]>([]); const [people, setPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
+  const [picMembers, setPicMembers] = useState<Record<string, string[]>>({});
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
+  const [selectedRoot, setSelectedRoot] = useState(false);
+  useEffect(() => {
+    setSelectedRoot(false);
+    const id = selected?.id || selectedCampaign?.id;
+    let active = true;
+    if (id) supabase.rpc('workflow_root', { k: selected ? 'project' : 'campaign', e: id }).then(({ data }) => { if (active) setSelectedRoot(data === true); });
+    return () => { active = false; };
+  }, [selected?.id, selectedCampaign?.id, profile?.id]);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -105,10 +117,9 @@ export const Projects: React.FC = () => {
 
 
 
-  const visiblePeople = useMemo(() => {
-    if (profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader')) return people;
-    return people.filter(person => person.department_id === profile?.department_id);
-  }, [people, profile?.role, profile?.employment_level, profile?.department_id]);
+  // Selecting another department's PIC is an explicit invitation, not a global
+  // read grant. The database limits their workflow scope to parent or phase.
+  const visiblePeople = people;
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);
   const projectMentionQuery = useMemo(() => comment.match(/(?:^|\s)@([^\s@]*)$/)?.[1]?.toLowerCase() || null, [comment]);
   const projectMentionOptions = useMemo(() => projectMentionQuery === null ? [] : visiblePeople.filter(person => person.name.toLowerCase().includes(projectMentionQuery)).slice(0, 5), [projectMentionQuery, visiblePeople]);
@@ -136,39 +147,31 @@ export const Projects: React.FC = () => {
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
   const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
 
-  const canViewAll = profile?.role === 'admin' || profile?.employment_level?.toLowerCase() === 'admin' || profile?.employment_level?.toLowerCase() === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
-  const isLeader = profile?.employment_level === 'Leader' || profile?.role?.toLowerCase() === 'leader';
-
-  const visibleProjects = useMemo(() => {
-    if (canViewAll) return projects;
-    return projects.filter(p => {
-      const isOwner = String(p.created_by) === String(profile?.id);
-      const isMember = (members[p.id] || []).includes(String(profile?.id));
-      const hasSubtask = (subtaskMembers[p.id] || []).includes(String(profile?.id));
-      if (isOwner || isMember || hasSubtask) return true;
-      if (isLeader && String(p.department_id) === String(profile?.department_id)) return true;
-      return false;
-    });
-  }, [projects, profile, canViewAll, isLeader, members, subtaskMembers]);
+  // RLS includes department, full PIC and phase/task invitation exceptions.
+  const visibleProjects = projects;
 
 
   const load = async () => {
+    if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
     const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('users').select('id,name,department_id,avatar_url,departments(name)').eq('is_active', true).order('name'),
-      supabase.from('project_members').select('project_id,user_id'),
+      supabase.from('project_members').select('project_id,user_id,workflow_role'),
       supabase.from('project_comments').select('project_id'),
       supabase.from('project_subtasks').select('project_id,assignee_id').neq('status', 'deleted')
     ]);
     if (projectRes.error) return toast.error('Không thể tải Project');
     setProjects(projectRes.data || []); setPeople((peopleRes.data as any) || []);
+    setSelected(current => current ? (projectRes.data || []).find(p => p.id === current.id) || null : null);
     setMembers((memberRes.data || []).reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
+    setPicMembers((memberRes.data || []).filter(item => item.workflow_role === 'pic').reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
     
     const commentsMap: Record<string, boolean> = {};
     (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
     setHasComments(commentsMap);
-    const { data: campaignData } = await supabase.from('campaigns').select('id,name,start_date,end_date,lead_id,department_id').neq('status', 'archived').neq('status', 'deleted').order('name');
-    setCampaigns((campaignData || []).filter(c => canViewAll || (profile?.department_id && c.department_id === profile.department_id) || c.lead_id === profile?.id));
+    const { data: campaignData } = await supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url),creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('name');
+    setCampaigns(campaignData || []);
+    setSelectedCampaign((current: any) => current ? (campaignData || []).find(c => c.id === current.id) || null : null);
     const { data: creationDetails } = await supabase.from('activity_log').select('entity_id,metadata').eq('entity_type', 'project').eq('action', 'creation_details');
     setProjectPrimaryOwners(Object.fromEntries((creationDetails || []).map(row => [row.entity_id, row.metadata?.primary_owner_id])));
 
@@ -193,7 +196,7 @@ export const Projects: React.FC = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => { load(); setRefreshDetailTrigger(v => v + 1); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [profile?.id, profile?.department_id]);
 
   useEffect(() => {
     if (!selected) return;
@@ -269,7 +272,7 @@ export const Projects: React.FC = () => {
       setPrimaryOwnerId(String(campaign.lead_id));
       setOwnerIds(ids => Array.from(new Set([...ids, String(campaign.lead_id)])));
     }
-    setDepartmentId(campaign.department_id || profile?.department_id || '');
+    setDepartmentId(profile?.department_id || '');
   };
 
   const resolveAttachmentUrl = async (scope: 'projects' | 'campaigns') => {
@@ -287,7 +290,7 @@ export const Projects: React.FC = () => {
     if (!canCreate || !profile?.id) return toast.error('Bạn không có quyền tạo mới.');
     if (!title.trim() || !primaryOwnerId) return toast.error('Nhập tên và chọn người phụ trách chính.');
     const allowed = new Set(visiblePeople.map(person => String(person.id)));
-    const selectedPeople = creationType === 'project' ? [primaryOwnerId, ...ownerIds, ...executionMemberIds] : [primaryOwnerId];
+    const selectedPeople = [primaryOwnerId, ...ownerIds, ...(creationType === 'project' ? executionMemberIds : [])];
     if (selectedPeople.some(id => !allowed.has(id))) return toast.error('PIC nằm ngoài phạm vi được giao việc.');
     const startDate = parseYMD(start), endDate = parseYMD(due);
     if (startDate && endDate && endDate < startDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu trở đi.');
@@ -310,6 +313,8 @@ export const Projects: React.FC = () => {
           workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile.id
         }).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single();
         if (error || !campaign) throw error || new Error('Không nhận được Campaign vừa tạo.');
+        const { error: picError } = await supabase.from('campaign_members').insert(Array.from(new Set([primaryOwnerId, ...ownerIds])).map(id => ({ campaign_id: campaign.id, user_id: Number(id), workflow_role: 'pic' })));
+        if (picError) toast.error('Campaign đã tạo nhưng chưa lưu được PIC bổ sung.');
         setCreateOpen(false); resetCreateForm(); setSelected(null); setSelectedCampaign(campaign); setCampaignEditMode(false);
         if (asset) {
           const { error: assetError } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'attachment_added', entity_type: 'campaign', entity_id: campaign.id, metadata: { strategy_asset: asset } });
@@ -331,7 +336,7 @@ export const Projects: React.FC = () => {
         if (error || !project) throw error || new Error('Không nhận được Project vừa tạo.');
         // Once created, leave the create form so a retry cannot duplicate the project.
         setCreateOpen(false); resetCreateForm(); setSelectedCampaign(null); setSelected(project); setEditMode(false);
-        const { error: memberError } = await supabase.from('project_members').insert(participantIds.map(user_id => ({ project_id: project.id, user_id: Number(user_id) })));
+        const { error: memberError } = await supabase.from('project_members').insert(participantIds.map(user_id => ({ project_id: project.id, user_id: Number(user_id), workflow_role: picIds.includes(user_id) ? 'pic' : 'sub_pic' })));
         if (memberError) toast.error('Project đã tạo nhưng chưa lưu được PIC. Mở Chỉnh sửa để bổ sung.');
         const { error: metadataError } = await supabase.from('activity_log').insert({
           workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id,
@@ -403,8 +408,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     if (!title || !selected) return;
     const { data, error } = await supabase.from('projects').update({ name: title, description, start_date: parseYMD(start), due_date: parseYMD(due), priority }).eq('id', selected.id).select().single();
     if (error || !data) return toast.error('Lỗi cập nhật');
-    await supabase.from('project_members').delete().eq('project_id', selected.id);
-    if (ownerIds.length) await supabase.from('project_members').insert(ownerIds.map(user_id => ({ project_id: data.id, user_id: Number(user_id) })));
+    const { error: picError } = await supabase.rpc('workflow_set_parent_pics', { p_kind: 'project', p_parent: data.id, p_ids: ownerIds.map(Number) });
+    if (picError) { toast.error(picError.message); return; }
     setEditMode(false); load(); toast.success('Đã lưu thông tin');
     await notifyStakeholders('project', selected.id, 'đã cập nhật thông tin dự án: ' + title);
     setSelected({ ...selected, name: title, description, start_date: parseYMD(start), due_date: parseYMD(due), priority });
@@ -602,7 +607,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <div className="space-y-7 animate-in fade-in duration-200">
               <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selected?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(members[selected?.id || ''] || []).length > 0 ? (members[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
-      <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || t('tasks.noDescription')}</div></section>
+      <button onClick={() => navigate(workflowLink('project', selected.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || t('tasks.noDescription')}</div></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.map(s=>(
   <div key={s.id} onClick={() => { const own = Number(s.assignee_id) === Number(profile?.id); if (own || canCreate) setSelectedSubtask(s); }} className={`p-3 rounded-xl border text-sm group relative transition-all ${(s.status || '').toLowerCase() === 'completed' ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer hover-row-effect hover:border-transparent' : ''}`}>
     {editingSubtaskId === s.id ? (
@@ -674,7 +679,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
             </div>
             )}
           </div>
-          {!editMode && (<div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selected.name); setDescription(selected.description || ''); setStart(selected.start_date || ''); setDue(selected.due_date || ''); setPriority(selected.priority || 'medium'); setOwnerIds(members[selected.id] || []); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeProject} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>)}
+          {!editMode && selectedRoot && (<div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selected.name); setDescription(selected.description || ''); setStart(selected.start_date || ''); setDue(selected.due_date || ''); setPriority(selected.priority || 'medium'); setOwnerIds(picMembers[selected.id] || []); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeProject} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>)}
         </div>
       )}
       {selectedCampaign && (
@@ -684,7 +689,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
             <button onClick={() => setSelectedCampaign(null)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
           </div>
           <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><select value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="">{t('common.selectPic')}</option>{visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm" /></div><div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">{t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selectedCampaign.status || 'planning'}</span></div><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.lead?.name || t('common.unassigned')} src={(selectedCampaign as any)?.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.lead?.name || t('common.unassigned')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
+            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><select value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="">{t('common.selectPic')}</option>{visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm" /></div><div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">{t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selectedCampaign.status || 'planning'}</span></div><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.lead?.name || t('common.unassigned')} src={(selectedCampaign as any)?.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.lead?.name || t('common.unassigned')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><button onClick={() => navigate(workflowLink('campaign', selectedCampaign.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
 <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted').map(s => (
   <div key={s.id} className={`group p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 border transition-all duration-300 text-sm cursor-pointer ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'border-emerald-400 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white/50 dark:bg-slate-900/50 dark:hover:border-slate-700'}`} onClick={() => setSelectedSubtask(s)}>
     {campaignEditingSubtaskId === s.id ? (
@@ -753,7 +758,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         );
       })}</div><div className="mt-4 relative"><textarea ref={campaignCommentInput} value={campaignComment} onChange={e=>setCampaignComment(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (e.nativeEvent.isComposing) return; if (campaignComment.trim()) void addCampaignComment(); } }} rows={3} placeholder={t('common.commentPlaceholder')} className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" />{campaignMentionOptions.length > 0 && <div className="absolute bottom-full mb-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-800">{campaignMentionOptions.map(person => <button key={person.id} onMouseDown={event => event.preventDefault()} onClick={() => chooseCampaignMention(person)} className="block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700"><b>{person.name}</b><span className="ml-2 text-xs text-gray-400">@{person.name.replace(/\s+/g, '')}</span></button>)}</div>}<div className="mt-2 flex justify-end"><button disabled={!campaignComment.trim()} onClick={addCampaignComment} className="px-4 py-2 bg-[#002e6d] text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5 shadow-sm hover:bg-[#002150] transition-colors"><Send size={14} /> {t('common.sendComment')}</button></div></div></section></div>}
           </div>
-          {!campaignEditMode && <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selectedCampaign.name); setStart(selectedCampaign.start_date || ''); setDue(selectedCampaign.end_date || ''); setCampaignObjective(selectedCampaign.objective || ''); setCampaignBudget(selectedCampaign.budget ? String(selectedCampaign.budget) : ''); setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : ''); setCampaignEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeCampaign} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>}
+          {!campaignEditMode && selectedRoot && <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selectedCampaign.name); setStart(selectedCampaign.start_date || ''); setDue(selectedCampaign.end_date || ''); setCampaignObjective(selectedCampaign.objective || ''); setCampaignBudget(selectedCampaign.budget ? String(selectedCampaign.budget) : ''); setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : ''); setCampaignEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeCampaign} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>}
         </div>
       )}
     </div>
@@ -789,7 +794,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         </div>
 
         <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">{t('projects.primaryOwner')} <span className="text-red-500">*</span></label>
-          {creationType === 'project' ? <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} /> : <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name}))} value={primaryOwnerId ? [primaryOwnerId] : []} maxSelected={1} onChange={(ids: string[]) => setPrimaryOwnerId(ids[0] || '')} placeholder={t('common.selectPic')} />}
+          <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name + (p.departments?.name ? ` · ${p.departments.name}` : '')}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} />
+          <p className="text-xs text-gray-500">PIC ở đây được xem toàn bộ lộ trình. Người chỉ tham gia một phase cần được tag trong Workflow của phase đó.</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('projects.primaryOwnerNote')}</p>
         </div>
 
