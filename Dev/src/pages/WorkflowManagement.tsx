@@ -3,7 +3,7 @@ import {
   FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
   ChevronDown, ChevronUp, X, Globe, Code2, Info, Search,
-  Calendar, User, Edit3, Trash2, Eye, Check, Clock
+  Calendar, User, Edit3, Trash2, Eye, Check, Clock, Zap, Target
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -2119,135 +2119,277 @@ export const WorkflowManagement: React.FC = () => {
 
       </div>
 
-      {/* 4. DATA VISUALIZATION & PERFORMANCE CHARTS ROW */}
+      {/* 4. DATA VISUALIZATION & PERFORMANCE CHARTS ROW - CYBER LIQUID GLASS EDITION */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Chart 1: Donut Chart - Trạng thái Task tháng này (5 Cols) */}
-        <div className="lg:col-span-5 card-hub p-5 rounded-2xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-3 mb-2">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
-                  <Activity size={16} className="text-primary" />
-                  Trạng thái Task Tháng Này
-                </h3>
-                <span className="text-[11px] text-gray-400">Tháng 10/2026 · Tổng {totalMonthTasks} tasks</span>
+        <div className="lg:col-span-5 p-5 sm:p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden transition-all duration-300 backdrop-blur-[24px] saturate-[180%] bg-gradient-to-br from-white/90 via-blue-50/50 to-white/80 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-slate-800/70 border border-white/90 dark:border-slate-700/80 shadow-[0_12px_36px_rgba(18,48,94,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(180,210,255,0.25)] hover:shadow-[0_16px_44px_rgba(18,48,94,0.12),inset_0_1px_0_rgba(255,255,255,1)]">
+          {/* Ambient Liquid Glow Orbs */}
+          <div className="absolute -top-16 -right-16 w-52 h-52 bg-gradient-to-br from-blue-400/20 to-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-gradient-to-tr from-cyan-400/15 to-indigo-400/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10">
+            {/* Header with Liquid Glass Pill Badge */}
+            <div className="flex items-center justify-between border-b border-white/80 dark:border-slate-700/60 pb-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-b from-blue-100/95 to-blue-200/70 dark:from-blue-500/35 dark:to-cyan-500/15 text-blue-700 dark:text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_3px_10px_rgba(30,90,170,0.18)] ring-1 ring-blue-300/80 dark:ring-blue-300/40 flex items-center justify-center shrink-0">
+                  <Activity size={18} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
+                    Trạng thái Task Tháng Này
+                  </h3>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                    Tháng 10/2026 · Tổng {totalMonthTasks} tasks
+                  </span>
+                </div>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
-                Current Month
+              <span className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-gradient-to-b from-blue-100/90 to-blue-200/60 dark:from-blue-500/25 dark:to-cyan-500/15 text-blue-700 dark:text-cyan-200 ring-1 ring-blue-300/70 dark:ring-blue-400/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(30,90,170,0.12)]">
+                Active Cycle
               </span>
             </div>
 
-            {/* Donut Chart */}
-            <div className="h-56 relative flex items-center justify-center">
+            {/* Donut Chart with Center 3D Glass Orb */}
+            <div className="h-60 relative flex items-center justify-center my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <defs>
+                    {/* Linear gradients for donut slices */}
+                    <linearGradient id="grad-done" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                    <linearGradient id="grad-progress" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                    <linearGradient id="grad-review" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#c084fc" />
+                      <stop offset="100%" stopColor="#7c3aed" />
+                    </linearGradient>
+                    <linearGradient id="grad-overdue" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#f87171" />
+                      <stop offset="100%" stopColor="#dc2626" />
+                    </linearGradient>
+                    <linearGradient id="grad-todo" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#94a3b8" />
+                      <stop offset="100%" stopColor="#475569" />
+                    </linearGradient>
+                    <filter id="donutGlassGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.15" />
+                    </filter>
+                  </defs>
                   <Pie
                     data={currentMonthTaskStats}
-                    innerRadius={55}
-                    outerRadius={80}
+                    innerRadius={68}
+                    outerRadius={94}
                     paddingAngle={4}
+                    cornerRadius={6}
                     dataKey="value"
+                    stroke="rgba(255,255,255,0.7)"
+                    strokeWidth={1.5}
+                    filter="url(#donutGlassGlow)"
                   >
-                    {currentMonthTaskStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {currentMonthTaskStats.map((_, index) => {
+                      const gradIds = ['url(#grad-done)', 'url(#grad-progress)', 'url(#grad-review)', 'url(#grad-overdue)', 'url(#grad-todo)'];
+                      return <Cell key={`cell-${index}`} fill={gradIds[index % gradIds.length]} />;
+                    })}
                   </Pie>
                   <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                      borderRadius: '12px',
-                      border: '1px solid #334155',
-                      color: '#fff',
-                      fontSize: '12px'
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0];
+                        const pct = totalMonthTasks > 0 ? Math.round(((Number(data.value) || 0) / totalMonthTasks) * 100) : 0;
+                        return (
+                          <div className="backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/90 dark:border-slate-700/80 p-3 rounded-2xl shadow-[0_12px_32px_rgba(18,48,94,0.2),inset_0_1px_0_rgba(255,255,255,0.9)] text-xs min-w-[170px] space-y-1.5 animate-in fade-in zoom-in-95">
+                            <div className="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 pb-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: data.payload.color, color: data.payload.color }} />
+                              <span className="font-bold text-gray-900 dark:text-white truncate">{data.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                              <span>Số lượng:</span>
+                              <b className="font-bold text-gray-900 dark:text-white">{data.value} tasks</b>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-slate-800">
+                              <span>Tỷ trọng:</span>
+                              <b className="text-primary font-bold">{pct}%</b>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Center percentage label */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xs text-gray-400">Hoàn thành</span>
-                <b className="text-xl font-extrabold text-emerald-500">
-                  {Math.round((currentMonthTaskStats[0].value / (totalMonthTasks || 1)) * 100)}%
-                </b>
+              {/* Center 3D Liquid Glass Orb Hub */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-28 h-28 rounded-full bg-gradient-to-b from-white/95 via-blue-50/70 to-white/90 dark:from-slate-800/95 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-md shadow-[0_8px_24px_rgba(18,48,94,0.12),inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(147,197,253,0.3)] ring-1 ring-white/90 dark:ring-slate-700/80 flex flex-col items-center justify-center p-2 transition-transform duration-300">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                    <Zap size={10} className="fill-emerald-500 text-emerald-500" /> Hoàn tất
+                  </span>
+                  <b className="text-2xl font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent tracking-tight my-0.5">
+                    {Math.round((currentMonthTaskStats[0].value / (totalMonthTasks || 1)) * 100)}%
+                  </b>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                    {currentMonthTaskStats[0]?.value || 0}/{totalMonthTasks} tasks
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Legends */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-slate-700/60 text-xs">
-            {currentMonthTaskStats.map(stat => (
-              <div key={stat.name} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: stat.color }} />
-                <span className="text-gray-500 dark:text-gray-400 truncate text-[11px]">{stat.name}:</span>
-                <b className="text-gray-900 dark:text-white ml-auto">{stat.value}</b>
-              </div>
-            ))}
+          {/* Liquid Glass Capsule Legends */}
+          <div className="relative z-10 grid grid-cols-2 gap-2 pt-3 border-t border-white/80 dark:border-slate-700/60">
+            {currentMonthTaskStats.map(stat => {
+              const pct = totalMonthTasks > 0 ? Math.round((stat.value / totalMonthTasks) * 100) : 0;
+              return (
+                <div
+                  key={stat.name}
+                  className="p-2 rounded-xl bg-gradient-to-b from-white/85 to-blue-50/45 dark:from-slate-800/75 dark:to-slate-800/40 border border-white/90 dark:border-slate-700/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(18,48,94,0.04)] flex items-center justify-between gap-1.5 transition-all duration-200 hover:scale-[1.02]"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 shadow-[0_0_8px_currentColor]"
+                      style={{ backgroundColor: stat.color, color: stat.color }}
+                    />
+                    <span className="text-gray-600 dark:text-gray-300 truncate text-[11px] font-medium">
+                      {stat.name.split(' (')[0]}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <b className="text-gray-900 dark:text-white text-[12px] font-bold">{stat.value}</b>
+                    <span className="text-[10px] px-1 py-0.2 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-300 font-semibold">
+                      {pct}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Chart 2: Performance & Velocity Charts Row (7 Cols) */}
-        <div className="lg:col-span-7 card-hub p-5 rounded-2xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-3 mb-4">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
-                  <BarChart2 size={16} className="text-primary" />
-                  Hiệu Suất Thực Thi & Vận Tốc (Burndown & Velocity)
-                </h3>
-                <span className="text-[11px] text-gray-400">
-                  Tiến độ bàn giao so với kế hoạch mục tiêu theo từng chặng
-                </span>
+        <div className="lg:col-span-7 p-5 sm:p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden transition-all duration-300 backdrop-blur-[24px] saturate-[180%] bg-gradient-to-br from-white/90 via-blue-50/50 to-white/80 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-slate-800/70 border border-white/90 dark:border-slate-700/80 shadow-[0_12px_36px_rgba(18,48,94,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(180,210,255,0.25)] hover:shadow-[0_16px_44px_rgba(18,48,94,0.12),inset_0_1px_0_rgba(255,255,255,1)]">
+          {/* Ambient Liquid Glow Orbs */}
+          <div className="absolute -top-16 -left-16 w-52 h-52 bg-gradient-to-br from-blue-500/20 to-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -right-16 w-52 h-52 bg-gradient-to-tl from-indigo-500/15 to-teal-400/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between border-b border-white/80 dark:border-slate-700/60 pb-3 mb-3 gap-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-b from-blue-100/95 to-blue-200/70 dark:from-blue-500/35 dark:to-cyan-500/15 text-blue-700 dark:text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_3px_10px_rgba(30,90,170,0.18)] ring-1 ring-blue-300/80 dark:ring-blue-300/40 flex items-center justify-center shrink-0">
+                  <BarChart2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
+                    Hiệu Suất Thực Thi & Vận Tốc (Burndown & Velocity)
+                  </h3>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                    Tiến độ bàn giao so với kế hoạch mục tiêu theo từng chặng Website Build
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1.5 text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Thực tế
-                </span>
-                <span className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-0.5 bg-gray-400" /> Mục tiêu
-                </span>
+              {/* Liquid Glass Legend Indicators */}
+              <div className="flex items-center gap-2">
+                <div className="px-2.5 py-1 rounded-xl bg-gradient-to-b from-blue-500/15 to-blue-600/10 border border-blue-400/30 text-blue-700 dark:text-blue-300 flex items-center gap-1.5 text-xs font-semibold shadow-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]" />
+                  <span>Thực tế</span>
+                </div>
+                <div className="px-2.5 py-1 rounded-xl bg-gradient-to-b from-slate-100/80 to-slate-200/40 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-300/50 dark:border-slate-700/60 text-gray-600 dark:text-gray-400 flex items-center gap-1.5 text-xs font-semibold shadow-xs">
+                  <Target size={12} className="text-gray-400" />
+                  <span>Mục tiêu</span>
+                </div>
+                <div className="px-2.5 py-1 rounded-xl bg-gradient-to-b from-emerald-100/90 to-teal-200/60 dark:from-emerald-500/25 dark:to-teal-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-400/30 text-[11px] font-bold flex items-center gap-1 shadow-xs">
+                  <Zap size={11} className="fill-emerald-500 text-emerald-500" />
+                  <span>1.8d/task</span>
+                </div>
               </div>
             </div>
 
-            {/* Area Chart */}
-            <div className="h-60 w-full">
+            {/* Cyber Liquid Glass Area Chart */}
+            <div className="h-60 w-full my-1">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={performanceTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={performanceTrendData} margin={{ top: 12, right: 12, left: -18, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                    {/* Multi-stop liquid area gradient */}
+                    <linearGradient id="cyberVelocityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.45} />
+                      <stop offset="40%" stopColor="#06b6d4" stopOpacity={0.22} />
+                      <stop offset="85%" stopColor="#3b82f6" stopOpacity={0.05} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
                     </linearGradient>
+                    <filter id="neonLineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#2563eb" floodOpacity="0.35" />
+                    </filter>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.18)" vertical={false} />
                   <XAxis
                     dataKey="period"
-                    tick={{ fontSize: 10, fill: '#94a3b8' }}
-                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.25)' }}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: '#94a3b8' }}
-                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }}
+                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.25)' }}
                   />
                   <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                      borderRadius: '12px',
-                      border: '1px solid #334155',
-                      color: '#fff',
-                      fontSize: '12px'
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/90 dark:border-slate-700/80 p-3.5 rounded-2xl shadow-[0_12px_32px_rgba(18,48,94,0.22),inset_0_1px_0_rgba(255,255,255,0.95)] text-xs space-y-2 min-w-[200px] animate-in fade-in zoom-in-95">
+                            <div className="font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-slate-800 pb-1.5 flex items-center justify-between">
+                              <span className="truncate">{label}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100/90 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
+                                Milestone
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]" />
+                                Thực tế bàn giao:
+                              </span>
+                              <b className="text-blue-600 dark:text-blue-400 font-extrabold text-[13px]">{data.actual} tasks</b>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-0.5 bg-gray-400" />
+                                Mục tiêu kế hoạch:
+                              </span>
+                              <span className="font-semibold">{data.plan} tasks</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 dark:border-slate-800 text-[11px] text-emerald-600 dark:text-emerald-400">
+                              <span className="flex items-center gap-1 font-semibold">
+                                <Zap size={12} className="fill-emerald-500 text-emerald-500" /> Vận tốc thực thi:
+                              </span>
+                              <b className="font-bold">{data.velocity} ngày/task</b>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="actual"
                     name="Thực tế xong (Tasks)"
-                    stroke="#3b82f6"
-                    strokeWidth={2.5}
+                    stroke="#2563eb"
+                    strokeWidth={3}
+                    filter="url(#neonLineGlow)"
                     fillOpacity={1}
-                    fill="url(#velocityGradient)"
+                    fill="url(#cyberVelocityGradient)"
+                    activeDot={{
+                      r: 6,
+                      stroke: '#ffffff',
+                      strokeWidth: 2.5,
+                      fill: '#2563eb',
+                      filter: 'drop-shadow(0 0 6px #2563eb)'
+                    }}
                   />
                   <Area
                     type="monotone"
@@ -2255,7 +2397,7 @@ export const WorkflowManagement: React.FC = () => {
                     name="Kế hoạch cam kết"
                     stroke="#94a3b8"
                     strokeDasharray="4 4"
-                    strokeWidth={1.8}
+                    strokeWidth={2}
                     fill="none"
                   />
                 </AreaChart>
@@ -2263,11 +2405,23 @@ export const WorkflowManagement: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
-            <span>Đánh giá nhịp độ:</span>
-            <span className="font-semibold text-emerald-500">
-              🟢 Tiến độ thực tế đang bám sát 98.4% kế hoạch kỳ vọng
-            </span>
+          {/* Liquid Glass Status Ribbon */}
+          <div className="relative z-10 p-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-teal-500/10 dark:from-emerald-900/25 dark:via-blue-900/25 dark:to-teal-900/25 border border-emerald-400/35 dark:border-emerald-500/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_2px_8px_rgba(16,185,129,0.08)] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+              </span>
+              <span className="font-bold text-gray-800 dark:text-gray-200">Đánh giá nhịp độ & Velocity:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                Tiến độ thực tế đang bám sát 98.4% kế hoạch kỳ vọng
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                +8.2% vận tốc
+              </span>
+            </div>
           </div>
         </div>
 
