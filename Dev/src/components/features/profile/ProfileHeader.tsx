@@ -63,9 +63,11 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
 
   return (
     <>
-    <div className="card-hub relative overflow-hidden rounded-2xl p-4 shadow-sm sm:p-5">
+    <div className="card-hub relative rounded-2xl p-4 shadow-sm sm:p-5">
       {/* Decorative background blur */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
+      </div>
       
       <div className="relative z-10 flex flex-wrap items-center gap-4">
         
