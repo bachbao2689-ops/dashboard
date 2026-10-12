@@ -811,10 +811,9 @@ export const WorkflowManagement: React.FC = () => {
     toast.success(`🎉 Phê duyệt Gate thành công! Đã mở khóa: ${phases[nextIdx]?.name}`);
   };
 
-  // Handle clicking on a Phase node in the Stepper
+  // Handle clicking on a Phase node in the Stepper (Updates active phase for performance visualization; does not open detail tasks)
   const handlePhaseClick = (index: number) => {
     setActivePhaseIndex(index);
-    setIsDetailOpen(true); // Open details board automatically on click
   };
 
   // Monthly Task Status Breakdown for Donut Chart
@@ -839,16 +838,21 @@ export const WorkflowManagement: React.FC = () => {
     return currentMonthTaskStats.reduce((acc, curr) => acc + curr.value, 0);
   }, [currentMonthTaskStats]);
 
-  // Performance Burndown / Velocity Chart Data for Website Build
+  // Performance Burndown / Velocity Chart Data mapped dynamically to Phases
   const performanceTrendData = useMemo(() => {
-    return [
-      { period: 'Tuần 1 (Discovery)', plan: 15, actual: 18, velocity: 1.5 },
-      { period: 'Tuần 2 (UI/UX Wireframe)', plan: 35, actual: 38, velocity: 1.7 },
-      { period: 'Tuần 3 (Design System)', plan: 55, actual: 52, velocity: 2.1 },
-      { period: 'Tuần 4 (Frontend Dev)', plan: 75, actual: 72, velocity: 1.8 },
-      { period: 'Tuần 5 (Testing & Release)', plan: 100, actual: 94, velocity: 1.6 }
-    ];
-  }, []);
+    return phases.map((p, idx) => {
+      const isPast = idx < activePhaseIndex;
+      const isCurrent = idx === activePhaseIndex;
+      const planVal = Math.round(((idx + 1) / phases.length) * 100);
+      const actualVal = isPast ? 100 : isCurrent ? p.progress : 0;
+      return {
+        period: `Chặng ${idx + 1} (${p.name.length > 14 ? p.name.substring(0, 14) + '...' : p.name})`,
+        plan: planVal,
+        actual: actualVal,
+        velocity: idx === 1 ? 1.7 : idx === 2 ? 2.1 : idx === 3 ? 1.8 : 1.5
+      };
+    });
+  }, [phases, activePhaseIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2295,9 +2299,9 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
-            <span>Đánh giá nhịp độ:</span>
+            <span>Đánh giá nhịp độ ({activePhase.name}):</span>
             <span className="font-semibold text-emerald-500">
-              🟢 Tiến độ thực tế đang bám sát 98.4% kế hoạch kỳ vọng
+              🟢 Tiến độ đạt {activePhase.progress}% kế hoạch — Xác suất Gate {gatePassChancePct}%
             </span>
           </div>
         </div>
