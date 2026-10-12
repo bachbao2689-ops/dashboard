@@ -1,5 +1,9 @@
 # Real Workflow Management
 
+## Current UI release (2026-10-12)
+
+The user approved the isolated `3161bf0` UI preview and explicitly requested release to both develop and main. `WorkflowManagement.tsx` is restored verbatim from that revision. Its default website/campaign fixtures, KPI fallbacks, and phase/task edits are prototype state; those edits do not persist to Supabase. Existing parent/task reads still use Supabase. The real-data migration, permission helpers, shared task tracking, and other screens are retained. The architecture below describes the retained real-data implementation, not the restored prototype UI's current phase/task behavior. Preview entry files remain local and are excluded from the release commit.
+
 ## Source and tracking
 
 - `/projects` is the only parent creation screen. Insert triggers/backfill create one `workflow_tracks` row per real parent; no sample phases/tasks/PICs.
