@@ -82,15 +82,75 @@ button:disabled { cursor: not-allowed; }
 /* Primary actions retain white text and a saturated background. */
 .dark .bg-primary { background-color: #185ba5; }
 .dark .bg-primary.text-white { color: #fff; }
+/* ========================================================
+   Sidebar Left — Liquid Glass Navigation (per GUIDELINE/UI Button.md)
+   NOTE: STRICTLY APPLIED ONLY TO LIGHT MODE (html:not(.dark)).
+   Dark mode rules are untouched below.
+   ======================================================== */
 .app-sidebar.card-hub { overflow: hidden; }
-.sidebar-link { border: 1px solid transparent; position: relative; }
-.sidebar-link-idle { color: var(--color-primary); }
-.sidebar-link-idle:hover { color: var(--color-primary); background: rgba(0, 46, 109, 0.05); }
-.sidebar-link-active {
-  color: var(--color-primary);
-  background: #ffffff;
-  border-color: var(--color-primary);
-  box-shadow: none;
+.sidebar-link { position: relative; }
+
+/* Light mode outer sidebar shell */
+html:not(.dark) .app-sidebar.card-hub {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(226, 239, 255, 0.70)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 12px 32px rgba(18, 48, 94, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+}
+
+/* Light mode navigation links */
+html:not(.dark) .sidebar-link {
+  border-radius: 14px;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .sidebar-link-idle {
+  color: #4b5563 !important; /* text-gray-600 */
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+html:not(.dark) .sidebar-link-idle:hover {
+  color: #002e6d !important; /* hover:text-primary */
+  background: rgba(226, 239, 255, 0.55) !important;
+  border-color: rgba(191, 219, 254, 0.50) !important;
+}
+
+html:not(.dark) .sidebar-link-idle svg {
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+html:not(.dark) .sidebar-link-idle:hover svg {
+  color: #002e6d;
+}
+
+/* Light mode active button (matching UI Button.md) */
+html:not(.dark) .sidebar-link-active {
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70)) !important;
+  color: #1d4ed8 !important; /* text-blue-700 */
+  border: 1px solid rgba(147, 197, 253, 0.80) !important; /* ring-1 ring-blue-300/80 */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px rgba(30, 90, 170, 0.18) !important;
+  font-weight: 600 !important;
+}
+
+html:not(.dark) .sidebar-link-active svg {
+  color: #1d4ed8 !important;
+}
+
+/* Small active indicator dot on the right edge */
+html:not(.dark) .sidebar-link-active::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: #2563eb; /* bg-blue-600 */
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.5);
 }
 .dark .app-sidebar.card-hub { background: linear-gradient(170deg, #172b32, #101c2c 42%, #101a29) !important; }
 .dark .sidebar-link-idle { color: #c3d2e5; }
