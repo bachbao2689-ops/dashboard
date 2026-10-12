@@ -407,10 +407,10 @@ export const WorkflowManagement: React.FC = () => {
     <div className="h-full flex flex-col overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-6">
       
       {/* 1. HEADER: PROJECT INFO (LEFT) + 4 COMPACT HEALTH/KPI BOARDS (RIGHT) IN 1 UNIFIED CARD */}
-      <div className="card-hub p-4 sm:p-5 rounded-2xl flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+      <div className="card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch">
         
-        {/* Left Side: Filter buttons, Title dropdown, and Subtitle */}
-        <div className="space-y-2 max-w-xl flex-1">
+        {/* Left Side: Filter buttons, Title dropdown, and Subtitle (4 cols) */}
+        <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2">
           {/* Top Row: Button tách ra Campaign & Projects (Annotation 1) */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80">
@@ -547,10 +547,10 @@ export const WorkflowManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side: 4 Compact KPI/Health Boards (Annotation Cyan) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 shrink-0 xl:max-w-2xl w-full xl:w-auto">
+        {/* Right Side: 4 Compact KPI/Health Boards (Dàn đều 4 cột, khớp hàng) */}
+        <div className="xl:col-span-8 2xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full">
           {/* Card 1: Tiến độ tổng thể */}
-          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-[130px]">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full">
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Tiến độ tổng thể
@@ -625,9 +625,9 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
-          <div className={`p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-[130px]`}>
+          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full`}>
             <div className="flex items-center justify-between gap-1 mb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
                 Sức khỏe & Cơ hội qua Phase
               </span>
 
@@ -702,7 +702,7 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 3: Vận tốc (Velocity) */}
-          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-[130px]">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full">
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Vận tốc (Velocity)
@@ -777,7 +777,7 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 4: Đúng cam kết hạn */}
-          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-[130px]">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full">
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Đúng cam kết hạn
