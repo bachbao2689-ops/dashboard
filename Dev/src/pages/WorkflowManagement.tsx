@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, Eye, BarChart2, Activity,
-  ChevronDown, ChevronUp, X, Globe, Code2
+  ChevronDown, ChevronUp, X, Globe, Code2, Info, Search
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -120,6 +120,10 @@ export const WorkflowManagement: React.FC = () => {
   const [entities, setEntities] = useState<ProjectEntity[]>([]);
   const [selectedEntityId, setSelectedEntityId] = useState<string>('project_web');
   const [loading, setLoading] = useState<boolean>(true);
+  const [entityFilter, setEntityFilter] = useState<'all' | 'project' | 'campaign'>('project');
+  const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState<boolean>(false);
+  const [searchEntityQuery, setSearchEntityQuery] = useState<string>('');
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // Raw data from DB
   const [allTasks, setAllTasks] = useState<any[]>([]);
@@ -198,6 +202,35 @@ export const WorkflowManagement: React.FC = () => {
     }
   };
 
+  // Filtered entities based on entityFilter tab & search query
+  const filteredEntities = useMemo(() => {
+    let list = entities;
+    if (entityFilter !== 'all') {
+      list = list.filter(e => e.type === entityFilter);
+    }
+    if (searchEntityQuery.trim()) {
+      const q = searchEntityQuery.toLowerCase().trim();
+      list = list.filter(e => e.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [entities, entityFilter, searchEntityQuery]);
+
+  // When switching filter tabs, select first item if current is not in filtered list
+  const handleFilterChange = (filter: 'all' | 'project' | 'campaign') => {
+    setEntityFilter(filter);
+    const available = filter === 'all' ? entities : entities.filter(e => e.type === filter);
+    if (available.length > 0 && !available.some(e => e.id === selectedEntityId)) {
+      setSelectedEntityId(available[0].id);
+    }
+  };
+
+  const handleSelectEntity = (id: string) => {
+    setSelectedEntityId(id);
+    setIsTitleDropdownOpen(false);
+    setSearchEntityQuery('');
+    toast.success('Đã chuyển dự án / chiến dịch');
+  };
+
   const currentEntity = useMemo(() => {
     return entities.find(e => e.id === selectedEntityId) || entities[0] || {
       id: 'project_web',
@@ -250,6 +283,17 @@ export const WorkflowManagement: React.FC = () => {
     const blended = Math.round(critScore * 0.65 + phaseProgressPct * 0.35);
     return Math.min(100, Math.max(0, blended));
   }, [criteria, phaseProgressPct, activePhase.status]);
+
+  // Criteria Score for current gate
+  const criteriaScore = useMemo(() => {
+    let score = 0;
+    let totalWeight = 0;
+    criteria.forEach(c => {
+      totalWeight += c.weight;
+      if (c.checked) score += c.weight;
+    });
+    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 100;
+  }, [criteria]);
 
   // Sync progress & gate chance to phases array
   useEffect(() => {
@@ -365,48 +409,147 @@ export const WorkflowManagement: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-6">
       
-      {/* 1. HEADER: PROMINENT PROJECT NAME + TRACK THÊM CAMPAIGNS DROPDOWN */}
+      {/* 1. HEADER: BUTTON TÁCH RA CAMPAIGN & PROJECTS + TIÊU ĐỀ LÀ FUNCST LỌC CHỌN TÊN DỰ ÁN */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 card-hub p-5 rounded-2xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-              Quản lý tiến độ
+        <div className="space-y-2.5">
+          {/* Top Row: Button tách ra Campaign & Projects (Annotation 1) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80">
+              <button
+                type="button"
+                onClick={() => handleFilterChange('project')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  entityFilter === 'project'
+                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                <Globe size={13} />
+                Dự án (Projects)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFilterChange('campaign')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  entityFilter === 'campaign'
+                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                <FolderKanban size={13} />
+                Chiến dịch (Campaigns)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFilterChange('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  entityFilter === 'all'
+                    ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Tất cả
+              </button>
+            </div>
+
+            <span className="text-xs text-gray-400 hidden sm:inline">
+              · Website Development Lifecycle
             </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">· Website Development Lifecycle</span>
           </div>
-          
-          {/* Main Title: Tên Project / Campaign rõ ràng, nổi bật */}
-          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2 tracking-tight">
-            <Globe className="text-primary shrink-0" size={24} />
-            {currentEntity.name}
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Hệ thống quản trị lộ trình 5 giai đoạn, thẩm định Gate và đo lường vận tốc thực thi thời gian thực
-          </p>
+
+          {/* Main Title as Filter Dropdown (Annotation 2) */}
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
+              className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
+              title="Bấm để chọn và lọc Project / Campaign"
+            >
+              <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                {currentEntity.type === 'campaign' ? <FolderKanban size={22} /> : <Globe size={22} />}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
+                  {currentEntity.name}
+                </h1>
+                <ChevronDown
+                  size={20}
+                  className={`text-gray-400 group-hover:text-primary transition-transform duration-200 ${
+                    isTitleDropdownOpen ? 'rotate-180 text-primary' : ''
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Dropdown Menu to choose Project / Campaign */}
+            {isTitleDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40 bg-transparent"
+                  onClick={() => setIsTitleDropdownOpen(false)}
+                />
+                <div className="absolute z-50 left-0 top-full mt-2 w-80 sm:w-96 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95">
+                  <div className="relative mb-2">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchEntityQuery}
+                      onChange={e => setSearchEntityQuery(e.target.value)}
+                      placeholder="Tìm kiếm dự án hoặc chiến dịch..."
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-primary"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
+                    {filteredEntities.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-gray-400">
+                        Không tìm thấy dự án phù hợp
+                      </div>
+                    ) : (
+                      filteredEntities.map(e => {
+                        const isSelected = e.id === selectedEntityId;
+                        return (
+                          <button
+                            key={e.id}
+                            type="button"
+                            onClick={() => handleSelectEntity(e.id)}
+                            className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-colors ${
+                              isSelected
+                                ? 'bg-primary/10 text-primary font-bold'
+                                : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              {e.type === 'campaign' ? (
+                                <FolderKanban size={14} className="shrink-0 text-amber-500" />
+                              ) : (
+                                <Globe size={14} className="shrink-0 text-blue-500" />
+                              )}
+                              <span className="truncate">{e.name}</span>
+                            </div>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                              e.type === 'campaign' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                            }`}>
+                              {e.type === 'campaign' ? 'Campaign' : 'Project'}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Hệ thống quản trị lộ trình 5 giai đoạn, thẩm định Gate và đo lường vận tốc thực thi thời gian thực
+            </p>
+          </div>
         </div>
 
-        {/* Right Header Area: Track Thêm Campaigns/Projects */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-semibold whitespace-nowrap hidden sm:inline">
-              Track thêm Campaigns:
-            </span>
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-3 py-2 rounded-xl shadow-2xs">
-              <FolderKanban size={15} className="text-primary shrink-0" />
-              <select
-                value={selectedEntityId}
-                onChange={e => setSelectedEntityId(e.target.value)}
-                className="bg-transparent text-xs font-bold text-gray-900 dark:text-white outline-none cursor-pointer pr-1 max-w-[240px] truncate"
-              >
-                {entities.map(e => (
-                  <option key={e.id} value={e.id} className="dark:bg-slate-800">
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
+        {/* Right Header Area: Nút liên kết Xem chi tiết dự án (Đã bỏ select dư thừa) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => navigate('/projects')}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-colors"
@@ -416,33 +559,146 @@ export const WorkflowManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. TOP METRICS ROW: ĐÚNG 4 CARDS (ĐÃ LOẠI BỎ 2 CARD GẠCH CHÉO ĐỎ) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 2. TOP METRICS ROW: 4 BOARD ĐỀU NHAU + TOOLTIP HOVER THEO GUIDELINE .MD */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Tiến độ tổng thể */}
-        <div className="p-4 rounded-2xl card-hub space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-            Tiến độ tổng thể
-          </span>
-          <div className="flex items-baseline justify-between">
-            <b className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+        <div className="p-4 sm:p-5 rounded-2xl card-hub flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card">
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
+              Tiến độ tổng thể
+            </span>
+
+            {/* Info Icon (i) with Hover & Click Tooltip */}
+            <div
+              className="relative flex items-center shrink-0"
+              onMouseEnter={() => setActiveTooltip('overall_progress')}
+              onMouseLeave={() => setActiveTooltip(null)}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'overall_progress' ? null : 'overall_progress');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
+                aria-label="Thông tin chỉ số Tiến độ tổng thể"
+              >
+                <Info size={11} strokeWidth={2.2} />
+              </button>
+
+              {activeTooltip === 'overall_progress' && (
+                <div
+                  role="tooltip"
+                  className="absolute z-[70] left-0 sm:left-0 sm:right-auto sm:translate-x-0 top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                >
+                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                    <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
+                      <Info size={12} strokeWidth={2.5} />
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      Tiến độ tổng thể (Overall Progress)
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                      <span>Đo lường mức độ hoàn thiện tích lũy toàn diện của toàn bộ chu kỳ phát triển dự án website (từ Khảo sát SRS đến Go-Live).</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                      <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                      <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                        (Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%
+                      </code>
+                    </div>
+
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                      💡 Cột mốc phản ánh độ hoàn thiện thực tế chuẩn bị bàn giao Production.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between my-1">
+            <b className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400">
               {overallProjectProgressPct}%
             </b>
             <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-0.5">
               <TrendingUp size={12} /> +6.5%
             </span>
           </div>
-          <span className="text-[10px] text-gray-400 block truncate">
+
+          <span className="text-[10px] text-gray-400 block truncate mt-1">
             Đang chạy Phase {activePhase.id}/5 ({activePhase.name})
           </span>
         </div>
 
-        {/* Card 2: Cơ hội qua Phase */}
-        <div className="p-4 rounded-2xl card-hub space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-            Cơ hội qua Phase
-          </span>
-          <div className="flex items-baseline justify-between">
-            <b className={`text-2xl font-extrabold ${gatePassChancePct >= 80 ? 'text-emerald-500' : gatePassChancePct >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+        {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
+        <div className={`p-4 sm:p-5 rounded-2xl card-hub flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card`}>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
+              Sức khỏe & Cơ hội qua Phase
+            </span>
+
+            {/* Info Icon (i) with Hover & Click Tooltip */}
+            <div
+              className="relative flex items-center shrink-0"
+              onMouseEnter={() => setActiveTooltip('phase_health_gate')}
+              onMouseLeave={() => setActiveTooltip(null)}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'phase_health_gate' ? null : 'phase_health_gate');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
+                aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
+              >
+                <Info size={11} strokeWidth={2.2} />
+              </button>
+
+              {activeTooltip === 'phase_health_gate' && (
+                <div
+                  role="tooltip"
+                  className="absolute z-[70] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                >
+                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                    <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                      <Info size={12} strokeWidth={2.5} />
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                      <span>Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                      <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                      <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                        65% Điểm Gate Checklist (Trọng số tiêu chí) + 35% Tỷ lệ hoàn tất Subtasks
+                      </code>
+                    </div>
+
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                      💡 Đạt ≥ 80% là đủ điều kiện bật đèn xanh để giải ngân/phê duyệt chặng sau.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between my-1">
+            <b className={`text-2xl sm:text-3xl font-extrabold ${gatePassChancePct >= 80 ? 'text-emerald-500' : gatePassChancePct >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
               {gatePassChancePct}%
             </b>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -451,44 +707,159 @@ export const WorkflowManagement: React.FC = () => {
               {gatePassChancePct >= 80 ? '🟢 Đủ điều kiện' : '🟡 Cần rà soát'}
             </span>
           </div>
-          <span className="text-[10px] text-gray-400 block truncate">
-            Gatekeeper Confidence Score
+
+          <span className="text-[10px] text-gray-400 block truncate mt-1">
+            Gatekeeper Confidence Score ({criteriaScore}/100)
           </span>
         </div>
 
         {/* Card 3: Vận tốc (Velocity) */}
-        <div className="p-4 rounded-2xl card-hub space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-            Vận tốc (Velocity)
-          </span>
-          <div className="flex items-baseline justify-between">
-            <b className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
+        <div className="p-4 sm:p-5 rounded-2xl card-hub flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card">
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
+              Vận tốc (Velocity)
+            </span>
+
+            {/* Info Icon (i) with Hover & Click Tooltip */}
+            <div
+              className="relative flex items-center shrink-0"
+              onMouseEnter={() => setActiveTooltip('velocity')}
+              onMouseLeave={() => setActiveTooltip(null)}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'velocity' ? null : 'velocity');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
+                aria-label="Thông tin chỉ số Vận tốc"
+              >
+                <Info size={11} strokeWidth={2.2} />
+              </button>
+
+              {activeTooltip === 'velocity' && (
+                <div
+                  role="tooltip"
+                  className="absolute z-[70] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                >
+                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                    <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
+                      <Info size={12} strokeWidth={2.5} />
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      Vận tốc (Velocity)
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                      <span>Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                      <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                      <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                        Tổng thời gian hoàn tất các task đã xong / Tổng số task kỹ thuật hoàn thành
+                      </code>
+                    </div>
+
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                      💡 VD: 1.8 ngày/task nghĩa là trung bình team hoàn thiện và đóng 1 task trong 1.8 ngày.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between my-1">
+            <b className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
               1.8 <span className="text-xs font-normal text-gray-500">ngày/task</span>
             </b>
             <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-0.5">
               <TrendingDown size={12} /> -0.3d
             </span>
           </div>
-          <span className="text-[10px] text-gray-400 block truncate">
-            Tốc độ hoàn tất task kỹ thuật
+
+          <span className="text-[10px] text-gray-400 block truncate mt-1">
+            Tốc độ tiêu hóa dứt điểm task kỹ thuật
           </span>
         </div>
 
         {/* Card 4: Đúng cam kết hạn */}
-        <div className="p-4 rounded-2xl card-hub space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-            Đúng cam kết hạn
-          </span>
-          <div className="flex items-baseline justify-between">
-            <b className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+        <div className="p-4 sm:p-5 rounded-2xl card-hub flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card">
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
+              Đúng cam kết hạn
+            </span>
+
+            {/* Info Icon (i) with Hover & Click Tooltip */}
+            <div
+              className="relative flex items-center shrink-0"
+              onMouseEnter={() => setActiveTooltip('on_time_rate')}
+              onMouseLeave={() => setActiveTooltip(null)}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'on_time_rate' ? null : 'on_time_rate');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
+                aria-label="Thông tin chỉ số Đúng cam kết hạn"
+              >
+                <Info size={11} strokeWidth={2.2} />
+              </button>
+
+              {activeTooltip === 'on_time_rate' && (
+                <div
+                  role="tooltip"
+                  className="absolute z-[70] right-0 sm:right-0 sm:left-auto sm:translate-x-0 top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                >
+                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                    <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">
+                      <Info size={12} strokeWidth={2.5} />
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      Đúng cam kết hạn (On-Time Rate)
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                      <span>Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                      <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                      <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                        (Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%
+                      </code>
+                    </div>
+
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                      💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between my-1">
+            <b className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
               93.5%
             </b>
             <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-0.5">
               <TrendingUp size={12} /> +1.2%
             </span>
           </div>
-          <span className="text-[10px] text-gray-400 block truncate">
-            Mốc deadline 23:59:59 chuẩn hóa
+
+          <span className="text-[10px] text-gray-400 block truncate mt-1">
+            Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống
           </span>
         </div>
       </div>
