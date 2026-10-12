@@ -850,6 +850,14 @@ export const WorkflowManagement: React.FC = () => {
     ];
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveTooltip(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center p-8">
@@ -862,10 +870,21 @@ export const WorkflowManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-6">
+    <div className="w-full flex flex-col p-3 sm:p-6 pb-28 md:pb-32 space-y-6 relative">
       
+      {/* Backdrop blur overlay when hovering or inspecting Health Core KPI tooltip (Requirement 3) */}
+      {activeTooltip && (
+        <div
+          className="fixed inset-0 z-[65] bg-slate-900/20 dark:bg-slate-950/45 backdrop-blur-[3px] transition-all duration-200 pointer-events-auto cursor-pointer animate-in fade-in"
+          onClick={() => setActiveTooltip(null)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* 1. HEADER: PROJECT INFO (LEFT) + 4 COMPACT HEALTH/KPI BOARDS (RIGHT) IN 1 UNIFIED CARD */}
-      <div className="card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch">
+      <div className={`card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch relative transition-all duration-200 ${
+        activeTooltip ? 'z-[70]' : 'z-20'
+      }`}>
         
         {/* Left Side: Filter buttons, Title dropdown, and Subtitle (4 cols) */}
         <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2.5">
@@ -1055,7 +1074,13 @@ export const WorkflowManagement: React.FC = () => {
         {/* Right Side: 4 Compact KPI/Health Boards (Dàn đều 4 cột, khớp hàng) */}
         <div className="xl:col-span-8 2xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full">
           {/* Card 1: Tiến độ tổng thể */}
-          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full">
+          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full ${
+            activeTooltip === 'overall_progress'
+              ? 'z-[75] ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
+              : activeTooltip
+                ? 'opacity-60 z-10'
+                : 'z-10'
+          }`}>
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Tiến độ tổng thể
@@ -1082,7 +1107,7 @@ export const WorkflowManagement: React.FC = () => {
                 {activeTooltip === 'overall_progress' && (
                   <div
                     role="tooltip"
-                    className="absolute z-[70] left-0 sm:left-0 sm:right-auto sm:translate-x-0 top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                    className="absolute z-[85] left-0 sm:left-0 sm:right-auto sm:translate-x-0 top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
                   >
                     <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                       <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
@@ -1130,7 +1155,13 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
-          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full`}>
+          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full ${
+            activeTooltip === 'phase_health_gate'
+              ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
+              : activeTooltip
+                ? 'opacity-60 z-10'
+                : 'z-10'
+          }`}>
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
                 Sức khỏe & Cơ hội qua Phase
@@ -1157,7 +1188,7 @@ export const WorkflowManagement: React.FC = () => {
                 {activeTooltip === 'phase_health_gate' && (
                   <div
                     role="tooltip"
-                    className="absolute z-[70] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                    className="absolute z-[85] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
                   >
                     <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                       <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
@@ -1207,7 +1238,13 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 3: Vận tốc (Velocity) */}
-          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full">
+          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full ${
+            activeTooltip === 'velocity'
+              ? 'z-[75] ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
+              : activeTooltip
+                ? 'opacity-60 z-10'
+                : 'z-10'
+          }`}>
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Vận tốc (Velocity)
@@ -1234,7 +1271,7 @@ export const WorkflowManagement: React.FC = () => {
                 {activeTooltip === 'velocity' && (
                   <div
                     role="tooltip"
-                    className="absolute z-[70] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                    className="absolute z-[85] right-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
                   >
                     <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                       <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
@@ -1282,7 +1319,13 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           {/* Card 4: Đúng cam kết hạn */}
-          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full">
+          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full ${
+            activeTooltip === 'on_time_rate'
+              ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
+              : activeTooltip
+                ? 'opacity-60 z-10'
+                : 'z-10'
+          }`}>
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Đúng cam kết hạn
@@ -1309,7 +1352,7 @@ export const WorkflowManagement: React.FC = () => {
                 {activeTooltip === 'on_time_rate' && (
                   <div
                     role="tooltip"
-                    className="absolute z-[70] right-0 sm:right-0 sm:left-auto sm:translate-x-0 top-full mt-2 w-64 sm:w-72 p-3.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-left animate-in fade-in zoom-in-95"
+                    className="absolute z-[85] right-0 sm:right-0 sm:left-auto sm:translate-x-0 top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
                   >
                     <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                       <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">

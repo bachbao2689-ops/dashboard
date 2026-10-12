@@ -28,6 +28,28 @@ export const Header: React.FC = () => {
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const scrollContainer = document.getElementById('main-scroll-container');
+    const handleScroll = () => {
+      const top = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+      setIsScrolled(top > 10);
+    };
+
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -134,11 +156,17 @@ export const Header: React.FC = () => {
       {/* Liquid Glass Top Depth Mask (fades from blur to transparent) */}
       <div
         aria-hidden="true"
-        className="liquid-glass-top-mask pointer-events-none absolute inset-x-0 top-0 z-10"
+        className={cn(
+          "liquid-glass-top-mask pointer-events-none absolute inset-x-0 top-0 z-10 transition-all duration-300",
+          isScrolled && "is-scrolled"
+        )}
       />
       
       {/* Floating Liquid Glass Top Header Pill */}
-      <header className="liquid-glass-header pointer-events-auto relative z-20 mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5">
+      <header className={cn(
+        "liquid-glass-header pointer-events-auto relative z-20 mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5 transition-all duration-300",
+        isScrolled && "is-scrolled"
+      )}>
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
