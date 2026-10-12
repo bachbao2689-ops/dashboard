@@ -1074,70 +1074,34 @@ export const WorkflowManagement: React.FC = () => {
         {/* Right Side: 4 Compact KPI/Health Boards (Dàn đều 4 cột, khớp hàng) */}
         <div className="xl:col-span-8 2xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full">
           {/* Card 1: Tiến độ tổng thể */}
-          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full ${
-            activeTooltip === 'overall_progress'
-              ? 'z-[75] ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
-              : activeTooltip
-                ? 'opacity-60 z-10'
-                : 'z-10'
-          }`}>
+          <div
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-pointer ${
+              activeTooltip === 'overall_progress'
+                ? 'z-[75] ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
+                : activeTooltip
+                  ? 'opacity-60 z-10'
+                  : 'z-10'
+            }`}
+            onMouseEnter={() => setActiveTooltip('overall_progress')}
+            onMouseLeave={() => setActiveTooltip(null)}
+          >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Tiến độ tổng thể
               </span>
 
-              {/* Info Icon (i) with Hover & Click Tooltip */}
-              <div
-                className="relative flex items-center shrink-0"
-                onMouseEnter={() => setActiveTooltip('overall_progress')}
-                onMouseLeave={() => setActiveTooltip(null)}
+              {/* Info Icon (i) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'overall_progress' ? null : 'overall_progress');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                aria-label="Thông tin chỉ số Tiến độ tổng thể"
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveTooltip(prev => prev === 'overall_progress' ? null : 'overall_progress');
-                  }}
-                  className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
-                  aria-label="Thông tin chỉ số Tiến độ tổng thể"
-                >
-                  <Info size={10} strokeWidth={2.2} />
-                </button>
-
-                {activeTooltip === 'overall_progress' && (
-                  <div
-                    role="tooltip"
-                    className="absolute z-[85] left-0 sm:left-0 sm:right-auto sm:translate-x-0 top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
-                  >
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
-                      <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
-                        <Info size={12} strokeWidth={2.5} />
-                      </span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Tiến độ tổng thể (Overall Progress)
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
-                      <div>
-                        <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                        <span>Đo lường mức độ hoàn thiện tích lũy toàn diện của toàn bộ chu kỳ phát triển dự án website (từ Khảo sát SRS đến Go-Live).</span>
-                      </div>
-
-                      <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                        <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
-                        <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                          (Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%
-                        </code>
-                      </div>
-
-                      <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                        💡 Cột mốc phản ánh độ hoàn thiện thực tế chuẩn bị bàn giao Production.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <Info size={11} strokeWidth={2.2} />
+              </button>
             </div>
 
             <div className="flex items-baseline justify-between my-0.5">
@@ -1152,73 +1116,73 @@ export const WorkflowManagement: React.FC = () => {
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
               Đang chạy Phase {activePhase.id}/5 ({activePhase.name})
             </span>
+
+            {/* Tooltip Popover positioned neatly below Card 1 */}
+            {activeTooltip === 'overall_progress' && (
+              <div
+                role="tooltip"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                  <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
+                    <Info size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    Tiến độ tổng thể (Overall Progress)
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                  <div>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường mức độ hoàn thiện tích lũy toàn diện của toàn bộ chu kỳ phát triển dự án website (từ Khảo sát SRS đến Go-Live).</span>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                      (Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%
+                    </code>
+                  </div>
+
+                  <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                    💡 Cột mốc phản ánh độ hoàn thiện thực tế chuẩn bị bàn giao Production.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
-          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full ${
-            activeTooltip === 'phase_health_gate'
-              ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
-              : activeTooltip
-                ? 'opacity-60 z-10'
-                : 'z-10'
-          }`}>
+          <div
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-pointer ${
+              activeTooltip === 'phase_health_gate'
+                ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
+                : activeTooltip
+                  ? 'opacity-60 z-10'
+                  : 'z-10'
+            }`}
+            onMouseEnter={() => setActiveTooltip('phase_health_gate')}
+            onMouseLeave={() => setActiveTooltip(null)}
+          >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
                 Sức khỏe & Cơ hội qua Phase
               </span>
 
-              {/* Info Icon (i) with Hover & Click Tooltip */}
-              <div
-                className="relative flex items-center shrink-0"
-                onMouseEnter={() => setActiveTooltip('phase_health_gate')}
-                onMouseLeave={() => setActiveTooltip(null)}
+              {/* Info Icon (i) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'phase_health_gate' ? null : 'phase_health_gate');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveTooltip(prev => prev === 'phase_health_gate' ? null : 'phase_health_gate');
-                  }}
-                  className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
-                  aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
-                >
-                  <Info size={10} strokeWidth={2.2} />
-                </button>
-
-                {activeTooltip === 'phase_health_gate' && (
-                  <div
-                    role="tooltip"
-                    className="absolute z-[85] left-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
-                  >
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
-                      <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                        <Info size={12} strokeWidth={2.5} />
-                      </span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
-                      <div>
-                        <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                        <span>Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.</span>
-                      </div>
-
-                      <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                        <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
-                        <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                          65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks
-                        </code>
-                      </div>
-
-                      <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                        💡 Đạt ≥ 80% là đủ điều kiện bật đèn xanh để giải ngân/phê duyệt chặng sau.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <Info size={11} strokeWidth={2.2} />
+              </button>
             </div>
 
             <div className="flex items-baseline justify-between my-0.5">
@@ -1235,73 +1199,73 @@ export const WorkflowManagement: React.FC = () => {
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
               Thẩm định Confidence Score {criteriaScore}/100
             </span>
+
+            {/* Tooltip Popover positioned neatly below Card 2 */}
+            {activeTooltip === 'phase_health_gate' && (
+              <div
+                role="tooltip"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute z-[85] left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                  <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    <Info size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                  <div>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.</span>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                      65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks
+                    </code>
+                  </div>
+
+                  <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                    💡 Đạt ≥ 80% là đủ điều kiện bật đèn xanh để giải ngân/phê duyệt chặng sau.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Card 3: Vận tốc (Velocity) */}
-          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full ${
-            activeTooltip === 'velocity'
-              ? 'z-[75] ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
-              : activeTooltip
-                ? 'opacity-60 z-10'
-                : 'z-10'
-          }`}>
+          <div
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-pointer ${
+              activeTooltip === 'velocity'
+                ? 'z-[75] ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
+                : activeTooltip
+                  ? 'opacity-60 z-10'
+                  : 'z-10'
+            }`}
+            onMouseEnter={() => setActiveTooltip('velocity')}
+            onMouseLeave={() => setActiveTooltip(null)}
+          >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Vận tốc (Velocity)
               </span>
 
-              {/* Info Icon (i) with Hover & Click Tooltip */}
-              <div
-                className="relative flex items-center shrink-0"
-                onMouseEnter={() => setActiveTooltip('velocity')}
-                onMouseLeave={() => setActiveTooltip(null)}
+              {/* Info Icon (i) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'velocity' ? null : 'velocity');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                aria-label="Thông tin chỉ số Vận tốc"
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveTooltip(prev => prev === 'velocity' ? null : 'velocity');
-                  }}
-                  className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
-                  aria-label="Thông tin chỉ số Vận tốc"
-                >
-                  <Info size={10} strokeWidth={2.2} />
-                </button>
-
-                {activeTooltip === 'velocity' && (
-                  <div
-                    role="tooltip"
-                    className="absolute z-[85] right-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
-                  >
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
-                      <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
-                        <Info size={12} strokeWidth={2.5} />
-                      </span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Vận tốc (Velocity)
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
-                      <div>
-                        <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                        <span>Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.</span>
-                      </div>
-
-                      <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                        <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
-                        <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                          Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành
-                        </code>
-                      </div>
-
-                      <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                        💡 VD: 1.8 ngày/task nghĩa là trung bình team hoàn thiện và đóng 1 task trong 1.8 ngày.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <Info size={11} strokeWidth={2.2} />
+              </button>
             </div>
 
             <div className="flex items-baseline justify-between my-0.5">
@@ -1316,73 +1280,73 @@ export const WorkflowManagement: React.FC = () => {
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
               Tốc độ tiêu hóa dứt điểm task kỹ thuật
             </span>
+
+            {/* Tooltip Popover positioned neatly below Card 3 */}
+            {activeTooltip === 'velocity' && (
+              <div
+                role="tooltip"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute z-[85] left-0 sm:left-auto sm:right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                  <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
+                    <Info size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    Vận tốc (Velocity)
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                  <div>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.</span>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                      Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành
+                    </code>
+                  </div>
+
+                  <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                    💡 VD: 1.8 ngày/task nghĩa là trung bình team hoàn thiện và đóng 1 task trong 1.8 ngày.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Card 4: Đúng cam kết hạn */}
-          <div className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full ${
-            activeTooltip === 'on_time_rate'
-              ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
-              : activeTooltip
-                ? 'opacity-60 z-10'
-                : 'z-10'
-          }`}>
+          <div
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-pointer ${
+              activeTooltip === 'on_time_rate'
+                ? 'z-[75] ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
+                : activeTooltip
+                  ? 'opacity-60 z-10'
+                  : 'z-10'
+            }`}
+            onMouseEnter={() => setActiveTooltip('on_time_rate')}
+            onMouseLeave={() => setActiveTooltip(null)}
+          >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
                 Đúng cam kết hạn
               </span>
 
-              {/* Info Icon (i) with Hover & Click Tooltip */}
-              <div
-                className="relative flex items-center shrink-0"
-                onMouseEnter={() => setActiveTooltip('on_time_rate')}
-                onMouseLeave={() => setActiveTooltip(null)}
+              {/* Info Icon (i) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTooltip(prev => prev === 'on_time_rate' ? null : 'on_time_rate');
+                }}
+                className="flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-pointer shrink-0"
+                aria-label="Thông tin chỉ số Đúng cam kết hạn"
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveTooltip(prev => prev === 'on_time_rate' ? null : 'on_time_rate');
-                  }}
-                  className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-none cursor-help"
-                  aria-label="Thông tin chỉ số Đúng cam kết hạn"
-                >
-                  <Info size={10} strokeWidth={2.2} />
-                </button>
-
-                {activeTooltip === 'on_time_rate' && (
-                  <div
-                    role="tooltip"
-                    className="absolute z-[85] right-0 sm:right-0 sm:left-auto sm:translate-x-0 top-full mt-2 w-72 sm:w-80 p-3.5 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left animate-in fade-in zoom-in-95 pointer-events-auto"
-                  >
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
-                      <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">
-                        <Info size={12} strokeWidth={2.5} />
-                      </span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Đúng cam kết hạn (On-Time Rate)
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
-                      <div>
-                        <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                        <span>Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.</span>
-                      </div>
-
-                      <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                        <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
-                        <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                          (Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%
-                        </code>
-                      </div>
-
-                      <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                        💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <Info size={11} strokeWidth={2.2} />
+              </button>
             </div>
 
             <div className="flex items-baseline justify-between my-0.5">
@@ -1397,6 +1361,42 @@ export const WorkflowManagement: React.FC = () => {
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
               Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống
             </span>
+
+            {/* Tooltip Popover positioned neatly below Card 4 */}
+            {activeTooltip === 'on_time_rate' && (
+              <div
+                role="tooltip"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute z-[85] right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
+                  <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">
+                    <Info size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    Đúng cam kết hạn (On-Time Rate)
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
+                  <div>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.</span>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
+                      (Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%
+                    </code>
+                  </div>
+
+                  <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
+                    💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
