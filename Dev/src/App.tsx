@@ -1,5 +1,5 @@
-import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -8,7 +8,6 @@ import { Register } from './pages/auth/Register';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
 import { WorkflowManagement } from './pages/WorkflowManagement';
-const WorkflowManagement2 = lazy(() => import('./pages/WorkflowManagement2').then(module => ({default:module.WorkflowManagement2})));
 import { Dashboard } from './pages/Dashboard';
 import { Departments2 } from './pages/Departments2';
 import { TaskList } from './pages/TaskList';
@@ -40,7 +39,7 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<WorkflowManagement />} />
-            <Route path="workflow-management-2" element={<Suspense fallback={<div className="card-hub h-48 m-4 animate-pulse" aria-label="Đang tải Workflow" />}><WorkflowManagement2 /></Suspense>} />
+            <Route path="workflow-management-2" element={<Navigate to="/" replace />} />
             <Route path="overview" element={<Overview />} />
             <Route path="ui-dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<TaskList />} />

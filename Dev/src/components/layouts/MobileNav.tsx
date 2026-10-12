@@ -21,7 +21,6 @@ export const MobileNav: React.FC = () => {
   
   const navItems = [
     { name: t('nav.home'), path: '/', icon: <Layers size={20} strokeWidth={1.8} /> },
-    { name: 'Workflow 2', path: '/workflow-management-2', icon: <Layers size={20} strokeWidth={1.8} /> },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
