@@ -293,18 +293,12 @@ html:not(.dark) .liquid-glass-header {
   -webkit-backdrop-filter: blur(24px) saturate(190%) contrast(100%);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(230, 243, 255, 0.66) 100%) !important;
   border: 1px solid rgba(210, 228, 255, 0.85) !important;
-  box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
-              inset 0 -1px 1px 0 rgba(191, 219, 254, 0.6),
-              inset 0 0 16px 0 rgba(255, 255, 255, 0.45),
-              0 8px 24px -4px rgba(18, 48, 94, 0.10),
-              0 2px 6px -1px rgba(18, 48, 94, 0.04) !important;
 }
 
 html:not(.dark) .liquid-glass-header.is-scrolled {
   backdrop-filter: blur(28px) saturate(200%) contrast(100%);
   -webkit-backdrop-filter: blur(28px) saturate(200%) contrast(100%);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(224, 239, 255, 0.76) 100%) !important;
-  border-color: rgba(186, 215, 255, 0.95) !important;
   box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
               inset 0 -1px 1px 0 rgba(186, 215, 255, 0.7),
               inset 0 0 18px 0 rgba(255, 255, 255, 0.5),
@@ -343,7 +337,6 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
 @media (max-width: 767px) {
   html:not(.dark) .mobile-liquid-glass.card-hub,
   html:not(.dark) .mobile-liquid-glass {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(230, 243, 255, 0.66) 100%) !important;
     border: 1px solid rgba(210, 228, 255, 0.85) !important;
     box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
                 inset 0 -1px 1px 0 rgba(191, 219, 254, 0.6),
