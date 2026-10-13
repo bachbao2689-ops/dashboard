@@ -11,9 +11,10 @@ import {
 } from 'recharts';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWorkflowHub } from '../hooks/useWorkflowHub';
+import { useTranslation } from '../i18n/translations';
 import type { Task } from '../hooks/useTasks';
 import { gateScore, taskProgress, workflowMetrics, displayDate, inputDate, localDay, type HubPhase, type GateCriterion } from '../lib/workflowHub';
-import { WorkflowStatusPicker, canonicalWorkflowStatus, workflowStage, WORKFLOW_STATUS_CONFIG, MARKETING_STATUS_GUIDES, WorkflowHexagonIcon, type WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
+import { WorkflowStatusPicker, canonicalWorkflowStatus, workflowStage, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, MARKETING_STATUS_GUIDES_EN, MARKETING_STATUS_GUIDES_VI, WorkflowHexagonIcon, type WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
 import { MultiSelect } from '../components/common/MultiSelect';
 import { Avatar } from '../components/common/Avatar';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -40,6 +41,8 @@ const field = 'w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-
 
 export const WorkflowManagement: React.FC = () => {
   const hub = useWorkflowHub();
+  const { lang } = useTranslation();
+  const isEn = lang === 'en';
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [entityFilter, setEntityFilter] = useState<'project' | 'campaign'>(params.has('campaign') ? 'campaign' : 'project');
@@ -112,7 +115,16 @@ export const WorkflowManagement: React.FC = () => {
   const subTeamMembers = currentEntity?.sub_pics || [];
   const leadInfo = { name: (currentEntity?.pics || []).map(p => p.name).join(', ') || 'Chưa giao PIC', avatar: currentEntity?.pics[0]?.avatar_url, role: 'PIC' };
   const taskCountsByStatus = Object.fromEntries(Object.keys(WORKFLOW_STATUS_CONFIG).map(s => [s, allTasks.filter(t => toWorkflowStage(t) === s).length])) as Record<WorkflowTaskStatus,number>;
-  const currentMonthTaskStats = ['Hoàn thành (Done)', 'Đang thực hiện (In Progress)', 'Đang xem xét (Review)', 'Quá hạn (Overdue)', 'Chưa làm (Todo)'].map((name, i) => ({name, value: metrics.buckets[i], color: ['#10b981','#3b82f6','#8b5cf6','#ef4444','#64748b'][i]}));
+  const currentMonthTaskStats = useMemo(() => {
+    const labels = isEn
+      ? ['Completed', 'In Progress', 'In Review', 'Overdue', 'Todo']
+      : ['Hoàn thành', 'Đang thực hiện', 'Đang xem xét', 'Quá hạn', 'Chưa làm'];
+    return labels.map((name, i) => ({
+      name,
+      value: metrics.buckets[i],
+      color: ['#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#64748b'][i]
+    }));
+  }, [isEn, metrics.buckets]);
   const totalMonthTasks = metrics.buckets.reduce((a,b) => a+b,0);
   const performanceTrendData = phases.map(p => {
     const startStr = p.start_date ? p.start_date.slice(0, 10) : null;
@@ -261,7 +273,7 @@ export const WorkflowManagement: React.FC = () => {
             </div>
 
             <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
-              • {currentEntity.root ? 'PIC toàn bộ (Full Scope)' : 'Phạm vi được giao (Assigned Scope)'}
+              • {currentEntity.root ? (isEn ? 'Full Scope' : 'PIC toàn bộ') : (isEn ? 'Assigned Scope' : 'Phạm vi được giao')}
             </span>
           </div>
 
@@ -271,7 +283,7 @@ export const WorkflowManagement: React.FC = () => {
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
               className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
-              title="Bấm để chọn và lọc Project / Campaign"
+              title={isEn ? "Click to select and filter Project / Campaign" : "Bấm để chọn và lọc Project / Campaign"}
             >
               <div className={`p-1.5 rounded-xl transition-colors ${
                 isCampaign
@@ -307,7 +319,7 @@ export const WorkflowManagement: React.FC = () => {
                       type="text"
                       value={searchEntityQuery}
                       onChange={e => setSearchEntityQuery(e.target.value)}
-                      placeholder="Tìm kiếm dự án hoặc chiến dịch..."
+                      placeholder={isEn ? "Search project or campaign..." : "Tìm kiếm dự án hoặc chiến dịch..."}
                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-primary"
                       autoFocus
                     />
@@ -316,7 +328,7 @@ export const WorkflowManagement: React.FC = () => {
                   <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
                     {filteredEntities.length === 0 ? (
                       <div className="p-3 text-center text-xs text-gray-400">
-                        Không tìm thấy dự án phù hợp
+                        {isEn ? 'No matching projects found' : 'Không tìm thấy dự án phù hợp'}
                       </div>
                     ) : (
                       filteredEntities.map(e => {
@@ -360,7 +372,13 @@ export const WorkflowManagement: React.FC = () => {
             <span>{entityTimeline}</span>
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Clock size={10} />
-              <span>{daysRemaining == null ? 'Chưa có hạn (No deadline)' : daysRemaining < 0 ? 'Trễ ' + Math.abs(daysRemaining) + ' ngày (' + Math.abs(daysRemaining) + 'd overdue)' : 'Còn ' + daysRemaining + ' ngày (' + daysRemaining + 'd left)'}</span>
+              <span>
+                {daysRemaining == null
+                  ? (isEn ? 'No deadline' : 'Chưa có hạn')
+                  : daysRemaining < 0
+                  ? (isEn ? `${Math.abs(daysRemaining)}d overdue` : `Trễ ${Math.abs(daysRemaining)} ngày`)
+                  : (isEn ? `${daysRemaining}d left` : `Còn ${daysRemaining} ngày`)}
+              </span>
             </span>
           </div>
 
@@ -392,7 +410,7 @@ export const WorkflowManagement: React.FC = () => {
               {subTeamMembers.map(sub => (
                 <div
                   key={sub.id}
-                  title={`${sub.name} (Thành viên tham gia)`}
+                  title={`${sub.name} ${isEn ? '(Team member)' : '(Thành viên tham gia)'}`}
                   className={`w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
                 >
                   <Avatar name={sub.name} src={sub.avatar_url} className="w-full h-full text-[8px]" />
@@ -400,7 +418,7 @@ export const WorkflowManagement: React.FC = () => {
               ))}
             </div>
 
-            <StatusBadge status={currentEntity.status} bilingual />
+            <StatusBadge status={currentEntity.status} />
             <button onClick={()=>navigate('/projects')} className="text-[10px] font-semibold underline">Projects/Campaigns →</button>
           </div>
         </div>
@@ -418,7 +436,7 @@ export const WorkflowManagement: React.FC = () => {
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                {currentEntity.root ? 'Tiến độ tổng thể (Overall Progress)' : 'Tiến độ được giao (Assigned Progress)'}
+                {currentEntity.root ? (isEn ? 'Overall Progress' : 'Tiến độ tổng thể') : (isEn ? 'Assigned Progress' : 'Tiến độ được giao')}
               </span>
 
               {/* Info Icon (i) */}
@@ -436,8 +454,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label="Thông tin chỉ số Tiến độ tổng thể"
-                title="Xem cơ chế & cách tính Tiến độ tổng thể"
+                aria-label={isEn ? "Overall Progress info" : "Thông tin chỉ số Tiến độ tổng thể"}
+                title={isEn ? "View mechanism & formula for Overall Progress" : "Xem cơ chế & cách tính Tiến độ tổng thể"}
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -453,7 +471,7 @@ export const WorkflowManagement: React.FC = () => {
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase ? 'Đang xem (Viewing): ' + activePhase.name : 'PIC chưa tạo lộ trình (No phase roadmap)'}
+              {activePhase ? (isEn ? `Viewing: ${activePhase.name}` : `Đang xem: ${activePhase.name}`) : (isEn ? 'No phase roadmap' : 'PIC chưa tạo lộ trình')}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 1 */}
@@ -471,25 +489,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    Tiến độ tổng thể (Overall Progress)
+                    {isEn ? 'Overall Progress' : 'Tiến độ tổng thể'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                    <span>Tỷ lệ task hoàn thành trên các task còn hoạt động của Project/Campaign trong phạm vi được xem.</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
+                    <span>{isEn ? 'Ratio of completed tasks to active tasks for the Project/Campaign within viewable scope.' : 'Tỷ lệ task hoàn thành trên các task còn hoạt động của Project/Campaign trong phạm vi được xem.'}</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      (Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%
+                      {isEn ? '(Completed subtasks / Total project subtasks) × 100%' : '(Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%'}
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    Task đã hủy không nằm trong mẫu số. Không có task thì hiển thị —.
+                    {isEn ? 'Canceled tasks are excluded from denominator. Displays — if no tasks.' : 'Task đã hủy không nằm trong mẫu số. Không có task thì hiển thị —.'}
                   </div>
                 </div>
               </div>
@@ -506,8 +524,8 @@ export const WorkflowManagement: React.FC = () => {
             }`}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)">
-                Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title={isEn ? "Stage-Gate Health" : "Sức khỏe & Cơ hội qua Phase"}>
+                {isEn ? 'Stage-Gate Health' : 'Sức khỏe & Cơ hội qua Phase'}
               </span>
 
               {/* Info Icon (i) */}
@@ -525,8 +543,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
-                title="Xem cơ chế & cách tính Sức khỏe & Cơ hội qua Phase"
+                aria-label={isEn ? "Stage-Gate Health info" : "Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"}
+                title={isEn ? "View mechanism & formula for Stage-Gate Health" : "Xem cơ chế & cách tính Sức khỏe & Cơ hội qua Phase"}
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -539,12 +557,18 @@ export const WorkflowManagement: React.FC = () => {
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                 (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
-                {gatePassChancePct == null ? 'Chưa đánh giá (Not evaluated)' : (gatePassChancePct ?? -1) >= 80 ? '🟢 Đủ điều kiện (Eligible)' : '🟡 Cần rà soát (Review needed)'}
+                {gatePassChancePct == null
+                  ? (isEn ? 'Not evaluated' : 'Chưa đánh giá')
+                  : (gatePassChancePct ?? -1) >= 80
+                  ? (isEn ? '🟢 Eligible' : '🟢 Đủ điều kiện')
+                  : (isEn ? '🟡 Review needed' : '🟡 Cần rà soát')}
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase?.opportunity != null ? 'PIC đánh giá (PIC eval) · ' + (activePhase.opportunity_note || '') : 'Gate Checklist: ' + (criteriaScore == null ? 'Chưa có tiêu chí (No criteria)' : criteriaScore + '/100')}
+              {activePhase?.opportunity != null
+                ? (isEn ? `PIC eval · ${activePhase.opportunity_note || ''}` : `PIC đánh giá · ${activePhase.opportunity_note || ''}`)
+                : (isEn ? `Gate Checklist: ${criteriaScore == null ? 'No criteria' : criteriaScore + '/100'}` : `Gate Checklist: ${criteriaScore == null ? 'Chưa có tiêu chí' : criteriaScore + '/100'}`)}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 2 */}
@@ -562,25 +586,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
+                    {isEn ? 'Stage-Gate Health' : 'Sức khỏe & Cơ hội qua Phase'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                    <span>Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
+                    <span>{isEn ? 'Operational health forecast and probability of passing the gate review to unlock the next phase.' : 'Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.'}</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks
+                      {isEn ? '65% Gate Checklist Score + 35% Subtasks Completion Rate' : '65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks'}
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    Điểm Gate là chỉ báo theo checklist và tiến độ thật; không phải xác suất thống kê. PIC có thể ghi đánh giá riêng kèm cơ sở. Duyệt Gate cần task xong và checklist ≥80%.
+                    {isEn ? 'Gate score is an indicator based on checklist and real progress. Passing Gate requires finished tasks and checklist ≥80%.' : 'Điểm Gate là chỉ báo theo checklist và tiến độ thật; không phải xác suất thống kê. PIC có thể ghi đánh giá riêng kèm cơ sở. Duyệt Gate cần task xong và checklist ≥80%.'}
                   </div>
                 </div>
               </div>
@@ -598,7 +622,7 @@ export const WorkflowManagement: React.FC = () => {
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                Vận tốc (Velocity)
+                {isEn ? 'Velocity' : 'Vận tốc'}
               </span>
 
               {/* Info Icon (i) */}
@@ -616,8 +640,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 ring-2 ring-indigo-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label="Thông tin chỉ số Vận tốc"
-                title="Xem cơ chế & cách tính Vận tốc"
+                aria-label={isEn ? "Velocity info" : "Thông tin chỉ số Vận tốc"}
+                title={isEn ? "View mechanism & formula for Velocity" : "Xem cơ chế & cách tính Vận tốc"}
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -625,15 +649,15 @@ export const WorkflowManagement: React.FC = () => {
 
             <div className="flex items-baseline justify-between my-0.5">
               <b className="text-xl sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
-                {metrics.velocity == null ? '—' : metrics.velocity} <span className="text-xs font-normal text-gray-500">ngày/task (days/task)</span>
+                {metrics.velocity == null ? '—' : metrics.velocity} <span className="text-xs font-normal text-gray-500">{isEn ? 'days/task' : 'ngày/task'}</span>
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                {allTasks.filter(t=>t.completed_at).length} task có thời gian (dated tasks)
+                {isEn ? `${allTasks.filter(t=>t.completed_at).length} dated tasks` : `${allTasks.filter(t=>t.completed_at).length} task có thời gian`}
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              Tốc độ giải quyết task kỹ thuật (Avg completion time)
+              {isEn ? 'Average technical task completion pace' : 'Tốc độ giải quyết task kỹ thuật'}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 3 */}
@@ -651,25 +675,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    Vận tốc (Velocity)
+                    {isEn ? 'Velocity' : 'Vận tốc'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                    <span>Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
+                    <span>{isEn ? 'Measures the average digestion pace and completion time of technical workloads by the team.' : 'Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.'}</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành
+                      {isEn ? 'Total completion duration of finished tasks / Total finished technical tasks' : 'Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành'}
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    Chỉ tính task có thời gian bắt đầu/tạo và completed_at thực tế.
+                    {isEn ? 'Only counts tasks with start/created time and actual completed_at.' : 'Chỉ tính task có thời gian bắt đầu/tạo và completed_at thực tế.'}
                   </div>
                 </div>
               </div>
@@ -687,7 +711,7 @@ export const WorkflowManagement: React.FC = () => {
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                Đúng cam kết hạn (On-Time Rate)
+                {isEn ? 'On-Time Rate' : 'Đúng cam kết hạn'}
               </span>
 
               {/* Info Icon (i) */}
@@ -705,8 +729,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label="Thông tin chỉ số Đúng cam kết hạn"
-                title="Xem cơ chế & cách tính Đúng cam kết hạn"
+                aria-label={isEn ? "On-Time Rate info" : "Thông tin chỉ số Đúng cam kết hạn"}
+                title={isEn ? "View mechanism & formula for On-Time Rate" : "Xem cơ chế & cách tính Đúng cam kết hạn"}
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -717,12 +741,12 @@ export const WorkflowManagement: React.FC = () => {
                 {pct(metrics.onTime)}
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                Dữ liệu thật (Real data)
+                {isEn ? 'Real data' : 'Dữ liệu thật'}
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              Mốc deadline 23:59:59 (Standard 23:59:59 cutoff)
+              {isEn ? 'Standard 23:59:59 deadline cutoff' : 'Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống'}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 4 */}
@@ -740,25 +764,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    Đúng cam kết hạn (On-Time Rate)
+                    {isEn ? 'On-Time Rate' : 'Đúng cam kết hạn'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
-                    <span>Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
+                    <span>{isEn ? 'Measures the percentage of technical tasks approved on or before the committed deadline.' : 'Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.'}</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      (Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%
+                      {isEn ? '(On-time completed tasks / Total completed tasks) × 100%' : '(Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%'}
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.
+                    {isEn ? '💡 System automatically audits completion time against the 23:59:59 deadline cutoff.' : '💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.'}
                   </div>
                 </div>
               </div>
@@ -778,13 +802,13 @@ export const WorkflowManagement: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles size={16} className="text-primary" />
-              Lộ trình giai đoạn (Stage-Gate Stepper Timeline)
+              {isEn ? 'Stage-Gate Stepper Timeline' : 'Lộ trình giai đoạn'}
             </h3>
 
             {/* Thanh Task biểu hiện những Task trong đó (Requirement 3: move xuống bảng Lộ trình giai đoạn) */}
             <div className="flex items-center gap-1.5 flex-wrap mt-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
-                Task trong phạm vi (Tasks in scope):
+                {isEn ? 'Tasks in scope:' : 'Task trong phạm vi:'}
               </span>
 
               {/* Small (i) button for Staff guidance on Task Status mechanisms (Requirement 2) */}
@@ -803,8 +827,8 @@ export const WorkflowManagement: React.FC = () => {
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
                       : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                   }`}
-                  aria-label="Cơ chế & quy chuẩn 7 trạng thái Task"
-                  title="Xem cơ chế & quy chuẩn 7 trạng thái Task (Marketing)"
+                  aria-label={isEn ? "7 Task Status mechanism guide" : "Cơ chế & quy chuẩn 7 trạng thái Task"}
+                  title={isEn ? "View mechanism & rules for 7 Task Statuses (Marketing)" : "Xem cơ chế & quy chuẩn 7 trạng thái Task (Marketing)"}
                 >
                   <Info size={11} strokeWidth={2.4} />
                 </button>
@@ -826,10 +850,10 @@ export const WorkflowManagement: React.FC = () => {
                         </span>
                         <div>
                           <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                            Cơ chế & Quy chuẩn 7 Trạng thái Task
+                            {isEn ? 'Mechanism & Standards of 7 Task Statuses' : 'Cơ chế & Quy chuẩn 7 Trạng thái Task'}
                           </h4>
                           <span className="text-[10px] text-gray-500 dark:text-slate-400 block">
-                            Chuẩn hóa theo quy trình Marketing & Vận hành chiến dịch
+                            {isEn ? 'Standardized for Marketing & Campaign Operations' : 'Chuẩn hóa theo quy trình Marketing & Vận hành chiến dịch'}
                           </span>
                         </div>
                       </div>
@@ -839,7 +863,7 @@ export const WorkflowManagement: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar text-[11px]">
-                      {MARKETING_STATUS_GUIDES.map((item) => {
+                      {(isEn ? MARKETING_STATUS_GUIDES_EN : MARKETING_STATUS_GUIDES_VI).map((item) => {
                         const cfg = WORKFLOW_STATUS_CONFIG[item.status];
                         return (
                           <div
@@ -853,7 +877,7 @@ export const WorkflowManagement: React.FC = () => {
                               </span>
                             </div>
                             <div className="text-[10.5px] text-gray-600 dark:text-slate-300 leading-relaxed mb-1">
-                              <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                              <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
                               {item.shortDesc}
                             </div>
                             <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
@@ -865,7 +889,7 @@ export const WorkflowManagement: React.FC = () => {
                     </div>
 
                     <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-gray-500 dark:text-slate-400">
-                      <span>💡 <b>Quy ước:</b> Nộp draft ấn phẩm chuyển <b>In QA</b> để Leader duyệt trước khi sang <b>Completed</b>.</span>
+                      <span>{isEn ? '💡 Convention: Submit draft deliverables to In QA for Lead review before moving to Completed.' : '💡 Quy ước: Nộp draft ấn phẩm chuyển In QA để Leader duyệt trước khi sang Completed.'}</span>
                     </div>
                   </div>
                 )}
@@ -874,18 +898,19 @@ export const WorkflowManagement: React.FC = () => {
               {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[]).map(st => {
                 const count = taskCountsByStatus[st] || 0;
                 const cfg = WORKFLOW_STATUS_CONFIG[st];
+                const statusLabel = isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || cfg.label);
                 return (
                   <div
                     key={st}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
-                    title={`${cfg.label}: ${count} tasks`}
+                    title={`${statusLabel}: ${count} tasks`}
                   >
                     <WorkflowHexagonIcon status={st} size={13} />
                     <span className={`font-bold ${cfg.textColor}`}>
                       {count}
                     </span>
                     <span className="text-[9px] text-gray-500 dark:text-gray-400">
-                      {cfg.label}
+                      {statusLabel}
                     </span>
                   </div>
                 );
@@ -894,7 +919,7 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap min-w-0 items-center gap-2">
-            <span className="text-xs text-gray-500 whitespace-nowrap">Chặng đang chọn (Selected phase):</span>
+            <span className="text-xs text-gray-500 whitespace-nowrap">{isEn ? 'Selected phase:' : 'Chặng đang chọn:'}</span>
             <div className="relative">
               <select
                 value={activePhaseIndex}
@@ -915,14 +940,14 @@ export const WorkflowManagement: React.FC = () => {
               disabled={!activePhase}
               onClick={() => setIsDetailOpen(!isDetailOpen)}
               className="p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-500 transition-colors ml-1"
-              title={isDetailOpen ? 'Thu gọn chi tiết' : 'Mở rộng chi tiết'}
+              title={isDetailOpen ? (isEn ? 'Collapse details' : 'Thu gọn chi tiết') : (isEn ? 'Expand details' : 'Mở rộng chi tiết')}
             >
               {isDetailOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
           </div>
         </div>
 
-        {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC (No phases yet. Add a phase to assign PIC & sub-PIC).' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn (Not assigned to any phase. Contact PIC to join).'}</div>}
+        {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? (isEn ? 'No phases yet. Add a phase to assign PIC & sub-PIC.' : 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC.') : (isEn ? 'Not assigned to any phase. Contact PIC to join.' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn.')}</div>}
         {/* Timeline Connected Stepper Nodes (Circular Gauge & Connecting Shape Links) */}
         <div className="relative pt-2 pb-2 overflow-x-auto custom-scrollbar">
           <div className="flex items-center min-w-max pb-2 pt-1 px-1">
@@ -957,7 +982,7 @@ export const WorkflowManagement: React.FC = () => {
                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                           : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
                       }`}>
-                        Chặng {p.position}{currentEntity.root ? '/' + phases.length : ' · được giao'}
+                        {isEn ? `Phase ${p.position}` : `Chặng ${p.position}`}{currentEntity.root ? '/' + phases.length : (isEn ? ' · assigned' : ' · được giao')}
                       </span>
 
                       {currentEntity.root && (
@@ -965,7 +990,7 @@ export const WorkflowManagement: React.FC = () => {
                           type="button"
                           onClick={(e) => handleDeletePhase(idx, e)}
                           className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ml-auto"
-                          title={`Xóa giai đoạn: ${p.name}`}
+                          title={isEn ? `Delete phase: ${p.name}` : `Xóa giai đoạn: ${p.name}`}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -996,7 +1021,7 @@ export const WorkflowManagement: React.FC = () => {
                               {pct(p.progress)}
                             </span>
                             <span className="text-[7.5px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-tight">
-                              Đang chạy
+                              {isEn ? 'Running' : 'Đang chạy'}
                             </span>
                           </div>
                         </div>
@@ -1020,7 +1045,7 @@ export const WorkflowManagement: React.FC = () => {
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                         : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
                     }`}>
-                      {isCompleted ? '✓ Hoàn thành' : p.status === 'cancelled' ? 'Đã hủy' : p.status === 'on_hold' ? 'Tạm dừng' : p.status === 'in_review' ? 'Đang nghiệm thu' : isActive ? '● Đang triển khai' : '○ Chờ bắt đầu'}
+                      {isCompleted ? (isEn ? '✓ Completed' : '✓ Hoàn thành') : p.status === 'cancelled' ? (isEn ? 'Canceled' : 'Đã hủy') : p.status === 'on_hold' ? (isEn ? 'On Hold' : 'Tạm dừng') : p.status === 'in_review' ? (isEn ? 'In Review' : 'Đang nghiệm thu') : isActive ? (isEn ? '● In Progress' : '● Đang triển khai') : (isEn ? '○ Not Started' : '○ Chờ bắt đầu')}
                     </span>
 
                     {/* Phase Name & Desc */}
@@ -1035,10 +1060,10 @@ export const WorkflowManagement: React.FC = () => {
                       {p.desc}
                     </span>
 
-                    <div className="w-full mt-1 space-y-1"><p className="text-[9px] text-gray-400">{displayDate(p.start_date)} – {displayDate(p.due_date)}</p><div className="flex flex-wrap justify-center gap-1">{p.members.map(m=><span key={m.id} title={m.name + ' · ' + (m.role || 'PIC')} className="inline-flex items-center gap-1 text-[9px]"><Avatar name={m.name} src={m.avatar_url} className="w-4 h-4 text-[8px]"/>{m.name}{m.role==='sub_pic'?' · SUB':''}</span>)}</div>{currentEntity.root && <button onClick={e=>handleOpenAddPhaseModal(idx,e,p)} className="text-[10px] text-primary underline">Chỉnh sửa phase</button>}</div>
+                    <div className="w-full mt-1 space-y-1"><p className="text-[9px] text-gray-400">{displayDate(p.start_date)} – {displayDate(p.due_date)}</p><div className="flex flex-wrap justify-center gap-1">{p.members.map(m=><span key={m.id} title={m.name + ' · ' + (m.role || 'PIC')} className="inline-flex items-center gap-1 text-[9px]"><Avatar name={m.name} src={m.avatar_url} className="w-4 h-4 text-[8px]"/>{m.name}{m.role==='sub_pic'?' · SUB':''}</span>)}</div>{currentEntity.root && <button onClick={e=>handleOpenAddPhaseModal(idx,e,p)} className="text-[10px] text-primary underline">{isEn ? 'Edit phase' : 'Chỉnh sửa phase'}</button>}</div>
                     {/* Gate chance info */}
                     <div className="w-full mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-[10px]">
-                      <span className="text-gray-400">Cơ hội Gate:</span>
+                      <span className="text-gray-400">{isEn ? 'Gate chance:' : 'Cơ hội Gate:'}</span>
                       <span className={`font-bold ${
                         isCompleted ? 'text-emerald-500' : (p.gateChance ?? -1) >= 80 ? 'text-emerald-500' : (p.gateChance ?? -1) >= 50 ? 'text-amber-500' : 'text-gray-400'
                       }`}>
@@ -1069,12 +1094,12 @@ export const WorkflowManagement: React.FC = () => {
                       {isSelected && isDetailOpen ? (
                         <>
                           <ChevronUp size={13} />
-                          <span>Thu gọn</span>
+                          <span>{isEn ? 'Collapse' : 'Thu gọn'}</span>
                         </>
                       ) : (
                         <>
                           <Eye size={13} />
-                          <span>Xem chi tiết</span>
+                          <span>{isEn ? 'View details' : 'Xem chi tiết'}</span>
                         </>
                       )}
                     </button>
@@ -1098,7 +1123,7 @@ export const WorkflowManagement: React.FC = () => {
                         disabled={!currentEntity.root}
                         onClick={(e) => handleOpenAddPhaseModal(p.position, e)}
                         className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
-                        title={`Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
+                        title={isEn ? `Insert new phase after phase ${idx + 1}` : `Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
                       >
                         <Plus size={12} strokeWidth={2.5} />
                       </button>
@@ -1118,17 +1143,17 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'border-amber-400/70 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-amber-600 dark:text-amber-400'
                     : 'border-blue-400/70 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-blue-600 dark:text-blue-400'
                 }`}
-                title="Thêm giai đoạn mới vào cuối lộ trình"
+                title={isEn ? "Add new phase to end of roadmap" : "Thêm giai đoạn mới vào cuối lộ trình"}
               >
                 <Plus size={18} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-200" />
-                <span className="text-[8px] font-bold mt-0.5">Thêm chặng (Add)</span>
+                <span className="text-[8px] font-bold mt-0.5">{isEn ? 'Add Phase' : 'Thêm chặng'}</span>
               </button>
-              <span className="text-[9px] text-gray-400 mt-1 text-center">Tùy biến lộ trình (Custom)</span>
+              <span className="text-[9px] text-gray-400 mt-1 text-center">{isEn ? 'Custom roadmap' : 'Tùy biến lộ trình'}</span>
             </div>}
           </div>
         </div>
 
-        {currentEntity.root && unplanned.length>0 && <section className="border-t border-gray-100 dark:border-slate-700 pt-3"><details><summary className="text-xs font-semibold cursor-pointer">Task chưa gắn phase ({unplanned.length})</summary><div className="space-y-2 mt-3">{unplanned.map(t=><div key={t.id} className="flex flex-wrap items-center gap-2 text-xs"><button onClick={()=>setSelectedTask(t)} className="flex-1 min-w-0 text-left truncate">{t.title}</button><select aria-label={'Gắn phase cho '+t.title} className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 max-w-full" disabled={hub.busy} value="" onChange={e=>linkTask(t,e.target.value)}><option value="">Chọn phase...</option>{phases.filter(p=>!['completed','cancelled'].includes(p.status)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>)}</div></details></section>}
+        {currentEntity.root && unplanned.length>0 && <section className="border-t border-gray-100 dark:border-slate-700 pt-3"><details><summary className="text-xs font-semibold cursor-pointer">{isEn ? `Unplanned tasks (${unplanned.length})` : `Task chưa gắn phase (${unplanned.length})`}</summary><div className="space-y-2 mt-3">{unplanned.map(t=><div key={t.id} className="flex flex-wrap items-center gap-2 text-xs"><button onClick={()=>setSelectedTask(t)} className="flex-1 min-w-0 text-left truncate">{t.title}</button><select aria-label={isEn ? 'Assign phase for '+t.title : 'Gắn phase cho '+t.title} className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 max-w-full" disabled={hub.busy} value="" onChange={e=>linkTask(t,e.target.value)}><option value="">{isEn ? 'Select phase...' : 'Chọn phase...'}</option>{phases.filter(p=>!['completed','cancelled'].includes(p.status)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>)}</div></details></section>}
         {/* EXPANDED DETAILS SECTION: KHI BẤM VÀO LỘ TRÌNH THÌ MỚI HIỆN RA DETAILS TASK & GATE */}
         {isDetailOpen && activePhase && (
           <div className="pt-4 border-t border-gray-100 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-300">
@@ -1138,7 +1163,7 @@ export const WorkflowManagement: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-xs font-bold text-primary uppercase tracking-wide">
-                  Chi tiết chặng đang chọn:
+                  {isEn ? 'Selected Phase Details:' : 'Chi tiết chặng đang chọn:'}
                 </span>
                 <b className="text-xs text-gray-900 dark:text-white">
                   {activePhase.name} — {activePhase.desc}
@@ -1149,7 +1174,7 @@ export const WorkflowManagement: React.FC = () => {
                 onClick={() => setIsDetailOpen(false)}
                 className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 font-semibold transition-colors"
               >
-                <X size={14} /> Thu gọn chi tiết
+                <X size={14} /> {isEn ? 'Collapse details' : 'Thu gọn chi tiết'}
               </button>
             </div>
 
@@ -1163,20 +1188,20 @@ export const WorkflowManagement: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span>Tiến độ công việc</span>
+                      <span>{isEn ? 'Task progress' : 'Tiến độ công việc'}</span>
                       <span className="font-bold text-primary">{pct(phaseProgressPct)}</span>
                     </div>
                     <div className="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
                       <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${phaseProgressPct ?? 0}%` }} />
                     </div>
                     <span className="text-[10px] text-gray-400 mt-1 block">
-                      {doneSubtasksCount}/{totalSubtasksCount} task hoàn thành
+                      {doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'task hoàn thành'}
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">Cơ hội qua Phase</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">{isEn ? 'Gate Opportunity' : 'Cơ hội qua Phase'}</span>
                       <span className={`font-bold ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
                         {pct(gatePassChancePct)}
                       </span>
@@ -1192,7 +1217,7 @@ export const WorkflowManagement: React.FC = () => {
                     <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border mt-1 inline-block ${
                       (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
                     }`}>
-                      {(gatePassChancePct ?? -1) >= 80 ? '🟢 Đủ điều kiện (>80%)' : '🟡 Cần bổ sung tiêu chí'}
+                      {(gatePassChancePct ?? -1) >= 80 ? (isEn ? '🟢 Eligible (≥80%)' : '🟢 Đủ điều kiện (≥80%)') : (isEn ? '🟡 Add more criteria' : '🟡 Cần bổ sung tiêu chí')}
                     </span>
                   </div>
                 </div>
@@ -1203,9 +1228,9 @@ export const WorkflowManagement: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <ShieldCheck size={16} className="text-emerald-500" />
                       <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                        Tiêu chí thẩm định Gate (Gate Checklist)
+                        {isEn ? 'Gate Checklist' : 'Tiêu chí thẩm định Gate'}
                       </span>
-                      <span className="text-[10px] text-gray-400 hidden sm:inline">(Đạt &gt; 80% để mở khóa chặng sau)</span>
+                      <span className="text-[10px] text-gray-400 hidden sm:inline">{isEn ? '(Score ≥ 80% to unlock next phase)' : '(Đạt ≥ 80% để mở khóa chặng sau)'}</span>
                     </div>
 
                     <button
@@ -1214,7 +1239,7 @@ export const WorkflowManagement: React.FC = () => {
                       onClick={() => setShowAddCriteria(!showAddCriteria)}
                       className="text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold"
                     >
-                      <Plus size={13} /> Thêm tiêu chí
+                      <Plus size={13} /> {isEn ? 'Add criterion' : 'Thêm tiêu chí'}
                     </button>
                   </div>
 
@@ -1224,11 +1249,11 @@ export const WorkflowManagement: React.FC = () => {
                         type="text"
                         value={newCriteriaLabel}
                         onChange={e => setNewCriteriaLabel(e.target.value)}
-                        placeholder="Nhập tiêu chí điều kiện Gate..."
+                        placeholder={isEn ? "Enter gate criterion..." : "Nhập tiêu chí điều kiện Gate..."}
                         className="flex-1 text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-primary"
                       />
                       <button type="submit" className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold">
-                        Lưu
+                        {isEn ? 'Save' : 'Lưu'}
                       </button>
                     </form>
                   )}
@@ -1253,7 +1278,7 @@ export const WorkflowManagement: React.FC = () => {
                         />
                         <div className="flex-1 text-xs">
                           <span className={c.checked ? 'font-semibold' : ''}>{c.label}</span>
-                          <span className="text-[10px] text-gray-400 block mt-0.5">Trọng số: {c.weight}%</span>
+                          <span className="text-[10px] text-gray-400 block mt-0.5">{isEn ? `Weight: ${c.weight}%` : `Trọng số: ${c.weight}%`}</span>
                         </div>
                       </label>
                     ))}
@@ -1263,7 +1288,7 @@ export const WorkflowManagement: React.FC = () => {
                 {/* Gate Pass Approval Button */}
                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {doneSubtasksCount === totalSubtasksCount && totalSubtasksCount > 0 && (criteriaScore || 0) >= 80 ? '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.'}
+                    {doneSubtasksCount === totalSubtasksCount && totalSubtasksCount > 0 && (criteriaScore || 0) >= 80 ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
                   </p>
 
                   {currentEntity.root && !['completed','cancelled'].includes(activePhase.status) && (
@@ -1277,7 +1302,7 @@ export const WorkflowManagement: React.FC = () => {
                           : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-70'
                       }`}
                     >
-                      <span>{phases[activePhaseIndex + 1] ? 'Phê duyệt qua ' + phases[activePhaseIndex + 1].name : 'Hoàn thành phase'}</span>
+                      <span>{phases[activePhaseIndex + 1] ? (isEn ? `Approve to ${phases[activePhaseIndex + 1].name}` : 'Phê duyệt qua ' + phases[activePhaseIndex + 1].name) : (isEn ? 'Complete phase' : 'Hoàn thành phase')}</span>
                       <ArrowRight size={13} />
                     </button>
                   )}
@@ -1292,9 +1317,9 @@ export const WorkflowManagement: React.FC = () => {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
                         <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-blue-600'} />
-                        Đầu việc ({doneSubtasksCount}/{totalSubtasksCount})
+                        {isEn ? 'Tasks' : 'Đầu việc'} ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
-                      <span className="text-[10px] text-gray-400">Thêm, sửa, xóa và chuyển đổi trạng thái task</span>
+                      <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1308,10 +1333,10 @@ export const WorkflowManagement: React.FC = () => {
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
-                        title="Thêm đầu việc mới vào chặng này"
+                        title={isEn ? 'Add new task to this phase' : 'Thêm đầu việc mới vào chặng này'}
                       >
                         <Plus size={12} strokeWidth={2.5} />
-                        <span>Thêm task</span>
+                        <span>{isEn ? 'Add task' : 'Thêm task'}</span>
                       </button>
                     </div>
                   </div>
@@ -1321,7 +1346,7 @@ export const WorkflowManagement: React.FC = () => {
                     <form onSubmit={handleAddTask} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                          <Plus size={12} strokeWidth={2.5} /> Thêm đầu việc mới
+                          <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm đầu việc mới'}
                         </span>
                         <button
                           type="button"
@@ -1336,13 +1361,13 @@ export const WorkflowManagement: React.FC = () => {
                         type="text"
                         value={newTaskTitle}
                         onChange={e => setNewTaskTitle(e.target.value)}
-                        placeholder="Nhập tên đầu việc..."
+                        placeholder={isEn ? 'Enter task title...' : 'Nhập tên đầu việc...'}
                         autoFocus
                         className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
                       />
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <MultiSelect options={taskOptions} value={newTaskAssignee ? [newTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setNewTaskAssignee(ids[0] || '')} placeholder="Chọn PIC task..." />
+                        <MultiSelect options={taskOptions} value={newTaskAssignee ? [newTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setNewTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} />
                         <WorkflowDateField id="workflow-task-due" value={newTaskDue} onChange={setNewTaskDue}/>
 
                         <select
@@ -1352,7 +1377,7 @@ export const WorkflowManagement: React.FC = () => {
                         >
                           {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                             <option key={st} value={st}>
-                              {WORKFLOW_STATUS_CONFIG[st].label}
+                              {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
                             </option>
                           ))}
                         </select>
@@ -1364,13 +1389,13 @@ export const WorkflowManagement: React.FC = () => {
                           onClick={() => setShowAddTask(false)}
                           className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                         >
-                          Hủy
+                          {isEn ? 'Cancel' : 'Hủy'}
                         </button>
                         <button
                           type="submit"
                           className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
                         >
-                          Lưu đầu việc
+                          {isEn ? 'Save task' : 'Lưu đầu việc'}
                         </button>
                       </div>
                     </form>
@@ -1380,7 +1405,7 @@ export const WorkflowManagement: React.FC = () => {
                   <div className="space-y-2">
                     {currentPhaseSubtasks.length === 0 ? (
                       <div className="text-center py-8 text-xs text-gray-400">
-                        Chưa có đầu việc nào trong giai đoạn này. Bấm &quot;Thêm task&quot; để tạo đầu việc đầu tiên.
+                        {isEn ? 'No tasks in this phase yet. Click "Add task" to create the first one.' : 'Chưa có đầu việc nào trong giai đoạn này. Bấm "Thêm task" để tạo đầu việc đầu tiên.'}
                       </div>
                     ) : (
                       currentPhaseSubtasks.map((s) => {
@@ -1395,7 +1420,7 @@ export const WorkflowManagement: React.FC = () => {
                               onClick={e => e.stopPropagation()}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase">Đang chỉnh sửa đầu việc</span>
+                                <span className="text-[10px] font-bold text-blue-600 uppercase">{isEn ? 'Editing task' : 'Đang chỉnh sửa đầu việc'}</span>
                                 <button
                                   type="button"
                                   onClick={() => setEditingTaskId(null)}
@@ -1413,7 +1438,7 @@ export const WorkflowManagement: React.FC = () => {
                               />
 
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                                {currentEntity.root ? <MultiSelect options={taskOptions} value={editTaskAssignee ? [editTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setEditTaskAssignee(ids[0] || '')} placeholder="Chọn PIC task..." /> : <span className="text-xs">{s.assignee}</span>}
+                                {currentEntity.root ? <MultiSelect options={taskOptions} value={editTaskAssignee ? [editTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setEditTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} /> : <span className="text-xs">{s.assignee}</span>}
                                 <WorkflowDateField id="workflow-edit-task-due" value={editTaskDue} onChange={setEditTaskDue}/>
                                 <select
                                   value={editTaskStatus}
@@ -1422,7 +1447,7 @@ export const WorkflowManagement: React.FC = () => {
                                 >
                                   {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                                     <option key={st} value={st}>
-                                      {WORKFLOW_STATUS_CONFIG[st].label}
+                                      {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
                                     </option>
                                   ))}
                                 </select>
@@ -1434,14 +1459,14 @@ export const WorkflowManagement: React.FC = () => {
                                   onClick={() => setEditingTaskId(null)}
                                   className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
                                 >
-                                  Hủy
+                                  {isEn ? 'Cancel' : 'Hủy'}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={(e) => handleSaveEditTask(s.id, e)}
                                   className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
                                 >
-                                  <Check size={12} strokeWidth={2.5} /> Lưu thay đổi
+                                  <Check size={12} strokeWidth={2.5} /> {isEn ? 'Save changes' : 'Lưu thay đổi'}
                                 </button>
                               </div>
                             </div>
@@ -1467,7 +1492,7 @@ export const WorkflowManagement: React.FC = () => {
                                 checked={done}
                                 onChange={() => toggleSubtask(s.id)}
                                 className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
-                                title="Đánh dấu hoàn thành"
+                                title={isEn ? 'Mark completed' : 'Đánh dấu hoàn thành'}
                               />
 
                               <WorkflowStatusPicker status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
@@ -1503,7 +1528,7 @@ export const WorkflowManagement: React.FC = () => {
                                 disabled={!s.canEdit || hub.busy}
                                 onClick={(e) => handleStartEditTask(s, e)}
                                 className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title="Chỉnh sửa đầu việc"
+                                title={isEn ? 'Edit task' : 'Chỉnh sửa đầu việc'}
                               >
                                 <Edit3 size={12} />
                               </button>
@@ -1514,7 +1539,7 @@ export const WorkflowManagement: React.FC = () => {
                                 disabled={!s.canEdit || hub.busy}
                                 onClick={(e) => handleDeleteTask(s.id, e)}
                                 className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title="Xóa đầu việc"
+                                title={isEn ? 'Delete task' : 'Xóa đầu việc'}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -1528,8 +1553,8 @@ export const WorkflowManagement: React.FC = () => {
 
                 {/* Footer summary */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
-                  <span>Tiến độ hoàn thành chặng:</span>
-                  <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} công việc xong</b>
+                  <span>{isEn ? 'Phase completion:' : 'Tiến độ hoàn thành chặng:'}</span>
+                  <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'công việc xong'}</b>
                 </div>
               </div>
 
@@ -1549,12 +1574,12 @@ export const WorkflowManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                   <Activity size={16} className="text-primary" />
-                  Trạng thái Task Tháng Này (Task Status This Month)
+                  {isEn ? 'Task Status This Month' : 'Trạng thái Task Tháng Này'}
                 </h3>
-                <span className="text-[11px] text-gray-400">{new Date().toLocaleDateString('vi-VN',{month:'long',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'})} · Tổng {totalMonthTasks} tasks (Total: {totalMonthTasks})</span>
+                <span className="text-[11px] text-gray-400">{new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN',{month:'long',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'})} · {isEn ? `Total: ${totalMonthTasks} tasks` : `Tổng: ${totalMonthTasks} tasks`}</span>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
-                Current Month
+                {isEn ? 'Current Month' : 'Tháng hiện tại'}
               </span>
             </div>
 
@@ -1591,7 +1616,7 @@ export const WorkflowManagement: React.FC = () => {
               {/* Center gentle glass hub - Soft & Technical (No border stroke) */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="w-22 h-22 rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_6px_20px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center">
-                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">Hoàn thành (Done)</span>
+                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">{isEn ? 'Completed' : 'Hoàn thành'}</span>
                   <b className="text-xl font-extrabold text-emerald-500 dark:text-emerald-400">
                     {totalMonthTasks ? Math.round(currentMonthTaskStats[0].value * 100 / totalMonthTasks) + '%' : '—'}
                   </b>
@@ -1619,19 +1644,19 @@ export const WorkflowManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                   <BarChart2 size={16} className="text-primary" />
-                  Hiệu Suất Thực Thi & Vận Tốc (Burndown & Velocity)
+                  {isEn ? 'Execution Performance & Velocity' : 'Hiệu Suất Thực Thi & Vận Tốc'}
                 </h3>
                 <span className="text-[11px] text-gray-400">
-                  Tiến độ bàn giao so với kế hoạch mục tiêu (Delivery progress vs. Plan target)
+                  {isEn ? 'Delivery progress vs. plan target' : 'Tiến độ bàn giao so với kế hoạch mục tiêu'}
                 </span>
               </div>
 
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Thực tế (Actual)
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> {isEn ? 'Actual' : 'Thực tế'}
                 </span>
                 <span className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-0.5 bg-gray-400" /> Mục tiêu (Plan)
+                  <span className="w-2.5 h-0.5 bg-gray-400" /> {isEn ? 'Plan' : 'Kế hoạch'}
                 </span>
               </div>
             </div>
@@ -1668,7 +1693,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="actual"
-                    name="Thực tế (Actual tasks)"
+                    name={isEn ? 'Actual' : 'Thực tế'}
                     stroke="#3b82f6"
                     strokeWidth={2.5}
                     fillOpacity={1}
@@ -1677,7 +1702,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="plan"
-                    name="Kế hoạch (Plan target)"
+                    name={isEn ? 'Plan' : 'Kế hoạch'}
                     stroke="#94a3b8"
                     strokeDasharray="4 4"
                     strokeWidth={1.8}
@@ -1689,9 +1714,9 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
-            <span>Đánh giá nhịp độ (Pace assessment - {activePhase?.name || 'Chưa có phase / No phase'}):</span>
+            <span>{isEn ? `Pace assessment (${activePhase?.name || 'No phase'}):` : `Đánh giá nhịp độ (${activePhase?.name || 'Chưa có phase'}):`}</span>
             <span className="font-semibold text-emerald-500">
-              Tiến độ (Progress) {pct(activePhase?.progress)} — Chỉ báo Gate (Gate indicator) {pct(gatePassChancePct)}
+              {isEn ? `Progress ${pct(activePhase?.progress)} — Gate indicator ${pct(gatePassChancePct)}` : `Tiến độ ${pct(activePhase?.progress)} — Chỉ báo Gate ${pct(gatePassChancePct)}`}
             </span>
           </div>
         </div>
@@ -1718,10 +1743,10 @@ export const WorkflowManagement: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                    {editingPhaseId ? 'Chỉnh sửa phase' : 'Thêm giai đoạn mới'}
+                    {editingPhaseId ? (isEn ? 'Edit phase' : 'Chỉnh sửa phase') : (isEn ? 'Add new phase' : 'Thêm giai đoạn mới')}
                   </h3>
                   <span className="text-[10px] text-gray-400">
-                    {editingPhaseId ? 'PIC và sub-PIC chỉ có quyền trên phase được giao' : 'Chèn vào vị trí chặng số ' + (insertPhaseIndex + 1)}
+                    {editingPhaseId ? (isEn ? 'PIC and sub-PIC only have permissions on assigned phases' : 'PIC và sub-PIC chỉ có quyền trên phase được giao') : (isEn ? `Insert into phase #${insertPhaseIndex + 1}` : `Chèn vào vị trí chặng số ${insertPhaseIndex + 1}`)}
                   </span>
                 </div>
               </div>
@@ -1737,13 +1762,13 @@ export const WorkflowManagement: React.FC = () => {
             <form onSubmit={handleCreatePhase} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  Tên giai đoạn <span className="text-red-500">*</span>
+                  {isEn ? 'Phase name' : 'Tên giai đoạn'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newPhaseName}
                   onChange={e => setNewPhaseName(e.target.value)}
-                  placeholder="Nhập tên giai đoạn..."
+                  placeholder={isEn ? 'Enter phase name...' : 'Nhập tên giai đoạn...'}
                   autoFocus
                   required
                   className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -1752,29 +1777,29 @@ export const WorkflowManagement: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  Mô tả mục tiêu giai đoạn
+                  {isEn ? 'Phase objective description' : 'Mô tả mục tiêu giai đoạn'}
                 </label>
                 <textarea
                   rows={2}
                   value={newPhaseDesc}
                   onChange={e => setNewPhaseDesc(e.target.value)}
-                  placeholder="Mục tiêu và kết quả cần bàn giao..."
+                  placeholder={isEn ? 'Objective and expected deliverables...' : 'Mục tiêu và kết quả cần bàn giao...'}
                   className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold">Ngày bắt đầu<WorkflowDateField id="workflow-phase-start" value={phaseStart} onChange={setPhaseStart}/></label><label className="text-xs font-semibold">Ngày kết thúc<WorkflowDateField id="workflow-phase-due" value={phaseDue} onChange={setPhaseDue}/></label></div>
-              <label className="block text-xs font-semibold">PIC phase *<MultiSelect options={personOptions} value={phasePicIds} onChange={setPhasePicIds} placeholder="Chọn PIC phase..."/></label>
-              <label className="block text-xs font-semibold">Sub-PIC phase<MultiSelect options={personOptions.filter(p=>!phasePicIds.includes(p.value))} value={phaseSubIds} onChange={setPhaseSubIds} placeholder="Chọn sub-PIC phase..."/></label>
-              <label className="block text-xs font-semibold">Trạng thái<select className={field} value={phaseStatus} onChange={e=>setPhaseStatus(e.target.value)}>{[['todo','Chưa bắt đầu'],['in_progress','Đang triển khai'],['in_review','Đang nghiệm thu'],['on_hold','Tạm dừng'],['completed','Hoàn thành'],['cancelled','Đã hủy']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
-              <div className="space-y-2"><label className="block text-xs font-semibold">Cơ hội qua phase · PIC đánh giá (tùy chọn)<input type="number" min="0" max="100" className={field} value={phaseOpportunity} onChange={e=>setPhaseOpportunity(e.target.value)} placeholder="Chưa đánh giá"/></label><textarea className={field} value={phaseReason} onChange={e=>setPhaseReason(e.target.value)} placeholder="Cơ sở đánh giá · bắt buộc khi nhập %"/></div>
+              <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold">{isEn ? 'Start date' : 'Ngày bắt đầu'}<WorkflowDateField id="workflow-phase-start" value={phaseStart} onChange={setPhaseStart}/></label><label className="text-xs font-semibold">{isEn ? 'Due date' : 'Ngày kết thúc'}<WorkflowDateField id="workflow-phase-due" value={phaseDue} onChange={setPhaseDue}/></label></div>
+              <label className="block text-xs font-semibold">{isEn ? 'Phase PIC *' : 'PIC phase *'}<MultiSelect options={personOptions} value={phasePicIds} onChange={setPhasePicIds} placeholder={isEn ? 'Select phase PIC...' : 'Chọn PIC phase...'}/></label>
+              <label className="block text-xs font-semibold">{isEn ? 'Phase Sub-PIC' : 'Sub-PIC phase'}<MultiSelect options={personOptions.filter(p=>!phasePicIds.includes(p.value))} value={phaseSubIds} onChange={setPhaseSubIds} placeholder={isEn ? 'Select phase Sub-PIC...' : 'Chọn sub-PIC phase...'}/></label>
+              <label className="block text-xs font-semibold">{isEn ? 'Status' : 'Trạng thái'}<select className={field} value={phaseStatus} onChange={e=>setPhaseStatus(e.target.value)}>{[['todo', isEn ? 'Todo' : 'Chưa bắt đầu'],['in_progress', isEn ? 'In progress' : 'Đang triển khai'],['in_review', isEn ? 'In review' : 'Đang nghiệm thu'],['on_hold', isEn ? 'On hold' : 'Tạm dừng'],['completed', isEn ? 'Completed' : 'Hoàn thành'],['cancelled', isEn ? 'Canceled' : 'Đã hủy']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+              <div className="space-y-2"><label className="block text-xs font-semibold">{isEn ? 'Gate opportunity · PIC evaluation (optional)' : 'Cơ hội qua phase · PIC đánh giá (tùy chọn)'}<input type="number" min="0" max="100" className={field} value={phaseOpportunity} onChange={e=>setPhaseOpportunity(e.target.value)} placeholder={isEn ? 'Not evaluated' : 'Chưa đánh giá'}/></label><textarea className={field} value={phaseReason} onChange={e=>setPhaseReason(e.target.value)} placeholder={isEn ? 'Evaluation basis · required when entering %' : 'Cơ sở đánh giá · bắt buộc khi nhập %'}/></div>
               <div className="sticky bottom-0 bg-white dark:bg-slate-900 flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddPhaseModal(false)}
                   className="px-3 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Hủy bỏ
+                  {isEn ? 'Cancel' : 'Hủy bỏ'}
                 </button>
                 <button
                   type="submit" disabled={hub.busy}
@@ -1785,7 +1810,7 @@ export const WorkflowManagement: React.FC = () => {
                   }`}
                 >
                   <Plus size={14} strokeWidth={2.5} />
-                  <span>{hub.busy ? 'Đang lưu...' : editingPhaseId ? 'Lưu phase' : 'Tạo giai đoạn'}</span>
+                  <span>{hub.busy ? (isEn ? 'Saving...' : 'Đang lưu...') : editingPhaseId ? (isEn ? 'Save phase' : 'Lưu phase') : (isEn ? 'Create phase' : 'Tạo giai đoạn')}</span>
                 </button>
               </div>
             </form>

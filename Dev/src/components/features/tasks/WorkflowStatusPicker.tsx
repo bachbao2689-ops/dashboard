@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Sparkles } from 'lucide-react';
+import { useTranslation } from '../../../i18n/translations';
 
 export type WorkflowTaskStatus = 'backlog' | 'planned' | 'scoping' | 'in_progress' | 'in_qa' | 'completed' | 'canceled';
 
@@ -70,6 +71,26 @@ export const WORKFLOW_STATUS_CONFIG: Record<WorkflowTaskStatus, {
   }
 };
 
+export const WORKFLOW_STATUS_LABELS_VI: Record<WorkflowTaskStatus, string> = {
+  backlog: 'Chờ xử lý',
+  planned: 'Đã lên kế hoạch',
+  scoping: 'Làm rõ phạm vi',
+  in_progress: 'Đang triển khai',
+  in_qa: 'Rà soát & Duyệt',
+  completed: 'Đã hoàn thành',
+  canceled: 'Đã hủy'
+};
+
+export const WORKFLOW_STATUS_LABELS_EN: Record<WorkflowTaskStatus, string> = {
+  backlog: 'Backlog',
+  planned: 'Planned',
+  scoping: 'Scoping',
+  in_progress: 'In Progress',
+  in_qa: 'In QA',
+  completed: 'Completed',
+  canceled: 'Canceled'
+};
+
 export interface MarketingStatusGuide {
   status: WorkflowTaskStatus;
   marketingTitle: string;
@@ -77,50 +98,97 @@ export interface MarketingStatusGuide {
   usageRule: string;
 }
 
-export const MARKETING_STATUS_GUIDES: MarketingStatusGuide[] = [
+export const MARKETING_STATUS_GUIDES_VI: MarketingStatusGuide[] = [
   {
     status: 'backlog',
-    marketingTitle: 'Backlog (Ý tưởng & Chờ duyệt)',
+    marketingTitle: 'Backlog · Ý tưởng & Chờ duyệt',
     shortDesc: 'Kho lưu trữ ý tưởng, đề xuất nội dung & hạng mục tiềm năng cho các chiến dịch tương lai, chưa xếp lịch đợt này.',
     usageRule: 'Gán khi task mới nảy sinh ý tưởng hoặc đang xếp hàng chờ duyệt ngân sách / thời điểm.'
   },
   {
     status: 'planned',
-    marketingTitle: 'Planned (Đã lên kế hoạch)',
+    marketingTitle: 'Planned · Đã lên kế hoạch',
     shortDesc: 'Đã chốt đưa vào kế hoạch tuần/tháng hoặc chiến dịch sắp tới; đã phân bổ nhân sự nhưng chưa bắt đầu sản xuất ngay.',
     usageRule: 'Gán khi đã chốt timeline & người phụ trách, chờ đến ngày bấm máy triển khai.'
   },
   {
     status: 'scoping',
-    marketingTitle: 'Scoping (Làm rõ Brief & Phạm vi)',
-    shortDesc: 'Hoàn thiện creative brief, chốt mục tiêu, thông điệp truyền thông, tiêu chí nghiệm thu (acceptance criteria) trước khi làm.',
+    marketingTitle: 'Scoping · Làm rõ Brief & Phạm vi',
+    shortDesc: 'Hoàn thiện creative brief, chốt mục tiêu, thông điệp truyền thông, tiêu chí nghiệm thu trước khi làm.',
     usageRule: 'Gán khi đang trao đổi brief với khách hàng / lead trước khi bắt tay thực thi.'
   },
   {
     status: 'in_progress',
-    marketingTitle: 'In Progress (Đang triển khai)',
+    marketingTitle: 'In Progress · Đang triển khai',
     shortDesc: 'Đội ngũ Marketing / Design / Content / Media đang trực tiếp sản xuất nội dung, thiết kế ấn phẩm và thực thi chiến dịch.',
     usageRule: 'Gán ngay khi nhân sự bắt đầu sản xuất nội dung / ấn phẩm truyền thông.'
   },
   {
     status: 'in_qa',
-    marketingTitle: 'In QA (Rà soát & Duyệt nội dung)',
+    marketingTitle: 'In QA · Rà soát & Duyệt nội dung',
     shortDesc: 'Bản nháp / ấn phẩm hoàn tất đang được Leader hoặc QC rà soát câu từ, visual và đối soát brand guidelines.',
     usageRule: 'Gán khi nộp bản draft chờ Leader / khách hàng duyệt và phản hồi feedback.'
   },
   {
     status: 'completed',
-    marketingTitle: 'Completed (Đã nghiệm thu & Hoàn tất)',
+    marketingTitle: 'Completed · Đã nghiệm thu & Hoàn tất',
     shortDesc: 'Ấn phẩm / chiến dịch đã được phê duyệt chính thức, xuất bản hoặc bàn giao đạt chuẩn yêu cầu ban đầu.',
     usageRule: 'Gán khi đã hoàn thành nghiệm thu toàn bộ tiêu chí chất lượng.'
   },
   {
     status: 'canceled',
-    marketingTitle: 'Canceled (Đã hủy bỏ)',
+    marketingTitle: 'Canceled · Đã hủy bỏ',
     shortDesc: 'Dừng thực hiện do thay đổi định hướng chiến dịch, trùng lặp nội dung hoặc không còn phù hợp với mục tiêu kinh doanh.',
     usageRule: 'Gán thay vì xóa task để lưu vết lịch sử quyết định và tài nguyên đã nghiên cứu.'
   }
 ];
+
+export const MARKETING_STATUS_GUIDES_EN: MarketingStatusGuide[] = [
+  {
+    status: 'backlog',
+    marketingTitle: 'Backlog · Ideas & Pending',
+    shortDesc: 'Repository of ideas, content proposals & potential tasks for future campaigns, not yet scheduled.',
+    usageRule: 'Assign when task is newly brainstormed or queued for budget/timeline approval.'
+  },
+  {
+    status: 'planned',
+    marketingTitle: 'Planned · Scheduled',
+    shortDesc: 'Confirmed in roadmap or upcoming campaign; assigned to PIC but not yet in active production.',
+    usageRule: 'Assign when timeline & owner are locked in, waiting for launch date.'
+  },
+  {
+    status: 'scoping',
+    marketingTitle: 'Scoping · Brief & Requirements',
+    shortDesc: 'Finalizing creative brief, goals, key messages, and acceptance criteria before production.',
+    usageRule: 'Assign while clarifying requirements with clients / leads before execution.'
+  },
+  {
+    status: 'in_progress',
+    marketingTitle: 'In Progress · Active Execution',
+    shortDesc: 'Marketing, Design, Content, or Media team is actively producing deliverables and running the campaign.',
+    usageRule: 'Assign as soon as staff starts producing content / assets.'
+  },
+  {
+    status: 'in_qa',
+    marketingTitle: 'In QA · Review & Approval',
+    shortDesc: 'Completed drafts/assets are being reviewed by Lead or QC for copy, visuals, and brand guidelines.',
+    usageRule: 'Assign when submitting draft deliverables awaiting Lead review and feedback.'
+  },
+  {
+    status: 'completed',
+    marketingTitle: 'Completed · Delivered & Done',
+    shortDesc: 'Deliverable/campaign officially approved, published, or handed over meeting all quality criteria.',
+    usageRule: 'Assign when all deliverables have met acceptance criteria.'
+  },
+  {
+    status: 'canceled',
+    marketingTitle: 'Canceled · Discontinued',
+    shortDesc: 'Halted due to campaign pivot, redundant content, or business priority changes.',
+    usageRule: 'Assign instead of deleting to retain audit trail of decisions and research.'
+  }
+];
+
+export const MARKETING_STATUS_GUIDES = MARKETING_STATUS_GUIDES_VI;
 
 export const STATUS_MARKETING_SUBTITLE: Record<WorkflowTaskStatus, string> = {
   backlog: 'Ý tưởng & Chờ duyệt',
@@ -130,6 +198,16 @@ export const STATUS_MARKETING_SUBTITLE: Record<WorkflowTaskStatus, string> = {
   in_qa: 'Rà soát & Duyệt nội dung',
   completed: 'Đã nghiệm thu & Hoàn tất',
   canceled: 'Đã hủy bỏ'
+};
+
+export const STATUS_MARKETING_SUBTITLE_EN: Record<WorkflowTaskStatus, string> = {
+  backlog: 'Ideas & Pending',
+  planned: 'Scheduled',
+  scoping: 'Brief & Requirements',
+  in_progress: 'Active Execution',
+  in_qa: 'Review & Approval',
+  completed: 'Delivered & Done',
+  canceled: 'Discontinued'
 };
 
 export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: number; className?: string }> = ({
@@ -277,6 +355,10 @@ export function workflowStage(status?: string | null, stage?: string | null): Wo
   return 'backlog';
 }
 export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:string;stage?:string|null;disabled?:boolean;onChange:(stage:WorkflowTaskStatus)=>Promise<void>}) {
+  const { lang } = useTranslation();
+  const isEn = lang === 'en';
+  const guides = isEn ? MARKETING_STATUS_GUIDES_EN : MARKETING_STATUS_GUIDES_VI;
+  const subtitleMap = isEn ? STATUS_MARKETING_SUBTITLE_EN : STATUS_MARKETING_SUBTITLE;
   const value=workflowStage(status,stage);
   const [open,setOpen]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -303,9 +385,9 @@ export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:s
     setPosition({left:Math.max(12,Math.min(r.left,window.innerWidth-276)),top:down?r.bottom+6:Math.max(12,r.top-available-6),maxHeight:available});
     setOpen(v=>!v);
   };
-  return <><button ref={button} disabled={disabled||saving} onClick={toggle} aria-label="Đổi trạng thái task" aria-expanded={open} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold transition-colors ${WORKFLOW_STATUS_CONFIG[value].bgLight} ${WORKFLOW_STATUS_CONFIG[value].bgDark} ${WORKFLOW_STATUS_CONFIG[value].textColor} ${WORKFLOW_STATUS_CONFIG[value].borderClass} disabled:cursor-default`}><WorkflowHexagonIcon status={value} size={13}/>{WORKFLOW_STATUS_CONFIG[value].label}{!disabled&&<ChevronDown size={10}/>}</button>
+  return <><button ref={button} disabled={disabled||saving} onClick={toggle} aria-label={isEn ? "Change task status" : "Đổi trạng thái task"} aria-expanded={open} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold transition-colors ${WORKFLOW_STATUS_CONFIG[value].bgLight} ${WORKFLOW_STATUS_CONFIG[value].bgDark} ${WORKFLOW_STATUS_CONFIG[value].textColor} ${WORKFLOW_STATUS_CONFIG[value].borderClass} disabled:cursor-default`}><WorkflowHexagonIcon status={value} size={13}/>{isEn ? WORKFLOW_STATUS_LABELS_EN[value] : WORKFLOW_STATUS_LABELS_VI[value]}{!disabled&&<ChevronDown size={10}/>}</button>
   {open&&createPortal(<div ref={popup} style={{position:'fixed',left:position.left,top:position.top,maxHeight:position.maxHeight,width:'min(264px,calc(100vw - 24px))'}} className="z-[200] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-xl space-y-1">
-    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5 p-2"><Sparkles size={11}/>Đổi trạng thái task</p>
-    {MARKETING_STATUS_GUIDES.map(g=><button key={g.status} disabled={saving} title={g.usageRule} onClick={async()=>{setSaving(true);try{await onChange(g.status);setOpen(false);}catch{/* Caller displays the write error; keep the picker open. */}finally{setSaving(false);}}} className="w-full p-2 text-left rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"><span className="flex items-center gap-2 text-xs font-bold"><WorkflowHexagonIcon status={g.status} size={16}/>{WORKFLOW_STATUS_CONFIG[g.status].label}{g.status===value&&<Check size={13}/>}</span><span className="block mt-1 text-[10px] text-gray-500">{STATUS_MARKETING_SUBTITLE[g.status]}</span><span className="block mt-1 text-[10px] text-gray-400 leading-relaxed">{g.shortDesc}</span></button>)}
+    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5 p-2"><Sparkles size={11}/>{isEn ? 'Change task status' : 'Đổi trạng thái task'}</p>
+    {guides.map(g=><button key={g.status} disabled={saving} title={g.usageRule} onClick={async()=>{setSaving(true);try{await onChange(g.status);setOpen(false);}catch{/* Caller displays the write error; keep the picker open. */}finally{setSaving(false);}}} className="w-full p-2 text-left rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"><span className="flex items-center gap-2 text-xs font-bold"><WorkflowHexagonIcon status={g.status} size={16}/>{isEn ? WORKFLOW_STATUS_LABELS_EN[g.status] : WORKFLOW_STATUS_LABELS_VI[g.status]}{g.status===value&&<Check size={13}/>}</span><span className="block mt-1 text-[10px] text-gray-500">{subtitleMap[g.status]}</span><span className="block mt-1 text-[10px] text-gray-400 leading-relaxed">{g.shortDesc}</span></button>)}
   </div>,document.body)}</>;
 }

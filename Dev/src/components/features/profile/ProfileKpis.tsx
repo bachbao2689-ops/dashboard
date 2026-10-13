@@ -54,11 +54,11 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <CheckCircle2 size={14} />,
       tone: 'text-teal-600',
       tooltip: {
-        title: lang === 'vi' ? 'Đúng hạn (On-time Rate)' : 'On-Time Rate',
+        title: lang === 'vi' ? 'Đúng hạn' : 'On-Time Rate',
         mechanism: lang === 'vi'
           ? 'Đo lường % task hoàn thành đúng cam kết deadline.'
           : 'Percentage of tasks completed on or before deadline.',
-        formula: '(Task xong đúng hạn / Tổng task đã xong) × 100%',
+        formula: lang === 'vi' ? '(Task xong đúng hạn / Tổng task đã xong) × 100%' : '(On-time tasks / Total completed tasks) × 100%',
         note: lang === 'vi'
           ? 'Hệ thống tính mốc Deadline lúc 23:59:59 của ngày đáo hạn.'
           : 'Based on 23:59:59 cutoff of the deadline date.'
@@ -71,7 +71,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <AlertTriangle size={14} />,
       tone: 'text-red-600',
       tooltip: {
-        title: lang === 'vi' ? 'Điểm nghẽn (Bottlenecks)' : 'Bottlenecks',
+        title: lang === 'vi' ? 'Điểm nghẽn' : 'Bottlenecks',
         mechanism: lang === 'vi'
           ? 'Số lượng điểm nóng bị quá hạn, gây tắc nghẽn guồng máy vận hành.'
           : 'Number of overdue tasks causing operational bottlenecks.',
@@ -86,7 +86,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <Clock3 size={14} />,
       tone: 'text-blue-600',
       tooltip: {
-        title: lang === 'vi' ? 'Vận tốc (Velocity)' : 'Velocity',
+        title: lang === 'vi' ? 'Vận tốc' : 'Velocity',
         mechanism: lang === 'vi'
           ? 'Tốc độ tiêu hoá công việc trung bình (số ngày để xong 1 task).'
           : 'Average days taken to complete a task from creation to completion.',
@@ -103,7 +103,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <UsersRound size={14} />,
       tone: 'text-violet-600',
       tooltip: {
-        title: lang === 'vi' ? 'Task đang mở (Open Tasks)' : 'Open Tasks',
+        title: lang === 'vi' ? 'Task đang mở' : 'Open Tasks',
         mechanism: lang === 'vi'
           ? 'Khối lượng công việc (Workload) hiện tại đang đảm nhiệm.'
           : 'Current active workload under responsibility.',
@@ -119,7 +119,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <PlayCircle size={14} />,
       tone: 'text-blue-600',
       tooltip: {
-        title: lang === 'vi' ? 'Hạn hôm nay (Today)' : 'Due Today',
+        title: lang === 'vi' ? 'Hạn hôm nay' : 'Due Today',
         mechanism: lang === 'vi'
           ? 'Các đầu việc cần tập trung xử lý và hoàn tất ngay trong ngày.'
           : 'Tasks that need to be completed today.',
@@ -133,7 +133,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <AlertTriangle size={14} />,
       tone: 'text-red-600',
       tooltip: {
-        title: lang === 'vi' ? 'Quá hạn (Overdue)' : 'Overdue Tasks',
+        title: lang === 'vi' ? 'Quá hạn' : 'Overdue Tasks',
         mechanism: lang === 'vi'
           ? 'Các task đã vượt quá thời hạn cam kết, cần ưu tiên xử lý gấp.'
           : 'Tasks past their committed deadline requiring immediate focus.',
@@ -147,7 +147,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <Clock3 size={14} />,
       tone: 'text-amber-600',
       tooltip: {
-        title: lang === 'vi' ? 'Sắp đến hạn (Due Soon)' : 'Due Soon',
+        title: lang === 'vi' ? 'Sắp đến hạn' : 'Due Soon',
         mechanism: lang === 'vi'
           ? 'Các task sắp đến hạn trong vòng 3 ngày tới để chủ động tiến độ.'
           : 'Tasks due within the next 3 days to help plan ahead.',
@@ -161,7 +161,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
       icon: <CheckCircle2 size={14} />,
       tone: 'text-teal-600',
       tooltip: {
-        title: lang === 'vi' ? 'Chờ duyệt (Pending)' : 'Pending Approvals',
+        title: lang === 'vi' ? 'Chờ duyệt' : 'Pending Approvals',
         mechanism: lang === 'vi'
           ? 'Yêu cầu mượn thiết bị đang gửi chờ Leader/Manager phê duyệt.'
           : 'Equipment borrow requests waiting for approval.',
@@ -242,12 +242,12 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">{lang === 'vi' ? 'Cơ chế: ' : 'Mechanism: '}</span>
                     <span>{metric.tooltip.mechanism}</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{lang === 'vi' ? 'Cách tính:' : 'Formula:'}</span>
                     <span className="font-mono text-primary dark:text-blue-400 font-medium">{metric.tooltip.formula}</span>
                   </div>
 
