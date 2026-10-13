@@ -1,11 +1,38 @@
+# Dependencies
 node_modules/
-.DS_Store
-.env
-dist/
-build/
 backend/node_modules/
 Dev/node_modules/
+
+# Production builds
+dist/
+build/
 Dev/dist/
-# One-time Google Sheets import snapshot (local only)
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+backend/.env
 backend/.import-source.json
-File_Xoa/
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs & Diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary files & tests
+*.tmp
+*.patch
+tsc_errors.log
+scratch/
+test-results/
