@@ -34,12 +34,12 @@ export function useTasks() {
       if (!profile) { setTasks([]); return; }
       const [real, projects, campaigns] = await Promise.all([
         allRows('tasks', 'id,task_ref,title,status,priority,due_date,start_date,completed_at,created_at,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(name),campaign:campaign_id(name),assignee:assignee_id(id,name,avatar_url),department:department_id(name),column:column_id(name)'),
-        allRows('project_subtasks', 'id,title,status,due_date,created_at,project_id,workflow_phase_id,workflow_status,projects(name,department_id),assignee:assignee_id(id,name,avatar_url)'),
-        allRows('campaign_subtasks', 'id,title,status,due_date,created_at,campaign_id,workflow_phase_id,workflow_status,campaigns(name,department_id),assignee:assignee_id(id,name,avatar_url)')
+        allRows('project_subtasks', 'id,title,status,start_date,due_date,created_at,project_id,workflow_phase_id,workflow_status,projects(name,department_id),assignee:assignee_id(id,name,avatar_url)'),
+        allRows('campaign_subtasks', 'id,title,status,start_date,due_date,created_at,campaign_id,workflow_phase_id,workflow_status,campaigns(name,department_id),assignee:assignee_id(id,name,avatar_url)')
       ]);
       const legacy = (items: any[], kind: 'project' | 'campaign') => items.map(s => ({
         id: `${kind === 'project' ? 'ps' : 'cs'}-${s.id}`, task_ref: '', title: s.title,
-        status: s.status || 'todo', priority: 'medium', due_date: s.due_date, created_at: s.created_at, workflow_phase_id: s.workflow_phase_id, workflow_status: s.workflow_status,
+        status: s.status || 'todo', priority: 'medium', start_date: s.start_date, due_date: s.due_date, created_at: s.created_at, workflow_phase_id: s.workflow_phase_id, workflow_status: s.workflow_status,
         [`${kind}_id`]: s[`${kind}_id`], [kind]: s[`${kind}s`] ? { name: s[`${kind}s`].name } : null,
         assignee: s.assignee, assignee_id: s.assignee?.id, department_id: s[`${kind}s`]?.department_id
       }));
