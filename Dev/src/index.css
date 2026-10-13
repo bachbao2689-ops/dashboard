@@ -355,7 +355,6 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
   }
   .dark .mobile-liquid-glass.card-hub,
   .dark .mobile-liquid-glass {
-    background: linear-gradient(180deg, rgba(16, 28, 48, 0.82) 0%, rgba(9, 18, 34, 0.72) 100%) !important;
     border: 1px solid rgba(147, 197, 253, 0.22) !important;
     box-shadow: inset 0 1px 1px 0 rgba(215, 235, 255, 0.20),
                 inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25),
