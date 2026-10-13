@@ -1,13 +1,14 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Filter, Plus, Search, MoreHorizontal, Download, Trash2, CheckCircle2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { FilterPanel } from '../components/common/FilterPanel';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { supabase } from '../services/supabase';
-import { TableSkeleton } from '../components/common/Skeleton';
-import { StatusBadge } from '../components/common/StatusBadge';
-import { Avatar } from '../components/common/Avatar';
+import { TaskListToolbar } from '../components/features/tasks/list/TaskListToolbar';
+import { TaskListLayout } from '../components/features/tasks/list/TaskListLayout';
+import { TaskListCollection } from '../components/features/tasks/list/TaskListCollection';
+import { TaskListBulkActions } from '../components/features/tasks/list/TaskListBulkActions';
+import { mapStatus, mapPriority } from '../components/features/tasks/list/taskListPresentation';
+import '../components/features/tasks/list/TaskList.css';
 import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
@@ -17,30 +18,10 @@ import { useAuthStore } from '../store/authStore';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
 import { useTranslation } from '../i18n/translations';
 
-const mapStatus = (status: string) => {
-  const s = status.toLowerCase();
-  if (s.includes('done') || ['completed', 'complete'].includes(s) || s.includes('hoàn thành')) return 'done';
-  if (s.includes('progress') || s.includes('đang')) return 'in-progress';
-  if (s.includes('review')) return 'review';
-  if (s.includes('overdue')) return 'overdue';
-  return 'todo';
-};
-
-const mapPriority = (prio: string | undefined) => {
-  if (!prio) return 'Medium';
-  const p = prio.toLowerCase();
-  if (p.includes('high') || p.includes('cao')) return 'High';
-  if (p.includes('low') || p.includes('thấp')) return 'Low';
-  return 'Medium';
-};
-
-
-
 export const TaskList: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   // const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
 
@@ -277,253 +258,21 @@ export const TaskList: React.FC = () => {
   }, [filteredTasks, groupBy]);
 
   return (
-    <div className="relative flex min-h-full min-w-0">
-      <div className={`relative flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedTask ? 'hidden md:flex xl:mr-[516px] pr-2' : 'pr-1 lg:pr-4'}`}>
+    <TaskListLayout panelKey={isModalOpen ? 'create' : selectedTask?.id || null}>
+      <div className="task-list-main" data-detail-open={!!selectedTask}>
       
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('tasks.title')}</h1>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 relative z-50 w-full sm:w-auto">
-          {/* Expanding Search */}
-          <div className="flex items-center relative h-10">
-            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${isSearchExpanded ? 'w-40 sm:w-64 opacity-100 mr-2' : 'w-0 opacity-0'}`}>
-              <div className="relative w-full">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={t('tasks.search')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-10 pl-9 pr-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-gray-900 dark:text-gray-100 transition-colors"
-                />
-              </div>
-            </div>
-            <button 
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)} 
-              className={`h-10 w-10 rounded-xl border transition-colors flex items-center justify-center shrink-0 ${isSearchExpanded ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
+      <TaskListToolbar searchTerm={searchTerm} onSearchChange={setSearchTerm} groupBy={groupBy} onGroupChange={setGroupBy} showFilters={showFilters} setShowFilters={setShowFilters} filters={filters} setFilters={setFilters} activeFiltersCount={activeFiltersCount} onExport={exportCSV} onCreate={handleNewTask} canCreateTask={canCreateTask} />
 
-          {/* Group By Filter */}
-          <div className="flex items-center">
-            <select 
-              value={groupBy} 
-              onChange={(e) => setGroupBy(e.target.value)}
-              className="h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
-            >
-              <option value="none">{t('common.none')}</option>
-              <option value="project">{t('common.project')}</option>
-              <option value="assignee">{t('common.assignee')}</option>
-              <option value="status">{t('common.status')}</option>
-            </select>
-          </div>
-
-          {/* Filters Panel Toggle */}
-          <div className="relative flex items-center">
-            <button onClick={() => setShowFilters(!showFilters)} className={`hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 border px-3.5 sm:px-4 rounded-xl transition-colors ${(showFilters || activeFiltersCount > 0) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}>
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('btn.filters')}</span>
-              {activeFiltersCount > 0 && <span className="ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full">{activeFiltersCount}</span>}
-            </button>
-            <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
-          </div>
-
-          <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5 sm:mx-1 self-center"></div>
-
-          <button onClick={exportCSV} className="hover-magnetic-btn magnetic-blue h-10 flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-3.5 sm:px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-            <Download className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('common.export')}</span>
-          </button>
-          
-          {canCreateTask && <button onClick={handleNewTask} className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm">
-            <Plus className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('tasks.createBtn')}</span>
-          </button>}
-        </div>
-      </div>
-
-      {shortcutScope && <div className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-xl px-4 py-2 mb-4">{t('tasks.filteringScope', { scope: shortcutScope === 'mine' ? t('tasks.filterMine') : shortcutScope === 'due-soon' ? t('tasks.filterDueSoon') : t('tasks.filterOverdue') })}</div>}
+      {shortcutScope && <div className="task-list-scope">{t('tasks.filteringScope', { scope: shortcutScope === 'mine' ? t('tasks.filterMine') : shortcutScope === 'due-soon' ? t('tasks.filterDueSoon') : t('tasks.filterOverdue') })}</div>}
       
-      <div className="space-y-6 pb-12 pr-1">
-      
+      <TaskListCollection loading={loading} filteredTasks={filteredTasks} groupedTasks={groupedTasks} groupBy={groupBy} collapsedGroups={collapsedGroups} toggleGroup={toggleGroup} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} toggleSelectTask={toggleSelectTask} onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }} deletingIds={deletingIds} />
 
-      {loading ? (
-        <div className="card-hub rounded-2xl p-2"><TableSkeleton rows={8} /></div>
-      ) : filteredTasks.length === 0 ? (
-        <div className="card-hub rounded-2xl p-16 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('tasks.noTasksFound')}</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('tasks.adjustFilters')}</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
-            <div key={groupName} className="card-hub rounded-2xl overflow-hidden">
-              {groupBy !== 'none' && (
-                <div 
-                  className="bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors"
-                  onClick={() => toggleGroup(groupName)}
-                >
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto">
-                    <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center">
-                      {collapsedGroups.includes(groupName) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide text-sm">{groupName}</h3>
-                    <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-slate-600">{groupTasks.length} tasks</span>
-                  </div>
-                </div>
-              )}
-              {!collapsedGroups.includes(groupName) && (
-                <>
-                <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
-                  {groupTasks.map(task => (
-                    <div key={task.id} className="px-3 py-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="shrink-0 rounded border-gray-300 text-primary focus:ring-primary" />
-                        <button type="button" onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          <span className="min-w-0 flex-1 truncate">{task.title}</span>
-                          <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
-                        </button>
-                      </div>
-                      <p className="ml-6 mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
-                        <span className="shrink-0">#{task.task_ref || task.id.split('-')[0]}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="min-w-0 truncate">{task.assignee?.name || t('common.unassigned')}</span>
-                      </p>
-                      <div className="ml-6 mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-                        <StatusBadge status={task.status} />
-                        <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${new Date(task.due_date).toLocaleDateString()}` : t('common.noDueDate')}</span>
-                        {mapPriority(task.priority) === 'High' && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">High</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="hidden overflow-x-auto animate-in slide-in-from-top-1 fade-in duration-200 md:block">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-                      <th className="p-4 w-12">
-                        <input 
-                          type="checkbox" 
-                          checked={groupTasks.length > 0 && groupTasks.every(t => selectedTasks.includes(t.id))}
-                          onChange={() => {
-                            const allIds = groupTasks.map(t => t.id);
-                            const allSelected = groupTasks.every(t => selectedTasks.includes(t.id));
-                            if (allSelected) {
-                              setSelectedTasks(selectedTasks.filter(id => !allIds.includes(id)));
-                            } else {
-                              const newSelected = new Set([...selectedTasks, ...allIds]);
-                              setSelectedTasks(Array.from(newSelected));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                      </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.ref')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.title')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">{t('tasks.col.projectCampaign')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.assignee')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.status')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.priority')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">{t('tasks.col.dueDate')}</th>
-                      <th className="p-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {groupTasks.map((task) => (
-                      <tr key={task.id} onClick={() => { setIsModalOpen(false); setSelectedTask(task as any); }} className={`cursor-pointer hover-row-effect ${task.campaign?.name ? 'hover-row-campaign' : task.project?.name ? 'hover-row-project' : ''} hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300 group ${selectedTasks.includes(task.id) ? 'bg-primary/5 dark:bg-primary/10' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''} ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20' : ''}`}>
-                        <td className="p-4">
-                          <input 
-                            type="checkbox" 
-                            checked={selectedTasks.includes(task.id)}
-                            onClick={(e) => e.stopPropagation()} onChange={() => toggleSelectTask(task.id)}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                        </td>
-                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
-                        <td className="p-4">
-                          <div className={`max-w-[360px] truncate font-medium cursor-pointer hover:text-primary transition-colors ${['done', 'complete', 'completed'].includes((task.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{task.title}</div>
-                          {task.department && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.department.name}</div>}
-                        </td>
-                        <td className="p-4 text-sm hidden lg:table-cell">
-                          {task.project?.name ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span>
-                          ) : task.campaign?.name ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-500">---</span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          {task.assignee ? (
-                            <div className="flex items-center space-x-2">
-                              <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
-                              <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{task.assignee.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md">Unassigned</span>
-                          )}
-                        </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit status coming soon', { icon: '🚧' }); }}>
-                          <StatusBadge status={task.status} />
-                        </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit priority coming soon', { icon: '🚧' }); }}>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold
-                            ${mapPriority(task.priority) === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                            mapPriority(task.priority) === 'Medium' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                            {mapPriority(task.priority)}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="p-4">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700">
-                            <MoreHorizontal className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Batch Actions Toolbar */}
-      {selectedTasks.length > 0 && (
-        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-white shadow-2xl animate-fade-in-up sm:gap-6 sm:px-6 sm:py-3 md:bottom-6">
-          <div className="flex items-center gap-2 border-r border-gray-700 pr-4">
-            <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">{selectedTasks.length}</span>
-            <span className="text-sm font-medium">{t('common.selected')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white">
-              <CheckCircle2 className="w-4 h-4 text-green-400" /> {t('tasks.markDone')}
-            </button>
-            <button onClick={() => setIsBulkDeleteModalOpen(true)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400">
-              <Trash2 className="w-4 h-4" /> {t('common.delete')}
-            </button>
-          </div>
-          <button onClick={() => setSelectedTasks([])} className="ml-2 p-1 hover:bg-gray-800 rounded-full transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-      )}</div>
-    
+      <TaskListBulkActions selectedTasks={selectedTasks} onDelete={() => setIsBulkDeleteModalOpen(true)} onClear={() => setSelectedTasks([])} />
       </div>
       {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-')) ? <SubtaskDetailPanel subtask={{ ...selectedTask, id: selectedTask.id.slice(3) }} entityType={selectedTask.id.startsWith('ps-') ? 'project_subtask' : 'campaign_subtask'} parentName={selectedTask.project?.name || selectedTask.campaign?.name} profile={profile} people={tasks.filter(t => t.assignee_id && t.assignee?.name).map(t => ({ id: Number(t.assignee_id), name: t.assignee!.name })).filter((p, i, list) => list.findIndex(v => v.id === p.id) === i)} onClose={() => setSelectedTask(null)} onUpdated={updated => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated, id: current.id })); void refetch(); }} /> : <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />}
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
       <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title={t('tasks.deleteSelectedTitle')} message={t('tasks.deleteSelectedConfirm')} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
       <ConfirmDeleteModal isOpen={!!taskToDelete} title={t('tasks.deleteTaskTitle')} message={t('tasks.deleteTaskConfirm')} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
-    </div>
+    </TaskListLayout>
   );
 };

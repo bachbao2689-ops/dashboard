@@ -1,0 +1,143 @@
+/* All Tasks presentation. Layout belongs here; data and permissions stay in existing hooks. */
+.all-tasks-page .task-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: .625rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+.all-tasks-page .task-list-toolbar-actions {
+  @apply flex flex-wrap items-center gap-2 sm:gap-2.5 relative z-50 w-full sm:w-auto;
+}
+.all-tasks-page .task-list-search-icon {
+  @apply w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400;
+}
+.all-tasks-page .task-list-search-input {
+  @apply w-full h-10 pl-9 pr-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 text-sm text-gray-900 dark:text-gray-100 transition-colors;
+}
+.all-tasks-page .task-list-group-select {
+  @apply h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 appearance-none cursor-pointer;
+}
+.all-tasks-page .task-list-filter-count {
+  @apply ml-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-white text-primary rounded-full;
+}
+.all-tasks-page .task-list-export-button {
+  @apply h-10 flex items-center space-x-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 px-3.5 sm:px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors;
+}
+.all-tasks-page .task-list-create-button {
+  @apply h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm;
+}
+.all-tasks-page .task-list-scope {
+  @apply text-sm text-primary border rounded-xl px-4 py-2 mb-4;
+}
+.all-tasks-page .task-list-empty-icon {
+  @apply w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4;
+}
+.all-tasks-page .task-list-group-header {
+  @apply bg-gray-50/80 hover:bg-gray-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center cursor-pointer transition-colors;
+}
+.all-tasks-page .task-list-group-heading {
+  @apply flex flex-wrap items-center gap-2 sm:gap-3 relative z-50 w-full sm:w-auto;
+}
+.all-tasks-page .task-list-group-toggle {
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center justify-center;
+}
+.all-tasks-page .task-list-group-count {
+  @apply bg-white dark:bg-slate-700 px-2 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-300 shadow-sm border border-black/5 dark:border-slate-600;
+}
+.all-tasks-page .task-list-mobile-title {
+  @apply flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
+}
+.all-tasks-page .task-list-mobile-meta {
+  @apply ml-6 mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400;
+}
+.all-tasks-page .task-list-mobile-status {
+  @apply ml-6 mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400;
+}
+.all-tasks-page .task-list-project-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full;
+}
+.all-tasks-page .task-list-campaign-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full;
+}
+.all-tasks-page .task-list-row-menu {
+  @apply p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700;
+}
+.all-tasks-page .task-list-bulk {
+  @apply fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-white shadow-2xl animate-fade-in-up sm:gap-6 sm:px-6 sm:py-3 md:bottom-6;
+}
+.all-tasks-page .task-list-bulk-count {
+  @apply bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold;
+}
+.all-tasks-page .task-list-bulk-done {
+  @apply p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-white;
+}
+.all-tasks-page .task-list-bulk-delete {
+  @apply p-2 hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2 text-sm text-gray-300 hover:text-red-400;
+}
+
+.all-tasks-page { position: relative; min-height: 100%; min-width: 0; }
+.all-tasks-page .task-list-main { position: relative; display: flex; flex-direction: column; min-width: 0; padding-right: 4px; }
+
+.all-tasks-page .task-list-search-field {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 0;
+  opacity: 0;
+  transition: width 300ms ease-out, opacity 300ms ease-out, margin 300ms ease-out;
+}
+.all-tasks-page .task-list-search-field[data-expanded="true"] { width: 10rem; opacity: 1; margin-right: .5rem; }
+.all-tasks-page .task-list-search-toggle {
+  @apply h-10 w-10 rounded-xl border transition-colors flex items-center justify-center shrink-0;
+  @apply bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700;
+}
+.all-tasks-page .task-list-filter-toggle {
+  @apply h-10 flex items-center space-x-2 border px-3.5 sm:px-4 rounded-xl transition-colors;
+  @apply bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700;
+}
+.all-tasks-page .task-list-search-toggle[data-active="true"],
+.all-tasks-page .task-list-filter-toggle[data-active="true"] { @apply bg-primary text-white border-primary shadow-sm; }
+
+/* This scope leaves drawers in Profile/Projects/Workflow on their existing layout. */
+.all-tasks-page .dashboard-detail-drawer { height: auto; }
+.all-tasks-page .task-list-table-scroll { min-width: 0; overflow-x: auto; }
+.all-tasks-page .task-list-table { width: 100%; min-width: 960px; border-collapse: collapse; text-align: left; }
+.all-tasks-page .task-list-row { @apply cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300; }
+.all-tasks-page .task-list-row[data-selected="true"] { background: color-mix(in srgb, var(--color-primary) 5%, transparent); }
+.all-tasks-page .task-list-row[data-completed="true"] { @apply bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20; }
+.all-tasks-page .task-list-row-title { @apply max-w-[360px] truncate font-medium cursor-pointer hover:text-primary transition-colors text-gray-900 dark:text-gray-100; }
+.all-tasks-page .task-list-row[data-completed="true"] .task-list-row-title { @apply line-through text-gray-400 dark:text-gray-500; }
+.all-tasks-page .task-list-priority { @apply inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold; }
+.all-tasks-page .task-list-priority[data-priority="high"] { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
+.all-tasks-page .task-list-priority[data-priority="medium"] { @apply bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400; }
+.all-tasks-page .task-list-priority[data-priority="low"] { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
+
+@media (min-width: 640px) {
+  .all-tasks-page .task-list-search-field[data-expanded="true"] { width: 16rem; }
+}
+@media (max-width: 767px) {
+  .all-tasks-page .task-list-main[data-detail-open="true"] { display: none; }
+  .all-tasks-page .task-list-toolbar { padding-block: .5rem; }
+  .all-tasks-page .task-list-table-scroll { display: none; }
+  .all-tasks-page .task-list-bulk { gap: .5rem; border-radius: 1rem; flex-wrap: wrap; justify-content: center; width: max-content; }
+}
+@media (min-width: 1024px) {
+  .all-tasks-page .task-list-main { padding-right: 1rem; }
+}
+@media (min-width: 1280px) {
+  .all-tasks-page[data-panel-open="true"] .task-list-main {
+    margin-right: calc(var(--task-list-panel-space, 500px) + 16px);
+    padding-right: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .all-tasks-page .task-list-search-field { transition: none; }
+}
+
+.all-tasks-page .task-list-scope { background: color-mix(in srgb, var(--color-primary) 5%, transparent); border-color: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+.all-tasks-page .task-list-search-input:focus, .all-tasks-page .task-list-group-select:focus { --tw-ring-color: color-mix(in srgb, var(--color-primary) 50%, transparent); }
+html.dark .all-tasks-page .task-list-row[data-selected="true"] { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
