@@ -12,7 +12,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWorkflowHub } from '../hooks/useWorkflowHub';
 import type { Task } from '../hooks/useTasks';
-import { gateScore, taskProgress, workflowMetrics, displayDate, inputDate, type HubPhase, type GateCriterion } from '../lib/workflowHub';
+import { gateScore, taskProgress, workflowMetrics, displayDate, inputDate, localDay, type HubPhase, type GateCriterion } from '../lib/workflowHub';
 import { WorkflowStatusPicker, canonicalWorkflowStatus, workflowStage, WORKFLOW_STATUS_CONFIG, MARKETING_STATUS_GUIDES, WorkflowHexagonIcon, type WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
 import { MultiSelect } from '../components/common/MultiSelect';
 import { Avatar } from '../components/common/Avatar';
@@ -107,7 +107,7 @@ export const WorkflowManagement: React.FC = () => {
   const criteriaScore = gateScore(criteria);
   const metrics = workflowMetrics(allTasks);
   const overallProjectProgressPct = metrics.progress;
-  const daysRemaining = currentEntity?.due_date ? Math.ceil((Date.parse(currentEntity.due_date.slice(0,10) + 'T23:59:59+07:00') - Date.now()) / 86400000) : null;
+  const daysRemaining = currentEntity?.due_date ? Math.round((Date.parse(currentEntity.due_date.slice(0,10)) - Date.parse(localDay(new Date()))) / 86400000) : null;
   const entityTimeline = displayDate(currentEntity?.start_date) + ' – ' + displayDate(currentEntity?.due_date);
   const subTeamMembers = currentEntity?.sub_pics || [];
   const leadInfo = { name: (currentEntity?.pics || []).map(p => p.name).join(', ') || 'Chưa giao PIC', avatar: currentEntity?.pics[0]?.avatar_url, role: 'PIC' };
