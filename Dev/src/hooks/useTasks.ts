@@ -27,9 +27,10 @@ export function useTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const request = useRef(0);
+  const loadedActor = useRef<number | null>(null);
   const fetchTasks = async () => {
     const token = ++request.current;
-    setLoading(true); setError(null);
+    setLoading(loadedActor.current !== profile?.id); setError(null);
     try {
       if (!profile) { setTasks([]); return; }
       const [real, projects, campaigns] = await Promise.all([
@@ -43,14 +44,14 @@ export function useTasks() {
         [`${kind}_id`]: s[`${kind}_id`], [kind]: s[`${kind}s`] ? { name: s[`${kind}s`].name } : null,
         assignee: s.assignee, assignee_id: s.assignee?.id, department_id: s[`${kind}s`]?.department_id
       }));
-      if (token === request.current) setTasks([...real, ...legacy(projects, 'project'), ...legacy(campaigns, 'campaign')] as Task[]);
+      if (token === request.current) { loadedActor.current = profile.id; setTasks([...real, ...legacy(projects, 'project'), ...legacy(campaigns, 'campaign')] as Task[]); }
     } catch (err: any) {
       // Never substitute fixtures for real assignments after a request failure.
       if (token === request.current) { setTasks([]); setError(err.message || 'Không thể tải Tasks. Vui lòng thử lại.'); }
     } finally { if (token === request.current) setLoading(false); }
   };
   useEffect(() => {
-    setTasks([]); void fetchTasks();
+    loadedActor.current = null; setTasks([]); void fetchTasks();
     return () => { request.current++; };
   }, [profile?.id, profile?.department_id, profile?.role]);
   useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments'], fetchTasks, profile?.id);

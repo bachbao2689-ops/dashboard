@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Avatar } from "../../common/Avatar";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { TaskComments } from '../comments/TaskComments';
+import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Reply, Save, Send, User, X, Activity, Clock } from 'lucide-react';
+import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Save, User, X, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useTranslation } from '../../../i18n/translations';
@@ -19,20 +20,13 @@ type Subtask = {
   priority?: string | null;
 };
 type ParentDetails = { name: string; priority?: string | null; departmentName?: string | null };
-type ActivityComment = {
-  id: string;
-  user_id: number;
-  created_at: string;
-  metadata?: { body?: string } | null;
-  user?: { name?: string } | null;
-};
-
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
 const displayDate = (date?: string | null) => date ? new Date(date).toLocaleDateString('vi-VN') : '---';
 
 interface SubtaskDetailPanelProps {
   embedded?: boolean;
+  commentsFocusToken?: number;
   entityType?: 'project_subtask' | 'campaign_subtask';
   parentName?: string;
   subtask: Subtask | null;
@@ -42,16 +36,15 @@ interface SubtaskDetailPanelProps {
   onUpdated: (subtask?: Subtask) => void;
 }
 
-export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask', parentName, embedded = false }) => {
+export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask', parentName, embedded = false, commentsFocusToken = 0 }) => {
   const { t } = useTranslation();
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
   const [parentLoading, setParentLoading] = useState(false);
-  const [comments, setComments] = useState<ActivityComment[]>([]);
+  const [commentFocus, setCommentFocus] = useState(0);
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
   const [draftImageUrl, setDraftImageUrl] = useState('');
-  const [commentText, setCommentText] = useState('');
   const [width, setWidth] = useState(560);
   const [resizing, setResizing] = useState(false);
   
@@ -64,7 +57,6 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   }, [resizing]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const commentRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,50 +91,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   const reload = useCallback(async () => {
     if (!subtask?.id) return;
-    const [commentsResult, detailsResult] = await Promise.all([
-      supabase
-        .from('activity_log')
-        .select('id,user_id,created_at,metadata,user:user_id(name)')
-        .eq('entity_type', entityType)
-        .eq('entity_id', subtask.id)
-        .eq('action', 'comment')
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('activity_log')
-        .select('metadata')
-        .eq('entity_type', entityType)
-        .eq('entity_id', subtask.id)
-        .eq('action', 'details_updated')
-        .order('created_at', { ascending: false })
-        .limit(1)
-    ]);
-    if (commentsResult.error) console.warn('Could not load subtask comments', commentsResult.error.message);
-    setComments((commentsResult.data || []) as ActivityComment[]);
+    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtask.id).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
     const details = detailsResult.data?.[0]?.metadata || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
   }, [subtask?.id, entityType]);
 
   useEffect(() => {
-    setCommentText('');
+    setCommentFocus(0);
     setEditing(false);
     void reload();
   }, [reload]);
 
-  const mentionQuery = useMemo(() => {
-    const match = commentText.match(/(?:^|\s)@([^\s@]*)$/);
-    return match ? match[1].toLowerCase() : null;
-  }, [commentText]);
-  const mentionOptions = useMemo(() => mentionQuery === null ? [] : people.filter(person => person.name.toLowerCase().includes(mentionQuery)).slice(0, 5), [mentionQuery, people]);
-
-  const chooseMention = (person: Person) => {
-    setCommentText(value => value.replace(/@[^\s@]*$/, `@${person.name.replace(/\s+/g, '')} `));
-    commentRef.current?.focus();
-  };
-
-  const notifyMentionedPeople = async (body: string) => {
+  const notifyMentionedPeople = async (_body: string, mentions: number[]) => {
     if (!subtask || !profile?.id) return;
-    const targets = people.filter(person => person.id !== profile.id && body.toLowerCase().includes(`@${person.name.replace(/\s+/g, '').toLowerCase()}`));
+    const targets = people.filter(person => person.id !== profile.id && mentions.includes(person.id));
     if (!targets.length) return;
     await supabase.from('notifications').insert(targets.map(person => ({
       user_id: person.id,
@@ -151,32 +114,6 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       entity_type: entityType,
       entity_id: subtask.id
     })));
-  };
-
-  const addComment = async () => {
-    const body = commentText.trim();
-    if (!subtask || !profile?.id || !body) return;
-    setSaving(true);
-    const { error } = await supabase.from('activity_log').insert({
-      workspace_id: workspaceId,
-      user_id: profile.id,
-      action: 'comment',
-      entity_type: entityType,
-      entity_id: subtask.id,
-      metadata: { body, mentions: people.filter(person => body.toLowerCase().includes(`@${person.name.replace(/\s+/g, '').toLowerCase()}`)).map(person => person.id) }
-    });
-    setSaving(false);
-    if (error) return toast.error('Không thể gửi bình luận');
-    await notifyMentionedPeople(body);
-    setCommentText('');
-    await reload();
-    onUpdated();
-  };
-
-  const replyTo = (author?: string) => {
-    if (!author) return;
-    setCommentText(value => `${value}${value && !value.endsWith(' ') ? ' ' : ''}@${author.replace(/\s+/g, '')} `);
-    window.setTimeout(() => commentRef.current?.focus(), 0);
   };
 
   const saveDetails = async () => {
@@ -266,41 +203,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           {editing ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
         </section>
 
-        <section>
-          <p className="text-sm font-bold mb-3"><Activity className="w-4 h-4 inline mr-2" />{t('common.activityComments')}</p>
-          <div className="space-y-3">{comments.length === 0 && <p className="text-sm text-gray-500">{t('common.noComments')}</p>}
-          <div className="space-y-4">
-            {comments.map(item => {
-              const mine = Number(item.user_id) === Number(profile?.id);
-              return (
-                <div key={item.id} className={`flex gap-3 ${mine ? 'flex-row-reverse' : 'flex-row'} items-end group animate-slide-up`}>
-                  {!mine && <Avatar name={item.user?.name || 'Staff'} src={(item.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
-                  <div className={`flex flex-col max-w-[85%] ${mine ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${mine ? 'bg-[#002e6d] text-white rounded-br-sm' : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>
-                      <div className={`flex items-center gap-2 mb-1 ${mine ? 'justify-end' : 'justify-start'}`}>
-                        <span className={`text-[11px] font-bold ${mine ? 'text-blue-100' : 'text-gray-500 dark:text-slate-300'}`}>{item.user?.name || 'Staff'}</span>
-                        <span className={`text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>{new Date(item.created_at).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
-                      </div>
-                      <p className="whitespace-pre-wrap leading-relaxed">{item.metadata?.body || ''}</p>
-                    </div>
-                  </div>
-                  {mine && <Avatar name={item.user?.name || 'Staff'} src={(item.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
-                  <button onClick={() => replyTo(item.user?.name)} className="rounded-lg p-1.5 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-primary group-hover:opacity-100 dark:hover:bg-slate-700" title="Trả lời và nhắc tên"><Reply className="h-3.5 w-3.5" /></button>
-                </div>
-              );
-            })}
-          </div>
-          </div>
-          <div className="relative mt-4">
-            <textarea ref={commentRef} value={commentText} onChange={event => setCommentText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && commentText.trim()) { event.preventDefault(); void addComment(); } }} rows={3} placeholder={t('common.commentPlaceholder')} className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none" />
-            {mentionOptions.length > 0 && <div className="absolute bottom-full mb-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-800">{mentionOptions.map(person => <button key={person.id} onMouseDown={event => event.preventDefault()} onClick={() => chooseMention(person)} className="block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700"><b>{person.name}</b><span className="ml-2 text-xs text-gray-400">@{person.name.replace(/\s+/g, '')}</span></button>)}</div>}
-            <button disabled={!commentText.trim() || saving} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"><Send className="mr-1 inline h-4 w-4" />{t('common.sendComment')}</button>
-          </div>
-        </section>
+        <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }}/>
       </div>
 
       <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <button onClick={() => commentRef.current?.focus()} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
+        <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
         <button disabled={completed || saving} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
       </div>
     </aside>

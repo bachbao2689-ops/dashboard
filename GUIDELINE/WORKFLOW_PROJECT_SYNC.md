@@ -48,3 +48,11 @@ DATABASE_URL='<connection string>' node scripts/testWorkflowCalendar.mjs
 ```
 
 Kiểm tra database nằm trong transaction và luôn rollback: quyền theo scope, mapping UUID, task có sẵn, tạo task, Gate, dữ liệu Project gốc, hide và publication realtime. Không lưu credential vào source.
+
+## Bình luận công việc
+
+- Task dùng `comments`; Project/Campaign Subtask dùng `activity_log` với đúng `entity_type`, UUID gốc và `action = comment`. Không tạo bản sao thread khi gắn chặng.
+- `TaskComments` dùng chung giữa Workflow, All Tasks và Projects/Campaigns. Nút comments mở đúng công việc, cuộn và focus ô nhập; hiện người viết, ngày giờ và số bình luận thật.
+- RPC `workflow_task_comment_counts` đọc số lượng và thời điểm mới nhất dưới RLS của người đăng nhập (security invoker), không dùng bộ đếm cache có thể cũ khi xóa. Migration: `20261013160019_workflow_comment_tracking.sql`.
+- Thread cập nhật qua Realtime, reconnect, focus và dự phòng 30 giây. Đổi task loại phản hồi cũ; refresh nền không làm mất bản nháp. Gửi lỗi giữ nội dung, khóa gửi khi đang xử lý; Enter gửi, Shift+Enter xuống dòng.
+- Kiểm tra database: `DATABASE_URL='<connection string>' node scripts/testWorkflowComments.mjs`. Các fixture đều rollback, kiểm tra ba loại task, quyền tác giả/scope, count khi sửa/xóa và giữ thread khi gắn chặng.

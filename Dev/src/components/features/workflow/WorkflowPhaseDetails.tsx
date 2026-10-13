@@ -1,3 +1,4 @@
+import {useTaskCommentCounts} from '../../../hooks/useTaskCommentCounts';
 import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import {Plus, X, Code2, Calendar, User, Edit3, Trash2, Check, MessageSquare} from 'lucide-react';
@@ -9,7 +10,7 @@ import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
 import {Avatar} from '../../common/Avatar';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, setSelectedTask, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, editingTaskId, setEditingTaskId, editTaskTitle, setEditTaskTitle, editTaskAssignee, setEditTaskAssignee, editTaskStatus, setEditTaskStatus, editTaskDue, setEditTaskDue, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleStartEditTask, handleSaveEditTask, handleQuickChangeStatus, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, editingTaskId, setEditingTaskId, editTaskTitle, setEditTaskTitle, editTaskAssignee, setEditTaskAssignee, editTaskStatus, setEditTaskStatus, editTaskDue, setEditTaskDue, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleStartEditTask, handleSaveEditTask, handleQuickChangeStatus, pct} = model;
 
   const [splitPct, setSplitPct] = useState(58);
   const [resizing, setResizing] = useState(false);
@@ -37,6 +38,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
     };
   }, [resizing]);
 
+  const commentTracking = useTaskCommentCounts(isDetailOpen ? currentPhaseSubtasks.map(task=>task.id) : [],hub.profile?.id);
   if (!currentEntity) return null;
   if (!activePhase) return null;
   return (<>
@@ -283,7 +285,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                               <WorkflowStatusPicker status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
 
                               {/* Task Title */}
-                              <button type="button" onClick={()=>setSelectedTask(s.record)}
+                              <button type="button" onClick={()=>openTaskDetails(s.record)}
                                 className={`text-left text-xs truncate flex-1 min-w-0 hover:text-primary transition-colors cursor-pointer ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
@@ -297,12 +299,13 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedTask(s.record);
+                                  openTaskComments(s.record);
                                 }}
                                 className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0 cursor-pointer"
-                                title={isEn ? "Open task comments & details" : "Bình luận & chi tiết đầu việc"}
+                                aria-label={`${isEn ? 'Comments' : 'Bình luận'}: ${s.title}`}
+                                title={commentTracking.error ? (isEn ? 'Could not load comment count' : 'Chưa tải được số bình luận') : `${isEn ? 'Comments' : 'Bình luận'}: ${commentTracking.counts[s.id]?.count ?? '…'}${commentTracking.counts[s.id]?.lastAt ? ' · ' + new Date(commentTracking.counts[s.id].lastAt!).toLocaleString(isEn?'en-GB':'vi-VN') : ''}`}
                               >
-                                <MessageSquare size={13} className="text-gray-400 hover:text-blue-500 transition-colors" />
+                                <MessageSquare size={13} className="text-gray-400 hover:text-blue-500 transition-colors" /><span className="text-[10px] tabular-nums">{commentTracking.counts[s.id]?.count ?? (commentTracking.error ? '—' : '…')}</span>
                               </button>
                             </div>
 
