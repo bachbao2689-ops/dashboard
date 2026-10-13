@@ -17,6 +17,15 @@ end $$;
 insert into workflow_tracks(entity_type,entity_id) select 'project',id from projects on conflict(entity_type,entity_id) do nothing;
 insert into workflow_tracks(entity_type,entity_id) select 'campaign',id from campaigns on conflict(entity_type,entity_id) do nothing;
 
+-- Gate completion and progress use the same active task set. Cancelled tasks
+-- remain in history but never block approval or count as completed work.
+do $$declare d text;begin
+  select pg_get_functiondef('workflow_save_phase(uuid,uuid,jsonb,integer)'::regprocedure) into d;
+  d:=replace(d,'status not in (''deleted'',''archived'')','lower(status) not in (''deleted'',''archived'',''cancelled'',''canceled'')');
+  d:=replace(d,'status not in (''done'',''completed'',''complete'',''deleted'',''archived'')','lower(status) not in (''done'',''completed'',''complete'',''deleted'',''archived'',''cancelled'',''canceled'')');
+  execute d;
+end $$;
+
 create or replace function workflow_hub_index() returns jsonb language sql stable security definer set search_path=public as $$
  select coalesce(jsonb_agg(jsonb_build_object(
  'id',w.id,'entity_type',w.entity_type,'entity_id',w.entity_id,'name',s.name,'status',s.status,

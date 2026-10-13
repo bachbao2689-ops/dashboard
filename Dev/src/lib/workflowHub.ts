@@ -40,6 +40,12 @@ export function gateScore(criteria: GateCriterion[]) {
   const total = criteria.reduce((n, c) => n + c.weight, 0);
   return total ? Math.round(criteria.reduce((n, c) => n + (c.checked ? c.weight : 0), 0) * 100 / total) : null;
 }
+export function gateReady(tasks: { status: string; workflow_status?: string | null }[], criteria: GateCriterion[]) {
+  const progress = taskProgress(tasks);
+  const total = criteria.reduce((n, c) => n + c.weight, 0);
+  const passed = criteria.reduce((n, c) => n + (c.checked ? c.weight : 0), 0);
+  return progress.total > 0 && progress.done === progress.total && total > 0 && passed / total >= .8;
+}
 export function workflowMetrics(tasks: MetricTask[], now = new Date()) {
   const day = localDay(now), month = day.slice(0, 7);
   const current = tasks.filter(t => !['deleted', 'archived', 'canceled', 'cancelled'].includes((t.status || '').toLowerCase()) && t.workflow_status !== 'canceled');

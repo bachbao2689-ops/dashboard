@@ -106,6 +106,8 @@ try {
   await rejects('select workflow_configure_phase($1,null,$2,0)',[track.id,JSON.stringify(middleData)]);
   await auth(root);
   await db.query("update tasks set workflow_status='completed' where id=$1",[mt]);
+  const canceledTask=(await db.query('select workflow_create_task($1,$2) id',[middle,JSON.stringify({title:'Canceled scope kept in history',assignee_id:Number(root.id),workflow_status:'canceled'})])).rows[0].id;
+  check((await db.query('select status from tasks where id=$1',[canceledTask])).rows[0].status,'cancelled','Cancelled task keeps its canonical state');
   await db.query('select workflow_update_gate($1,$2,1)',[middle,JSON.stringify([{id:'gate-one',label:'Real acceptance',weight:100,checked:true}])]);
   await rejects('select workflow_update_gate($1,$2,1)',[middle,'[]']);
   check((await db.query('select workflow_advance_phase($1,2) id',[middle])).rows[0].id,p2,'Atomic Gate approval activates the next real phase');

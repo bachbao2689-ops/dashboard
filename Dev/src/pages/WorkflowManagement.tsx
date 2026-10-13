@@ -13,7 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWorkflowHub } from '../hooks/useWorkflowHub';
 import { useTranslation } from '../i18n/translations';
 import type { Task } from '../hooks/useTasks';
-import { gateScore, taskProgress, workflowMetrics, displayDate, inputDate, projectsLink, parentTasks, daysUntil, type HubPhase, type GateCriterion } from '../lib/workflowHub';
+import { gateScore, gateReady, taskProgress, workflowMetrics, displayDate, inputDate, projectsLink, parentTasks, daysUntil, type HubPhase, type GateCriterion } from '../lib/workflowHub';
 import { WorkflowStatusPicker, canonicalWorkflowStatus, workflowStage, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, MARKETING_STATUS_GUIDES_EN, MARKETING_STATUS_GUIDES_VI, WorkflowHexagonIcon, type WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
 import { MultiSelect } from '../components/common/MultiSelect';
 import { Avatar } from '../components/common/Avatar';
@@ -108,6 +108,8 @@ export const WorkflowManagement: React.FC = () => {
   const phaseProgressPct = activePhase?.progress ?? null;
   const gatePassChancePct = activePhase?.gateChance ?? null;
   const criteriaScore = gateScore(criteria);
+  const readyToApprove = gateReady(currentPhaseSubtasks.map(task => task.record), criteria);
+  const readinessLabel = readyToApprove ? (isEn ? '🟢 Ready for approval' : '🟢 Sẵn sàng duyệt') : doneSubtasksCount !== totalSubtasksCount || !totalSubtasksCount ? (isEn ? '🟡 Complete phase tasks' : '🟡 Cần hoàn thành task') : (isEn ? '🟡 Complete gate checklist' : '🟡 Cần đạt checklist');
   const metrics = workflowMetrics(allTasks);
   const overallProjectProgressPct = metrics.progress;
   const daysRemaining = daysUntil(currentEntity?.due_date);
@@ -608,13 +610,11 @@ export const WorkflowManagement: React.FC = () => {
                 {pct(gatePassChancePct)}
               </b>
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
+                readyToApprove ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
                 {gatePassChancePct == null
                   ? (isEn ? 'Not evaluated' : 'Chưa đánh giá')
-                  : (gatePassChancePct ?? -1) >= 80
-                  ? (isEn ? '🟢 Eligible' : '🟢 Đủ điều kiện')
-                  : (isEn ? '🟡 Review needed' : '🟡 Cần rà soát')}
+                  : readinessLabel}
               </span>
             </div>
 
@@ -1395,9 +1395,9 @@ export const WorkflowManagement: React.FC = () => {
                       />
                     </div>
                     <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border mt-1 inline-block ${
-                      (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                      readyToApprove ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
                     }`}>
-                      {(gatePassChancePct ?? -1) >= 80 ? (isEn ? '🟢 Eligible (≥80%)' : '🟢 Đủ điều kiện (≥80%)') : (isEn ? '🟡 Add more criteria' : '🟡 Cần bổ sung tiêu chí')}
+                      {readinessLabel}
                     </span>
                   </div>
                 </div>
@@ -1468,13 +1468,13 @@ export const WorkflowManagement: React.FC = () => {
                 {/* Gate Pass Approval Button */}
                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {doneSubtasksCount === totalSubtasksCount && totalSubtasksCount > 0 && (criteriaScore || 0) >= 80 ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
+                    {readyToApprove ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
                   </p>
 
                   {currentEntity.root && !['completed','cancelled'].includes(activePhase.status) && (
                     <button
                       type="button"
-                      disabled={hub.busy || criteriaScore == null || criteriaScore < 80 || !totalSubtasksCount || doneSubtasksCount !== totalSubtasksCount}
+                      disabled={hub.busy || !readyToApprove}
                       onClick={handleAdvancePhase}
                       className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                         (gatePassChancePct ?? -1) >= 80

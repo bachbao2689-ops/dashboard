@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {workflowMetrics,taskProgress,gateScore} from '../src/lib/workflowHub.ts';
+import {workflowMetrics,taskProgress,gateScore,gateReady} from '../src/lib/workflowHub.ts';
 const now=new Date('2026-10-13T08:00:00+07:00');
 test('empty data has no invented performance or pass probability',()=>{
  const m=workflowMetrics([],now);
@@ -27,4 +27,12 @@ test('cycle time requires a genuine completion timestamp',()=>{
 });
 test('gate readiness uses persisted weights and checks',()=>{
  assert.equal(gateScore([{id:'a',label:'Review',weight:80,checked:true},{id:'b',label:'Delivery',weight:20,checked:false}]),80);
+});
+test('approval requires all active phase tasks and the exact 80 percent checklist threshold',()=>{
+ const criteria=[{id:'a',label:'Review',weight:79.6,checked:true},{id:'b',label:'Delivery',weight:20.4,checked:false}];
+ assert.equal(gateScore(criteria),80);
+ assert.equal(gateReady([{status:'done'}],criteria),false);
+ assert.equal(gateReady([{status:'done'},{status:'todo'}],[{id:'a',label:'Passed',weight:100,checked:true}]),false);
+ assert.equal(gateReady([],[{id:'a',label:'Passed',weight:100,checked:true}]),false);
+ assert.equal(gateReady([{status:'done'},{status:'cancelled'}],[{id:'a',label:'Passed',weight:80,checked:true},{id:'b',label:'Remaining',weight:20,checked:false}]),true);
 });
