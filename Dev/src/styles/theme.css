@@ -142,8 +142,8 @@ html:not(.dark) .sidebar-link-active svg {
   color: #1d4ed8 !important;
 }
 
-/* Small active indicator dot on the right edge */
-html:not(.dark) .sidebar-link-active::after {
+/* Small active indicator dot on the right edge (Left sidebar only) */
+html:not(.dark) .app-sidebar .sidebar-link-active::after {
   content: '';
   position: absolute;
   right: 12px;

@@ -228,10 +228,10 @@ export const Header: React.FC = () => {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) => cn(
-                        "px-3 py-1.5 mx-0.5 rounded-lg transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap",
+                        "sidebar-link relative px-3 py-1.5 mx-0.5 rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-xs border border-transparent",
                         isActive 
-                          ? "bg-primary text-white shadow-md font-semibold" 
-                          : "text-gray-500 hover:text-primary hover:bg-white dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200"
+                          ? "sidebar-link-active font-semibold" 
+                          : "sidebar-link-idle"
                       )}
                     >
                       {item.icon}
