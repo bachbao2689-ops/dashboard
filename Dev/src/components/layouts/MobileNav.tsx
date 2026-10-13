@@ -141,7 +141,7 @@ export const MobileNav: React.FC = () => {
             className={({ isActive }) => cn(
               'relative flex min-w-11 flex-1 shrink-0 h-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-primary',
               isActive
-                ? 'bg-blue-600/[0.08] text-blue-700 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.95),0_1.5px_4px_rgba(0,0,0,0.04)] ring-1 ring-blue-500/25 dark:bg-gradient-to-b dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_3px_10px_rgba(30,90,170,.18)]'
+                ? 'bg-slate-900/[0.07] text-gray-900 shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] dark:bg-gradient-to-b dark:from-blue-500/35 dark:to-cyan-500/15 dark:!text-blue-100 dark:ring-blue-300/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_3px_10px_rgba(30,90,170,.18)]'
                 : 'text-gray-600 dark:text-slate-300 hover:text-primary dark:hover:text-white'
             )}
           >
