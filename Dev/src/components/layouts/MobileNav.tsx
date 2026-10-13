@@ -127,7 +127,7 @@ export const MobileNav: React.FC = () => {
       {/* Nav Pill */}
       <div 
         className={cn(
-          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container",
+          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container backdrop-blur-xl",
           isHidden && "nav-hidden"
         )}
       >
