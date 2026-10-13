@@ -261,7 +261,7 @@ export const WorkflowManagement: React.FC = () => {
             </div>
 
             <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
-              • {currentEntity.root ? 'PIC toàn bộ' : 'Phạm vi phase/task được giao'}
+              • {currentEntity.root ? 'PIC toàn bộ (Full Scope)' : 'Phạm vi được giao (Assigned Scope)'}
             </span>
           </div>
 
@@ -360,7 +360,7 @@ export const WorkflowManagement: React.FC = () => {
             <span>{entityTimeline}</span>
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Clock size={10} />
-              <span>{daysRemaining == null ? 'Chưa có hạn' : daysRemaining < 0 ? 'Trễ ' + Math.abs(daysRemaining) + ' ngày' : 'Còn ' + daysRemaining + ' ngày'}</span>
+              <span>{daysRemaining == null ? 'Chưa có hạn (No deadline)' : daysRemaining < 0 ? 'Trễ ' + Math.abs(daysRemaining) + ' ngày (' + Math.abs(daysRemaining) + 'd overdue)' : 'Còn ' + daysRemaining + ' ngày (' + daysRemaining + 'd left)'}</span>
             </span>
           </div>
 
@@ -400,7 +400,7 @@ export const WorkflowManagement: React.FC = () => {
               ))}
             </div>
 
-            <StatusBadge status={currentEntity.status} />
+            <StatusBadge status={currentEntity.status} bilingual />
             <button onClick={()=>navigate('/projects')} className="text-[10px] font-semibold underline">Projects/Campaigns →</button>
           </div>
         </div>
@@ -410,17 +410,15 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 1: Tiến độ tổng thể */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-pointer ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'overall_progress'
                 ? 'z-30 ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
-            onMouseEnter={() => openTooltip('overall_progress')}
-            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                {currentEntity.root ? 'Tiến độ tổng thể' : 'Tiến độ được giao'}
+                {currentEntity.root ? 'Tiến độ tổng thể (Overall Progress)' : 'Tiến độ được giao (Assigned Progress)'}
               </span>
 
               {/* Info Icon (i) */}
@@ -455,7 +453,7 @@ export const WorkflowManagement: React.FC = () => {
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase ? 'Đang xem: ' + activePhase.name : 'PIC chưa tạo lộ trình'}
+              {activePhase ? 'Đang xem (Viewing): ' + activePhase.name : 'PIC chưa tạo lộ trình (No phase roadmap)'}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 1 */}
@@ -501,17 +499,15 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${(gatePassChancePct ?? -1) >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-pointer ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${(gatePassChancePct ?? -1) >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'phase_health_gate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
-            onMouseEnter={() => openTooltip('phase_health_gate')}
-            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
-                Sức khỏe & Cơ hội qua Phase
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)">
+                Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
               </span>
 
               {/* Info Icon (i) */}
@@ -543,12 +539,12 @@ export const WorkflowManagement: React.FC = () => {
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                 (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
-                {gatePassChancePct == null ? 'Chưa đánh giá' : (gatePassChancePct ?? -1) >= 80 ? '🟢 Đủ điều kiện' : '🟡 Cần rà soát'}
+                {gatePassChancePct == null ? 'Chưa đánh giá (Not evaluated)' : (gatePassChancePct ?? -1) >= 80 ? '🟢 Đủ điều kiện (Eligible)' : '🟡 Cần rà soát (Review needed)'}
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase?.opportunity != null ? 'PIC đánh giá · ' + (activePhase.opportunity_note || '') : 'Gate Checklist: ' + (criteriaScore == null ? 'Chưa có tiêu chí' : criteriaScore + '/100')}
+              {activePhase?.opportunity != null ? 'PIC đánh giá (PIC eval) · ' + (activePhase.opportunity_note || '') : 'Gate Checklist: ' + (criteriaScore == null ? 'Chưa có tiêu chí (No criteria)' : criteriaScore + '/100')}
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 2 */}
@@ -594,13 +590,11 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 3: Vận tốc (Velocity) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-pointer ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'velocity'
                 ? 'z-30 ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
-            onMouseEnter={() => openTooltip('velocity')}
-            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
@@ -631,15 +625,15 @@ export const WorkflowManagement: React.FC = () => {
 
             <div className="flex items-baseline justify-between my-0.5">
               <b className="text-xl sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
-                {metrics.velocity == null ? '—' : metrics.velocity} <span className="text-xs font-normal text-gray-500">ngày/task</span>
+                {metrics.velocity == null ? '—' : metrics.velocity} <span className="text-xs font-normal text-gray-500">ngày/task (days/task)</span>
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                {allTasks.filter(t=>t.completed_at).length} task có thời gian
+                {allTasks.filter(t=>t.completed_at).length} task có thời gian (dated tasks)
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              Tốc độ tiêu hóa dứt điểm task kỹ thuật
+              Tốc độ giải quyết task kỹ thuật (Avg completion time)
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 3 */}
@@ -685,17 +679,15 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 4: Đúng cam kết hạn */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-pointer ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'on_time_rate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
-            onMouseEnter={() => openTooltip('on_time_rate')}
-            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                Đúng cam kết hạn
+                Đúng cam kết hạn (On-Time Rate)
               </span>
 
               {/* Info Icon (i) */}
@@ -725,12 +717,12 @@ export const WorkflowManagement: React.FC = () => {
                 {pct(metrics.onTime)}
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                Dữ liệu thật
+                Dữ liệu thật (Real data)
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống
+              Mốc deadline 23:59:59 (Standard 23:59:59 cutoff)
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 4 */}
@@ -792,7 +784,7 @@ export const WorkflowManagement: React.FC = () => {
             {/* Thanh Task biểu hiện những Task trong đó (Requirement 3: move xuống bảng Lộ trình giai đoạn) */}
             <div className="flex items-center gap-1.5 flex-wrap mt-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
-                Task trong phạm vi:
+                Task trong phạm vi (Tasks in scope):
               </span>
 
               {/* Small (i) button for Staff guidance on Task Status mechanisms (Requirement 2) */}
@@ -902,7 +894,7 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap min-w-0 items-center gap-2">
-            <span className="text-xs text-gray-500 whitespace-nowrap">Chặng đang chọn:</span>
+            <span className="text-xs text-gray-500 whitespace-nowrap">Chặng đang chọn (Selected phase):</span>
             <div className="relative">
               <select
                 value={activePhaseIndex}
@@ -930,7 +922,7 @@ export const WorkflowManagement: React.FC = () => {
           </div>
         </div>
 
-        {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC.' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn.'}</div>}
+        {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC (No phases yet. Add a phase to assign PIC & sub-PIC).' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn (Not assigned to any phase. Contact PIC to join).'}</div>}
         {/* Timeline Connected Stepper Nodes (Circular Gauge & Connecting Shape Links) */}
         <div className="relative pt-2 pb-2 overflow-x-auto custom-scrollbar">
           <div className="flex items-center min-w-max pb-2 pt-1 px-1">
@@ -1129,9 +1121,9 @@ export const WorkflowManagement: React.FC = () => {
                 title="Thêm giai đoạn mới vào cuối lộ trình"
               >
                 <Plus size={18} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-200" />
-                <span className="text-[8px] font-bold mt-0.5">Thêm chặng</span>
+                <span className="text-[8px] font-bold mt-0.5">Thêm chặng (Add)</span>
               </button>
-              <span className="text-[9px] text-gray-400 mt-1 text-center">Tùy biến lộ trình</span>
+              <span className="text-[9px] text-gray-400 mt-1 text-center">Tùy biến lộ trình (Custom)</span>
             </div>}
           </div>
         </div>
@@ -1557,9 +1549,9 @@ export const WorkflowManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                   <Activity size={16} className="text-primary" />
-                  Trạng thái Task Tháng Này
+                  Trạng thái Task Tháng Này (Task Status This Month)
                 </h3>
-                <span className="text-[11px] text-gray-400">{new Date().toLocaleDateString('vi-VN',{month:'long',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'})} · Tổng {totalMonthTasks} tasks</span>
+                <span className="text-[11px] text-gray-400">{new Date().toLocaleDateString('vi-VN',{month:'long',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'})} · Tổng {totalMonthTasks} tasks (Total: {totalMonthTasks})</span>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
                 Current Month
@@ -1599,7 +1591,7 @@ export const WorkflowManagement: React.FC = () => {
               {/* Center gentle glass hub - Soft & Technical (No border stroke) */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="w-22 h-22 rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_6px_20px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center">
-                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">Hoàn thành</span>
+                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">Hoàn thành (Done)</span>
                   <b className="text-xl font-extrabold text-emerald-500 dark:text-emerald-400">
                     {totalMonthTasks ? Math.round(currentMonthTaskStats[0].value * 100 / totalMonthTasks) + '%' : '—'}
                   </b>
@@ -1630,16 +1622,16 @@ export const WorkflowManagement: React.FC = () => {
                   Hiệu Suất Thực Thi & Vận Tốc (Burndown & Velocity)
                 </h3>
                 <span className="text-[11px] text-gray-400">
-                  Tiến độ bàn giao so với kế hoạch mục tiêu theo từng chặng
+                  Tiến độ bàn giao so với kế hoạch mục tiêu (Delivery progress vs. Plan target)
                 </span>
               </div>
 
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Thực tế
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Thực tế (Actual)
                 </span>
                 <span className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-0.5 bg-gray-400" /> Mục tiêu
+                  <span className="w-2.5 h-0.5 bg-gray-400" /> Mục tiêu (Plan)
                 </span>
               </div>
             </div>
@@ -1676,7 +1668,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="actual"
-                    name="Thực tế xong (Tasks)"
+                    name="Thực tế (Actual tasks)"
                     stroke="#3b82f6"
                     strokeWidth={2.5}
                     fillOpacity={1}
@@ -1685,7 +1677,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="plan"
-                    name="Kế hoạch cam kết"
+                    name="Kế hoạch (Plan target)"
                     stroke="#94a3b8"
                     strokeDasharray="4 4"
                     strokeWidth={1.8}
@@ -1697,9 +1689,9 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
-            <span>Đánh giá nhịp độ ({activePhase?.name || 'Chưa có phase'}):</span>
+            <span>Đánh giá nhịp độ (Pace assessment - {activePhase?.name || 'Chưa có phase / No phase'}):</span>
             <span className="font-semibold text-emerald-500">
-              Tiến độ {pct(activePhase?.progress)} — Chỉ báo Gate {pct(gatePassChancePct)}
+              Tiến độ (Progress) {pct(activePhase?.progress)} — Chỉ báo Gate (Gate indicator) {pct(gatePassChancePct)}
             </span>
           </div>
         </div>
