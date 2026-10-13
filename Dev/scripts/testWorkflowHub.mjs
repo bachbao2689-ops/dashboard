@@ -85,5 +85,36 @@ try {
   await db.query('insert into campaign_members(campaign_id,user_id) values($1,$2)',[campaign.id,invited.id]);
   await auth(invited);
   check((await db.query("select workflow_root('campaign',$1) ok",[campaign.id])).rows[0].ok,true,'Campaign allows cross-department root PIC');
+  // The approved timeline UI persists real fields, stable placement, gates and tasks.
+  await auth(root);
+  const middleData = {title:'Inserted phase',description:'Real phase brief',position:2,status:'todo',pic_ids:[Number(root.id)],sub_pic_ids:[],start_date:'2026-10-01',due_date:'2026-10-31',gate_criteria:[{id:'gate-one',label:'Real acceptance',weight:100,checked:false}]};
+  const middle=(await db.query('select workflow_configure_phase($1,null,$2,0) id',[track.id,JSON.stringify(middleData)])).rows[0].id;
+  check((await db.query('select id from workflow_phases where workflow_id=$1 order by position',[track.id])).rows.map(r=>r.id),[p1,middle,p2,p3],'Insert does not re-key existing phases');
+  check((await db.query('select workflow_phase_id from tasks where id=$1',[t2])).rows[0].workflow_phase_id,p2,'Insertion retains task phase FK');
+  const ui=(await db.query('select workflow_hub_index() data')).rows[0].data.find(w=>w.id===track.id).phases.find(p=>p.id===middle);
+  check(ui.description,'Real phase brief','Phase description survives reload');
+  check(ui.gate_criteria[0].checked,false,'Checklist is real saved data, not preset passed gates');
+  const mt=(await db.query('select workflow_create_task($1,$2) id',[middle,JSON.stringify({title:'Phase task',assignee_id:Number(root.id),workflow_status:'scoping',due_date:'2026-10-20'})])).rows[0].id;
+  check((await db.query('select status,workflow_status from tasks where id=$1',[mt])).rows[0],{status:'in_progress',workflow_status:'scoping'},'Created task stage and All Tasks performance commit together');
+  await rejects('select workflow_remove_phase($1,1)',[middle]);
+  await rejects('select workflow_advance_phase($1,1)',[middle]);
+  await auth(outsider);
+  await rejects('select workflow_update_gate($1,$2,1)',[p2,JSON.stringify([{id:'spoof',label:'Spoof',weight:100,checked:true}])]);
+  await auth(staff);
+  const phaseTwoVersion=(await db.query('select version from workflow_phases where id=$1',[p2])).rows[0].version;
+  await db.query('select workflow_update_gate($1,$2,$3)',[p2,JSON.stringify([{id:'actual',label:'Draft reviewed',weight:100,checked:true}]),phaseTwoVersion]);
+  check((await db.query('select gate_criteria from workflow_phases where id=$1',[p2])).rows[0].gate_criteria[0].label,'Draft reviewed','Sub-PIC may fill only their own gate');
+  await rejects('select workflow_update_gate($1,$2,1)',[middle,'[]']);
+  await rejects('select workflow_configure_phase($1,null,$2,0)',[track.id,JSON.stringify(middleData)]);
+  await auth(root);
+  await db.query("update tasks set workflow_status='completed' where id=$1",[mt]);
+  await db.query('select workflow_update_gate($1,$2,1)',[middle,JSON.stringify([{id:'gate-one',label:'Real acceptance',weight:100,checked:true}])]);
+  await rejects('select workflow_update_gate($1,$2,1)',[middle,'[]']);
+  check((await db.query('select workflow_advance_phase($1,2) id',[middle])).rows[0].id,p2,'Atomic Gate approval activates the next real phase');
+  check((await db.query('select status from workflow_phases where id=$1',[middle])).rows[0].status,'completed','Approved phase completes');
+  check((await db.query('select status from workflow_phases where id=$1',[p2])).rows[0].status,'in_progress','Next phase starts');
+  const empty=(await db.query('select workflow_configure_phase($1,null,$2,0) id',[track.id,JSON.stringify({...middleData,title:'Empty phase',position:5,gate_criteria:[]})])).rows[0].id;
+  await db.query('select workflow_remove_phase($1,1)',[empty]);
+  check((await db.query('select count(*)::int n from workflow_phases where id=$1',[empty])).rows[0].n,0,'Only truly empty phase can be removed');
   console.log(`${assertions} Workflow Hub DB checks passed; all fixture writes rolled back.`);
 } finally { await db.query('rollback').catch(()=>{}); await db.end(); }

@@ -396,6 +396,10 @@ section.bg-white.border,
 }
 
 /* Unified Responsive Detail Drawer System (16:9, 16:10, 4:3, and zoom-resilient) */
+.workflow-management-page .dashboard-detail-drawer {
+  /* Insets remain the size authority when mobile visual viewport/safe-area differ. */
+  height: auto;
+}
 .dashboard-detail-drawer {
   position: fixed;
   right: 0;

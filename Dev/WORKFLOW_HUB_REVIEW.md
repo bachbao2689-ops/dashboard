@@ -1,8 +1,14 @@
 # Real Workflow Management
 
-## Current UI release (2026-10-12)
+## Approved UI connected to real data (2026-10-13)
 
-The user approved the isolated `3161bf0` UI preview and explicitly requested release to both develop and main. `WorkflowManagement.tsx` is restored verbatim from that revision. Its default website/campaign fixtures, KPI fallbacks, and phase/task edits are prototype state; those edits do not persist to Supabase. Existing parent/task reads still use Supabase. The real-data migration, permission helpers, shared task tracking, and other screens are retained. The architecture below describes the retained real-data implementation, not the restored prototype UI's current phase/task behavior. Preview entry files remain local and are excluded from the release commit.
+The approved `3161bf0` visual concept is retained: compact core/KPI header, connected stage-gate timeline, expandable gate/task board, status donut, and phase execution chart. All synthetic parents, website phases, PIC names, tasks and KPI fallbacks have been removed from the production component. It reads `workflow_hub_index` plus the same `useTasks` records used by All Tasks. A new `useWorkflowHub` controller handles refresh, scoped data, checked writes and membership pickers. Query-string links open the exact source Project/Campaign. Empty/no-permission/error states never inject sample data.
+
+Apply `workflow-approved-ui.sql` after the foundational `workflow-hub.sql`. It adds persisted description/checklist fields and version-checked configure/gate/approval/empty-phase-removal RPCs. Inserting phases retains stable IDs and existing task/comment links. Populated phases cannot be removed. Task creation commits its seven-stage selection in the same transaction. Only root PIC/Admin configure the whole route; phase PIC/sub-PIC fill their own checklist and create tasks. A task-only assignee/mention has exact-task scope and cannot fill other phases or their gates.
+
+KPI progress is actual done/active task count, excluding cancelled tasks. Cycle time and on-time rate require real completion timestamps; missing data shows `—`. The monthly donut has mutually exclusive buckets and Vietnam deadline-day boundaries. Gate score is a readiness indicator from saved checklist weights and actual task completion, not a statistical probability. A PIC may enter an explicit opportunity estimate with a required rationale. Gate approval needs all active phase tasks complete and at least 80% of the checklist; completion/start of the next phase is atomic. Phase execution compares real completion percentage with elapsed date-based plan, with no fabricated trend points.
+
+Preview and QA fixtures stay local and are excluded from release commits. Release this change to develop for review; the previously approved official source remains unchanged until this flow is approved.
 
 ## Source and tracking
 
@@ -40,8 +46,8 @@ Actual done/total task count gives phase progress. Empty phases show `—`, not 
 
 Run `node scripts/workflowHubDb.mjs ../migrations/workflow-hub.sql <backend env path>` once (atomic and re-applicable). It adds schema/policies and backfills tracks; does not delete parents/tasks. Shared Supabase permissions change for both deployments, even though UI/source publish only to develop.
 
-- `node scripts/testWorkflowHub.mjs <backend env path>`: 29 permission/tracking assertions using authenticated role, with all fixtures rolled back.
-- `node --experimental-strip-types --test tests/workflowHub.test.mjs tests/workflow2.test.mjs tests/workflowFiles.test.mjs`
+- `node scripts/testWorkflowHub.mjs <backend env path>`: 45 permission/tracking/persistence assertions using authenticated role, with all fixtures rolled back.
+- `node --experimental-strip-types --test tests/workflowMetrics.test.mjs tests/workflowHub.test.mjs tests/workflow2.test.mjs tests/workflowFiles.test.mjs`
 - `npm run build`
 - Isolated browser UI QA: 360×800, 1024×768, 1920×1080, 2560×1440, 1920×1200; no horizontal overflow; drawer footer visible, above mobile nav. QA fixtures removed before commit.
 - Deployment is develop only. Signed-in online end-to-end UI verification still requires the user's authenticated browser session; SQL tests exercise actual shared DB permissions and rollback all writes.
