@@ -11,8 +11,15 @@ export interface HubTrack {
   start_date: string | null; due_date: string | null; root: boolean; asset: string | null;
   pics: WorkflowPerson[]; phases: HubPhase[];
   sub_pics?: WorkflowPerson[];
+  description?: string | null; priority?: string | null; department_id?: string | null;
+  campaign_id?: string | null; budget?: number | null; channels?: string[] | null;
 }
-export const workflowLink = (kind: 'project' | 'campaign', id: string) => `/workflow?${kind}=${encodeURIComponent(id)}`;
+export const workflowLink = (kind: 'project' | 'campaign', id: string, phase?: string) => `/workflow?${kind}=${encodeURIComponent(id)}${phase ? '&phase=' + encodeURIComponent(phase) : ''}`;
+export const projectsLink = (kind: 'project' | 'campaign', id: string) => `/projects?${kind}=${encodeURIComponent(id)}`;
+export function parentTasks<T extends { project_id?: string | null; campaign_id?: string | null }>(tasks: T[], kind: 'project' | 'campaign', id: string): T[] {
+  return tasks.filter(task => kind === 'project' ? task.project_id === id : task.campaign_id === id && !task.project_id);
+}
+export const daysUntil = (date: string | null | undefined, now = new Date()) => date ? Math.round((Date.parse(date.slice(0, 10)) - Date.parse(localDay(now))) / 86400000) : null;
 export const isDone = (status?: string | null) => ['done', 'completed', 'complete'].includes((status || '').toLowerCase());
 export function taskProgress(tasks: { status: string; workflow_status?: string | null }[]) {
   const active = tasks.filter(t => !['deleted', 'archived', 'canceled', 'cancelled'].includes((t.status || '').toLowerCase()) && t.workflow_status !== 'canceled');

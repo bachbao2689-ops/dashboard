@@ -1,5 +1,6 @@
 import { StatusBadge } from '../../common/StatusBadge';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
@@ -159,16 +160,22 @@ export const CampaignPanel: React.FC<{
   const [campaignToHide, setCampaignToHide] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [subtaskMap, setSubtaskMap] = useState<Record<string, any[]>>({});
+  const request = useRef(0);
 
   const load = async () => {
+    const token = ++request.current;
+    if (!profile) { setCampaigns([]); setSubtaskMap({}); return; }
     let query = supabase.from('campaigns').select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false });
-    const [{ data, error }, { data: allSubtasks }] = await Promise.all([
+    const [{ data, error }, { data: allSubtasks }, { data: canonicalTasks }, { data: members }] = await Promise.all([
       query,
-      supabase.from('campaign_subtasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').neq('status', 'deleted')
+      supabase.from('campaign_subtasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').neq('status', 'deleted').neq('status', 'archived'),
+      supabase.from('tasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').not('campaign_id', 'is', null).is('project_id', null).neq('status', 'deleted').neq('status', 'archived'),
+      supabase.from('campaign_members').select('campaign_id, assignee:user_id(id,name,avatar_url)')
     ]);
+    if (token !== request.current) return;
     if (error) { toast.error('Không thể tải Campaign'); return; }
     const stMap: Record<string, any[]> = {};
-    (allSubtasks || []).forEach(st => {
+    [...(allSubtasks || []), ...(canonicalTasks || []), ...(members || [])].forEach(st => {
       if (!st.assignee) return;
       if (!stMap[st.campaign_id]) stMap[st.campaign_id] = [];
       if (!stMap[st.campaign_id].find(x => x.id === (st.assignee as any).id)) stMap[st.campaign_id].push(st.assignee);
@@ -181,9 +188,9 @@ export const CampaignPanel: React.FC<{
 
   useEffect(() => {
     void load();
-    window.addEventListener('campaigns:changed', load);
-    return () => window.removeEventListener('campaigns:changed', load);
+    return () => { request.current++; };
   }, [profile?.id, profile?.department_id]);
+  useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members'], load, profile?.id);
 
   
   

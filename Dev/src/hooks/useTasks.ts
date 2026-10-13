@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import { useWorkspaceRealtime } from './useWorkspaceRealtime';
 
 export interface Task {
   id: string; task_ref: string; title: string; status: string; priority: string; due_date: string;
@@ -50,17 +51,8 @@ export function useTasks() {
   };
   useEffect(() => {
     setTasks([]); void fetchTasks();
-    let channel = supabase.channel(`tasks-${profile?.id}-${Math.random()}`);
-    for (const table of ['tasks', 'project_subtasks', 'campaign_subtasks', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments']) {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => { void fetchTasks(); });
-    }
-    channel.subscribe();
-    const refresh = () => { void fetchTasks(); };
-    const visibleRefresh = () => { if (document.visibilityState === 'visible') refresh(); };
-    const timer = setInterval(visibleRefresh, 60000);
-    window.addEventListener('focus', visibleRefresh);
-    window.addEventListener('tasks:changed', refresh);
-    return () => { request.current++; clearInterval(timer); window.removeEventListener('focus', visibleRefresh); void supabase.removeChannel(channel); window.removeEventListener('tasks:changed', refresh); };
+    return () => { request.current++; };
   }, [profile?.id, profile?.department_id, profile?.role]);
+  useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments'], fetchTasks, profile?.id);
   return { tasks, loading, error, refetch: fetchTasks };
 }

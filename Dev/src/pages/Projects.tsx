@@ -1,8 +1,12 @@
 import { StatusBadge } from '../components/common/StatusBadge';
 import { MultiSelect } from '../components/common/MultiSelect';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { workflowLink } from '../lib/workflowHub';
+import { useSearchParams } from 'react-router-dom';
+import { useWorkflowHub } from '../hooks/useWorkflowHub';
+import { useWorkspaceRealtime } from '../hooks/useWorkspaceRealtime';
+import { WorkflowTrackingSummary } from '../components/features/projects/WorkflowTrackingSummary';
+import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
+import type { Task } from '../hooks/useTasks';
 import { Avatar } from "../components/common/Avatar";
 
 import toast from 'react-hot-toast';
@@ -80,12 +84,16 @@ const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, i
 
 export const Projects: React.FC = () => {
   const { t, lang } = useTranslation();
-  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const workflow = useWorkflowHub();
+  const [sourceTask, setSourceTask] = useState<Task | null>(null);
+  const loadRequest = useRef(0);
   const profile = useAuthStore(s => s.profile);
   const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'leader' || profile?.employment_level === 'Leader';
   const [projects, setProjects] = useState<Project[]>([]); const [people, setPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
-  const [picMembers, setPicMembers] = useState<Record<string, string[]>>({});
+  const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
+  const picMembers = useMemo(() => ({ ...storedPicMembers, ...Object.fromEntries(workflow.tracks.filter(track => track.entity_type === 'project').map(track => [track.entity_id, track.pics.map(p => String(p.id))])) }), [storedPicMembers, workflow.tracks]);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [selectedRoot, setSelectedRoot] = useState(false);
   useEffect(() => {
@@ -165,7 +173,13 @@ export const Projects: React.FC = () => {
   const removeCampaignComment = async (id: string) => { await supabase.from('activity_log').delete().eq('id', id); setCampaignComments(campaignComments.filter(c => c.id !== id)); };
   const saveEditedCampaignComment = async (id: string) => { await supabase.from('activity_log').update({ metadata: { body: campaignEditingCommentText } }).eq('id', id); setCampaignComments(campaignComments.map(c => c.id === id ? { ...c, metadata: { ...c.metadata, body: campaignEditingCommentText } } : c)); setCampaignEditingCommentId(null); };
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
-  const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
+  const [legacySubtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
+  const subtaskMembers = useMemo(() => {
+    const result = Object.fromEntries(Object.entries(legacySubtaskMembers).map(([id, ids]) => [id, new Set(ids)]));
+    for (const task of workflow.tasks) if (task.project_id && task.assignee_id) (result[task.project_id] ||= new Set()).add(String(task.assignee_id));
+    for (const track of workflow.tracks) if (track.entity_type === 'project') for (const member of track.sub_pics || []) (result[track.entity_id] ||= new Set()).add(String(member.id));
+    return Object.fromEntries(Object.entries(result).map(([id, ids]) => [id, [...ids]]));
+  }, [legacySubtaskMembers, workflow.tasks, workflow.tracks]);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -297,6 +311,7 @@ export const Projects: React.FC = () => {
 
 
   const load = async () => {
+    const token = ++loadRequest.current;
     if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
     const [projectRes, peopleRes, memberRes, commentRes, subtaskRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
@@ -305,6 +320,7 @@ export const Projects: React.FC = () => {
       supabase.from('project_comments').select('project_id'),
       supabase.from('project_subtasks').select('project_id,assignee_id').neq('status', 'deleted')
     ]);
+    if (token !== loadRequest.current) return;
     if (projectRes.error) return toast.error('Không thể tải Project');
     setProjects(projectRes.data || []); setPeople((peopleRes.data as any) || []);
     setSelected(current => current ? (projectRes.data || []).find(p => p.id === current.id) || null : null);
@@ -315,9 +331,11 @@ export const Projects: React.FC = () => {
     (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
     setHasComments(commentsMap);
     const { data: campaignData } = await supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url),creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('name');
+    if (token !== loadRequest.current) return;
     setCampaigns(campaignData || []);
     setSelectedCampaign((current: any) => current ? (campaignData || []).find(c => c.id === current.id) || null : null);
     const { data: creationDetails } = await supabase.from('activity_log').select('entity_id,metadata').eq('entity_type', 'project').eq('action', 'creation_details');
+    if (token !== loadRequest.current) return;
     setProjectPrimaryOwners(Object.fromEntries((creationDetails || []).map(row => [row.entity_id, row.metadata?.primary_owner_id])));
 
     const stMap: Record<string, Set<string>> = {};
@@ -331,35 +349,64 @@ export const Projects: React.FC = () => {
     setSubtaskMembers(subtaskMembersRecord);
   };
   useEffect(() => {
-    load();
-    const channel = supabase.channel('projects_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_subtasks' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaign_subtasks' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_comments' }, () => { load(); setRefreshDetailTrigger(v => v + 1); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => { load(); setRefreshDetailTrigger(v => v + 1); })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    void load();
+    return () => { loadRequest.current++; };
   }, [profile?.id, profile?.department_id]);
+  useWorkspaceRealtime(['projects', 'campaigns', 'tasks', 'project_subtasks', 'campaign_subtasks', 'project_members', 'campaign_members', 'project_comments', 'activity_log', 'workflow_phases', 'workflow_phase_members'], () => { void load(); setRefreshDetailTrigger(v => v + 1); }, profile?.id);
+
+  // URL identity supports Workflow → source and browser Back/Forward navigation.
+  useEffect(() => {
+    const project = params.get('project'), campaign = params.get('campaign');
+    if (project) { setSelected(projects.find(p => p.id === project) || null); setSelectedCampaign(null); }
+    else if (campaign) { setSelectedCampaign(campaigns.find(c => c.id === campaign) || null); setSelected(null); }
+  }, [params.toString(), projects, campaigns]);
+  useEffect(() => {
+    const project = selected?.id, campaign = selectedCampaign?.id;
+    if (project && params.get('project') !== project) setParams({ project }, { replace: true });
+    else if (campaign && params.get('campaign') !== campaign) setParams({ campaign }, { replace: true });
+  }, [selected?.id, selectedCampaign?.id]);
 
   useEffect(() => {
     if (!selected) return;
+    let active = true;
     (async () => {
       const [s, c] = await Promise.all([
         supabase.from('project_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('project_id', selected.id).order('created_at'),
         supabase.from('project_comments').select('*, author:author_id(name,avatar_url)').eq('project_id', selected.id).order('created_at')
       ]);
-      const nextSubtasks = (s.data || []).filter(item => item.status !== 'deleted');
+      if (!active) return;
+      if (s.error || c.error) return toast.error(s.error?.message || c.error?.message || 'Không thể tải chi tiết Project');
+      const nextSubtasks = (s.data || []).filter(item => !['deleted', 'archived'].includes(item.status));
       setSubtasks(nextSubtasks);
       setComments(c.data || []);
       if (!nextSubtasks.length) return setSubtaskCommentCounts({});
       const { data: subtaskActivities } = await supabase.from('activity_log').select('entity_id').eq('entity_type', 'project_subtask').eq('action', 'comment').in('entity_id', nextSubtasks.map(item => item.id));
+      if (!active) return;
       const counts = (subtaskActivities || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
       setSubtaskCommentCounts(counts);
     })();
+    return () => { active = false; };
   }, [selected, refreshDetailTrigger]);
-  useEffect(() => { if (!selectedCampaign) return; (async () => { const [subtaskRes, commentRes] = await Promise.all([supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'), supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at')]); setCampaignSubtasks(subtaskRes.data || []); setCampaignComments(commentRes.data || []); })(); }, [selectedCampaign, refreshDetailTrigger]);
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    let active = true;
+    void (async () => {
+      const [subtaskRes, commentRes] = await Promise.all([
+        supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'),
+        supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at')
+      ]);
+      if (!active) return;
+      if (subtaskRes.error || commentRes.error) return toast.error(subtaskRes.error?.message || commentRes.error?.message || 'Không thể tải chi tiết Campaign');
+      setCampaignSubtasks((subtaskRes.data || []).filter(task => !['deleted', 'archived'].includes(task.status)));
+      setCampaignComments(commentRes.data || []);
+    })();
+    return () => { active = false; };
+  }, [selectedCampaign, refreshDetailTrigger]);
+  useEffect(() => {
+    setSourceTask(null); setSelectedSubtask(null);
+    setSubtasks([]); setCampaignSubtasks([]); setComments([]); setCampaignComments([]);
+    setEditMode(false); setCampaignEditMode(false); setShowSubtaskForm(false); setShowCampaignSubtaskForm(false);
+  }, [selected?.id, selectedCampaign?.id, profile?.id]);
   
   
   const notifyStakeholders = async (type: 'project' | 'campaign', entityId: string, actionMsg: string, singleUserId?: string | number) => {
@@ -394,10 +441,12 @@ export const Projects: React.FC = () => {
 
   const completeProject = async () => {
     if (!selected) return;
-    await supabase.from('projects').update({ status: 'completed' }).eq('id', selected.id);
+    const { data, error } = await supabase.from('projects').update({ status: 'completed' }).eq('id', selected.id).select('id').maybeSingle();
+    if (error || !data) return toast.error(error?.message || 'Không có quyền cập nhật Project');
     setSelected({ ...selected, status: 'completed' });
     setProjects(projects.map(p => p.id === selected.id ? { ...p, status: 'completed' } : p));
     toast.success('Đã hoàn thành Project');
+    window.dispatchEvent(new Event('workspace:changed'));
     await notifyStakeholders('project', selected.id, 'đã đánh dấu hoàn thành dự án: ' + selected.name);
   };
 
@@ -611,7 +660,13 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     return dateStr;
   };
 
-  const addSubtask = async () => { if (!selected || !newSubtask) return; await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask, assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: parseYMD(subtaskDue) }); setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected }); };
+  const addSubtask = async () => {
+    if (!selected || !newSubtask.trim()) return;
+    const { error } = await supabase.from('project_subtasks').insert({ project_id: selected.id, title: newSubtask.trim(), assignee_id: subtaskOwner ? Number(subtaskOwner) : null, due_date: parseYMD(subtaskDue) });
+    if (error) return toast.error(error.message);
+    setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSelected({ ...selected });
+    window.dispatchEvent(new Event('workspace:changed'));
+  };
   const completeSubtask = async (subtask: any) => {
     if (!selected || ['done', 'complete', 'completed'].includes((subtask.status || '').toLowerCase())) return;
     const { error } = await supabase.from('project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
@@ -1038,7 +1093,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <td>
   <div className="flex items-center gap-2">
     <div className="flex -space-x-2">
-      {(members[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
+      {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
     </div>
     {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
       <>
@@ -1062,6 +1117,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   
     </div></div>
 
+    {sourceTask && <TaskDetailPanel task={workflow.tasks.find(task => task.id === sourceTask.id) || sourceTask} isOpen onClose={() => setSourceTask(null)} onTaskUpdated={() => void workflow.refresh()} />}
+
     {/* Right Side: Detail Panel */}
     <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${panelOpen ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto ' + (selectedCampaign ? 'shadow-drawer-campaign' : 'shadow-drawer-project') : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[60] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
       {panelOpen && <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
@@ -1069,7 +1126,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
             <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3>
-            <button onClick={() => setSelected(null)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+            <button onClick={() => { setSelected(null); setParams({}, { replace: true }); }} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
@@ -1096,9 +1153,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <div className="space-y-7 animate-in fade-in duration-200">
               <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selected?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(members[selected?.id || ''] || []).length > 0 ? (members[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
-      <button onClick={() => navigate(workflowLink('project', selected.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || t('tasks.noDescription')}</div></section>
+      <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selected?.description || t('tasks.noDescription')}</div></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.map(s=>(
-  <div key={s.id} onClick={() => { const own = Number(s.assignee_id) === Number(profile?.id); if (own || canCreate) setSelectedSubtask(s); }} className={`p-3 rounded-xl border text-sm group relative transition-all ${(s.status || '').toLowerCase() === 'completed' ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer hover-row-effect hover:border-transparent' : ''}`}>
+  <div key={s.id} onClick={() => setSelectedSubtask(s)} className={`p-3 rounded-xl border text-sm group relative transition-all ${(s.status || '').toLowerCase() === 'completed' ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer hover-row-effect hover:border-transparent' : ''}`}>
     {editingSubtaskId === s.id ? (
       <div className="space-y-2" onClick={event => event.stopPropagation()}>
          <input value={editSubtaskTitle} onChange={e=>setEditSubtaskTitle(e.target.value)} className="w-full p-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none rounded-lg" />
@@ -1175,10 +1232,10 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
             <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selectedCampaign.name}</h3>
-            <button onClick={() => setSelectedCampaign(null)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
+            <button onClick={() => { setSelectedCampaign(null); setParams({}, { replace: true }); }} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
           </div>
           <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><select value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="">{t('common.selectPic')}</option>{visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm" /></div><div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">{t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selectedCampaign.status || 'planning'}</span></div><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.lead?.name || t('common.unassigned')} src={(selectedCampaign as any)?.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.lead?.name || t('common.unassigned')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><button onClick={() => navigate(workflowLink('campaign', selectedCampaign.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
+            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="date" value={start} onChange={e=>setStart(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="date" value={due} onChange={e=>setDue(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><select value={primaryOwnerId} onChange={e=>setPrimaryOwnerId(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="">{t('common.selectPic')}</option>{visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm" /></div><div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">{t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selectedCampaign.status || 'planning'}</span></div><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.lead?.name || t('common.unassigned')} src={(selectedCampaign as any)?.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.lead?.name || t('common.unassigned')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
 <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted').map(s => (
   <div key={s.id} className={`group p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 border transition-all duration-300 text-sm cursor-pointer ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'border-emerald-400 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white/50 dark:bg-slate-900/50 dark:hover:border-slate-700'}`} onClick={() => setSelectedSubtask(s)}>
     {campaignEditingSubtaskId === s.id ? (

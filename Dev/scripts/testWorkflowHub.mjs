@@ -1,8 +1,6 @@
-import fs from 'node:fs';
-import pg from 'pg';
 import assert from 'node:assert/strict';
-const line = fs.readFileSync(process.argv[2] || new URL('../../backend/.env', import.meta.url), 'utf8').split(/\r?\n/).find(x => x.startsWith('DATABASE_URL='));
-const db = new pg.Client({ connectionString: line.slice(13).replace(/^"|"$/g, ''), ssl: { rejectUnauthorized: false } });
+import { workflowDbClient } from './workflowDbClient.mjs';
+const db = workflowDbClient(process.argv[2]);
 let assertions = 0;
 const check = (actual, expected, label) => { assert.deepEqual(actual, expected, label); assertions++; };
 try {
@@ -116,5 +114,17 @@ try {
   const empty=(await db.query('select workflow_configure_phase($1,null,$2,0) id',[track.id,JSON.stringify({...middleData,title:'Empty phase',position:5,gate_criteria:[]})])).rows[0].id;
   await db.query('select workflow_remove_phase($1,1)',[empty]);
   check((await db.query('select count(*)::int n from workflow_phases where id=$1',[empty])).rows[0].n,0,'Only truly empty phase can be removed');
+  await db.query("update projects set description='Source brief',priority='high',start_date='2026-10-01',due_date='2026-11-30' where id=$1", [parent.id]);
+  const synced=(await db.query('select workflow_hub_index() data')).rows[0].data.find(w=>w.entity_type==='project' && w.entity_id===parent.id);
+  check({description:synced.description,priority:synced.priority,start:synced.start_date,due:synced.due_date}, {description:'Source brief',priority:'high',start:'2026-10-01',due:'2026-11-30'}, 'Workflow reads source brief, priority and calendar dates without fallback');
+  check(synced.id,track.id,'Source edits preserve the workflow track UUID');
+  check(synced.pics.map(p=>Number(p.id)),[Number(root.id)],'PICs come from the same parent membership');
+  check((await db.query('select count(*)::int n from tasks where id=$1 and project_id=$2 and workflow_phase_id=$3',[mt,parent.id,middle])).rows[0].n,1,'Task created in Workflow is directly visible to source Project without copying');
+  await db.query("update projects set status='archived' where id=$1",[parent.id]);
+  check((await db.query('select workflow_hub_index() data')).rows[0].data.some(w=>w.entity_id===parent.id),false,'Archived source disappears from the active Workflow index');
+  await db.query('reset role');
+  const published=(await db.query("select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public'")).rows.map(r=>r.tablename);
+  for (const table of ['projects','campaigns','tasks','project_subtasks','campaign_subtasks','project_members','campaign_members','workflow_tracks','workflow_phases','workflow_phase_members']) check(published.includes(table),true,table+' publishes realtime changes');
+  check((await db.query("select count(*)::int n from (select p.id from projects p left join workflow_tracks w on w.entity_type='project' and w.entity_id=p.id where w.id is null union all select c.id from campaigns c left join workflow_tracks w on w.entity_type='campaign' and w.entity_id=c.id where w.id is null) missing")).rows[0].n,0,'Every source Project/Campaign has exactly its linked Workflow track');
   console.log(`${assertions} Workflow Hub DB checks passed; all fixture writes rolled back.`);
 } finally { await db.query('rollback').catch(()=>{}); await db.end(); }

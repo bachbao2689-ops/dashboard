@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useTasks, type Task } from './useTasks';
 import type { HubTrack, WorkflowPerson } from '../lib/workflowHub';
+import { useWorkspaceRealtime } from './useWorkspaceRealtime';
 
 export function useWorkflowHub() {
   const profile = useAuthStore(s => s.profile);
@@ -37,16 +38,9 @@ export function useWorkflowHub() {
       }
       if (useAuthStore.getState().profile?.id === actor) setPeople(rows);
     })();
-    let debounce: ReturnType<typeof setTimeout>;
-    const schedule = () => { clearTimeout(debounce); debounce = setTimeout(() => void refresh(), 180); };
-    let channel = supabase.channel(`workflow-approved-${actor}-${Math.random()}`);
-    for (const table of ['workflow_tracks', 'workflow_phases', 'workflow_phase_members', 'projects', 'campaigns', 'project_members', 'campaign_members', 'comments', 'activity_log']) channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
-    channel.subscribe();
-    const visible = () => { if (document.visibilityState === 'visible') schedule(); };
-    const interval = setInterval(visible, 30000);
-    window.addEventListener('focus', visible);
-    return () => { request.current++; clearTimeout(debounce); clearInterval(interval); window.removeEventListener('focus', visible); void supabase.removeChannel(channel); };
+    return () => { request.current++; };
   }, [refresh]);
+  const connected = useWorkspaceRealtime(['workflow_tracks', 'workflow_phases', 'workflow_phase_members', 'projects', 'campaigns', 'project_members', 'campaign_members', 'comments', 'activity_log'], refresh, profile?.id);
   const mutate = async (operation: () => PromiseLike<any>) => {
     if (lock.current) throw new Error('Đang lưu. Vui lòng chờ.');
     lock.current = true; setBusy(true);
@@ -54,7 +48,7 @@ export function useWorkflowHub() {
       const { data, error: failure } = await operation();
       if (failure) throw failure;
       await Promise.all([refresh(), refetch()]);
-      window.dispatchEvent(new Event('tasks:changed'));
+      window.dispatchEvent(new Event('workspace:changed'));
       return data;
     } finally { lock.current = false; setBusy(false); }
   };
@@ -65,5 +59,5 @@ export function useWorkflowHub() {
     if (!result.error && !result.data) throw new Error('Không có quyền cập nhật task này');
     return result;
   });
-  return { tracks: trackActor === profile?.id ? tracks : [], tasks, people, profile, loading: loading || (taskLoading && !tasks.length), error: error || taskError, busy, refresh: async () => { await Promise.all([refresh(), refetch()]); }, mutate, updateTask };
+  return { tracks: trackActor === profile?.id ? tracks : [], tasks, people, profile, connected, loading: loading || (taskLoading && !tasks.length), error: error || taskError, busy, refresh: async () => { await Promise.all([refresh(), refetch()]); }, mutate, updateTask };
 }
