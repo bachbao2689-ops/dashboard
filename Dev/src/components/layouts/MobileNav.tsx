@@ -19,11 +19,13 @@ export const MobileNav: React.FC = () => {
   const lastYRef = useRef(0);
   const scrollTargetRef = useRef<EventTarget | null>(null);
   
+  const canViewDashboard = ['admin', 'manager', 'leader'].includes(role.toLowerCase()) || (profile?.employment_level || '').toLowerCase() === 'leader';
+  
   const navItems = [
-    { name: t('nav.home'), path: '/', icon: <Layers size={20} strokeWidth={1.8} /> },
+    { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, hidden: !canViewDashboard },
+    { name: t('nav.home'), path: '/workflow', icon: <Layers size={20} strokeWidth={1.8} /> },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
-    { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} /> },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} /> },
     { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban, Layers } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban, Layers } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -71,7 +71,7 @@ export const Header: React.FC = () => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   
   
-  const canViewDashboard = true;
+  const canViewDashboard = ['admin', 'manager', 'leader'].includes((profile?.role || '').toLowerCase()) || ['admin', 'manager', 'leader'].includes((profile?.employment_level || '').toLowerCase());
 
   useEffect(() => {
     let active = true;
@@ -112,7 +112,7 @@ export const Header: React.FC = () => {
     if (notification.entity_type === 'task' && notification.entity_id) {
       navigate(`/tasks?task=${notification.entity_id}`);
     } else if (notification.entity_type === 'workflow2') {
-      navigate(`/`);
+      navigate(`/workflow`);
     } else if (notification.entity_type === 'project_subtask') {
       navigate(`/projects`);
     } else if (notification.entity_type === 'weekly_report') {
@@ -124,8 +124,8 @@ export const Header: React.FC = () => {
     {
       title: t('nav.main'),
       items: [
-        { name: t('nav.home'), path: '/', icon: <Layers size={18} /> },
-        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard }
+        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard },
+        { name: t('nav.home'), path: '/workflow', icon: <Layers size={18} /> }
       ]
     },
     {
@@ -133,7 +133,7 @@ export const Header: React.FC = () => {
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
         { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
-        { name: t('nav.profile'), path: '/my-tasks', icon: <Users size={18} /> },
+        { name: t('nav.profile'), path: '/my-tasks', icon: <User size={18} /> },
         { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
       ]
     },

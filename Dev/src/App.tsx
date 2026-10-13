@@ -18,6 +18,34 @@ import { TeamWorkload } from './pages/TeamWorkload';
 import { Reports } from './pages/Reports';
 import { MemberManagement } from './pages/MemberManagement';
 import { Projects } from './pages/Projects';
+import { useLocation } from 'react-router-dom';
+
+function RootRedirect() {
+  const profile = useAuthStore(state => state.profile);
+  const loading = useAuthStore(state => state.loading);
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading...</div>;
+  }
+
+  // Preserve query params if coming with project/campaign links
+  if (location.search && (location.search.includes('project=') || location.search.includes('campaign='))) {
+    return <Navigate to={`/workflow${location.search}`} replace />;
+  }
+
+  const role = (profile?.role || '').toLowerCase();
+  const level = (profile?.employment_level || '').toLowerCase();
+  const isLeader = role === 'leader' || level === 'leader';
+  const isAdminOrManager = ['admin', 'manager'].includes(role) || ['admin', 'manager'].includes(level);
+
+  if (isLeader || isAdminOrManager) {
+    return <Navigate to="/ui-dashboard" replace />;
+  }
+
+  // Regular staff / Nhân viên -> Profile (my-tasks)
+  return <Navigate to="/my-tasks" replace />;
+}
 
 function App() {
   const initialize = useAuthStore(state => state.initialize);
@@ -38,8 +66,9 @@ function App() {
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<WorkflowManagement />} />
-            <Route path="workflow-management-2" element={<Navigate to="/" replace />} />
+            <Route index element={<RootRedirect />} />
+            <Route path="workflow" element={<WorkflowManagement />} />
+            <Route path="workflow-management-2" element={<Navigate to="/workflow" replace />} />
             <Route path="overview" element={<Overview />} />
             <Route path="ui-dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<TaskList />} />

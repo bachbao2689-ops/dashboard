@@ -12,7 +12,7 @@ export interface HubTrack {
   pics: WorkflowPerson[]; phases: HubPhase[];
   sub_pics?: WorkflowPerson[];
 }
-export const workflowLink = (kind: 'project' | 'campaign', id: string) => `/?${kind}=${encodeURIComponent(id)}`;
+export const workflowLink = (kind: 'project' | 'campaign', id: string) => `/workflow?${kind}=${encodeURIComponent(id)}`;
 export const isDone = (status?: string | null) => ['done', 'completed', 'complete'].includes((status || '').toLowerCase());
 export function taskProgress(tasks: { status: string; workflow_status?: string | null }[]) {
   const active = tasks.filter(t => !['deleted', 'archived', 'canceled', 'cancelled'].includes((t.status || '').toLowerCase()) && t.workflow_status !== 'canceled');

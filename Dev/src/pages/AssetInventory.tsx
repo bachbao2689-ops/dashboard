@@ -8,6 +8,7 @@ import { AssetModal } from '../components/features/assets/AssetModal';
 import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
 import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
+import { useAuthStore } from '../store/authStore';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -20,6 +21,10 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
+  const profile = useAuthStore(state => state.profile);
+  const roleStr = (profile?.role || '').toLowerCase();
+  const levelStr = (profile?.employment_level || '').toLowerCase();
+  const canAddAsset = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,9 +89,11 @@ export const AssetInventory: React.FC = () => {
             <Box size={18} /> <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
             {cart.length > 0 && <span className="bg-white/20 text-white text-[11px] font-bold min-w-5 h-5 px-1 flex items-center justify-center rounded-full" aria-label={`${cart.length} ${t('assets.borrowSlip').toLowerCase()}`}>{cart.length}</span>}
           </button>
-          <button onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
-            <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
-          </button>
+          {canAddAsset && (
+            <button onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
+              <Plus size={18} /> <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
+            </button>
+          )}
         </div>
       </div>
 

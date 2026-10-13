@@ -48,7 +48,9 @@ export const TaskList: React.FC = () => {
   
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
-  const canCreateTask = true;
+  const roleStr = (profile?.role || '').toLowerCase();
+  const levelStr = (profile?.employment_level || '').toLowerCase();
+  const canCreateTask = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
   const [filters, setFilters] = useState({ 
     status: searchParams.get('status') || 'all', 
     priority: searchParams.get('priority') || 'all', 

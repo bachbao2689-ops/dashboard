@@ -17,12 +17,11 @@ export const Reports: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
   const role = (profile?.role || '').toLowerCase();
   const level = (profile?.employment_level || '').toLowerCase();
-  const isLeader = role === 'leader' || (level === 'leader' && role !== 'admin');
-  const isAdmin = role === 'admin' || level === 'admin';
+  const isLeader = role === 'leader' || level === 'leader';
+  const isAdminOrManager = ['admin', 'manager'].includes(role) || ['admin', 'manager'].includes(level);
 
-  if (isLeader) return <LeaderReports />;
-  if (isAdmin) return <AdminReports />;
-  return <ManagerReports />;
+  if (isAdminOrManager || isLeader) return <AdminReports />;
+  return <LeaderReports />;
 };
 
 const AdminReports: React.FC = () => {

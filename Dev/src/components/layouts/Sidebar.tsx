@@ -2,13 +2,11 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   CheckSquare, Layers,
-  Users, BarChart2, History, Box, FolderKanban
+  Users, User, BarChart2, History, Box, FolderKanban
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
-
-const User = ({size}: {size: number}) => <Users size={size} />;
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
@@ -25,8 +23,8 @@ export const Sidebar: React.FC = () => {
     {
       title: t('nav.main'),
       items: [
-        { name: t('nav.home'), path: '/', icon: <Layers size={18} /> },
-        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) }
+        { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) },
+        { name: t('nav.home'), path: '/workflow', icon: <Layers size={18} /> }
       ]
     },
     {
@@ -58,10 +56,10 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="app-sidebar w-full h-full card-hub flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
 
-      <div className="mb-8 flex items-center justify-center bg-white dark:bg-slate-800 mx-6 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105">
+      <NavLink to="/" className="mb-8 flex items-center justify-center bg-white dark:bg-slate-800 mx-6 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105">
         <img src="/logo-light.svg" alt="K COFFEE Logo" className="h-11 w-auto filter drop-shadow-md block dark:hidden" />
         <img src="/logo-dark.svg" alt="K COFFEE Logo" className="h-11 w-auto filter drop-shadow-md hidden dark:block" />
-      </div>
+      </NavLink>
 
       <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
         {navGroups.map((group, idx) => {

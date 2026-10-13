@@ -12,6 +12,7 @@ import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportD
 import type { ReportReference } from '../components/features/reports/WeeklyReportDrawer';
 import { tasksForWeeklyReport } from '../lib/weeklyReport';
 import { useTranslation } from '../i18n/translations';
+import { useAuthStore } from '../store/authStore';
 
 /* Design tokens */
 const INK = 'text-gray-900 dark:text-white';
@@ -127,6 +128,20 @@ export const Dashboard: React.FC = () => {
   const isDark = useUiStore(state => state.theme) === 'dark';
   const { tasks, users, loading } = useWorkspaceData();
   const navigate = useNavigate();
+  const profile = useAuthStore(state => state.profile);
+  const authLoading = useAuthStore(state => state.loading);
+
+  useEffect(() => {
+    if (!authLoading && profile) {
+      const role = (profile.role || '').toLowerCase();
+      const level = (profile.employment_level || '').toLowerCase();
+      const canView = ['admin', 'manager', 'leader'].includes(role) || ['admin', 'manager', 'leader'].includes(level);
+      if (!canView) {
+        navigate('/my-tasks', { replace: true });
+      }
+    }
+  }, [profile, authLoading, navigate]);
+
   const [activeId, setActiveId] = useState('s1');
   const [range, setRange] = useState<'weekly' | 'custom'>('weekly');
   const [customStart, setCustomStart] = useState(() => toYmd(startOfCurrentWeek()));

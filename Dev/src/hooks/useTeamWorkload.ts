@@ -33,7 +33,9 @@ export const useTeamWorkload = () => {
 
       // The dashboard stores its members in public.users, not auth profiles.
       const profile = useAuthStore.getState().profile;
-      const canViewAll = profile?.role === 'admin' || profile?.employment_level?.toLowerCase() === 'admin' || profile?.employment_level?.toLowerCase() === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+      const normalizedRole = (profile?.role || '').toLowerCase();
+      const normalizedLevel = (profile?.employment_level || '').toLowerCase();
+      const canViewAll = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
       
       let usersQuery = supabase
         .from('users')

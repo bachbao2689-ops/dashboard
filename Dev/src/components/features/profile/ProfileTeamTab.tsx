@@ -48,7 +48,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const loadTeam = useCallback(async (silent = false) => {
       const normalizedRole = (profile?.role || '').toLowerCase();
       const normalizedLevel = (profile?.employment_level || '').toLowerCase();
-      const canViewAll = normalizedRole === 'admin' || normalizedLevel === 'admin' || normalizedLevel === 'manager' || (normalizedRole === 'manager' && normalizedLevel !== 'leader');
+      const canViewAll = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
       if (!profile || (!canViewAll && !profile.department_id)) {
         setMembers([]); if(!silent) if(!silent) setLoadingTeam(false);
         return;
