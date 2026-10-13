@@ -114,10 +114,13 @@ export const WorkflowManagement: React.FC = () => {
   const taskCountsByStatus = Object.fromEntries(Object.keys(WORKFLOW_STATUS_CONFIG).map(s => [s, allTasks.filter(t => toWorkflowStage(t) === s).length])) as Record<WorkflowTaskStatus,number>;
   const currentMonthTaskStats = ['Hoàn thành (Done)', 'Đang thực hiện (In Progress)', 'Đang xem xét (Review)', 'Quá hạn (Overdue)', 'Chưa làm (Todo)'].map((name, i) => ({name, value: metrics.buckets[i], color: ['#10b981','#3b82f6','#8b5cf6','#ef4444','#64748b'][i]}));
   const totalMonthTasks = metrics.buckets.reduce((a,b) => a+b,0);
-  const performanceTrendData = phases.map(p => ({
-    period: p.name, actual: p.progress,
-    plan: !p.start_date || !p.due_date ? null : Math.max(0, Math.min(100, Math.round((Date.now() - Date.parse(p.start_date + 'T00:00:00+07:00')) / Math.max(86400000, Date.parse(p.due_date + 'T23:59:59+07:00') - Date.parse(p.start_date + 'T00:00:00+07:00')) * 100))),
-  }));
+  const performanceTrendData = phases.map(p => {
+    const startStr = p.start_date ? p.start_date.slice(0, 10) : null;
+    const dueStr = p.due_date ? p.due_date.slice(0, 10) : null;
+    const actual = p.displayStatus === 'completed' ? (p.progress ?? 100) : p.progress;
+    const plan = p.displayStatus === 'completed' ? 100 : (!startStr || !dueStr ? null : Math.max(0, Math.min(100, Math.round((Date.now() - Date.parse(startStr + 'T00:00:00+07:00')) / Math.max(86400000, Date.parse(dueStr + 'T23:59:59+07:00') - Date.parse(startStr + 'T00:00:00+07:00')) * 100))));
+    return { period: p.name, actual, plan };
+  });
   const unplanned = allTasks.filter(t => !t.workflow_phase_id);
   const [showAddCriteria, setShowAddCriteria] = useState(false);
   const [newCriteriaLabel, setNewCriteriaLabel] = useState('');

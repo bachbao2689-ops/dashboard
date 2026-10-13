@@ -267,12 +267,13 @@ export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: 
 
 
 export const canonicalWorkflowStatus: Record<WorkflowTaskStatus,string> = {backlog:'todo',planned:'todo',scoping:'in_progress',in_progress:'in_progress',in_qa:'in_review',completed:'done',canceled:'cancelled'};
-export function workflowStage(status: string, stage?: string | null): WorkflowTaskStatus {
+export function workflowStage(status?: string | null, stage?: string | null): WorkflowTaskStatus {
   if (stage && stage in WORKFLOW_STATUS_CONFIG) return stage as WorkflowTaskStatus;
-  if (['done','completed','complete'].includes(status)) return 'completed';
-  if (['cancelled','canceled'].includes(status)) return 'canceled';
-  if (['in_review','review','in_qa'].includes(status)) return 'in_qa';
-  if (['in_progress','in-progress','doing'].includes(status)) return 'in_progress';
+  const s = (status || '').toLowerCase();
+  if (['done','completed','complete'].includes(s)) return 'completed';
+  if (['cancelled','canceled'].includes(s)) return 'canceled';
+  if (['in_review','review','in_qa','feedback','pending'].includes(s)) return 'in_qa';
+  if (['in_progress','in-progress','doing','scoping'].includes(s)) return 'in_progress';
   return 'backlog';
 }
 export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:string;stage?:string|null;disabled?:boolean;onChange:(stage:WorkflowTaskStatus)=>Promise<void>}) {
