@@ -11,8 +11,10 @@ import { supabase } from '../../services/supabase';
 type NotificationItem = { id: string; title: string; message: string; entity_type?: string | null; entity_id?: string | null };
 
 export const Header: React.FC = () => {
-    const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
+  const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showNotifs, setShowNotifs] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -22,9 +24,24 @@ export const Header: React.FC = () => {
         setShowNotifs(false);
       }
     };
-    if (showNotifs) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifs(false);
+      }
+    };
+    if (showNotifs) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [showNotifs]);
+
+  useEffect(() => {
+    setShowNotifs(false);
+  }, [location.pathname]);
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -51,8 +68,6 @@ export const Header: React.FC = () => {
     };
   }, []);
 
-  const location = useLocation();
-  const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   
   
@@ -152,7 +167,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-    <div className="pointer-events-none absolute top-0 inset-x-0 z-40 select-none">
+    <div className={cn("pointer-events-none absolute top-0 inset-x-0 select-none transition-all duration-200", showNotifs ? "z-[9999]" : "z-[60]")}>
       {/* Liquid Glass Top Depth Mask (fades from blur to transparent) */}
       <div
         aria-hidden="true"
@@ -164,7 +179,8 @@ export const Header: React.FC = () => {
       
       {/* Floating Liquid Glass Top Header Pill */}
       <header className={cn(
-        "liquid-glass-header pointer-events-auto relative z-20 mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5 transition-all duration-300",
+        "liquid-glass-header pointer-events-auto relative mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5 transition-all duration-300",
+        showNotifs ? "z-[9999]" : "z-20",
         isScrolled && "is-scrolled"
       )}>
       
@@ -307,26 +323,34 @@ export const Header: React.FC = () => {
             />
           </div>
           
-          <div className="relative" ref={notifRef}>
+          <div className={cn("relative", showNotifs && "z-[9999]")} ref={notifRef}>
             <button 
+              type="button"
               onClick={() => setShowNotifs(!showNotifs)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
+              aria-label={t('profile.notifications')}
+              aria-expanded={showNotifs}
+              className={cn(
+                "p-2 rounded-xl transition-all relative cursor-pointer",
+                showNotifs
+                  ? "bg-primary/10 text-primary dark:bg-slate-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300"
+              )}
             >
               <Bell size={20} />
               {notifications.length > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{notifications.length > 99 ? "99+" : notifications.length}</span>}
             </button>
             
             {showNotifs && (
-              <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-24px))] sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
-                  <span>Notifications</span>
-                  <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>Mark all as read</span>
+                  <span>{lang === 'en' ? 'Notifications' : 'Thông báo'}</span>
+                  <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">Không có thông báo mới.</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No new notifications.' : 'Không có thông báo mới.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
-                <div className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-                  View all notifications
+                <div onClick={() => { setShowNotifs(false); navigate('/my-tasks'); }} className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 transition-colors">
+                  {lang === 'en' ? 'View all notifications' : 'Xem tất cả thông báo'}
                 </div>
               </div>
             )}
