@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  FolderKanban, ArrowRight,  ShieldCheck,
+  FolderKanban, ArrowRight, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
-  ChevronDown, ChevronUp, X, Globe, Code2, Info, Search,
-  Calendar, User, Edit3, Trash2, Eye, Check, Clock
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Globe, Code2, Info, Search,
+  Calendar, User, Edit3, Trash2, Eye, Check, Clock, AlertTriangle, Users
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -222,9 +222,54 @@ export const WorkflowManagement: React.FC = () => {
         opportunity:phaseOpportunity === '' ? null : Number(phaseOpportunity),opportunity_note:phaseReason.trim() || null}
     })), 'Đã lưu phase vào lộ trình')) setShowAddPhaseModal(false);
   };
+  const [phaseToDelete, setPhaseToDelete] = useState<{ index: number; phase: Phase } | null>(null);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScrollBounds = () => {
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8);
+  };
+
+  useEffect(() => {
+    checkScrollBounds();
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScrollBounds, { passive: true });
+    window.addEventListener('resize', checkScrollBounds);
+    const timer = setTimeout(checkScrollBounds, 300);
+    return () => {
+      el.removeEventListener('scroll', checkScrollBounds);
+      window.removeEventListener('resize', checkScrollBounds);
+      clearTimeout(timer);
+    };
+  }, [phases.length, activePhaseId]);
+
+  const scrollTimeline = (direction: 'left' | 'right') => {
+    if (!timelineScrollRef.current) return;
+    const offset = direction === 'left' ? -320 : 320;
+    timelineScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
   const handleDeletePhase = (index: number, e: React.MouseEvent) => {
-    e.stopPropagation(); const phase = phases[index];
-    if (currentEntity?.root && window.confirm('Xóa phase trống "' + phase.title + '"? Phase có task sẽ được giữ lại.')) void attempt(() => hub.mutate(() => supabase.rpc('workflow_remove_phase',{p_phase:phase.id,p_expected:phase.version})), 'Đã xóa phase trống');
+    e.stopPropagation();
+    const phase = phases[index];
+    if (currentEntity?.root && phase) {
+      setPhaseToDelete({ index, phase });
+    }
+  };
+
+  const confirmDeletePhase = async () => {
+    if (!phaseToDelete) return;
+    const { phase } = phaseToDelete;
+    const ok = await attempt(
+      () => hub.mutate(() => supabase.rpc('workflow_remove_phase', { p_phase: phase.id, p_expected: phase.version })),
+      isEn ? 'Phase deleted successfully' : 'Đã xóa phase khỏi lộ trình'
+    );
+    if (ok) setPhaseToDelete(null);
   };
   const handleAdvancePhase = async () => {
     if (!activePhase) return;
@@ -948,9 +993,39 @@ export const WorkflowManagement: React.FC = () => {
         </div>
 
         {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? (isEn ? 'No phases yet. Add a phase to assign PIC & sub-PIC.' : 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC.') : (isEn ? 'Not assigned to any phase. Contact PIC to join.' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn.')}</div>}
-        {/* Timeline Connected Stepper Nodes (Circular Gauge & Connecting Shape Links) */}
-        <div className="relative pt-2 pb-2 overflow-x-auto custom-scrollbar">
-          <div className="flex items-center min-w-max pb-2 pt-1 px-1">
+        {/* Timeline Connected Stepper Nodes with Slide Navigation Buttons (Requirement 1) */}
+        <div className="relative group/timeline pt-2 pb-2">
+          {/* Scroll Left Button */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scrollTimeline('left')}
+              aria-label={isEn ? 'Scroll left' : 'Trượt sang trái'}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -ml-2 sm:-ml-3"
+              title={isEn ? 'Scroll left to view previous phases' : 'Trượt sang trái để xem các phase trước'}
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+          )}
+
+          {/* Scroll Right Button */}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scrollTimeline('right')}
+              aria-label={isEn ? 'Scroll right' : 'Trượt sang phải'}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -mr-2 sm:-mr-3"
+              title={isEn ? 'Scroll right to view more phases' : 'Trượt sang phải để xem thêm các phase sau'}
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+          )}
+
+          <div
+            ref={timelineScrollRef}
+            className="overflow-x-auto custom-scrollbar scroll-smooth"
+          >
+            <div className="flex items-center min-w-max pb-2 pt-1 px-1">
             {phases.map((p, idx) => {
               const isSelected = idx === activePhaseIndex;
               const isCompleted = p.displayStatus === 'completed';
@@ -1060,7 +1135,103 @@ export const WorkflowManagement: React.FC = () => {
                       {p.desc}
                     </span>
 
-                    <div className="w-full mt-1 space-y-1"><p className="text-[9px] text-gray-400">{displayDate(p.start_date)} – {displayDate(p.due_date)}</p><div className="flex flex-wrap justify-center gap-1">{p.members.map(m=><span key={m.id} title={m.name + ' · ' + (m.role || 'PIC')} className="inline-flex items-center gap-1 text-[9px]"><Avatar name={m.name} src={m.avatar_url} className="w-4 h-4 text-[8px]"/>{m.name}{m.role==='sub_pic'?' · SUB':''}</span>)}</div>{currentEntity.root && <button onClick={e=>handleOpenAddPhaseModal(idx,e,p)} className="text-[10px] text-primary underline">{isEn ? 'Edit phase' : 'Chỉnh sửa phase'}</button>}</div>
+                    {/* Phase PIC & Subtask Members & Tracking (Requirement 3) */}
+                    {(() => {
+                      const phaseTasks = allTasks.filter(t => t.workflow_phase_id === p.id);
+                      const doneTasks = phaseTasks.filter(t => toWorkflowStage(t) === 'completed').length;
+                      const totalTasks = phaseTasks.filter(t => toWorkflowStage(t) !== 'canceled').length;
+
+                      // Unique subtask assignees
+                      const subtaskAssigneesMap = new Map<string, { id?: string; name: string; avatar_url?: string; count: number }>();
+                      phaseTasks.forEach(t => {
+                        if (t.assignee?.name) {
+                          const key = t.assignee.id || t.assignee.name;
+                          const prev = subtaskAssigneesMap.get(key);
+                          if (prev) {
+                            prev.count += 1;
+                          } else {
+                            subtaskAssigneesMap.set(key, { id: t.assignee.id, name: t.assignee.name, avatar_url: t.assignee.avatar_url, count: 1 });
+                          }
+                        }
+                      });
+                      const subtaskAssignees = Array.from(subtaskAssigneesMap.values());
+
+                      return (
+                        <div className="w-full mt-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex flex-col items-center gap-1 text-[9.5px]">
+                          {/* Date */}
+                          <p className="text-[9px] text-gray-400">
+                            {displayDate(p.start_date)} – {displayDate(p.due_date)}
+                          </p>
+
+                          {/* Phase PIC Row */}
+                          <div className="flex items-center justify-center flex-wrap gap-1">
+                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">PIC:</span>
+                            {p.members.length > 0 ? (
+                              p.members.map(m => (
+                                <span key={m.id} title={`${m.name} · ${m.role === 'sub_pic' ? 'Sub-PIC' : 'PIC'}`} className="inline-flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
+                                  <Avatar name={m.name} src={m.avatar_url} className="w-4 h-4 text-[8px]" />
+                                  <span className="truncate max-w-[65px]">{m.name}</span>
+                                  {m.role === 'sub_pic' && <span className="text-[7.5px] text-amber-500 font-bold px-1 py-0.2 bg-amber-500/10 rounded">SUB</span>}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[8.5px] text-gray-400 italic">{isEn ? 'None' : 'Chưa giao'}</span>
+                            )}
+                          </div>
+
+                          {/* Subtask Members & Tracking Row (Requirement 3) */}
+                          <div className="flex items-center justify-between w-full mt-0.5 py-1 px-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800">
+                            <div className="flex items-center gap-1 min-w-0" title={isEn ? `${subtaskAssignees.length} subtask members` : `${subtaskAssignees.length} thành viên thực hiện subtask`}>
+                              <Users size={11} className="text-gray-400 shrink-0" />
+                              {subtaskAssignees.length > 0 ? (
+                                <div className="flex -space-x-1.5 items-center overflow-hidden">
+                                  {subtaskAssignees.slice(0, 3).map(m => (
+                                    <div key={m.name} title={`${m.name} (${m.count} ${isEn ? 'tasks' : 'việc'})`} className="ring-1 ring-white dark:ring-slate-800 rounded-full shrink-0">
+                                      <Avatar name={m.name} src={m.avatar_url} className="w-3.5 h-3.5 text-[7px]" />
+                                    </div>
+                                  ))}
+                                  {subtaskAssignees.length > 3 && (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 text-[7px] font-bold text-gray-600 dark:text-gray-300 flex items-center justify-center ring-1 ring-white dark:ring-slate-800 shrink-0">
+                                      +{subtaskAssignees.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[8px] text-gray-400 truncate">
+                                  {phaseTasks.length === 0 ? (isEn ? 'No tasks' : 'Chưa có task') : (isEn ? 'Unassigned' : 'Chưa giao')}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Task Tracking Badge */}
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-tight shrink-0 ${
+                                totalTasks === 0
+                                  ? 'bg-gray-100 dark:bg-slate-800 text-gray-400'
+                                  : doneTasks === totalTasks
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25'
+                              }`}
+                              title={isEn ? `Tracking: ${doneTasks}/${totalTasks} tasks completed` : `Theo dõi: ${doneTasks}/${totalTasks} việc xong`}
+                            >
+                              {doneTasks}/{totalTasks} {isEn ? 'done' : 'xong'}
+                            </span>
+                          </div>
+
+                          {/* Edit Phase Link */}
+                          {currentEntity.root && (
+                            <button
+                              type="button"
+                              onClick={e => handleOpenAddPhaseModal(idx, e, p)}
+                              className="text-[9.5px] text-primary hover:underline transition-colors mt-0.5 cursor-pointer"
+                            >
+                              {isEn ? 'Edit phase' : 'Chỉnh sửa phase'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Gate chance info */}
                     <div className="w-full mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-[10px]">
                       <span className="text-gray-400">{isEn ? 'Gate chance:' : 'Cơ hội Gate:'}</span>
@@ -1150,6 +1321,7 @@ export const WorkflowManagement: React.FC = () => {
               </button>
               <span className="text-[9px] text-gray-400 mt-1 text-center">{isEn ? 'Custom roadmap' : 'Tùy biến lộ trình'}</span>
             </div>}
+            </div>
           </div>
         </div>
 
@@ -1814,6 +1986,111 @@ export const WorkflowManagement: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE PHASE CONFIRMATION MODAL (Requirement 2) */}
+      {phaseToDelete && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => !hub.busy && setPhaseToDelete(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-phase-modal-title"
+            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header Icon + Title */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 shadow-xs">
+                <Trash2 size={20} strokeWidth={2.2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 id="delete-phase-modal-title" className="text-base font-bold text-gray-900 dark:text-white">
+                  {isEn ? 'Delete Phase Confirmation' : 'Xác nhận xóa giai đoạn'}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {isEn ? 'Review the phase details before removing from roadmap.' : 'Kiểm tra kỹ thông tin giai đoạn trước khi gỡ khỏi lộ trình.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={hub.busy}
+                onClick={() => setPhaseToDelete(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Phase Target Card */}
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  {isEn ? `Phase ${phaseToDelete.phase.position}` : `Chặng ${phaseToDelete.phase.position}`}
+                </span>
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                  {allTasks.filter(t => t.workflow_phase_id === phaseToDelete.phase.id).length} {isEn ? 'linked tasks' : 'task trong phase'}
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                {phaseToDelete.phase.title}
+              </h4>
+              {phaseToDelete.phase.description && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                  {phaseToDelete.phase.description}
+                </p>
+              )}
+            </div>
+
+            {/* Warning Message based on linked tasks */}
+            {(() => {
+              const linkedCount = allTasks.filter(t => t.workflow_phase_id === phaseToDelete.phase.id).length;
+              if (linkedCount > 0) {
+                return (
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-500" />
+                    <div>
+                      <span className="font-bold">{isEn ? 'Preservation Notice: ' : 'Lưu ý bảo toàn dữ liệu: '}</span>
+                      {isEn
+                        ? `This phase currently has ${linkedCount} tasks. These tasks will NOT be deleted; they will be safely kept and moved to "Unplanned tasks".`
+                        : `Phase này đang có ${linkedCount} task. Các task sẽ KHÔNG bị mất đi mà được giữ nguyên an toàn và chuyển về mục "Task chưa gắn phase".`}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {isEn
+                    ? 'This phase is empty and will be completely removed from the project roadmap.'
+                    : 'Giai đoạn này đang trống và sẽ được gỡ bỏ hoàn toàn khỏi lộ trình dự án.'}
+                </p>
+              );
+            })()}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
+              <button
+                type="button"
+                disabled={hub.busy}
+                onClick={() => setPhaseToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                {isEn ? 'Cancel' : 'Hủy bỏ'}
+              </button>
+              <button
+                type="button"
+                disabled={hub.busy}
+                onClick={confirmDeletePhase}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-all flex items-center gap-1.5 shadow-sm hover:shadow-red-500/20 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 size={13} />
+                <span>{hub.busy ? (isEn ? 'Deleting...' : 'Đang xóa...') : (isEn ? 'Confirm Delete' : 'Xác nhận xóa')}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
