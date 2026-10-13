@@ -116,10 +116,10 @@ export const MobileNav: React.FC = () => {
         }
       `}</style>
       
-      {/* Background Mask */}
+      {/* Background Mask (Dark mode only) */}
       <div 
         className={cn(
-          "md:hidden fixed bottom-0 left-0 right-0 pointer-events-none z-[98] mobile-nav-mask backdrop-blur-[32px] backdrop-saturate-[165%]",
+          "hidden dark:md:hidden dark:fixed dark:bottom-0 dark:left-0 dark:right-0 pointer-events-none z-[98] mobile-nav-mask backdrop-blur-[32px] backdrop-saturate-[165%]",
           isHidden && "nav-hidden"
         )}
       />

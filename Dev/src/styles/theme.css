@@ -92,11 +92,14 @@ button:disabled { cursor: not-allowed; }
 
 /* Light mode outer sidebar shell */
 html:not(.dark) .app-sidebar.card-hub {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(226, 239, 255, 0.70)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.55) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.88) !important;
-  box-shadow: 0 12px 32px rgba(18, 48, 94, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+              inset 0 0 14px 0 rgba(255, 255, 255, 0.35),
+              0 2px 8px -2px rgba(0, 0, 0, 0.03),
+              0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 /* Light mode navigation links */

@@ -168,11 +168,11 @@ export const Header: React.FC = () => {
   return (
     <>
     <div className={cn("pointer-events-none absolute top-0 inset-x-0 select-none transition-all duration-200", showNotifs ? "z-[9999]" : "z-[60]")}>
-      {/* Liquid Glass Top Depth Mask (fades from blur to transparent) */}
+      {/* Liquid Glass Top Depth Mask (fades from blur to transparent - dark mode only) */}
       <div
         aria-hidden="true"
         className={cn(
-          "liquid-glass-top-mask pointer-events-none absolute inset-x-0 top-0 z-10 transition-all duration-300",
+          "hidden dark:block liquid-glass-top-mask pointer-events-none absolute inset-x-0 top-0 z-10 transition-all duration-300",
           isScrolled && "is-scrolled"
         )}
       />
