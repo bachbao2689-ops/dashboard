@@ -63,7 +63,7 @@ export const WorkflowManagement: React.FC = () => {
     if (entity) { setParams({ [entity.type]: entity.entity_id }); setEntityFilter(entity.type); }
     setIsTitleDropdownOpen(false); setSearchEntityQuery('');
   };
-  useEffect(() => { setEntityFilter(params.has('campaign') ? 'campaign' : 'project'); }, [params.toString()]);
+  useEffect(() => { if (params.has('campaign')) setEntityFilter('campaign'); else if (params.has('project')) setEntityFilter('project'); }, [params.toString()]);
   const [activePhaseId, setActivePhaseId] = useState('');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
