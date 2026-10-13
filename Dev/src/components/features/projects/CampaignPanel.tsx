@@ -1,5 +1,5 @@
 import { StatusBadge } from '../../common/StatusBadge';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
@@ -8,6 +8,85 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+
+export interface CampaignFilters {
+  searchTerm: string;
+  status: string;
+  picId: string;
+  calendar: string;
+  customStartDate?: string;
+  customEndDate?: string;
+  priority: string;
+}
+
+export const checkDateMatch = (
+  startDateStr: string | null | undefined,
+  dueDateStr: string | null | undefined,
+  filter: string,
+  customStart?: string,
+  customEnd?: string,
+  isCompleted?: boolean
+): boolean => {
+  if (filter === 'all' && !customStart && !customEnd) return true;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  const start = startDateStr ? new Date(startDateStr).setHours(0, 0, 0, 0) : null;
+  const due = dueDateStr ? new Date(dueDateStr).setHours(0, 0, 0, 0) : null;
+
+  if (filter === 'ongoing') {
+    if (isCompleted) return false;
+    if (start && start > today) return false;
+    if (due && due < today) return false;
+    return true;
+  }
+
+  if (filter === 'due_soon') {
+    if (isCompleted || !due) return false;
+    const diff = (due - today) / ONE_DAY;
+    return diff >= 0 && diff <= 7;
+  }
+
+  if (filter === 'overdue') {
+    if (isCompleted || !due) return false;
+    return due < today;
+  }
+
+  if (filter === 'this_week') {
+    const day = now.getDay();
+    const diffToMon = (day === 0 ? -6 : 1) - day;
+    const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon).setHours(0, 0, 0, 0);
+    const sun = mon + 6 * ONE_DAY;
+    const itemStart = start || due;
+    const itemEnd = due || start;
+    if (!itemStart && !itemEnd) return false;
+    return itemStart! <= sun && itemEnd! >= mon;
+  }
+
+  if (filter === 'this_month') {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).setHours(23, 59, 59, 999);
+    const itemStart = start || due;
+    const itemEnd = due || start;
+    if (!itemStart && !itemEnd) return false;
+    return itemStart! <= endOfMonth && itemEnd! >= startOfMonth;
+  }
+
+  if (filter === 'custom' || customStart || customEnd) {
+    const cs = customStart ? new Date(customStart).setHours(0, 0, 0, 0) : null;
+    const ce = customEnd ? new Date(customEnd).setHours(23, 59, 59, 999) : null;
+    const itemStart = start || due;
+    const itemEnd = due || start;
+    if (!itemStart && !itemEnd) return false;
+    if (cs && itemEnd! < cs) return false;
+    if (ce && itemStart! > ce) return false;
+    return true;
+  }
+
+  return true;
+};
 
 const strictFormatVN = (dateStr?: string | null) => {
   if (!dateStr) return '—';
@@ -47,8 +126,11 @@ const getDueStatusLabel = (endDateStr?: string | null) => {
   return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
 
-export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = ({ onSelect }) => {
-  const { t } = useTranslation();
+export const CampaignPanel: React.FC<{ 
+  onSelect?: (campaign: any) => void;
+  filters?: CampaignFilters;
+}> = ({ onSelect, filters }) => {
+  const { t, lang } = useTranslation();
   const profile = useAuthStore(s => s.profile);
   const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
   const [expanded, setExpanded] = useState(true);
@@ -127,18 +209,89 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
   };
 
 
+  const isCompleted = (c: any) => ['done', 'complete', 'completed'].includes((c.status || '').toLowerCase());
+
+  const visibleCampaigns = useMemo(() => {
+    if (!filters) return campaigns;
+    const { searchTerm, status, picId, calendar, customStartDate, customEndDate, priority } = filters;
+    const term = (searchTerm || '').trim().toLowerCase();
+
+    return campaigns.filter(c => {
+      // 1. Search filter
+      if (term) {
+        const nameMatch = (c.name || '').toLowerCase().includes(term);
+        const objMatch = (c.objective || '').toLowerCase().includes(term);
+        if (!nameMatch && !objMatch) return false;
+      }
+
+      // 2. Status filter
+      if (status && status !== 'all') {
+        const norm = (c.status || 'planning').toLowerCase();
+        if (status === 'in_progress') {
+          if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;
+        } else if (status === 'completed') {
+          if (!['done', 'complete', 'completed'].includes(norm)) return false;
+        } else if (status === 'planning') {
+          if (!['planning', 'draft', 'pending'].includes(norm)) return false;
+        } else if (status !== norm) {
+          return false;
+        }
+      }
+
+      // 3. PIC filter
+      if (picId && picId !== 'all') {
+        if (picId === 'me') {
+          const myId = profile?.id;
+          const isLead = myId && Number(c.lead_id) === Number(myId);
+          const isCreator = myId && Number(c.creator?.id) === Number(myId);
+          const isSub = myId && (subtaskMap[c.id] || []).some((a: any) => Number(a.id) === Number(myId));
+          if (!isLead && !isCreator && !isSub) return false;
+        } else if (picId === 'unassigned') {
+          if (c.lead_id || c.lead?.name) return false;
+        } else {
+          const targetId = Number(picId);
+          const isLead = Number(c.lead_id) === targetId;
+          const isCreator = Number(c.creator?.id) === targetId;
+          const isSub = (subtaskMap[c.id] || []).some((a: any) => Number(a.id) === targetId);
+          if (!isLead && !isCreator && !isSub) return false;
+        }
+      }
+
+      // 4. Priority filter
+      if (priority && priority !== 'all') {
+        const p = campaignPriority(c).toLowerCase();
+        if (p !== priority.toLowerCase()) return false;
+      }
+
+      // 5. Calendar filter
+      if (calendar && calendar !== 'all') {
+        if (!checkDateMatch(c.start_date, c.end_date, calendar, customStartDate, customEndDate, isCompleted(c))) {
+          return false;
+        }
+      } else if (customStartDate || customEndDate) {
+        if (!checkDateMatch(c.start_date, c.end_date, 'custom', customStartDate, customEndDate, isCompleted(c))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [campaigns, filters, subtaskMap, profile?.id]);
+
   return (
     <section className="card-hub rounded-2xl overflow-hidden shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
         <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
           <Megaphone className="text-amber-500" size={16} /> {t('projects.campaignsAccordion')}
-          <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">{campaigns.length}</span>
+          <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+            {visibleCampaigns.length}{visibleCampaigns.length !== campaigns.length ? ` / ${campaigns.length}` : ''}
+          </span>
         </button>
       </div>
       {expanded && <>
       <div className="space-y-3 p-3 md:hidden">
-        {campaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
+        {visibleCampaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
           <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
             <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span><ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
             <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
@@ -149,14 +302,18 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
             {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
         </article>)}
-        {!campaigns.length && <p className="p-6 text-center text-sm text-gray-500">{t('projects.noCampaigns')}</p>}
+        {!visibleCampaigns.length && (
+          <p className="p-6 text-center text-sm text-gray-500">
+            {campaigns.length > 0 ? (lang === 'en' ? 'No campaigns match current filters.' : 'Không có chiến dịch phù hợp bộ lọc.') : t('projects.noCampaigns')}
+          </p>
+        )}
       </div>
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-max text-left">
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
             <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />
           </tr></thead>
-          <tbody>{campaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign hover:bg-primary/5 transition-all duration-300 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
+          <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign hover:bg-primary/5 transition-all duration-300 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
             <td className="p-4"><b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p></td>
             <td>
   <div className="flex items-center gap-2">
@@ -181,7 +338,11 @@ export const CampaignPanel: React.FC<{ onSelect?: (campaign: any) => void }> = (
             <td className="w-16 pr-4">{canManage && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
           </tr>)}</tbody>
         </table>
-        {!campaigns.length && <p className="p-8 text-center text-sm text-gray-400">{t('projects.noCampaigns')}</p>}
+        {!visibleCampaigns.length && (
+          <p className="p-8 text-center text-sm text-gray-400">
+            {campaigns.length > 0 ? (lang === 'en' ? 'No campaigns match current filters.' : 'Không có chiến dịch phù hợp bộ lọc.') : t('projects.noCampaigns')}
+          </p>
+        )}
       </div></>}
     <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemove} onCancel={() => setCampaignToDelete(null)} />
     <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHide} onCancel={() => setCampaignToHide(null)} />

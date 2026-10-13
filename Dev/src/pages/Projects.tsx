@@ -1,18 +1,18 @@
 import { StatusBadge } from '../components/common/StatusBadge';
 import { MultiSelect } from '../components/common/MultiSelect';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { workflowLink } from '../lib/workflowHub';
 import { Avatar } from "../components/common/Avatar";
 
 import toast from 'react-hot-toast';
 import { useTranslation } from '../i18n/translations';
-import { ChevronDown, ChevronRight, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff, Reply, Send } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderKanban, MessageSquare, Plus, Users, X, Edit3, Trash2, CheckCircle2, Calendar, EyeOff, Reply, Send, Search, ArrowUpDown } from 'lucide-react';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../components/common/ConfirmHideModal';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
-import { CampaignPanel } from '../components/features/projects/CampaignPanel';
+import { CampaignPanel, checkDateMatch, type CampaignFilters } from '../components/features/projects/CampaignPanel';
 import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
 
@@ -59,7 +59,7 @@ const getDueStatusLabel = (endDateStr?: string | null) => {
 };
 
 export const Projects: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const profile = useAuthStore(s => s.profile);
   const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'leader' || profile?.employment_level === 'Leader';
@@ -147,8 +147,133 @@ export const Projects: React.FC = () => {
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
   const [subtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
 
-  // RLS includes department, full PIC and phase/task invitation exceptions.
-  const visibleProjects = projects;
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [picFilter, setPicFilter] = useState<string>('all');
+  const [calendarFilter, setCalendarFilter] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+
+  // Dropdown open state
+  const [activeDropdown, setActiveDropdown] = useState<'status' | 'pic' | 'calendar' | 'priority' | null>(null);
+  const [picSearchQuery, setPicSearchQuery] = useState('');
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    if (activeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeDropdown]);
+
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() ||
+    statusFilter !== 'all' ||
+    picFilter !== 'all' ||
+    calendarFilter !== 'all' ||
+    customStartDate ||
+    customEndDate ||
+    priorityFilter !== 'all'
+  );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setPicFilter('all');
+    setCalendarFilter('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setPriorityFilter('all');
+    setActiveDropdown(null);
+  };
+
+  const campaignFilters = useMemo<CampaignFilters>(() => ({
+    searchTerm,
+    status: statusFilter,
+    picId: picFilter,
+    calendar: calendarFilter,
+    customStartDate,
+    customEndDate,
+    priority: priorityFilter
+  }), [searchTerm, statusFilter, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter]);
+
+  const visibleProjects = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return projects.filter(p => {
+      // 1. Search filter
+      if (term) {
+        const nameMatch = (p.name || '').toLowerCase().includes(term);
+        const descMatch = (p.description || '').toLowerCase().includes(term);
+        if (!nameMatch && !descMatch) return false;
+      }
+
+      // 2. Status filter
+      if (statusFilter !== 'all') {
+        const norm = (p.status || 'active').toLowerCase();
+        if (statusFilter === 'in_progress') {
+          if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;
+        } else if (statusFilter === 'completed') {
+          if (!['done', 'complete', 'completed'].includes(norm)) return false;
+        } else if (statusFilter === 'planning') {
+          if (!['planning', 'draft', 'pending'].includes(norm)) return false;
+        } else if (statusFilter !== norm) {
+          return false;
+        }
+      }
+
+      // 3. PIC filter
+      if (picFilter !== 'all') {
+        if (picFilter === 'me') {
+          const myId = profile?.id;
+          const myIdStr = String(myId);
+          const isLead = myId && (Number(p.lead_id) === Number(myId) || projectPrimaryOwners[p.id] === myId);
+          const isMember = (members[p.id] || []).includes(myIdStr) || (picMembers[p.id] || []).includes(myIdStr);
+          const isSub = (subtaskMembers[p.id] || []).includes(myIdStr);
+          const isCreator = myId && Number(p.created_by) === Number(myId);
+          if (!isLead && !isMember && !isSub && !isCreator) return false;
+        } else if (picFilter === 'unassigned') {
+          const hasMembers = (members[p.id] || []).length > 0;
+          if (p.lead_id || hasMembers) return false;
+        } else {
+          const targetId = Number(picFilter);
+          const targetStr = String(picFilter);
+          const isLead = Number(p.lead_id) === targetId || projectPrimaryOwners[p.id] === targetId;
+          const isMember = (members[p.id] || []).includes(targetStr) || (picMembers[p.id] || []).includes(targetStr);
+          const isSub = (subtaskMembers[p.id] || []).includes(targetStr);
+          const isCreator = Number(p.created_by) === targetId;
+          if (!isLead && !isMember && !isSub && !isCreator) return false;
+        }
+      }
+
+      // 4. Priority filter
+      if (priorityFilter !== 'all') {
+        const pPriority = (p.priority || 'medium').toLowerCase();
+        if (pPriority !== priorityFilter.toLowerCase()) return false;
+      }
+
+      // 5. Calendar filter
+      const isCompleted = ['done', 'complete', 'completed'].includes((p.status || '').toLowerCase());
+      if (calendarFilter !== 'all') {
+        if (!checkDateMatch(p.start_date, p.due_date, calendarFilter, customStartDate, customEndDate, isCompleted)) {
+          return false;
+        }
+      } else if (customStartDate || customEndDate) {
+        if (!checkDateMatch(p.start_date, p.due_date, 'custom', customStartDate, customEndDate, isCompleted)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [projects, searchTerm, statusFilter, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, members, picMembers, subtaskMembers, projectPrimaryOwners, profile?.id]);
 
 
   const load = async () => {
@@ -510,23 +635,366 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 
     {/* Left Side: Projects List */}
     <div className={`flex min-w-0 flex-1 flex-col p-1 transition-all duration-300 ${panelOpen ? 'hidden md:flex xl:mr-[calc(var(--panel-width)+16px)] pr-2' : 'pr-1'}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 py-2 sm:py-2.5 mb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 leading-none">
             <FolderKanban className="text-primary"/> {t('projects.title')}
           </h1>
           <p className="text-sm text-gray-500 mt-1.5">{t('projects.subtitle')}</p>
         </div>
-        {canCreate && (
-          <button 
-            onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
-            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-medium transition-all shadow-sm"
-          >
-            <FolderKanban className="w-4 h-4" />
-            <span>{t('projects.add')}</span>
-          </button>
-        )}
-      </div><div className="space-y-6 pb-20 pr-1"><CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}/><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 md:hidden">{visibleProjects.map(project => {
+
+        {/* Function Toolbar: Search, Status, PIC, Calendar, Priority, Clear Filters, Add New */}
+        <div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
+          {/* 1. Search */}
+          <div className="relative flex items-center">
+            <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder={t('projects.searchPlaceholder')}
+              className="h-9 pl-8 pr-7 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all w-36 sm:w-48 focus:w-60 shadow-2xs"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* 2. Status Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+              className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                statusFilter !== 'all'
+                  ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <CheckCircle2 size={13} className={statusFilter !== 'all' ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+              <span>
+                {statusFilter === 'all'
+                  ? t('projects.filterStatus')
+                  : statusFilter === 'in_progress'
+                  ? t('projects.statusInProgress')
+                  : statusFilter === 'planning'
+                  ? t('projects.statusPlanning')
+                  : statusFilter === 'completed'
+                  ? t('projects.statusCompleted')
+                  : statusFilter === 'draft'
+                  ? t('projects.statusDraft')
+                  : t('projects.statusOnHold')}
+              </span>
+              <ChevronDown size={12} className={`text-gray-400 transition-transform ${activeDropdown === 'status' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeDropdown === 'status' && (
+              <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  {t('projects.filterStatus')}
+                </div>
+                {[
+                  { key: 'all', label: t('projects.allStatuses'), dot: 'bg-gray-400' },
+                  { key: 'planning', label: t('projects.statusPlanning'), dot: 'bg-amber-400' },
+                  { key: 'in_progress', label: t('projects.statusInProgress'), dot: 'bg-sky-400' },
+                  { key: 'completed', label: t('projects.statusCompleted'), dot: 'bg-emerald-500' },
+                  { key: 'draft', label: t('projects.statusDraft'), dot: 'bg-slate-400' },
+                  { key: 'on_hold', label: t('projects.statusOnHold'), dot: 'bg-rose-400' }
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => { setStatusFilter(opt.key); setActiveDropdown(null); }}
+                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                      statusFilter === opt.key ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+                      <span>{opt.label}</span>
+                    </span>
+                    {statusFilter === opt.key && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3. PIC Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setActiveDropdown(activeDropdown === 'pic' ? null : 'pic'); setPicSearchQuery(''); }}
+              className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                picFilter !== 'all'
+                  ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <Users size={13} className={picFilter !== 'all' ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+              <span className="max-w-[110px] truncate">
+                {picFilter === 'all'
+                  ? t('projects.filterPic')
+                  : picFilter === 'me'
+                  ? t('projects.picAssignedToMe')
+                  : picFilter === 'unassigned'
+                  ? t('projects.picUnassigned')
+                  : people.find(p => String(p.id) === picFilter)?.name || t('projects.filterPic')}
+              </span>
+              <ChevronDown size={12} className={`text-gray-400 transition-transform ${activeDropdown === 'pic' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeDropdown === 'pic' && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-80">
+                <div className="px-1 pb-2">
+                  <input
+                    type="text"
+                    value={picSearchQuery}
+                    onChange={e => setPicSearchQuery(e.target.value)}
+                    placeholder={t('projects.searchPic')}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                  />
+                </div>
+                <div className="overflow-y-auto custom-scrollbar flex-1 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setPicFilter('all'); setActiveDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                      picFilter === 'all' ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span>{t('projects.allPics')}</span>
+                    {picFilter === 'all' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                  </button>
+                  {profile?.id && (
+                    <button
+                      type="button"
+                      onClick={() => { setPicFilter('me'); setActiveDropdown(null); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                        picFilter === 'me' ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Avatar name={profile.name || 'Me'} src={profile.avatar_url || undefined} className="w-5 h-5 text-[9px]" />
+                        <span>{t('projects.picAssignedToMe')} ({profile.name})</span>
+                      </div>
+                      {picFilter === 'me' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setPicFilter('unassigned'); setActiveDropdown(null); }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                      picFilter === 'unassigned' ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span>{t('projects.picUnassigned')}</span>
+                    {picFilter === 'unassigned' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                  </button>
+                  <div className="h-px bg-gray-100 dark:bg-slate-700 my-1" />
+                  {people
+                    .filter(p => p.name.toLowerCase().includes(picSearchQuery.toLowerCase()))
+                    .map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setPicFilter(String(p.id)); setActiveDropdown(null); }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                          picFilter === String(p.id) ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar name={p.name} src={(p as any).avatar_url} className="w-5 h-5 text-[9px] shrink-0" />
+                          <span className="truncate">{p.name}</span>
+                          {p.departments?.name && (
+                            <span className="text-[10px] text-gray-400 truncate">({p.departments.name})</span>
+                          )}
+                        </div>
+                        {picFilter === String(p.id) && <CheckCircle2 size={12} className="text-primary dark:text-blue-400 shrink-0" />}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Calendar Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === 'calendar' ? null : 'calendar')}
+              className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                calendarFilter !== 'all' || customStartDate || customEndDate
+                  ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <Calendar size={13} className={calendarFilter !== 'all' || customStartDate || customEndDate ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+              <span className="max-w-[120px] truncate">
+                {customStartDate || customEndDate
+                  ? `${customStartDate ? strictFormatVN(customStartDate) : '...'} - ${customEndDate ? strictFormatVN(customEndDate) : '...'}`
+                  : calendarFilter === 'all'
+                  ? t('projects.filterCalendar')
+                  : calendarFilter === 'ongoing'
+                  ? t('projects.dateOngoing')
+                  : calendarFilter === 'this_week'
+                  ? t('projects.dateThisWeek')
+                  : calendarFilter === 'this_month'
+                  ? t('projects.dateThisMonth')
+                  : calendarFilter === 'due_soon'
+                  ? t('projects.dateDueSoon')
+                  : t('projects.dateOverdue')}
+              </span>
+              <ChevronDown size={12} className={`text-gray-400 transition-transform ${activeDropdown === 'calendar' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeDropdown === 'calendar' && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2.5 animate-in fade-in zoom-in-95 duration-150 space-y-2">
+                <div className="px-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  {t('projects.filterCalendar')}
+                </div>
+                <div className="space-y-0.5">
+                  {[
+                    { key: 'all', label: t('projects.allDates') },
+                    { key: 'ongoing', label: t('projects.dateOngoing') },
+                    { key: 'this_week', label: t('projects.dateThisWeek') },
+                    { key: 'this_month', label: t('projects.dateThisMonth') },
+                    { key: 'due_soon', label: t('projects.dateDueSoon') },
+                    { key: 'overdue', label: t('projects.dateOverdue') }
+                  ].map(opt => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => { setCalendarFilter(opt.key); setCustomStartDate(''); setCustomEndDate(''); setActiveDropdown(null); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                        calendarFilter === opt.key && !customStartDate && !customEndDate
+                          ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {calendarFilter === opt.key && !customStartDate && !customEndDate && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                    </button>
+                  ))}
+                </div>
+                <div className="h-px bg-gray-100 dark:bg-slate-700 my-1.5" />
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 block px-1">
+                    {t('projects.dateCustom')}
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <label className="text-[10px] text-gray-400 block mb-0.5">{t('projects.startDate')}</label>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        onChange={e => { setCustomStartDate(e.target.value); setCalendarFilter('custom'); }}
+                        className="w-full p-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 block mb-0.5">{t('projects.endDate')}</label>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={e => { setCustomEndDate(e.target.value); setCalendarFilter('custom'); }}
+                        className="w-full p-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. Priority Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === 'priority' ? null : 'priority')}
+              className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                priorityFilter !== 'all'
+                  ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <ArrowUpDown size={13} className={priorityFilter !== 'all' ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+              <span>
+                {priorityFilter === 'all'
+                  ? t('projects.filterPriority')
+                  : priorityFilter === 'urgent'
+                  ? t('projects.priorityUrgent')
+                  : priorityFilter === 'high'
+                  ? t('projects.priorityHigh')
+                  : priorityFilter === 'medium'
+                  ? t('projects.priorityMedium')
+                  : t('projects.priorityLow')}
+              </span>
+              <ChevronDown size={12} className={`text-gray-400 transition-transform ${activeDropdown === 'priority' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeDropdown === 'priority' && (
+              <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  {t('projects.filterPriority')}
+                </div>
+                {[
+                  { key: 'all', label: t('projects.allPriorities'), dot: 'bg-gray-400' },
+                  { key: 'urgent', label: t('projects.priorityUrgent'), dot: 'bg-red-500' },
+                  { key: 'high', label: t('projects.priorityHigh'), dot: 'bg-rose-500' },
+                  { key: 'medium', label: t('projects.priorityMedium'), dot: 'bg-amber-400' },
+                  { key: 'low', label: t('projects.priorityLow'), dot: 'bg-blue-400' }
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => { setPriorityFilter(opt.key); setActiveDropdown(null); }}
+                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                      priorityFilter === opt.key ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+                      <span>{opt.label}</span>
+                    </span>
+                    {priorityFilter === opt.key && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 6. Reset Filters Button */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              title={t('projects.clearFilters')}
+              className="h-9 px-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+            >
+              <X size={12} />
+              <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
+            </button>
+          )}
+
+          {/* 7. Add New Button */}
+          {canCreate && (
+            <button 
+              onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
+              className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+            >
+              <FolderKanban className="w-4 h-4" />
+              <span>{t('projects.add')}</span>
+            </button>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-6 pb-20 pr-1">
+        <CampaignPanel onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }} filters={campaignFilters} /><section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 md:hidden">{visibleProjects.map(project => {
   return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
     <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
       <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{project.name}</span>{hasComments[project.id] && <MessageSquare size={14} className="shrink-0 text-blue-500" />}<ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
@@ -538,7 +1006,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       {canCreate && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}><Trash2 size={15} /></button></div>}
     </div>
   </article>;
-})}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-max text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">{t('projects.col.project')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.status')}</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project hover:bg-primary/5 transition-all duration-300 ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
+})}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-max text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">{t('projects.col.project')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.status')}</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project hover:bg-primary/5 transition-all duration-300 ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
 <td className="p-4">
   <div className="flex items-center gap-2">
     <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{project.name}</b>
@@ -568,7 +1036,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></td>
 <td><StatusBadge status={project.status || 'active'} /></td>
 <td className="w-16 pr-4">{canCreate && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
-</tr>)}</tbody></table>{!projects.length && <div className="p-12 text-center text-gray-500">{t('projects.noProjects')}</div>}</div></>}</section>
+</tr>)}</tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
   
   
     </div></div>
