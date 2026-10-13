@@ -100,28 +100,48 @@ const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red
 const campaignPriority = (campaign: any) => campaign.priority || (Number(campaign.budget) >= 50000000 ? 'high' : Number(campaign.budget) >= 30000000 ? 'medium' : 'low');
 
 
-const getDueStatusColor = (endDateStr?: string | null) => {
+const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
   if (!endDateStr) return 'border-transparent';
-  const end = new Date(endDateStr);
+  const isDone = ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
+  if (isDone) return 'border-emerald-500';
+  const parts = endDateStr.split('T')[0].split('-').map(Number);
+  if (parts.length !== 3) return 'border-transparent';
+  const end = new Date(parts[0], parts[1] - 1, parts[2]);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays > 3) return 'border-green-500';
-  if (diffDays >= 1) return 'border-amber-500';
+  const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays > 3) return 'border-emerald-500';
+  if (diffDays >= 0) return 'border-amber-500';
   return 'border-red-500';
 };
 
-const getDueStatusLabel = (endDateStr?: string | null) => {
+const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, isEn?: boolean) => {
   if (!endDateStr) return null;
-  const end = new Date(endDateStr);
+  const isDone = ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
+  if (isDone) {
+    return (
+      <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30">
+        {isEn ? 'Completed' : 'Hoàn thành'}
+      </span>
+    );
+  }
+  const parts = endDateStr.split('T')[0].split('-').map(Number);
+  if (parts.length !== 3) return null;
+  const end = new Date(parts[0], parts[1] - 1, parts[2]);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
-  const color = diffDays > 3 ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30' : diffDays >= 1 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
-  const label = diffDays < 0 ? `Trễ ${Math.abs(diffDays)} ngày` : diffDays === 0 ? 'Hôm nay' : `Còn ${diffDays} ngày`;
+  const color = diffDays > 3
+    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+    : diffDays >= 0
+    ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30'
+    : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+  const label = diffDays < 0
+    ? (isEn ? `${Math.abs(diffDays)}d overdue` : `Trễ ${Math.abs(diffDays)} ngày`)
+    : diffDays === 0
+    ? (isEn ? 'Due today' : 'Hôm nay')
+    : (isEn ? `${diffDays}d left` : `Còn ${diffDays} ngày`);
   
   return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
@@ -299,6 +319,7 @@ export const CampaignPanel: React.FC<{
           <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <StatusBadge status={c.status || 'planning'} />
             <span className="min-w-0 truncate">{c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}</span>
+            {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
             {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
         </article>)}
@@ -331,7 +352,7 @@ export const CampaignPanel: React.FC<{
     )}
   </div>
 </td>
-            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date)}</div>}</div></td>
+            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date, c.status, lang === 'en')}</div>}</div></td>
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
             <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
             <td><StatusBadge status={c.status || 'planning'} /></td>

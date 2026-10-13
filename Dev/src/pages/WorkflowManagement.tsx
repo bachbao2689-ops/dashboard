@@ -1,227 +1,871 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from '../i18n/translations';
+import { useSearchParams } from 'react-router-dom';
 import {
-  FolderKanban, ArrowRight, ShieldCheck,
+  FolderKanban, ArrowRight, TrendingUp, TrendingDown, ShieldCheck,
   Sparkles, Plus, BarChart2, Activity,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Globe, Code2, Info, Search,
-  Calendar, User, Edit3, Trash2, Eye, Check, Clock, AlertTriangle, Users
+  AlertTriangle,
+  Calendar, User, Edit3, Trash2, Eye, Check, Clock
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useWorkflowHub } from '../hooks/useWorkflowHub';
-import { useTranslation } from '../i18n/translations';
-import type { Task } from '../hooks/useTasks';
-import { gateScore, taskProgress, workflowMetrics, displayDate, inputDate, localDay, type HubPhase, type GateCriterion } from '../lib/workflowHub';
-import { WorkflowStatusPicker, canonicalWorkflowStatus, workflowStage, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, MARKETING_STATUS_GUIDES_EN, MARKETING_STATUS_GUIDES_VI, WorkflowHexagonIcon, type WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
-import { MultiSelect } from '../components/common/MultiSelect';
-import { Avatar } from '../components/common/Avatar';
-import { StatusBadge } from '../components/common/StatusBadge';
-import { WorkflowDateField } from '../components/features/projects/WorkflowDateField';
-import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
-import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
 import { supabase } from '../services/supabase';
 import toast from 'react-hot-toast';
 
-export { WORKFLOW_STATUS_CONFIG, MARKETING_STATUS_GUIDES, STATUS_MARKETING_SUBTITLE, WorkflowHexagonIcon } from '../components/features/tasks/WorkflowStatusPicker';
-export type { WorkflowTaskStatus } from '../components/features/tasks/WorkflowStatusPicker';
+export type WorkflowTaskStatus = 'backlog' | 'planned' | 'scoping' | 'in_progress' | 'in_qa' | 'completed' | 'canceled';
 
-interface Phase extends HubPhase {
-  name: string; desc: string; progress: number | null; gateChance: number | null;
-  displayStatus: 'completed' | 'active' | 'locked';
+export const WORKFLOW_STATUS_CONFIG: Record<WorkflowTaskStatus, {
+  label: string;
+  color: string;
+  textColor: string;
+  bgLight: string;
+  bgDark: string;
+  borderClass: string;
+}> = {
+  backlog: {
+    label: 'Backlog',
+    color: '#D97706',
+    textColor: 'text-amber-700 dark:text-amber-300',
+    bgLight: 'bg-amber-50',
+    bgDark: 'dark:bg-amber-950/40',
+    borderClass: 'border-amber-300 dark:border-amber-700'
+  },
+  planned: {
+    label: 'Planned',
+    color: '#6B7280',
+    textColor: 'text-gray-600 dark:text-gray-300',
+    bgLight: 'bg-gray-50',
+    bgDark: 'dark:bg-slate-800',
+    borderClass: 'border-gray-300 dark:border-slate-600'
+  },
+  scoping: {
+    label: 'Scoping',
+    color: '#F43F5E',
+    textColor: 'text-rose-700 dark:text-rose-300',
+    bgLight: 'bg-rose-50',
+    bgDark: 'dark:bg-rose-950/40',
+    borderClass: 'border-rose-300 dark:border-rose-700'
+  },
+  in_progress: {
+    label: 'In Progress',
+    color: '#EAB308',
+    textColor: 'text-yellow-700 dark:text-yellow-300',
+    bgLight: 'bg-yellow-50',
+    bgDark: 'dark:bg-yellow-950/40',
+    borderClass: 'border-yellow-300 dark:border-yellow-700'
+  },
+  in_qa: {
+    label: 'In QA',
+    color: '#10B981',
+    textColor: 'text-emerald-700 dark:text-emerald-300',
+    bgLight: 'bg-emerald-50',
+    bgDark: 'dark:bg-emerald-950/40',
+    borderClass: 'border-emerald-300 dark:border-emerald-700'
+  },
+  completed: {
+    label: 'Completed',
+    color: '#6366F1',
+    textColor: 'text-indigo-700 dark:text-indigo-300',
+    bgLight: 'bg-indigo-50',
+    bgDark: 'dark:bg-indigo-950/40',
+    borderClass: 'border-indigo-300 dark:border-indigo-700'
+  },
+  canceled: {
+    label: 'Canceled',
+    color: '#4B5563',
+    textColor: 'text-gray-500 dark:text-gray-400',
+    bgLight: 'bg-gray-100',
+    bgDark: 'dark:bg-slate-800',
+    borderClass: 'border-gray-300 dark:border-slate-700'
+  }
+};
+
+export interface MarketingStatusGuide {
+  status: WorkflowTaskStatus;
+  marketingTitle: string;
+  shortDesc: string;
+  usageRule: string;
 }
+
+export const MARKETING_STATUS_GUIDES: MarketingStatusGuide[] = [
+  {
+    status: 'backlog',
+    marketingTitle: 'Backlog (Ý tưởng & Chờ duyệt)',
+    shortDesc: 'Kho lưu trữ ý tưởng, đề xuất nội dung & hạng mục tiềm năng cho các chiến dịch tương lai, chưa xếp lịch đợt này.',
+    usageRule: 'Gán khi task mới nảy sinh ý tưởng hoặc đang xếp hàng chờ duyệt ngân sách / thời điểm.'
+  },
+  {
+    status: 'planned',
+    marketingTitle: 'Planned (Đã lên kế hoạch)',
+    shortDesc: 'Đã chốt đưa vào kế hoạch tuần/tháng hoặc chiến dịch sắp tới; đã phân bổ nhân sự nhưng chưa bắt đầu sản xuất ngay.',
+    usageRule: 'Gán khi đã chốt timeline & người phụ trách, chờ đến ngày bấm máy triển khai.'
+  },
+  {
+    status: 'scoping',
+    marketingTitle: 'Scoping (Làm rõ Brief & Phạm vi)',
+    shortDesc: 'Hoàn thiện creative brief, chốt mục tiêu, thông điệp truyền thông, tiêu chí nghiệm thu (acceptance criteria) trước khi làm.',
+    usageRule: 'Gán khi đang trao đổi brief với khách hàng / lead trước khi bắt tay thực thi.'
+  },
+  {
+    status: 'in_progress',
+    marketingTitle: 'In Progress (Đang triển khai)',
+    shortDesc: 'Đội ngũ Marketing / Design / Content / Media đang trực tiếp sản xuất nội dung, thiết kế ấn phẩm và thực thi chiến dịch.',
+    usageRule: 'Gán ngay khi nhân sự bắt đầu sản xuất nội dung / ấn phẩm truyền thông.'
+  },
+  {
+    status: 'in_qa',
+    marketingTitle: 'In QA (Rà soát & Duyệt nội dung)',
+    shortDesc: 'Bản nháp / ấn phẩm hoàn tất đang được Leader hoặc QC rà soát câu từ, visual và đối soát brand guidelines.',
+    usageRule: 'Gán khi nộp bản draft chờ Leader / khách hàng duyệt và phản hồi feedback.'
+  },
+  {
+    status: 'completed',
+    marketingTitle: 'Completed (Đã nghiệm thu & Hoàn tất)',
+    shortDesc: 'Ấn phẩm / chiến dịch đã được phê duyệt chính thức, xuất bản hoặc bàn giao đạt chuẩn yêu cầu ban đầu.',
+    usageRule: 'Gán khi đã hoàn thành nghiệm thu toàn bộ tiêu chí chất lượng.'
+  },
+  {
+    status: 'canceled',
+    marketingTitle: 'Canceled (Đã hủy bỏ)',
+    shortDesc: 'Dừng thực hiện do thay đổi định hướng chiến dịch, trùng lặp nội dung hoặc không còn phù hợp với mục tiêu kinh doanh.',
+    usageRule: 'Gán thay vì xóa task để lưu vết lịch sử quyết định và tài nguyên đã nghiên cứu.'
+  }
+];
+
+export const STATUS_MARKETING_SUBTITLE: Record<WorkflowTaskStatus, string> = {
+  backlog: 'Ý tưởng & Chờ duyệt',
+  planned: 'Đã lên kế hoạch',
+  scoping: 'Làm rõ Brief & Phạm vi',
+  in_progress: 'Đang triển khai',
+  in_qa: 'Rà soát & Duyệt nội dung',
+  completed: 'Đã nghiệm thu & Hoàn tất',
+  canceled: 'Đã hủy bỏ'
+};
+
+export const WorkflowHexagonIcon: React.FC<{ status: WorkflowTaskStatus; size?: number; className?: string }> = ({
+  status,
+  size = 18,
+  className = ''
+}) => {
+  const hexPath = "M12 2.5 L20.2 7.2 L20.2 16.8 L12 21.5 L3.8 16.8 L3.8 7.2 Z";
+
+  switch (status) {
+    case 'backlog':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#D97706"
+            strokeWidth="2.2"
+            strokeDasharray="3.2 2.4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'planned':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#6B7280"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'scoping':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#F43F5E"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 12 L12 6.5 A5.5 5.5 0 0 1 17.5 12 Z"
+            fill="#F43F5E"
+          />
+        </svg>
+      );
+    case 'in_progress':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#EAB308"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 6.5 A5.5 5.5 0 0 1 12 17.5 Z"
+            fill="#EAB308"
+          />
+        </svg>
+      );
+    case 'in_qa':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 12 L12 6.5 A5.5 5.5 0 1 1 6.5 12 Z"
+            fill="#10B981"
+          />
+        </svg>
+      );
+    case 'completed':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="#6366F1"
+            stroke="#6366F1"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M7.8 12.2 L10.8 15.2 L16.2 9.5"
+            stroke="#FFFFFF"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      );
+    case 'canceled':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 ${className}`}>
+          <path
+            d={hexPath}
+            fill="#4B5563"
+            stroke="#4B5563"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d="M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5"
+            stroke="#FFFFFF"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
+interface Phase {
+  id: number;
+  name: string;
+  desc: string;
+  status: 'completed' | 'active' | 'locked';
+  progress: number;
+  gateChance: number;
+}
+
+interface GateCriterion {
+  id: string;
+  label: string;
+  weight: number;
+  checked: boolean;
+}
+
+interface ProjectEntity {
+  id: string;
+  name: string;
+  type: 'project' | 'campaign';
+  status: string;
+  start_date?: string | null;
+  due_date?: string | null;
+  budget?: number | null;
+  lead?: any;
+}
+
 interface WorkflowSubtask {
-  id: string; phaseId?: string; title: string; assignee: string; assignee_id?: string;
-  status: WorkflowTaskStatus; due_date?: string; record: Task; canEdit: boolean;
+  id: string;
+  phaseId: number;
+  title: string;
+  assignee: string;
+  status: WorkflowTaskStatus;
+  due_date?: string;
 }
-const toWorkflowStage = (task: Task) => workflowStage(task.status, task.workflow_status);
-const pct = (value: number | null | undefined) => value == null ? '—' : value + '%';
-const field = 'w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary';
+
+// 5 Standard Phases for "Build Website" Workflow (flexible count)
+const WEBSITE_BUILD_PHASES: Phase[] = [
+  { id: 1, name: '1. Khảo sát & Đặc tả (Discovery)', desc: 'Sitemap, User Flow & Tech Stack', status: 'completed', progress: 100, gateChance: 100 },
+  { id: 2, name: '2. Thiết kế UI/UX & Prototype', desc: 'Wireframe, Design System & Mockups', status: 'active', progress: 75, gateChance: 85 },
+  { id: 3, name: '3. Lập trình Phát triển (Dev)', desc: 'Front-end, Backend API & Database', status: 'locked', progress: 0, gateChance: 0 },
+  { id: 4, name: '4. Kiểm thử QA/QC & Tối ưu', desc: 'Testing, Performance & Bảo mật', status: 'locked', progress: 0, gateChance: 0 },
+  { id: 5, name: '5. Triển khai & Go-Live', desc: 'Domain, SSL, Cloudflare & Bàn giao', status: 'locked', progress: 0, gateChance: 0 }
+];
+
+// Default criteria for each Website phase
+const WEBSITE_CRITERIA_MAP: Record<number, GateCriterion[]> = {
+  1: [
+    { id: 'web_c1_1', label: 'Tài liệu đặc tả yêu cầu kỹ thuật (SRS) đã được ký duyệt', weight: 40, checked: true },
+    { id: 'web_c1_2', label: 'Sơ đồ luồng người dùng (User Flow & Sitemap) hoàn tất', weight: 35, checked: true },
+    { id: 'web_c1_3', label: 'Chốt kiến trúc hệ thống & công nghệ (React, Tailwind, Supabase)', weight: 25, checked: true },
+  ],
+  2: [
+    { id: 'web_c2_1', label: 'Khách hàng / Ban Giám Đốc duyệt bản vẽ Prototype 100%', weight: 35, checked: true },
+    { id: 'web_c2_2', label: 'Design System & Bộ icon/màu sắc đã được chuẩn hóa', weight: 25, checked: true },
+    { id: 'web_c2_3', label: 'Tiến độ Subtasks giai đoạn thiết kế đạt trên 70%', weight: 25, checked: true },
+    { id: 'web_c2_4', label: 'Không có màn hình trọng yếu bị vướng mắc (No Blockers)', weight: 15, checked: false },
+  ],
+  3: [
+    { id: 'web_c3_1', label: 'Toàn bộ API endpoints cốt lõi và Database RLS hoạt động ổn định', weight: 40, checked: false },
+    { id: 'web_c3_2', label: 'Giao diện Front-end đạt chuẩn Responsive đa màn hình (Mobile/Desktop)', weight: 35, checked: false },
+    { id: 'web_c3_3', label: 'Source code vượt qua bước rà soát kỹ thuật (Code Review Passed)', weight: 25, checked: false },
+  ],
+  4: [
+    { id: 'web_c4_1', label: 'Không còn lỗi chức năng nghiêm trọng (Zero Critical Bugs)', weight: 45, checked: false },
+    { id: 'web_c4_2', label: 'Điểm hiệu năng Google PageSpeed đạt tối thiểu trên 85 điểm', weight: 30, checked: false },
+    { id: 'web_c4_3', label: 'Vượt qua bài test nghiệm thu người dùng cuối (UAT Sign-off)', weight: 25, checked: false },
+  ],
+  5: [
+    { id: 'web_c5_1', label: 'Cấu hình Domain, SSL & Cloudflare CDN chạy thông suốt', weight: 40, checked: false },
+    { id: 'web_c5_2', label: 'Hệ thống Production deploy tự động qua CI/CD an toàn', weight: 35, checked: false },
+    { id: 'web_c5_3', label: 'Bàn giao tài liệu quản trị CMS và ký biên bản nghiệm thu Go-live', weight: 25, checked: false },
+  ]
+};
+
+// Website Build specific subtasks mapped with the 7 Status Workflow
+const DEFAULT_WEBSITE_SUBTASKS: WorkflowSubtask[] = [
+  // Phase 1
+  { id: 'st_1', phaseId: 1, title: 'Khảo sát người dùng & phân tích yêu cầu tính năng', assignee: 'Bách Bảo', status: 'completed', due_date: '2026-10-05' },
+  { id: 'st_2', phaseId: 1, title: 'Lập sơ đồ cấu trúc Sitemap & User Flow', assignee: 'Thương Phạm', status: 'completed', due_date: '2026-10-08' },
+  { id: 'st_3', phaseId: 1, title: 'Viết tài liệu đặc tả chức năng kỹ thuật (SRS)', assignee: 'Admin', status: 'completed', due_date: '2026-10-10' },
+  // Phase 2
+  { id: 'st_4', phaseId: 2, title: 'Thiết kế Wireframe cấu trúc layout các trang chính', assignee: 'Vũ Trần', status: 'completed', due_date: '2026-10-14' },
+  { id: 'st_5', phaseId: 2, title: 'Xây dựng Design System, Typography & Màu thương hiệu', assignee: 'LUNA', status: 'completed', due_date: '2026-10-16' },
+  { id: 'st_6', phaseId: 2, title: 'Thiết kế chi tiết High-Fidelity Desktop & Mobile', assignee: 'Nguyễn Văn A', status: 'completed', due_date: '2026-10-18' },
+  { id: 'st_7', phaseId: 2, title: 'Dựng bản mẫu tương tác Prototype và thử nghiệm UX', assignee: 'Hoàng Văn E', status: 'in_progress', due_date: '2026-10-22' },
+  // Phase 3
+  { id: 'st_8', phaseId: 3, title: 'Cắt giao diện Front-end React Components theo Figma', assignee: 'Tech Lead', status: 'scoping', due_date: '2026-10-28' },
+  { id: 'st_9', phaseId: 3, title: 'Thiết kế Database Schema & Phân quyền bảo mật RLS', assignee: 'Backend Dev', status: 'planned', due_date: '2026-11-02' },
+  { id: 'st_10', phaseId: 3, title: 'Lập trình API endpoints & tích hợp dữ liệu Supabase', assignee: 'Backend Dev', status: 'planned', due_date: '2026-11-06' },
+  { id: 'st_11', phaseId: 3, title: 'Tích hợp cổng thanh toán & hệ thống thông báo Email', assignee: 'Fullstack Dev', status: 'backlog', due_date: '2026-11-12' },
+  // Phase 4
+  { id: 'st_12', phaseId: 4, title: 'Kiểm thử chức năng toàn diện (Functional Testing)', assignee: 'QA Lead', status: 'in_qa', due_date: '2026-11-18' },
+  { id: 'st_13', phaseId: 4, title: 'Kiểm tra tương thích đa trình duyệt (Chrome, Safari, iOS)', assignee: 'QC Team', status: 'planned', due_date: '2026-11-22' },
+  { id: 'st_14', phaseId: 4, title: 'Tối ưu tốc độ tải trang & điểm SEO Google PageSpeed', assignee: 'Tech Lead', status: 'backlog', due_date: '2026-11-26' },
+  // Phase 5
+  { id: 'st_15', phaseId: 5, title: 'Cấu hình Domain, chứng chỉ SSL & CDN Cloudflare', assignee: 'DevOps', status: 'backlog', due_date: '2026-12-02' },
+  { id: 'st_16', phaseId: 5, title: 'Triển khai Production Server & Kiểm tra tải', assignee: 'DevOps', status: 'backlog', due_date: '2026-12-06' },
+  { id: 'st_17', phaseId: 5, title: 'Soạn thảo tài liệu hướng dẫn CMS & Bàn giao hệ thống', assignee: 'Project Manager', status: 'backlog', due_date: '2026-12-12' }
+];
 
 export const WorkflowManagement: React.FC = () => {
-  const hub = useWorkflowHub();
   const { lang } = useTranslation();
   const isEn = lang === 'en';
-  const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [entityFilter, setEntityFilter] = useState<'project' | 'campaign'>(params.has('campaign') ? 'campaign' : 'project');
-  const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState(false);
-  const [searchEntityQuery, setSearchEntityQuery] = useState('');
-  const entities = hub.tracks.map(track => ({ ...track, type: track.entity_type }));
-  const selectedKey = params.get('campaign') || params.get('project');
-  const currentEntity = entities.find(e => e.entity_id === selectedKey && e.type === (params.has('campaign') ? 'campaign' : 'project')) || (!selectedKey ? entities.find(e => e.type === entityFilter) : undefined);
-  useEffect(() => { if (currentEntity && !selectedKey) setParams({[currentEntity.type]:currentEntity.entity_id}, {replace:true}); }, [currentEntity?.id, selectedKey]);
-  const selectedEntityId = currentEntity?.id;
-  const isCampaign = currentEntity?.type === 'campaign';
-  const filteredEntities = entities.filter(e => e.type === entityFilter && e.name.toLowerCase().includes(searchEntityQuery.toLowerCase()));
-  const handleFilterChange = (kind: 'project' | 'campaign') => {
-    setEntityFilter(kind);
-    const first = entities.find(e => e.type === kind);
-    setParams(first ? { [kind]: first.entity_id } : {});
-    setIsTitleDropdownOpen(true);
-  };
-  const handleSelectEntity = (id: string) => {
-    const entity = entities.find(e => e.id === id);
-    if (entity) { setParams({ [entity.type]: entity.entity_id }); setEntityFilter(entity.type); }
-    setIsTitleDropdownOpen(false); setSearchEntityQuery('');
-  };
-  useEffect(() => { if (params.has('campaign')) setEntityFilter('campaign'); else if (params.has('project')) setEntityFilter('project'); }, [params.toString()]);
-  const [activePhaseId, setActivePhaseId] = useState('');
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [params] = useSearchParams();
+  const requestedProject = params.get('project');
+  const requestedCampaign = params.get('campaign');
+  // Entities state
+  const [entities, setEntities] = useState<ProjectEntity[]>([]);
+  const [selectedEntityId, setSelectedEntityId] = useState<string>('project_web');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [entityFilter, setEntityFilter] = useState<'all' | 'project' | 'campaign'>('project');
+  const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState<boolean>(false);
+  const [searchEntityQuery, setSearchEntityQuery] = useState<string>('');
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [pinnedTooltip, setPinnedTooltip] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelCloseTooltip = () => { if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current); };
-  const openTooltip = (id: string) => { cancelCloseTooltip(); setActiveTooltip(id); };
-  const scheduleCloseTooltip = () => { if (!pinnedTooltip) { cancelCloseTooltip(); tooltipTimeoutRef.current = setTimeout(() => setActiveTooltip(null), 200); } };
-  const togglePinTooltip = (id: string) => { cancelCloseTooltip(); setPinnedTooltip(pinnedTooltip === id ? null : id); setActiveTooltip(pinnedTooltip === id ? null : id); };
-  const closeAllTooltips = () => { cancelCloseTooltip(); setPinnedTooltip(null); setActiveTooltip(null); };
-  useEffect(() => {
-    const click = (e: MouseEvent) => { if (!(e.target as HTMLElement)?.closest('[data-tooltip-container]')) closeAllTooltips(); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAllTooltips(); };
-    document.addEventListener('click', click); window.addEventListener('keydown', key);
-    return () => { cancelCloseTooltip(); document.removeEventListener('click', click); window.removeEventListener('keydown', key); };
-  }, [pinnedTooltip]);
-  const allTasks = useMemo(() => hub.tasks.filter(t => currentEntity && (currentEntity.type === 'project' ? t.project_id === currentEntity.entity_id : t.campaign_id === currentEntity.entity_id)), [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
-  const phases: Phase[] = useMemo(() => (currentEntity?.phases || []).map(p => {
-    const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
-    const progress = p.can_edit_tasks ? taskProgress(rows).percent : null;
-    const score = gateScore(p.gate_criteria || []);
-    return { ...p, name: p.position + '. ' + p.title, desc: p.description || '', progress,
-      gateChance: p.opportunity ?? (score != null && progress != null ? Math.round(score * .65 + progress * .35) : null),
-      displayStatus: p.status === 'completed' ? 'completed' : ['in_progress','in_review'].includes(p.status) ? 'active' : 'locked' };
-  }), [currentEntity, allTasks]);
-  const requestedPhaseIndex = phases.findIndex(p => p.id === activePhaseId);
-  const activePhaseIndex = requestedPhaseIndex >= 0 ? requestedPhaseIndex : Math.max(0, phases.findIndex(p => p.status === 'in_progress' || p.status === 'in_review'));
-  const activePhase = phases[activePhaseIndex];
-  const criteria = activePhase?.gate_criteria || [];
-  const subtasks: WorkflowSubtask[] = allTasks.filter(t => t.workflow_phase_id).map(t => ({
-    id: t.id, phaseId: t.workflow_phase_id, title: t.title, assignee: t.assignee?.name || 'Chưa giao PIC',
-    assignee_id: t.assignee_id, status: toWorkflowStage(t), due_date: t.due_date, record: t,
-    canEdit: Boolean(phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks || String(t.assignee_id) === String(hub.profile?.id)),
-  }));
-  const currentPhaseSubtasks = subtasks.filter(t => t.phaseId === activePhase?.id);
-  const doneSubtasksCount = currentPhaseSubtasks.filter(t => t.status === 'completed').length;
-  const totalSubtasksCount = currentPhaseSubtasks.filter(t => t.status !== 'canceled').length;
-  const phaseProgressPct = activePhase?.progress ?? null;
-  const gatePassChancePct = activePhase?.gateChance ?? null;
-  const criteriaScore = gateScore(criteria);
-  const metrics = workflowMetrics(allTasks);
-  const overallProjectProgressPct = metrics.progress;
-  const daysRemaining = currentEntity?.due_date ? Math.round((Date.parse(currentEntity.due_date.slice(0,10)) - Date.parse(localDay(new Date()))) / 86400000) : null;
-  const entityTimeline = displayDate(currentEntity?.start_date) + ' – ' + displayDate(currentEntity?.due_date);
-  const subTeamMembers = currentEntity?.sub_pics || [];
-  const leadInfo = { name: (currentEntity?.pics || []).map(p => p.name).join(', ') || 'Chưa giao PIC', avatar: currentEntity?.pics[0]?.avatar_url, role: 'PIC' };
-  const taskCountsByStatus = Object.fromEntries(Object.keys(WORKFLOW_STATUS_CONFIG).map(s => [s, allTasks.filter(t => toWorkflowStage(t) === s).length])) as Record<WorkflowTaskStatus,number>;
-  const currentMonthTaskStats = useMemo(() => {
-    const labels = isEn
-      ? ['Completed', 'In Progress', 'In Review', 'Overdue', 'Todo']
-      : ['Hoàn thành', 'Đang thực hiện', 'Đang xem xét', 'Quá hạn', 'Chưa làm'];
-    return labels.map((name, i) => ({
-      name,
-      value: metrics.buckets[i],
-      color: ['#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#64748b'][i]
-    }));
-  }, [isEn, metrics.buckets]);
-  const totalMonthTasks = metrics.buckets.reduce((a,b) => a+b,0);
-  const performanceTrendData = phases.map(p => {
-    const startStr = p.start_date ? p.start_date.slice(0, 10) : null;
-    const dueStr = p.due_date ? p.due_date.slice(0, 10) : null;
-    const actual = p.displayStatus === 'completed' ? (p.progress ?? 100) : p.progress;
-    const plan = p.displayStatus === 'completed' ? 100 : (!startStr || !dueStr ? null : Math.max(0, Math.min(100, Math.round((Date.now() - Date.parse(startStr + 'T00:00:00+07:00')) / Math.max(86400000, Date.parse(dueStr + 'T23:59:59+07:00') - Date.parse(startStr + 'T00:00:00+07:00')) * 100))));
-    return { period: p.name, actual, plan };
-  });
-  const unplanned = allTasks.filter(t => !t.workflow_phase_id);
-  const [showAddCriteria, setShowAddCriteria] = useState(false);
-  const [newCriteriaLabel, setNewCriteriaLabel] = useState('');
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('');
-  const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
-  const [newTaskDue, setNewTaskDue] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editTaskTitle, setEditTaskTitle] = useState('');
-  const [editTaskAssignee, setEditTaskAssignee] = useState('');
-  const [editTaskStatus, setEditTaskStatus] = useState<WorkflowTaskStatus>('planned');
-  const [editTaskDue, setEditTaskDue] = useState('');
-  const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
-  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
-  const [insertPhaseIndex, setInsertPhaseIndex] = useState(0);
-  const [newPhaseName, setNewPhaseName] = useState('');
-  const [newPhaseDesc, setNewPhaseDesc] = useState('');
-  const [phasePicIds, setPhasePicIds] = useState<string[]>([]);
-  const [phaseSubIds, setPhaseSubIds] = useState<string[]>([]);
-  const [phaseStart, setPhaseStart] = useState('');
-  const [phaseDue, setPhaseDue] = useState('');
-  const [phaseStatus, setPhaseStatus] = useState('todo');
-  const [phaseOpportunity, setPhaseOpportunity] = useState('');
-  const [phaseReason, setPhaseReason] = useState('');
-  const editingPhase = phases.find(p => p.id === editingPhaseId);
-  const taskPeople = [...(activePhase?.members || []), ...(currentEntity?.pics || [])].filter((p,i,a) => a.findIndex(v => v.id === p.id) === i);
-  const personOptions = hub.people.map(p => ({value:String(p.id),label:p.name}));
-  const taskOptions = taskPeople.map(p => ({value:String(p.id),label:p.name}));
-  useEffect(() => { setIsDetailOpen(false); setActivePhaseId(''); setShowAddTask(false); setEditingTaskId(null); setShowAddPhaseModal(false); setSelectedTask(null); }, [currentEntity?.id, hub.profile?.id]);
-  useEffect(() => {
-    if (activePhaseId && !phases.some(p => p.id === activePhaseId)) { setActivePhaseId(''); setIsDetailOpen(false); }
-    if (selectedTask && !hub.tasks.some(t => t.id === selectedTask.id)) setSelectedTask(null);
-    if (!currentEntity?.root) setShowAddPhaseModal(false);
-    if (!activePhase?.can_edit_tasks) { setShowAddTask(false); setShowAddCriteria(false); }
-  }, [hub.tasks, phases, currentEntity?.root]);
-  const attempt = async (action: () => Promise<unknown>, success: string) => {
-    try { await action(); toast.success(success); return true; }
-    catch (e: any) { toast.error(e.message || 'Không thể lưu thay đổi'); return false; }
+
+  const openTooltip = (id: string) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setActiveTooltip(id);
   };
-  const saveGate = (items: GateCriterion[]) => hub.mutate(() => supabase.rpc('workflow_update_gate', {p_phase: activePhase?.id, p_items: items, p_expected: activePhase?.version}));
-  const toggleCriterion = (id: string) => { if (activePhase?.can_edit_tasks) void attempt(() => saveGate(criteria.map(c => c.id === id ? {...c, checked: !c.checked} : c)), 'Đã lưu tiêu chí'); };
-  const handleAddCriteria = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!newCriteriaLabel.trim()) return;
-    if (await attempt(() => saveGate([...criteria, {id:crypto.randomUUID(),label:newCriteriaLabel.trim(),weight:20,checked:false}]), 'Đã lưu tiêu chí')) { setNewCriteriaLabel(''); setShowAddCriteria(false); }
+
+  const scheduleCloseTooltip = () => {
+    if (pinnedTooltip) return;
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setActiveTooltip(null);
+      tooltipTimeoutRef.current = null;
+    }, 200);
   };
-  const stageValues = (stage: WorkflowTaskStatus) => ({status:canonicalWorkflowStatus[stage],workflow_status:stage});
-  const toggleSubtask = (id: string) => { const row = subtasks.find(t => t.id === id); if (row?.canEdit) void attempt(() => hub.updateTask(row.record, stageValues(row.status === 'completed' ? 'in_progress' : 'completed')), 'Đã cập nhật All Tasks'); };
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim() || !newTaskAssignee || !activePhase) return toast.error('Nhập tên và chọn PIC');
-    if (await attempt(() => hub.mutate(() => supabase.rpc('workflow_create_task', {p_phase:activePhase.id,p_data:{title:newTaskTitle.trim(),assignee_id:Number(newTaskAssignee),due_date:inputDate(newTaskDue),workflow_status:newTaskStatus,priority:'medium'}})), 'Đã tạo task và đồng bộ All Tasks')) {
-      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskDue(''); setNewTaskStatus('planned'); setShowAddTask(false);
+
+  const cancelCloseTooltip = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
     }
   };
-  const handleDeleteTask = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); const row = subtasks.find(t => t.id === id);
-    if (row?.canEdit && window.confirm('Ẩn task "' + row.title + '" khỏi danh sách? Dữ liệu vẫn được giữ.')) void attempt(() => hub.updateTask(row.record,{status:'deleted'}), 'Đã ẩn task');
+
+  const togglePinTooltip = (id: string) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    if (pinnedTooltip === id) {
+      setPinnedTooltip(null);
+      setActiveTooltip(null);
+    } else {
+      setPinnedTooltip(id);
+      setActiveTooltip(id);
+    }
   };
-  const handleStartEditTask = (row: WorkflowSubtask, e: React.MouseEvent) => {
-    e.stopPropagation(); setEditingTaskId(row.id); setEditTaskTitle(row.title); setEditTaskAssignee(String(row.assignee_id || '')); setEditTaskStatus(row.status); setEditTaskDue(row.due_date || '');
+
+  const closeAllTooltips = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setActiveTooltip(null);
+    setPinnedTooltip(null);
   };
-  const handleSaveEditTask = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); const row = subtasks.find(t => t.id === id); if (!row || !editTaskTitle.trim()) return;
-    const values = {title:editTaskTitle.trim(),due_date:inputDate(editTaskDue),...stageValues(editTaskStatus),...(currentEntity?.root ? {assignee_id:Number(editTaskAssignee)} : {})};
-    if (await attempt(() => hub.updateTask(row.record,values), 'Đã lưu task')) setEditingTaskId(null);
+
+  // Raw data from DB
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+
+  // Phases state for Website Build
+  const [phases, setPhases] = useState<Phase[]>(WEBSITE_BUILD_PHASES);
+  const [activePhaseIndex, setActivePhaseIndex] = useState<number>(1); // Phase 2 (Design) by default
+
+  // Combined Board UX state: whether the detail task/gate drawer is expanded (Default false per Requirement 4)
+  const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
+
+  // Criteria for currently active/viewed phase
+  const [criteria, setCriteria] = useState<GateCriterion[]>(WEBSITE_CRITERIA_MAP[2]);
+  const [showAddCriteria, setShowAddCriteria] = useState<boolean>(false);
+  const [newCriteriaLabel, setNewCriteriaLabel] = useState<string>('');
+
+  // Subtasks with rich WorkflowTaskStatus (7 statuses from ./Status workflow)
+  const [subtasks, setSubtasks] = useState<WorkflowSubtask[]>(DEFAULT_WEBSITE_SUBTASKS);
+
+  // Task CRUD states
+  const [showAddTask, setShowAddTask] = useState<boolean>(false);
+  const [newTaskTitle, setNewTaskTitle] = useState<string>('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
+  const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
+  const [newTaskDue, setNewTaskDue] = useState<string>('');
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState<string>('');
+  const [editTaskAssignee, setEditTaskAssignee] = useState<string>('');
+  const [editTaskStatus, setEditTaskStatus] = useState<WorkflowTaskStatus>('in_progress');
+  const [editTaskDue, setEditTaskDue] = useState<string>('');
+
+  const [statusPickerTaskId, setStatusPickerTaskId] = useState<string | null>(null);
+
+  // Phase CRUD states (Add/Remove dynamic phases per Requirement 5)
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState<boolean>(false);
+  const [insertPhaseIndex, setInsertPhaseIndex] = useState<number>(1);
+  const [newPhaseName, setNewPhaseName] = useState<string>('');
+  const [newPhaseDesc, setNewPhaseDesc] = useState<string>('');
+
+  // 1. Fetch campaigns, projects, and tasks from DB
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+
+      const [{ data: cData }, { data: pData }, { data: tData }] = await Promise.all([
+        supabase.from('campaigns').select('id, name, status, start_date, end_date, budget, lead:lead_id(name,avatar_url)').neq('status', 'deleted').order('name'),
+        supabase.from('projects').select('id, name, status, start_date, due_date, priority').neq('status', 'deleted').order('name'),
+        supabase.from('tasks').select('*')
+      ]);
+
+      // Website Project default at top
+      const defaultWebProject: ProjectEntity = {
+        id: 'project_web',
+        name: '[Project] Xây Dựng & Nâng Cấp Hệ Thống Website K COFFEE',
+        type: 'project',
+        status: 'active',
+        start_date: '2026-10-01',
+        due_date: '2026-12-31',
+        budget: 150000000,
+        lead: { name: 'Tech Lead - K COFFEE' }
+      };
+
+      const defaultDemoCampaign: ProjectEntity = {
+        id: 'campaign_social_q4',
+        name: '[Demo] Always-on Social Q4',
+        type: 'campaign',
+        status: 'active',
+        start_date: '2026-10-10',
+        due_date: '2026-12-31',
+        budget: 85000000,
+        lead: { name: 'Lead Marketing' }
+      };
+
+      const formatted: ProjectEntity[] = [
+        defaultWebProject,
+        defaultDemoCampaign,
+        ...(pData || []).map(p => ({
+          id: `p_${p.id}`,
+          name: p.name,
+          type: 'project' as const,
+          status: p.status || 'active',
+          start_date: p.start_date,
+          due_date: p.due_date,
+          lead: null
+        })),
+        ...(cData || []).map(c => ({
+          id: `c_${c.id}`,
+          name: c.name,
+          type: 'campaign' as const,
+          status: c.status || 'active',
+          start_date: c.start_date,
+          due_date: c.end_date,
+          budget: c.budget,
+          lead: c.lead
+        }))
+      ];
+
+      setEntities(formatted);
+      setAllTasks(tData || []);
+    } catch (err) {
+      console.error('Error loading workflow data', err);
+    } finally {
+      setLoading(false);
+    }
   };
-  const handleQuickChangeStatus = (id: string, status: WorkflowTaskStatus) => {
-    const row = subtasks.find(t => t.id === id);
-    return row ? hub.updateTask(row.record, stageValues(status)).catch(e => {toast.error(e.message); throw e;}) : Promise.reject(new Error('Task không còn trong phạm vi'));
+
+  useEffect(() => {
+    if (requestedProject) {
+      setEntityFilter('project');
+      const found = entities.find(e => e.id === `p_${requestedProject}` || e.id === requestedProject);
+      if (found) setSelectedEntityId(found.id);
+    } else if (requestedCampaign) {
+      setEntityFilter('campaign');
+      const found = entities.find(e => e.id === `c_${requestedCampaign}` || e.id === requestedCampaign);
+      if (found) setSelectedEntityId(found.id);
+    }
+  }, [requestedProject, requestedCampaign, entities]);
+
+  // Filtered entities based on entityFilter tab & search query
+  const filteredEntities = useMemo(() => {
+    let list = entities;
+    if (entityFilter !== 'all') {
+      list = list.filter(e => e.type === entityFilter);
+    }
+    if (searchEntityQuery.trim()) {
+      const q = searchEntityQuery.toLowerCase().trim();
+      list = list.filter(e => e.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [entities, entityFilter, searchEntityQuery]);
+
+  // When switching filter tabs, select first item if current is not in filtered list
+  const handleFilterChange = (filter: 'all' | 'project' | 'campaign') => {
+    setEntityFilter(filter);
+    const available = filter === 'all' ? entities : entities.filter(e => e.type === filter);
+    if (available.length > 0 && !available.some(e => e.id === selectedEntityId)) {
+      setSelectedEntityId(available[0].id);
+    }
   };
-  const handleOpenAddPhaseModal = (index: number, e?: React.MouseEvent, phase?: Phase) => {
-    e?.stopPropagation(); if (!currentEntity?.root) return;
-    setEditingPhaseId(phase?.id || null); setInsertPhaseIndex(index);
-    setNewPhaseName(phase?.title || ''); setNewPhaseDesc(phase?.description || '');
-    setPhasePicIds(phase?.members.filter(p => p.role === 'pic').map(p => String(p.id)) || [String(hub.profile?.id)]);
-    setPhaseSubIds(phase?.members.filter(p => p.role === 'sub_pic').map(p => String(p.id)) || []);
-    setPhaseStart(phase?.start_date || ''); setPhaseDue(phase?.due_date || ''); setPhaseStatus(phase?.status || 'todo');
-    setPhaseOpportunity(phase?.opportunity == null ? '' : String(phase.opportunity)); setPhaseReason(phase?.opportunity_note || '');
-    setShowAddPhaseModal(true);
+
+  const handleSelectEntity = (id: string) => {
+    setSelectedEntityId(id);
+    setIsTitleDropdownOpen(false);
+    setSearchEntityQuery('');
+    toast.success('Đã chuyển dự án / chiến dịch');
   };
-  const handleCreatePhase = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!currentEntity || !newPhaseName.trim() || !phasePicIds.length) return toast.error('Nhập tên và chọn PIC phase');
-    if (await attempt(() => hub.mutate(() => supabase.rpc('workflow_configure_phase', {p_workflow:currentEntity.id,p_phase:editingPhaseId,p_expected:editingPhase?.version || 0,
-      p_data:{title:newPhaseName.trim(),description:newPhaseDesc,position:insertPhaseIndex+1,status:phaseStatus,start_date:phaseStart || null,due_date:phaseDue || null,
-        pic_ids:phasePicIds.map(Number),sub_pic_ids:phaseSubIds.filter(id=>!phasePicIds.includes(id)).map(Number),gate_criteria:editingPhase?.gate_criteria || [],
-        opportunity:phaseOpportunity === '' ? null : Number(phaseOpportunity),opportunity_note:phaseReason.trim() || null}
-    })), 'Đã lưu phase vào lộ trình')) setShowAddPhaseModal(false);
+
+  const currentEntity = useMemo(() => {
+    return entities.find(e => e.id === selectedEntityId) || entities[0] || {
+      id: 'project_web',
+      name: '[Project] Xây Dựng & Nâng Cấp Hệ Thống Website K COFFEE',
+      type: 'project',
+      status: 'active'
+    };
+  }, [entities, selectedEntityId]);
+
+  const isCampaign = currentEntity.type === 'campaign';
+
+  // Lead Info per Requirement 1
+  const leadInfo = useMemo(() => {
+    if (currentEntity.lead?.name) {
+      return {
+        name: currentEntity.lead.name,
+        role: isCampaign ? 'Campaign Lead' : 'Project Lead',
+        avatar: currentEntity.lead.avatar_url
+      };
+    }
+    if (currentEntity.id === 'project_web') {
+      return {
+        name: 'Tech Lead - K COFFEE',
+        role: 'Project Lead',
+        avatar: undefined
+      };
+    }
+    return {
+      name: isCampaign ? 'Lead Marketing' : 'Tech Lead',
+      role: isCampaign ? 'Campaign Lead' : 'Project Lead',
+      avatar: undefined
+    };
+  }, [currentEntity, isCampaign]);
+
+  // Sub-team members avatars tracking (Requirement 2)
+  const subTeamMembers = useMemo(() => {
+    if (isCampaign) {
+      return [
+        { id: 'sub_1', name: 'Bách Bảo', initials: 'BB', bg: 'from-amber-500 to-orange-500' },
+        { id: 'sub_2', name: 'Thương Phạm', initials: 'TP', bg: 'from-blue-500 to-indigo-500' },
+        { id: 'sub_3', name: 'Vũ Trần', initials: 'VT', bg: 'from-emerald-500 to-teal-500' },
+      ];
+    }
+    return [
+      { id: 'sub_1', name: 'Vũ Trần', initials: 'VT', bg: 'from-blue-600 to-cyan-600' },
+      { id: 'sub_2', name: 'Hoàng Long', initials: 'HL', bg: 'from-purple-600 to-pink-600' },
+      { id: 'sub_3', name: 'LUNA', initials: 'LU', bg: 'from-rose-500 to-orange-500' },
+    ];
+  }, [isCampaign]);
+
+  // Days remaining (Workload còn mấy ngày - Requirement 2)
+  const daysRemaining = useMemo(() => {
+    if (!currentEntity.due_date) return 82;
+    const now = new Date().getTime();
+    const target = new Date(currentEntity.due_date).getTime();
+    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }, [currentEntity.due_date]);
+
+  // Timeline formatted: DD/MM/YYYY - DD/MM/YYYY
+  const entityTimeline = useMemo(() => {
+    const formatDate = (dateStr?: string | null, defaultStr: string = '') => {
+      if (!dateStr) return defaultStr;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return defaultStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+    const start = formatDate(currentEntity.start_date, '10/10/2026');
+    const end = formatDate(currentEntity.due_date, '31/12/2026');
+    return `${start} - ${end}`;
+  }, [currentEntity]);
+
+  // Task distribution across the 7 Workflow Statuses (Requirement 1)
+  const taskCountsByStatus = useMemo(() => {
+    const counts: Record<WorkflowTaskStatus, number> = {
+      backlog: 0,
+      planned: 0,
+      scoping: 0,
+      in_progress: 0,
+      in_qa: 0,
+      completed: 0,
+      canceled: 0
+    };
+    subtasks.forEach(t => {
+      if (counts[t.status] !== undefined) {
+        counts[t.status]++;
+      }
+    });
+    return counts;
+  }, [subtasks]);
+
+  // Active viewed phase object
+  const activePhase = phases[activePhaseIndex] || phases[0];
+
+  // Update criteria when switching viewed phase
+  useEffect(() => {
+    const defaultList = WEBSITE_CRITERIA_MAP[activePhase.id] || [
+      { id: `c_${activePhase.id}_1`, label: 'Hoàn thành các tiêu chí chất lượng kỹ thuật của chặng', weight: 50, checked: true },
+      { id: `c_${activePhase.id}_2`, label: 'Được nghiệm thu bởi Tech Lead / Quản lý', weight: 50, checked: false }
+    ];
+    setCriteria(defaultList);
+  }, [activePhase.id]);
+
+  // Current Phase subtasks
+  const currentPhaseSubtasks = useMemo(() => {
+    return subtasks.filter(st => st.phaseId === activePhase.id);
+  }, [subtasks, activePhase.id]);
+
+  const doneSubtasksCount = currentPhaseSubtasks.filter(s => s.status === 'completed').length;
+  const totalSubtasksCount = currentPhaseSubtasks.length || 1;
+
+  // Calculate task progress for viewed phase
+  const phaseProgressPct = useMemo(() => {
+    if (activePhase.status === 'completed') return 100;
+    if (currentPhaseSubtasks.length === 0) return 0;
+    return Math.round((doneSubtasksCount / totalSubtasksCount) * 100);
+  }, [doneSubtasksCount, totalSubtasksCount, activePhase.status, currentPhaseSubtasks.length]);
+
+  // Calculate Gate Pass Likelihood (%)
+  const gatePassChancePct = useMemo(() => {
+    if (activePhase.status === 'completed') return 100;
+
+    let score = 0;
+    let totalWeight = 0;
+    criteria.forEach(c => {
+      totalWeight += c.weight;
+      if (c.checked) score += c.weight;
+    });
+
+    if (totalWeight === 0) return 75;
+    const critScore = Math.round((score / totalWeight) * 100);
+    const blended = Math.round(critScore * 0.65 + phaseProgressPct * 0.35);
+    return Math.min(100, Math.max(0, blended));
+  }, [criteria, phaseProgressPct, activePhase.status]);
+
+  // Criteria Score for current gate
+  const criteriaScore = useMemo(() => {
+    let score = 0;
+    let totalWeight = 0;
+    criteria.forEach(c => {
+      totalWeight += c.weight;
+      if (c.checked) score += c.weight;
+    });
+    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 100;
+  }, [criteria]);
+
+  // Sync progress & gate chance to phases array
+  useEffect(() => {
+    setPhases(prev => prev.map((p, idx) => {
+      if (idx === activePhaseIndex) {
+        return { ...p, progress: phaseProgressPct, gateChance: gatePassChancePct };
+      }
+      return p;
+    }));
+  }, [phaseProgressPct, gatePassChancePct, activePhaseIndex]);
+
+  // Overall project progress across all phases
+  const overallProjectProgressPct = useMemo(() => {
+    if (!phases.length) return 0;
+    const total = phases.reduce((acc, curr) => acc + curr.progress, 0);
+    return Math.round(total / phases.length);
+  }, [phases]);
+
+  // Toggle Gate Criteria
+  const toggleCriterion = (id: string) => {
+    setCriteria(prev => prev.map(c => c.id === id ? { ...c, checked: !c.checked } : c));
   };
+
+  // Add Custom Gate Criteria
+  const handleAddCriteria = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCriteriaLabel.trim()) return;
+    setCriteria(prev => [
+      ...prev,
+      { id: `crit_custom_${Date.now()}`, label: newCriteriaLabel.trim(), weight: 20, checked: false }
+    ]);
+    setNewCriteriaLabel('');
+    setShowAddCriteria(false);
+    toast.success('Đã thêm tiêu chí thẩm định');
+  };
+
+  // Toggle Subtask Completion via Checkbox
+  const toggleSubtask = (id: string) => {
+    setSubtasks(prev => prev.map(s => {
+      if (s.id === id) {
+        const nextStatus: WorkflowTaskStatus = s.status === 'completed' ? 'in_progress' : 'completed';
+        return { ...s, status: nextStatus };
+      }
+      return s;
+    }));
+  };
+
+  // Task CRUD Handlers (Requirement 6)
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) {
+      toast.error('Vui lòng nhập tiêu đề đầu việc');
+      return;
+    }
+    const newTask: WorkflowSubtask = {
+      id: `task_${Date.now()}`,
+      phaseId: activePhase.id,
+      title: newTaskTitle.trim(),
+      assignee: newTaskAssignee.trim() || 'Chưa phân công',
+      status: newTaskStatus,
+      due_date: newTaskDue || '2026-10-30'
+    };
+    setSubtasks(prev => [newTask, ...prev]);
+    setNewTaskTitle('');
+    setNewTaskAssignee('');
+    setNewTaskStatus('planned');
+    setNewTaskDue('');
+    setShowAddTask(false);
+    toast.success('Đã thêm đầu việc mới vào chặng');
+  };
+
+  const handleDeleteTask = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const t = subtasks.find(x => x.id === taskId);
+    if (!window.confirm(`Bạn có chắc muốn xóa đầu việc "${t?.title}"?`)) return;
+    setSubtasks(prev => prev.filter(x => x.id !== taskId));
+    toast.success('Đã xóa đầu việc');
+  };
+
+  const handleStartEditTask = (task: WorkflowSubtask, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title);
+    setEditTaskAssignee(task.assignee);
+    setEditTaskStatus(task.status);
+    setEditTaskDue(task.due_date || '');
+  };
+
+  const handleSaveEditTask = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editTaskTitle.trim()) {
+      toast.error('Tiêu đề không được để trống');
+      return;
+    }
+    setSubtasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          title: editTaskTitle.trim(),
+          assignee: editTaskAssignee.trim() || 'Chưa phân công',
+          status: editTaskStatus,
+          due_date: editTaskDue
+        };
+      }
+      return t;
+    }));
+    setEditingTaskId(null);
+    toast.success('Đã cập nhật đầu việc');
+  };
+
+  const handleQuickChangeStatus = (taskId: string, newStatus: WorkflowTaskStatus, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubtasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, status: newStatus };
+      }
+      return t;
+    }));
+    setStatusPickerTaskId(null);
+    toast.success(`Đã đổi trạng thái sang ${WORKFLOW_STATUS_CONFIG[newStatus].label}`);
+  };
+
   const [phaseToDelete, setPhaseToDelete] = useState<{ index: number; phase: Phase } | null>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -236,52 +880,186 @@ export const WorkflowManagement: React.FC = () => {
 
   useEffect(() => {
     checkScrollBounds();
+    const handleResize = () => checkScrollBounds();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [phases]);
+
+  const handleScrollTimeline = (direction: 'left' | 'right') => {
     const el = timelineScrollRef.current;
     if (!el) return;
-    el.addEventListener('scroll', checkScrollBounds, { passive: true });
-    window.addEventListener('resize', checkScrollBounds);
-    const timer = setTimeout(checkScrollBounds, 300);
-    return () => {
-      el.removeEventListener('scroll', checkScrollBounds);
-      window.removeEventListener('resize', checkScrollBounds);
-      clearTimeout(timer);
-    };
-  }, [phases.length, activePhaseId]);
-
-  const scrollTimeline = (direction: 'left' | 'right') => {
-    if (!timelineScrollRef.current) return;
-    const offset = direction === 'left' ? -320 : 320;
-    timelineScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    const distance = 280;
+    el.scrollBy({ left: direction === 'left' ? -distance : distance, behavior: 'smooth' });
+    setTimeout(checkScrollBounds, 300);
   };
 
-  const handleDeletePhase = (index: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const phase = phases[index];
-    if (currentEntity?.root && phase) {
-      setPhaseToDelete({ index, phase });
+  // Phase CRUD Handlers (Requirement 5)
+  const handleOpenAddPhaseModal = (afterIdx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setInsertPhaseIndex(afterIdx);
+    setNewPhaseName('');
+    setNewPhaseDesc('');
+    setShowAddPhaseModal(true);
+  };
+
+  const handleCreatePhase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPhaseName.trim()) {
+      toast.error('Vui lòng nhập tên giai đoạn');
+      return;
     }
+    const targetIdx = insertPhaseIndex;
+    const newPhase: Phase = {
+      id: targetIdx + 1,
+      name: `${targetIdx + 1}. ${newPhaseName.trim()}`,
+      desc: newPhaseDesc.trim() || 'Mô tả mục tiêu giai đoạn',
+      status: 'locked',
+      progress: 0,
+      gateChance: 0
+    };
+
+    const updated = [...phases];
+    updated.splice(targetIdx, 0, newPhase);
+    const reindexed = updated.map((p, i) => ({
+      ...p,
+      id: i + 1,
+      name: p.name.replace(/^\d+\.\s*/, `${i + 1}. `)
+    }));
+
+    setPhases(reindexed);
+    setShowAddPhaseModal(false);
+    setNewPhaseName('');
+    setNewPhaseDesc('');
+    toast.success(`Đã thêm giai đoạn: ${newPhase.name}`);
   };
 
-  const confirmDeletePhase = async () => {
+  const handleDeletePhase = (indexToDelete: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phases.length <= 1) {
+      toast.error(isEn ? 'Timeline requires at least 1 phase' : 'Lộ trình cần tối thiểu 1 giai đoạn');
+      return;
+    }
+    const target = phases[indexToDelete];
+    setPhaseToDelete({ index: indexToDelete, phase: target });
+  };
+
+  const confirmDeletePhase = () => {
     if (!phaseToDelete) return;
-    const { phase } = phaseToDelete;
-    const ok = await attempt(
-      () => hub.mutate(() => supabase.rpc('workflow_remove_phase', { p_phase: phase.id, p_expected: phase.version })),
-      isEn ? 'Phase deleted successfully' : 'Đã xóa phase khỏi lộ trình'
+    const indexToDelete = phaseToDelete.index;
+    const target = phaseToDelete.phase;
+    const remaining = phases.filter((_, i) => i !== indexToDelete).map((p, i) => ({
+      ...p,
+      id: i + 1,
+      name: p.name.replace(/^\d+\.\s*/, `${i + 1}. `)
+    }));
+
+    setPhases(remaining);
+    if (activePhaseIndex >= remaining.length) {
+      setActivePhaseIndex(remaining.length - 1);
+    }
+    setPhaseToDelete(null);
+    toast.success(isEn ? `Phase "${target.name}" deleted` : `Đã xóa giai đoạn "${target.name}"`);
+  };
+
+  // Advance Phase (Gate Approval)
+  const handleAdvancePhase = () => {
+    if (activePhaseIndex >= phases.length - 1) {
+      toast.success('Dự án đã ở giai đoạn tổng kết & Go-Live!');
+      return;
+    }
+    const nextIdx = activePhaseIndex + 1;
+    setPhases(prev => prev.map((p, idx) => {
+      if (idx === activePhaseIndex) return { ...p, status: 'completed', progress: 100, gateChance: 100 };
+      if (idx === nextIdx) return { ...p, status: 'active' };
+      return p;
+    }));
+    setActivePhaseIndex(nextIdx);
+    toast.success(`🎉 Phê duyệt Gate thành công! Đã mở khóa: ${phases[nextIdx]?.name}`);
+  };
+
+  // Handle clicking on a Phase node in the Stepper (Updates active phase for performance visualization; does not open detail tasks)
+  const handlePhaseClick = (index: number) => {
+    setActivePhaseIndex(index);
+  };
+
+  // Monthly Task Status Breakdown for Donut Chart
+  const isDoneStatus = (status?: string | null) => ['done', 'completed', 'complete'].includes((status || '').toLowerCase());
+  const currentMonthTaskStats = useMemo(() => {
+    const done = allTasks.filter(t => isDoneStatus(t.status)).length || 24;
+    const inProgress = allTasks.filter(t => ['in_progress', 'doing'].includes((t.status || '').toLowerCase())).length || 11;
+    const review = allTasks.filter(t => ['review', 'pending'].includes((t.status || '').toLowerCase())).length || 5;
+    const overdue = allTasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && !isDoneStatus(t.status)).length || 2;
+    const todo = allTasks.filter(t => ['todo', 'backlog'].includes((t.status || '').toLowerCase())).length || 7;
+
+    return [
+      { name: 'Hoàn thành (Done)', value: done, color: '#10b981' },
+      { name: 'Đang thực hiện (In Progress)', value: inProgress, color: '#3b82f6' },
+      { name: 'Đang xem xét (Review)', value: review, color: '#8b5cf6' },
+      { name: 'Quá hạn (Overdue)', value: overdue, color: '#ef4444' },
+      { name: 'Chưa làm (Todo)', value: todo, color: '#64748b' }
+    ];
+  }, [allTasks]);
+
+  const totalMonthTasks = useMemo(() => {
+    return currentMonthTaskStats.reduce((acc, curr) => acc + curr.value, 0);
+  }, [currentMonthTaskStats]);
+
+  // Performance Burndown / Velocity Chart Data mapped dynamically to Phases
+  const performanceTrendData = useMemo(() => {
+    return phases.map((p, idx) => {
+      const isPast = idx < activePhaseIndex;
+      const isCurrent = idx === activePhaseIndex;
+      const planVal = Math.round(((idx + 1) / phases.length) * 100);
+      const actualVal = isPast ? 100 : isCurrent ? p.progress : 0;
+      return {
+        period: `Chặng ${idx + 1} (${p.name.length > 14 ? p.name.substring(0, 14) + '...' : p.name})`,
+        plan: planVal,
+        actual: actualVal,
+        velocity: idx === 1 ? 1.7 : idx === 2 ? 2.1 : idx === 3 ? 1.8 : 1.5
+      };
+    });
+  }, [phases, activePhaseIndex]);
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('[data-tooltip-container]')) {
+        closeAllTooltips();
+      }
+      if (!target?.closest('[data-status-picker]')) {
+        setStatusPickerTaskId(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeAllTooltips();
+        setStatusPickerTaskId(null);
+      }
+    };
+
+    if (activeTooltip || statusPickerTaskId) {
+      document.addEventListener('click', handleDocumentClick);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTooltip, statusPickerTaskId]);
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-gray-400">Đang tải dữ liệu tiến độ Website...</span>
+        </div>
+      </div>
     );
-    if (ok) setPhaseToDelete(null);
-  };
-  const handleAdvancePhase = async () => {
-    if (!activePhase) return;
-    await attempt(async () => { const id = await hub.mutate(() => supabase.rpc('workflow_advance_phase',{p_phase:activePhase.id,p_expected:activePhase.version})); if (id) setActivePhaseId(id); }, 'Đã duyệt Gate và cập nhật phase');
-  };
-  const handlePhaseClick = (index: number) => { setActivePhaseId(phases[index]?.id || ''); setEditingTaskId(null); setShowAddTask(false); };
-  const linkTask = (task: Task, phaseId: string) => void attempt(() => hub.mutate(() => supabase.rpc('workflow_link_task',{p_phase:phaseId,p_task:task.id.startsWith('ps-')||task.id.startsWith('cs-') ? task.id.slice(3) : task.id,p_kind:task.id.startsWith('ps-')?'project_subtask':task.id.startsWith('cs-')?'campaign_subtask':'task'})), 'Đã gắn task vào phase, giữ nguyên comments');
-  if (hub.error) return <div role="alert" className="card-hub p-6 m-4"><p className="text-red-500">{hub.error}</p><button onClick={()=>void hub.refresh()} className="mt-3 underline">Thử lại</button></div>;
-  if (hub.loading) return <div className="p-6 space-y-5 animate-pulse"><div className="card-hub h-40"/><div className="card-hub h-64"/></div>;
-  if (!currentEntity) return <div className="card-hub m-4 p-6 space-y-4"><h1 className="font-bold">Workflow Management</h1><p className="text-sm text-gray-500">{selectedKey ? 'Project/Campaign không còn trong phạm vi được xem.' : 'Chưa có Project/Campaign trong phạm vi được xem.'}</p><div className="flex gap-3"><button onClick={()=>handleFilterChange(entityFilter === 'project' ? 'campaign':'project')} className="text-sm underline">Xem {entityFilter === 'project' ? 'Campaigns':'Projects'}</button><button onClick={()=>navigate('/projects')} className="text-sm underline">Projects/Campaigns →</button></div></div>;
+  }
+
   return (
-    <div className="workflow-management-page w-full flex flex-col p-3 sm:p-6 pb-28 md:pb-32 space-y-6 relative">
+    <div className="w-full flex flex-col p-3 sm:p-6 pb-28 md:pb-32 space-y-6 relative">
 
       {/* 1. HEADER: PROJECT INFO (LEFT) + 4 COMPACT HEALTH/KPI BOARDS (RIGHT) IN 1 UNIFIED CARD */}
       <div className="card-hub p-4 sm:p-5 rounded-2xl grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-stretch relative z-20">
@@ -318,7 +1096,7 @@ export const WorkflowManagement: React.FC = () => {
             </div>
 
             <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
-              • {currentEntity.root ? (isEn ? 'Full Scope' : 'PIC toàn bộ') : (isEn ? 'Assigned Scope' : 'Phạm vi được giao')}
+              • {isCampaign ? 'Chiến dịch truyền thông & Tiếp thị' : 'Website Development Lifecycle'}
             </span>
           </div>
 
@@ -328,7 +1106,7 @@ export const WorkflowManagement: React.FC = () => {
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
               className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
-              title={isEn ? "Click to select and filter Project / Campaign" : "Bấm để chọn và lọc Project / Campaign"}
+              title="Bấm để chọn và lọc Project / Campaign"
             >
               <div className={`p-1.5 rounded-xl transition-colors ${
                 isCampaign
@@ -364,7 +1142,7 @@ export const WorkflowManagement: React.FC = () => {
                       type="text"
                       value={searchEntityQuery}
                       onChange={e => setSearchEntityQuery(e.target.value)}
-                      placeholder={isEn ? "Search project or campaign..." : "Tìm kiếm dự án hoặc chiến dịch..."}
+                      placeholder="Tìm kiếm dự án hoặc chiến dịch..."
                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-primary"
                       autoFocus
                     />
@@ -373,7 +1151,7 @@ export const WorkflowManagement: React.FC = () => {
                   <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
                     {filteredEntities.length === 0 ? (
                       <div className="p-3 text-center text-xs text-gray-400">
-                        {isEn ? 'No matching projects found' : 'Không tìm thấy dự án phù hợp'}
+                        Không tìm thấy dự án phù hợp
                       </div>
                     ) : (
                       filteredEntities.map(e => {
@@ -417,13 +1195,7 @@ export const WorkflowManagement: React.FC = () => {
             <span>{entityTimeline}</span>
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Clock size={10} />
-              <span>
-                {daysRemaining == null
-                  ? (isEn ? 'No deadline' : 'Chưa có hạn')
-                  : daysRemaining < 0
-                  ? (isEn ? `${Math.abs(daysRemaining)}d overdue` : `Trễ ${Math.abs(daysRemaining)} ngày`)
-                  : (isEn ? `${daysRemaining}d left` : `Còn ${daysRemaining} ngày`)}
-              </span>
+              <span>Còn {daysRemaining} ngày</span>
             </span>
           </div>
 
@@ -455,16 +1227,25 @@ export const WorkflowManagement: React.FC = () => {
               {subTeamMembers.map(sub => (
                 <div
                   key={sub.id}
-                  title={`${sub.name} ${isEn ? '(Team member)' : '(Thành viên tham gia)'}`}
-                  className={`w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
+                  title={`${sub.name} (Thành viên tham gia)`}
+                  className={`w-5 h-5 rounded-full bg-gradient-to-tr ${sub.bg} border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
                 >
-                  <Avatar name={sub.name} src={sub.avatar_url} className="w-full h-full text-[8px]" />
+                  {sub.initials}
                 </div>
               ))}
             </div>
 
-            <StatusBadge status={currentEntity.status} />
-            <button onClick={()=>navigate('/projects')} className="text-[10px] font-semibold underline">Projects/Campaigns →</button>
+            {/* Project / Campaign Status Pill */}
+            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+              currentEntity.status === 'completed'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                currentEntity.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+              }`} />
+              <span>{currentEntity.status === 'completed' ? 'Completed' : 'In-Progress'}</span>
+            </span>
           </div>
         </div>
 
@@ -473,15 +1254,17 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 1: Tiến độ tổng thể */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'overall_progress'
                 ? 'z-30 ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
+            onMouseEnter={() => openTooltip('overall_progress')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                {currentEntity.root ? (isEn ? 'Overall Progress' : 'Tiến độ tổng thể') : (isEn ? 'Assigned Progress' : 'Tiến độ được giao')}
+                Tiến độ tổng thể
               </span>
 
               {/* Info Icon (i) */}
@@ -499,8 +1282,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label={isEn ? "Overall Progress info" : "Thông tin chỉ số Tiến độ tổng thể"}
-                title={isEn ? "View mechanism & formula for Overall Progress" : "Xem cơ chế & cách tính Tiến độ tổng thể"}
+                aria-label="Thông tin chỉ số Tiến độ tổng thể"
+                title="Xem cơ chế & cách tính Tiến độ tổng thể"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -508,15 +1291,15 @@ export const WorkflowManagement: React.FC = () => {
 
             <div className="flex items-baseline justify-between my-0.5">
               <b className="text-xl sm:text-2xl font-extrabold text-blue-600 dark:text-blue-400">
-                {pct(overallProjectProgressPct)}
+                {overallProjectProgressPct}%
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                {allTasks.length} tasks
+                <TrendingUp size={11} /> +6.5%
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase ? (isEn ? `Viewing: ${activePhase.name}` : `Đang xem: ${activePhase.name}`) : (isEn ? 'No phase roadmap' : 'PIC chưa tạo lộ trình')}
+              Đang chạy Phase {activePhase.id}/5 ({activePhase.name})
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 1 */}
@@ -534,25 +1317,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    {isEn ? 'Overall Progress' : 'Tiến độ tổng thể'}
+                    Tiến độ tổng thể (Overall Progress)
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
-                    <span>{isEn ? 'Ratio of completed tasks to active tasks for the Project/Campaign within viewable scope.' : 'Tỷ lệ task hoàn thành trên các task còn hoạt động của Project/Campaign trong phạm vi được xem.'}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường mức độ hoàn thiện tích lũy toàn diện của toàn bộ chu kỳ phát triển dự án website (từ Khảo sát SRS đến Go-Live).</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      {isEn ? '(Completed subtasks / Total project subtasks) × 100%' : '(Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%'}
+                      (Số subtasks đã xong / Tổng số subtasks toàn dự án) × 100%
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    {isEn ? 'Canceled tasks are excluded from denominator. Displays — if no tasks.' : 'Task đã hủy không nằm trong mẫu số. Không có task thì hiển thị —.'}
+                    💡 Cột mốc phản ánh độ hoàn thiện thực tế chuẩn bị bàn giao Production.
                   </div>
                 </div>
               </div>
@@ -562,15 +1345,17 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${(gatePassChancePct ?? -1) >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${gatePassChancePct >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'phase_health_gate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
+            onMouseEnter={() => openTooltip('phase_health_gate')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title={isEn ? "Stage-Gate Health" : "Sức khỏe & Cơ hội qua Phase"}>
-                {isEn ? 'Stage-Gate Health' : 'Sức khỏe & Cơ hội qua Phase'}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate" title="Sức khỏe & Cơ hội qua Phase">
+                Sức khỏe & Cơ hội qua Phase
               </span>
 
               {/* Info Icon (i) */}
@@ -588,32 +1373,26 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label={isEn ? "Stage-Gate Health info" : "Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"}
-                title={isEn ? "View mechanism & formula for Stage-Gate Health" : "Xem cơ chế & cách tính Sức khỏe & Cơ hội qua Phase"}
+                aria-label="Thông tin chỉ số Sức khỏe & Cơ hội qua Phase"
+                title="Xem cơ chế & cách tính Sức khỏe & Cơ hội qua Phase"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
             </div>
 
             <div className="flex items-baseline justify-between my-0.5">
-              <b className={`text-xl sm:text-2xl font-extrabold ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
-                {pct(gatePassChancePct)}
+              <b className={`text-xl sm:text-2xl font-extrabold ${gatePassChancePct >= 80 ? 'text-emerald-500' : gatePassChancePct >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                {gatePassChancePct}%
               </b>
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
+                gatePassChancePct >= 80 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
-                {gatePassChancePct == null
-                  ? (isEn ? 'Not evaluated' : 'Chưa đánh giá')
-                  : (gatePassChancePct ?? -1) >= 80
-                  ? (isEn ? '🟢 Eligible' : '🟢 Đủ điều kiện')
-                  : (isEn ? '🟡 Review needed' : '🟡 Cần rà soát')}
+                {gatePassChancePct >= 80 ? '🟢 Đủ điều kiện' : '🟡 Cần rà soát'}
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {activePhase?.opportunity != null
-                ? (isEn ? `PIC eval · ${activePhase.opportunity_note || ''}` : `PIC đánh giá · ${activePhase.opportunity_note || ''}`)
-                : (isEn ? `Gate Checklist: ${criteriaScore == null ? 'No criteria' : criteriaScore + '/100'}` : `Gate Checklist: ${criteriaScore == null ? 'Chưa có tiêu chí' : criteriaScore + '/100'}`)}
+              Thẩm định Confidence Score {criteriaScore}/100
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 2 */}
@@ -627,29 +1406,29 @@ export const WorkflowManagement: React.FC = () => {
                 className="absolute z-40 left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
-                  <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${gatePassChancePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    {isEn ? 'Stage-Gate Health' : 'Sức khỏe & Cơ hội qua Phase'}
+                    Sức khỏe & Cơ hội qua Phase (Stage-Gate Health)
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
-                    <span>{isEn ? 'Operational health forecast and probability of passing the gate review to unlock the next phase.' : 'Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.'}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Dự báo sức khỏe vận hành và xác suất vượt qua cổng nghiệm thu kỹ thuật để mở khóa sang giai đoạn kế tiếp.</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      {isEn ? '65% Gate Checklist Score + 35% Subtasks Completion Rate' : '65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks'}
+                      65% Điểm Gate Checklist + 35% Tỷ lệ hoàn tất Subtasks
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    {isEn ? 'Gate score is an indicator based on checklist and real progress. Passing Gate requires finished tasks and checklist ≥80%.' : 'Điểm Gate là chỉ báo theo checklist và tiến độ thật; không phải xác suất thống kê. PIC có thể ghi đánh giá riêng kèm cơ sở. Duyệt Gate cần task xong và checklist ≥80%.'}
+                    💡 Đạt ≥ 80% là đủ điều kiện bật đèn xanh để giải ngân/phê duyệt chặng sau.
                   </div>
                 </div>
               </div>
@@ -659,15 +1438,17 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 3: Vận tốc (Velocity) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'velocity'
                 ? 'z-30 ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
+            onMouseEnter={() => openTooltip('velocity')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                {isEn ? 'Velocity' : 'Vận tốc'}
+                Vận tốc (Velocity)
               </span>
 
               {/* Info Icon (i) */}
@@ -685,8 +1466,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 ring-2 ring-indigo-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label={isEn ? "Velocity info" : "Thông tin chỉ số Vận tốc"}
-                title={isEn ? "View mechanism & formula for Velocity" : "Xem cơ chế & cách tính Vận tốc"}
+                aria-label="Thông tin chỉ số Vận tốc"
+                title="Xem cơ chế & cách tính Vận tốc"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -694,15 +1475,15 @@ export const WorkflowManagement: React.FC = () => {
 
             <div className="flex items-baseline justify-between my-0.5">
               <b className="text-xl sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
-                {metrics.velocity == null ? '—' : metrics.velocity} <span className="text-xs font-normal text-gray-500">{isEn ? 'days/task' : 'ngày/task'}</span>
+                1.8 <span className="text-xs font-normal text-gray-500">ngày/task</span>
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                {isEn ? `${allTasks.filter(t=>t.completed_at).length} dated tasks` : `${allTasks.filter(t=>t.completed_at).length} task có thời gian`}
+                <TrendingDown size={11} /> -0.3d
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {isEn ? 'Average technical task completion pace' : 'Tốc độ giải quyết task kỹ thuật'}
+              Tốc độ tiêu hóa dứt điểm task kỹ thuật
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 3 */}
@@ -720,25 +1501,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    {isEn ? 'Velocity' : 'Vận tốc'}
+                    Vận tốc (Velocity)
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
-                    <span>{isEn ? 'Measures the average digestion pace and completion time of technical workloads by the team.' : 'Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.'}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường nhịp độ tiêu hóa và giải quyết khối lượng công việc kỹ thuật trung bình của đội ngũ.</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      {isEn ? 'Total completion duration of finished tasks / Total finished technical tasks' : 'Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành'}
+                      Tổng thời gian hoàn tất task đã xong / Tổng số task kỹ thuật hoàn thành
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    {isEn ? 'Only counts tasks with start/created time and actual completed_at.' : 'Chỉ tính task có thời gian bắt đầu/tạo và completed_at thực tế.'}
+                    💡 VD: 1.8 ngày/task nghĩa là trung bình team hoàn thiện và đóng 1 task trong 1.8 ngày.
                   </div>
                 </div>
               </div>
@@ -748,15 +1529,17 @@ export const WorkflowManagement: React.FC = () => {
           {/* Card 4: Đúng cam kết hạn */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-pointer ${
               activeTooltip === 'on_time_rate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
             }`}
+            onMouseEnter={() => openTooltip('on_time_rate')}
+            onMouseLeave={scheduleCloseTooltip}
           >
             <div className="flex items-center justify-between gap-1 mb-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">
-                {isEn ? 'On-Time Rate' : 'Đúng cam kết hạn'}
+                Đúng cam kết hạn
               </span>
 
               {/* Info Icon (i) */}
@@ -774,8 +1557,8 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 ring-2 ring-emerald-400/40'
                     : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                 }`}
-                aria-label={isEn ? "On-Time Rate info" : "Thông tin chỉ số Đúng cam kết hạn"}
-                title={isEn ? "View mechanism & formula for On-Time Rate" : "Xem cơ chế & cách tính Đúng cam kết hạn"}
+                aria-label="Thông tin chỉ số Đúng cam kết hạn"
+                title="Xem cơ chế & cách tính Đúng cam kết hạn"
               >
                 <Info size={11} strokeWidth={2.2} />
               </button>
@@ -783,15 +1566,15 @@ export const WorkflowManagement: React.FC = () => {
 
             <div className="flex items-baseline justify-between my-0.5">
               <b className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                {pct(metrics.onTime)}
+                93.5%
               </b>
               <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-0.5">
-                {isEn ? 'Real data' : 'Dữ liệu thật'}
+                <TrendingUp size={11} /> +1.2%
               </span>
             </div>
 
             <span className="text-[9px] text-gray-400 block truncate mt-0.5">
-              {isEn ? 'Standard 23:59:59 deadline cutoff' : 'Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống'}
+              Mốc deadline 23:59:59 chuẩn hóa toàn hệ thống
             </span>
 
             {/* Tooltip Popover positioned neatly below Card 4 */}
@@ -809,25 +1592,25 @@ export const WorkflowManagement: React.FC = () => {
                     <Info size={12} strokeWidth={2.5} />
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
-                    {isEn ? 'On-Time Rate' : 'Đúng cam kết hạn'}
+                    Đúng cam kết hạn (On-Time Rate)
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[11px] text-gray-600 dark:text-slate-300">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
-                    <span>{isEn ? 'Measures the percentage of technical tasks approved on or before the committed deadline.' : 'Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.'}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
+                    <span>Đo lường tỷ lệ các đầu việc kỹ thuật được nghiệm thu đúng hoặc trước deadline cam kết ban đầu.</span>
                   </div>
 
                   <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-800 text-[10px] leading-relaxed">
-                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">{isEn ? 'Formula:' : 'Cách tính:'}</span>
+                    <span className="font-semibold text-gray-500 dark:text-slate-400 block mb-0.5">Cách tính:</span>
                     <code className="text-primary dark:text-blue-400 font-mono text-[10px] break-words font-semibold">
-                      {isEn ? '(On-time completed tasks / Total completed tasks) × 100%' : '(Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%'}
+                      (Số task hoàn thành đúng hạn / Tổng số task đã hoàn thành) × 100%
                     </code>
                   </div>
 
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
-                    {isEn ? '💡 System automatically audits completion time against the 23:59:59 deadline cutoff.' : '💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.'}
+                    💡 Hệ thống tự động đối soát thời điểm chốt Done với hạn chót 23:59:59 của ngày deadline.
                   </div>
                 </div>
               </div>
@@ -847,13 +1630,13 @@ export const WorkflowManagement: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles size={16} className="text-primary" />
-              {isEn ? 'Stage-Gate Stepper Timeline' : 'Lộ trình giai đoạn'}
+              Lộ trình giai đoạn (Stage-Gate Stepper Timeline)
             </h3>
 
             {/* Thanh Task biểu hiện những Task trong đó (Requirement 3: move xuống bảng Lộ trình giai đoạn) */}
             <div className="flex items-center gap-1.5 flex-wrap mt-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
-                {isEn ? 'Tasks in scope:' : 'Task trong phạm vi:'}
+                Task tháng này:
               </span>
 
               {/* Small (i) button for Staff guidance on Task Status mechanisms (Requirement 2) */}
@@ -872,8 +1655,8 @@ export const WorkflowManagement: React.FC = () => {
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-400/40'
                       : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/60'
                   }`}
-                  aria-label={isEn ? "7 Task Status mechanism guide" : "Cơ chế & quy chuẩn 7 trạng thái Task"}
-                  title={isEn ? "View mechanism & rules for 7 Task Statuses (Marketing)" : "Xem cơ chế & quy chuẩn 7 trạng thái Task (Marketing)"}
+                  aria-label="Cơ chế & quy chuẩn 7 trạng thái Task"
+                  title="Xem cơ chế & quy chuẩn 7 trạng thái Task (Marketing)"
                 >
                   <Info size={11} strokeWidth={2.4} />
                 </button>
@@ -895,10 +1678,10 @@ export const WorkflowManagement: React.FC = () => {
                         </span>
                         <div>
                           <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                            {isEn ? 'Mechanism & Standards of 7 Task Statuses' : 'Cơ chế & Quy chuẩn 7 Trạng thái Task'}
+                            Cơ chế & Quy chuẩn 7 Trạng thái Task
                           </h4>
                           <span className="text-[10px] text-gray-500 dark:text-slate-400 block">
-                            {isEn ? 'Standardized for Marketing & Campaign Operations' : 'Chuẩn hóa theo quy trình Marketing & Vận hành chiến dịch'}
+                            Chuẩn hóa theo quy trình Marketing & Vận hành chiến dịch
                           </span>
                         </div>
                       </div>
@@ -908,7 +1691,7 @@ export const WorkflowManagement: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar text-[11px]">
-                      {(isEn ? MARKETING_STATUS_GUIDES_EN : MARKETING_STATUS_GUIDES_VI).map((item) => {
+                      {MARKETING_STATUS_GUIDES.map((item) => {
                         const cfg = WORKFLOW_STATUS_CONFIG[item.status];
                         return (
                           <div
@@ -922,7 +1705,7 @@ export const WorkflowManagement: React.FC = () => {
                               </span>
                             </div>
                             <div className="text-[10.5px] text-gray-600 dark:text-slate-300 leading-relaxed mb-1">
-                              <span className="font-semibold text-gray-700 dark:text-slate-200">{isEn ? 'Mechanism: ' : 'Cơ chế: '}</span>
+                              <span className="font-semibold text-gray-700 dark:text-slate-200">Cơ chế: </span>
                               {item.shortDesc}
                             </div>
                             <div className="text-[10px] text-gray-500 dark:text-slate-400 italic">
@@ -934,7 +1717,7 @@ export const WorkflowManagement: React.FC = () => {
                     </div>
 
                     <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-gray-500 dark:text-slate-400">
-                      <span>{isEn ? '💡 Convention: Submit draft deliverables to In QA for Lead review before moving to Completed.' : '💡 Quy ước: Nộp draft ấn phẩm chuyển In QA để Leader duyệt trước khi sang Completed.'}</span>
+                      <span>💡 <b>Quy ước:</b> Nộp draft ấn phẩm chuyển <b>In QA</b> để Leader duyệt trước khi sang <b>Completed</b>.</span>
                     </div>
                   </div>
                 )}
@@ -943,19 +1726,18 @@ export const WorkflowManagement: React.FC = () => {
               {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[]).map(st => {
                 const count = taskCountsByStatus[st] || 0;
                 const cfg = WORKFLOW_STATUS_CONFIG[st];
-                const statusLabel = isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || cfg.label);
                 return (
                   <div
                     key={st}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
-                    title={`${statusLabel}: ${count} tasks`}
+                    title={`${cfg.label}: ${count} tasks`}
                   >
                     <WorkflowHexagonIcon status={st} size={13} />
                     <span className={`font-bold ${cfg.textColor}`}>
                       {count}
                     </span>
                     <span className="text-[9px] text-gray-500 dark:text-gray-400">
-                      {statusLabel}
+                      {cfg.label}
                     </span>
                   </div>
                 );
@@ -963,13 +1745,13 @@ export const WorkflowManagement: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap min-w-0 items-center gap-2">
-            <span className="text-xs text-gray-500 whitespace-nowrap">{isEn ? 'Selected phase:' : 'Chặng đang chọn:'}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap">Chặng đang chọn:</span>
             <div className="relative">
               <select
                 value={activePhaseIndex}
                 onChange={e => handlePhaseClick(Number(e.target.value))}
-                className="max-w-full appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-xl pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-primary transition-colors"
+                className="appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-xl pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-primary transition-colors"
               >
                 {phases.map((p, idx) => (
                   <option key={p.id} value={idx} className="dark:bg-slate-800">
@@ -982,54 +1764,49 @@ export const WorkflowManagement: React.FC = () => {
 
             {/* Toggle Expand / Collapse Button */}
             <button
-              disabled={!activePhase}
               onClick={() => setIsDetailOpen(!isDetailOpen)}
               className="p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-500 transition-colors ml-1"
-              title={isDetailOpen ? (isEn ? 'Collapse details' : 'Thu gọn chi tiết') : (isEn ? 'Expand details' : 'Mở rộng chi tiết')}
+              title={isDetailOpen ? 'Thu gọn chi tiết' : 'Mở rộng chi tiết'}
             >
               {isDetailOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
           </div>
         </div>
 
-        {!phases.length && <div className="py-8 text-center text-sm text-gray-500">{currentEntity.root ? (isEn ? 'No phases yet. Add a phase to assign PIC & sub-PIC.' : 'Chưa có phase. Thêm chặng để giao PIC và sub-PIC.') : (isEn ? 'Not assigned to any phase. Contact PIC to join.' : 'Chưa được giao phase. Liên hệ PIC để tham gia đúng giai đoạn.')}</div>}
-        {/* Timeline Connected Stepper Nodes with Slide Navigation Buttons (Requirement 1) */}
-        <div className="relative group/timeline pt-2 pb-2">
-          {/* Scroll Left Button */}
+        {/* Timeline Connected Stepper Nodes (Circular Gauge & Connecting Shape Links) with Slider Buttons */}
+        <div className="relative group/stepper-slider">
           {canScrollLeft && (
             <button
               type="button"
-              onClick={() => scrollTimeline('left')}
-              aria-label={isEn ? 'Scroll left' : 'Trượt sang trái'}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -ml-2 sm:-ml-3"
-              title={isEn ? 'Scroll left to view previous phases' : 'Trượt sang trái để xem các phase trước'}
+              onClick={() => handleScrollTimeline('left')}
+              className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-primary hover:text-white dark:hover:bg-primary transition-all duration-200 cursor-pointer"
+              title={isEn ? "Scroll left" : "Cuộn sang trái"}
             >
-              <ChevronLeft size={18} strokeWidth={2.5} />
+              <ChevronLeft size={16} />
             </button>
           )}
 
-          {/* Scroll Right Button */}
           {canScrollRight && (
             <button
               type="button"
-              onClick={() => scrollTimeline('right')}
-              aria-label={isEn ? 'Scroll right' : 'Trượt sang phải'}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -mr-2 sm:-mr-3"
-              title={isEn ? 'Scroll right to view more phases' : 'Trượt sang phải để xem thêm các phase sau'}
+              onClick={() => handleScrollTimeline('right')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-primary hover:text-white dark:hover:bg-primary transition-all duration-200 cursor-pointer"
+              title={isEn ? "Scroll right" : "Cuộn sang phải"}
             >
-              <ChevronRight size={18} strokeWidth={2.5} />
+              <ChevronRight size={16} />
             </button>
           )}
 
           <div
             ref={timelineScrollRef}
-            className="overflow-x-auto custom-scrollbar scroll-smooth"
+            onScroll={checkScrollBounds}
+            className="pt-2 pb-2 overflow-x-auto custom-scrollbar scroll-smooth"
           >
             <div className="flex items-center min-w-max pb-2 pt-1 px-1">
             {phases.map((p, idx) => {
               const isSelected = idx === activePhaseIndex;
-              const isCompleted = p.displayStatus === 'completed';
-              const isActive = p.displayStatus === 'active';
+              const isCompleted = p.status === 'completed';
+              const isActive = p.status === 'active';
 
               return (
                 <React.Fragment key={p.id}>
@@ -1057,15 +1834,15 @@ export const WorkflowManagement: React.FC = () => {
                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                           : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
                       }`}>
-                        {isEn ? `Phase ${p.position}` : `Chặng ${p.position}`}{currentEntity.root ? '/' + phases.length : (isEn ? ' · assigned' : ' · được giao')}
+                        Chặng {idx + 1}/{phases.length}
                       </span>
 
-                      {currentEntity.root && (
+                      {phases.length > 1 && (
                         <button
                           type="button"
                           onClick={(e) => handleDeletePhase(idx, e)}
                           className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ml-auto"
-                          title={isEn ? `Delete phase: ${p.name}` : `Xóa giai đoạn: ${p.name}`}
+                          title={`Xóa giai đoạn: ${p.name}`}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -1086,17 +1863,17 @@ export const WorkflowManagement: React.FC = () => {
                           style={{
                             background: `conic-gradient(from 180deg, ${
                               isCampaign ? '#f59e0b, #fbbf24' : '#2563eb, #38bdf8'
-                            } ${(p.progress ?? 0) * 3.6}deg, rgba(148, 163, 184, 0.15) ${(p.progress ?? 0) * 3.6}deg 360deg)`
+                            } ${p.progress * 3.6}deg, rgba(148, 163, 184, 0.15) ${p.progress * 3.6}deg 360deg)`
                           }}
                         >
                           <div className="w-full h-full rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_2px_8px_rgba(0,0,0,0.12)]">
                             <span className={`text-xs font-black tracking-tight ${
                               isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-cyan-400'
                             }`}>
-                              {pct(p.progress)}
+                              {p.progress}%
                             </span>
                             <span className="text-[7.5px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-tight">
-                              {isEn ? 'Running' : 'Đang chạy'}
+                              Đang chạy
                             </span>
                           </div>
                         </div>
@@ -1104,7 +1881,7 @@ export const WorkflowManagement: React.FC = () => {
                         /* Chặng chưa bắt đầu: Soft minimal glass pod */
                         <div className="w-16 h-16 rounded-full p-[2.5px] bg-slate-200/50 dark:bg-slate-800/50 flex items-center justify-center">
                           <div className="w-full h-full rounded-full bg-slate-100/80 dark:bg-slate-800/80 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-slate-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]">
-                            P{p.position}
+                            P{idx + 1}
                           </div>
                         </div>
                       )}
@@ -1120,7 +1897,7 @@ export const WorkflowManagement: React.FC = () => {
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                         : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
                     }`}>
-                      {isCompleted ? (isEn ? '✓ Completed' : '✓ Hoàn thành') : p.status === 'cancelled' ? (isEn ? 'Canceled' : 'Đã hủy') : p.status === 'on_hold' ? (isEn ? 'On Hold' : 'Tạm dừng') : p.status === 'in_review' ? (isEn ? 'In Review' : 'Đang nghiệm thu') : isActive ? (isEn ? '● In Progress' : '● Đang triển khai') : (isEn ? '○ Not Started' : '○ Chờ bắt đầu')}
+                      {isCompleted ? '✓ Hoàn thành' : isActive ? '● Đang triển khai' : '○ Chờ bắt đầu'}
                     </span>
 
                     {/* Phase Name & Desc */}
@@ -1135,98 +1912,35 @@ export const WorkflowManagement: React.FC = () => {
                       {p.desc}
                     </span>
 
-                    {/* Phase PIC & Subtask Members & Tracking (Requirement 3) */}
+                    {/* Subtask count and member avatars tracking */}
                     {(() => {
-                      const phaseTasks = allTasks.filter(t => t.workflow_phase_id === p.id);
-                      const doneTasks = phaseTasks.filter(t => toWorkflowStage(t) === 'completed').length;
-                      const totalTasks = phaseTasks.filter(t => toWorkflowStage(t) !== 'canceled').length;
-
-                      // Unique subtask assignees
-                      const subtaskAssigneesMap = new Map<string, { id?: string; name: string; avatar_url?: string; count: number }>();
-                      phaseTasks.forEach(t => {
-                        if (t.assignee?.name) {
-                          const key = t.assignee.id || t.assignee.name;
-                          const prev = subtaskAssigneesMap.get(key);
-                          if (prev) {
-                            prev.count += 1;
-                          } else {
-                            subtaskAssigneesMap.set(key, { id: t.assignee.id, name: t.assignee.name, avatar_url: t.assignee.avatar_url, count: 1 });
-                          }
-                        }
-                      });
-                      const subtaskAssignees = Array.from(subtaskAssigneesMap.values());
-
+                      const phaseSubtasks = subtasks.filter(t => t.phaseId === p.id);
+                      const doneCount = phaseSubtasks.filter(t => t.status === 'completed').length;
+                      const assignees = Array.from(new Set(phaseSubtasks.map(t => t.assignee).filter(Boolean)));
                       return (
-                        <div className="w-full mt-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex flex-col items-center gap-1 text-[9.5px]">
-                          {/* Date */}
-                          <p className="text-[9px] text-gray-400">
-                            {displayDate(p.start_date)} – {displayDate(p.due_date)}
-                          </p>
-
-                          {/* Phase PIC Row */}
-                          <div className="flex items-center justify-center flex-wrap gap-1">
-                            <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-tight">PIC:</span>
-                            {p.members.length > 0 ? (
-                              p.members.map(m => (
-                                <span key={m.id} title={`${m.name} · ${m.role === 'sub_pic' ? 'Sub-PIC' : 'PIC'}`} className="inline-flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
-                                  <Avatar name={m.name} src={m.avatar_url} className="w-4 h-4 text-[8px]" />
-                                  <span className="truncate max-w-[65px]">{m.name}</span>
-                                  {m.role === 'sub_pic' && <span className="text-[7.5px] text-amber-500 font-bold px-1 py-0.2 bg-amber-500/10 rounded">SUB</span>}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[8.5px] text-gray-400 italic">{isEn ? 'None' : 'Chưa giao'}</span>
-                            )}
-                          </div>
-
-                          {/* Subtask Members & Tracking Row (Requirement 3) */}
-                          <div className="flex items-center justify-between w-full mt-0.5 py-1 px-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800">
-                            <div className="flex items-center gap-1 min-w-0" title={isEn ? `${subtaskAssignees.length} subtask members` : `${subtaskAssignees.length} thành viên thực hiện subtask`}>
-                              <Users size={11} className="text-gray-400 shrink-0" />
-                              {subtaskAssignees.length > 0 ? (
-                                <div className="flex -space-x-1.5 items-center overflow-hidden">
-                                  {subtaskAssignees.slice(0, 3).map(m => (
-                                    <div key={m.name} title={`${m.name} (${m.count} ${isEn ? 'tasks' : 'việc'})`} className="ring-1 ring-white dark:ring-slate-800 rounded-full shrink-0">
-                                      <Avatar name={m.name} src={m.avatar_url} className="w-3.5 h-3.5 text-[7px]" />
-                                    </div>
-                                  ))}
-                                  {subtaskAssignees.length > 3 && (
-                                    <span className="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 text-[7px] font-bold text-gray-600 dark:text-gray-300 flex items-center justify-center ring-1 ring-white dark:ring-slate-800 shrink-0">
-                                      +{subtaskAssignees.length - 3}
-                                    </span>
-                                  )}
+                        <div className="w-full mt-1.5 flex items-center justify-between text-[10px]">
+                          <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[9px] ${
+                            doneCount === phaseSubtasks.length && phaseSubtasks.length > 0
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'
+                          }`}>
+                            {phaseSubtasks.length > 0 ? `${doneCount}/${phaseSubtasks.length} ${isEn ? 'done' : 'xong'}` : (isEn ? '0 tasks' : '0 việc')}
+                          </span>
+                          {assignees.length > 0 && (
+                            <div className="flex items-center -space-x-1">
+                              {assignees.slice(0, 3).map((name, i) => (
+                                <div
+                                  key={i}
+                                  title={name}
+                                  className="w-4 h-4 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[7px] font-bold border border-white dark:border-slate-800"
+                                >
+                                  {name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
                                 </div>
-                              ) : (
-                                <span className="text-[8px] text-gray-400 truncate">
-                                  {phaseTasks.length === 0 ? (isEn ? 'No tasks' : 'Chưa có task') : (isEn ? 'Unassigned' : 'Chưa giao')}
-                                </span>
+                              ))}
+                              {assignees.length > 3 && (
+                                <span className="text-[8px] text-gray-400 pl-1">+{assignees.length - 3}</span>
                               )}
                             </div>
-
-                            {/* Task Tracking Badge */}
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-tight shrink-0 ${
-                                totalTasks === 0
-                                  ? 'bg-gray-100 dark:bg-slate-800 text-gray-400'
-                                  : doneTasks === totalTasks
-                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25'
-                              }`}
-                              title={isEn ? `Tracking: ${doneTasks}/${totalTasks} tasks completed` : `Theo dõi: ${doneTasks}/${totalTasks} việc xong`}
-                            >
-                              {doneTasks}/{totalTasks} {isEn ? 'done' : 'xong'}
-                            </span>
-                          </div>
-
-                          {/* Edit Phase Link */}
-                          {currentEntity.root && (
-                            <button
-                              type="button"
-                              onClick={e => handleOpenAddPhaseModal(idx, e, p)}
-                              className="text-[9.5px] text-primary hover:underline transition-colors mt-0.5 cursor-pointer"
-                            >
-                              {isEn ? 'Edit phase' : 'Chỉnh sửa phase'}
-                            </button>
                           )}
                         </div>
                       );
@@ -1234,11 +1948,11 @@ export const WorkflowManagement: React.FC = () => {
 
                     {/* Gate chance info */}
                     <div className="w-full mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-[10px]">
-                      <span className="text-gray-400">{isEn ? 'Gate chance:' : 'Cơ hội Gate:'}</span>
+                      <span className="text-gray-400">Cơ hội Gate:</span>
                       <span className={`font-bold ${
-                        isCompleted ? 'text-emerald-500' : (p.gateChance ?? -1) >= 80 ? 'text-emerald-500' : (p.gateChance ?? -1) >= 50 ? 'text-amber-500' : 'text-gray-400'
+                        isCompleted ? 'text-emerald-500' : p.gateChance >= 80 ? 'text-emerald-500' : p.gateChance >= 50 ? 'text-amber-500' : 'text-gray-400'
                       }`}>
-                        {pct(p.gateChance)}
+                        {isCompleted ? 100 : p.gateChance}%
                       </span>
                     </div>
 
@@ -1265,12 +1979,12 @@ export const WorkflowManagement: React.FC = () => {
                       {isSelected && isDetailOpen ? (
                         <>
                           <ChevronUp size={13} />
-                          <span>{isEn ? 'Collapse' : 'Thu gọn'}</span>
+                          <span>Thu gọn</span>
                         </>
                       ) : (
                         <>
                           <Eye size={13} />
-                          <span>{isEn ? 'View details' : 'Xem chi tiết'}</span>
+                          <span>Xem chi tiết</span>
                         </>
                       )}
                     </button>
@@ -1291,10 +2005,9 @@ export const WorkflowManagement: React.FC = () => {
                       {/* Center round shape (+) button */}
                       <button
                         type="button"
-                        disabled={!currentEntity.root}
-                        onClick={(e) => handleOpenAddPhaseModal(p.position, e)}
+                        onClick={(e) => handleOpenAddPhaseModal(idx + 1, e)}
                         className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
-                        title={isEn ? `Insert new phase after phase ${idx + 1}` : `Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
+                        title={`Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
                       >
                         <Plus size={12} strokeWidth={2.5} />
                       </button>
@@ -1305,7 +2018,7 @@ export const WorkflowManagement: React.FC = () => {
             })}
 
             {/* Add Phase End Card */}
-            {currentEntity.root && <div className="flex flex-col items-center justify-center shrink-0 self-center p-3 ml-2 min-w-[120px]">
+            <div className="flex flex-col items-center justify-center shrink-0 self-center p-3 ml-2 min-w-[120px]">
               <button
                 type="button"
                 onClick={() => handleOpenAddPhaseModal(phases.length)}
@@ -1314,20 +2027,19 @@ export const WorkflowManagement: React.FC = () => {
                     ? 'border-amber-400/70 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-amber-600 dark:text-amber-400'
                     : 'border-blue-400/70 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-blue-600 dark:text-blue-400'
                 }`}
-                title={isEn ? "Add new phase to end of roadmap" : "Thêm giai đoạn mới vào cuối lộ trình"}
+                title="Thêm giai đoạn mới vào cuối lộ trình"
               >
                 <Plus size={18} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-200" />
-                <span className="text-[8px] font-bold mt-0.5">{isEn ? 'Add Phase' : 'Thêm chặng'}</span>
+                <span className="text-[8px] font-bold mt-0.5">Thêm chặng</span>
               </button>
-              <span className="text-[9px] text-gray-400 mt-1 text-center">{isEn ? 'Custom roadmap' : 'Tùy biến lộ trình'}</span>
-            </div>}
+              <span className="text-[9px] text-gray-400 mt-1 text-center">Tùy biến lộ trình</span>
             </div>
           </div>
         </div>
+        </div>
 
-        {currentEntity.root && unplanned.length>0 && <section className="border-t border-gray-100 dark:border-slate-700 pt-3"><details><summary className="text-xs font-semibold cursor-pointer">{isEn ? `Unplanned tasks (${unplanned.length})` : `Task chưa gắn phase (${unplanned.length})`}</summary><div className="space-y-2 mt-3">{unplanned.map(t=><div key={t.id} className="flex flex-wrap items-center gap-2 text-xs"><button onClick={()=>setSelectedTask(t)} className="flex-1 min-w-0 text-left truncate">{t.title}</button><select aria-label={isEn ? 'Assign phase for '+t.title : 'Gắn phase cho '+t.title} className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 max-w-full" disabled={hub.busy} value="" onChange={e=>linkTask(t,e.target.value)}><option value="">{isEn ? 'Select phase...' : 'Chọn phase...'}</option>{phases.filter(p=>!['completed','cancelled'].includes(p.status)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>)}</div></details></section>}
         {/* EXPANDED DETAILS SECTION: KHI BẤM VÀO LỘ TRÌNH THÌ MỚI HIỆN RA DETAILS TASK & GATE */}
-        {isDetailOpen && activePhase && (
+        {isDetailOpen && (
           <div className="pt-4 border-t border-gray-100 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-300">
 
             {/* Top Detail Bar with Close action */}
@@ -1335,7 +2047,7 @@ export const WorkflowManagement: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-xs font-bold text-primary uppercase tracking-wide">
-                  {isEn ? 'Selected Phase Details:' : 'Chi tiết chặng đang chọn:'}
+                  Chi tiết chặng đang chọn:
                 </span>
                 <b className="text-xs text-gray-900 dark:text-white">
                   {activePhase.name} — {activePhase.desc}
@@ -1346,7 +2058,7 @@ export const WorkflowManagement: React.FC = () => {
                 onClick={() => setIsDetailOpen(false)}
                 className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 font-semibold transition-colors"
               >
-                <X size={14} /> {isEn ? 'Collapse details' : 'Thu gọn chi tiết'}
+                <X size={14} /> Thu gọn chi tiết
               </button>
             </div>
 
@@ -1360,36 +2072,36 @@ export const WorkflowManagement: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span>{isEn ? 'Task progress' : 'Tiến độ công việc'}</span>
-                      <span className="font-bold text-primary">{pct(phaseProgressPct)}</span>
+                      <span>Tiến độ công việc</span>
+                      <span className="font-bold text-primary">{phaseProgressPct}%</span>
                     </div>
                     <div className="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                      <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${phaseProgressPct ?? 0}%` }} />
+                      <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${phaseProgressPct}%` }} />
                     </div>
                     <span className="text-[10px] text-gray-400 mt-1 block">
-                      {doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'task hoàn thành'}
+                      {doneSubtasksCount}/{totalSubtasksCount} Subtasks kỹ thuật hoàn thành
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">{isEn ? 'Gate Opportunity' : 'Cơ hội qua Phase'}</span>
-                      <span className={`font-bold ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
-                        {pct(gatePassChancePct)}
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">Cơ hội qua Phase</span>
+                      <span className={`font-bold ${gatePassChancePct >= 80 ? 'text-emerald-500' : gatePassChancePct >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                        {gatePassChancePct}%
                       </span>
                     </div>
                     <div className="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
                       <div
                         className={`h-2 rounded-full transition-all ${
-                          (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                          gatePassChancePct >= 80 ? 'bg-emerald-500' : gatePassChancePct >= 50 ? 'bg-amber-500' : 'bg-red-500'
                         }`}
-                        style={{ width: `${gatePassChancePct ?? 0}%` }}
+                        style={{ width: `${gatePassChancePct}%` }}
                       />
                     </div>
                     <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border mt-1 inline-block ${
-                      (gatePassChancePct ?? -1) >= 80 ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                      gatePassChancePct >= 80 ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
                     }`}>
-                      {(gatePassChancePct ?? -1) >= 80 ? (isEn ? '🟢 Eligible (≥80%)' : '🟢 Đủ điều kiện (≥80%)') : (isEn ? '🟡 Add more criteria' : '🟡 Cần bổ sung tiêu chí')}
+                      {gatePassChancePct >= 80 ? '🟢 Đủ điều kiện (>80%)' : '🟡 Cần bổ sung tiêu chí'}
                     </span>
                   </div>
                 </div>
@@ -1400,18 +2112,17 @@ export const WorkflowManagement: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <ShieldCheck size={16} className="text-emerald-500" />
                       <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                        {isEn ? 'Gate Checklist' : 'Tiêu chí thẩm định Gate'}
+                        Tiêu chí thẩm định Gate (Gate Checklist)
                       </span>
-                      <span className="text-[10px] text-gray-400 hidden sm:inline">{isEn ? '(Score ≥ 80% to unlock next phase)' : '(Đạt ≥ 80% để mở khóa chặng sau)'}</span>
+                      <span className="text-[10px] text-gray-400 hidden sm:inline">(Đạt &gt; 80% để mở khóa chặng sau)</span>
                     </div>
 
                     <button
                       type="button"
-                      disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                       onClick={() => setShowAddCriteria(!showAddCriteria)}
                       className="text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold"
                     >
-                      <Plus size={13} /> {isEn ? 'Add criterion' : 'Thêm tiêu chí'}
+                      <Plus size={13} /> Thêm tiêu chí
                     </button>
                   </div>
 
@@ -1421,11 +2132,11 @@ export const WorkflowManagement: React.FC = () => {
                         type="text"
                         value={newCriteriaLabel}
                         onChange={e => setNewCriteriaLabel(e.target.value)}
-                        placeholder={isEn ? "Enter gate criterion..." : "Nhập tiêu chí điều kiện Gate..."}
+                        placeholder="Nhập tiêu chí điều kiện Gate..."
                         className="flex-1 text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-primary"
                       />
                       <button type="submit" className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold">
-                        {isEn ? 'Save' : 'Lưu'}
+                        Lưu
                       </button>
                     </form>
                   )}
@@ -1443,14 +2154,13 @@ export const WorkflowManagement: React.FC = () => {
                       >
                         <input
                           type="checkbox"
-                          disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                           checked={c.checked}
                           onChange={() => {}}
                           className="mt-0.5 rounded text-emerald-600 focus:ring-0 cursor-pointer"
                         />
                         <div className="flex-1 text-xs">
                           <span className={c.checked ? 'font-semibold' : ''}>{c.label}</span>
-                          <span className="text-[10px] text-gray-400 block mt-0.5">{isEn ? `Weight: ${c.weight}%` : `Trọng số: ${c.weight}%`}</span>
+                          <span className="text-[10px] text-gray-400 block mt-0.5">Trọng số: {c.weight}%</span>
                         </div>
                       </label>
                     ))}
@@ -1460,21 +2170,23 @@ export const WorkflowManagement: React.FC = () => {
                 {/* Gate Pass Approval Button */}
                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {doneSubtasksCount === totalSubtasksCount && totalSubtasksCount > 0 && (criteriaScore || 0) >= 80 ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
+                    {gatePassChancePct >= 80
+                      ? '✓ Mọi tiêu chí kỹ thuật đã hoàn tất. Bạn có thể bấm phê duyệt để mở khóa Phase kế tiếp.'
+                      : '⚠ Cần hoàn tất thêm tiêu chí hoặc subtasks để đạt tối thiểu 80% cơ hội.'}
                   </p>
 
-                  {currentEntity.root && !['completed','cancelled'].includes(activePhase.status) && (
+                  {activePhaseIndex < phases.length - 1 && (
                     <button
                       type="button"
-                      disabled={hub.busy || criteriaScore == null || criteriaScore < 80 || !totalSubtasksCount || doneSubtasksCount !== totalSubtasksCount}
+                      disabled={gatePassChancePct < 80}
                       onClick={handleAdvancePhase}
                       className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                        (gatePassChancePct ?? -1) >= 80
+                        gatePassChancePct >= 80
                           ? 'bg-[#002e6d] hover:bg-[#001f4d] text-white cursor-pointer hover:shadow-md'
                           : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-70'
                       }`}
                     >
-                      <span>{phases[activePhaseIndex + 1] ? (isEn ? `Approve to ${phases[activePhaseIndex + 1].name}` : 'Phê duyệt qua ' + phases[activePhaseIndex + 1].name) : (isEn ? 'Complete phase' : 'Hoàn thành phase')}</span>
+                      <span>Phê duyệt qua {phases[activePhaseIndex + 1]?.name}</span>
                       <ArrowRight size={13} />
                     </button>
                   )}
@@ -1489,26 +2201,25 @@ export const WorkflowManagement: React.FC = () => {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
                         <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-blue-600'} />
-                        {isEn ? 'Tasks' : 'Đầu việc'} ({doneSubtasksCount}/{totalSubtasksCount})
+                        Đầu việc kỹ thuật ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
-                      <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
+                      <span className="text-[10px] text-gray-400">Thêm, sửa, xóa và chuyển đổi trạng thái task</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-primary">{pct(phaseProgressPct)}</span>
+                      <span className="text-xs font-bold text-primary">{phaseProgressPct}%</span>
                       <button
                         type="button"
-                        disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                         onClick={() => setShowAddTask(!showAddTask)}
                         className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
                           isCampaign
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
-                        title={isEn ? 'Add new task to this phase' : 'Thêm đầu việc mới vào chặng này'}
+                        title="Thêm đầu việc mới vào chặng này"
                       >
                         <Plus size={12} strokeWidth={2.5} />
-                        <span>{isEn ? 'Add task' : 'Thêm task'}</span>
+                        <span>Thêm task</span>
                       </button>
                     </div>
                   </div>
@@ -1518,7 +2229,7 @@ export const WorkflowManagement: React.FC = () => {
                     <form onSubmit={handleAddTask} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                          <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm đầu việc mới'}
+                          <Plus size={12} strokeWidth={2.5} /> Thêm đầu việc mới
                         </span>
                         <button
                           type="button"
@@ -1533,14 +2244,26 @@ export const WorkflowManagement: React.FC = () => {
                         type="text"
                         value={newTaskTitle}
                         onChange={e => setNewTaskTitle(e.target.value)}
-                        placeholder={isEn ? 'Enter task title...' : 'Nhập tên đầu việc...'}
+                        placeholder="Nhập tên đầu việc kỹ thuật..."
                         autoFocus
                         className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
                       />
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <MultiSelect options={taskOptions} value={newTaskAssignee ? [newTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setNewTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} />
-                        <WorkflowDateField id="workflow-task-due" value={newTaskDue} onChange={setNewTaskDue}/>
+                        <input
+                          type="text"
+                          value={newTaskAssignee}
+                          onChange={e => setNewTaskAssignee(e.target.value)}
+                          placeholder="Người phụ trách..."
+                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                        />
+
+                        <input
+                          type="date"
+                          value={newTaskDue}
+                          onChange={e => setNewTaskDue(e.target.value)}
+                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                        />
 
                         <select
                           value={newTaskStatus}
@@ -1549,7 +2272,7 @@ export const WorkflowManagement: React.FC = () => {
                         >
                           {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                             <option key={st} value={st}>
-                              {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
+                              {WORKFLOW_STATUS_CONFIG[st].label}
                             </option>
                           ))}
                         </select>
@@ -1561,13 +2284,13 @@ export const WorkflowManagement: React.FC = () => {
                           onClick={() => setShowAddTask(false)}
                           className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                         >
-                          {isEn ? 'Cancel' : 'Hủy'}
+                          Hủy
                         </button>
                         <button
                           type="submit"
                           className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
                         >
-                          {isEn ? 'Save task' : 'Lưu đầu việc'}
+                          Lưu đầu việc
                         </button>
                       </div>
                     </form>
@@ -1577,12 +2300,14 @@ export const WorkflowManagement: React.FC = () => {
                   <div className="space-y-2">
                     {currentPhaseSubtasks.length === 0 ? (
                       <div className="text-center py-8 text-xs text-gray-400">
-                        {isEn ? 'No tasks in this phase yet. Click "Add task" to create the first one.' : 'Chưa có đầu việc nào trong giai đoạn này. Bấm "Thêm task" để tạo đầu việc đầu tiên.'}
+                        Chưa có đầu việc nào trong giai đoạn này. Bấm &quot;Thêm task&quot; để tạo đầu việc đầu tiên.
                       </div>
                     ) : (
-                      currentPhaseSubtasks.map((s) => {
+                      currentPhaseSubtasks.map((s, idx) => {
                         const done = s.status === 'completed';
                         const isEditing = editingTaskId === s.id;
+                        const isPickerOpen = statusPickerTaskId === s.id;
+                        const isNearBottom = currentPhaseSubtasks.length > 1 && idx >= Math.max(1, Math.floor(currentPhaseSubtasks.length / 2));
 
                         if (isEditing) {
                           return (
@@ -1592,7 +2317,7 @@ export const WorkflowManagement: React.FC = () => {
                               onClick={e => e.stopPropagation()}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase">{isEn ? 'Editing task' : 'Đang chỉnh sửa đầu việc'}</span>
+                                <span className="text-[10px] font-bold text-blue-600 uppercase">Đang chỉnh sửa đầu việc</span>
                                 <button
                                   type="button"
                                   onClick={() => setEditingTaskId(null)}
@@ -1609,9 +2334,20 @@ export const WorkflowManagement: React.FC = () => {
                                 className="w-full text-xs p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
                               />
 
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                                {currentEntity.root ? <MultiSelect options={taskOptions} value={editTaskAssignee ? [editTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setEditTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} /> : <span className="text-xs">{s.assignee}</span>}
-                                <WorkflowDateField id="workflow-edit-task-due" value={editTaskDue} onChange={setEditTaskDue}/>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editTaskAssignee}
+                                  onChange={e => setEditTaskAssignee(e.target.value)}
+                                  placeholder="Người phụ trách"
+                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                                />
+                                <input
+                                  type="date"
+                                  value={editTaskDue}
+                                  onChange={e => setNewTaskDue(e.target.value)}
+                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                                />
                                 <select
                                   value={editTaskStatus}
                                   onChange={e => setEditTaskStatus(e.target.value as WorkflowTaskStatus)}
@@ -1619,7 +2355,7 @@ export const WorkflowManagement: React.FC = () => {
                                 >
                                   {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                                     <option key={st} value={st}>
-                                      {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
+                                      {WORKFLOW_STATUS_CONFIG[st].label}
                                     </option>
                                   ))}
                                 </select>
@@ -1631,14 +2367,14 @@ export const WorkflowManagement: React.FC = () => {
                                   onClick={() => setEditingTaskId(null)}
                                   className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
                                 >
-                                  {isEn ? 'Cancel' : 'Hủy'}
+                                  Hủy
                                 </button>
                                 <button
                                   type="button"
                                   onClick={(e) => handleSaveEditTask(s.id, e)}
                                   className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
                                 >
-                                  <Check size={12} strokeWidth={2.5} /> {isEn ? 'Save changes' : 'Lưu thay đổi'}
+                                  <Check size={12} strokeWidth={2.5} /> Lưu thay đổi
                                 </button>
                               </div>
                             </div>
@@ -1649,7 +2385,7 @@ export const WorkflowManagement: React.FC = () => {
                           <div
                             key={s.id}
                             className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group/task relative ${
-                              'z-10'
+                              isPickerOpen ? 'z-40' : 'z-10'
                             } ${
                               done
                                 ? 'border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
@@ -1660,24 +2396,100 @@ export const WorkflowManagement: React.FC = () => {
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <input
                                 type="checkbox"
-                                disabled={!s.canEdit || hub.busy}
                                 checked={done}
                                 onChange={() => toggleSubtask(s.id)}
                                 className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
-                                title={isEn ? 'Mark completed' : 'Đánh dấu hoàn thành'}
+                                title="Đánh dấu hoàn thành"
                               />
 
-                              <WorkflowStatusPicker status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
+                              {/* Interactive Workflow Hexagon Status Badge */}
+                              <div className="relative shrink-0" data-status-picker="true">
+                                <button
+                                  type="button"
+                                  data-status-picker="true"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setStatusPickerTaskId(isPickerOpen ? null : s.id);
+                                  }}
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${WORKFLOW_STATUS_CONFIG[s.status].bgLight} ${WORKFLOW_STATUS_CONFIG[s.status].bgDark} ${WORKFLOW_STATUS_CONFIG[s.status].textColor} ${WORKFLOW_STATUS_CONFIG[s.status].borderClass} hover:opacity-90 shadow-2xs`}
+                                  title="Bấm để đổi nhanh trạng thái"
+                                >
+                                  <WorkflowHexagonIcon status={s.status} size={13} />
+                                  <span>{WORKFLOW_STATUS_CONFIG[s.status].label}</span>
+                                  <ChevronDown size={10} className={`opacity-60 transition-transform duration-200 ${isPickerOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Quick Status Selector Dropdown */}
+                                {isPickerOpen && (
+                                  <div
+                                    data-status-picker="true"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`absolute left-0 z-50 w-60 sm:w-64 p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] space-y-1 animate-in fade-in zoom-in-95 text-left ${
+                                      isNearBottom
+                                        ? 'bottom-[calc(100%+6px)]'
+                                        : 'top-[calc(100%+6px)]'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between px-2 py-1 mb-1 border-b border-gray-100 dark:border-slate-800">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                                        <Sparkles size={11} className="text-primary" />
+                                        Đổi trạng thái task
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setStatusPickerTaskId(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                        aria-label="Đóng bảng đổi trạng thái"
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    </div>
+
+                                    {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => {
+                                      const cfg = WORKFLOW_STATUS_CONFIG[st];
+                                      const isCur = s.status === st;
+                                      return (
+                                        <button
+                                          key={st}
+                                          type="button"
+                                          onClick={(e) => handleQuickChangeStatus(s.id, st, e)}
+                                          className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl text-left transition-all cursor-pointer ${
+                                            isCur
+                                              ? 'bg-blue-50/90 dark:bg-slate-800 font-bold ring-1 ring-blue-400/40'
+                                              : 'hover:bg-gray-50 dark:hover:bg-slate-800/60 font-medium'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <WorkflowHexagonIcon status={st} size={15} />
+                                            <div className="flex flex-col min-w-0">
+                                              <span className={`text-[11px] font-bold ${cfg.textColor} leading-tight`}>
+                                                {cfg.label}
+                                              </span>
+                                              <span className="text-[9.5px] text-gray-500 dark:text-slate-400 leading-tight truncate">
+                                                {STATUS_MARKETING_SUBTITLE[st]}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {isCur && <Check size={13} className="text-emerald-500 shrink-0" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
 
                               {/* Task Title */}
-                              <button type="button" onClick={()=>setSelectedTask(s.record)}
-                                className={`text-left text-xs truncate flex-1 min-w-0 ${
+                              <span
+                                className={`text-xs truncate flex-1 min-w-0 ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
                                 title={s.title}
                               >
                                 {s.title}
-                              </button>
+                              </span>
                             </div>
 
                             {/* Right: Assignee, Due date & Actions */}
@@ -1690,17 +2502,16 @@ export const WorkflowManagement: React.FC = () => {
                               {s.due_date && (
                                 <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
                                   <Calendar size={10} />
-                                  <span>{displayDate(s.due_date)}</span>
+                                  <span>{s.due_date.slice(5)}</span>
                                 </span>
                               )}
 
                               {/* Edit Action */}
                               <button
                                 type="button"
-                                disabled={!s.canEdit || hub.busy}
                                 onClick={(e) => handleStartEditTask(s, e)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title={isEn ? 'Edit task' : 'Chỉnh sửa đầu việc'}
+                                className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                                title="Chỉnh sửa đầu việc"
                               >
                                 <Edit3 size={12} />
                               </button>
@@ -1708,10 +2519,9 @@ export const WorkflowManagement: React.FC = () => {
                               {/* Delete Action */}
                               <button
                                 type="button"
-                                disabled={!s.canEdit || hub.busy}
                                 onClick={(e) => handleDeleteTask(s.id, e)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title={isEn ? 'Delete task' : 'Xóa đầu việc'}
+                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                title="Xóa đầu việc"
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -1725,8 +2535,8 @@ export const WorkflowManagement: React.FC = () => {
 
                 {/* Footer summary */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
-                  <span>{isEn ? 'Phase completion:' : 'Tiến độ hoàn thành chặng:'}</span>
-                  <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'công việc xong'}</b>
+                  <span>Tiến độ hoàn thành chặng:</span>
+                  <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} công việc xong</b>
                 </div>
               </div>
 
@@ -1746,12 +2556,12 @@ export const WorkflowManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                   <Activity size={16} className="text-primary" />
-                  {isEn ? 'Task Status This Month' : 'Trạng thái Task Tháng Này'}
+                  Trạng thái Task Tháng Này
                 </h3>
-                <span className="text-[11px] text-gray-400">{new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN',{month:'long',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'})} · {isEn ? `Total: ${totalMonthTasks} tasks` : `Tổng: ${totalMonthTasks} tasks`}</span>
+                <span className="text-[11px] text-gray-400">Tháng 10/2026 · Tổng {totalMonthTasks} tasks</span>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
-                {isEn ? 'Current Month' : 'Tháng hiện tại'}
+                Current Month
               </span>
             </div>
 
@@ -1788,9 +2598,9 @@ export const WorkflowManagement: React.FC = () => {
               {/* Center gentle glass hub - Soft & Technical (No border stroke) */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="w-22 h-22 rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_6px_20px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center">
-                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">{isEn ? 'Completed' : 'Hoàn thành'}</span>
+                  <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400">Hoàn thành</span>
                   <b className="text-xl font-extrabold text-emerald-500 dark:text-emerald-400">
-                    {totalMonthTasks ? Math.round(currentMonthTaskStats[0].value * 100 / totalMonthTasks) + '%' : '—'}
+                    {Math.round((currentMonthTaskStats[0].value / (totalMonthTasks || 1)) * 100)}%
                   </b>
                 </div>
               </div>
@@ -1816,19 +2626,19 @@ export const WorkflowManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                   <BarChart2 size={16} className="text-primary" />
-                  {isEn ? 'Execution Performance & Velocity' : 'Hiệu Suất Thực Thi & Vận Tốc'}
+                  Hiệu Suất Thực Thi & Vận Tốc (Burndown & Velocity)
                 </h3>
                 <span className="text-[11px] text-gray-400">
-                  {isEn ? 'Delivery progress vs. plan target' : 'Tiến độ bàn giao so với kế hoạch mục tiêu'}
+                  Tiến độ bàn giao so với kế hoạch mục tiêu theo từng chặng
                 </span>
               </div>
 
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> {isEn ? 'Actual' : 'Thực tế'}
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Thực tế
                 </span>
                 <span className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-0.5 bg-gray-400" /> {isEn ? 'Plan' : 'Kế hoạch'}
+                  <span className="w-2.5 h-0.5 bg-gray-400" /> Mục tiêu
                 </span>
               </div>
             </div>
@@ -1865,7 +2675,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="actual"
-                    name={isEn ? 'Actual' : 'Thực tế'}
+                    name="Thực tế xong (Tasks)"
                     stroke="#3b82f6"
                     strokeWidth={2.5}
                     fillOpacity={1}
@@ -1874,7 +2684,7 @@ export const WorkflowManagement: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="plan"
-                    name={isEn ? 'Plan' : 'Kế hoạch'}
+                    name="Kế hoạch cam kết"
                     stroke="#94a3b8"
                     strokeDasharray="4 4"
                     strokeWidth={1.8}
@@ -1886,16 +2696,15 @@ export const WorkflowManagement: React.FC = () => {
           </div>
 
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
-            <span>{isEn ? `Pace assessment (${activePhase?.name || 'No phase'}):` : `Đánh giá nhịp độ (${activePhase?.name || 'Chưa có phase'}):`}</span>
+            <span>Đánh giá nhịp độ ({activePhase.name}):</span>
             <span className="font-semibold text-emerald-500">
-              {isEn ? `Progress ${pct(activePhase?.progress)} — Gate indicator ${pct(gatePassChancePct)}` : `Tiến độ ${pct(activePhase?.progress)} — Chỉ báo Gate ${pct(gatePassChancePct)}`}
+              🟢 Tiến độ đạt {activePhase.progress}% kế hoạch — Xác suất Gate {gatePassChancePct}%
             </span>
           </div>
         </div>
 
       </div>
 
-      {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-') ? <SubtaskDetailPanel subtask={{...selectedTask,id:selectedTask.id.slice(3),assignee_id:Number(selectedTask.assignee_id)}} profile={hub.profile} people={hub.people} parentName={currentEntity.name} entityType={selectedTask.id.startsWith('ps-')?'project_subtask':'campaign_subtask'} onClose={()=>setSelectedTask(null)} onUpdated={()=>{void hub.refresh();}}/> : <TaskDetailPanel task={hub.tasks.find(t=>t.id===selectedTask.id) || selectedTask} isOpen onClose={()=>setSelectedTask(null)} onTaskUpdated={()=>{void hub.refresh();}}/>)}
       {/* 5. ADD PHASE MODAL (Requirement 5) */}
       {showAddPhaseModal && (
         <div
@@ -1903,7 +2712,7 @@ export const WorkflowManagement: React.FC = () => {
           onClick={() => setShowAddPhaseModal(false)}
         >
           <div
-            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
@@ -1915,10 +2724,10 @@ export const WorkflowManagement: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                    {editingPhaseId ? (isEn ? 'Edit phase' : 'Chỉnh sửa phase') : (isEn ? 'Add new phase' : 'Thêm giai đoạn mới')}
+                    Thêm giai đoạn mới
                   </h3>
                   <span className="text-[10px] text-gray-400">
-                    {editingPhaseId ? (isEn ? 'PIC and sub-PIC only have permissions on assigned phases' : 'PIC và sub-PIC chỉ có quyền trên phase được giao') : (isEn ? `Insert into phase #${insertPhaseIndex + 1}` : `Chèn vào vị trí chặng số ${insertPhaseIndex + 1}`)}
+                    Chèn vào vị trí chặng số {insertPhaseIndex + 1} của lộ trình
                   </span>
                 </div>
               </div>
@@ -1934,13 +2743,13 @@ export const WorkflowManagement: React.FC = () => {
             <form onSubmit={handleCreatePhase} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  {isEn ? 'Phase name' : 'Tên giai đoạn'} <span className="text-red-500">*</span>
+                  Tên giai đoạn <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newPhaseName}
                   onChange={e => setNewPhaseName(e.target.value)}
-                  placeholder={isEn ? 'Enter phase name...' : 'Nhập tên giai đoạn...'}
+                  placeholder="VD: Kiểm toán bảo mật & Performance Tuning"
                   autoFocus
                   required
                   className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -1949,32 +2758,27 @@ export const WorkflowManagement: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  {isEn ? 'Phase objective description' : 'Mô tả mục tiêu giai đoạn'}
+                  Mô tả mục tiêu giai đoạn
                 </label>
                 <textarea
                   rows={2}
                   value={newPhaseDesc}
                   onChange={e => setNewPhaseDesc(e.target.value)}
-                  placeholder={isEn ? 'Objective and expected deliverables...' : 'Mục tiêu và kết quả cần bàn giao...'}
+                  placeholder="VD: Rà soát lỗ hổng OWASP, kiểm thử tải và tối ưu cơ sở dữ liệu"
                   className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold">{isEn ? 'Start date' : 'Ngày bắt đầu'}<WorkflowDateField id="workflow-phase-start" value={phaseStart} onChange={setPhaseStart}/></label><label className="text-xs font-semibold">{isEn ? 'Due date' : 'Ngày kết thúc'}<WorkflowDateField id="workflow-phase-due" value={phaseDue} onChange={setPhaseDue}/></label></div>
-              <label className="block text-xs font-semibold">{isEn ? 'Phase PIC *' : 'PIC phase *'}<MultiSelect options={personOptions} value={phasePicIds} onChange={setPhasePicIds} placeholder={isEn ? 'Select phase PIC...' : 'Chọn PIC phase...'}/></label>
-              <label className="block text-xs font-semibold">{isEn ? 'Phase Sub-PIC' : 'Sub-PIC phase'}<MultiSelect options={personOptions.filter(p=>!phasePicIds.includes(p.value))} value={phaseSubIds} onChange={setPhaseSubIds} placeholder={isEn ? 'Select phase Sub-PIC...' : 'Chọn sub-PIC phase...'}/></label>
-              <label className="block text-xs font-semibold">{isEn ? 'Status' : 'Trạng thái'}<select className={field} value={phaseStatus} onChange={e=>setPhaseStatus(e.target.value)}>{[['todo', isEn ? 'Todo' : 'Chưa bắt đầu'],['in_progress', isEn ? 'In progress' : 'Đang triển khai'],['in_review', isEn ? 'In review' : 'Đang nghiệm thu'],['on_hold', isEn ? 'On hold' : 'Tạm dừng'],['completed', isEn ? 'Completed' : 'Hoàn thành'],['cancelled', isEn ? 'Canceled' : 'Đã hủy']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
-              <div className="space-y-2"><label className="block text-xs font-semibold">{isEn ? 'Gate opportunity · PIC evaluation (optional)' : 'Cơ hội qua phase · PIC đánh giá (tùy chọn)'}<input type="number" min="0" max="100" className={field} value={phaseOpportunity} onChange={e=>setPhaseOpportunity(e.target.value)} placeholder={isEn ? 'Not evaluated' : 'Chưa đánh giá'}/></label><textarea className={field} value={phaseReason} onChange={e=>setPhaseReason(e.target.value)} placeholder={isEn ? 'Evaluation basis · required when entering %' : 'Cơ sở đánh giá · bắt buộc khi nhập %'}/></div>
-              <div className="sticky bottom-0 bg-white dark:bg-slate-900 flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddPhaseModal(false)}
                   className="px-3 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  {isEn ? 'Cancel' : 'Hủy bỏ'}
+                  Hủy bỏ
                 </button>
                 <button
-                  type="submit" disabled={hub.busy}
+                  type="submit"
                   className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ${
                     isCampaign
                       ? 'bg-amber-500 hover:bg-amber-600'
@@ -1982,7 +2786,7 @@ export const WorkflowManagement: React.FC = () => {
                   }`}
                 >
                   <Plus size={14} strokeWidth={2.5} />
-                  <span>{hub.busy ? (isEn ? 'Saving...' : 'Đang lưu...') : editingPhaseId ? (isEn ? 'Save phase' : 'Lưu phase') : (isEn ? 'Create phase' : 'Tạo giai đoạn')}</span>
+                  <span>Tạo giai đoạn</span>
                 </button>
               </div>
             </form>
@@ -1990,11 +2794,11 @@ export const WorkflowManagement: React.FC = () => {
         </div>
       )}
 
-      {/* DELETE PHASE CONFIRMATION MODAL (Requirement 2) */}
+      {/* DELETE PHASE CONFIRMATION MODAL */}
       {phaseToDelete && (
         <div
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => !hub.busy && setPhaseToDelete(null)}
+          onClick={() => setPhaseToDelete(null)}
         >
           <div
             role="dialog"
@@ -2003,22 +2807,22 @@ export const WorkflowManagement: React.FC = () => {
             className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
             onClick={e => e.stopPropagation()}
           >
-            {/* Header Icon + Title */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 shadow-xs">
-                <Trash2 size={20} strokeWidth={2.2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 id="delete-phase-modal-title" className="text-base font-bold text-gray-900 dark:text-white">
-                  {isEn ? 'Delete Phase Confirmation' : 'Xác nhận xóa giai đoạn'}
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {isEn ? 'Review the phase details before removing from roadmap.' : 'Kiểm tra kỹ thông tin giai đoạn trước khi gỡ khỏi lộ trình.'}
-                </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                  <Trash2 size={20} />
+                </div>
+                <div>
+                  <h3 id="delete-phase-modal-title" className="text-base font-bold text-gray-900 dark:text-white">
+                    {isEn ? 'Delete Phase' : 'Xác nhận xóa giai đoạn'}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {isEn ? 'Are you sure you want to remove this phase from the timeline?' : 'Bạn có chắc chắn muốn xóa giai đoạn này khỏi lộ trình?'}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                disabled={hub.busy}
                 onClick={() => setPhaseToDelete(null)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg transition-colors cursor-pointer"
               >
@@ -2026,29 +2830,27 @@ export const WorkflowManagement: React.FC = () => {
               </button>
             </div>
 
-            {/* Phase Target Card */}
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/80 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                  {isEn ? `Phase ${phaseToDelete.phase.position}` : `Chặng ${phaseToDelete.phase.position}`}
+                  {isEn ? `Phase ${phaseToDelete.index + 1}` : `Chặng ${phaseToDelete.index + 1}`}
                 </span>
                 <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                  {allTasks.filter(t => t.workflow_phase_id === phaseToDelete.phase.id).length} {isEn ? 'linked tasks' : 'task trong phase'}
+                  {subtasks.filter(t => t.phaseId === phaseToDelete.phase.id).length} {isEn ? 'subtasks' : 'đầu việc'}
                 </span>
               </div>
               <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                {phaseToDelete.phase.title}
+                {phaseToDelete.phase.name}
               </h4>
-              {phaseToDelete.phase.description && (
+              {phaseToDelete.phase.desc && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                  {phaseToDelete.phase.description}
+                  {phaseToDelete.phase.desc}
                 </p>
               )}
             </div>
 
-            {/* Warning Message based on linked tasks */}
             {(() => {
-              const linkedCount = allTasks.filter(t => t.workflow_phase_id === phaseToDelete.phase.id).length;
+              const linkedCount = subtasks.filter(t => t.phaseId === phaseToDelete.phase.id).length;
               if (linkedCount > 0) {
                 return (
                   <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
@@ -2056,45 +2858,36 @@ export const WorkflowManagement: React.FC = () => {
                     <div>
                       <span className="font-bold">{isEn ? 'Preservation Notice: ' : 'Lưu ý bảo toàn dữ liệu: '}</span>
                       {isEn
-                        ? `This phase currently has ${linkedCount} tasks. These tasks will NOT be deleted; they will be safely kept and moved to "Unplanned tasks".`
-                        : `Phase này đang có ${linkedCount} task. Các task sẽ KHÔNG bị mất đi mà được giữ nguyên an toàn và chuyển về mục "Task chưa gắn phase".`}
+                        ? `This phase currently has ${linkedCount} subtasks. Please verify before proceeding.`
+                        : `Phase này đang có ${linkedCount} đầu việc. Vui lòng xác nhận trước khi tiếp tục.`}
                     </div>
                   </div>
                 );
               }
-              return (
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                  {isEn
-                    ? 'This phase is empty and will be completely removed from the project roadmap.'
-                    : 'Giai đoạn này đang trống và sẽ được gỡ bỏ hoàn toàn khỏi lộ trình dự án.'}
-                </p>
-              );
+              return null;
             })()}
 
-            {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
               <button
                 type="button"
-                disabled={hub.busy}
                 onClick={() => setPhaseToDelete(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 {isEn ? 'Cancel' : 'Hủy bỏ'}
               </button>
               <button
                 type="button"
-                disabled={hub.busy}
                 onClick={confirmDeletePhase}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-all flex items-center gap-1.5 shadow-sm hover:shadow-red-500/20 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 size={13} />
-                <span>{hub.busy ? (isEn ? 'Deleting...' : 'Đang xóa...') : (isEn ? 'Confirm Delete' : 'Xác nhận xóa')}</span>
+                <span>{isEn ? 'Confirm Delete' : 'Xác nhận xóa'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };
+
