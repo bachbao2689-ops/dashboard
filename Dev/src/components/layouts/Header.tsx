@@ -51,7 +51,7 @@ export const Header: React.FC = () => {
     const scrollContainer = document.getElementById('main-scroll-container');
     const handleScroll = () => {
       const top = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
-      setIsScrolled(top > 10);
+      setIsScrolled(top > 4);
     };
 
     if (scrollContainer) {
@@ -66,7 +66,7 @@ export const Header: React.FC = () => {
       }
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [location.pathname]);
 
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   
