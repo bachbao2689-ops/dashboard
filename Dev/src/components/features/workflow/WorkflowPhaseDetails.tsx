@@ -1,13 +1,42 @@
+import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {Plus, X, Code2, Calendar, User, Edit3, Trash2, Check} from 'lucide-react';
+import {Plus, X, Code2, Calendar, User, Edit3, Trash2, Check, MessageSquare} from 'lucide-react';
 import {displayDate} from '../../../lib/workflowHub';
 import {WorkflowStatusPicker, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
 import {WorkflowGateChecklist} from './WorkflowGateChecklist';
 import {MultiSelect} from '../../common/MultiSelect';
 import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
+import {Avatar} from '../../common/Avatar';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
   const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, setSelectedTask, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, editingTaskId, setEditingTaskId, editTaskTitle, setEditTaskTitle, editTaskAssignee, setEditTaskAssignee, editTaskStatus, setEditTaskStatus, editTaskDue, setEditTaskDue, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleStartEditTask, handleSaveEditTask, handleQuickChangeStatus, pct} = model;
+
+  const [splitPct, setSplitPct] = useState(58);
+  const [resizing, setResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const pctValue = (offsetX / rect.width) * 100;
+      if (pctValue >= 28 && pctValue <= 72) {
+        setSplitPct(pctValue);
+      }
+    };
+    const onMouseUp = () => {
+      setResizing(false);
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [resizing]);
+
   if (!currentEntity) return null;
   if (!activePhase) return null;
   return (<>
@@ -34,13 +63,38 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
               </button>
             </div>
 
-            {/* Split Columns: Cột Trái (Gate Checklist) & Cột Phải (Subtasks Website) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Split Columns: Cột Trái (Gate Checklist) & Cột Phải (Đầu việc) with interactive drag resizer */}
+            <div ref={containerRef} className="flex flex-col lg:flex-row items-stretch gap-0 relative">
 
-              <WorkflowGateChecklist model={model}/>
+              {/* Left Column (Gate Checklist) */}
+              <div
+                style={{ flexBasis: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${splitPct}%` : '100%' }}
+                className="w-full lg:min-w-[320px] shrink-0 min-h-full flex flex-col"
+              >
+                <WorkflowGateChecklist model={model}/>
+              </div>
 
-              {/* Right Column: Quản Lý Đầu Việc Kỹ Thuật (Subtasks) của chặng (5 Cols) */}
-              <div className="lg:col-span-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
+              {/* Middle Resizer Handle */}
+              <div
+                onMouseDown={() => setResizing(true)}
+                className={`hidden lg:flex w-5 -mx-2.5 z-20 cursor-col-resize items-center justify-center group relative select-none shrink-0 ${
+                  resizing ? 'cursor-col-resize' : ''
+                }`}
+                title={isEn ? "Drag to resize panels" : "Kéo để co giãn các bảng"}
+              >
+                <div className={`w-1 h-14 rounded-full transition-all duration-200 ${
+                  resizing
+                    ? 'bg-primary ring-4 ring-primary/20 scale-y-110'
+                    : 'bg-gray-300 dark:bg-slate-600 group-hover:bg-primary group-hover:scale-y-105'
+                }`} />
+              </div>
+
+              {/* Right Column: Quản Lý Đầu Việc Kỹ Thuật (Subtasks) của chặng */}
+              <div
+                style={{ flex: 1 }}
+                className="w-full lg:min-w-[300px] shrink-0 mt-4 lg:mt-0 min-h-full flex flex-col"
+              >
+                <div className="w-full h-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
                 <div>
                   {/* Column Header */}
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700/80 pb-2.5 mb-2.5">
@@ -230,21 +284,51 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                               {/* Task Title */}
                               <button type="button" onClick={()=>setSelectedTask(s.record)}
-                                className={`text-left text-xs truncate flex-1 min-w-0 ${
+                                className={`text-left text-xs truncate flex-1 min-w-0 hover:text-primary transition-colors cursor-pointer ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
                                 title={s.title}
                               >
                                 {s.title}
                               </button>
+
+                              {/* Comment icon button for leader to comment */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTask(s.record);
+                                }}
+                                className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0 cursor-pointer"
+                                title={isEn ? "Open task comments & details" : "Bình luận & chi tiết đầu việc"}
+                              >
+                                <MessageSquare size={13} className="text-gray-400 hover:text-blue-500 transition-colors" />
+                              </button>
                             </div>
 
-                            {/* Right: Assignee, Due date & Actions */}
+                            {/* Right: Assignee (Avatar + Name), Due date & Actions */}
                             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto ml-6 sm:ml-0">
-                              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300">
-                                <User size={10} className="text-gray-400" />
-                                <span className="truncate max-w-[80px]">{s.assignee}</span>
-                              </span>
+                              {/* PIC Avatar + Name */}
+                              {s.record.assignee?.name || s.assignee ? (
+                                <span
+                                  className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
+                                  title={`${isEn ? 'Assignee' : 'Người thực hiện'}: ${s.record.assignee?.name || s.assignee}`}
+                                >
+                                  <Avatar
+                                    name={s.record.assignee?.name || s.assignee}
+                                    src={s.record.assignee?.avatar_url}
+                                    className="w-4 h-4 text-[7px] shrink-0"
+                                  />
+                                  <span className="font-semibold truncate max-w-[95px]">
+                                    {s.record.assignee?.name || s.assignee}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
+                                  <User size={10} />
+                                  <span className="truncate max-w-[80px]">{isEn ? 'Unassigned' : 'Chưa giao PIC'}</span>
+                                </span>
+                              )}
 
                               {s.due_date && (
                                 <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
@@ -288,6 +372,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                   <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'công việc xong'}</b>
                 </div>
               </div>
+            </div>
 
             </div>
           </div>

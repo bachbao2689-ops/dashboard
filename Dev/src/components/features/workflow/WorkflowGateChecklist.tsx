@@ -5,8 +5,8 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
   const {hub, isEn, currentEntity, activePhase, phases, activePhaseIndex, criteria, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, readyToApprove, readinessLabel, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, toggleCriterion, handleAddCriteria, handleAdvancePhase, pct} = model;
   if (!currentEntity || !activePhase) return null;
   return (<>
-              {/* Left Column: Tiêu chí Gatekeeper & Duyệt Chuyển Phase (7 Cols) */}
-              <div className="lg:col-span-7 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4">
+              {/* Left Column: Tiêu chí Gatekeeper & Duyệt Chuyển Phase */}
+              <div className="w-full h-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4 flex flex-col justify-between">
 
                 {/* 2 Big Gauge Boxes */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

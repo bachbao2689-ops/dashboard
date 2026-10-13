@@ -1,6 +1,6 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import React from 'react';
-import {Plus, ChevronUp, ChevronLeft, ChevronRight, Trash2, Eye, Check} from 'lucide-react';
+import {Plus, ChevronUp, ChevronLeft, ChevronRight, Trash2, Pencil, Eye, Check} from 'lucide-react';
 import {taskContributors} from '../../../lib/workflowCalendar';
 import {WorkflowPeopleRows} from '../../features/projects/WorkflowPeopleRows';
 import {WorkflowPhaseDates} from '../../features/projects/WorkflowPhaseDates';
@@ -57,7 +57,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     aria-pressed={isSelected}
                     onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handlePhaseClick(idx); } }}
                     onClick={() => handlePhaseClick(idx)}
-                    className={`w-48 sm:w-56 p-3.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 ${
+                    className={`w-48 sm:w-56 p-3.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 group ${
                       isSelected
                         ? isCampaign
                           ? 'border-amber-500 ring-2 ring-amber-500/25 bg-amber-50/10 dark:bg-amber-950/15 shadow-md -translate-y-0.5'
@@ -67,7 +67,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60 hover:border-gray-300 dark:hover:border-slate-600'
                     }`}
                   >
-                    {/* Header Row: Chặng order & Delete button */}
+                    {/* Header Row: Chặng order & Edit / Delete action buttons on hover */}
                     <div className="w-full flex items-center justify-between mb-1">
                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                         isCompleted
@@ -82,14 +82,30 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                       </span>
 
                       {currentEntity.root && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeletePhase(idx, e)}
-                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ml-auto"
-                          title={isEn ? `Delete phase: ${p.name}` : `Xóa giai đoạn: ${p.name}`}
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        <div className="flex items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenAddPhaseModal(idx, e, p);
+                            }}
+                            className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                            title={isEn ? `Edit phase: ${p.name}` : `Chỉnh sửa giai đoạn: ${p.name}`}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePhase(idx, e);
+                            }}
+                            className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                            title={isEn ? `Delete phase: ${p.name}` : `Xóa giai đoạn: ${p.name}`}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -157,9 +173,31 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     </span>
 
                     <WorkflowPhaseDates start={p.start_date || currentEntity.start_date} due={p.due_date || currentEntity.due_date} status={p.status} en={isEn} inherited={(!p.start_date && !!currentEntity.start_date) || (!p.due_date && !!currentEntity.due_date)}/>
-                    <WorkflowPeopleRows pics={p.members.filter(member => member.role === 'pic')} contributors={taskContributors(allTasks.filter(task => task.workflow_phase_id === p.id))} en={isEn}/>
-                    <div className="workflow-phase-tracking">{taskProgress(allTasks.filter(task => task.workflow_phase_id === p.id)).done}/{taskProgress(allTasks.filter(task => task.workflow_phase_id === p.id)).total} {isEn ? 'tasks completed' : 'việc xong'}</div>
-                    {currentEntity.root && <button type="button" onClick={event => handleOpenAddPhaseModal(idx,event,p)} className="text-xs text-primary hover:underline">{isEn ? 'Edit phase' : 'Chỉnh sửa phase'}</button>}
+                    <WorkflowPeopleRows pics={p.members.filter(member => member.role === 'pic')} contributors={taskContributors(allTasks.filter(task => task.workflow_phase_id === p.id))} en={isEn} isCampaign={isCampaign}/>
+
+                    {/* Visualized Task Progress Bar (Mức xanh chạy lên trực quan theo % hoàn thành) */}
+                    {(() => {
+                      const phaseTasks = allTasks.filter(task => task.workflow_phase_id === p.id);
+                      const pProg = taskProgress(phaseTasks);
+                      const doneCount = pProg.done;
+                      const totalCount = pProg.total;
+                      const pctDone = pProg.percent;
+                      return (
+                        <div
+                          className="relative w-full h-5.5 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-900/60 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs flex items-center justify-center my-1.5"
+                          title={`${isEn ? 'Task completion' : 'Tiến độ đầu việc'}: ${doneCount}/${totalCount} (${pctDone}%)`}
+                        >
+                          <div
+                            className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-teal-400 dark:from-emerald-500 dark:to-teal-400 transition-all duration-500 ease-out"
+                            style={{ width: `${pctDone}%` }}
+                          />
+                          <span className="relative z-10 text-[10px] font-extrabold text-gray-800 dark:text-white drop-shadow-2xs select-none">
+                            {doneCount === totalCount && totalCount > 0 ? '✓ ' : ''}
+                            {doneCount}/{totalCount} {isEn ? 'tasks completed' : 'việc xong'}
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     {/* Gate chance info */}
                     <div className="w-full mt-2 pt-1.5 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-[10px]">
