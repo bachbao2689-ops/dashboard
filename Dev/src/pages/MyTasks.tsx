@@ -1,8 +1,9 @@
 import { ProjectCampaignDetailPanel } from '../components/features/projects/ProjectCampaignDetailPanel';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
-import { Filter, User } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
+import { DepartmentFilterDropdown, PicFilterDropdown } from '../components/common/filters';
 
 import { ProfileHeader } from '../components/features/profile/ProfileHeader';
 import { ProfileCalendar } from '../components/features/profile/ProfileCalendar';
@@ -22,15 +23,24 @@ export const MyTasks: React.FC = () => {
   const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
   const isManager = isGlobalManager || isLeader;
   const role = isManager ? 'manager' : 'staff';
-    const [departments, setDepartments] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [filterDept, setFilterDept] = useState('');
   const [filterPic, setFilterPic] = useState('');
+  const [activeDropdown, setActiveDropdown] = useState<'dept' | 'pic' | null>(null);
+
+  useEffect(() => {
+    const handleOutside = () => setActiveDropdown(null);
+    if (activeDropdown) {
+      window.addEventListener('click', handleOutside);
+      return () => window.removeEventListener('click', handleOutside);
+    }
+  }, [activeDropdown]);
 
   useEffect(() => {
     if (!isManager) return;
     let deptQuery = supabase.from('departments').select('id, name');
-    let userQuery = supabase.from('users').select('id, name, department_id').eq('is_active', true);
+    let userQuery = supabase.from('users').select('id, name, department_id, avatar_url').eq('is_active', true);
     if (!isManager && profile?.department_id) {
       deptQuery = deptQuery.eq('id', profile.department_id);
       userQuery = userQuery.eq('department_id', profile.department_id);
@@ -60,7 +70,7 @@ export const MyTasks: React.FC = () => {
   return (
     <div className="relative flex min-h-full min-w-0">
       <div className={`min-w-0 flex-1 space-y-6 pb-6 transition-all duration-300 ${selected ? 'hidden md:block xl:mr-[516px] pr-2' : 'pr-0 lg:pr-4'}`}>
-                <ProfileHeader role={role} />
+        <ProfileHeader role={role} />
         {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
         <ProfileCalendar 
           {...calendar} 
@@ -72,21 +82,44 @@ export const MyTasks: React.FC = () => {
           extraFilters={
             isManager && (
               <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
-                <Filter size={15} className="text-gray-400" />
-                <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setFilterPic(''); }} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <option value="">{t('common.allDepartments')}</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
+                <DepartmentFilterDropdown
+                  value={filterDept}
+                  onChange={val => {
+                    setFilterDept(val);
+                    setFilterPic('');
+                  }}
+                  departments={departments}
+                  isOpen={activeDropdown === 'dept'}
+                  onToggle={() => setActiveDropdown(activeDropdown === 'dept' ? null : 'dept')}
+                  onClose={() => setActiveDropdown(null)}
+                />
+                <PicFilterDropdown
+                  value={filterPic || ''}
+                  onChange={val => setFilterPic(val)}
+                  people={visibleUsers}
+                  allKey=""
+                  allLabel={filterDept ? t('common.allStaff') : t('common.selectPic')}
+                  label={filterDept ? t('common.allStaff') : t('common.selectPic')}
+                  showMe={false}
+                  showUnassigned={false}
+                  isOpen={activeDropdown === 'pic'}
+                  onToggle={() => setActiveDropdown(activeDropdown === 'pic' ? null : 'pic')}
+                  onClose={() => setActiveDropdown(null)}
+                />
+                {(Boolean(filterDept) || Boolean(filterPic)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterDept('');
+                      setFilterPic('');
+                    }}
+                    className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                    title={t('projects.clearFilters')}
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
               </div>
-              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700">
-                <User size={15} className="text-gray-400" />
-                <select value={filterPic} onChange={e => setFilterPic(e.target.value)} className="bg-transparent text-sm font-semibold outline-none border-none text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <option value="">{filterDept ? t('common.allStaff') : t('common.selectPic')}</option>
-                  {visibleUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </div>
-            </div>
             )
           }
         />

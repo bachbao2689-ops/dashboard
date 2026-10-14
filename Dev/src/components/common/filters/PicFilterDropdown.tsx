@@ -19,6 +19,10 @@ interface PicFilterDropdownProps {
   currentUserName?: string;
   currentUserAvatar?: string | null;
   label?: string;
+  allKey?: string;
+  allLabel?: string;
+  showUnassigned?: boolean;
+  showMe?: boolean;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -33,6 +37,10 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
   currentUserName = 'Me',
   currentUserAvatar,
   label,
+  allKey = 'all',
+  allLabel,
+  showUnassigned = true,
+  showMe = true,
   isOpen,
   onToggle,
   onClose,
@@ -44,15 +52,15 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
 
   const selectedPerson = people.find(p => String(p.id) === value);
   const displayLabel =
-    value === 'all'
+    value === allKey
       ? defaultLabel
-      : value === 'me'
+      : showMe && value === 'me'
       ? `${t('projects.picAssignedToMe')}`
-      : value === 'unassigned'
+      : showUnassigned && value === 'unassigned'
       ? t('projects.picUnassigned')
       : selectedPerson?.name || defaultLabel;
 
-  const isFiltered = value !== 'all';
+  const isFiltered = value !== allKey;
 
   const filteredPeople = people.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -98,21 +106,21 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
             <button
               type="button"
               onClick={() => {
-                onChange('all');
+                onChange(allKey);
                 onClose();
               }}
               className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
-                value === 'all'
+                value === allKey
                   ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
                   : 'text-gray-700 dark:text-gray-300'
               }`}
             >
-              <span>{t('projects.allPics')}</span>
-              {value === 'all' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+              <span>{allLabel || t('projects.allPics')}</span>
+              {value === allKey && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
             </button>
 
             {/* Assigned to Me */}
-            {currentUserId && (
+            {showMe && currentUserId && (
               <button
                 type="button"
                 onClick={() => {
@@ -134,26 +142,28 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
             )}
 
             {/* Unassigned */}
-            <button
-              type="button"
-              onClick={() => {
-                onChange('unassigned');
-                onClose();
-              }}
-              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
-                value === 'unassigned'
-                  ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
-                  : 'text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full border border-dashed border-gray-400 flex items-center justify-center text-[9px] text-gray-400">
-                  ?
+            {showUnassigned && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('unassigned');
+                  onClose();
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                  value === 'unassigned'
+                    ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full border border-dashed border-gray-400 flex items-center justify-center text-[9px] text-gray-400">
+                    ?
+                  </div>
+                  <span>{t('projects.picUnassigned')}</span>
                 </div>
-                <span>{t('projects.picUnassigned')}</span>
-              </div>
-              {value === 'unassigned' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
-            </button>
+                {value === 'unassigned' && <CheckCircle2 size={12} className="text-primary dark:text-blue-400" />}
+              </button>
+            )}
 
             {filteredPeople.length > 0 && <div className="h-px bg-gray-100 dark:bg-slate-700 my-1" />}
 

@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useMembers } from '../hooks/useMembers';
 import type { Member } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
 import { useTranslation } from '../i18n/translations';
-import { Search, Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
+import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
+import { SearchInput, StatusFilterDropdown } from '../components/common/filters';
 
 export function MemberManagement() {
   const { t } = useTranslation();
@@ -12,13 +13,21 @@ export function MemberManagement() {
   const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
+  const [activeDropdown, setActiveDropdown] = useState<'role' | 'status' | null>(null);
   const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [savingMember, setSavingMember] = useState(false);
   const canManageAll = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+
+  useEffect(() => {
+    const handleOutside = () => setActiveDropdown(null);
+    if (activeDropdown) {
+      window.addEventListener('click', handleOutside);
+      return () => window.removeEventListener('click', handleOutside);
+    }
+  }, [activeDropdown]);
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
@@ -77,48 +86,72 @@ export function MemberManagement() {
           <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm">{t('members.subtitle')}</p>
         </div>
         
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className={`flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
-            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
-              <Search className="w-5 h-5" />
-            </button>
-            <input
-              type="text"
-              placeholder={t("members.search")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            />
-          </div>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('members.search')}
+          />
 
-          <select
+          <StatusFilterDropdown
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-10 px-3 text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
-          >
-            <option value="">{t('members.allRoles')}</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="leader">Leader</option>
-            <option value="member">{t('members.roleMember')}</option>
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 text-sm rounded-xl flex-shrink-0 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm appearance-none cursor-pointer"
-          >
-            <option value="all">{t('members.allStatus')}</option>
-            <option value="active">{t('members.active')}</option>
-            <option value="removed">{t('members.removed')}</option>
-          </select>
+            onChange={setRoleFilter}
+            allKey=""
+            label={t('members.allRoles')}
+            icon={<Shield size={13} className={roleFilter ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
+            options={[
+              { key: '', label: t('members.allRoles'), dot: 'bg-gray-400' },
+              { key: 'admin', label: 'Admin', dot: 'bg-purple-500' },
+              { key: 'manager', label: 'Manager', dot: 'bg-blue-500' },
+              { key: 'leader', label: 'Leader', dot: 'bg-orange-500' },
+              { key: 'member', label: t('members.roleMember'), dot: 'bg-emerald-500' }
+            ]}
+            isOpen={activeDropdown === 'role'}
+            onToggle={() => setActiveDropdown(activeDropdown === 'role' ? null : 'role')}
+            onClose={() => setActiveDropdown(null)}
+          />
 
-          {canManageAll && <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm"
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">{t('members.invite')}</span>
-          </button>}
+          <StatusFilterDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            allKey="all"
+            label={t('members.allStatus')}
+            options={[
+              { key: 'all', label: t('members.allStatus'), dot: 'bg-gray-400' },
+              { key: 'active', label: t('members.active'), dot: 'bg-emerald-500' },
+              { key: 'removed', label: t('members.removed'), dot: 'bg-rose-500' }
+            ]}
+            isOpen={activeDropdown === 'status'}
+            onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+            onClose={() => setActiveDropdown(null)}
+          />
+
+          {(Boolean(searchTerm) || Boolean(roleFilter) || statusFilter !== 'active') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setRoleFilter('');
+                setStatusFilter('active');
+              }}
+              className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              title={t('projects.clearFilters')}
+            >
+              <RotateCcw size={13} />
+              <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
+            </button>
+          )}
+
+          {canManageAll && (
+            <button
+              type="button"
+              onClick={() => setIsInviteModalOpen(true)}
+              className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl font-medium text-xs shadow-2xs cursor-pointer"
+            >
+              <Plus size={15} />
+              <span className="hidden sm:inline">{t('members.invite')}</span>
+            </button>
+          )}
         </div>
       </div>
 

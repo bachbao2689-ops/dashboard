@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutGrid, List, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutGrid, List, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, RotateCcw } from 'lucide-react';
 import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone, isCalendarOverdue, localDay, monthDays, occursOnCalendar } from '../../../lib/profileCalendar';
 import type { CalendarNotification } from '../../../hooks/useProfileCalendar';
 import { NotificationLog } from './NotificationLog';
 import { Avatar } from '../../common/Avatar';
+import { SearchInput, StatusFilterDropdown } from '../../common/filters';
 import { useTranslation } from '../../../i18n/translations';
 import './ProfileCalendar.css';
 
@@ -66,6 +67,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [query, setQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [status, setStatus] = useState('open');
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
   const rangeMenuRef = useRef<HTMLDivElement>(null);
@@ -76,14 +78,15 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       if (rangeOpen && !rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); 
       if (monthPickerOpen && !monthMenuRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
       if (showNotifications && !notifRef.current?.contains(event.target as Node)) setShowNotifications(false);
+      if (statusDropdownOpen) setStatusDropdownOpen(false);
     };
     const closeEscape = (event: KeyboardEvent) => { 
-      if (event.key === 'Escape') { setRangeOpen(false); setMonthPickerOpen(false); setShowNotifications(false); }
+      if (event.key === 'Escape') { setRangeOpen(false); setMonthPickerOpen(false); setShowNotifications(false); setStatusDropdownOpen(false); }
     };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);
     return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
-  }, [rangeOpen, monthPickerOpen, showNotifications]);
+  }, [rangeOpen, monthPickerOpen, showNotifications, statusDropdownOpen]);
 
   const preFiltered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');
@@ -247,9 +250,43 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           })}
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <label className="relative min-w-0 flex-1"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-gray-400" /><input aria-label={t('profile.searchWork')} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('profile.searchWork')} className="h-10 w-full min-w-0 rounded-xl border border-gray-200 bg-transparent pl-9 pr-3 text-sm outline-none focus:border-primary dark:border-slate-700" /></label>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder={t('profile.searchWork')}
+            className="w-full sm:w-auto"
+          />
           {extraFilters}
-          <select aria-label="Lọc trạng thái" value={status} onChange={event => setStatus(event.target.value)} className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"><option value="all">{t('profile.allStatus')}</option><option value="open">{t('profile.incomplete')}</option><option value="done">{t('profile.completed')}</option><option value="overdue">{t('profile.overdue')}</option><option value="hidden">{t('profile.archived')}</option><option value="deleted">{t('profile.deleted')}</option></select>
+          <StatusFilterDropdown
+            value={status}
+            onChange={setStatus}
+            allKey="all"
+            label={t('profile.allStatus')}
+            options={[
+              { key: 'all', label: t('profile.allStatus'), dot: 'bg-gray-400' },
+              { key: 'open', label: t('profile.incomplete'), dot: 'bg-blue-500' },
+              { key: 'done', label: t('profile.completed'), dot: 'bg-emerald-500' },
+              { key: 'overdue', label: t('profile.overdue'), dot: 'bg-rose-500' },
+              { key: 'hidden', label: t('profile.archived'), dot: 'bg-slate-500' },
+              { key: 'deleted', label: t('profile.deleted'), dot: 'bg-zinc-500' }
+            ]}
+            isOpen={statusDropdownOpen}
+            onToggle={() => setStatusDropdownOpen(!statusDropdownOpen)}
+            onClose={() => setStatusDropdownOpen(false)}
+          />
+          {(Boolean(query) || status !== 'open') && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setStatus('open');
+              }}
+              className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              title={t('projects.clearFilters')}
+            >
+              <RotateCcw size={13} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -259,19 +296,20 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
 
     <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <label className="group relative cursor-pointer block">
+        <button
+          type="button"
+          onClick={() => {
+            setCursor(new Date());
+            setRange('today');
+          }}
+          title={t('profile.rangeToday')}
+          className="group relative cursor-pointer block text-left"
+        >
           <div className="grid h-12 w-12 shrink-0 place-content-center rounded-xl border border-blue-100 bg-blue-50/60 text-center dark:border-slate-700 dark:bg-slate-900 transition-colors group-hover:bg-blue-100 dark:group-hover:bg-slate-800">
             <span className="text-[9px] font-semibold uppercase text-gray-500">{lang === 'vi' ? `Tháng ${cursor.getMonth() + 1}` : cursor.toLocaleString('en-US', { month: 'short' })}</span>
             <b className="text-lg leading-5 text-primary dark:text-blue-300">{cursor.getDate()}</b>
           </div>
-          <input type="date" onClick={(e) => { try { (e.target as any).showPicker?.(); } catch (err) {} }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" value={`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`} onChange={(e) => {
-            if (e.target.value) {
-              const [y, m, d] = e.target.value.split('-');
-              setCursor(new Date(Number(y), Number(m) - 1, Number(d)));
-              setRange('today');
-            }
-          }} />
-        </label>
+        </button>
         <div className="relative" ref={monthMenuRef}>
           <button type="button" onClick={() => { setPickerYear(cursor.getFullYear()); setMonthPickerOpen(!monthPickerOpen); setRangeOpen(false); }} className="group flex items-center gap-1.5 text-left">
             <p className="text-base font-bold text-gray-900 dark:!text-white transition-colors group-hover:text-primary">{periodTitle}</p>

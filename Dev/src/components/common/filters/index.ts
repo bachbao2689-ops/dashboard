@@ -4,3 +4,4 @@ export { PicFilterDropdown, type FilterPerson } from './PicFilterDropdown';
 export { PriorityFilterDropdown } from './PriorityFilterDropdown';
 export { GroupByDropdown } from './GroupByDropdown';
 export { SearchInput } from './SearchInput';
+export { DepartmentFilterDropdown } from './DepartmentFilterDropdown';

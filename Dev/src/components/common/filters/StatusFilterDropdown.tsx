@@ -13,6 +13,8 @@ interface StatusFilterDropdownProps {
   onChange: (value: string) => void;
   options: StatusFilterOption[];
   label?: string;
+  icon?: React.ReactNode;
+  allKey?: string;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -24,6 +26,8 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
   onChange,
   options,
   label,
+  icon,
+  allKey = 'all',
   isOpen,
   onToggle,
   onClose,
@@ -33,8 +37,8 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
   const defaultLabel = label || t('projects.filterStatus');
 
   const selectedOption = options.find(o => o.key === value);
-  const displayLabel = value !== 'all' && selectedOption ? selectedOption.label : defaultLabel;
-  const isFiltered = value !== 'all';
+  const isFiltered = allKey !== undefined ? value !== allKey : (value !== 'all' && value !== '');
+  const displayLabel = isFiltered && selectedOption ? selectedOption.label : defaultLabel;
 
   return (
     <div className="relative inline-block text-left">
@@ -47,7 +51,7 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
         }`}
       >
-        <CheckCircle2 size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+        {icon ? icon : <CheckCircle2 size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         <span className="max-w-[120px] truncate">{displayLabel}</span>
         <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
