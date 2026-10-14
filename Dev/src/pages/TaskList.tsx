@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { supabase } from '../services/supabase';
@@ -13,6 +12,8 @@ import { useTasks } from '../hooks/useTasks';
 import { TaskModal } from '../components/features/tasks/TaskModal';
 import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
+import { checkDateMatch } from '../components/features/projects/CampaignPanel';
+import type { FilterPerson } from '../components/common/filters';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
@@ -21,28 +22,25 @@ import { useTranslation } from '../i18n/translations';
 export const TaskList: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  // const navigate = useNavigate();
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
-
-  
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
   const roleStr = (profile?.role || '').toLowerCase();
   const levelStr = (profile?.employment_level || '').toLowerCase();
   const canCreateTask = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
-  const [filters, setFilters] = useState({ 
-    status: searchParams.get('status') || 'all', 
-    priority: searchParams.get('priority') || 'all', 
-    assignee: searchParams.get('assignee') || 'all', 
-    department: 'all', 
-    dateRange: 'all' 
-  });
-  const activeFiltersCount = Object.values(filters).filter(v => v !== 'all').length;
-  const [groupBy, setGroupBy] = useState('none');
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
+  // Modular filter states matching Projects.tsx
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(searchParams.get('assignee') || 'all');
+  const [calendarFilter, setCalendarFilter] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get('priority') || 'all');
+  const [groupBy, setGroupBy] = useState<string>('none');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
@@ -53,6 +51,53 @@ export const TaskList: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
+  // People list from Supabase for PIC filter
+  const [people, setPeople] = useState<FilterPerson[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('users')
+      .select('id, name, avatar_url, departments(name)')
+      .eq('is_active', true)
+      .order('name')
+      .then(res => {
+        if (res.data) {
+          setPeople(res.data as any);
+        }
+      });
+  }, []);
+
+  // Merge people with any task assignees not yet in people
+  const allPeople = useMemo<FilterPerson[]>(() => {
+    const list = [...people];
+    tasks.forEach(t => {
+      if (t.assignee_id && t.assignee?.name) {
+        if (!list.some(p => String(p.id) === String(t.assignee_id))) {
+          list.push({
+            id: t.assignee_id,
+            name: t.assignee.name,
+            avatar_url: t.assignee.avatar_url
+          });
+        }
+      }
+    });
+    return list;
+  }, [people, tasks]);
+
+  // Click outside to close dropdowns
+  const toolbarContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolbarContainerRef.current && !toolbarContainerRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    if (activeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeDropdown]);
+
   const handleNewTask = () => {
     setSelectedTask(null);
     setIsModalOpen(true);
@@ -62,10 +107,15 @@ export const TaskList: React.FC = () => {
     if (searchParams.has('search')) {
       setSearchTerm(searchParams.get('search') || '');
     }
-  }, [searchParams]);
-
-  useEffect(() => {
-    setFilters(current => ({ ...current, status: searchParams.get('status') || 'all', priority: searchParams.get('priority') || 'all', assignee: searchParams.get('assignee') || 'all' }));
+    if (searchParams.has('status')) {
+      setStatusFilter(searchParams.get('status') || 'all');
+    }
+    if (searchParams.has('priority')) {
+      setPriorityFilter(searchParams.get('priority') || 'all');
+    }
+    if (searchParams.has('assignee')) {
+      setAssigneeFilter(searchParams.get('assignee') || 'all');
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -76,7 +126,6 @@ export const TaskList: React.FC = () => {
     }
   }, [searchParams, tasks]);
 
-
   const toggleSelectTask = (id: string) => {
     if (selectedTasks.includes(id)) {
       setSelectedTasks(selectedTasks.filter(taskId => taskId !== id));
@@ -85,17 +134,25 @@ export const TaskList: React.FC = () => {
     }
   };
 
-  const exportCSV = () => {
-    const headers = ['Task Ref', 'Title', 'Project', 'Assignee', 'Status', 'Priority', 'Due Date'];
-    const csvContent = filteredTasks.map(t => {
-      return [`"${t.task_ref || ''}"`, `"${t.title || ''}"`, `"${t.project?.name || ''}"`, `"${t.assignee?.name || ''}"`, `"${t.status || ''}"`, `"${t.priority || ''}"`, `"${t.due_date ? new Date(t.due_date).toLocaleDateString() : ''}"`].join(',');
-    });    const csvString = [headers.join(','), ...csvContent].join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'tasks_export.csv';
-    link.click();
-    toast.success('Xuất file CSV thành công');
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() ||
+    statusFilter !== 'all' ||
+    assigneeFilter !== 'all' ||
+    calendarFilter !== 'all' ||
+    customStartDate ||
+    customEndDate ||
+    priorityFilter !== 'all'
+  );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setAssigneeFilter('all');
+    setCalendarFilter('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setPriorityFilter('all');
+    setActiveDropdown(null);
   };
 
   const shortcutScope = searchParams.get('scope');
@@ -105,12 +162,12 @@ export const TaskList: React.FC = () => {
   const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
-  
+
   const handleBulkDelete = async () => {
     setDeletingIds(prev => [...prev, ...selectedTasks]);
     const cachedSelected = [...selectedTasks];
     setIsBulkDeleteModalOpen(false);
-    
+
     setTimeout(async () => {
       let deletedCount = 0;
       for (const taskId of cachedSelected) {
@@ -151,11 +208,11 @@ export const TaskList: React.FC = () => {
     let entityType: 'task' | 'project_subtask' | 'campaign_subtask';
     let rawId = taskId;
     let error: any;
-    
+
     setDeletingIds(prev => [...prev, taskId]);
     const cachedTask = taskToDelete;
     setTaskToDelete(null);
-    
+
     setTimeout(async () => {
       if (taskId.startsWith('ps-')) {
         entityType = 'project_subtask'; rawId = taskId.replace('ps-', '');
@@ -181,98 +238,213 @@ export const TaskList: React.FC = () => {
 
   const filteredTasks = tasks.filter(t => {
     // 1. Status Filter
-    let statusMatch = true;
-    if (filters.status !== 'all') {
+    if (statusFilter !== 'all') {
       const ms = mapStatus(t.status || '');
       const mapped = ms === 'in-progress' ? 'in_progress' : ms;
-      statusMatch = (mapped === filters.status) || (t.status?.toLowerCase() === filters.status.toLowerCase());
-    }
-    
-    // 2. Priority
-    let priorityMatch = true;
-    if (filters.priority !== 'all') {
-      priorityMatch = mapPriority(t.priority).toLowerCase() === filters.priority.toLowerCase();
-    }
-    
-    // 3. Assignee
-    let assigneeMatch = true;
-    if (filters.assignee !== 'all') {
-      if (filters.assignee === 'me') {
-        assigneeMatch = String(t.assignee_id) === String(profileId);
-      } else if (filters.assignee === 'unassigned') {
-        assigneeMatch = !t.assignee_id && !t.assignee;
-      } else {
-        assigneeMatch = t.assignee?.id === filters.assignee || String(t.assignee_id) === filters.assignee;
+      if (mapped !== statusFilter && t.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
       }
     }
-    
+
+    // 2. Priority Filter
+    if (priorityFilter !== 'all') {
+      const p = mapPriority(t.priority).toLowerCase();
+      if (p !== priorityFilter.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // 3. Assignee Filter
+    if (assigneeFilter !== 'all') {
+      if (assigneeFilter === 'me') {
+        if (String(t.assignee_id) !== String(profileId)) return false;
+      } else if (assigneeFilter === 'unassigned') {
+        if (t.assignee_id || t.assignee) return false;
+      } else {
+        const match = String(t.assignee_id) === String(assigneeFilter) || String(t.assignee?.id) === String(assigneeFilter);
+        if (!match) return false;
+      }
+    }
+
     // 4. Department
-    let deptMatch = true;
-    if (departmentParam) {
-      deptMatch = t.department?.name === departmentParam;
+    if (departmentParam && t.department?.name !== departmentParam) {
+      return false;
     }
-    
-    // 5. Date Range
-    let dateMatch = true;
-    if (startParam && t.due_date) {
-      dateMatch = dateMatch && new Date(t.due_date) >= new Date(`${startParam}T00:00:00`);
-    }
-    if (endParam && t.due_date) {
-      dateMatch = dateMatch && new Date(t.due_date) <= new Date(`${endParam}T23:59:59`);
+
+    // 5. Calendar Filter (Custom inline calendar & presets)
+    const isDone = ['done', 'completed', 'complete'].includes((t.status || '').toLowerCase());
+    if (calendarFilter !== 'all') {
+      if (!checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, isDone)) {
+        return false;
+      }
+    } else if (customStartDate || customEndDate) {
+      if (!checkDateMatch(t.start_date, t.due_date, 'custom', customStartDate, customEndDate, isDone)) {
+        return false;
+      }
+    } else if (startParam || endParam) {
+      if (startParam && t.due_date && new Date(t.due_date) < new Date(`${startParam}T00:00:00`)) return false;
+      if (endParam && t.due_date && new Date(t.due_date) > new Date(`${endParam}T23:59:59`)) return false;
     }
 
     // 6. Shortcut scope
-    let shortcutMatch = true;
     if (shortcutScope) {
       if (String(t.assignee_id) !== String(profileId)) {
-        shortcutMatch = false;
-      } else {
-        if (shortcutScope === 'due-soon') {
-          shortcutMatch = isOpenTask(t) && !!t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays;
-        } else if (shortcutScope === 'overdue') {
-          shortcutMatch = isOpenTask(t) && !!t.due_date && new Date(t.due_date) < today;
+        return false;
+      }
+      if (shortcutScope === 'due-soon') {
+        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays)) {
+          return false;
+        }
+      } else if (shortcutScope === 'overdue') {
+        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) < today)) {
+          return false;
         }
       }
     }
 
     // 7. Search
-    let searchMatch = true;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      searchMatch = (t.title?.toLowerCase().includes(term) || t.task_ref?.toLowerCase().includes(term));
+      const match = (t.title?.toLowerCase().includes(term) || t.task_ref?.toLowerCase().includes(term));
+      if (!match) return false;
     }
 
-    return statusMatch && priorityMatch && assigneeMatch && deptMatch && dateMatch && shortcutMatch && searchMatch;
+    return true;
   });
+
   const groupedTasks = useMemo(() => {
     if (groupBy === 'none') return { 'All Tasks': filteredTasks };
     const groups: Record<string, typeof filteredTasks> = {};
     filteredTasks.forEach(t => {
       let key = 'Other';
-      if (groupBy === 'project') key = t.project?.name || 'No Project';
+      if (groupBy === 'project') key = t.project?.name || t.campaign?.name || 'No Project';
       if (groupBy === 'assignee') key = t.assignee?.name || 'Unassigned';
       if (groupBy === 'status') key = mapStatus(t.status).toUpperCase();
       if (!groups[key]) groups[key] = [];
       groups[key].push(t);
-    });    return groups;
+    });
+    return groups;
   }, [filteredTasks, groupBy]);
 
   return (
     <TaskListLayout panelKey={isModalOpen ? 'create' : selectedTask?.id || null}>
       <div className="task-list-main" data-detail-open={!!selectedTask}>
-      
-      <TaskListToolbar searchTerm={searchTerm} onSearchChange={setSearchTerm} groupBy={groupBy} onGroupChange={setGroupBy} showFilters={showFilters} setShowFilters={setShowFilters} filters={filters} setFilters={setFilters} activeFiltersCount={activeFiltersCount} onExport={exportCSV} onCreate={handleNewTask} canCreateTask={canCreateTask} />
+        <div ref={toolbarContainerRef} className="w-full">
+          <TaskListToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            assigneeFilter={assigneeFilter}
+            onAssigneeChange={setAssigneeFilter}
+            calendarFilter={calendarFilter}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onSelectCalendarPreset={preset => {
+              setCalendarFilter(preset);
+              setCustomStartDate('');
+              setCustomEndDate('');
+            }}
+            onApplyCustomDateRange={(start, end) => {
+              setCalendarFilter('custom');
+              setCustomStartDate(start);
+              setCustomEndDate(end);
+            }}
+            onClearDateRange={() => {
+              setCalendarFilter('all');
+              setCustomStartDate('');
+              setCustomEndDate('');
+            }}
+            priorityFilter={priorityFilter}
+            onPriorityChange={setPriorityFilter}
+            groupBy={groupBy}
+            onGroupChange={setGroupBy}
+            hasActiveFilters={hasActiveFilters}
+            onResetFilters={handleResetFilters}
+            people={allPeople}
+            currentUserId={profile?.id}
+            currentUserName={profile?.name || 'Me'}
+            currentUserAvatar={profile?.avatar_url}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+            onCreate={handleNewTask}
+            canCreateTask={canCreateTask}
+          />
+        </div>
 
-      {shortcutScope && <div className="task-list-scope">{t('tasks.filteringScope', { scope: shortcutScope === 'mine' ? t('tasks.filterMine') : shortcutScope === 'due-soon' ? t('tasks.filterDueSoon') : t('tasks.filterOverdue') })}</div>}
-      
-      <TaskListCollection loading={loading} filteredTasks={filteredTasks} groupedTasks={groupedTasks} groupBy={groupBy} collapsedGroups={collapsedGroups} toggleGroup={toggleGroup} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} toggleSelectTask={toggleSelectTask} onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }} deletingIds={deletingIds} />
+        {shortcutScope && (
+          <div className="task-list-scope mb-4">
+            {t('tasks.filteringScope', {
+              scope: shortcutScope === 'mine'
+                ? t('tasks.filterMine')
+                : shortcutScope === 'due-soon'
+                ? t('tasks.filterDueSoon')
+                : t('tasks.filterOverdue')
+            })}
+          </div>
+        )}
 
-      <TaskListBulkActions selectedTasks={selectedTasks} onDelete={() => setIsBulkDeleteModalOpen(true)} onClear={() => setSelectedTasks([])} />
+        <TaskListCollection
+          loading={loading}
+          filteredTasks={filteredTasks}
+          groupedTasks={groupedTasks}
+          groupBy={groupBy}
+          collapsedGroups={collapsedGroups}
+          toggleGroup={toggleGroup}
+          selectedTasks={selectedTasks}
+          setSelectedTasks={setSelectedTasks}
+          toggleSelectTask={toggleSelectTask}
+          onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }}
+          deletingIds={deletingIds}
+        />
+
+        <TaskListBulkActions
+          selectedTasks={selectedTasks}
+          onDelete={() => setIsBulkDeleteModalOpen(true)}
+          onClear={() => setSelectedTasks([])}
+        />
       </div>
-      {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-')) ? <SubtaskDetailPanel subtask={{ ...selectedTask, id: selectedTask.id.slice(3) }} entityType={selectedTask.id.startsWith('ps-') ? 'project_subtask' : 'campaign_subtask'} parentName={selectedTask.project?.name || selectedTask.campaign?.name} profile={profile} people={tasks.filter(t => t.assignee_id && t.assignee?.name).map(t => ({ id: Number(t.assignee_id), name: t.assignee!.name })).filter((p, i, list) => list.findIndex(v => v.id === p.id) === i)} onClose={() => setSelectedTask(null)} onUpdated={updated => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated, id: current.id })); void refetch(); }} /> : <TaskDetailPanel task={selectedTask} isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} onTaskUpdated={(updated) => { if (updated) setSelectedTask((current: any) => ({ ...current, ...updated })); refetch(); }} />}
+
+      {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-')) ? (
+        <SubtaskDetailPanel
+          subtask={{ ...selectedTask, id: selectedTask.id.slice(3) }}
+          entityType={selectedTask.id.startsWith('ps-') ? 'project_subtask' : 'campaign_subtask'}
+          parentName={selectedTask.project?.name || selectedTask.campaign?.name}
+          profile={profile}
+          people={allPeople as any}
+          onClose={() => setSelectedTask(null)}
+          onUpdated={updated => {
+            if (updated) setSelectedTask((current: any) => ({ ...current, ...updated, id: current.id }));
+            void refetch();
+          }}
+        />
+      ) : (
+        <TaskDetailPanel
+          task={selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onTaskUpdated={(updated) => {
+            if (updated) setSelectedTask((current: any) => ({ ...current, ...updated }));
+            refetch();
+          }}
+        />
+      )}
+
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refetch} />
-      <ConfirmDeleteModal isOpen={isBulkDeleteModalOpen} title={t('tasks.deleteSelectedTitle')} message={t('tasks.deleteSelectedConfirm')} onConfirm={handleBulkDelete} onCancel={() => setIsBulkDeleteModalOpen(false)} />
-      <ConfirmDeleteModal isOpen={!!taskToDelete} title={t('tasks.deleteTaskTitle')} message={t('tasks.deleteTaskConfirm')} onConfirm={handleSingleDelete} onCancel={() => setTaskToDelete(null)} />
+      <ConfirmDeleteModal
+        isOpen={isBulkDeleteModalOpen}
+        title={t('tasks.deleteSelectedTitle')}
+        message={t('tasks.deleteSelectedConfirm')}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setIsBulkDeleteModalOpen(false)}
+      />
+      <ConfirmDeleteModal
+        isOpen={!!taskToDelete}
+        title={t('tasks.deleteTaskTitle')}
+        message={t('tasks.deleteTaskConfirm')}
+        onConfirm={handleSingleDelete}
+        onCancel={() => setTaskToDelete(null)}
+      />
     </TaskListLayout>
   );
 };

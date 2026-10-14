@@ -1,81 +1,178 @@
-import { useState, type ComponentProps } from 'react';
-import { Filter, Plus, Search, Download } from 'lucide-react';
-import { FilterPanel } from '../../../common/FilterPanel';
+import React from 'react';
+import { Plus, X } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/translations';
+import {
+  SearchInput,
+  StatusFilterDropdown,
+  PicFilterDropdown,
+  DateFilterDropdown,
+  PriorityFilterDropdown,
+  GroupByDropdown,
+  type FilterPerson
+} from '../../../common/filters';
 
-type Props = Pick<ComponentProps<typeof FilterPanel>, 'filters' | 'setFilters'> & {
- searchTerm: string; onSearchChange: (value: string) => void; groupBy: string; onGroupChange: (value: string) => void;
- showFilters: boolean; setShowFilters: (value: boolean) => void; activeFiltersCount: number;
- onExport: () => void; onCreate: () => void; canCreateTask: boolean;
-};
-export function TaskListToolbar({searchTerm, onSearchChange: setSearchTerm, groupBy, onGroupChange: setGroupBy, showFilters, setShowFilters, filters, setFilters, activeFiltersCount, onExport: exportCSV, onCreate: handleNewTask, canCreateTask}: Props) {
- const { t } = useTranslation();
- const [isSearchExpanded, setIsSearchExpanded] = useState(false);
- return (<div className="task-list-toolbar">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('tasks.title')}</h1>
-        <div className="task-list-toolbar-actions">
-          {/* Expanding Search */}
-          <div className="flex items-center relative h-10">
-            <div className="task-list-search-field" data-expanded={isSearchExpanded} inert={!isSearchExpanded}>
-              <div className="relative w-full">
-                <Search className="task-list-search-icon" />
-                <input
-                  type="text"
-                  placeholder={t('tasks.search')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="task-list-search-input"
-                />
-              </div>
-            </div>
-            <button 
-              type="button"
-              aria-label={t('tasks.search')}
-              aria-expanded={isSearchExpanded}
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)} 
-              className="task-list-search-toggle"
-              data-active={isSearchExpanded}
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Group By Filter */}
-          <div className="flex items-center">
-            <select 
-              aria-label="Group tasks"
-              value={groupBy} 
-              onChange={(e) => setGroupBy(e.target.value)}
-              className="task-list-group-select"
-            >
-              <option value="none">{t('common.none')}</option>
-              <option value="project">{t('common.project')}</option>
-              <option value="assignee">{t('common.assignee')}</option>
-              <option value="status">{t('common.status')}</option>
-            </select>
-          </div>
-
-          {/* Filters Panel Toggle */}
-          <div className="relative flex items-center">
-            <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="task-list-filter-toggle hover-magnetic-btn magnetic-blue" data-active={showFilters || activeFiltersCount > 0}>
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('btn.filters')}</span>
-              {activeFiltersCount > 0 && <span className="task-list-filter-count">{activeFiltersCount}</span>}
-            </button>
-            <FilterPanel isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} setFilters={setFilters} onApply={() => {}} />
-          </div>
-
-          <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5 sm:mx-1 self-center"></div>
-
-          <button onClick={exportCSV} className="task-list-export-button hover-magnetic-btn magnetic-blue">
-            <Download className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('common.export')}</span>
-          </button>
-          
-          {canCreateTask && <button aria-label={t('tasks.createBtn')} onClick={handleNewTask} className="task-list-create-button btn-add-new">
-            <Plus className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('tasks.createBtn')}</span>
-          </button>}
-        </div>
-      </div>);
+interface TaskListToolbarProps {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  statusFilter: string;
+  onStatusChange: (value: string) => void;
+  assigneeFilter: string;
+  onAssigneeChange: (value: string) => void;
+  calendarFilter: string;
+  customStartDate: string;
+  customEndDate: string;
+  onSelectCalendarPreset: (preset: string) => void;
+  onApplyCustomDateRange: (start: string, end: string) => void;
+  onClearDateRange: () => void;
+  priorityFilter: string;
+  onPriorityChange: (value: string) => void;
+  groupBy: string;
+  onGroupChange: (value: string) => void;
+  hasActiveFilters: boolean;
+  onResetFilters: () => void;
+  people: FilterPerson[];
+  currentUserId?: string | number;
+  currentUserName?: string;
+  currentUserAvatar?: string | null;
+  activeDropdown: string | null;
+  setActiveDropdown: (dropdown: string | null) => void;
+  onCreate: () => void;
+  canCreateTask: boolean;
 }
+
+export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
+  searchTerm,
+  onSearchChange,
+  statusFilter,
+  onStatusChange,
+  assigneeFilter,
+  onAssigneeChange,
+  calendarFilter,
+  customStartDate,
+  customEndDate,
+  onSelectCalendarPreset,
+  onApplyCustomDateRange,
+  onClearDateRange,
+  priorityFilter,
+  onPriorityChange,
+  groupBy,
+  onGroupChange,
+  hasActiveFilters,
+  onResetFilters,
+  people,
+  currentUserId,
+  currentUserName,
+  currentUserAvatar,
+  activeDropdown,
+  setActiveDropdown,
+  onCreate,
+  canCreateTask
+}) => {
+  const { t, lang } = useTranslation();
+  const isEn = lang === 'en';
+
+  const statusOptions = [
+    { key: 'all', label: isEn ? 'All Statuses' : 'Tất cả trạng thái', dot: 'bg-gray-400' },
+    { key: 'todo', label: isEn ? 'To Do' : 'Cần làm', dot: 'bg-slate-400' },
+    { key: 'in_progress', label: isEn ? 'In Progress' : 'Đang làm', dot: 'bg-sky-400' },
+    { key: 'review', label: isEn ? 'In Review' : 'Đang duyệt', dot: 'bg-amber-400' },
+    { key: 'done', label: isEn ? 'Done' : 'Hoàn thành', dot: 'bg-emerald-500' },
+    { key: 'overdue', label: isEn ? 'Overdue' : 'Quá hạn', dot: 'bg-rose-500' }
+  ];
+
+  return (
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 w-full">
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
+        {t('tasks.title')}
+      </h1>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {/* 1. Search */}
+        <SearchInput
+          value={searchTerm}
+          onChange={onSearchChange}
+          placeholder={t('tasks.search')}
+        />
+
+        {/* 2. Status Filter */}
+        <StatusFilterDropdown
+          value={statusFilter}
+          onChange={onStatusChange}
+          options={statusOptions}
+          isOpen={activeDropdown === 'status'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+        {/* 3. PIC / Assignee Filter */}
+        <PicFilterDropdown
+          value={assigneeFilter}
+          onChange={onAssigneeChange}
+          people={people}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          currentUserAvatar={currentUserAvatar}
+          isOpen={activeDropdown === 'pic'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'pic' ? null : 'pic')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+        {/* 4. Calendar Filter (Custom inline calendar) */}
+        <DateFilterDropdown
+          calendarFilter={calendarFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onSelectPreset={onSelectCalendarPreset}
+          onApplyCustomRange={onApplyCustomDateRange}
+          onClear={onClearDateRange}
+          isOpen={activeDropdown === 'calendar'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'calendar' ? null : 'calendar')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+        {/* 5. Priority Filter */}
+        <PriorityFilterDropdown
+          value={priorityFilter}
+          onChange={onPriorityChange}
+          isOpen={activeDropdown === 'priority'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'priority' ? null : 'priority')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+        {/* 6. Group By */}
+        <GroupByDropdown
+          value={groupBy}
+          onChange={onGroupChange}
+          isOpen={activeDropdown === 'group'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'group' ? null : 'group')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+        {/* 7. Clear Filters Button */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            title={t('projects.clearFilters')}
+            className="h-9 px-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+          >
+            <X size={12} />
+            <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
+          </button>
+        )}
+
+        {/* 8. Add New Task Button */}
+        {canCreateTask && (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t('tasks.createBtn')}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
