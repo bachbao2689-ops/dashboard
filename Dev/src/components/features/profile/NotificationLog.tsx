@@ -1,3 +1,4 @@
+import {entityLink} from '../../../lib/taskTracking';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronRight, MessageSquare, CheckCircle2, Clock3, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -62,10 +63,12 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
       setLoading(false);
     };
     void load();
+    const refreshVisible=()=>{if(document.visibilityState==='visible')void load();};
+    const fallback=setInterval(refreshVisible,30000);window.addEventListener('focus',refreshVisible);window.addEventListener('workspace:changed',refreshVisible);document.addEventListener('visibilitychange',refreshVisible);
     const channel = profile?.id ? supabase.channel(`profile-notification-log-${profile.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => { void load(); })
       .subscribe() : null;
-    return () => { active = false; if (channel) void supabase.removeChannel(channel); };
+    return () => { active=false;clearInterval(fallback);window.removeEventListener('focus',refreshVisible);window.removeEventListener('workspace:changed',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible); if (channel) void supabase.removeChannel(channel); };
   }, [includeTeam, profile?.department_id, profile?.id, profile?.role]);
 
   const subtitle = useMemo(() => includeTeam ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [includeTeam]);
@@ -94,14 +97,12 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
         {loading ? <p className="p-5 text-center text-sm text-gray-500">Đang tải log thông báo…</p> : entries.length === 0 ? <p className="p-5 text-center text-sm text-gray-500">Chưa có thông báo liên quan.</p> : entries.map(entry => {
           const display = labelFor(entry.type);
           const Icon = display.icon;
-          const canOpen = Boolean(entry.entity_type && entry.entity_id);
+          const canOpen = Boolean(entityLink(entry.entity_type,entry.entity_id));
           const handleClick = () => {
             if (!canOpen) return;
             const handled = onOpenEntity?.(entry.entity_type!, entry.entity_id!);
             if (handled) return;
-            if (entry.entity_type === 'task') navigate(`/tasks?task=${entry.entity_id}`);
-            else if (entry.entity_type === 'project') navigate(`/projects?project=${entry.entity_id}`);
-            else if (entry.entity_type === 'campaign') navigate(`/projects?campaign=${entry.entity_id}`);
+            const link=entityLink(entry.entity_type,entry.entity_id);if(link)navigate(link);
           };
           return <button key={entry.id} type="button" onClick={handleClick} className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${canOpen ? 'hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer' : 'cursor-default'}`}>
             <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${display.color} dark:bg-slate-700`}><Icon size={15} /></span>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Plus, User } from 'lucide-react';
 import { useBorrowRequests } from '../hooks/useBorrowRequests';
@@ -13,11 +13,12 @@ export const BorrowRequests: React.FC = () => {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams,setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const profile = useAuthStore(state => state.profile);
   const canManage = !!profile && ['admin', 'manager'].includes(profile.role);
   const { requests, loading, error, busyId, updateStatus } = useBorrowRequests();
+  useEffect(()=>{const id=searchParams.get("request");if(id&&requests.some(r=>r.id===id))setSelectedId(id);},[searchParams,requests]);
   const mine = !canManage || searchParams.get('scope') === 'mine';
   const selectedRequest = requests.find(request => request.id === selectedId) || null;
 
@@ -44,7 +45,7 @@ export const BorrowRequests: React.FC = () => {
   return (
     <div className="flex flex-col z-10 relative">
       <BorrowRequestDetailModal
-        isOpen={!!selectedRequest} request={selectedRequest} onClose={() => setSelectedId(null)}
+        isOpen={!!selectedRequest} request={selectedRequest} onClose={()=>{setSelectedId(null);const query=new URLSearchParams(searchParams);query.delete("request");setSearchParams(query,{replace:true});}}
         canManage={canManage} busy={busyId === selectedId}
         onApprove={() => selectedId && void act(selectedId, 'approve')}
         onReject={() => selectedId && void act(selectedId, 'reject')}

@@ -1,3 +1,4 @@
+import {taskDone,taskOpen} from '../lib/taskTracking';
 import toast from "react-hot-toast";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -5,7 +6,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
-import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar, Bot, Download, CheckCircle, Clock, AlertCircle, XCircle, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
 import { useUiStore } from '../store/uiStore';
@@ -32,12 +33,6 @@ const Ring: React.FC<{ pct: number; color: string; size?: number; track: string 
     </svg>
   );
 };
-
-const Trend: React.FC<{ v: number }> = ({ v }) => (
-  <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${v >= 0 ? 'text-emerald-600 bg-emerald-600/10' : 'text-red-500 bg-red-500/10'}`}>
-    {v >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}{v >= 0 ? '+' : ''}{v}%
-  </span>
-);
 
 export const Overview: React.FC = () => {
   const { t } = useTranslation();
@@ -92,11 +87,11 @@ export const Overview: React.FC = () => {
     const now = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(now); d.setDate(now.getDate() + i);
-      const real = data.tasks.filter(tk => tk.status !== 'done' && tk.due_date && new Date(tk.due_date).toDateString() === d.toDateString()).length;
+      const real = data.tasks.filter(tk => taskOpen(tk) && tk.due_date && new Date(tk.due_date).toDateString() === d.toDateString()).length;
       days.push({ name: d.toLocaleDateString('en-US', { weekday: 'short' }), count: real, today: i === 0 });
     }
     return days;
-  }, [data.upcomingTasks]);
+  }, [data.tasks]);
 
   const taskStatusData = useMemo(() => {
     const now = new Date();
@@ -104,11 +99,11 @@ export const Overview: React.FC = () => {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((3 - index) * 7 + 6));
       const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((3 - index) * 7));
       const inWeek = (task: any) => new Date(task.created_at || task.start_date || 0) >= start && new Date(task.created_at || task.start_date || 0) <= end;
-      return { name: `W${index + 1}`, created: data.tasks.filter(inWeek).length, done: data.tasks.filter(task => task.status === 'done' && inWeek(task)).length };
+      return { name: `W${index + 1}`, created: data.tasks.filter(inWeek).length, done: data.tasks.filter(task => taskDone(task) && task.completed_at && new Date(task.completed_at)>=start && new Date(task.completed_at)<=end).length };
     });
   }, [data.tasks]);
   const created = data.tasks.length;
-  const done = data.tasks.filter(task => task.status === 'done').length;
+  const done = data.tasks.filter(task => taskDone(task)).length;
   const donePct = created ? Math.round((done / created) * 100) : 0;
   const pendingApprovals = data.recentRequests.filter(r => r.approval_status === 'pending').length;
 
@@ -128,7 +123,7 @@ export const Overview: React.FC = () => {
       {error && (
         <div className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-500/30 flex items-center gap-2">
           <AlertCircle size={16} />
-          <span className="text-xs font-semibold">Running in Offline/Dev Mode: {error}</span>
+          <span className="text-xs font-semibold">Chưa đồng bộ dữ liệu: {error}</span>
         </div>
       )}
 
@@ -163,7 +158,7 @@ export const Overview: React.FC = () => {
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.myTasks')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.myTasksCount}</p>
-            <Trend v={5} />
+
           </div>
           <div className="relative grid place-items-center">
             <Ring pct={donePct} color="#093570" track={ringTrack} />
@@ -175,7 +170,7 @@ export const Overview: React.FC = () => {
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.dueSoon')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.dueSoonCount}</p>
-            <Trend v={-2} />
+
           </div>
           <div className="flex items-end gap-1 h-[60px]">
             {weekData.slice(0, 5).map((d, i) => (
@@ -188,10 +183,10 @@ export const Overview: React.FC = () => {
           <div className="space-y-1.5">
             <p className={LABEL}>{t('overview.borrowed')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.borrowedCount}</p>
-            <Trend v={1} />
+
           </div>
           <div className="relative grid place-items-center">
-            <Ring pct={60} color="#3789f4" track={ringTrack} />
+            <Ring pct={data.recentRequests.length ? data.borrowedCount/data.recentRequests.length*100 : 0} color="#3789f4" track={ringTrack} />
             <span className={`absolute text-xs font-bold ${INK}`}>60%</span>
           </div>
         </button>

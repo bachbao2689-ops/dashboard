@@ -1,3 +1,5 @@
+import {useNavigate} from 'react-router-dom';
+import {projectsLink} from '../../lib/workflowHub';
 // src/components/departments/OverallView.tsx
 import React from 'react';
 import {
@@ -39,6 +41,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
   isDark = false,
 }) => {
   const { t } = useTranslation();
+  const navigate=useNavigate();
   const tickColor = isDark ? '#94a3b8' : '#52514e';
   const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(137,135,129,0.18)';
 
@@ -91,7 +94,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-              {t('departments.weeklyTrendTitle')}
+              Công việc hoàn thành theo ngày/kỳ
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
@@ -118,8 +121,8 @@ export const OverallView: React.FC<OverallViewProps> = ({
                   tick={{ fill: tickColor, fontSize: 11 }}
                 />
                 <YAxis
-                  domain={[30, 80]}
-                  unit="%"
+                  domain={[0, 'auto']}
+                  allowDecimals={false}
                   stroke={tickColor}
                   tickLine={false}
                   axisLine={{ stroke: gridColor }}
@@ -135,7 +138,7 @@ export const OverallView: React.FC<OverallViewProps> = ({
                         </p>
                         <div className="flex items-center justify-between gap-4 text-blue-600 dark:text-blue-400">
                           <span>{t('departments.actual')}:</span>
-                          <b>{payload[0].value}%</b>
+                          <b>{payload[0].value} task</b>
                         </div>
                         {payload[1] && (
                           <div className="flex items-center justify-between gap-4 text-gray-500 dark:text-gray-400">
@@ -189,8 +192,8 @@ export const OverallView: React.FC<OverallViewProps> = ({
             const badge = getStatusBadge(proj.status);
             return (
               <div
-                key={proj.id}
-                onClick={() => onSelectDepartment(proj.departmentId)}
+                key={`${proj.kind}:${proj.id}`}
+                onClick={() => navigate(projectsLink(proj.kind||'project',proj.id))}
                 className="grid grid-cols-[140px_1fr_64px_96px] gap-3 items-center py-1.5 text-xs cursor-pointer hover:bg-gray-50/60 dark:hover:bg-slate-700/30 rounded-lg px-1 transition-colors"
                 title={t('departments.clickToViewDept', { name: proj.department })}
               >
@@ -205,11 +208,11 @@ export const OverallView: React.FC<OverallViewProps> = ({
                 <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${badge.bar}`}
-                    style={{ width: `${proj.progress}%` }}
+                    style={{ width: `${proj.progress==null?'—':`${proj.progress??0}%`}` }}
                   />
                 </div>
                 <span className="text-right font-medium text-gray-700 dark:text-gray-300">
-                  {proj.progress}%
+                  {proj.progress==null?'—':`${proj.progress??0}%`}
                 </span>
                 <div className="text-right">
                   <span

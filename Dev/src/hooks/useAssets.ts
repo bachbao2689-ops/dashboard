@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
-import mockData from '../data/mock_generated.json';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
+import {readAll} from '../services/workspaceTasks';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 
 export interface Asset {
   id: string;
@@ -23,55 +23,29 @@ export function useAssets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAssets();
-    
-    const channel = supabase
-      .channel('assets_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
-        fetchAssets();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const actor=useAuthStore(state=>state.profile?.id);
+  const generation=useRef(0),loaded=useRef<number|undefined>(undefined);
+  useEffect(()=>{loaded.current=undefined;setAssets([]);void fetchAssets();return()=>{generation.current++;};},[actor]);
+  useWorkspaceRealtime(['assets','borrow_requests'],()=>void fetchAssets(),actor);
 
   const fetchAssets = async () => {
+    const token=++generation.current;
     try {
-      setLoading(true);
+      setLoading(loaded.current!==actor);
       setError(null);
 
-      // INSTANT BYPASS FOR DEV ADMIN
-      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
-        const mapped = mockData.assets.map((a: any) => ({
-          id: a.id,
-          asset_code: a.asset_ref || a.id,
-          name: a.name,
-          condition: 'good',
-          location: 'Kho tổng',
-          status: 'available',
-          category: { name: 'Thiết bị', icon: 'Box' }
-        }));
-        setAssets(mapped as any);
-        setError('Instant Offline Mode');
-        return;
-      }
-
-      const [assetResult, requestResult] = await Promise.all([
-        supabase.from('assets')
+      if(!actor){setAssets([]);return;}
+      const [assetRows, requestRows] = await Promise.all([
+        readAll(supabase.from('assets')
           .select('id, asset_code, name, condition, location, status, is_available, category:category_id(name, icon)')
-          .order('created_at', { ascending: false }),
-        supabase.from('borrow_requests')
+          .order('created_at', { ascending: false }).order('id')),
+        readAll(supabase.from('borrow_requests')
           .select('asset_id, due_date, requested_at, approval_status, requester:requester_id(name)')
           .in('approval_status', ['pending', 'approved']).is('returned_at', null)
-          .order('requested_at', { ascending: false }),
+          .order('requested_at', { ascending: false }).order('id')),
       ]);
 
-      if (assetResult.error) throw assetResult.error;
-      if (requestResult.error) throw requestResult.error;
-      const openRequests = (requestResult.data || []) as unknown as Array<{
+      const openRequests = requestRows as unknown as Array<{
         asset_id: string;
         due_date: string;
         requested_at: string;
@@ -79,7 +53,7 @@ export function useAssets() {
         requester: { name: string } | null;
       }>;
       
-      const mappedData = (assetResult.data as any[]).map(asset => {
+      const mappedData = assetRows.map(asset => {
         const requests = openRequests.filter(request => request.asset_id === asset.id);
         const activeRequest = requests.find(r => r.approval_status === 'approved');
         const pendingRequest = requests.find(r => r.approval_status === 'pending');
@@ -92,17 +66,15 @@ export function useAssets() {
           due_date: activeRequest?.due_date || null,
         };
       });
-      setAssets(mappedData as any);
+      if(token===generation.current){loaded.current=actor;setAssets(mappedData as any);}
 
     } catch (err: any) {
       console.warn('Error fetching assets', err);
-      setAssets([]);
-      setError(err.message || 'Không tải được kho thiết bị.');
-      toast.error('Không tải được kho thiết bị từ Supabase.');
+      if(token===generation.current){setAssets([]);setError(err.message||'Không tải được kho thiết bị.');}
     } finally {
-      setLoading(false);
+      if(token===generation.current)setLoading(false);
     }
   };
 
-  return { assets, loading, error, refetch: fetchAssets };
+  return { assets:loaded.current===actor?assets:[], loading, error, refetch: fetchAssets };
 }

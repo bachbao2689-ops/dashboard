@@ -21,7 +21,7 @@ export const ProfileActivityTab: React.FC = () => {
         type: 'task',
         icon: completed ? <CheckCircle2 size={16} /> : <ArrowRightLeft size={16} />,
         color: completed ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600',
-        time: task.updated_at || task.created_at,
+        time: completed?task.completed_at:task.updated_at||task.created_at,
         title: completed ? `Hoàn thành ${task.task_ref || 'task'}: ${task.title}` : `Cập nhật ${task.task_ref || 'task'}: ${task.title}`,
         desc: `Trạng thái: ${task.status || 'Chưa cập nhật'}`,
       };
@@ -35,7 +35,7 @@ export const ProfileActivityTab: React.FC = () => {
       title: `Yêu cầu mượn thiết bị: ${request.asset?.name || 'Thiết bị'}`,
       desc: `Trạng thái: ${borrowStatusLabel(request.approval_status || 'pending', request.returned_at)}`,
     }));
-    return [...taskActivities, ...borrowActivities].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    return [...taskActivities, ...borrowActivities].sort((a, b) => new Date(b.time||0).getTime() - new Date(a.time||0).getTime());
   }, [tasks, borrowRequests]);
 
   const visibleActivities = activities.filter(activity => filter === 'All' || (filter === 'Tasks' ? activity.type === 'task' : activity.type === 'asset'));

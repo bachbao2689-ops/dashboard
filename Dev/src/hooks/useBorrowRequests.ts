@@ -1,5 +1,7 @@
+import {readAll} from '../services/workspaceTasks';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 import toast from "react-hot-toast";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { transitionBorrowRequest } from '../services/borrowWorkflow';
 import type { BorrowAction } from '../services/borrowWorkflow';
@@ -27,24 +29,14 @@ export function useBorrowRequests() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRequests();
-    
-    const channel = supabase
-      .channel('borrow_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'borrow_requests' }, () => {
-        fetchRequests();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.id, profile?.role]);
+  const generation=useRef(0),loaded=useRef<number|undefined>(undefined);
+  useEffect(()=>{loaded.current=undefined;setRequests([]);void fetchRequests();return()=>{generation.current++;};},[profile?.id,profile?.role]);
+  useWorkspaceRealtime(['borrow_requests','assets'],()=>void fetchRequests(),profile?.id);
 
   const fetchRequests = async () => {
+    const token=++generation.current;
     try {
-      setLoading(true);
+      setLoading(loaded.current!==profile?.id);
       setError(null);
       if (!profile?.id) {
         setRequests([]);
@@ -60,16 +52,13 @@ export function useBorrowRequests() {
         `)
         .order('requested_at', { ascending: false });
       if (!['admin', 'manager'].includes(profile.role)) query = query.eq('requester_id', profile.id);
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setRequests(data as any);
+      const data=await readAll(query.order('id'));
+      if(token===generation.current){loaded.current=profile?.id;setRequests(data as any);}
     } catch (err) {
       console.error('Error fetching borrow requests', err);
-      setError(err instanceof Error ? err.message : 'Không tải được yêu cầu mượn.');
-      setRequests([]);
+      if(token===generation.current){setError(err instanceof Error?err.message:'Không tải được yêu cầu mượn.');setRequests([]);}
     } finally {
-      setLoading(false);
+      if(token===generation.current)setLoading(false);
     }
   };
 
@@ -90,5 +79,5 @@ export function useBorrowRequests() {
     }
   };
 
-  return { requests, loading, error, busyId, updateStatus, refetch: fetchRequests };
+  return { requests:loaded.current===profile?.id?requests:[], loading, error, busyId, updateStatus, refetch: fetchRequests };
 }

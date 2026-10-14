@@ -1,3 +1,5 @@
+import {taskKey,taskTarget} from '../lib/taskTracking';
+import {useSearchParams} from 'react-router-dom';
 import { ProjectCampaignDetailPanel } from '../components/features/projects/ProjectCampaignDetailPanel';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
@@ -51,13 +53,15 @@ export const MyTasks: React.FC = () => {
   const targetUserId = filterPic || profile?.id;
   const calendar = useProfileCalendar(targetUserId);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [reportOpen, setReportOpen] = useState(false);
+  const [searchParams]=useSearchParams();
+  const [reportOpen, setReportOpen] = useState(searchParams.get("report")==="1");
   const reportRef = useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(searchParams.get("report")==="1")setReportOpen(true);},[searchParams]);
   useEffect(() => { if (reportOpen) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [reportOpen]);
   const [weekSelection, setWeekSelection] = useState<WeekSelection>('current');
   const selected = calendar.items.find(item => item.key === selectedKey);
   const week = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
-  const reportTasks = useMemo(() => tasksForWeeklyReport(calendar.items.filter(item => item.kind === 'task').map(item => item.record as any), week.start, week.end), [calendar.items, week.start, week.end]);
+  const reportTasks = useMemo(() => tasksForWeeklyReport(calendar.items.filter(item => ['task','project_subtask','campaign_subtask'].includes(item.kind)&&String(item.record.assignee_id)===String(targetUserId)).map(item => ({...item.record,id:taskKey(item.kind,item.id),project:item.kind==='project_subtask'?{id:item.parentId,name:item.parentName}:item.record.project,campaign:item.kind==='campaign_subtask'?{id:item.parentId,name:item.parentName}:item.record.campaign}) as any), week.start, week.end), [calendar.items, week.start, week.end,targetUserId]);
   const references: ReportReference[] = calendar.items.filter(item => item.kind === 'project' || item.kind === 'campaign').map(item => ({ id: item.id, name: item.title, status: item.status, description: item.description, kind: item.kind as 'project' | 'campaign' }));
   return (
     <div className="relative flex min-h-full min-w-0">
@@ -115,7 +119,7 @@ export const MyTasks: React.FC = () => {
             )
           }
         />
-        {reportOpen && <div ref={reportRef}><WeeklyReportDrawer isOpen variant="inline" onClose={() => setReportOpen(false)} ownerName={profile?.name || 'Report của tôi'} userId={profile?.id} canEdit weekStart={week.start} weekEnd={week.end} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} onOpenTask={id => setSelectedKey(`task:${id}`)} /></div>}
+        {reportOpen && <div ref={reportRef}><WeeklyReportDrawer isOpen variant="inline" onClose={() => setReportOpen(false)} ownerName={users.find(u=>String(u.id)===String(targetUserId))?.name||profile?.name||'Report'} userId={Number(targetUserId)} canEdit={String(targetUserId)===String(profile?.id)} weekStart={week.start} weekEnd={week.end} weekSelection={weekSelection} onWeekSelectionChange={setWeekSelection} tasks={reportTasks} references={references} onOpenTask={key => {const target=taskTarget(key);setSelectedKey(`${target.kind}:${target.id}`);}} onReportSaved={calendar.refresh} /></div>}
       </div>
       <TaskDetailPanel task={selected?.kind === 'task' ? selected.record : null} isOpen={selected?.kind === 'task'} onClose={() => setSelectedKey(null)} onTaskUpdated={calendar.refresh} />
       {selected && (selected.kind === 'project' || selected.kind === 'campaign') && <ProjectCampaignDetailPanel item={selected.record} kind={selected.kind as any} onClose={() => setSelectedKey(null)} onUpdated={calendar.refresh} />}

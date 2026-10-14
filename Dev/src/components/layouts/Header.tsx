@@ -1,3 +1,4 @@
+import {entityLink} from '../../lib/taskTracking';
 import React, { useState, useEffect } from 'react';
 import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban, Layers } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -82,6 +83,8 @@ export const Header: React.FC = () => {
       setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : notification.type === 'weekly_report' ? 'Weekly Report mới' : notification.type === 'report_reminder' ? 'Nhắc report' : 'Thông báo', message: notification.message, entity_type: notification.entity_type, entity_id: notification.entity_id })));
     };
     void loadNotifications();
+    const refreshVisible=()=>{if(document.visibilityState==='visible')void loadNotifications();};
+    const fallback=setInterval(refreshVisible,30000);window.addEventListener('focus',refreshVisible);window.addEventListener('workspace:changed',refreshVisible);document.addEventListener('visibilitychange',refreshVisible);
     const channel = profileId
       ? supabase
           .channel(`header-notifications-${profileId}`)
@@ -94,7 +97,7 @@ export const Header: React.FC = () => {
       : null;
 
     return () => {
-      active = false;
+      active=false;clearInterval(fallback);window.removeEventListener('focus',refreshVisible);window.removeEventListener('workspace:changed',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);
       if (channel) void supabase.removeChannel(channel);
     };
   }, [profileId]);
@@ -109,15 +112,8 @@ export const Header: React.FC = () => {
     setNotifications(current => current.filter(item => item.id !== notification.id));
     await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', notification.id);
     setShowNotifs(false);
-    if (notification.entity_type === 'task' && notification.entity_id) {
-      navigate(`/tasks?task=${notification.entity_id}`);
-    } else if (notification.entity_type === 'workflow2') {
-      navigate(`/workflow`);
-    } else if (notification.entity_type === 'project_subtask') {
-      navigate(`/projects`);
-    } else if (notification.entity_type === 'weekly_report') {
-      navigate(`/profile`);
-    }
+    const link=entityLink(notification.entity_type,notification.entity_id);
+    if(link)navigate(link);
   };
 
   const navGroups = [
