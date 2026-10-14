@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
 
@@ -35,16 +35,31 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
 }) => {
   const { t } = useTranslation();
   const defaultLabel = label || t('projects.filterStatus');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => document.removeEventListener('mousedown', handleDocumentClick);
+  }, [isOpen, onClose]);
 
   const selectedOption = options.find(o => o.key === value);
   const isFiltered = allKey !== undefined ? value !== allKey : (value !== 'all' && value !== '');
   const displayLabel = isFiltered && selectedOption ? selectedOption.label : defaultLabel;
 
   return (
-    <div className="relative inline-block text-left">
+    <div ref={containerRef} className="relative inline-block text-left">
       <button
         type="button"
-        onClick={onToggle}
+        onClick={e => {
+          e.stopPropagation();
+          onToggle();
+        }}
         className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
           isFiltered
             ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'

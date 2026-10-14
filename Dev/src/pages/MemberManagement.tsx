@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useMembers } from '../hooks/useMembers';
 import type { Member } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
@@ -20,14 +20,6 @@ export function MemberManagement() {
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [savingMember, setSavingMember] = useState(false);
   const canManageAll = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
-
-  useEffect(() => {
-    const handleOutside = () => setActiveDropdown(null);
-    if (activeDropdown) {
-      window.addEventListener('click', handleOutside);
-      return () => window.removeEventListener('click', handleOutside);
-    }
-  }, [activeDropdown]);
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {

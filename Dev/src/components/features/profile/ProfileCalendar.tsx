@@ -78,7 +78,6 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
       if (rangeOpen && !rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); 
       if (monthPickerOpen && !monthMenuRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
       if (showNotifications && !notifRef.current?.contains(event.target as Node)) setShowNotifications(false);
-      if (statusDropdownOpen) setStatusDropdownOpen(false);
     };
     const closeEscape = (event: KeyboardEvent) => { 
       if (event.key === 'Escape') { setRangeOpen(false); setMonthPickerOpen(false); setShowNotifications(false); setStatusDropdownOpen(false); }
@@ -86,7 +85,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);
     return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
-  }, [rangeOpen, monthPickerOpen, showNotifications, statusDropdownOpen]);
+  }, [rangeOpen, monthPickerOpen, showNotifications]);
 
   const preFiltered = useMemo(() => items.filter(item => {
     const text = `${item.title} ${item.parentName || ''} ${item.record.task_ref || ''}`.toLocaleLowerCase('vi');

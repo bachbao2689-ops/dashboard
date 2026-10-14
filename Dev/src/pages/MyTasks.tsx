@@ -30,14 +30,6 @@ export const MyTasks: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<'dept' | 'pic' | null>(null);
 
   useEffect(() => {
-    const handleOutside = () => setActiveDropdown(null);
-    if (activeDropdown) {
-      window.addEventListener('click', handleOutside);
-      return () => window.removeEventListener('click', handleOutside);
-    }
-  }, [activeDropdown]);
-
-  useEffect(() => {
     if (!isManager) return;
     let deptQuery = supabase.from('departments').select('id, name');
     let userQuery = supabase.from('users').select('id, name, department_id, avatar_url').eq('is_active', true);

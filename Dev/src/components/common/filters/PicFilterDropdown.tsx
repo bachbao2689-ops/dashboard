@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Users, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { Avatar } from '../Avatar';
 import { useTranslation } from '../../../i18n/translations';
@@ -49,6 +49,18 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
   const { t } = useTranslation();
   const defaultLabel = label || t('projects.filterPic');
   const [searchQuery, setSearchQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => document.removeEventListener('mousedown', handleDocumentClick);
+  }, [isOpen, onClose]);
 
   const selectedPerson = people.find(p => String(p.id) === value);
   const displayLabel =
@@ -67,10 +79,11 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
   );
 
   return (
-    <div className="relative inline-block text-left">
+    <div ref={containerRef} className="relative inline-block text-left">
       <button
         type="button"
-        onClick={() => {
+        onClick={e => {
+          e.stopPropagation();
           onToggle();
           setSearchQuery('');
         }}

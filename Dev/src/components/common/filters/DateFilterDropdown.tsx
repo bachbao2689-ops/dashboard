@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
 
@@ -37,6 +37,18 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
 }) => {
   const { t, lang } = useTranslation();
   const isEn = lang === 'en';
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => document.removeEventListener('mousedown', handleDocumentClick);
+  }, [isOpen, onClose]);
 
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState<number>(() => {
@@ -176,10 +188,13 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   }, [hasCustom, customStartDate, customEndDate, calendarFilter, presets, t]);
 
   return (
-    <div className="relative inline-block text-left">
+    <div ref={containerRef} className="relative inline-block text-left">
       <button
         type="button"
-        onClick={onToggle}
+        onClick={e => {
+          e.stopPropagation();
+          onToggle();
+        }}
         className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
           isFiltered
             ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
