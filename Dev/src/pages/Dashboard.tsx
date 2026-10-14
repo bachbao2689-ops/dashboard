@@ -38,7 +38,7 @@ const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; cl
 export const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const isDark = useUiStore(state => state.theme) === 'dark';
-  const { tasks: allTasks, users, loading } = useWorkspaceData();
+  const { tasks: allTasks, users, loading, error, refetch } = useWorkspaceData();
   const tasks=useMemo(()=>allTasks.filter(taskActive),[allTasks]);
   const navigate = useNavigate();
   const profile = useAuthStore(state => state.profile);
@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
   const [customEnd, setCustomEnd] = useState(() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); });
     const [performanceOpen, setPerformanceOpen] = useState(false);
 
-  const [openDept, setOpenDept] = useState<string | null>('DESIGN');
+  const [openDept, setOpenDept] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -87,6 +87,7 @@ export const Dashboard: React.FC = () => {
     navigate(`/tasks?${query}`);
   };
   if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>;
+  if (error) return <div role="alert" className="p-8 text-sm text-red-500">{error}<button onClick={() => void refetch()} className="ml-2 underline">Thử lại</button></div>;
   if (!s) return <div className="p-8 text-center text-gray-500">{t('dashboard.noHistoryDesc')}</div>;
 
   return (
@@ -286,7 +287,7 @@ export const Dashboard: React.FC = () => {
               <strong className={`text-sm font-semibold ${INK}`}>{t('dashboard.trackingIncomplete', { name: s.name, count: s.open })}</strong>
               <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{t('dashboard.openNoDeadline', { count: s.noDeadline })}</p>
             </div>
-            <button className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
+            <button onClick={openFilteredTasks} aria-label="Xem công việc đang theo dõi" className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
           </div>
         </div>
       </section>
@@ -350,10 +351,10 @@ export const Dashboard: React.FC = () => {
             </div>
             <div>
               {teams.map(d => {
-                const open = openDept === d.name;
+                const open = openDept === d.id;
                 return (
-                  <div key={d.name} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
-                    <button onClick={() => setOpenDept(open ? null : d.name)} className="w-full flex items-center justify-between py-2">
+                  <div key={d.id} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
+                    <button onClick={() => setOpenDept(open ? null : d.id)} className="w-full flex items-center justify-between py-2">
                       <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>{t('dashboard.picsCount', { count: d.members.length })}</span></span>
                       <ChevronDown size={13} className={`${MUTED} transition-transform duration-300 ${open ? 'rotate-180' : '-rotate-90'}`} />
                     </button>

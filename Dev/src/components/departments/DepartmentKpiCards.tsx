@@ -10,9 +10,9 @@ interface DepartmentKpiCardsProps {
 
 export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, isOverall = false }) => {
   const { t } = useTranslation();
-  const budgetPct = kpis.budgetActual!=null&&kpis.budgetTotal?Math.round((kpis.budgetActual/kpis.budgetTotal)*100):null;
-  const formattedActual = kpis.budgetActual==null?'—':(kpis.budgetActual/1000000).toLocaleString('vi-VN');
-  const formattedTotal = kpis.budgetTotal==null?'—':(kpis.budgetTotal/1000000).toLocaleString('vi-VN');
+  const budgetPct = Math.round((kpis.budgetActual / kpis.budgetTotal) * 100);
+  const formattedActual = (kpis.budgetActual / 1000000).toLocaleString('vi-VN');
+  const formattedTotal = (kpis.budgetTotal / 1000000).toLocaleString('vi-VN');
 
   // Dynamic polarity and threshold resolvers
   const isOverdueZero = kpis.overdueTasks === 0;
@@ -37,9 +37,9 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
     : 'text-gray-900 dark:text-white';
 
   const budgetBadgeClass =
-    (budgetPct ?? 0) > 100
+    budgetPct > 100
       ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40'
-      : (budgetPct ?? 0) > 90
+      : budgetPct > 90
       ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40'
       : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40';
 
@@ -49,7 +49,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiCompletion')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
-          {kpis.completionRate==null?'—':`${kpis.completionRate}%`}
+          {kpis.completionRate}%
         </b>
         <span
           className={`text-[11px] truncate font-medium ${
@@ -88,7 +88,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOnTime')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
-          {kpis.onTimeRate==null?'—':`${kpis.onTimeRate}%`}
+          {kpis.onTimeRate}%
         </b>
         <span className={`text-[11px] truncate font-medium ${onTimeDeltaColor}`}>
           {kpis.onTimeDelta}
@@ -113,23 +113,23 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiBudget')}</span>
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${budgetBadgeClass}`}>
-            {budgetPct==null?'—':`${budgetPct}%`}
+            {budgetPct}%
           </span>
         </div>
         <div className="my-0.5">
           <b className="text-lg font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-            {kpis.budgetActual==null?'—':`₫${formattedActual}M`}
+            ₫{formattedActual}M
           </b>
           <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1">
             <div
               className={`h-full rounded-full ${
-                (budgetPct ?? 0) > 100
+                budgetPct > 100
                   ? 'bg-red-500'
-                  : (budgetPct ?? 0) > 90
+                  : budgetPct > 90
                   ? 'bg-amber-400'
                   : 'bg-emerald-500'
               }`}
-              style={{ width: `${Math.min(budgetPct??0, 100)}%` }}
+              style={{ width: `${Math.min(budgetPct, 100)}%` }}
             />
           </div>
         </div>
@@ -142,10 +142,10 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiAvgDuration')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
-          {kpis.avgTaskDuration==null?'—':`${kpis.avgTaskDuration}d`}
+          {kpis.avgTaskDuration}d
         </b>
         <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-          {kpis.avgTaskDurationTarget==null?'Chưa có mục tiêu thời gian':t('departments.kpiTargetDuration', { target: kpis.avgTaskDurationTarget })}
+          {t('departments.kpiTargetDuration', { target: kpis.avgTaskDurationTarget })}
         </span>
       </div>
 
@@ -153,10 +153,10 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiSatisfaction')}</span>
         <b className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400 leading-tight my-0.5">
-          {kpis.satisfactionScore??'—'} <span className="text-xs font-normal text-gray-400">/ 5.0</span>
+          {kpis.satisfactionScore} <span className="text-xs font-normal text-gray-400">/ 5.0</span>
         </b>
         <span className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-          {kpis.satisfactionScore==null?'Chưa có dữ liệu đánh giá':t('departments.kpiPositive')}
+          {t('departments.kpiPositive')}
         </span>
       </div>
     </div>

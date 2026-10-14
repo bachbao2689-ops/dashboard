@@ -34,6 +34,6 @@ export function useTasks() {
     loadedActor.current = null; setTasks([]); void fetchTasks();
     return () => { request.current++; };
   }, [profile?.id, profile?.department_id, profile?.role]);
-  useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments'], fetchTasks, profile?.id);
+  useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments','activity_log'], fetchTasks, profile?.id);
   return { tasks:loadedActor.current===profile?.id?tasks:[], loading, error, refetch: fetchTasks };
 }

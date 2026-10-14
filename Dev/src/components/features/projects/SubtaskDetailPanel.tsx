@@ -5,6 +5,8 @@ import { Avatar } from '../../common/Avatar';
 import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Save, User, X, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
+import { updateTrackedTask } from '../../../services/workspaceTasks';
+import { taskKey } from '../../../lib/taskTracking';
 import { useTranslation } from '../../../i18n/translations';
 
 type Person = { id: number; name: string };
@@ -66,8 +68,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setParentDetails(null);
     setParentLoading(true);
     const loadParent = async () => {
-      const table = entityType === 'campaign_subtask' ? 'campaigns' : 'projects';
-      const { data: parent, error } = await supabase.from(table).select('name,priority,department_id').eq('id', parentId).maybeSingle();
+      const { data: parent, error } = await (entityType === 'project_subtask'
+        ? supabase.from('projects').select('name,priority,department_id').eq('id', parentId).maybeSingle()
+        : supabase.from('campaigns').select('name,department_id').eq('id', parentId).maybeSingle());
       if (!active) return;
       if (error || !parent) {
         if (error) console.warn('Could not load subtask parent', error.message);
@@ -81,7 +84,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         departmentName = department?.name || null;
       }
       if (active) {
-        setParentDetails({ name: parent.name, priority: parent.priority, departmentName });
+        setParentDetails({ name: parent.name, priority: 'priority' in parent ? parent.priority as string : null, departmentName });
         setParentLoading(false);
       }
     };
@@ -89,13 +92,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     return () => { active = false; };
   }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType]);
 
+  const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
-    if (!subtask?.id) return;
-    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtask.id).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
+    if (!subtaskId) return;
+    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
     const details = detailsResult.data?.[0]?.metadata || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
-  }, [subtask?.id, entityType]);
+  }, [subtaskId, entityType]);
 
   useEffect(() => {
     setCommentFocus(0);
@@ -148,14 +152,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const complete = async () => {
-    if (!subtask || isDone(subtask.status)) return;
+    if (!subtask || saving || isDone(subtask.status)) return;
     setSaving(true);
-    const { error } = await supabase.from(entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
-    setSaving(false);
-    if (error) return toast.error('Không thể hoàn thành subtask');
-    const updated = { ...subtask, status: 'completed' };
-    onUpdated(updated);
-    toast.success('Đã hoàn thành subtask');
+    try {
+      await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
+      onUpdated({ ...subtask, status: 'completed' });
+      toast.success('Đã hoàn thành subtask');
+    } catch (error: any) { toast.error(error.message || 'Không thể hoàn thành subtask'); }
+    finally { setSaving(false); }
   };
 
   useEffect(() => {

@@ -1,7 +1,9 @@
+import {tasksForProfileWeek as tasksForWeeklyReport} from '../lib/profileTaskTracking';
 import {useMemo,useState,useEffect} from 'react';
 import {useTranslation} from '../i18n/translations';
-import {taskDone,taskOpen} from '../lib/taskTracking';
-import {tasksForWeeklyReport} from '../lib/weeklyReport';
+import {taskDone,taskOpen,taskOverdue,taskDueWithin} from '../lib/taskTracking';
+import {calendarDay} from '../lib/profileCalendar';
+import {mapPriority} from '../components/features/tasks/list/taskListPresentation';
 import type {Task} from './useTasks';
 import type {WorkspaceData} from './useWorkspaceData';
 import type {ReportReference} from '../components/features/reports/WeeklyReportDrawer';
@@ -30,8 +32,7 @@ const WEEK_LABELS_VI=['T2','T3','T4','T5','T6','T7','CN'];
 const WEEK_LABELS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const toYmd=(d:Date)=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const startOfCurrentWeek=(day:string)=>{const d=new Date(`${day}T00:00:00`);d.setDate(d.getDate()-((d.getDay()+6)%7));d.setHours(0,0,0,0);return d;};
-const dayKey=(value?:string|null)=>value?toYmd(new Date(value)):'';
-const isDone=(status?:string|null)=>['done','complete','completed'].includes((status||'').toLowerCase());
+const dayKey=(value?:string|null)=>calendarDay(value)||'';
 export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'],activeId:string,range:'weekly'|'custom',customStart:string,customEnd:string,search:string){
  const {t,lang}=useTranslation();
  const [todayKey,setTodayKey]=useState(()=>toYmd(new Date()));
@@ -43,14 +44,14 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
     const stats = (id: string, type: PerfData['type'], name: string, role: string, dept: string, list: any[], avatar_url?: string | null): PerfData => {
       const done = list.filter(taskDone).length;
       const open = list.filter(taskOpen).length;
-      const overdue = list.filter(task => taskOpen(task) && task.due_date && new Date(task.due_date) < today).length;
-      const due3 = list.filter(task => taskOpen(task) && task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= plusThree).length;
+      const overdue = list.filter(task => taskOverdue(task,todayKey)).length;
+      const due3 = list.filter(task => taskDueWithin(task,todayKey,toYmd(plusThree))).length;
       const urgent = list.filter(task => taskOpen(task) && ['high','urgent'].includes(task.priority)).length;
-      const noDeadline = list.filter(task => !task.due_date).length;
+      const noDeadline = list.filter(task => taskOpen(task) && !task.due_date).length;
       const projects = new Set(list.map(task => task.project_id?`project:${task.project_id}`:task.campaign_id?`campaign:${task.campaign_id}`:null).filter(Boolean)).size;
       const week = Array.from({ length: 7 }, (_, offset) => {
         const date = new Date(today); date.setDate(today.getDate() + offset);
-        return list.filter(task => task.due_date && new Date(task.due_date).toDateString() === date.toDateString()).length;
+        return list.filter(task => taskOpen(task) && dayKey(task.due_date) === toYmd(date)).length;
       });
       const month = Array.from({ length: 4 }, (_, offset) => {
         const date = new Date(today.getFullYear(), today.getMonth() - 3 + offset, 1);
@@ -92,7 +93,7 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
     const weekLabels = lang === 'vi' ? WEEK_LABELS_VI : WEEK_LABELS_EN;
     for (let cursor = new Date(start); cursor <= end && days.length < 31; cursor.setDate(cursor.getDate() + 1)) {
       const key = toYmd(cursor);
-      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isDone(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => taskDone(task) && dayKey(task.completed_at) === key).length });
+      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => taskDone(task) && dayKey(task.completed_at) === key).length });
     }
     return days;
   }, [rangeStart, rangeEnd, range, selectedTasks, lang]);
@@ -127,13 +128,14 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
         date: new Date(task.due_date!).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US'),
         dueStr,
         isOverdue: diffDays < 0,
-        priority: ['high','urgent'].includes(task.priority) ? t('common.high') : t('common.medium'),
+        priority: mapPriority(task.priority),
       };
     });
-  const teams = [...new Set(users.map(user => user.department?.name || t('dashboard.unassignedTeam')))].map(name => ({
-    name,
-    id: `team-${name}`,
-    members: liveData.filter(member => member.type === 'staff' && (users.find(user => `user-${user.id}` === member.id)?.department?.name || t('dashboard.unassignedTeam')) === name).map(member => ({ i: member.initial, id: member.id, n: member.name, r: member.role, open: member.open, a: member.avatar_url })),
+  const departmentNames = new Map(users.map(user => [user.department_id || 'unassigned', user.department?.name || t('dashboard.unassignedTeam')]));
+  const userDepartments = new Map(users.map(user => [`user-${user.id}`, user.department_id || 'unassigned']));
+  const teams = [...departmentNames].map(([id,name]) => ({
+    name, id:`team-${id}`,
+    members:liveData.filter(member => member.type === 'staff' && userDepartments.get(member.id) === id).map(member => ({i:member.initial,id:member.id,n:member.name,r:member.role,open:member.open,a:member.avatar_url})),
   }));
 
  return {s,pct,rangeStart,rangeEnd,selectedTasks,periodTasks,chartData,selectedReferences,filteredDepts,getEyebrow,upcomingProjects,teams};

@@ -1,3 +1,5 @@
+import {taskOverdue,taskDueWithin} from '../lib/taskTracking';
+import {calendarDay} from '../lib/profileCalendar';
 import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
 import {useTaskListActions} from '../hooks/useTaskListActions';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -145,7 +147,8 @@ export const TaskList: React.FC = () => {
     calendarFilter !== 'all' ||
     customStartDate ||
     customEndDate ||
-    priorityFilter !== 'all'
+    priorityFilter !== 'all' ||
+    ['scope','start','end','department','department_id','project_id','campaign_id'].some(key => searchParams.has(key))
   );
 
   const handleResetFilters = () => {
@@ -157,13 +160,15 @@ export const TaskList: React.FC = () => {
     setCustomEndDate('');
     setPriorityFilter('all');
     setActiveDropdown(null);
+    const query = new URLSearchParams(searchParams);
+    ['search','status','priority','assignee','scope','start','end','department','department_id','project_id','campaign_id'].forEach(key => query.delete(key));
+    setSearchParams(query, {replace:true});
   };
 
   const shortcutScope = searchParams.get('scope');
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
   const departmentParam = searchParams.get('department');
-  const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
 
@@ -175,7 +180,8 @@ export const TaskList: React.FC = () => {
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
     // 1. Status Filter
-    if (statusFilter !== 'all') {
+    if(statusFilter==='overdue'){if(!taskOverdue(t,calendarDay(today.toISOString())!))return false;}
+    else if (statusFilter !== 'all') {
       const ms = mapStatus(t.status || '');
       const mapped = ms === 'in-progress' ? 'in_progress' : ms;
       if (mapped !== statusFilter && t.status?.toLowerCase() !== statusFilter.toLowerCase()) {
@@ -219,8 +225,8 @@ export const TaskList: React.FC = () => {
         return false;
       }
     } else if (startParam || endParam) {
-      if (startParam && t.due_date && new Date(t.due_date) < new Date(`${startParam}T00:00:00`)) return false;
-      if (endParam && t.due_date && new Date(t.due_date) > new Date(`${endParam}T23:59:59`)) return false;
+      if (startParam && t.due_date && calendarDay(t.due_date)! < startParam) return false;
+      if (endParam && t.due_date && calendarDay(t.due_date)! > endParam) return false;
     }
 
     // 6. Shortcut scope
@@ -229,11 +235,11 @@ export const TaskList: React.FC = () => {
         return false;
       }
       if (shortcutScope === 'due-soon') {
-        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays)) {
+        if (!(taskDueWithin(t,calendarDay(today.toISOString())!,calendarDay(inSevenDays.toISOString())!))) {
           return false;
         }
       } else if (shortcutScope === 'overdue') {
-        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) < today)) {
+        if (!(taskOverdue(t,calendarDay(today.toISOString())!))) {
           return false;
         }
       }

@@ -1,3 +1,4 @@
+import {tasksForProfileWeek as tasksForWeeklyReport} from '../lib/profileTaskTracking';
 import {taskKey,taskTarget} from '../lib/taskTracking';
 import {useSearchParams} from 'react-router-dom';
 import { ProjectCampaignDetailPanel } from '../components/features/projects/ProjectCampaignDetailPanel';
@@ -14,7 +15,7 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportDrawer';
 import type { ReportReference } from '../components/features/reports/WeeklyReportDrawer';
 import { useProfileCalendar } from '../hooks/useProfileCalendar';
-import { tasksForWeeklyReport, weeklyReportRange } from '../lib/weeklyReport';
+import { weeklyReportRange } from '../lib/weeklyReport';
 import type { WeekSelection } from '../lib/weeklyReport';
 import { useAuthStore } from '../store/authStore';
 

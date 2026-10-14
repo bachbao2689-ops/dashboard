@@ -1,3 +1,4 @@
+import {mapWorkspaceTasks} from '../lib/workspaceTaskMapping';
 import {supabase} from './supabase';
 import type {Task} from '../hooks/useTasks';
 import {taskActive,taskKey,taskTarget} from '../lib/taskTracking';
@@ -5,19 +6,21 @@ export async function readAll(query:any):Promise<any[]> {
   const rows:any[]=[];
   for(let offset=0;;offset+=500){const {data,error}=await query.range(offset,offset+499);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<500)return rows;}
 }
-const visibleParent=(p:any)=>!p||!['deleted','archived'].includes(p.status||'');
 export async function readWorkspaceTasks():Promise<Task[]> {
   const [real,projects,campaigns]=await Promise.all([
     readAll(supabase.from('tasks').select('id,workspace_id,task_ref,title,status,priority,due_date,start_date,completed_at,updated_at,created_at,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(id,name,status),campaign:campaign_id(id,name,status),assignee:assignee_id(id,name,avatar_url),department:department_id(id,name),column:column_id(name)').order('created_at',{ascending:false}).order('id')),
-    readAll(supabase.from('project_subtasks').select('*,projects:project_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),
+    readAll(supabase.from('project_subtasks').select('*,projects:project_id(id,name,status,priority,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),
     readAll(supabase.from('campaign_subtasks').select('*,campaigns:campaign_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id'))
   ]);
-  const normalize=(items:any[],kind:'project'|'campaign')=>items.filter(s=>s[`${kind}s`]&&visibleParent(s[`${kind}s`])).map(s=>{
-    const parent=s[`${kind}s`];return {...s,id:taskKey(`${kind}_subtask`,s.id),task_ref:'',priority:'medium',status:s.status||'todo',workspace_id:parent.workspace_id,assignee_id:s.assignee_id,[kind]:{id:parent.id,name:parent.name},department_id:parent.department_id,department:parent.department};
-  });
+  const details=new Map<string,{description?:string}>();
+  const ids=[...new Set([...projects,...campaigns].map(row=>row.id))];
+  for(let i=0;i<ids.length;i+=200){
+    const rows=await readAll(supabase.from('activity_log').select('entity_type,entity_id,metadata,created_at').eq('action','details_updated').in('entity_type',['project_subtask','campaign_subtask']).in('entity_id',ids.slice(i,i+200)).order('created_at',{ascending:false}).order('id',{ascending:false}));
+    rows.forEach(row=>{const key=taskKey(row.entity_type,row.entity_id);if(!details.has(key))details.set(key,row.metadata||{});});
+  }
   // Archived/deleted parents disappear consistently across the lists and analytics.
   // Cancelled work stays in lists/history; metrics exclude it with taskActive().
-  return [...real.filter(t=>visibleParent(t.project)&&visibleParent(t.campaign)),...normalize(projects,'project'),...normalize(campaigns,'campaign')].filter(t=>!['deleted','archived'].includes(t.status||'')) as Task[];
+  return mapWorkspaceTasks(real,projects,campaigns,details);
 }
 export async function updateTrackedTask(key:string,values:Record<string,unknown>) {
   const target=taskTarget(key);

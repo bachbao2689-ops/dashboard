@@ -5,7 +5,6 @@ import { StatusBadge } from '../../../common/StatusBadge';
 import { Avatar } from '../../../common/Avatar';
 import type { Task } from '../../../../hooks/useTasks';
 import { mapPriority } from './taskListPresentation';
-import toast from 'react-hot-toast';
 import { useTranslation } from '../../../../i18n/translations';
 
 type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
@@ -62,7 +61,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                       <div className="task-list-mobile-status">
                         <StatusBadge status={task.status} />
                         <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${new Date(task.due_date).toLocaleDateString()}` : t('common.noDueDate')}</span>
-                        {mapPriority(task.priority) === 'High' && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">High</span>}
+                        {['High','Urgent'].includes(mapPriority(task.priority)) && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">{mapPriority(task.priority)}</span>}
                       </div>
                     </div>
                   ))}
@@ -135,11 +134,11 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit status coming soon', { icon: '🚧' }); }}>
+                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
                           <StatusBadge status={task.status} />
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); toast('Inline edit priority coming soon', { icon: '🚧' }); }}>
-                          <span className="task-list-priority" data-priority={mapPriority(task.priority).toLowerCase()}>
+                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
+                          <span className="task-list-priority" data-priority={mapPriority(task.priority)==='Urgent'?'high':mapPriority(task.priority).toLowerCase()}>
                             {mapPriority(task.priority)}
                           </span>
                         </td>

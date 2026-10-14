@@ -46,8 +46,8 @@ export const DepartmentHeatmap: React.FC<DepartmentHeatmapProps> = ({
               {row.name}
             </button>
             {row.weeks.map((val, idx) => {
-              const isOverload = (val??0) > 100;
-              const alpha = isOverload ? 0.75 : Math.max(0.12, ((val??0) - 30) / 100);
+              const isOverload = val > 100;
+              const alpha = isOverload ? 0.75 : Math.max(0.12, (val - 30) / 100);
               const rgb = isOverload ? '208, 59, 59' : '42, 120, 214';
               const bgColor = `rgba(${rgb}, ${alpha.toFixed(2)})`;
 
@@ -60,9 +60,9 @@ export const DepartmentHeatmap: React.FC<DepartmentHeatmapProps> = ({
                       ? 'text-white font-bold shadow-sm'
                       : 'text-gray-900 dark:text-gray-100'
                   }`}
-                  title={`${row.name} - Tuần ${idx + 1}: ${val==null?'—':`${val}%`}`}
+                  title={`${row.name} - Tuần ${idx + 1}: ${val}%`}
                 >
-                  {val==null?'—':`${val}%`}
+                  {val}%
                 </div>
               );
             })}

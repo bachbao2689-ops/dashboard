@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
 import { Plus, Search, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
@@ -31,9 +31,8 @@ export const AssetInventory: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [qrAsset, setQrAsset] = useState<any>(null);
   const { assets, loading, error, refetch } = useAssets();
-  const [searchParams,setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  useEffect(()=>{const id=searchParams.get("asset");if(id){const row=assets.find(a=>a.id===id);if(row)setSelectedAsset(row);}},[searchParams,assets]);
   const [cart, setCart] = useState<Asset[]>([]);
   const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(searchParams.get('borrow') === '1');
   const [bounce, setBounce] = useState(false);
@@ -215,7 +214,7 @@ export const AssetInventory: React.FC = () => {
       </div>
     
       </div>
-      <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={()=>{setSelectedAsset(null);const query=new URLSearchParams(searchParams);query.delete("asset");setSearchParams(query,{replace:true});}} onOpenQR={() => setQrAsset(selectedAsset)} />
+      <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} onOpenQR={() => setQrAsset(selectedAsset)} />
       <BorrowDrawer isOpen={isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={refetch} />
       <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
 </div>

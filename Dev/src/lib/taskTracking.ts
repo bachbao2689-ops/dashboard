@@ -18,6 +18,9 @@ export const taskDone = (t:TrackedTask) => ['done','completed','complete'].inclu
 export const taskActive = (t:TrackedTask) => !['deleted','archived','cancelled','canceled'].includes((t.status||'').toLowerCase()) && t.workflow_status!=='canceled';
 export const taskOpen = (t:TrackedTask) => taskActive(t)&&!taskDone(t);
 export const taskOverdue = (t:TrackedTask,today=calendarDay(new Date().toISOString())!) => taskOpen(t)&&Boolean(t.due_date&&calendarDay(t.due_date)!<today);
+export function taskDueWithin(t:TrackedTask,start:string,end:string) {
+  const due=calendarDay(t.due_date);return taskOpen(t)&&Boolean(due&&due>=start&&due<=end);
+}
 export function taskBucket(t:TrackedTask,today:string) {
   if(taskDone(t))return 'done';
   if(taskOverdue(t,today))return 'overdue';

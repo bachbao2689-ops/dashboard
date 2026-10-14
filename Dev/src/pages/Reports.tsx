@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useReports } from '../hooks/useReports';
 import type { TimeRange } from "../hooks/useReports";
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { Download, CheckCircle, Clock, TrendingUp, Activity } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
@@ -58,7 +58,7 @@ const AdminReports: React.FC = () => {
 };
 
 const ManagerReports: React.FC = () => {
-  const { data, isLoading, timeRange, setTimeRange, exportCSV, error } = useReports();
+  const { data, isLoading, timeRange, setTimeRange, exportCSV } = useReports();
 
   if (isLoading) {
     return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading reports...</div>;
@@ -70,9 +70,9 @@ const ManagerReports: React.FC = () => {
 
   const { kpis, completionTrend, statusDistribution, priorityBreakdown, topPerformers } = data;
 
-  const percentChange = kpis.tasksCompletedPrev != null && kpis.tasksCompletedPrev > 0
-    ? Math.round(((kpis.tasksCompleted - kpis.tasksCompletedPrev) / kpis.tasksCompletedPrev) * 100)
-    : null;
+  const percentChange = kpis.tasksCompletedPrev > 0 
+    ? Math.round(((kpis.tasksCompleted - kpis.tasksCompletedPrev) / kpis.tasksCompletedPrev) * 100) 
+    : 0;
 
   return (
     <div className="p-4 lg:p-6 w-full space-y-6">
@@ -81,7 +81,7 @@ const ManagerReports: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
           <p className="text-gray-500 dark:text-gray-400">Performance metrics and task distribution</p>
         </div>
-
+        
         <div className="flex items-center gap-4">
           <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-1">
             {(['week', 'month', 'quarter', 'all'] as TimeRange[]).map((range) => (
@@ -89,8 +89,8 @@ const ManagerReports: React.FC = () => {
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  timeRange === range
-                    ? 'bg-[#002e6d] text-white'
+                  timeRange === range 
+                    ? 'bg-[#002e6d] text-white' 
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
@@ -98,7 +98,7 @@ const ManagerReports: React.FC = () => {
               </button>
             ))}
           </div>
-
+          
           <button
             onClick={exportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-[#002e6d] text-white rounded-lg hover:bg-[#002250] transition-colors"
@@ -109,8 +109,6 @@ const ManagerReports: React.FC = () => {
         </div>
       </div>
 
-      {error && <p role="alert">Không thể đồng bộ báo cáo: {error}</p>}
-      {kpis.unknownCompletionDates > 0 && <p className="text-xs text-gray-500">{kpis.unknownCompletionDates} công việc hoàn thành cũ chưa có ngày hoàn thành; chưa tính vào biểu đồ theo kỳ và thời gian xử lý.</p>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-xl">
           <div className="flex items-center gap-4 mb-4">
@@ -122,9 +120,9 @@ const ManagerReports: React.FC = () => {
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.tasksCompleted}</h3>
             </div>
           </div>
-          <p className={`text-sm flex items-center gap-1 ${(percentChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            <TrendingUp className={`w-4 h-4 ${(percentChange ?? 0) < 0 ? 'rotate-180' : ''}`} />
-            {percentChange == null ? '— Chưa có kỳ trước để so sánh' : `${Math.abs(percentChange)}% vs previous period`}
+          <p className={`text-sm flex items-center gap-1 ${percentChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <TrendingUp className={`w-4 h-4 ${percentChange < 0 ? 'rotate-180' : ''}`} />
+            {Math.abs(percentChange)}% vs previous period
           </p>
         </div>
 
@@ -148,7 +146,7 @@ const ManagerReports: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Avg Completion Time</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.avgCompletionTimeDays == null ? '—' : `${kpis.avgCompletionTimeDays}d`}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.avgCompletionTimeDays}d</h3>
             </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">From creation to done</p>
@@ -163,7 +161,7 @@ const ManagerReports: React.FC = () => {
               <LineChart data={completionTrend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <XAxis dataKey="name" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis allowDecimals={false} stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
+                <Tooltip 
                   contentStyle={chartTooltip}
                 />
                 <Line type="monotone" dataKey="completed" name="Hoàn thành" stroke="var(--chart-success)" strokeWidth={3} dot={{ r: 4, fill: 'var(--chart-success)' }} activeDot={{ r: 6 }} />

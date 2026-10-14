@@ -1,6 +1,6 @@
 // src/types/department.ts
 
-export type DepartmentId = string;
+export type DepartmentId = 'marketing' | 'sale' | 'ecommerce' | 'design' | 'accounting' | 'hr';
 
 export type AlertLevel = 'ok' | 'risk' | 'late';
 
@@ -19,24 +19,24 @@ export interface DepartmentInfo {
 }
 
 export interface DepartmentKpis {
-  completionRate: number | null;        // e.g. 62
+  completionRate: number;        // e.g. 62
   completionDelta: string;      // e.g. "▲ 4% so với kỳ trước"
   completionIsPositive?: boolean;
   overdueTasks: number;          // e.g. 21
   overdueDelta: string;         // e.g. "▲ 6 so với kỳ trước"
   inProgressTasks: number;       // e.g. 86
   inProgressSub: string;        // e.g. "trên 391 task"
-  onTimeRate: number | null;           // e.g. 81
+  onTimeRate: number;           // e.g. 81
   onTimeDelta: string;          // e.g. "▼ 2%"
   projectsAtRiskOrCount: number;// e.g. 3 (risk) or 4 (total)
   projectsSub: string;          // e.g. "trên 8 project" or "1 trễ, 1 rủi ro"
   
   // Mandatory R1 secondary metrics
-  budgetActual: number | null;         // e.g. 84500
-  budgetTotal: number | null;          // e.g. 100000
-  avgTaskDuration: number | null;      // e.g. 3.8 days
-  avgTaskDurationTarget: number | null;// e.g. 4.0 days
-  satisfactionScore: number | null;    // e.g. 4.6 (out of 5.0)
+  budgetActual: number;         // e.g. 84500
+  budgetTotal: number;          // e.g. 100000
+  avgTaskDuration: number;      // e.g. 3.8 days
+  avgTaskDurationTarget: number;// e.g. 4.0 days
+  satisfactionScore: number;    // e.g. 4.6 (out of 5.0)
 }
 
 export interface DepartmentComparisonItem {
@@ -53,27 +53,25 @@ export interface DepartmentComparisonItem {
 export interface WeeklyTrendItem {
   week: string; // T1..T8
   actual: number;
-  target: number | null;
+  target: number;
 }
 
 export interface HeatmapRow {
   id: DepartmentId;
   name: string;
-  weeks: [number|null, number|null, number|null, number|null];
+  weeks: [number, number, number, number];
 }
 
 export interface OverallProjectItem {
-  kind?: 'project'|'campaign';
   id: string;
   name: string;
   department: string;
   departmentId: DepartmentId;
-  progress: number | null;
+  progress: number;
   status: AlertLevel;
 }
 
 export interface DetailProjectItem {
-  kind?: 'project'|'campaign';
   id: string;
   name: string;
   completedTasks: number;
@@ -97,7 +95,7 @@ export interface DetailTaskItem {
 export interface BurndownItem {
   week: string;
   actual: number;
-  planned: number | null;
+  planned: number;
 }
 
 export interface MemberWorkloadItem {

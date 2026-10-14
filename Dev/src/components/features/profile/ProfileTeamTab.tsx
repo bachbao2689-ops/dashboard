@@ -1,7 +1,3 @@
-import {readAll,readWorkspaceTasks} from '../../../services/workspaceTasks';
-import {readWeeklyReports} from '../../../services/weeklyReports';
-import {taskTarget} from '../../../lib/taskTracking';
-import {useWorkspaceRealtime} from '../../../hooks/useWorkspaceRealtime';
 import { useTranslation } from '../../../i18n/translations';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
@@ -42,10 +38,6 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [reminding, setReminding] = useState(false);
   const [teamPanelWidth, setTeamPanelWidth] = useState(42);
   const reportGridRef = useRef<HTMLDivElement>(null);
-  const loadGeneration=useRef(0);
-  const selectedMemberRef=useRef(selectedMember);selectedMemberRef.current=selectedMember;
-  const detailGeneration=useRef(0);
-  const [teamError,setTeamError]=useState('');
 
   const resizeTeamPanel = (clientX: number) => {
     const bounds = reportGridRef.current?.getBoundingClientRect();
@@ -53,29 +45,72 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     setTeamPanelWidth(Math.min(65, Math.max(30, ((clientX - bounds.left) / bounds.width) * 100)));
   };
 
-  const loadTeam = useCallback(async(silent=false)=>{
-    const token=++loadGeneration.current;
-    if(!profile){setMembers([]);setLoadingTeam(false);return;}
-    if(!silent)setLoadingTeam(true);
-    try{
-      const canViewAll=['admin','manager','leader'].includes((profile.role||'').toLowerCase())||['admin','manager','leader'].includes((profile.employment_level||'').toLowerCase());
-      let query=supabase.from('users').select('id,name,avatar_url,employment_level,job_title,department_id,role').eq('is_active',true).neq('id',profile.id).order('name').order('id');
-      if(!canViewAll)query=profile.department_id?query.eq('department_id',profile.department_id):query.eq('id',profile.id);
-      const [loadedMembers,visibleTasks]=await Promise.all([readAll(query),readWorkspaceTasks()]);
-      const ids=new Set(loadedMembers.map(m=>String(m.id)));
-      const allMemberTasks=visibleTasks.filter(t=>ids.has(String(t.assignee_id)));
-      const weeklyTasks=tasksForWeeklyReport(allMemberTasks,weekStart,weekEnd);
-      const [rows,imageRows]=await Promise.all([readWeeklyReports(weeklyTasks.map(t=>t.id),weekStart,weekEnd,loadedMembers.map(m=>m.id)),loadedMembers.length?readAll(supabase.from('activity_log').select('user_id,metadata,created_at').eq('action','weekly_summary_image').eq('metadata->>week_start',weekStart).eq('metadata->>week_end',weekEnd).in('user_id',loadedMembers.map(m=>m.id)).order('created_at',{ascending:false}).order('id',{ascending:false})):Promise.resolve([])]);
-      if(token!==loadGeneration.current)return;
-      const latest:Record<string,TeamReportRow>={};rows.forEach(row=>{const key=`${row.user_id}:${row.task_key}`;if(!latest[key])latest[key]=row;});
-      const grouped=Object.fromEntries(loadedMembers.map(m=>[m.id,weeklyTasks.filter(t=>String(t.assignee_id)===String(m.id))]));
-      const progress=Object.fromEntries(loadedMembers.map(m=>[m.id,{total:grouped[m.id].length,reported:grouped[m.id].filter((t:WeeklyReportTask)=>latest[`${m.id}:${t.id}`]).length}]));
-      const images:Record<number,string|null>={};imageRows.forEach(row=>{if(!(row.user_id in images))images[row.user_id]=row.metadata?.image_url||null;});
-      setMembers(loadedMembers);setTaskCount(Object.fromEntries(loadedMembers.map(m=>[m.id,allMemberTasks.filter(t=>String(t.assignee_id)===String(m.id)).length])));setReportProgress(progress);setWeeklyTasksByMember(grouped);setTeamReports(latest);setSummaryImages(images);setTeamError('');
-      if(selectedMemberRef.current)setMemberTasks(allMemberTasks.filter(t=>String(t.assignee_id)===String(selectedMemberRef.current?.id)));
-    }catch(e){if(token===loadGeneration.current)setTeamError(e instanceof Error?e.message:'Chưa đồng bộ được báo cáo team.');}
-    finally{if(token===loadGeneration.current)setLoadingTeam(false);}
-  },[profile?.id,profile?.role,profile?.department_id,profile?.employment_level,weekStart,weekEnd]);
+  const loadTeam = useCallback(async (silent = false) => {
+      const normalizedRole = (profile?.role || '').toLowerCase();
+      const normalizedLevel = (profile?.employment_level || '').toLowerCase();
+      const canViewAll = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
+      if (!profile || (!canViewAll && !profile.department_id)) {
+        setMembers([]); if(!silent) if(!silent) setLoadingTeam(false);
+        return;
+      }
+      if(!silent) setLoadingTeam(true);
+      let query = supabase.from('users')
+        .select('id,name,avatar_url,employment_level,job_title,department_id,role')
+        .eq('is_active', true)
+        .neq('id', profile.id)
+        .order('name');
+      if (!canViewAll && profile.department_id) query = query.eq('department_id', profile.department_id);
+      const { data, error } = await query;
+      if (error) console.warn('Could not load team members:', error.message);
+      const loadedMembers = (data || []) as TeamMember[];
+      const memberIds = loadedMembers.map(member => member.id);
+      const [taskResult] = memberIds.length ? await Promise.all([
+        supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,assignee_id,project:project_id(id,name)').in('assignee_id', memberIds),
+      ]) : [{ data: [], error: null } as any];
+      if (taskResult.error) console.warn('Could not load team report tasks:', taskResult.error.message);
+      const allMemberTasks = (taskResult.data || []) as WeeklyReportTask[];
+      const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
+      const weeklyTaskIds = weeklyTasks.map((task: any) => task.id);
+      const { data: reportRows, error: reportError } = weeklyTaskIds.length
+        ? await supabase.from('activity_log').select('id,user_id,entity_id,created_at,metadata,action').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds).order('created_at', { ascending: false })
+        : { data: [], error: null };
+        
+      const { data: imageRows } = memberIds.length
+        ? await supabase.from('activity_log').select('user_id,metadata').eq('action', 'weekly_summary_image').in('user_id', memberIds).order('created_at', { ascending: false })
+        : { data: [] };
+      if (reportError) console.warn('Could not load team report status:', reportError.message);
+      const taskIdsByMember = new Map<number, string[]>();
+      weeklyTasks.forEach((task: any) => {
+        const memberId = Number(task.assignee_id);
+        taskIdsByMember.set(memberId, [...(taskIdsByMember.get(memberId) || []), task.id]);
+      });
+      const reportedKeys = new Set((reportRows || []).filter((row: any) => row.metadata?.week_start === weekStart && row.metadata?.week_end === weekEnd).map((row: any) => `${row.user_id}:${row.entity_id}`));
+      const progress = Object.fromEntries(loadedMembers.map(member => {
+        const ids = taskIdsByMember.get(member.id) || [];
+        return [member.id, { total: ids.length, reported: ids.filter(id => reportedKeys.has(`${member.id}:${id}`)).length }];
+      }));
+      const groupedTasks = Object.fromEntries(loadedMembers.map(member => [member.id, weeklyTasks.filter((task: any) => Number(task.assignee_id) === member.id)]));
+      const latestReports: Record<string, TeamReportRow> = {};
+      (reportRows || []).forEach((row: any) => {
+        if (row.metadata?.week_start !== weekStart || row.metadata?.week_end !== weekEnd) return;
+        const key = `${row.user_id}:${row.entity_id}`;
+        if (!latestReports[key]) latestReports[key] = row as TeamReportRow;
+      });
+      const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
+            setMembers(loadedMembers);
+      setTaskCount(counts);
+      setReportProgress(progress);
+      setWeeklyTasksByMember(groupedTasks);
+      setTeamReports(latestReports);
+      const imgMap: Record<number, string | null> = {};
+      (imageRows || []).forEach((row: any) => {
+        if (row.metadata?.week_start === weekStart && row.metadata?.week_end === weekEnd) {
+          if (!imgMap[row.user_id]) imgMap[row.user_id] = row.metadata.image_url;
+        }
+      });
+      setSummaryImages(imgMap);
+      if(!silent) setLoadingTeam(false);
+  }, [profile?.department_id, profile?.id, profile?.role, weekEnd, weekStart]);
 
   useEffect(() => {
     void loadTeam();
@@ -84,8 +119,14 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
-  useWorkspaceRealtime(['activity_log','tasks','project_subtasks','campaign_subtasks','users','projects','campaigns'],()=>void loadTeam(true),profile?.id);
-  useEffect(()=>()=>{loadGeneration.current++;},[loadTeam]);
+  useEffect(() => {
+    const channel = supabase.channel('team-report-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+        void loadTeam(true);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadTeam]);
 
   useEffect(() => {
     const el = document.getElementById('team-report-calendar');
@@ -107,7 +148,6 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     }
   };
   const openReport = async (member: TeamMember, silent = false) => {
-    const token=++detailGeneration.current;
     setSelectedMember(member);
     if (!silent) setLoadingReport(true);
     setMemberTasks([]);
@@ -118,14 +158,12 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       projectQuery = projectQuery.eq('department_id', member.department_id);
       campaignQuery = campaignQuery.eq('department_id', member.department_id);
     }
-    try {
     const [taskResult, projectResult, campaignResult] = await Promise.all([
-      readWorkspaceTasks().then(rows=>({data:rows.filter(t=>String(t.assignee_id)===String(member.id)),error:null})),
+      supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,project:project_id(id,name)').eq('assignee_id', member.id).order('updated_at', { ascending: false }),
       projectQuery,
       campaignQuery,
     ]);
-
-    if(token!==detailGeneration.current)return;
+    if (taskResult.error) console.warn('Could not load member tasks:', taskResult.error.message);
     if (projectResult.error) console.warn('Could not load member projects:', projectResult.error.message);
     if (campaignResult.error) console.warn('Could not load member campaigns:', campaignResult.error.message);
     setMemberTasks((taskResult.data || []) as WeeklyReportTask[]);
@@ -138,7 +176,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     });
     (campaignResult.data || []).forEach((item: any) => referenceMap.set(`campaign-${item.id}`, { id: item.id, name: item.name, status: item.status, description: item.objective, kind: 'campaign' }));
     setReferences([...referenceMap.values()]);
-    }catch(e){if(token===detailGeneration.current)setTeamError(e instanceof Error?e.message:'Chưa tải được report của thành viên.');}finally{if(token===detailGeneration.current&&!silent)setLoadingReport(false);}
+    if (!silent) setLoadingReport(false);
   };
 
   const notify = async (task?: WeeklyReportTask) => {
@@ -151,8 +189,8 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     const { error } = await supabase.from('notifications').insert({
       user_id: selectedMember.id,
       type: 'report_reminder',
-      entity_type: task ? taskTarget(task.id).kind : 'weekly_report',
-      entity_id: task ? taskTarget(task.id).id : null,
+      entity_type: task ? 'task' : 'weekly_report',
+      entity_id: task?.id || null,
       message,
       metadata: { week_start: weekStart, week_end: weekEnd, reminder_scope: task ? 'task' : 'member', task_title: task?.title || null, workspace_id: workspaceId },
     });
@@ -223,7 +261,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder={t("reports.search")} className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
         </div>
-        <div className="space-y-2">{teamError && <p role="alert">{teamError}</p>}
+        <div className="space-y-2">
           {loadingTeam ? <p className="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-slate-900">Đang tải đội ngũ…</p> : visibleMembers.length === 0 ? <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">Chưa có thành viên khác trong phòng ban.</p> : visibleMembers.map(member => {
             const expanded = selectedMember?.id === member.id;
             const compactTasks = weeklyTasksByMember[member.id] || [];

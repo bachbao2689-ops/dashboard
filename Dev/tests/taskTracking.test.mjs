@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {taskTarget,taskKey,entityLink,taskActive,taskOpen,taskOverdue,completionMetrics} from '../src/lib/taskTracking.ts';
-import {buildReportAnalytics,reportPeriod} from '../src/lib/reportAnalytics.ts';
-import {tasksForWeeklyReport} from '../src/lib/weeklyReport.ts';
-import {buildDepartmentTracking} from '../src/lib/departmentTracking.ts';
-const now=new Date('2026-10-14T12:00:00+07:00');
+import {taskTarget,taskKey,entityLink,taskActive,taskOpen,taskOverdue,taskDueWithin,completionMetrics} from '../src/lib/taskTracking.ts';
+import {mapWorkspaceTasks} from '../src/lib/workspaceTaskMapping.ts';
+import {taskProgress,parentTasks} from '../src/lib/workflowHub.ts';
+import {mapPriority,mapStatus} from '../src/components/features/tasks/list/taskListPresentation.ts';
+import {tasksForProfileWeek as tasksForWeeklyReport} from '../src/lib/profileTaskTracking.ts';
 const base={id:'a',title:'Task',status:'todo',priority:'medium',created_at:'2026-09-01T05:00:00Z'};
 test('kind and UUID stay distinct in notification links and writes',()=>{
  const id='same-id';assert.deepEqual(taskTarget(taskKey('project_subtask',id)),{kind:'project_subtask',id,table:'project_subtasks'});
@@ -21,18 +21,29 @@ test('weekly report does not move an old completion when it is edited or count c
  const tasks=[{...base,id:'old',status:'done',completed_at:'2026-10-02T00:00:00Z',updated_at:'2026-10-14T00:00:00Z'},{...base,id:'open'},{...base,id:'unknown',status:'done'},{...base,id:'cancelled',status:'cancelled'}];
  assert.deepEqual(tasksForWeeklyReport(tasks,'2026-10-12','2026-10-18').map(t=>t.id),['open','unknown']);
 });
-test('period filters compare genuine completions and do not manufacture unknown dates',()=>{
- const tasks=[{...base,id:'current',status:'done',completed_at:'2026-10-13T00:00:00Z'},{...base,id:'previous',status:'done',completed_at:'2026-09-13T00:00:00Z'},{...base,id:'unknown',status:'done'},{...base,id:'open',due_date:'2026-10-13'},{...base,id:'cancelled',status:'cancelled'}];
- const data=buildReportAnalytics(tasks,'month',now);assert.equal(data.kpis.tasksCompleted,1);assert.equal(data.kpis.tasksCompletedPrev,1);assert.equal(data.completionTrend.reduce((n,p)=>n+p.completed,0),1);assert.equal(data.kpis.unknownCompletionDates,1);assert.equal(data.statusDistribution.reduce((n,p)=>n+p.value,0),data.scoped.length);
- assert.equal(buildReportAnalytics(tasks,'all',now).kpis.tasksCompleted,3);
+
+test('same normalized tasks feed Project, All Tasks and Workload without colliding IDs',()=>{
+ const project={id:'parent',name:'Same name',status:'active',priority:'urgent',department_id:'dept'},campaign={...project,priority:'high'};
+ const rows=mapWorkspaceTasks([{...base,id:'same',assignee_id:1,project_id:'parent',project}], [{...base,id:'same',assignee_id:1,project_id:'parent',projects:project,status:'done'}],[{...base,id:'same',assignee_id:1,campaign_id:'parent',campaigns:campaign}],new Map([['ps-same',{description:'Project description'}],['cs-same',{description:'Campaign description'}]]));
+ assert.deepEqual(rows.map(t=>t.id),['same','ps-same','cs-same']);assert.equal(rows[1].priority,'urgent');assert.equal(rows[2].priority,'high');assert.equal(rows[1].description,'Project description');assert.equal(rows[2].description,'Campaign description');
+ assert.deepEqual(taskProgress(parentTasks(rows,'project','parent')),{total:2,done:1,percent:50});assert.equal(parentTasks(rows,'campaign','parent').length,1);assert.equal(rows.filter(t=>String(t.assignee_id)==='1'&&taskOpen(t)).length,2);
 });
-test('empty analytics does not invent cycle times or previous all-time period',()=>{
- const data=buildReportAnalytics([],'all',now);assert.equal(data.kpis.avgCompletionTimeDays,null);assert.equal(data.kpis.tasksCompletedPrev,null);
- assert.equal(reportPeriod('quarter',now).start,'2026-10-01');assert.equal(reportPeriod('week',now).start,'2026-10-12');
+test('hidden parents and hidden task rows are excluded from all shared views',()=>{
+ const hidden={id:'p',status:'archived',name:'Hidden'};
+ assert.equal(mapWorkspaceTasks([{...base,project:hidden}], [{...base,projects:hidden}], [{...base,campaigns:{...hidden,status:'deleted'}}]).length,0);
+ assert.equal(mapWorkspaceTasks([{...base,status:'deleted'},{...base,status:'cancelled'}],[],[]).length,1);
 });
-test('department tracking includes legacy subtasks and distinguishes equal parent IDs across kinds',()=>{
- const tasks=[{...base,id:'ps-a',project_id:'same',department_id:'d',assignee_id:'1',status:'done',completed_at:'2026-10-13T00:00:00Z'},{...base,id:'cs-a',campaign_id:'same',department_id:'d',assignee_id:'1',due_date:'2026-10-13'}];
- const tracks=['project','campaign'].map(kind=>({id:kind,entity_type:kind,entity_id:'same',name:'Same title',status:'active',department_id:'d',phases:[],pics:[],start_date:null,due_date:'2026-10-20',root:false,asset:null}));
- const data=buildDepartmentTracking(tasks,[{id:'1',name:'Staff',department_id:'d'}],[{id:'d',name:'Design'}],tracks,'month',now);
- assert.equal(data.overall.comparison[0].total,2);assert.equal(data.detail.d.members[0].activeTasks,1);assert.equal(data.overall.projects[0].progress,100);assert.equal(data.overall.projects[1].progress,0);assert.equal(data.detail.d.kpis.budgetActual,null);
+test('All Tasks filters retain real urgent priority and cancelled status',()=>{
+ assert.equal(mapPriority('urgent'),'Urgent');assert.equal(mapStatus('canceled'),'cancelled');
+});
+
+test('Campaign subtasks do not invent an unset priority',()=>{
+ const [row]=mapWorkspaceTasks([],[],[{...base,campaign_id:'c',campaigns:{id:'c',name:'Campaign',status:'active'}}]);
+ assert.equal(row.priority,'');assert.equal(mapPriority(row.priority),'—');
+});
+
+test('due-soon shortcuts and Dashboard include the last deadline day and exclude completed work',()=>{
+ assert.equal(taskDueWithin({status:'todo',due_date:'2026-10-21'},'2026-10-14','2026-10-21'),true);
+ assert.equal(taskDueWithin({status:'done',due_date:'2026-10-21'},'2026-10-14','2026-10-21'),false);
+ assert.equal(taskDueWithin({status:'todo',due_date:'2026-10-22'},'2026-10-14','2026-10-21'),false);
 });

@@ -1,6 +1,3 @@
-import {useNavigate} from 'react-router-dom';
-import {taskLink} from '../../lib/taskTracking';
-import {projectsLink} from '../../lib/workflowHub';
 // src/components/departments/DepartmentDetailView.tsx
 import React, { useState, useMemo } from 'react';
 import {
@@ -42,7 +39,6 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
   isDark = false,
 }) => {
   const { t } = useTranslation();
-  const navigate=useNavigate();
   const [taskFilter, setTaskFilter] = useState<TaskStatusFilter>('all');
 
   const filteredTasks = useMemo(() => {
@@ -123,13 +119,12 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {data.projects.map((proj) => {
-            const pct = proj.totalTasks?Math.round((proj.completedTasks/proj.totalTasks)*100):0;
+            const pct = Math.round((proj.completedTasks / proj.totalTasks) * 100);
             const badge = getStatusBadge(proj.status);
 
             return (
               <div
-                key={`${proj.kind}:${proj.id}`}
-                role="button" tabIndex={0} onClick={()=>navigate(projectsLink(proj.kind||'project',proj.id))} onKeyDown={e=>{if(e.key==='Enter')navigate(projectsLink(proj.kind||'project',proj.id));}}
+                key={proj.id}
                 className="bg-gray-50/70 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 flex flex-col justify-between"
               >
                 <div>
@@ -222,7 +217,6 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
             return (
               <div
                 key={taskItem.id}
-                role="button" tabIndex={0} onClick={()=>navigate(taskLink(taskItem.id))} onKeyDown={e=>{if(e.key==='Enter')navigate(taskLink(taskItem.id));}}
                 className="grid grid-cols-[minmax(0,1fr)_96px_36px_84px_52px] gap-2.5 items-center py-2 text-xs px-1 hover:bg-gray-50/60 dark:hover:bg-slate-700/20 rounded transition-colors"
               >
                 <div className="min-w-0 pr-2">
@@ -283,7 +277,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[260px]">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-              Công việc hoàn thành theo ngày/kỳ
+              {t('departments.burndownTitle')}
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
@@ -310,7 +304,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                   tick={{ fill: tickColor, fontSize: 11 }}
                 />
                 <YAxis
-                  domain={[0, 'auto']}
+                  domain={[0, 80]}
                   stroke={tickColor}
                   tickLine={false}
                   axisLine={{ stroke: gridColor }}
@@ -325,7 +319,7 @@ export const DepartmentDetailView: React.FC<DepartmentDetailViewProps> = ({
                           {t('departments.weekLabel', { label: String(label) })}
                         </p>
                         <div className="flex items-center justify-between gap-4 text-blue-600 dark:text-blue-400">
-                          <span>Hoàn thành</span>
+                          <span>{t('departments.actualRemaining')}</span>
                           <b>{payload[0].value} task</b>
                         </div>
                         {payload[1] && (

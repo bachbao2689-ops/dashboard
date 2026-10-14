@@ -1,6 +1,6 @@
 import {supabase} from './supabase';
 import {readAll} from './workspaceTasks';
-import {taskKey,taskTarget} from '../lib/taskTracking';
+import {taskKey,taskTarget,taskActive} from '../lib/taskTracking';
 export type WeeklyMetadata={body?:string;blocker?:string|null;next_step?:string|null;image_url?:string|null;unchanged?:boolean;week_start?:string;week_end?:string};
 export type WeeklyRow={id:string;user_id:number;entity_id:string;entity_type:string;created_at:string;metadata?:WeeklyMetadata|null;task_key:string};
 export async function readWeeklyReports(keys:string[],start:string,end:string,userIds?:number[]){
@@ -18,6 +18,7 @@ export async function saveWeeklyReports(items:{id:string;metadata:WeeklyMetadata
    for(const item of items){
     const target=taskTarget(item.id);
     const {data:task,error:taskError}=await supabase.from(target.table).select('*').eq('id',target.id).single();if(taskError)throw taskError;
+    if(!taskActive(task))throw new Error('Công việc đã được ẩn, xóa hoặc hủy.');
     if(Number(task.assignee_id)!==Number(actor.id))throw new Error('Chỉ người được giao công việc có thể gửi report.');
     let workspace=task.workspace_id;
     if(target.kind!=='task'){const parent=target.kind==='project_subtask'?'project':'campaign';const {data:p,error:failure}=await supabase.from(`${parent}s`).select('workspace_id,status').eq('id',task[`${parent}_id`]).single();if(failure)throw failure;if(['deleted','archived'].includes(p.status))throw new Error('Project/Campaign đã được ẩn hoặc xóa.');workspace=p.workspace_id;}

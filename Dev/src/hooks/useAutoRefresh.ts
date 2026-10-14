@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 export interface UseAutoRefreshOptions {
   intervalMinutes?: number;
-  onRefresh?: () => void | Promise<void>;
+  onRefresh?: () => void;
   showToastOnManual?: boolean;
 }
 
@@ -36,19 +36,39 @@ export function useAutoRefresh({
     setSecondsRemaining(mins * 60);
   }, []);
 
-  const refreshingRef=useRef(false);
-  const alive=useRef(true);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
-  const executeRefresh=useCallback(async(isManual=false)=>{
-    if(refreshingRef.current)return;
-    refreshingRef.current=true;setIsRefreshing(true);setSecondsRemaining(intervalMinutes*60);
-    try{await onRefreshRef.current?.();if(alive.current&&isManual&&showToastOnManual)toast.success('Đã tải lại dữ liệu phòng ban');}
-    catch{if(alive.current&&isManual)toast.error('Không thể làm mới dữ liệu');}
-    finally{refreshingRef.current=false;if(alive.current)setIsRefreshing(false);}
-  },[intervalMinutes,showToastOnManual]);
-  const refreshNow=useCallback(()=>{void executeRefresh(true);},[executeRefresh]);
-  const remainingRef=useRef(secondsRemaining);remainingRef.current=secondsRemaining;
-  useEffect(()=>{const timer=setInterval(()=>{const next=remainingRef.current-1;remainingRef.current=next;if(next<=0){void executeRefresh();}else setSecondsRemaining(next);},1000);return()=>clearInterval(timer);},[executeRefresh]);
+  const executeRefresh = useCallback((isManual = false) => {
+    setIsRefreshing(true);
+    if (onRefreshRef.current) {
+      onRefreshRef.current();
+    }
+    if (isManual && showToastOnManual) {
+      toast.success('Dữ liệu phòng ban đã được làm mới');
+    }
+    setSecondsRemaining(intervalMinutes * 60);
+    // Subtle timeout to simulate instant data sync feedback
+    const timeout = setTimeout(() => {
+      setIsRefreshing(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [intervalMinutes, showToastOnManual]);
+
+  const refreshNow = useCallback(() => {
+    executeRefresh(true);
+  }, [executeRefresh]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          executeRefresh(false);
+          return intervalMinutes * 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [intervalMinutes, executeRefresh]);
 
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
