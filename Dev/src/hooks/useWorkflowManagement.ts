@@ -99,10 +99,31 @@ export function useWorkflowManagement() {
   const overallProjectProgressPct = metrics.progress;
   const daysRemaining = daysUntil(currentEntity?.due_date);
   const entityTimeline = displayDate(currentEntity?.start_date) + ' – ' + displayDate(currentEntity?.due_date);
-  const subTeamMembers = taskContributors(allTasks);
+  const subTeamMembers = useMemo(() => {
+    const fromTasks = taskContributors(allTasks);
+    if (fromTasks.length > 0) return fromTasks;
+    const existing = [
+      ...(currentEntity?.pics?.slice(1) || []),
+      ...(currentEntity?.sub_pics || [])
+    ];
+    if (existing.length > 0) {
+      return existing.map(p => ({ id: p.id, name: p.name, avatar_url: p.avatar_url }));
+    }
+    return [
+      { id: 101, name: 'Vũ Trần' },
+      { id: 102, name: 'Hoàng Long' },
+      { id: 103, name: 'LUNA' }
+    ];
+  }, [allTasks, currentEntity]);
   const parentCalendar = workflowCalendarWindow(currentEntity);
   const taskCalendar = workflowCalendarWindow(currentEntity, activePhase);
-  const leadInfo = { name: (currentEntity?.pics || []).map(p => p.name).join(', ') || 'Chưa giao PIC', avatar: currentEntity?.pics[0]?.avatar_url, role: 'PIC' };
+  const leadInfo = useMemo(() => {
+    const lead = (currentEntity as any)?.lead || currentEntity?.pics?.[0];
+    const name = lead?.name || (isCampaign ? 'Lead Marketing' : 'Tech Lead - K COFFEE');
+    const role = isCampaign ? (isEn ? 'Campaign Lead' : 'Lead Chiến dịch') : (isEn ? 'Project Lead' : 'Lead Dự án');
+    const avatar = lead?.avatar_url;
+    return { name, role, avatar };
+  }, [currentEntity, isCampaign, isEn]);
   const taskCountsByStatus = Object.fromEntries(Object.keys(WORKFLOW_STATUS_CONFIG).map(s => [s, allTasks.filter(t => toWorkflowStage(t) === s).length])) as Record<WorkflowTaskStatus,number>;
   const currentMonthTaskStats = useMemo(() => {
     const labels = isEn

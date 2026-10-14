@@ -1,7 +1,6 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import {FolderKanban, ChevronDown, Globe, Search, User, Clock} from 'lucide-react';
 import {Avatar} from '../../common/Avatar';
-import {StatusBadge} from '../../common/StatusBadge';
 
 export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
   const {isEn, entityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, currentEntity, selectedEntityId, isCampaign, filteredEntities, handleFilterChange, handleSelectEntity, daysRemaining, entityTimeline, subTeamMembers, leadInfo} = model;
@@ -38,7 +37,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
             </div>
 
             <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
-              • {currentEntity.root ? (isEn ? 'Full Scope' : 'PIC toàn bộ') : (isEn ? 'Assigned Scope' : 'Phạm vi được giao')}
+              • {isCampaign ? (isEn ? 'Marketing & Media Campaign' : 'Chiến dịch truyền thông & Tiếp thị') : 'Website Development Lifecycle'}
             </span>
           </div>
 
@@ -59,7 +58,9 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
-                  {currentEntity.name}
+                  {currentEntity.name.startsWith('[Project]') || currentEntity.name.startsWith('[Campaign]') 
+                    ? currentEntity.name 
+                    : `[${isCampaign ? 'Campaign' : 'Project'}] ${currentEntity.name}`}
                 </h1>
                 <ChevronDown
                   size={18}
@@ -183,7 +184,17 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               ))}
             </div>
 
-            <StatusBadge status={currentEntity.status} />
+            {/* Project / Campaign Status Pill */}
+            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+              currentEntity.status === 'completed'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                currentEntity.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+              }`} />
+              <span>{currentEntity.status === 'completed' ? (isEn ? 'Completed' : 'Hoàn thành') : (isEn ? 'In-Progress' : 'Đang thực hiện')}</span>
+            </span>
 
           </div>
         </div>
