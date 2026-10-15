@@ -1,6 +1,6 @@
 // src/types/department.ts
 
-export type DepartmentId = 'marketing' | 'sale' | 'ecommerce' | 'design' | 'accounting' | 'hr';
+export type DepartmentId = string;
 
 export type AlertLevel = 'ok' | 'risk' | 'late';
 
@@ -19,6 +19,7 @@ export interface DepartmentInfo {
 }
 
 export interface DepartmentKpis {
+  unavailable?: string[];
   completionRate: number;        // e.g. 62
   completionDelta: string;      // e.g. "▲ 4% so với kỳ trước"
   completionIsPositive?: boolean;
@@ -53,7 +54,7 @@ export interface DepartmentComparisonItem {
 export interface WeeklyTrendItem {
   week: string; // T1..T8
   actual: number;
-  target: number;
+  target: number | null;
 }
 
 export interface HeatmapRow {

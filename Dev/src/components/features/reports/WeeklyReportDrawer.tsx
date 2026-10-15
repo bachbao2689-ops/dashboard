@@ -1,3 +1,6 @@
+import {readWeeklyReports,weeklyEntity} from '../../../services/weeklyReports';
+import {completeTrackedTask} from '../../../services/taskTracking';
+import {useWorkspaceRealtime} from '../../../hooks/useWorkspaceRealtime';
 import { WeeklyReportPreview } from './WeeklyReportPreview';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BellRing, CalendarDays, ChevronDown, ExternalLink, ImagePlus, Layers3, Send, X, CheckSquare , } from 'lucide-react';
@@ -16,6 +19,7 @@ export type WeeklyReportTask = {
   project?: { id?: string; name?: string | null } | null;
   created_at?: string | null;
   updated_at?: string | null;
+  completed_at?: string | null;
   due_date?: string | null;
 };
 export type ReportReference = { id: string; name: string; status?: string | null; description?: string | null; kind: 'project' | 'campaign' };
@@ -69,7 +73,6 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
     const [summaryImage, setSummaryImage] = useState<string | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  const [reportedThisSession, setReportedThisSession] = useState<Set<string>>(new Set());
   const [leftWidth, setLeftWidth] = useState(50);
   const [drawerWidth, setDrawerWidth] = useState(900);
   const [isResizingDrawer, setIsResizingDrawer] = useState(false);
@@ -108,13 +111,16 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const removeSummaryImage = async () => {
     setSummaryImage(null);
     if (!userId) return;
-    await supabase.from('activity_log').delete().match({
-      workspace_id: workspaceId, user_id: userId, action: 'weekly_summary_image', entity_id: userId
-    });
+    const {error}=await supabase.from('activity_log').delete().match({workspace_id:workspaceId,user_id:userId,action:'weekly_summary_image',entity_id:String(userId)}).contains('metadata',{week_start:weekStart,week_end:weekEnd});
+    if(error)toast.error('Không thể xóa ảnh report');
   };
 
-  const submitFinalReport = () => {
-    toast.success('Đã gửi báo cáo tuần cho Leader!');
+  const submitFinalReport = async () => {
+    if(!userId || !canEdit || saving)return;setSaving(true);
+    const {error}=await supabase.from('activity_log').insert({workspace_id:workspaceId,user_id:userId,entity_type:'user',entity_id:String(userId),action:'weekly_report_submitted',metadata:{week_start:weekStart,week_end:weekEnd,reported:reportedTasks.length,total:tasks.length}});
+    setSaving(false);if(error)return toast.error('Chưa gửi được báo cáo tuần');
+    await Promise.all(tasks.map(task=>notifyTaskParticipants(task,{id:userId,name:ownerName,department_id:profile?.department_id},'weekly_report')));
+    toast.success('Đã gửi báo cáo tuần cho Leader');onReportSaved?.();
   };
 
   const summaryUploadRef = useRef<HTMLInputElement>(null);
@@ -130,20 +136,16 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const [referenceSearch, setReferenceSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const requestId = useRef(0);
+  const draftDirty=useRef(false);
   const uploadRef = useRef<HTMLInputElement>(null);
 
   const loadReports = useCallback(async () => {
     const currentRequest = ++requestId.current;
+    if(userId){const {data}=await supabase.from('activity_log').select('metadata').eq('user_id',userId).eq('action','weekly_summary_image').contains('metadata',{week_start:weekStart,week_end:weekEnd}).order('created_at',{ascending:false}).limit(1);if(currentRequest===requestId.current)setSummaryImage(data?.[0]?.metadata?.image_url || null);}
     if (!tasks.length) { setReports({}); setLoadingReports(false); return; }
     setLoadingReports(true);
-    let query = supabase.from('activity_log')
-      .select('id,entity_id,created_at,metadata')
-      .eq('entity_type', 'task')
-      .eq('action', 'weekly_report')
-      .in('entity_id', tasks.map(task => task.id))
-      .order('created_at', { ascending: false });
-    if (userId) query = query.eq('user_id', userId);
-    const { data, error } = await query;
+    const result=await readWeeklyReports(tasks.map(t=>t.id),weekStart,weekEnd,userId).then(data=>({data,error:null})).catch(error=>({data:[],error}));
+    const {data,error}=result;
     if (currentRequest !== requestId.current) return;
     if (error) {
       console.warn('Could not load weekly reports:', error.message);
@@ -160,12 +162,14 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   }, [tasks, userId, weekEnd, weekStart]);
 
   useEffect(() => {
+    draftDirty.current=false;
     setReports({});
     setTab('pending');
-    setActiveTaskId(null);
+    setActiveTaskId(null);setSelectedTasks(new Set());
   }, [weekStart, weekEnd, userId]);
   useEffect(() => { if (isOpen) void loadReports(); }, [isOpen, loadReports]);
   useEffect(() => {
+    if(draftDirty.current)return;
     const metadata = activeTaskId ? reports[activeTaskId]?.metadata : null;
     setMode(metadata ? (metadata.unchanged ? 'unchanged' : 'progress') : null);
     setBody(metadata?.body || '');
@@ -175,7 +179,8 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     setShowMore(Boolean(metadata?.blocker || metadata?.next_step || metadata?.image_url));
   }, [activeTaskId, reports]);
 
-  const pendingTasks = useMemo(() => tasks.filter(task => !reports[task.id] || reportedThisSession.has(task.id)), [tasks, reports, reportedThisSession]);
+  useWorkspaceRealtime(['activity_log'],()=>{if(isOpen)void loadReports();},profile?.id);
+  const pendingTasks = useMemo(() => tasks.filter(task => !reports[task.id]), [tasks, reports]);
   const reportedTasks = useMemo(() => tasks.filter(task => Boolean(reports[task.id])), [tasks, reports]);
   const visibleTasks = tab === 'pending' ? pendingTasks : reportedTasks;
   // @ts-ignore
@@ -200,8 +205,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       workspace_id: workspaceId,
       user_id: userId,
       action: 'weekly_report',
-      entity_type: 'task',
-      entity_id: selectedTask.id,
+      ...weeklyEntity(selectedTask.id),
       metadata: {
         body: content,
         blocker: reportMode === 'progress' ? blocker.trim() || null : null,
@@ -215,10 +219,10 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     });
     setSaving(false);
     if (error) return toast.error('Không thể lưu weekly report');
+    draftDirty.current=false;
     if (profile?.id === userId) void notifyTaskParticipants(selectedTask, { id: userId, name: ownerName, department_id: profile.department_id }, 'weekly_report');
     toast.success(reportMode === 'unchanged' ? 'Đã ghi nhận: Không thay đổi' : 'Đã lưu report');
     onReportSaved?.();
-    setReportedThisSession(prev => new Set(prev).add(selectedTask.id));
     await loadReports();
   };
 
@@ -242,8 +246,9 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   const bulkCompleteTasks = async () => {
     if (!userId || selectedTasks.size === 0) return;
     setSaving(true);
+    try { await Promise.all(Array.from(selectedTasks).map(completeTrackedTask)); } catch(error:any) {setSaving(false);toast.error(error.message);return;}
     const payloads = Array.from(selectedTasks).map(taskId => ({
-      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
+      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', ...weeklyEntity(taskId),
       metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_start: weekStart, week_end: weekEnd }
     }));
     const { error } = await supabase.from('activity_log').insert(payloads);
@@ -252,16 +257,16 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       toast.success(`Đã đánh dấu hoàn thành ${selectedTasks.size} tasks`);
       onReportSaved?.();
       setSelectedTasks(new Set());
-      setReportedThisSession(prev => new Set([...prev, ...Array.from(selectedTasks)]));
-      await loadReports();
+        await loadReports();
     }
   };
 
   const quickCompleteTask = async (taskId: string) => {
     if (!userId) return;
     setSaving(true);
+    try {await completeTrackedTask(taskId);}catch(error:any){setSaving(false);toast.error(error.message);return;}
     const { error } = await supabase.from('activity_log').insert({
-      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', entity_type: 'task', entity_id: taskId,
+      workspace_id: workspaceId, user_id: userId, action: 'weekly_report', ...weeklyEntity(taskId),
       metadata: { body: 'Đã hoàn thành', unchanged: false, entity_id: userId, week_start: weekStart, week_end: weekEnd }
     });
     setSaving(false);
@@ -301,7 +306,7 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
     const report = reports[task.id];
     const expanded = activeTaskId === task.id;
     return <article key={task.id} className={`overflow-hidden rounded-xl border transition-colors ${expanded ? 'border-primary/30 bg-primary/[0.02]' : 'border-gray-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/30'}`}>
-      <div className="group flex w-full items-center gap-3 p-3 text-left hover:bg-primary/[0.03] relative cursor-pointer" onClick={() => setActiveTaskId(expanded ? null : task.id)}>
+      <div className="group flex w-full items-center gap-3 p-3 text-left hover:bg-primary/[0.03] relative cursor-pointer" onClick={() => {draftDirty.current=false;setActiveTaskId(expanded ? null : task.id);}}>
         {!report && canEdit && <input type="checkbox" checked={selectedTasks.has(task.id)} onClick={(e) => toggleSelectTask(task.id, e)} className="shrink-0 w-4 h-4 rounded border-gray-300 text-primary cursor-pointer" />}
         <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         <span className="min-w-0 flex-1 pr-24"><b className="block truncate text-sm text-gray-900 dark:text-white">{task.title}</b><span className="mt-1 block truncate text-[11px] text-gray-500">{task.project?.name || 'Task lẻ'} · {(task.status || 'todo').replaceAll('_', ' ')}</span></span>
@@ -317,18 +322,18 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
             <button type="button" disabled={saving} onClick={() => { if (mode !== 'unchanged' && !report?.metadata?.unchanged) setBody(''); setMode('unchanged'); if (!report) void saveReport('unchanged', ''); }} className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${mode === 'unchanged' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-emerald-300 dark:border-slate-700 dark:text-gray-300'}`}>Không thay đổi</button>
           </div>
           {mode === 'progress' && <>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Kết quả tuần này <span className="text-red-500">*</span><textarea value={body} onChange={event => setBody(event.target.value)} rows={3} placeholder="Đã làm được gì? Tiến độ hiện tại?" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-3 text-sm font-normal text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Kết quả tuần này <span className="text-red-500">*</span><textarea value={body} onChange={event => {draftDirty.current=true;setBody(event.target.value);}} rows={3} placeholder="Đã làm được gì? Tiến độ hiện tại?" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-3 text-sm font-normal text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></label>
             <button type="button" aria-expanded={showMore} onClick={() => setShowMore(value => !value)} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">{showMore ? 'Ẩn' : 'Thêm'} vướng mắc, bước tiếp theo và minh chứng <ChevronDown size={14} className={`transition-transform ${showMore ? 'rotate-180' : ''}`} /></button>
             {showMore && <div className="space-y-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900/40">
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Vướng mắc / cần hỗ trợ<textarea value={blocker} onChange={event => setBlocker(event.target.value)} rows={2} placeholder="Tùy chọn" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Việc tiếp theo<textarea value={nextStep} onChange={event => setNextStep(event.target.value)} rows={2} placeholder="Tùy chọn" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Link minh chứng<input value={imageUrl} onChange={event => setImageUrl(event.target.value)} placeholder="Dán link ảnh hoặc tài liệu" className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Vướng mắc / cần hỗ trợ<textarea value={blocker} onChange={event => {draftDirty.current=true;setBlocker(event.target.value);}} rows={2} placeholder="Tùy chọn" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Việc tiếp theo<textarea value={nextStep} onChange={event => {draftDirty.current=true;setNextStep(event.target.value);}} rows={2} placeholder="Tùy chọn" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Link minh chứng<input value={imageUrl} onChange={event => {draftDirty.current=true;setImageUrl(event.target.value);}} placeholder="Dán link ảnh hoặc tài liệu" className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800" /></label>
               <input ref={uploadRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} />
               <button type="button" onClick={() => uploadRef.current?.click()} className="inline-flex items-center gap-1 rounded-lg border border-primary/20 px-2.5 py-1.5 text-xs font-semibold text-primary"><ImagePlus size={14} />Tải ảnh</button>
             </div>}
             <button type="button" disabled={saving || !body.trim()} onClick={() => void saveReport('progress')} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50"><Send size={14} />{report ? 'Lưu chỉnh sửa' : 'Lưu report'}</button>
           </>}
-          {mode === 'unchanged' && <div className="space-y-2"><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Ghi chú (tùy chọn)<textarea value={body} onChange={event => setBody(event.target.value)} rows={2} placeholder="Ví dụ: Đang chờ phản hồi từ đối tác" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-3 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900" /></label>{report && <button type="button" disabled={saving || (report.metadata?.unchanged && body.trim() === (report.metadata?.body || ''))} onClick={() => void saveReport('unchanged')} className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">Lưu ghi chú</button>}</div>}
+          {mode === 'unchanged' && <div className="space-y-2"><label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Ghi chú (tùy chọn)<textarea value={body} onChange={event => {draftDirty.current=true;setBody(event.target.value);}} rows={2} placeholder="Ví dụ: Đang chờ phản hồi từ đối tác" className="mt-1.5 w-full resize-y rounded-xl border border-gray-200 bg-white p-3 text-sm font-normal outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900" /></label>{report && <button type="button" disabled={saving || (report.metadata?.unchanged && body.trim() === (report.metadata?.body || ''))} onClick={() => void saveReport('unchanged')} className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">Lưu ghi chú</button>}</div>}
           {onOpenTask && <button type="button" onClick={() => onOpenTask(task.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">Mở task <ExternalLink size={13} /></button>}
         </> : <>
           {report ? <div className="space-y-2 rounded-xl bg-white p-3 text-sm leading-6 text-gray-700 dark:bg-slate-800 dark:text-gray-200"><p className="font-semibold text-gray-900 dark:text-white">{report.metadata?.unchanged ? 'Không thay đổi trong tuần' : 'Kết quả tuần này'}</p>{report.metadata?.body && <p className="whitespace-pre-wrap">{report.metadata.body}</p>}{report.metadata?.blocker && <p><b>Vướng mắc: </b>{report.metadata.blocker}</p>}{report.metadata?.next_step && <p><b>Việc tiếp theo: </b>{report.metadata.next_step}</p>}{report.metadata?.image_url && <div className="space-y-2"><a href={report.metadata.image_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"><ImagePlus size={14} />Mở minh chứng</a><a href={report.metadata.image_url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-gray-100 dark:border-slate-700"><img src={report.metadata.image_url} alt={`Minh chứng report: ${task.title}`} loading="lazy" className="max-h-72 w-full bg-slate-50 object-contain dark:bg-slate-900" /></a></div>}</div> : <p className="rounded-xl bg-white p-3 text-sm text-gray-500 dark:bg-slate-800">Task này chưa được report trong tuần.</p>}

@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
-import { useAuthStore } from '../store/authStore';
-
+import {useEffect,useMemo,useState} from 'react';
+import {supabase} from '../services/supabase';
+import {useAuthStore} from '../store/authStore';
+import {useWorkspaceData} from './useWorkspaceData';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
+import {readAllRows} from '../services/readAllRows';
+import {isTaskClosed,taskDay} from '../lib/taskTracking';
 export interface DashboardData {
   myTasksCount: number;
   dueSoonCount: number;
@@ -13,121 +16,24 @@ export interface DashboardData {
   assetStatusData: { name: string; value: number; fill: string }[];
 }
 
-const MOCK_DATA: DashboardData = {
-  myTasksCount: 12,
-  dueSoonCount: 5,
-  borrowedCount: 3,
-  overdueCount: 2,
-  upcomingTasks: [
-    { id: '1', task_ref: 'TSK-001', title: 'Hoàn thiện giao diện', priority: 'high', due_date: '2026-10-05', assignee: { name: 'Admin', avatar_url: null } },
-    { id: '2', task_ref: 'TSK-002', title: 'Thiết kế Database', priority: 'medium', due_date: '2026-10-07', assignee: { name: 'Bach Bao', avatar_url: null } },
-  ],
-  recentRequests: [
-    { id: '1', approval_status: 'pending', due_date: '2026-10-10', asset: { name: 'MacBook Pro M2' }, requester: { name: 'Admin' } },
-  ],
-  tasks: [],
-  assetStatusData: []
-};
 
-export function useDashboard() {
-  const profileId = useAuthStore(state => state.profile?.id);
-  const [data, setData] = useState<DashboardData>({
-    myTasksCount: 0,
-    dueSoonCount: 0,
-    borrowedCount: 0,
-    overdueCount: 0,
-    upcomingTasks: [],
-    recentRequests: [],
-    tasks: [],
-    assetStatusData: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchDashboard();
-    
-    const channel = supabase
-      .channel('dashboard_channel')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        fetchDashboard();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profileId]);
-
-  const fetchDashboard = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // INSTANT BYPASS FOR DEV ADMIN
-      if (useAuthStore.getState().user?.id === 'dev-admin-id') {
-        setData(MOCK_DATA);
-        setError('Instant Offline Mode');
-        return;
-      }
-      
-      const { data: tasks, error: err1 } = await supabase
-        .from('tasks')
-        .select(`id, task_ref, title, priority, status, due_date, start_date, created_at, assignee_id, assignee:assignee_id(name, avatar_url)`);
-      if (err1) throw err1;
-
-      const { data: assets, error: err2 } = await supabase
-        .from('assets')
-        .select('status, is_available');
-      if (err2) throw err2;
-
-      const { data: recent, error: err4 } = await supabase
-        .from('borrow_requests')
-        .select(`id, approval_status, due_date, returned_at, requested_at, asset:asset_id(name), requester:requester_id(name)`)
-        .eq('requester_id', profileId || -1)
-        .order('requested_at', { ascending: false });
-      if (err4) throw err4;
-
-      const allTasks = tasks || [];
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
-      // tasks.assignee_id references public.users.id (bigint), not auth.users.id (UUID).
-      const myTasks = allTasks.filter(task => String(task.assignee_id) === String(profileId));
-      const openTasks = myTasks.filter(task => task.status !== 'done');
-      const upcoming = openTasks.filter(task => task.due_date).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()).slice(0, 5);
-      const overdue = openTasks.filter(task => task.due_date && new Date(task.due_date) < today);
-      const dueSoon = openTasks.filter(task => task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= inSevenDays);
-      const assetCounts = (assets || []).reduce((counts: Record<string, number>, asset: any) => {
-        const key = asset.status || (asset.is_available ? 'available' : 'borrowed');
-        counts[key] = (counts[key] || 0) + 1;
-        return counts;
-      }, {});
-
-      const personalRequests = recent || [];
-      const activeBorrowed = personalRequests.filter((request: any) => request.approval_status === 'approved' && !request.returned_at).length;
-      setData({
-        myTasksCount: openTasks.length,
-        dueSoonCount: dueSoon.length,
-        borrowedCount: activeBorrowed,
-        overdueCount: overdue.length,
-        upcomingTasks: upcoming,
-        recentRequests: personalRequests,
-        tasks: myTasks,
-        assetStatusData: [
-          { name: 'Borrowed', value: assetCounts.borrowed || 0, fill: '#38bdf8' },
-          { name: 'Pending', value: assetCounts.reserved || 0, fill: '#fbbf24' },
-          { name: 'Available inventory', value: assetCounts.available || 0, fill: '#4eb648' },
-          { name: 'Maintenance', value: (assetCounts.maintenance || 0) + (assetCounts.broken || 0), fill: '#fb7185' },
-        ].filter(item => item.value > 0)
-      });
-    } catch (err: any) {
-      console.warn('Error fetching dashboard, using mock data:', err);
-      setData(MOCK_DATA);
-      setError(err.message || 'Supabase Timeout - Loading Offline Mode');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { data, loading, error, refetch: fetchDashboard };
+export function useDashboard(){
+ const profileId=useAuthStore(s=>s.profile?.id);
+ const workspace=useWorkspaceData();
+ const [requests,setRequests]=useState<any[]>([]);
+ const [error,setError]=useState<string|null>(null);
+ const refreshRequests=async()=>{
+  if(!profileId){setRequests([]);return;}
+  try{const rows=await readAllRows(supabase.from('borrow_requests').select('id,approval_status,due_date,returned_at,requested_at,asset:asset_id(name),requester:requester_id(name)').eq('requester_id',profileId).order('requested_at').order('id'));if(useAuthStore.getState().profile?.id===profileId){setRequests(rows);setError(null);}}
+  catch(e:any){setRequests([]);setError(e.message);}
+ };
+ useEffect(()=>{setRequests([]);void refreshRequests();},[profileId]);
+ useWorkspaceRealtime(['borrow_requests'],refreshRequests,profileId);
+ const data=useMemo<DashboardData>(()=>{
+  const today=taskDay(new Date().toISOString()), next=new Date(today+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+7);const soon=taskDay(next.toISOString());
+  const mine=workspace.tasks.filter(t=>String(t.assignee_id)===String(profileId)),open=mine.filter(t=>!isTaskClosed(t.status));
+  const counts=workspace.assets.reduce<Record<string,number>>((a,v)=>{const k=v.status||(v.is_available?'available':'borrowed');a[k]=(a[k]||0)+1;return a;},{});
+  return {myTasksCount:open.length,dueSoonCount:open.filter(t=>taskDay(t.due_date)>=today&&taskDay(t.due_date)<=soon).length,overdueCount:open.filter(t=>taskDay(t.due_date)&&taskDay(t.due_date)<today).length,borrowedCount:requests.filter(r=>r.approval_status==='approved'&&!r.returned_at).length,upcomingTasks:open.filter(t=>t.due_date).sort((a,b)=>a.due_date!.localeCompare(b.due_date!)).slice(0,5),recentRequests:requests,tasks:mine,assetStatusData:[{name:'Borrowed',value:counts.borrowed||0,fill:'#38bdf8'},{name:'Pending',value:counts.reserved||0,fill:'#fbbf24'},{name:'Available inventory',value:counts.available||0,fill:'#4eb648'},{name:'Maintenance',value:(counts.maintenance||0)+(counts.broken||0),fill:'#fb7185'}].filter(v=>v.value>0)};
+ },[workspace.tasks,workspace.assets,requests,profileId]);
+ return {data,loading:workspace.loading,error:error||workspace.error,refetch:async()=>{await Promise.all([workspace.refetch(),refreshRequests()]);}};
 }

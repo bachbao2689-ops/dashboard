@@ -22,6 +22,9 @@ export const TeamWorkload: React.FC = () => {
   const chartData = workloads.map(w => ({
     name: w.name,
     tasks: w.activeTasksCount,
+    created: w.created,
+    doing: w.doing,
+    done: w.done,
     status: w.status
   }));
 
@@ -91,6 +94,7 @@ export const TeamWorkload: React.FC = () => {
                   <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip 
+                    content={({active,payload})=>active && payload?.[0] ? <div className="rounded-xl border bg-white p-3 text-xs text-gray-900 dark:bg-slate-800 dark:text-white"><b>{payload[0].payload.name}</b><p>Created: {payload[0].payload.created}</p><p>Doing: {payload[0].payload.doing}</p><p>Done: {payload[0].payload.done}</p></div> : null}
                     cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }}
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#f3f4f6' }}
                   />
@@ -127,7 +131,7 @@ export const TeamWorkload: React.FC = () => {
                     />
                   </div>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{member.capacityPercentage}% capacity</span>
+                    <span title="Ước tính 8 giờ/task, 40 giờ/tuần" className="text-xs text-gray-500 dark:text-gray-400">{member.capacityPercentage}% capacity (ước tính)</span>
                     {member.capacityPercentage >= 80 && (
                       <span className="text-xs text-red-500 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" /> {t('workload.warning')}

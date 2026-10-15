@@ -31,6 +31,7 @@ export function useAssets() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
         fetchAssets();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'borrow_requests' }, () => { fetchAssets(); })
       .subscribe();
 
     return () => {

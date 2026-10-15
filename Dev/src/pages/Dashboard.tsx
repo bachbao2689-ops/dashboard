@@ -13,6 +13,8 @@ import type { ReportReference } from '../components/features/reports/WeeklyRepor
 import { tasksForWeeklyReport } from '../lib/weeklyReport';
 import { useTranslation } from '../i18n/translations';
 import { useAuthStore } from '../store/authStore';
+import { DateFilterDropdown } from '../components/common/filters';
+import { isTaskClosed, isTaskDone, taskDay } from '../lib/taskTracking';
 
 /* Design tokens */
 const INK = 'text-gray-900 dark:text-white';
@@ -144,9 +146,11 @@ export const Dashboard: React.FC = () => {
 
   const [activeId, setActiveId] = useState('s1');
   const [range, setRange] = useState<'weekly' | 'custom'>('weekly');
+  const [calendarFilter, setCalendarFilter] = useState<string>('this_week');
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
   const [customStart, setCustomStart] = useState(() => toYmd(startOfCurrentWeek()));
   const [customEnd, setCustomEnd] = useState(() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); });
-    const [performanceOpen, setPerformanceOpen] = useState(false);
+  const [performanceOpen, setPerformanceOpen] = useState(false);
   
   const [openDept, setOpenDept] = useState<string | null>('DESIGN');
   
@@ -169,11 +173,11 @@ export const Dashboard: React.FC = () => {
     today.setHours(0, 0, 0, 0);
     const plusThree = new Date(today); plusThree.setDate(today.getDate() + 3);
     const stats = (id: string, type: PerfData['type'], name: string, role: string, dept: string, list: any[], avatar_url?: string | null): PerfData => {
-      const done = list.filter(task => task.status === 'done').length;
-      const open = list.length - done;
-      const overdue = list.filter(task => task.status !== 'done' && task.due_date && new Date(task.due_date) < today).length;
-      const due3 = list.filter(task => task.status !== 'done' && task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= plusThree).length;
-      const urgent = list.filter(task => task.status !== 'done' && task.priority === 'high').length;
+      const done = list.filter(task => isTaskDone(task.status)).length;
+      const open = list.filter(task=>!isTaskClosed(task.status)).length;
+      const overdue = list.filter(task => !isTaskClosed(task.status) && task.due_date && new Date(task.due_date) < today).length;
+      const due3 = list.filter(task => !isTaskClosed(task.status) && task.due_date && new Date(task.due_date) >= today && new Date(task.due_date) <= plusThree).length;
+      const urgent = list.filter(task => !isTaskClosed(task.status) && task.priority === 'high').length;
       const noDeadline = list.filter(task => !task.due_date).length;
       const projects = new Set(list.map(task => task.project?.name).filter(Boolean)).size;
       const week = Array.from({ length: 7 }, (_, offset) => {
@@ -222,7 +226,7 @@ export const Dashboard: React.FC = () => {
     const weekLabels = lang === 'vi' ? WEEK_LABELS_VI : WEEK_LABELS_EN;
     for (let cursor = new Date(start); cursor <= end && days.length < 31; cursor.setDate(cursor.getDate() + 1)) {
       const key = toYmd(cursor);
-      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isDone(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => isDone(task.status) && dayKey(task.updated_at || task.created_at) === key).length });
+      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => !isTaskClosed(task.status) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => isDone(task.status) && taskDay(task.completed_at) === key).length });
     }
     return days;
   }, [rangeStart, rangeEnd, range, selectedTasks, lang]);
@@ -250,7 +254,7 @@ export const Dashboard: React.FC = () => {
   };
 
   const upcomingProjects = tasks
-    .filter(task => task.status !== 'done' && task.due_date)
+    .filter(task => !isTaskClosed(task.status) && task.due_date)
     .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
     .slice(0, 2)
     .map(task => {
@@ -472,19 +476,41 @@ export const Dashboard: React.FC = () => {
                 <strong className={`text-sm ${INK}`}>{t('dashboard.taskAllocation')}</strong>
                 <p className={`text-xs mt-[3px] ${MUTED}`}>{s.name} · {displayDate(rangeStart, lang === 'vi' ? 'vi-VN' : 'en-US')} — {displayDate(rangeEnd, lang === 'vi' ? 'vi-VN' : 'en-US')}</p>
               </div>
-              <div className="flex bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg p-0.5">
-                {(['weekly', 'custom'] as const).map(r => (
-                  <button
-                    key={r}
-                    onClick={() => setRange(r)}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${range === r ? 'bg-white dark:bg-slate-900 shadow-sm text-gray-900 dark:text-white' : MUTED}`}
-                  >
-                    {r === 'weekly' ? t('dashboard.weekly') : t('dashboard.custom')}
-                  </button>
-                ))}
-              </div>
+              <DateFilterDropdown
+                calendarFilter={calendarFilter}
+                customStartDate={range === 'custom' ? customStart : ''}
+                customEndDate={range === 'custom' ? customEnd : ''}
+                onSelectPreset={(preset) => {
+                  setCalendarFilter(preset);
+                  if (preset === 'this_week' || preset === 'all') {
+                    setRange('weekly');
+                  } else if (preset === 'this_month') {
+                    const now = new Date();
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    setCustomStart(toYmd(start));
+                    setCustomEnd(toYmd(end));
+                    setRange('custom');
+                  } else {
+                    setRange('weekly');
+                  }
+                }}
+                onApplyCustomRange={(start, end) => {
+                  setCalendarFilter('custom');
+                  setCustomStart(start);
+                  setCustomEnd(end);
+                  setRange('custom');
+                }}
+                onClear={() => {
+                  setCalendarFilter('this_week');
+                  setRange('weekly');
+                }}
+                isOpen={dateFilterOpen}
+                onToggle={() => setDateFilterOpen(!dateFilterOpen)}
+                onClose={() => setDateFilterOpen(false)}
+                align="right"
+              />
             </div>
-            {range === 'custom' && <div className="mt-3 flex flex-wrap items-center gap-2"><input type="date" value={customStart} onChange={event => setCustomStart(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /><span className={`text-xs ${MUTED}`}>{t('dashboard.to')}</span><input type="date" value={customEnd} onChange={event => setCustomEnd(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900" /></div>}
             <div className="w-full mt-3 flex-1 min-h-[150px] 2xl:min-h-[190px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} onClick={() => setPerformanceOpen(true)} margin={{ left: -20, right: 8, top: 4 }}>

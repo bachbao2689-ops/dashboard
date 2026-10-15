@@ -109,17 +109,13 @@ export function useWorkflowManagement() {
     if (existing.length > 0) {
       return existing.map(p => ({ id: p.id, name: p.name, avatar_url: p.avatar_url }));
     }
-    return [
-      { id: 101, name: 'Vũ Trần' },
-      { id: 102, name: 'Hoàng Long' },
-      { id: 103, name: 'LUNA' }
-    ];
+    return [];
   }, [allTasks, currentEntity]);
   const parentCalendar = workflowCalendarWindow(currentEntity);
   const taskCalendar = workflowCalendarWindow(currentEntity, activePhase);
   const leadInfo = useMemo(() => {
     const lead = (currentEntity as any)?.lead || currentEntity?.pics?.[0];
-    const name = lead?.name || (isCampaign ? 'Lead Marketing' : 'Tech Lead - K COFFEE');
+    const name = lead?.name || (isEn ? 'Unassigned PIC' : 'Chưa giao PIC');
     const role = isCampaign ? (isEn ? 'Campaign Lead' : 'Lead Chiến dịch') : (isEn ? 'Project Lead' : 'Lead Dự án');
     const avatar = lead?.avatar_url;
     return { name, role, avatar };
@@ -139,7 +135,7 @@ export function useWorkflowManagement() {
   const performanceTrendData = phases.map(p => {
     const startStr = p.start_date ? p.start_date.slice(0, 10) : null;
     const dueStr = p.due_date ? p.due_date.slice(0, 10) : null;
-    const actual = p.displayStatus === 'completed' ? (p.progress ?? 100) : p.progress;
+    const actual = p.progress;
     const plan = p.displayStatus === 'completed' ? 100 : (!startStr || !dueStr ? null : Math.max(0, Math.min(100, Math.round((Date.now() - Date.parse(startStr + 'T00:00:00+07:00')) / Math.max(86400000, Date.parse(dueStr + 'T23:59:59+07:00') - Date.parse(startStr + 'T00:00:00+07:00')) * 100))));
     return { period: p.name, actual, plan };
   });

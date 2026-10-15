@@ -1,8 +1,7 @@
 import { Trash2, CheckCircle2, X } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { useTranslation } from '../../../../i18n/translations';
 
-export function TaskListBulkActions({selectedTasks, onDelete, onClear}: {selectedTasks: string[]; onDelete: () => void; onClear: () => void}) {
+export function TaskListBulkActions({selectedTasks, onDelete, onClear, onComplete, busy=false}: {selectedTasks: string[]; onDelete: () => void; onClear: () => void; onComplete: () => void; busy?: boolean}) {
  const {t} = useTranslation();
  return (<>{selectedTasks.length > 0 && (
         <div className="task-list-bulk">
@@ -11,7 +10,7 @@ export function TaskListBulkActions({selectedTasks, onDelete, onClear}: {selecte
             <span className="text-sm font-medium">{t('common.selected')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => toast.success(`Marked ${selectedTasks.length} tasks as Done`)} className="task-list-bulk-done">
+            <button disabled={busy} onClick={onComplete} className="task-list-bulk-done disabled:opacity-50">
               <CheckCircle2 className="w-4 h-4 text-green-400" /> {t('tasks.markDone')}
             </button>
             <button onClick={onDelete} className="task-list-bulk-delete">

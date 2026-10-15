@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronRight, MessageSquare, CheckCircle2, Clock3, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import {entityHref} from '../../../lib/taskTracking';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -94,14 +95,12 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
         {loading ? <p className="p-5 text-center text-sm text-gray-500">Đang tải log thông báo…</p> : entries.length === 0 ? <p className="p-5 text-center text-sm text-gray-500">Chưa có thông báo liên quan.</p> : entries.map(entry => {
           const display = labelFor(entry.type);
           const Icon = display.icon;
-          const canOpen = Boolean(entry.entity_type && entry.entity_id);
+          const canOpen = Boolean(entityHref(entry.entity_type,entry.entity_id));
           const handleClick = () => {
             if (!canOpen) return;
             const handled = onOpenEntity?.(entry.entity_type!, entry.entity_id!);
             if (handled) return;
-            if (entry.entity_type === 'task') navigate(`/tasks?task=${entry.entity_id}`);
-            else if (entry.entity_type === 'project') navigate(`/projects?project=${entry.entity_id}`);
-            else if (entry.entity_type === 'campaign') navigate(`/projects?campaign=${entry.entity_id}`);
+            const href=entityHref(entry.entity_type,entry.entity_id);if(href)navigate(href);
           };
           return <button key={entry.id} type="button" onClick={handleClick} className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${canOpen ? 'hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer' : 'cursor-default'}`}>
             <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${display.color} dark:bg-slate-700`}><Icon size={15} /></span>

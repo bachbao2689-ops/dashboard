@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, AlertCircle, ChevronRight, FolderKanban, Layers } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, ChevronRight, FolderKanban, Layers, MessageSquare } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -7,6 +7,8 @@ import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../services/supabase';
+import {entityHref} from '../../lib/taskTracking';
+import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 
 type NotificationItem = { id: string; title: string; message: string; entity_type?: string | null; entity_id?: string | null };
 
@@ -69,7 +71,9 @@ export const Header: React.FC = () => {
   }, [location.pathname]);
 
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  
+  const role = profile?.role || 'member';
+  const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
+  const badges = useSidebarBadges();
   
   const canViewDashboard = ['admin', 'manager', 'leader'].includes((profile?.role || '').toLowerCase()) || ['admin', 'manager', 'leader'].includes((profile?.employment_level || '').toLowerCase());
 
@@ -109,47 +113,73 @@ export const Header: React.FC = () => {
     setNotifications(current => current.filter(item => item.id !== notification.id));
     await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', notification.id);
     setShowNotifs(false);
-    if (notification.entity_type === 'task' && notification.entity_id) {
-      navigate(`/tasks?task=${notification.entity_id}`);
-    } else if (notification.entity_type === 'workflow2') {
-      navigate(`/workflow`);
-    } else if (notification.entity_type === 'project_subtask') {
-      navigate(`/projects`);
-    } else if (notification.entity_type === 'weekly_report') {
-      navigate(`/profile`);
-    }
+    const href=entityHref(notification.entity_type,notification.entity_id);
+    if(href)navigate(href);
   };
 
   const navGroups = [
     {
       title: t('nav.main'),
+      hasNotification: badges.workflowCount > 0,
       items: [
         { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !canViewDashboard },
-        { name: t('nav.home'), path: '/workflow', icon: <Layers size={18} /> }
+        {
+          name: t('nav.home'),
+          path: '/workflow',
+          icon: <Layers size={18} />,
+          badge: badges.workflowCount > 0 ? (
+            <span title="Có bình luận / nhắc đến" className="relative inline-flex items-center ml-1 shrink-0">
+              <MessageSquare size={12} className="text-blue-500" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-xs" />
+            </span>
+          ) : null
+        }
       ]
     },
     {
       title: t('nav.tasksProj'),
+      hasNotification: badges.projectCount > 0,
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
+        {
+          name: t('nav.projects'),
+          path: '/projects',
+          icon: <FolderKanban size={18} />,
+          badge: badges.projectCount > 0 ? (
+            <span title="Có bình luận / nhắc đến" className="relative inline-flex items-center ml-1 shrink-0">
+              <MessageSquare size={12} className="text-blue-500" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-xs" />
+            </span>
+          ) : null
+        },
         { name: t('nav.profile'), path: '/my-tasks', icon: <User size={18} /> },
-        { name: t('nav.designTeam'), path: '/project', icon: <AlertCircle size={18} /> },
+        { name: t('nav.departments'), path: '/departments-2', icon: <Users size={18} />, hidden: role !== 'admin' },
       ]
     },
     {
       title: t('nav.assets'),
+      hasNotification: badges.borrowCount > 0,
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: profile && ['admin', 'manager'].includes(profile.role) ? t('nav.borrow') : t('nav.myBorrow'), path: profile && ['admin', 'manager'].includes(profile.role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
+        {
+          name: profile && ['admin', 'manager'].includes(profile.role) ? t('nav.borrow') : t('nav.myBorrow'),
+          path: profile && ['admin', 'manager'].includes(profile.role) ? '/borrow-requests' : '/borrow-requests?scope=mine',
+          icon: <History size={18} />,
+          badge: badges.borrowCount > 0 ? (
+            <span className="shrink-0 ml-1 flex items-center justify-center w-4.5 h-4.5 rounded-full bg-red-500 text-white font-bold text-[10px] shadow-xs" title="Đơn cần duyệt / mượn">
+              {badges.borrowCount > 99 ? '99+' : badges.borrowCount}
+            </span>
+          ) : null
+        },
       ]
     },
     {
       title: t('nav.teamRep'),
+      hasNotification: false,
       items: [
         { name: t('nav.team'), path: '/team', icon: <Users size={18} /> },
         { name: t('nav.members'), path: '/members', icon: <Users size={18} /> },
-        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} /> },
+        { name: t('nav.reports'), path: '/reports', icon: <BarChart2 size={18} />, hidden: role !== 'admin' && (role === 'member' || role === 'staff') && !isLeader },
       ]
     }
   ];
@@ -207,13 +237,16 @@ export const Header: React.FC = () => {
                 <button 
                   onClick={() => setExpandedGroup(expandedGroup === group.title ? null : group.title)}
                   className={cn(
-                    "px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1",
+                    "px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5",
                     expandedGroup === group.title 
                       ? "text-primary dark:text-white" 
                       : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   )}
                 >
                   {group.title}
+                  {expandedGroup !== group.title && (group as any).hasNotification && (
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0" />
+                  )}
                   <ChevronRight size={14} className={cn("transition-transform duration-300", expandedGroup === group.title && "rotate-90")} />
                 </button>
                 
@@ -228,7 +261,7 @@ export const Header: React.FC = () => {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) => cn(
-                        "sidebar-link relative px-3 py-1.5 mx-0.5 rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-xs border border-transparent",
+                        "sidebar-link relative px-3 py-1.5 mx-0.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap text-xs border border-transparent",
                         isActive 
                           ? "sidebar-link-active font-semibold" 
                           : "sidebar-link-idle"
@@ -236,6 +269,7 @@ export const Header: React.FC = () => {
                     >
                       {item.icon}
                       <span className="text-xs">{item.name}</span>
+                      {(item as any).badge}
                     </NavLink>
                   ))}
                 </div>

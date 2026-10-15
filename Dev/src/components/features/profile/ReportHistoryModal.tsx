@@ -1,3 +1,7 @@
+import {readVisibleTasks} from '../../../hooks/useTasks';
+import {readAllRows} from '../../../services/readAllRows';
+import {taskUIId} from '../../../lib/taskTracking';
+import {weeklyEntity} from '../../../services/weeklyReports';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Edit3, FileText, FolderKanban, History, ImagePlus, RefreshCcw, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -38,12 +42,11 @@ export const ReportHistoryModal: React.FC<{ isOpen?: boolean; onClose?: () => vo
   const loadLogs = useCallback(async () => {
     if (!profileId) return;
     setLoading(true);
-    const { data, error } = await supabase.from('activity_log').select('id,entity_id,created_at,metadata').eq('user_id', profileId).eq('entity_type', 'task').eq('action', 'weekly_report').order('created_at', { ascending: false });
+    const { data, error } = await readAllRows(supabase.from('activity_log').select('id,entity_type,entity_id,created_at,metadata').eq('user_id', profileId).in('entity_type', ['task','project_subtask','campaign_subtask']).eq('action', 'weekly_report').order('created_at', { ascending: false }).order('id')).then(data=>({data,error:null})).catch(error=>({data:[],error}));
     if (error) { setLoading(false); return toast.error('Không thể tải lịch sử report'); }
-    const taskIds = [...new Set((data || []).map(row => row.entity_id).filter(Boolean))];
-    const taskResult = taskIds.length ? await supabase.from('tasks').select('id,title,task_ref').in('id', taskIds) : { data: [] as any[] };
-    const taskMap = new Map((taskResult.data || []).map((task: any) => [task.id, task]));
-    setLogs((data || []).map((row: any) => ({ ...row, taskTitle: taskMap.get(row.entity_id)?.title || 'Task đã bị xoá', taskRef: taskMap.get(row.entity_id)?.task_ref })));
+    const tasks=await readVisibleTasks();
+    const taskMap=new Map(tasks.map(task=>[task.id,task]));
+    setLogs((data||[]).map((row:any)=>{const id=taskUIId(row.entity_type,row.entity_id);return {...row,entity_id:id,taskTitle:taskMap.get(id)?.title || 'Task đã bị xoá',taskRef:taskMap.get(id)?.task_ref};}));
     setLoading(false);
   }, [profileId]);
 
@@ -98,8 +101,7 @@ export const ReportHistoryModal: React.FC<{ isOpen?: boolean; onClose?: () => vo
       workspace_id: workspaceId,
       user_id: profileId,
       action: 'weekly_report',
-      entity_type: 'task',
-      entity_id: log.entity_id,
+      ...weeklyEntity(log.entity_id),
       metadata: { ...log.metadata, body: body.trim(), image_url: imageUrl.trim() || null },
     });
     if (error) return toast.error('Không thể cập nhật report');

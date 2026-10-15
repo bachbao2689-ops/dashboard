@@ -58,19 +58,20 @@ const AdminReports: React.FC = () => {
 };
 
 const ManagerReports: React.FC = () => {
-  const { data, isLoading, timeRange, setTimeRange, exportCSV } = useReports();
+  const { data, isLoading, error, refetch, timeRange, setTimeRange, exportCSV } = useReports();
 
   if (isLoading) {
     return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading reports...</div>;
   }
 
+  if(error)return <div role="alert" className="card-hub m-4 p-4 text-sm text-red-600"><p>{error}</p><button onClick={()=>void refetch()} className="mt-2 underline">Thử lại</button></div>;
   if (!data) {
     return <div className="p-8 text-center text-gray-500">No report data available.</div>;
   }
 
   const { kpis, completionTrend, statusDistribution, priorityBreakdown, topPerformers } = data;
 
-  const percentChange = kpis.tasksCompletedPrev > 0 
+  const percentChange = kpis.tasksCompletedPrev != null && kpis.tasksCompletedPrev > 0
     ? Math.round(((kpis.tasksCompleted - kpis.tasksCompletedPrev) / kpis.tasksCompletedPrev) * 100) 
     : 0;
 
@@ -146,7 +147,7 @@ const ManagerReports: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Avg Completion Time</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.avgCompletionTimeDays}d</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.avgCompletionTimeDays == null ? '—' : `${kpis.avgCompletionTimeDays}d`}</h3>
             </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">From creation to done</p>

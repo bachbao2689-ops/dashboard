@@ -17,6 +17,7 @@ import type { FilterPerson } from '../components/common/filters';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { recordTaskDeletion } from '../services/taskDeletionLog';
+import { completeTrackedTask } from '../services/taskTracking';
 import { useTranslation } from '../i18n/translations';
 
 export const TaskList: React.FC = () => {
@@ -41,13 +42,24 @@ export const TaskList: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [completing, setCompleting] = useState(false);
+  const completeSelected = async () => {
+    if(completing)return;
+    setCompleting(true);
+    const results=await Promise.allSettled(selectedTasks.map(completeTrackedTask));
+    const failed=selectedTasks.filter((_,index)=>results[index].status==='rejected');
+    const count=selectedTasks.length-failed.length;
+    if(count)toast.success(`Đã hoàn thành ${count} công việc`);
+    if(failed.length)toast.error(`Không thể hoàn thành ${failed.length} công việc. Kiểm tra quyền hoặc tải lại.`);
+    setSelectedTasks(failed);setCompleting(false);void refetch();
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
-  const { tasks, loading, refetch } = useTasks();
+  const { tasks, loading, error:taskError, refetch } = useTasks();
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
@@ -384,7 +396,8 @@ export const TaskList: React.FC = () => {
           </div>
         )}
 
-        <TaskListCollection
+        {taskError && <div role="alert" className="card-hub p-4 text-sm text-red-600"><p>{taskError}</p><button onClick={()=>void refetch()} className="mt-2 underline">Thử lại</button></div>}
+        {!taskError && <TaskListCollection
           loading={loading}
           filteredTasks={filteredTasks}
           groupedTasks={groupedTasks}
@@ -396,9 +409,11 @@ export const TaskList: React.FC = () => {
           toggleSelectTask={toggleSelectTask}
           onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }}
           deletingIds={deletingIds}
-        />
+        />}
 
         <TaskListBulkActions
+          busy={completing}
+          onComplete={completeSelected}
           selectedTasks={selectedTasks}
           onDelete={() => setIsBulkDeleteModalOpen(true)}
           onClear={() => setSelectedTasks([])}

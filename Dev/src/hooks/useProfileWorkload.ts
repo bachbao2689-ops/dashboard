@@ -1,3 +1,6 @@
+import {useTasks} from './useTasks';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
+import {isTaskDone,isTaskClosed,taskDay} from '../lib/taskTracking';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -27,11 +30,11 @@ export interface PersonalBorrowRequest {
   asset?: { name?: string | null } | null;
 }
 
-const isDone = (status?: string | null) => ['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((status || '').toLowerCase());
 
 export function useProfileWorkload() {
   const profileId = useAuthStore(state => state.profile?.id);
-  const [tasks, setTasks] = useState<PersonalTask[]>([]);
+  const source=useTasks();
+  const tasks=useMemo(()=>source.tasks.filter(t=>String(t.assignee_id)===String(profileId)) as unknown as PersonalTask[],[source.tasks,profileId]);
   const [borrowRequests, setBorrowRequests] = useState<PersonalBorrowRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,18 +42,15 @@ export function useProfileWorkload() {
     let active = true;
     const load = async () => {
       if (!profileId) {
-        if (active) { setTasks([]); setBorrowRequests([]); setLoading(false); }
+        if (active) { setBorrowRequests([]); setLoading(false); }
         return;
       }
       setLoading(true);
-      const [taskResult, borrowResult] = await Promise.all([
-        supabase.from('tasks').select('id, task_ref, title, status, priority, description, due_date, created_at, updated_at, project:project_id(id,name), assignee:assignee_id(name,avatar_url), department:department_id(name)').eq('assignee_id', profileId).order('updated_at', { ascending: false }),
+      const [borrowResult] = await Promise.all([
         supabase.from('borrow_requests').select('id, approval_status, requested_at, approved_at, returned_at, created_at, asset:asset_id(name)').eq('requester_id', profileId).order('created_at', { ascending: false }),
       ]);
       if (!active) return;
-      if (taskResult.error) console.warn('Could not load personal tasks:', taskResult.error.message);
       if (borrowResult.error) console.warn('Could not load personal borrow requests:', borrowResult.error.message);
-      setTasks((taskResult.data || []) as PersonalTask[]);
       setBorrowRequests((borrowResult.data || []) as PersonalBorrowRequest[]);
       setLoading(false);
     };
@@ -59,12 +59,13 @@ export function useProfileWorkload() {
   }, [profileId]);
 
   const summary = useMemo(() => {
-    const completed = tasks.filter(task => isDone(task.status)).length;
-    const open = tasks.length - completed;
-    const overdue = tasks.filter(task => !isDone(task.status) && task.due_date && new Date(task.due_date) < new Date()).length;
+    const completed = tasks.filter(task => isTaskDone(task.status)).length;
+    const open = tasks.filter(t=>!isTaskClosed(t.status)).length;
+    const overdue = tasks.filter(task => !isTaskClosed(task.status) && taskDay(task.due_date) && taskDay(task.due_date) < taskDay(new Date().toISOString())).length;
     const pendingBorrow = borrowRequests.filter(request => (request.approval_status || '').toLowerCase() === 'pending').length;
     return { total: tasks.length, completed, open, overdue, completionRate: tasks.length ? Math.round((completed / tasks.length) * 100) : 0, pendingBorrow };
   }, [tasks, borrowRequests]);
 
-  return { tasks, borrowRequests, summary, loading };
+  useWorkspaceRealtime(['borrow_requests'],()=>{void supabase.from('borrow_requests').select('id,approval_status,requested_at,approved_at,returned_at,created_at,asset:asset_id(name)').eq('requester_id',profileId || -1).then(({data,error})=>{if(!error)setBorrowRequests((data||[]) as PersonalBorrowRequest[]);});},profileId);
+  return { tasks, borrowRequests, summary, loading: loading || source.loading };
 }

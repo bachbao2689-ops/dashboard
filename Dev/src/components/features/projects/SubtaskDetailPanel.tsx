@@ -150,11 +150,12 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const complete = async () => {
     if (!subtask || isDone(subtask.status)) return;
     setSaving(true);
-    const { error } = await supabase.from(entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
+    const { data, error } = await supabase.from(entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks').update({ status: 'completed',workflow_status:'completed' }).eq('id', subtask.id).select('id').maybeSingle();
     setSaving(false);
-    if (error) return toast.error('Không thể hoàn thành subtask');
+    if (error || !data) return toast.error('Không thể hoàn thành subtask. Kiểm tra quyền cập nhật.');
     const updated = { ...subtask, status: 'completed' };
     onUpdated(updated);
+    window.dispatchEvent(new Event('tasks:changed'));
     toast.success('Đã hoàn thành subtask');
   };
 

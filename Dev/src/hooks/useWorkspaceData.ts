@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import {readVisibleTasks} from './useTasks';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
+import {readAllRows} from '../services/readAllRows';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 
@@ -12,6 +15,8 @@ export type WorkspaceTask = {
   start_date: string | null;
   created_at: string;
   updated_at: string | null;
+  completed_at?: string | null;
+  department_id?: string;
   assignee_id: string | null;
   assignee?: { id: string; name: string; avatar_url?: string | null } | null;
   department?: { id: string; name: string } | null;
@@ -22,7 +27,7 @@ export type WorkspaceTask = {
 export type WorkspaceData = {
   tasks: WorkspaceTask[];
   assets: Array<{ id: string; asset_code: string; name: string; status: string; is_available: boolean; category?: { name: string } | null }>;
-  users: Array<{ id: string; name: string; avatar_url?: string | null; role?: string | null; employment_level?: string | null; job_title?: string | null; department?: { name: string } | null }>;
+  users: Array<{ id: string; name: string; department_id?: string | null; avatar_url?: string | null; role?: string | null; employment_level?: string | null; job_title?: string | null; department?: { name: string } | null }>;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -31,6 +36,7 @@ export type WorkspaceData = {
 export function useWorkspaceData(): WorkspaceData {
   const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
+  const generation=useRef(0);
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [assets, setAssets] = useState<WorkspaceData['assets']>([]);
   const [users, setUsers] = useState<WorkspaceData['users']>([]);
@@ -38,6 +44,7 @@ export function useWorkspaceData(): WorkspaceData {
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
+    const token=++generation.current;
     setLoading(true);
     setError(null);
     try {
@@ -53,29 +60,30 @@ export function useWorkspaceData(): WorkspaceData {
 
       const normalizedRole = (profile?.role || '').toLowerCase();
       const normalizedLevel = (profile?.employment_level || '').toLowerCase();
-      const canViewAllDepartments = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
-      if (!canViewAllDepartments && !profile?.department_id) {
+      const canViewAllDepartments = ['admin', 'manager'].includes(normalizedRole) || ['admin', 'manager'].includes(normalizedLevel);
+      if (!canViewAllDepartments && !profile?.department_id && !profile?.id) {
         setTasks([]);
         setUsers([]);
         setAssets([]);
         return;
       }
       const departmentId = profile?.department_id;
-      let taskQuery = supabase.from('tasks').select('id, task_ref, title, status, priority, due_date, start_date, created_at, updated_at, assignee_id, assignee:assignee_id(id, name, avatar_url), department:department_id(id, name), project:project_id(id, name), campaign:campaign_id(id,name)').order('created_at', { ascending: false });
+      const taskQuery = readVisibleTasks().then(data=>({data,error:null})).catch(error=>({data:[],error}));
       let userQuery = supabase.from('users').select('id, name, avatar_url, role, employment_level, job_title, department_id').eq('is_active', true).order('name');
       if (!canViewAllDepartments) {
-        taskQuery = taskQuery.eq('department_id', departmentId!);
-        userQuery = userQuery.eq('department_id', departmentId!);
+        userQuery = departmentId ? userQuery.eq('department_id', departmentId) : userQuery.eq('id', profile!.id);
       }
       const [tasksResult, assetsResult, usersResult, departmentsResult] = await Promise.all([
         taskQuery,
         supabase.from('assets').select('id, asset_code, name, status, is_available, category:category_id(name)').order('asset_code'),
-        userQuery,
+        readAllRows(userQuery).then(data=>({data,error:null})).catch(error=>({data:[],error})),
         supabase.from('departments').select('id, name'),
       ]);
+      if(token!==generation.current)return;
       if (tasksResult.error) throw tasksResult.error;
       const liveTasks = (tasksResult.data || []) as unknown as WorkspaceTask[];
-      setTasks(liveTasks);
+
+      setTasks(liveTasks.map(task=>({...task, department: task.department || (task.department_id ? {id:task.department_id,name:(departmentsResult.data||[]).find(d=>d.id===task.department_id)?.name || 'Chưa cập nhật team'}:null)})));
       setAssets(assetsResult.error ? [] : (assetsResult.data || []) as unknown as WorkspaceData['assets']);
       if (usersResult.error) {
         // Profile fields can be unavailable briefly after a schema migration. Keep the
@@ -95,20 +103,16 @@ export function useWorkspaceData(): WorkspaceData {
         })) as unknown as WorkspaceData['users']);
       }
     } catch (err: any) {
+      if(token!==generation.current)return;
+      setTasks([]);setUsers([]);setAssets([]);
       setError(err.message || 'Unable to load workspace data');
     } finally {
-      setLoading(false);
+      if(token===generation.current)setLoading(false);
     }
-  }, [profile?.department_id, profile?.role, user?.id]);
+  }, [profile?.id, profile?.department_id, profile?.role, profile?.employment_level, user?.id]);
 
-  useEffect(() => {
-    refetch();
-    const channel = supabase.channel('workspace-analytics')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, refetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, refetch)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [refetch]);
+  useEffect(() => { setTasks([]);setUsers([]);void refetch();return()=>{generation.current++;}; }, [refetch]);
+  useWorkspaceRealtime(['tasks','project_subtasks','campaign_subtasks','projects','campaigns','assets','borrow_requests','users','departments'],refetch,profile?.id);
 
   return { tasks, assets, users, loading, error, refetch };
 }

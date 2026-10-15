@@ -2,36 +2,53 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   CheckSquare, Layers,
-  Users, User, BarChart2, History, Box, FolderKanban
+  Users, User, BarChart2, History, Box, FolderKanban, MessageSquare
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
+import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 
 export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
   const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
-   
-   
-   
-  
-  
+  const badges = useSidebarBadges();
 
   const navGroups = [
     {
       title: t('nav.main'),
       items: [
         { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <BarChart2 size={18} />, hidden: !['admin', 'leader', 'manager'].includes(role?.toLowerCase()) },
-        { name: t('nav.home'), path: '/workflow', icon: <Layers size={18} /> }
+        {
+          name: t('nav.home'),
+          path: '/workflow',
+          icon: <Layers size={18} />,
+          inlineBadge: badges.workflowCount > 0 ? (
+            <span title="Có bình luận / nhắc đến" className="relative inline-flex items-center ml-1 shrink-0">
+              <MessageSquare size={13} className="text-blue-500" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-xs" />
+            </span>
+          ) : null
+        }
       ]
     },
     {
       title: t('nav.tasksProj'),
       items: [
         { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={18} /> },
-        { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={18} /> },
+        {
+          name: t('nav.projects'),
+          path: '/projects',
+          icon: <FolderKanban size={18} />,
+          inlineBadge: badges.projectCount > 0 ? (
+            <span title="Có bình luận / nhắc đến" className="relative inline-flex items-center ml-1 shrink-0">
+              <MessageSquare size={13} className="text-blue-500" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-xs" />
+            </span>
+          ) : null
+        },
         { name: t('nav.profile'), path: '/my-tasks', icon: <User size={18} /> },
         { name: t('nav.departments'), path: '/departments-2', icon: <Users size={18} />, hidden: role !== 'admin' },
       ]
@@ -40,7 +57,16 @@ export const Sidebar: React.FC = () => {
       title: t('nav.assets'),
       items: [
         { name: t('nav.inventory'), path: '/assets', icon: <Box size={18} /> },
-        { name: ['admin', 'manager'].includes(role) ? t('nav.borrow') : t('nav.myBorrow'), path: ['admin', 'manager'].includes(role) ? '/borrow-requests' : '/borrow-requests?scope=mine', icon: <History size={18} /> },
+        {
+          name: ['admin', 'manager'].includes(role) ? t('nav.borrow') : t('nav.myBorrow'),
+          path: ['admin', 'manager'].includes(role) ? '/borrow-requests' : '/borrow-requests?scope=mine',
+          icon: <History size={18} />,
+          rightBadge: badges.borrowCount > 0 ? (
+            <span className="shrink-0 ml-auto flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white font-bold text-[11px] shadow-xs" title="Đơn cần duyệt / mượn">
+              {badges.borrowCount > 99 ? '99+' : badges.borrowCount}
+            </span>
+          ) : null
+        },
       ]
     },
     {
@@ -74,14 +100,18 @@ export const Sidebar: React.FC = () => {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) => cn(
-                      "sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
+                      "sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
                       isActive
                         ? "sidebar-link-active font-semibold"
                         : "sidebar-link-idle"
                     )}
                   >
-                    {item.icon}
-                    {item.name}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {item.icon}
+                      <span className="truncate">{item.name}</span>
+                      {(item as any).inlineBadge}
+                    </div>
+                    {(item as any).rightBadge}
                   </NavLink>
                 </li>
               ))}

@@ -10,7 +10,8 @@ interface DepartmentKpiCardsProps {
 
 export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, isOverall = false }) => {
   const { t } = useTranslation();
-  const budgetPct = Math.round((kpis.budgetActual / kpis.budgetTotal) * 100);
+  const missing=(key:string)=>kpis.unavailable?.includes(key);
+  const budgetPct = kpis.budgetTotal ? Math.round((kpis.budgetActual / kpis.budgetTotal) * 100) : 0;
   const formattedActual = (kpis.budgetActual / 1000000).toLocaleString('vi-VN');
   const formattedTotal = (kpis.budgetTotal / 1000000).toLocaleString('vi-VN');
 
@@ -88,7 +89,7 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOnTime')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
-          {kpis.onTimeRate}%
+          {missing('onTimeRate')?'—':`${kpis.onTimeRate}%`}
         </b>
         <span className={`text-[11px] truncate font-medium ${onTimeDeltaColor}`}>
           {kpis.onTimeDelta}
@@ -113,12 +114,12 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiBudget')}</span>
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${budgetBadgeClass}`}>
-            {budgetPct}%
+            {missing('budgetActual')?'—':`${budgetPct}%`}
           </span>
         </div>
         <div className="my-0.5">
           <b className="text-lg font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-            ₫{formattedActual}M
+            ₫{missing('budgetActual')?'—':formattedActual}M
           </b>
           <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1">
             <div
@@ -142,10 +143,10 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiAvgDuration')}</span>
         <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight my-0.5">
-          {kpis.avgTaskDuration}d
+          {missing('avgTaskDuration')?'—':`${kpis.avgTaskDuration}d`}
         </b>
         <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-          {t('departments.kpiTargetDuration', { target: kpis.avgTaskDurationTarget })}
+          {missing('avgTaskDurationTarget')?'Chưa có mục tiêu':t('departments.kpiTargetDuration', { target: kpis.avgTaskDurationTarget })}
         </span>
       </div>
 
@@ -153,10 +154,10 @@ export const DepartmentKpiCards: React.FC<DepartmentKpiCardsProps> = ({ kpis, is
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{t('departments.kpiSatisfaction')}</span>
         <b className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400 leading-tight my-0.5">
-          {kpis.satisfactionScore} <span className="text-xs font-normal text-gray-400">/ 5.0</span>
+          {missing('satisfactionScore')?'—':kpis.satisfactionScore} <span className="text-xs font-normal text-gray-400">/ 5.0</span>
         </b>
         <span className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-          {t('departments.kpiPositive')}
+          {missing('satisfactionScore')?'Chưa có đánh giá':t('departments.kpiPositive')}
         </span>
       </div>
     </div>

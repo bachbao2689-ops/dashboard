@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 import toast from 'react-hot-toast';
 
 export type UserRole = 'admin' | 'member' | 'manager' | 'leader';
@@ -130,6 +131,8 @@ export function useMembers() {
   };
 
   useEffect(() => { void fetchMembers(); }, [fetchMembers]);
+  const actor=useAuthStore(state=>state.profile?.id);
+  useWorkspaceRealtime(['users','departments'],fetchMembers,actor);
 
   return { members, departments, loading, refetch: fetchMembers, addMember, setMemberRemoved };
 }

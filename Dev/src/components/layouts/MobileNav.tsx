@@ -5,6 +5,7 @@ import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
+import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 
 export const MobileNav: React.FC = () => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ export const MobileNav: React.FC = () => {
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
   const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
+  const badges = useSidebarBadges();
   
   // Track scroll travel logic to avoid jitter
   const travelRef = useRef(0);
@@ -23,10 +25,10 @@ export const MobileNav: React.FC = () => {
   
   const navItems = [
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, hidden: !canViewDashboard },
-    { name: t('nav.home'), path: '/workflow', icon: <Layers size={20} strokeWidth={1.8} /> },
+    { name: t('nav.home'), path: '/workflow', icon: <Layers size={20} strokeWidth={1.8} />, badgeCount: badges.workflowCount },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
-    { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} /> },
-    { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} /> },
+    { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} />, badgeCount: badges.projectCount },
+    { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} />, badgeCount: badges.borrowCount },
     { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
@@ -146,7 +148,18 @@ export const MobileNav: React.FC = () => {
             )}
           >
             {({ isActive }) => <>
-              {item.icon}
+              <div className="relative">
+                {item.icon}
+                {Boolean((item as any).badgeCount > 0) && (
+                  item.path.includes('borrow-requests') ? (
+                    <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white border border-white dark:border-slate-800">
+                      {(item as any).badgeCount > 99 ? '99+' : (item as any).badgeCount}
+                    </span>
+                  ) : (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-red-500 border border-white dark:border-slate-800" />
+                  )
+                )}
+              </div>
               {isActive && <span aria-hidden="true" className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-600 dark:bg-cyan-300" />}
             </>}
           </NavLink>

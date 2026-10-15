@@ -40,18 +40,24 @@ export function useProfileCalendar(targetUserId?: string | number) {
       loadingNow = true;
       setLoading(true);
       try {
-        const [mentionRows, campaignMemberships] = await Promise.all([
+        const [mentionRows, campaignMemberships, legacyMentions] = await Promise.all([
           allRows(supabase.from('comments').select('id,task_id').contains('mentions', [Number(profileId)]).order('id')),
-          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id'))
+          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id')),
+          allRows(supabase.from('activity_log').select('entity_type,entity_id').eq('action','comment').in('entity_type',['project_subtask','campaign_subtask']).contains('metadata',{mentions:[Number(profileId)]}).order('id'))
         ]);
         const mentionedIds = [...new Set(mentionRows.map(r => r.task_id))];
+        const subtaskQuery=(kind:string,table:string)=>{
+          const ids=[...new Set(legacyMentions.filter(r=>r.entity_type===kind).map(r=>r.entity_id))];
+          let q=supabase.from(table).select('*,assignee:assignee_id(name,avatar_url)').neq('status','deleted').neq('status','archived');
+          return ids.length?q.or(`assignee_id.eq.${profileId},id.in.(${ids.join(',')})`):q.eq('assignee_id',profileId);
+        };
         let personalTaskQuery = supabase.from('tasks').select('*,project:project_id(id,name),campaign:campaign_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)');
         personalTaskQuery = mentionedIds.length ? personalTaskQuery.or(`assignee_id.eq.${profileId},id.in.(${mentionedIds.join(',')})`) : personalTaskQuery.eq('assignee_id', profileId);
         const [tasks, memberships, projectSubtasks, campaignSubtasks, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
           allRows(personalTaskQuery.order('id')),
           allRows(supabase.from('project_members').select('project_id,user:user_id(name)').eq('user_id', profileId).order('project_id')),
-          allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).neq('status', 'deleted').order('id')),
-          allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').eq('assignee_id', profileId).neq('status', 'deleted').order('id')),
+          allRows(subtaskQuery('project_subtask','project_subtasks').order('id')),
+          allRows(subtaskQuery('campaign_subtask','campaign_subtasks').order('id')),
           allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').eq('created_by', profileId).order('id')),
           allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
           supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
@@ -79,7 +85,7 @@ export function useProfileCalendar(targetUserId?: string | number) {
           return {
             key: `${kind}:${record.id}`, id: record.id, kind, title: record.title || record.name,
             status: record.status, priority: record.priority, description: record.description || record.objective,
-            ...calendarDates(record, kind), parentId: parent?.id, parentName: parent?.name || record.project?.name,
+            ...calendarDates(record, kind), parentId: parent?.id, parentName: parent?.name || record.project?.name || record.campaign?.name,
             campaignId: record.campaign_id || parent?.campaign_id,
             owner: record.assignee?.name || record.lead?.name || record.creator?.name,
             record: { ...record, memberNames: kind === 'project' ? projectMemberNames.get(record.id) || [] : undefined, campaign: campaignMap.get(record.campaign_id) || null },
@@ -89,8 +95,8 @@ export function useProfileCalendar(targetUserId?: string | number) {
           ...tasks.map(row => makeItem(row, 'task')),
           ...projects.map(row => makeItem(row, 'project')),
           ...campaigns.map(row => makeItem(row, 'campaign')),
-          ...projectSubtasks.filter(row => isCalendarVisible(row.status) && projectMap.has(row.project_id)).map(row => makeItem(row, 'project_subtask')),
-          ...campaignSubtasks.filter(row => isCalendarVisible(row.status) && campaignMap.has(row.campaign_id)).map(row => makeItem(row, 'campaign_subtask')),
+          ...projectSubtasks.filter(row => isCalendarVisible(row.status)).map(row => makeItem(row, 'project_subtask')),
+          ...campaignSubtasks.filter(row => isCalendarVisible(row.status)).map(row => makeItem(row, 'campaign_subtask')),
         ];
         if (active) { setSnapshot({ userId: profileId, items, notifications: notificationResult.data || [], updatedAt: new Date() }); setError(null); }
       } catch (cause) {
@@ -106,7 +112,7 @@ export function useProfileCalendar(targetUserId?: string | number) {
     reloadRef.current = schedule;
     void load();
     const channel = profileId ? supabase.channel(`profile-calendar-${profileId}`) : null;
-    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'notifications', 'comments', 'workflow_phase_members'].forEach(table => {
+    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'notifications', 'comments', 'activity_log', 'workflow_phase_members'].forEach(table => {
       channel?.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
     });
     channel?.subscribe();
