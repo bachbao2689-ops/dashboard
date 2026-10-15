@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, ChevronRight, FolderKanban, Layers, MessageSquare } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Check, X, Search, Sun, Moon, History, Bell, Sidebar, Globe, CheckSquare, Users, User, BarChart2, Box, ChevronRight, FolderKanban, Layers, MessageSquare } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import { cn } from '../common/KpiCard';
@@ -9,6 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import {useNotificationCenter} from '../../hooks/useNotificationCenter';
 import {markNotificationsRead,type NotificationItem} from '../../store/notificationStore';
 import {PushNotificationSettings} from '../features/notifications/PushNotificationSettings';
+import {NotificationIcon,TONES,toneOf,toneStyle,PicText} from '../features/notifications/notificationVisual';
 import toast from 'react-hot-toast';
 import {entityLink} from '../../lib/taskTracking';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
@@ -22,9 +24,11 @@ export const Header: React.FC = () => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (notifRef.current && !notifRef.current.contains(target) && !panelRef.current?.contains(target)) {
         setShowNotifs(false);
       }
     };
@@ -48,6 +52,7 @@ export const Header: React.FC = () => {
   }, [location.pathname]);
   const profile = useAuthStore(state => state.profile);
   const {items:notifications,unread} = useNotificationCenter();
+  const latestUnread = notifications.find(item => !item.is_read);
   const [markingRead, setMarkingRead] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -345,24 +350,42 @@ export const Header: React.FC = () => {
                   : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300"
               )}
             >
-              <Bell size={20} />
+              <span className={unread > 0 ? 'notif-bell' : undefined} style={latestUnread ? toneStyle(latestUnread) : undefined}><Bell size={20} /></span>
               {unread > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{unread > 99 ? "99+" : unread}</span>}
             </button>
             
-            {showNotifs && (
-              <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-24px))] sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
-                  <span>{lang === 'en' ? 'Notifications' : 'Thông báo'}</span>
-                  <button type="button" disabled={markingRead||!unread} className="text-xs text-primary hover:underline disabled:opacity-50" onClick={()=>void markAllNotificationsRead()}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</button>
+            {showNotifs && createPortal(
+              <div ref={panelRef} style={(() => { const r = notifRef.current?.getBoundingClientRect(); return r ? { top: r.bottom + 8, right: Math.max(12, window.innerWidth - r.right) } : { top: 64, right: 12 }; })()} className="notif-glass fixed w-[min(360px,calc(100vw-24px))] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700/80 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
+                  <span className="text-xs font-semibold">{lang === 'en' ? 'Notifications' : 'Thông báo'}{unread > 0 && <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-300">{unread}</span>}</span>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      type="button" 
+                      disabled={markingRead||!unread} 
+                      title={lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'} 
+                      aria-label={lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}
+                      className="p-1.5 rounded-lg text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer" 
+                      onClick={()=>void markAllNotificationsRead()}
+                    >
+                      <Check size={16} strokeWidth={2.5} />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowNotifs(false)} 
+                      title={lang === 'en' ? 'Collapse' : 'Thu gọn'} 
+                      aria-label={lang === 'en' ? 'Collapse' : 'Thu gọn'} 
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-[min(60vh,420px)] overflow-y-auto">
                   <PushNotificationSettings hideWhenEnabled />
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <div key={notification.id} role="button" tabIndex={0} onClick={() => void openNotification(notification)} onKeyDown={e => { if (e.key === 'Enter') void openNotification(notification); }} style={toneStyle(notification)} className="notif-row group flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"><NotificationIcon dim={notification.is_read} message={notification.message} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{notification.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{TONES[toneOf(notification)].label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={notification.message}/>}</span></span>{!notification.is_read && <button type="button" aria-label={lang === 'en' ? 'Mark as read' : 'Đánh dấu đã đọc'} onClick={e => { e.stopPropagation(); void markNotificationsRead([notification.id]).catch(() => toast.error('Chưa đồng bộ trạng thái đã đọc.')); }} className="notif-x notif-x-static"><X size={13} /></button>}</div>)}
                 </div>
-                <div onClick={() => { setShowNotifs(false); navigate('/my-tasks'); }} className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 transition-colors">
-                  {lang === 'en' ? 'View all notifications' : 'Xem tất cả thông báo'}
-                </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
           
