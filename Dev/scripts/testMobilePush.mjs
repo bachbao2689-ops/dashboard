@@ -7,6 +7,7 @@ const check=(actual,expected,label)=>{assert.deepEqual(actual,expected,label);ch
 try{
  await db.connect();await db.query('begin');
  await db.query(fs.readFileSync(new URL('../supabase/migrations/20261015090000_mobile_push.sql',import.meta.url),'utf8'));
+ await db.query(fs.readFileSync(new URL('../supabase/migrations/20261015140000_notification_history.sql',import.meta.url),'utf8'));
  const actors=(await db.query('select distinct on (u.id) u.id,u.auth_id,s.id session_id from users u join auth.sessions s on s.user_id=u.auth_id where u.is_active order by u.id,s.created_at desc limit 2')).rows;
  assert(actors.length>=2,'Two signed-in staff fixtures are required');
  const [a,b]=actors,origin='https://dashboard-git-codex-develop-dashboard-bart-c8ff.vercel.app';
@@ -38,7 +39,7 @@ try{
  await db.query('update notifications set is_read=true where id=$1',[notice]);await db.query('select claim_dashboard_push()');
  check((await db.query('select state from push_deliveries where id=$1',[delivery.id])).rows[0].state,'skipped','Read notifications suppressed');
  await auth(a);const summary=(await db.query('select dashboard_notification_summary() data')).rows[0].data;
- check(summary.items.every(item=>item.id!==notice),true,'Read item absent from shared badge summary');
+ check(summary.items.some(item=>item.id===notice&&item.is_read),true,'Read item retained in recent notification history');
  await db.query('select unregister_dashboard_push($1)',[endpoint]);await db.query('reset role');
  check((await db.query('select count(*)::int n from push_subscriptions where id=$1',[sub])).rows[0].n,0,'Owner revokes device');
  console.log(`Mobile push: ${checks} checks passed; all data rolled back.`);

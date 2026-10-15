@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {supabase} from '../services/supabase';
 
-export type NotificationItem={id:string;type:string;message:string;entity_type:string|null;entity_id:string|null;created_at:string;title:string};
+export type NotificationItem={id:string;type:string;message:string;entity_type:string|null;entity_id:string|null;is_read:boolean;created_at:string;title:string};
 export type SidebarBadgeCounts={borrowCount:number;workflowCount:number;tasksCount:number;projectCount:number;profileCount:number;departmentCount:number};
 const empty:SidebarBadgeCounts={borrowCount:0,workflowCount:0,tasksCount:0,projectCount:0,profileCount:0,departmentCount:0};
 const title=(type:string)=>({task_completed:'Task completed',task_comment:'Bình luận mới',weekly_report:'Weekly Report mới',report_reminder:'Nhắc report',task_assigned:'Task mới được giao'}[type]||'Thông báo');

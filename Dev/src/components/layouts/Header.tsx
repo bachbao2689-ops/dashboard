@@ -48,6 +48,7 @@ export const Header: React.FC = () => {
   }, [location.pathname]);
   const profile = useAuthStore(state => state.profile);
   const {items:notifications,unread} = useNotificationCenter();
+  const [markingRead, setMarkingRead] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -79,7 +80,10 @@ export const Header: React.FC = () => {
   const canViewDashboard = ['admin', 'manager', 'leader'].includes((profile?.role || '').toLowerCase()) || ['admin', 'manager', 'leader'].includes((profile?.employment_level || '').toLowerCase());
 
   const markAllNotificationsRead = async () => {
+    if(markingRead||!unread)return;
+    setMarkingRead(true);
     try{await markNotificationsRead();}catch{toast.error('Chưa đánh dấu đã đọc được. Vui lòng thử lại.');}
+    finally{setMarkingRead(false);}
   };
   const openNotification = async (notification: NotificationItem) => {
     try{await markNotificationsRead([notification.id]);}catch{toast.error('Chưa đồng bộ trạng thái đã đọc.');}
@@ -349,11 +353,11 @@ export const Header: React.FC = () => {
               <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-24px))] sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 <div className="p-4 border-b border-gray-100 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
                   <span>{lang === 'en' ? 'Notifications' : 'Thông báo'}</span>
-                  <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</span>
+                  <button type="button" disabled={markingRead||!unread} className="text-xs text-primary hover:underline disabled:opacity-50" onClick={()=>void markAllNotificationsRead()}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</button>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  <PushNotificationSettings />
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No new notifications.' : 'Không có thông báo mới.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
+                  <PushNotificationSettings hideWhenEnabled />
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
                 <div onClick={() => { setShowNotifs(false); navigate('/my-tasks'); }} className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 transition-colors">
                   {lang === 'en' ? 'View all notifications' : 'Xem tất cả thông báo'}

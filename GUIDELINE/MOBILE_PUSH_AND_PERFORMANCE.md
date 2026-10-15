@@ -11,7 +11,11 @@
 Desktop Mac/Windows là nơi làm việc chính. Mobile ưu tiên nhận thông báo và xem tiến độ. Sự kiện được gửi từ server; không cần máy tính mở Dashboard.
 Task/subtask detail trên Mobile hiển thị nội dung và lịch sử bình luận, ẩn composer/Sửa/Complete; All Tasks không hiện tạo mới/chọn hàng loạt trên màn hình nhỏ. Đây là cách trình bày theo thiết bị, không thay thế phân quyền server.
 
-iPhone: mở link Official bằng Safari → Chia sẻ → Thêm vào Màn hình chính → mở icon → đăng nhập → chuông thông báo → Bật thông báo → Cho phép. Có nút Gửi thử và Tắt trên thiết bị này. Develop vẫn có thể đăng ký riêng để test.
+iPhone: mở link Official bằng Safari → Chia sẻ → Thêm vào Màn hình chính → mở icon → đăng nhập → chuông thông báo → Bật thông báo → Cho phép. Develop vẫn có thể đăng ký riêng để test.
+
+Sau khi thiết bị hiện tại đăng ký thành công, ẩn khối “Thông báo trên thiết bị” trong chuông (gồm hướng dẫn, Gửi thử và Tắt). Thiết bị khác chưa bật vẫn thấy hướng dẫn đăng ký; không suy ra trạng thái từ việc cùng tài khoản đã bật trên điện thoại. Trong lúc kiểm tra đăng ký, không nháy lại khối hướng dẫn.
+
+Danh sách chuông giữ 12 thông báo gần nhất của chính người dùng, gồm đã đọc và chưa đọc. “Đã đọc tất cả” chỉ cập nhật trạng thái đọc và badge; nội dung, thứ tự và link đến task/@mention vẫn giữ sau khi tải lại. Badge Header/Sidebar tiếp tục chỉ đếm chưa đọc. Migration `20261015140000_notification_history.sql` tách hai nguồn tổng hợp này, giữ security invoker và quyền hiện có.
 
 Chỉ request quyền từ thao tác bấm của người dùng. Cài web app chưa đồng nghĩa đã cấp quyền push. iOS cần 16.4 trở lên; Focus và cài đặt hệ điều hành có thể tắt âm thanh/ẩn thông báo.
 
@@ -53,6 +57,7 @@ Người dùng ban đầu bật Develop; ngày 15/10/2026 đã xác nhận rõ *
 - 39 pure checks: tracking, ngày tháng, calendar, phase, service-worker push/click và ngăn link khác origin.
 - 123 DB checks dùng fixture rollback: 13 push, 21 tracking/report, 62 Workflow, 12 Calendar, 15 comments/quyền.
 - Online Edge: worker 200 với hàng đợi rỗng; sau khi mở Official, preflight trả 204 đúng origin, Gửi thử thiếu phiên vẫn 401, origin lạ 403. Đăng ký Official bằng authenticated đã qua kiểm tra fixture rollback; cron retry đang active.
+- Bản sửa lịch sử thông báo: 15 DB checks rollback cho lịch sử/read-all/badge/quyền, 13 push checks và 3 service-worker tests; build production qua. QA local với dữ liệu giả trên Desktop 1440px và Mobile 430px: đọc tất cả vẫn bấm mở đúng subtask; đã bật thì ẩn khối setup, chưa bật vẫn thấy nút và bật thành công tự ẩn.
 
 ## Bảo trì
 
