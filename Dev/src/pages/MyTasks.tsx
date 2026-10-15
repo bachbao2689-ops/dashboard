@@ -78,7 +78,7 @@ export const MyTasks: React.FC = () => {
           includeTeamNotifications={isManager}
           extraFilters={
             isManager && (
-              <div className="flex items-center gap-2">
+              <div className="mobile-actions-row flex items-center gap-2">
                 <DepartmentFilterDropdown
                   value={filterDept}
                   onChange={val => {

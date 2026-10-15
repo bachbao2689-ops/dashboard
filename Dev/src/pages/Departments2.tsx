@@ -1,3 +1,4 @@
+import {ActionButton} from '../components/common/ActionButton';
 // src/pages/Departments2.tsx
 import React, { useState, useCallback } from 'react';
 import type { DepartmentId, PeriodFilter } from '../types/department';
@@ -49,15 +50,15 @@ export const Departments2: React.FC = () => {
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{t('departments.refreshIn', { time: formattedTime })}</span>
-              <button
+              <ActionButton icon={<RotateCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />}
                 type="button"
                 onClick={refreshNow}
                 disabled={isRefreshing}
                 className="ml-0.5 hover:text-gray-900 dark:hover:text-white transition-colors"
                 title={t('departments.refreshNow')}
               >
-                <RotateCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
+
+              </ActionButton>
             </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -67,7 +68,7 @@ export const Departments2: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mobile-actions-row flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
             {tabs.map((tItem) => (
               <button

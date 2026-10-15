@@ -1,3 +1,4 @@
+import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import React, { useEffect, useState } from 'react';
 import { X, Clock, MessageSquare, CheckCircle2, User, Calendar, AlignLeft, Edit3, Save } from 'lucide-react';
 import { TaskComments } from '../comments/TaskComments';
@@ -22,6 +23,7 @@ interface TaskDetailPanelProps {
 
 export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false, embedded = false, commentsFocusToken = 0 }) => {
   const { t } = useTranslation();
+  useTaskDetailVisibility(isOpen);
   const readOnly=useMobileReadOnly();
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);

@@ -1,3 +1,5 @@
+import {FilterPopover} from './FilterPopover';
+import {ActionButton} from '../ActionButton';
 import React, { useRef, useEffect } from 'react';
 import { Layers, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
@@ -21,11 +23,12 @@ export const GroupByDropdown: React.FC<GroupByDropdownProps> = ({
 }) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleDocumentClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -45,9 +48,10 @@ export const GroupByDropdown: React.FC<GroupByDropdownProps> = ({
   const isGrouped = value !== 'none';
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
-      <button
+    <div ref={containerRef} className="mobile-filter-control relative inline-block text-left">
+      <ActionButton icon={<Layers size={13} className={isGrouped ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
+        aria-expanded={isOpen}
         onClick={e => {
           e.stopPropagation();
           onToggle();
@@ -58,13 +62,13 @@ export const GroupByDropdown: React.FC<GroupByDropdownProps> = ({
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
         }`}
       >
-        <Layers size={13} className={isGrouped ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+
         <span className="max-w-[120px] truncate">{displayLabel}</span>
         <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+      </ActionButton>
 
       {isOpen && (
-        <div
+        <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-44 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150`}
           onClick={e => e.stopPropagation()}
         >
@@ -92,7 +96,7 @@ export const GroupByDropdown: React.FC<GroupByDropdownProps> = ({
               </button>
             );
           })}
-        </div>
+        </FilterPopover>
       )}
     </div>
   );

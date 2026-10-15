@@ -127,6 +127,7 @@ export function useProjectsController(){
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest('[data-filter-popover]')) return;
       if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
         setActiveDropdown(null);
       }

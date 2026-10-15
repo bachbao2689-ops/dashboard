@@ -1,3 +1,5 @@
+import {FilterPopover} from './FilterPopover';
+import {ActionButton} from '../ActionButton';
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { Avatar } from '../Avatar';
@@ -50,11 +52,12 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
   const defaultLabel = label || t('projects.filterPic');
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleDocumentClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -79,9 +82,10 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
   );
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
-      <button
+    <div ref={containerRef} className="mobile-filter-control relative inline-block text-left">
+      <ActionButton icon={<Users size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
+        aria-expanded={isOpen}
         onClick={e => {
           e.stopPropagation();
           onToggle();
@@ -93,13 +97,13 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
         }`}
       >
-        <Users size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+
         <span className="max-w-[120px] truncate">{displayLabel}</span>
         <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+      </ActionButton>
 
       {isOpen && (
-        <div
+        <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-80`}
           onClick={e => e.stopPropagation()}
         >
@@ -210,7 +214,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
               );
             })}
           </div>
-        </div>
+        </FilterPopover>
       )}
     </div>
   );

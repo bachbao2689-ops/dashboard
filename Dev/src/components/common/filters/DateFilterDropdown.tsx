@@ -1,3 +1,5 @@
+import {FilterPopover} from './FilterPopover';
+import {ActionButton} from '../ActionButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
@@ -38,11 +40,12 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   const { t, lang } = useTranslation();
   const isEn = lang === 'en';
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleDocumentClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -188,9 +191,10 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   }, [hasCustom, customStartDate, customEndDate, calendarFilter, presets, t]);
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
-      <button
+    <div ref={containerRef} className="mobile-filter-control relative inline-block text-left">
+      <ActionButton icon={<CalendarIcon size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
+        aria-expanded={isOpen}
         onClick={e => {
           e.stopPropagation();
           onToggle();
@@ -201,13 +205,13 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
         }`}
       >
-        <CalendarIcon size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />
+
         <span className="max-w-[130px] truncate">{triggerLabel}</span>
         <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+      </ActionButton>
 
       {isOpen && (
-        <div
+        <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-76 sm:w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-150 space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar`}
           onClick={e => e.stopPropagation()}
         >
@@ -389,7 +393,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </FilterPopover>
       )}
     </div>
   );

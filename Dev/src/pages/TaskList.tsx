@@ -76,6 +76,7 @@ export const TaskList: React.FC = () => {
   const toolbarContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest('[data-filter-popover]')) return;
       if (toolbarContainerRef.current && !toolbarContainerRef.current.contains(e.target as Node)) {
         setActiveDropdown(null);
       }

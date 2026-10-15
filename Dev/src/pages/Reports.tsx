@@ -1,3 +1,4 @@
+import {ActionButton} from '../components/common/ActionButton';
 import React, { useState } from 'react';
 import { useReports } from '../hooks/useReports';
 import type { TimeRange } from "../hooks/useReports";
@@ -100,13 +101,13 @@ const ManagerReports: React.FC = () => {
             ))}
           </div>
           
-          <button
+          <ActionButton icon={<Download className="w-4 h-4" />}
             onClick={exportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-[#002e6d] text-white rounded-lg hover:bg-[#002250] transition-colors"
           >
-            <Download className="w-4 h-4" />
+
             <span className="hidden sm:inline">Export CSV</span>
-          </button>
+          </ActionButton>
         </div>
       </div>
 

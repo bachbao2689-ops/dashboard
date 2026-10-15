@@ -1,3 +1,4 @@
+import {ActionButton} from '../components/common/ActionButton';
 import {DashboardAllocationChart} from '../components/features/dashboard/DashboardAllocationChart';
 import {useDashboardPerformance} from '../hooks/useDashboardPerformance';
 import {taskActive} from '../lib/taskTracking';
@@ -5,7 +6,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Avatar } from "../components/common/Avatar";
 
 import {
-  ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
+  Users, ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
 } from 'lucide-react';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
@@ -30,9 +31,9 @@ const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ 
 );
 
 const TextButton: React.FC<{ children: React.ReactNode; onClick?: () => void; className?: string }> = ({ children, onClick, className = '' }) => (
-  <button onClick={onClick} className={`inline-flex items-center gap-1 text-xs font-semibold hover:underline ${className}`}>
-    {children} <ArrowRight size={12} />
-  </button>
+  <ActionButton icon={<ArrowRight size={12}/>} onClick={onClick} className={`inline-flex items-center gap-1 text-xs font-semibold hover:underline ${className}`}>
+    {children}
+  </ActionButton>
 );
 
 export const Dashboard: React.FC = () => {
@@ -102,8 +103,8 @@ export const Dashboard: React.FC = () => {
 
           <div className="relative z-[100]" ref={searchRef}>
             <div className="flex items-center bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-lg p-1">
-              <span className={`text-xs font-semibold px-2 ${MUTED}`}>{t('dashboard.department')}:</span>
-              <button
+              <span className={`hidden md:inline text-xs font-semibold px-2 ${MUTED}`}>{t('dashboard.department')}:</span>
+              <ActionButton mobileOnlyIcon icon={<Users size={16}/>} label={s.type === 'department' ? s.name : t('dashboard.selectDept')}
                 onClick={() => setShowSearch(!showSearch)}
                 className="flex items-center justify-between min-w-[130px] gap-2 px-2.5 py-1 bg-white dark:bg-slate-800 rounded-md shadow-sm text-xs font-semibold border border-gray-200 dark:border-slate-600"
               >
@@ -111,7 +112,7 @@ export const Dashboard: React.FC = () => {
                   <span className={INK}>{s.type === 'department' ? s.name : t('dashboard.selectDept')}</span>
                 </div>
                 <ChevronDown size={13} className={MUTED} />
-              </button>
+              </ActionButton>
               <button onClick={() => setRange('custom')} className={`w-7 h-7 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`} title={t('dashboard.customDateRange')}>
                 <Calendar size={14} />
               </button>

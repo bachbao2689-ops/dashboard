@@ -1,3 +1,4 @@
+import {ActionButton} from '../../../common/ActionButton';
 import React from 'react';
 import {useMobileReadOnly} from '../../../../hooks/useMobileReadOnly';
 import { Plus, X } from 'lucide-react';
@@ -89,7 +90,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
         {t('tasks.title')}
       </h1>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mobile-actions-row flex flex-wrap items-center gap-2">
         {/* 1. Search */}
         <SearchInput
           value={searchTerm}
@@ -153,27 +154,27 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
 
         {/* 7. Clear Filters Button */}
         {hasActiveFilters && (
-          <button
+          <ActionButton icon={<X size={12} />}
             type="button"
             onClick={onResetFilters}
             title={t('projects.clearFilters')}
             className="h-9 px-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
           >
-            <X size={12} />
+
             <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
-          </button>
+          </ActionButton>
         )}
 
         {/* 8. Add New Task Button */}
         {canCreateTask && !readOnly && (
-          <button
+          <ActionButton icon={<Plus className="w-4 h-4" />}
             type="button"
             onClick={onCreate}
             className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
           >
-            <Plus className="w-4 h-4" />
+
             <span>{t('tasks.createBtn')}</span>
-          </button>
+          </ActionButton>
         )}
       </div>
     </div>

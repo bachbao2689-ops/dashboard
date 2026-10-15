@@ -1,3 +1,4 @@
+import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import {hasCanonicalNotifications} from '../../../store/notificationStore';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TaskComments } from '../comments/TaskComments';
@@ -42,6 +43,7 @@ interface SubtaskDetailPanelProps {
 
 export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask', parentName, embedded = false, commentsFocusToken = 0 }) => {
   const { t } = useTranslation();
+  useTaskDetailVisibility(Boolean(subtask));
   const readOnly=useMobileReadOnly();
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
   const [parentLoading, setParentLoading] = useState(false);

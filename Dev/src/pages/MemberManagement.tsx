@@ -1,3 +1,4 @@
+import {ActionButton} from '../components/common/ActionButton';
 import { useState, useMemo } from 'react';
 import { useMembers } from '../hooks/useMembers';
 import type { Member } from '../hooks/useMembers';
@@ -78,7 +79,7 @@ export function MemberManagement() {
           <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm">{t('members.subtitle')}</p>
         </div>
         
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+        <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}
@@ -119,7 +120,7 @@ export function MemberManagement() {
           />
 
           {(Boolean(searchTerm) || Boolean(roleFilter) || statusFilter !== 'active') && (
-            <button
+            <ActionButton icon={<RotateCcw size={13} />}
               type="button"
               onClick={() => {
                 setSearchTerm('');
@@ -129,20 +130,20 @@ export function MemberManagement() {
               className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               title={t('projects.clearFilters')}
             >
-              <RotateCcw size={13} />
+
               <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
-            </button>
+            </ActionButton>
           )}
 
           {canManageAll && (
-            <button
+            <ActionButton icon={<Plus size={15} />}
               type="button"
               onClick={() => setIsInviteModalOpen(true)}
               className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl font-medium text-xs shadow-2xs cursor-pointer"
             >
-              <Plus size={15} />
+
               <span className="hidden sm:inline">{t('members.invite')}</span>
-            </button>
+            </ActionButton>
           )}
         </div>
       </div>
@@ -208,8 +209,8 @@ export function MemberManagement() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {canManageAll && member.id !== profile?.id && (member.status === 'active' ?
-                        <button type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"><Trash2 size={14} /> {t('common.delete')}</button>
-                        : <button type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"><RotateCcw size={14} /> {t('members.restore')}</button>)}
+                        <ActionButton icon={<Trash2 size={14} />} type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"> {t('common.delete')}</ActionButton>
+                        : <ActionButton icon={<RotateCcw size={14} />} type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"> {t('members.restore')}</ActionButton>)}
                     </td>
                   </tr>
                   )))

@@ -1,3 +1,5 @@
+import {StatusFilterDropdown} from '../components/common/filters';
+import {ActionButton} from '../components/common/ActionButton';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Plus, User } from 'lucide-react';
@@ -12,6 +14,7 @@ const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T0
 export const BorrowRequests: React.FC = () => {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -56,19 +59,13 @@ export const BorrowRequests: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('borrow.subtitle')}</p>
           {mine && <p className="text-xs text-primary mt-1">{t('borrow.viewingMine')}</p>}
         </div>
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
-          <select aria-label="Lọc trạng thái yêu cầu" value={filter} onChange={event => setFilter(event.target.value)}
-            className="h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm rounded-xl px-3 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm cursor-pointer appearance-none">
-            <option value="all">{t('common.all')}</option>
-            <option value="pending">{t('borrow.statusPending')}</option>
-            <option value="approved">{t('borrow.statusApproved')}</option>
-            <option value="returned">{t('borrow.statusReturned')}</option>
-            <option value="rejected">{t('borrow.statusRejected')}</option>
-          </select>
-          <button type="button" onClick={() => navigate('/assets?borrow=1')}
+        <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
+          <StatusFilterDropdown value={filter} onChange={setFilter} isOpen={filterOpen} onToggle={() => setFilterOpen(value => !value)} onClose={() => setFilterOpen(false)}
+            options={[{key: 'all', dot: 'bg-gray-400', label: t('common.all')}, {key: 'pending', dot: 'bg-amber-400', label: t('borrow.statusPending')}, {key: 'approved', dot: 'bg-blue-400', label: t('borrow.statusApproved')}, {key: 'returned', dot: 'bg-emerald-400', label: t('borrow.statusReturned')}, {key: 'rejected', dot: 'bg-red-400', label: t('borrow.statusRejected')}]} />
+          <ActionButton icon={<Plus size={16} />} type="button" onClick={() => navigate('/assets?borrow=1')}
             className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-medium transition-all shadow-sm">
-            <Plus size={16} /> <span>{t('borrow.newRequest')}</span>
-          </button>
+             <span>{t('borrow.newRequest')}</span>
+          </ActionButton>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
+import {ActionButton} from '../../common/ActionButton';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import React from 'react';
-import {Plus, ChevronUp, ChevronLeft, ChevronRight, Trash2, Pencil, Eye, Check} from 'lucide-react';
+import {Plus, ChevronUp, ChevronLeft, ChevronRight, Trash2, Pencil, Eye, Check, Circle, Pause, CircleX, ScanEye} from 'lucide-react';
 import {taskContributors} from '../../../lib/workflowCalendar';
 import {WorkflowPeopleRows} from '../../features/projects/WorkflowPeopleRows';
 import {WorkflowPhaseDates} from '../../features/projects/WorkflowPhaseDates';
@@ -148,7 +149,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     </div>
 
                     {/* Status Pill */}
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 ${
+                    <ActionButton mobileOnlyIcon icon={isCompleted ? <Check size={16}/> : p.status === 'cancelled' ? <CircleX size={16}/> : p.status === 'on_hold' ? <Pause size={16}/> : p.status === 'in_review' ? <ScanEye size={16}/> : <Circle size={16}/>} onClick={e => e.stopPropagation()} className={`text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 ${
                       isCompleted
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                         : isActive
@@ -158,7 +159,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
                     }`}>
                       {isCompleted ? (isEn ? '✓ Completed' : '✓ Hoàn thành') : p.status === 'cancelled' ? (isEn ? 'Canceled' : 'Đã hủy') : p.status === 'on_hold' ? (isEn ? 'On Hold' : 'Tạm dừng') : p.status === 'in_review' ? (isEn ? 'In Review' : 'Đang nghiệm thu') : isActive ? (isEn ? '● In Progress' : '● Đang triển khai') : (isEn ? '○ Not Started' : '○ Chờ bắt đầu')}
-                    </span>
+                    </ActionButton>
 
                     {/* Phase Name & Desc */}
                     <b className={`text-xs block line-clamp-1 w-full ${
@@ -210,7 +211,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     </div>
 
                     {/* Action button: Xem chi tiết */}
-                    <button
+                    <ActionButton icon={isSelected && isDetailOpen ? <ChevronUp size={13}/> : <Eye size={13}/>}
                       type="button"
                       aria-expanded={isSelected && isDetailOpen}
                       onClick={(e) => {
@@ -227,18 +228,8 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                           : 'bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600'
                       }`}
                     >
-                      {isSelected && isDetailOpen ? (
-                        <>
-                          <ChevronUp size={13} />
-                          <span>{isEn ? 'Collapse' : 'Thu gọn'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye size={13} />
-                          <span>{isEn ? 'View details' : 'Xem chi tiết'}</span>
-                        </>
-                      )}
-                    </button>
+                      {isSelected && isDetailOpen ? (isEn ? 'Collapse' : 'Thu gọn') : (isEn ? 'View details' : 'Xem chi tiết')}
+                    </ActionButton>
                   </div>
 
                   {/* Connecting Shape Link with (+) Center Bead between adjacent phases */}

@@ -1,3 +1,5 @@
+import {FilterPopover} from '../../common/filters/FilterPopover';
+import {ActionButton} from '../../common/ActionButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutGrid, List, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderKanban, Megaphone, RefreshCw, RotateCcw } from 'lucide-react';
@@ -71,13 +73,16 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
   const rangeMenuRef = useRef<HTMLDivElement>(null);
+  const rangePanelRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
   const monthMenuRef = useRef<HTMLDivElement>(null);
+  const monthPanelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => { 
-      if (rangeOpen && !rangeMenuRef.current?.contains(event.target as Node)) setRangeOpen(false); 
-      if (monthPickerOpen && !monthMenuRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
-      if (showNotifications && !notifRef.current?.contains(event.target as Node)) setShowNotifications(false);
+      if (rangeOpen && !rangeMenuRef.current?.contains(event.target as Node) && !rangePanelRef.current?.contains(event.target as Node)) setRangeOpen(false);
+      if (monthPickerOpen && !monthMenuRef.current?.contains(event.target as Node) && !monthPanelRef.current?.contains(event.target as Node)) setMonthPickerOpen(false);
+      if (showNotifications && !notifRef.current?.contains(event.target as Node) && !notifPanelRef.current?.contains(event.target as Node)) setShowNotifications(false);
     };
     const closeEscape = (event: KeyboardEvent) => { 
       if (event.key === 'Escape') { setRangeOpen(false); setMonthPickerOpen(false); setShowNotifications(false); setStatusDropdownOpen(false); }
@@ -199,10 +204,10 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
     <div className="space-y-4 border-b border-gray-100 p-4 dark:border-slate-700 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:!text-white"><CalendarDays size={21} className="text-primary" />{t('profile.calendarTitle')}</h2><p className="mt-1 text-xs text-gray-500">{t('profile.calendarSubtitle')}</p></div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mobile-actions-row flex flex-wrap items-center gap-2">
           <div className="relative" ref={notifRef}>
-            <button type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="hover-magnetic-btn magnetic-blue inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300"><Bell size={15} />{t('profile.notifications')} <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] text-white">{notifications.length}</span></button>
-            {showNotifications && <div className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[min(320px,calc(100vw-48px))] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog
+            <ActionButton badge={notifications.length || undefined} label={t('profile.notifications')} icon={<Bell size={15} />} type="button" onClick={() => setShowNotifications(value => !value)} aria-expanded={showNotifications} className="hover-magnetic-btn magnetic-blue inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-blue-300">{t('profile.notifications')}</ActionButton>
+            {showNotifications && <FilterPopover anchorRef={notifRef} panelRef={notifPanelRef} align="right" onClose={() => setShowNotifications(false)} className="absolute right-0 top-[calc(100%+8px)] z-[120] w-[min(320px,calc(100vw-48px))] sm:w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white dark:bg-slate-900 dark:border-slate-700 overflow-hidden"><NotificationLog
               includeTeam={includeTeamNotifications} 
               inline 
               onClose={() => setShowNotifications(false)} 
@@ -222,13 +227,13 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                 }
                 return false;
               }}
-            /></div>}
+            /></FilterPopover>}
           </div>
-          <button type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90"><FileText size={15} />{reportOpen ? t('profile.closeReport') : t('profile.myReport')}</button>
+          <ActionButton icon={<FileText size={15} />} type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90">{reportOpen ? t('profile.closeReport') : t('profile.myReport')}</ActionButton>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">
+        <div className="mobile-actions-row inline-flex gap-1 rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900/60" aria-label="Loại công việc">
           {dynamicTabs.map(option => {
             let activeClass = 'bg-white text-primary shadow-sm dark:bg-slate-700 dark:!text-white';
             if (option.id === 'task') activeClass = 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50';
@@ -236,7 +241,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             if (option.id === 'campaign') activeClass = 'bg-amber-50 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
             
             return (
-              <button 
+              <ActionButton mobileOnlyIcon icon={option.id === 'all' ? <LayoutGrid size={16}/> : option.id === 'task' ? <CheckCircle2 size={16}/> : option.id === 'project' ? <FolderKanban size={16}/> : <Megaphone size={16}/>}
                 type="button" 
                 key={option.id} 
                 aria-pressed={filter === option.id} 
@@ -244,11 +249,11 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                 className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${filter === option.id ? activeClass : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
               >
                 {option.label}
-              </button>
+              </ActionButton>
             );
           })}
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="mobile-actions-row flex min-w-0 flex-wrap items-center gap-2">
           <SearchInput
             value={query}
             onChange={setQuery}
@@ -274,7 +279,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
             onClose={() => setStatusDropdownOpen(false)}
           />
           {(Boolean(query) || status !== 'open') && (
-            <button
+            <ActionButton icon={<RotateCcw size={13} />}
               type="button"
               onClick={() => {
                 setQuery('');
@@ -283,8 +288,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               title={t('projects.clearFilters')}
             >
-              <RotateCcw size={13} />
-            </button>
+
+            </ActionButton>
           )}
         </div>
       </div>
@@ -316,7 +321,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           </button>
           <p className="mt-0.5 text-xs text-gray-500">{formatCalendarDay(monthStart)} – {formatCalendarDay(monthEnd)} · {t('profile.workItemsCount', { count: monthItems.length })}</p>
           
-          {monthPickerOpen && <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+          {monthPickerOpen && <FilterPopover anchorRef={monthMenuRef} panelRef={monthPanelRef} align="right" onClose={() => setMonthPickerOpen(false)} className="absolute left-0 top-[calc(100%+8px)] z-[100] w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-3 flex items-center justify-between">
               <button type="button" onClick={() => setPickerYear(y => y - 1)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"><ChevronLeft size={16}/></button>
               <span className="font-bold text-gray-900 dark:!text-white">{pickerYear}</span>
@@ -329,20 +334,20 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
                 </button>
               ))}
             </div>
-          </div>}
+          </FilterPopover>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mobile-actions-row flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-slate-800">
-          <button type="button" onClick={() => setViewMode('grid')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><LayoutGrid size={15}/></button>
-          <button type="button" onClick={() => setViewMode('list')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><List size={15}/></button>
+          <button type="button" aria-label={lang === 'vi' ? 'Xem dạng lịch' : 'Calendar view'} data-mobile-label={lang === 'vi' ? 'Xem dạng lịch' : 'Calendar view'} aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><LayoutGrid size={15}/></button>
+          <button type="button" aria-label={lang === 'vi' ? 'Xem danh sách' : 'List view'} data-mobile-label={lang === 'vi' ? 'Xem danh sách' : 'List view'} aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')} className={`rounded-lg p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900 dark:bg-slate-700 dark:!text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}><List size={15}/></button>
         </div>
-        <div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700"><button type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="rounded-l-xl p-2.5 hover:bg-primary/5"><ChevronLeft size={17} /></button><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
-          <button type="button" onClick={() => { setPickerMonth(cursor.getMonth()); setPickerYear(cursor.getFullYear()); setRangeOpen(value => !value); setMonthPickerOpen(false); }} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">
+        <div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700"><ActionButton icon={<ChevronLeft size={17} />} type="button" aria-label="Khoảng trước" onClick={() => move(-1)} className="rounded-l-xl p-2.5 hover:bg-primary/5"></ActionButton><div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
+          <ActionButton icon={<CalendarDays size={16}/>} type="button" onClick={() => { setPickerMonth(cursor.getMonth()); setPickerYear(cursor.getFullYear()); setRangeOpen(value => !value); setMonthPickerOpen(false); }} aria-expanded={rangeOpen} className="flex h-full min-w-[104px] items-center justify-center gap-1.5 px-3 text-xs font-semibold hover:bg-primary/5">
             {selectedRangeLabel}
             <ChevronDown size={14} className={`transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {rangeOpen && <div className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:w-[320px] sm:flex-row">
+          </ActionButton>
+          {rangeOpen && <FilterPopover anchorRef={rangeMenuRef} panelRef={rangePanelRef} align="right" onClose={() => setRangeOpen(false)} className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-[280px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:w-[320px] sm:flex-row">
             
             {/* Calendar Grid */}
             <div className="p-3 sm:flex-1">
@@ -428,8 +433,8 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               </div>
             </div>
             
-          </div>}
-        </div><button type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="rounded-r-xl p-2.5 hover:bg-primary/5"><ChevronRight size={17} /></button></div><button type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button></div>
+          </FilterPopover>}
+        </div><ActionButton icon={<ChevronRight size={17} />} type="button" aria-label="Khoảng sau" onClick={() => move(1)} className="rounded-r-xl p-2.5 hover:bg-primary/5"></ActionButton></div><ActionButton icon={<RefreshCw size={16} className={loading ? 'animate-spin' : ''} />} type="button" aria-label="Đồng bộ lịch" title="Đồng bộ lịch" disabled={loading} onClick={onRefresh} className="rounded-xl p-2.5 text-gray-400 hover:bg-primary/5 hover:text-primary"></ActionButton></div>
     </div>
 
     {loading && !updatedAt ? <div role="status" className="grid min-h-72 place-items-center text-sm text-gray-400">{t('profile.loadingCalendar')}</div> : viewMode === 'grid' ? <>

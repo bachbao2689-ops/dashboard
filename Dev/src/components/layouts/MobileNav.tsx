@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import {useOverlayStore} from '../../store/overlayStore';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { CheckSquare, Package, User, Layers } from 'lucide-react';
 import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
@@ -7,19 +8,14 @@ import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 
-export const MobileNav: React.FC = () => {
+export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false}) => {
   const { t } = useTranslation();
-  const [isHidden, setIsHidden] = useState(false);
-  const location = useLocation();
+  const taskDetailsOpen=useOverlayStore(state=>state.taskDetails>0);
+  const isHidden=scrollHidden||taskDetailsOpen;
   const profile = useAuthStore(s => s.profile);
   const role = profile?.role || 'member';
   const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
   const badges = useSidebarBadges();
-  
-  // Track scroll travel logic to avoid jitter
-  const travelRef = useRef(0);
-  const lastYRef = useRef(0);
-  const scrollTargetRef = useRef<EventTarget | null>(null);
   
   const canViewDashboard = ['admin', 'manager', 'leader'].includes(role.toLowerCase()) || (profile?.employment_level || '').toLowerCase() === 'leader';
   
@@ -33,51 +29,6 @@ export const MobileNav: React.FC = () => {
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
 
-  useEffect(() => {
-    setIsHidden(false);
-    travelRef.current = 0;
-    lastYRef.current = 0;
-    scrollTargetRef.current = null;
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      // Only process scroll events from large containers (e.g. main page areas)
-      if (!target || !target.clientHeight || target.clientHeight < 300) return;
-
-      const y = Math.max(0, target.scrollTop);
-      if (target !== scrollTargetRef.current) {
-        scrollTargetRef.current = target;
-        lastYRef.current = y;
-        travelRef.current = 0;
-        return;
-      }
-      const delta = y - lastYRef.current;
-      
-      if (y <= 20) {
-        setIsHidden(false);
-        travelRef.current = 0;
-      } else {
-        if (delta && Math.sign(delta) !== Math.sign(travelRef.current)) {
-          travelRef.current = 0;
-        }
-        travelRef.current += delta;
-        
-        if (travelRef.current > 32 && y > 80) {
-          setIsHidden(true);
-          travelRef.current = 0;
-        } else if (travelRef.current < -24) {
-          setIsHidden(false);
-          travelRef.current = 0;
-        }
-      }
-      lastYRef.current = y;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
-  }, []);
 
   return (
     <>
@@ -122,15 +73,19 @@ export const MobileNav: React.FC = () => {
       <div 
         className={cn(
           "hidden dark:md:hidden dark:fixed dark:bottom-0 dark:left-0 dark:right-0 pointer-events-none z-[98] mobile-nav-mask backdrop-blur-[32px] backdrop-saturate-[165%]",
-          isHidden && "nav-hidden"
+          isHidden && "nav-hidden",
+          taskDetailsOpen && "nav-detail-hidden"
         )}
       />
 
       {/* Nav Pill */}
       <div 
+        inert={isHidden}
+        aria-hidden={isHidden}
         className={cn(
           "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container backdrop-blur-xl",
-          isHidden && "nav-hidden"
+          isHidden && "nav-hidden",
+          taskDetailsOpen && "nav-detail-hidden"
         )}
       >
         {navItems.filter(item => !(item as any).hidden).map((item) => (
