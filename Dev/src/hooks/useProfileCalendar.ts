@@ -1,3 +1,7 @@
+import {useNotificationCenter} from './useNotificationCenter';
+import {useNotificationStore} from '../store/notificationStore';
+import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
+import {workspaceScope} from '../services/workspaceResources';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -21,9 +25,10 @@ async function allRows(query: any): Promise<any[]> {
 }
 
 export function useProfileCalendar(targetUserId?: string | number) {
-  const myProfileId = useAuthStore(state => state.profile?.id);
+  const actor = useAuthStore(state => state.profile);
+  const myProfileId=actor?.id,scope=workspaceScope(),center=useNotificationCenter();
   const profileId = targetUserId || myProfileId;
-  const [snapshot, setSnapshot] = useState<{ userId?: string | number; items: CalendarItem[]; notifications: CalendarNotification[]; updatedAt: Date | null }>({ items: [], notifications: [], updatedAt: null });
+  const [snapshot, setSnapshot] = useState<{ userId?: string | number; scope?:string; items: CalendarItem[]; notifications: CalendarNotification[]; updatedAt: Date | null }>({ items: [], notifications: [], updatedAt: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const reloadRef = useRef<() => void>(() => {});
@@ -39,10 +44,11 @@ export function useProfileCalendar(targetUserId?: string | number) {
       if (loadingNow) { pending = true; return; }
       loadingNow = true;
       try {
-        const [mentionRows, legacyMentions, campaignMemberships] = await Promise.all([
+        const [mentionRows, legacyMentions, campaignMemberships,phaseMemberships] = await Promise.all([
           allRows(supabase.from('comments').select('id,task_id').contains('mentions', [Number(profileId)]).order('id')),
           allRows(supabase.from('activity_log').select('entity_type,entity_id').eq('action','comment').in('entity_type',['project_subtask','campaign_subtask']).contains('metadata',{mentions:[Number(profileId)]}).order('id')),
-          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id'))
+          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id')),
+          allRows(supabase.from('workflow_phase_members').select('phase_id,phase:phase_id(track:workflow_id(entity_type,entity_id))').eq('user_id',profileId).order('phase_id'))
         ]);
         const mentionedIds = [...new Set(mentionRows.map(r => r.task_id))];
         let personalTaskQuery = supabase.from('tasks').select('*,project:project_id(id,name),campaign:campaign_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)');
@@ -54,14 +60,14 @@ export function useProfileCalendar(targetUserId?: string | number) {
           allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').or(`assignee_id.eq.${profileId}${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').length?`,id.in.(${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').map(m=>m.entity_id).join(',')})`:''}`).neq('status', 'deleted').order('id')),
           allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').eq('created_by', profileId).order('id')),
           allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
-          supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
+          String(profileId)===String(myProfileId)?Promise.resolve({data:useNotificationStore.getState().history,error:null}):supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
         ]);
         if (notificationResult.error) throw notificationResult.error;
-        const projectIds = [...new Set([...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
+        const projectIds = [...new Set([...phaseMemberships.filter(row=>row.phase?.track?.entity_type==='project').map(row=>row.phase.track.entity_id),...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
         const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').in('id', projectIds).order('id')) : [];
         const linkedProjectMembers = projectIds.length ? await allRows(supabase.from('project_members').select('project_id,user:user_id(name)').in('project_id', projectIds).order('project_id')) : [];
         const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()].filter(row=>isCalendarVisible(row.status));
-        const campaignIds = [...new Set([...campaignMemberships.map(row => row.campaign_id), ...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
+        const campaignIds = [...new Set([...phaseMemberships.filter(row=>row.phase?.track?.entity_type==='campaign').map(row=>row.phase.track.entity_id),...campaignMemberships.map(row => row.campaign_id), ...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
         const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').in('id', campaignIds).order('id')) : [];
         const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()].filter(row=>isCalendarVisible(row.status));
         const projectMap = new Map(projects.map(row => [row.id, row]));
@@ -92,7 +98,7 @@ export function useProfileCalendar(targetUserId?: string | number) {
           ...projectSubtasks.filter(row => isCalendarVisible(row.status) && projectMap.has(row.project_id)).map(row => makeItem(row, 'project_subtask')),
           ...campaignSubtasks.filter(row => isCalendarVisible(row.status) && campaignMap.has(row.campaign_id)).map(row => makeItem(row, 'campaign_subtask')),
         ];
-        if (active) { setSnapshot({ userId: profileId, items, notifications: notificationResult.data || [], updatedAt: new Date() }); setError(null); }
+        if (active) { setSnapshot({ userId: profileId, scope, items, notifications: notificationResult.data || [], updatedAt: new Date() }); setError(null); }
       } catch (cause) {
         console.warn('Could not refresh personal calendar', cause);
         if (active) setError('Chưa thể đồng bộ lịch. Dữ liệu đang hiển thị có thể chưa phải bản mới nhất.');
@@ -102,45 +108,21 @@ export function useProfileCalendar(targetUserId?: string | number) {
       }
     };
     const schedule = () => { clearTimeout(debounce); if(document.visibilityState==='hidden')return;debounce = setTimeout(() => void load(), 400); };
-    const onVisible = () => { if (document.visibilityState === 'visible') schedule(); };
     reloadRef.current = schedule;
     setLoading(true);
     void load();
-    const channel = profileId ? supabase.channel(`profile-calendar-${profileId}`) : null;
-    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'comments', 'activity_log', 'workflow_phase_members'].forEach(table => {
-      channel?.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
-    });
-    let connectedOnce=false;
-    channel?.subscribe(status=>{if(status==='SUBSCRIBED'){if(connectedOnce)schedule();connectedOnce=true;}});
-    let notificationTimer:ReturnType<typeof setTimeout>;
-    const notificationChannel=profileId?supabase.channel(`calendar-notifications-${profileId}`).on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${profileId}`},()=>{
-      clearTimeout(notificationTimer);notificationTimer=setTimeout(async()=>{
-        if(!active||document.visibilityState==='hidden')return;
-        const {data,error}=await supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id',profileId).order('created_at',{ascending:false}).limit(50);
-        if(active&&!error)setSnapshot(previous=>previous.userId===profileId?{...previous,notifications:data||[]}:previous);
-      },300);
-    }).subscribe():null;
-    // Reconnect/focus and polling also cover tables not enabled for Realtime yet.
-    const interval = setInterval(onVisible, 60000);
-    window.addEventListener('focus', onVisible);
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('projects:changed', schedule);
-    window.addEventListener('campaigns:changed', schedule);
-    window.addEventListener('tasks:changed', schedule);
-    window.addEventListener('workspace:changed',schedule);
-    return () => {
-      active = false; clearTimeout(debounce); clearInterval(interval);
-      clearTimeout(notificationTimer);if(notificationChannel)void supabase.removeChannel(notificationChannel);
-      window.removeEventListener('focus', onVisible);
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('projects:changed', schedule);
-      window.removeEventListener('campaigns:changed', schedule);
-      window.removeEventListener('tasks:changed', schedule);
-      window.removeEventListener('workspace:changed',schedule);
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [profileId]);
+    const stop=myProfileId?retainWorkspaceRealtime(myProfileId,['tasks','projects','project_members','project_subtasks','campaigns','campaign_members','campaign_subtasks','comments','activity_log','workflow_phase_members'],()=>schedule(),()=>{},change=>{
+      if(change.table==='activity_log'&&change.eventType!=='DELETE')return ['comment','details_updated'].includes(change.new?.action||'');
+      if(change.table==='comments'&&change.eventType==='INSERT')return (change.new?.mentions||[]).includes(Number(profileId));
+      return true;
+    }):()=>{};
+    const stopNotifications=myProfileId&&String(profileId)!==String(myProfileId)?retainWorkspaceRealtime(myProfileId,['notifications'],async()=>{
+      const {data,error}=await supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id',profileId).order('created_at',{ascending:false}).limit(50);
+      if(active&&!error)setSnapshot(previous=>previous.userId===profileId?{...previous,notifications:data||[]}:previous);
+    }):()=>{};
+    return () => {active=false;clearTimeout(debounce);stop();stopNotifications();};
+  }, [profileId,myProfileId,scope]);
 
-  const visible = snapshot.userId === profileId;
-  return { items: visible ? snapshot.items : [], notifications: visible ? snapshot.notifications : [], updatedAt: visible ? snapshot.updatedAt : null, loading, error, refresh };
+  const visible = snapshot.userId === profileId && snapshot.scope === scope;
+  return { items: visible ? snapshot.items : [], notifications: myProfileId&&center.actor===myProfileId&&String(profileId)===String(myProfileId)?center.history.filter(item=>['task','project','campaign','project_subtask','campaign_subtask'].includes(item.entity_type||'')):visible?snapshot.notifications:[], updatedAt: visible ? snapshot.updatedAt : null, loading, error, refresh };
 }

@@ -207,7 +207,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               inline 
               onClose={() => setShowNotifications(false)} 
               onOpenEntity={(type, id) => {
-                const item = items.find(i => i.id === id && (i.kind === type || (type === 'task' && (i.kind === 'project_subtask' || i.kind === 'campaign_subtask'))));
+                const item = items.find(i => i.id === id && i.kind === type);
                 if (item) {
                   const d = item.start || item.due;
                   if (d) {

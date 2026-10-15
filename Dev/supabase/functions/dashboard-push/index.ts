@@ -1,17 +1,10 @@
+import {notificationLink} from '../_shared/notificationLink.ts';
 // Deployed with verify_jwt=false: drain uses a private webhook secret; test uses
 // Supabase Auth.getUser and derives the recipient, never a client-supplied ID.
 import {createClient} from 'npm:@supabase/supabase-js@2.117.2';
 import webpush from 'npm:web-push@3.6.7';
 
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
-const link=(kind:string,id:string)=>{
- if(['task','project_subtask','campaign_subtask'].includes(kind)&&id)return `/tasks?task=${encodeURIComponent((kind==='project_subtask'?'ps-':kind==='campaign_subtask'?'cs-':'')+id)}`;
- if(['project','campaign'].includes(kind)&&id)return `/projects?${kind}=${encodeURIComponent(id)}`;
- if(kind==='weekly_report')return '/my-tasks?report=1';
- if(['workflow','workflow2','workflow_track'].includes(kind))return '/workflow';
- if(kind==='borrow_request')return '/borrow-requests';
- return '/my-tasks';
-};
 const allowedEndpoint=(value:string)=>{try{const url=new URL(value);return url.protocol==='https:'&&!url.port&&!url.username&&!url.password&&( ['web.push.apple.com','fcm.googleapis.com','updates.push.services.mozilla.com'].includes(url.hostname)||/^[a-z0-9-]+\.notify\.windows\.com$/.test(url.hostname));}catch{return false;}};
 
 Deno.serve(async request=>{
@@ -51,7 +44,7 @@ Deno.serve(async request=>{
     if(allowedEndpoint(item.subscription.endpoint)&&cfg.allowed_origins.includes(item.origin)){
      const notification=item.notification;
      try{
-      const response=await webpush.sendNotification(item.subscription,JSON.stringify({title:'K COFFEE',body:String(notification.message||'Bạn có thông báo mới').slice(0,240),tag:`notification-${notification.id}`,notificationId:notification.id,url:link(notification.entity_type,notification.entity_id)}),{TTL:3600,urgency:'normal',timeout:10000});
+      const response=await webpush.sendNotification(item.subscription,JSON.stringify({title:'K COFFEE',body:String(notification.message||'Bạn có thông báo mới').slice(0,240),tag:`notification-${notification.id}`,notificationId:notification.id,url:notificationLink(notification.entity_type,notification.entity_id,notification.metadata)||'/my-tasks'}),{TTL:3600,urgency:'normal',timeout:10000});
       status=response.statusCode;sent++;
      }catch(error:any){status=Number(error.statusCode)||503;}
     }

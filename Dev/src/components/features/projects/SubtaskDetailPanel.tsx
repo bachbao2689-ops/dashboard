@@ -1,3 +1,4 @@
+import {hasCanonicalNotifications} from '../../../store/notificationStore';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
@@ -110,7 +111,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   }, [reload]);
 
   const notifyMentionedPeople = async (_body: string, mentions: number[]) => {
-    if (!subtask || !profile?.id) return;
+    if (hasCanonicalNotifications() || !subtask || !profile?.id) return;
     const targets = people.filter(person => person.id !== profile.id && mentions.includes(person.id));
     if (!targets.length) return;
     await supabase.from('notifications').insert(targets.map(person => ({

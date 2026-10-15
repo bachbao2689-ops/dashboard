@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
-import {syncPush} from './services/pushNotifications';
+import {initializeDevicePush,resetDevicePush} from './store/devicePushStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 const Login=lazy(()=>import('./pages/auth/Login').then(module=>({default:module.Login})));
 const Register=lazy(()=>import('./pages/auth/Register').then(module=>({default:module.Register})));
@@ -59,8 +59,8 @@ function App() {
   useEffect(() => {
     const userId = session?.user?.id;
     if (userId) {
-      void syncPush(userId).catch(() => {});
-    }
+      void initializeDevicePush(userId,true);
+    } else resetDevicePush();
   }, [session?.user?.id, session?.access_token]);
 
   return (

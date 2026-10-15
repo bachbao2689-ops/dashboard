@@ -1,5 +1,8 @@
+import {workspaceScope} from '../../../services/workspaceResources';
+import {useNotificationCenter} from '../../../hooks/useNotificationCenter';
+import {useWorkspaceRealtime} from '../../../hooks/useWorkspaceRealtime';
 import {entityLink} from '../../../lib/taskTracking';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, ChevronRight, MessageSquare, CheckCircle2, Clock3, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
@@ -15,7 +18,7 @@ type NotificationEntry = {
   entity_type?: string | null;
   entity_id?: string | null;
   is_read?: boolean | null;
-  created_at: string;
+  created_at: string; metadata?:Record<string,unknown>;
 };
 
 const labelFor = (type?: string | null) => {
@@ -29,10 +32,17 @@ const labelFor = (type?: string | null) => {
 export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => void; inline?: boolean; onOpenEntity?: (type: string, id: string) => boolean }> = ({ includeTeam = false, onClose, inline = false, onOpenEntity }) => {
   const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<NotificationEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const center=useNotificationCenter(),scope=workspaceScope();
+  const [teamScope,setTeamScope]=useState("");
+  const reload=useRef<() => void>(()=>{});
+  const [teamEntries, setEntries] = useState<NotificationEntry[]>([]);
+  const [teamLoading, setLoading] = useState(true);
 
+  const entries=includeTeam?(teamScope===scope?teamEntries:[]):(center.history.filter(item=>item.user_id===profile?.id).slice(0,12) as NotificationEntry[]);
+  const loading=includeTeam?teamLoading:Boolean(profile&&!center.ready);
+  useWorkspaceRealtime(['notifications'],()=>reload.current(),includeTeam?profile?.id:undefined);
   useEffect(() => {
+    if(!includeTeam)return;
     let active = true;
     const load = async () => {
       if (!profile?.id) {
@@ -47,7 +57,7 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
       const recipientIds = [...new Set([profile.id, ...(team || []).map((member: any) => member.id)])];
       const { data, error } = await supabase
         .from('notifications')
-        .select('id,user_id,type,message,entity_type,entity_id,is_read,created_at')
+        .select('id,user_id,type,message,entity_type,entity_id,is_read,created_at,metadata')
         .in('user_id', recipientIds)
         .order('created_at', { ascending: false })
         .limit(includeTeam ? 120 : 12);
@@ -61,17 +71,13 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
         seen.add(key);
         return true;
       });
-      setEntries(unique.slice(0, 12));
+      setEntries(unique.slice(0, 12));setTeamScope(scope);
       setLoading(false);
     };
+    reload.current=()=>{if(document.visibilityState==='visible')void load();};
     void load();
-    const refreshVisible=()=>{if(document.visibilityState==='visible')void load();};
-    const fallback=setInterval(refreshVisible,30000);window.addEventListener('focus',refreshVisible);window.addEventListener('workspace:changed',refreshVisible);document.addEventListener('visibilitychange',refreshVisible);
-    const channel = profile?.id ? supabase.channel(`profile-notification-log-${profile.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => { void load(); })
-      .subscribe() : null;
-    return () => { active=false;clearInterval(fallback);window.removeEventListener('focus',refreshVisible);window.removeEventListener('workspace:changed',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible); if (channel) void supabase.removeChannel(channel); };
-  }, [includeTeam, profile?.department_id, profile?.id, profile?.role]);
+    return()=>{active=false;reload.current=()=>{};};
+  }, [includeTeam, profile?.department_id, profile?.id, profile?.role,scope]);
 
   const subtitle = useMemo(() => includeTeam ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [includeTeam]);
   const clearAll = async () => {
@@ -99,13 +105,13 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
         {loading ? <p className="p-5 text-center text-sm text-gray-500">Đang tải log thông báo…</p> : entries.length === 0 ? <p className="p-5 text-center text-sm text-gray-500">Chưa có thông báo liên quan.</p> : entries.map(entry => {
           const display = labelFor(entry.type);
           const Icon = display.icon;
-          const canOpen = Boolean(entityLink(entry.entity_type,entry.entity_id));
+          const canOpen = Boolean(entityLink(entry.entity_type,entry.entity_id,entry.metadata));
           const handleClick = () => {
             if (!canOpen) return;
             if(entry.user_id===profile?.id)void markNotificationsRead([entry.id]).catch(()=>{});
-            const handled = onOpenEntity?.(entry.entity_type!, entry.entity_id!);
+            const handled = entry.metadata?.target==='workflow'?false:onOpenEntity?.(entry.entity_type!, entry.entity_id!);
             if (handled) return;
-            const link=entityLink(entry.entity_type,entry.entity_id);if(link)navigate(link);
+            const link=entityLink(entry.entity_type,entry.entity_id,entry.metadata);if(link)navigate(link);
           };
           return <button key={entry.id} type="button" onClick={handleClick} className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${canOpen ? 'hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer' : 'cursor-default'}`}>
             <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${display.color} dark:bg-slate-700`}><Icon size={15} /></span>

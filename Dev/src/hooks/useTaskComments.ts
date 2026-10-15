@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {supabase} from '../services/supabase';
+import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
 import {commentKey,readTaskComments,writeTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
 
 export function useTaskComments(target: CommentTarget, actorId?: number) {
@@ -24,18 +24,15 @@ export function useTaskComments(target: CommentTarget, actorId?: number) {
     let disposed=false;
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => { if(disposed)return; clearTimeout(timer); timer=setTimeout(()=>void refresh(),120); };
-    const visible = () => { if (document.visibilityState==='visible') schedule(); };
     const local = (event: Event) => { const changed=(event as CustomEvent<CommentTarget>).detail; if (changed && commentKey(changed)===commentKey(target)) schedule(); };
-    // DELETE events cannot be filtered reliably. RLS still controls every reread.
     const table=target.kind==='task'?'comments':'activity_log';
-    const channel=supabase.channel(`task-thread-${key}-${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes',{event:'*',schema:'public',table},schedule)
-      .subscribe(status=>{if(status==='SUBSCRIBED')schedule();});
+    const release=retainWorkspaceRealtime(actorId,[table],schedule,()=>{},change=>{
+      if(!change.table||change.eventType==='DELETE')return true;
+      const row=change.new;
+      return table==='comments'?row?.task_id===target.id:row?.entity_type===target.kind&&row?.entity_id===target.id&&row?.action==='comment';
+    });
     window.addEventListener('task-comments:changed',local);
-    window.addEventListener('focus',visible);
-    document.addEventListener('visibilitychange',visible);
-    const fallback=setInterval(visible,30000);
-    return()=>{disposed=true;generation.current++;clearTimeout(timer);clearInterval(fallback);window.removeEventListener('task-comments:changed',local);window.removeEventListener('focus',visible);document.removeEventListener('visibilitychange',visible);void supabase.removeChannel(channel);};
+    return()=>{disposed=true;generation.current++;clearTimeout(timer);release();window.removeEventListener('task-comments:changed',local);};
   },[key,actorId,refresh,target.kind,target.id]);
   const send = async (body:string,mentions:number[]) => {
     if (sending.current || !actorId || !body.trim()) return false;

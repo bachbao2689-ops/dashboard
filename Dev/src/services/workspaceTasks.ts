@@ -2,19 +2,11 @@ import {mapWorkspaceTasks} from '../lib/workspaceTaskMapping';
 import {supabase} from './supabase';
 import type {Task} from '../hooks/useTasks';
 import {taskActive,taskKey,taskTarget} from '../lib/taskTracking';
-import {useAuthStore} from '../store/authStore';
-const pendingReads=new Map<string,Promise<Task[]>>();
 export async function readAll(query:any):Promise<any[]> {
   const rows:any[]=[];
   for(let offset=0;;offset+=500){const {data,error}=await query.range(offset,offset+499);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<500)return rows;}
 }
 export async function readWorkspaceTasks():Promise<Task[]> {
-  const auth=useAuthStore.getState(),key=`${auth.user?.id}:${auth.profile?.id}:${auth.profile?.role}:${auth.profile?.department_id}`;
-  const existing=pendingReads.get(key);if(existing)return existing;
-  const request=loadWorkspaceTasks();pendingReads.set(key,request);
-  try{return await request;}finally{if(pendingReads.get(key)===request)pendingReads.delete(key);}
-}
-async function loadWorkspaceTasks():Promise<Task[]> {
   const [real,projects,campaigns]=await Promise.all([
     readAll(supabase.from('tasks').select('id,workspace_id,task_ref,title,status,priority,due_date,start_date,completed_at,updated_at,created_at,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(id,name,status),campaign:campaign_id(id,name,status),assignee:assignee_id(id,name,avatar_url),department:department_id(id,name),column:column_id(name)').order('created_at',{ascending:false}).order('id')),
     readAll(supabase.from('project_subtasks').select('*,projects:project_id(id,name,status,priority,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),

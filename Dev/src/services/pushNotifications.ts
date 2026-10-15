@@ -1,4 +1,7 @@
 import {supabase} from './supabase';
+function timeout<T>(promise:PromiseLike<T>,message:string,ms=10000):Promise<T>{
+ return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error(message)),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});
+}
 const ownerKey='kcoffee_push_owner';
 export const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 export const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||Boolean((navigator as Navigator&{standalone?:boolean}).standalone);
@@ -6,21 +9,24 @@ export const supportsPush=()=>window.isSecureContext&&'serviceWorker' in navigat
 let registration:Promise<ServiceWorkerRegistration>|undefined;
 export function registerPushWorker(){
  if(!window.isSecureContext||!('serviceWorker' in navigator))return Promise.reject(new Error('Thiết bị chưa hỗ trợ thông báo web.'));
- registration??=navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'}).then(()=>navigator.serviceWorker.ready).catch(error=>{registration=undefined;throw error;});
+ registration??=timeout(navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'}).then(()=>navigator.serviceWorker.ready),'Chưa kết nối được dịch vụ thông báo. Hãy kiểm tra mạng và bấm bật lại.').catch(error=>{registration=undefined;throw error;});
  return registration;
 }
 export async function getPushConfiguration(){
- const {data,error}=await supabase.rpc('dashboard_push_public_config');if(error)throw error;return data as {publicKey:string;enabled:boolean;origins:string[]}|null;
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
+ let result;try{result=await supabase.rpc('dashboard_push_public_config').abortSignal(abort.signal);}finally{clearTimeout(timer);}
+ const {data,error}=result;if(error)throw new Error(error.message||'Chưa tải được cấu hình thông báo.');return data as {publicKey:string;enabled:boolean;origins:string[]}|null;
 }
 async function saveSubscription(subscription:PushSubscription){
  const value=subscription.toJSON();
- const {error}=await supabase.rpc('register_dashboard_push',{p_endpoint:value.endpoint,p_p256dh:value.keys?.p256dh,p_auth:value.keys?.auth,p_origin:location.origin});
- if(error)throw error;
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
+ try{const {error}=await supabase.rpc('register_dashboard_push',{p_endpoint:value.endpoint,p_p256dh:value.keys?.p256dh,p_auth:value.keys?.auth,p_origin:location.origin}).abortSignal(abort.signal);if(error)throw new Error(error.message||'Không lưu được đăng ký thông báo.');}finally{clearTimeout(timer);}
 }
 export async function enablePush(publicKey:string,authId:string){
  // Permission must be requested directly from the tap, before any network await (iOS).
- const permission=await Notification.requestPermission();
+ const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
  if(permission!=='granted')throw new Error('Bạn chưa cho phép thông báo. Có thể bật lại trong cài đặt thiết bị.');
+ const {data:session}=await supabase.auth.getSession();if(session.session?.user.id!==authId)throw new Error('Phiên đã thay đổi. Vui lòng bật lại thông báo.');
  const worker=await registerPushWorker();
  const bytes=Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-publicKey.length%4)%4)),c=>c.charCodeAt(0));
  let subscription=await worker.pushManager.getSubscription();

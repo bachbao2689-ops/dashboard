@@ -66,3 +66,42 @@ Migration: `Dev/supabase/migrations/20261015090000_mobile_push.sql`.
 Edge source: `Dev/supabase/functions/dashboard-push/index.ts`, deploy `dashboard-push` với `verify_jwt=false` vì code tự xác thực JWT người dùng và webhook secret. Không bỏ các kiểm tra này.
 
 Theo dõi trạng thái `push_deliveries` và lỗi Edge; không log endpoint, khóa hay nội dung nhạy cảm. Khóa VAPID ổn định: thay khóa sẽ cần đăng ký lại thiết bị.
+
+
+## Rà soát thông báo & tải dữ liệu — 15/10/2026 (bản tiếp theo)
+
+### Luồng thống nhất
+
+`Task/subtask/Project/Campaign/chặng/bình luận → trigger trong transaction nguồn → dashboard_emit_activity → notifications → snapshot chuông/Profile + Realtime theo recipient → push_deliveries → dashboard-push`.
+
+- Server là nơi tạo các thông báo giao việc, thay đổi, hoàn thành, bình luận và Report. Source Develop nhận `writerVersion:2` từ summary để bỏ các query/insert thông báo client; DB chặn bản sao sự kiện từ client Official cũ. Giữ API cũ cho tương thích, không để nhiều producer cùng tạo thông báo.
+- Mỗi sự kiện chỉ có một hàng/recipient theo `metadata.event_key`. Recipient phải active và có quyền mở đúng đối tượng; actor không nhận lại sự kiện của mình. Không tự cấp quyền Project từ việc nhắc tên trong bình luận Project.
+- Link giữ nguyên phân loại `task`, `project_subtask`, `campaign_subtask`, không suy đoán từ UUID trùng nhau. Chặng có `phase_id` + parent và mở đúng Workflow. Chuông, popup, Profile và Edge push dùng chung `notificationLink.ts`.
+- Thông báo chặng kiểm tra trạng thái cuối transaction: lưu lại danh sách PIC không đổi hoặc chỉ tick Gate không phát assignment/update trùng. Giữ lịch sử và trạng thái đọc; không replay các sự kiện cũ.
+- `notifications` bật RLS trước khi đưa vào publication; chỉ recipient được cập nhật trạng thái đọc của mình. Quyền xem lịch sử team giữ theo Admin/Manager/Leader hiện có. `project_comments` dùng đúng một policy cho mỗi thao tác và cùng phạm vi parent.
+
+### Giảm tải
+
+- Task, nhân sự, Workflow dùng snapshot/request chung theo Auth user + staff ID + role + cấp bậc + phòng ban. Đổi tài khoản hoặc quyền sẽ bỏ cache cũ; lỗi mạng giữ dữ liệu thật cùng trạng thái lỗi.
+- Các consumer chia sẻ request đang chạy, gom invalidation và listener Realtime; poll/focus nền tập trung, không tải lại khi tab ẩn. Assets chỉ tải ở nơi cần. Profile dùng cùng history với chuông, không query lại mỗi lần mở log.
+- Khối bật push dùng state/config/sync chung; mở chuông nhiều lần không đăng ký lại liên tục. Quyền thiết bị vẫn chỉ xin sau khi bấm. Có timeout, không báo đã bật khi lưu subscription thất bại.
+- Projects tải các truy vấn độc lập song song, tách refresh danh sách/chi tiết khỏi task và phase không liên quan. Bỏ embedding `users.departments` không có FK. Tách page còn 379 dòng; giữ nguyên class giao diện Dark/Light.
+- RPC Workflow materialize actor và preaggregate PIC/Sub-PIC/chặng. Hàm quyền công khai giữ signature và luật cũ; helper `_for` private nhận actor đã xác định để tránh tra Auth lặp. Khi sửa phân quyền sau này phải sửa predicate private và chạy test đối chiếu ma trận quyền.
+- Không xóa task, dự án, lịch sử, thiết bị hay index chỉ vì thống kê chưa dùng. Chỉ bỏ producer/policy/timestamp trigger đã xác định trùng.
+
+### Đo và kiểm tra
+
+- 51 pure tests qua, gồm cache/request, đổi phiên/quyền, bật push, deep link, service worker, ngày tháng và tracking.
+- 52 kiểm tra DB rollback cho notification, scope, identity, no-op, dedup, read-all, RLS và chặng. Dùng staff giả, không gửi push thật.
+- Đối chiếu toàn bộ dữ liệu Workflow và quyền đọc/sửa task/subtask/phase/parent cho 7 tài khoản: giống nhau trước/sau.
+- Đo median ba lần `EXPLAIN ANALYZE`, JIT vốn đã tắt: thời gian server RPC trước 78–129 ms, sau 6–60 ms. Đây là thời gian RPC trong DB, không phải tốc độ mở toàn trang; số đo gồm mạng dao động nhiều hơn.
+- Sau áp dụng: 157 task, 15 Project subtask, 11 Campaign subtask, 75 track, 12 chặng, 7 subscriptions giữ nguyên; 41 delivery sent, không pending/error từ kiểm tra. Không phát test push tới staff.
+- Worker v2: preflight 204, test thiếu session 401, drain thiếu secret 401, origin lạ 403. Chưa xác nhận nhận push bằng điện thoại thật trong lượt này.
+- Build production qua; lint không có lỗi chặn, còn cảnh báo ở source hiện hữu. Không coi việc kiểm tra API/mock là đã nghiệm thu trên mọi thiết bị.
+
+### Đã áp dụng và giới hạn
+
+- Supabase dùng chung: đã áp dụng sau xác nhận trực tiếp của chủ dự án: `20261015144216_notification_tracking_performance.sql`, `20261015144514_consolidate_project_comment_policies.sql`.
+- Edge `dashboard-push` v2 đã deploy, giữ verify_jwt=false và toàn bộ kiểm tra session/webhook/origin; không thay VAPID hay subscriptions.
+- Frontend chỉ phát hành nhánh `codex/develop-dashboard`; Official cần quy trình duyệt/merge riêng.
+- Advisor vẫn báo cấu hình cũ của `users` (RLS đang tắt), một số bảng/hàm và FK/index ngoài phạm vi sửa lần này. Chưa thay cơ chế quản trị tài khoản hoặc xóa index/bảng tùy tiện vì có thể ảnh hưởng vận hành.

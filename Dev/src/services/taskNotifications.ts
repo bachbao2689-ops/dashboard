@@ -1,8 +1,9 @@
 import {supabase} from './supabase';
+import {hasCanonicalNotifications} from '../store/notificationStore';
 import {taskTarget} from '../lib/taskTracking';
 type TaskActivity='task_completed'|'task_comment'|'task_updated'|'weekly_report';
 export async function notifyTaskParticipants(task:any,actor:{id?:number;name?:string;department_id?:string|null},type:TaskActivity,mentions:number[]=[]){
- if(!task?.id||!actor.id)return;const {kind,id,table}=taskTarget(task.id);
+ if(hasCanonicalNotifications()||!task?.id||!actor.id)return;const {kind,id,table}=taskTarget(task.id);
  const select=kind==='task'?'assignee_id,task_ref,title,department_id,project:project_id(name),campaign:campaign_id(name)':kind==='project_subtask'?'assignee_id,title,project:project_id(name,department_id)':'assignee_id,title,campaign:campaign_id(name,department_id)';
  const {data,error}=await supabase.from(table).select(select).eq('id',id).maybeSingle();if(error)throw error;if(!data)return;
  const row=data as any,parent=row.project||row.campaign,department=row.department_id||parent?.department_id;

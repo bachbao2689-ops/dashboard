@@ -91,9 +91,9 @@ export const Header: React.FC = () => {
     finally{setMarkingRead(false);}
   };
   const openNotification = async (notification: NotificationItem) => {
-    try{await markNotificationsRead([notification.id]);}catch{toast.error('Chưa đồng bộ trạng thái đã đọc.');}
+    void markNotificationsRead([notification.id]).catch(()=>toast.error('Chưa đồng bộ trạng thái đã đọc.'));
     setShowNotifs(false);
-    const href=entityLink(notification.entity_type,notification.entity_id);
+    const href=entityLink(notification.entity_type,notification.entity_id,notification.metadata);
     if(href)navigate(href);
   };
 
@@ -382,7 +382,7 @@ export const Header: React.FC = () => {
                 </div>
                 <div className="max-h-[min(60vh,420px)] overflow-y-auto">
                   <PushNotificationSettings hideWhenEnabled />
-                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <div key={notification.id} role="button" tabIndex={0} onClick={() => void openNotification(notification)} onKeyDown={e => { if (e.key === 'Enter') void openNotification(notification); }} style={toneStyle(notification)} className="notif-row group flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"><NotificationIcon dim={notification.is_read} message={notification.message} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{notification.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{TONES[toneOf(notification)].label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={notification.message}/>}</span></span>{!notification.is_read && <button type="button" aria-label={lang === 'en' ? 'Mark as read' : 'Đánh dấu đã đọc'} onClick={e => { e.stopPropagation(); void markNotificationsRead([notification.id]).catch(() => toast.error('Chưa đồng bộ trạng thái đã đọc.')); }} className="notif-x notif-x-static"><X size={13} /></button>}</div>)}
+                  {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <div key={notification.id} role="button" tabIndex={0} onClick={() => void openNotification(notification)} onKeyDown={e => { if (e.key === 'Enter') void openNotification(notification); }} style={toneStyle(notification)} className="notif-row group flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"><NotificationIcon dim={notification.is_read} message={notification.message} metadata={notification.metadata} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{notification.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{TONES[toneOf(notification)].label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={notification.message} metadata={notification.metadata}/>}</span></span>{!notification.is_read && <button type="button" aria-label={lang === 'en' ? 'Mark as read' : 'Đánh dấu đã đọc'} onClick={e => { e.stopPropagation(); void markNotificationsRead([notification.id]).catch(() => toast.error('Chưa đồng bộ trạng thái đã đọc.')); }} className="notif-x notif-x-static"><X size={13} /></button>}</div>)}
                 </div>
               </div>,
               document.body

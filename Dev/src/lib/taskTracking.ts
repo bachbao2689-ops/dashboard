@@ -50,17 +50,8 @@ export function reportAnalytics(tasks: TrackedTask[], range: 'week'|'month'|'qua
   };
 }
 export const taskLink = (key:string) => `/tasks?task=${encodeURIComponent(key)}`;
-export function entityLink(kind?:string|null,id?:string|null):string|null {
-  if (kind==='weekly_report') return '/my-tasks?report=1';
-  if (!id) return null;
-  if (['task','project_subtask','campaign_subtask'].includes(kind||'')) return taskLink(taskKey(kind!,id));
-  if (kind==='project'||kind==='campaign') return `/projects?${kind}=${encodeURIComponent(id)}`;
-  if (kind==='workflow'||kind==='workflow2'||kind==='workflow_track') return '/workflow';
-  if (kind==='profile'||kind==='user')return '/my-tasks';
-  if (kind==='asset') return `/assets?asset=${encodeURIComponent(id)}`;
-  if (kind==='borrow_request') return `/borrow-requests?request=${encodeURIComponent(id)}`;
-  return null;
-}
+export {notificationLink as entityLink} from '../../supabase/functions/_shared/notificationLink.ts';
+
 export const taskDone = (t:TrackedTask) => ['done','completed','complete'].includes((t.status||'').toLowerCase()) || t.workflow_status==='completed';
 export const taskActive = (t:TrackedTask) => !['deleted','archived','cancelled','canceled'].includes((t.status||'').toLowerCase()) && t.workflow_status!=='canceled';
 export const taskOpen = (t:TrackedTask) => taskActive(t)&&!taskDone(t);

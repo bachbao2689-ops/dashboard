@@ -1,34 +1,22 @@
-import {useEffect,useState} from 'react';
+import {useEffect} from 'react';
 import {BellRing} from 'lucide-react';
 import {useAuthStore} from '../../../store/authStore';
 import {useUiStore} from '../../../store/uiStore';
-import {disablePush,enablePush,getPushConfiguration,isIOS,isStandalone,supportsPush,syncPush,testPush} from '../../../services/pushNotifications';
+import {isIOS,isStandalone,supportsPush} from '../../../services/pushNotifications';
 import '../../../styles/push-notifications.css';
+import {useDevicePush,initializeDevicePush,changeDevicePush} from '../../../store/devicePushStore';
 
 export function PushNotificationSettings({hideWhenEnabled=false}:{hideWhenEnabled?:boolean}){
  const user=useAuthStore(s=>s.user),lang=useUiStore(s=>s.lang);
- const [config,setConfig]=useState<Awaited<ReturnType<typeof getPushConfiguration>>>(null);
- const [enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- const [ready,setReady]=useState(false);
+ const {config,enabled,busy,ready,message}=useDevicePush();
  const vi=lang!=='en',needsInstall=isIOS()&&!isStandalone(),supported=supportsPush();
- useEffect(()=>{
-  let active=true;setEnabled(false);setReady(false);setMessage('');
-  if(user&&user.id!=='dev-admin-id')void getPushConfiguration().then(async cfg=>{
-   if(!active)return;setConfig(cfg);
-   if(supported&&cfg?.enabled&&cfg.origins.includes(location.origin)){
-    try{const on=await syncPush(user.id);if(active)setEnabled(on);}catch{if(active)setMessage(vi?'Chưa kết nối được thông báo. Bấm bật để thử lại.':'Unable to connect. Enable to retry.');}
-   }
-  }).catch(()=>{if(active)setConfig(null);}).finally(()=>{if(active)setReady(true);});
-  return()=>{active=false;};
- },[user?.id,supported,vi]);
+ useEffect(()=>{if(user?.id&&user.id!=='dev-admin-id')void initializeDevicePush(user.id);},[user?.id]);
  const run=async(action:'enable'|'disable'|'test')=>{
-  if(busy||!user)return;setBusy(true);setMessage('');
+  if(!user)return;
   try{
-   if(action==='enable'&&config){await enablePush(config.publicKey,user.id);setEnabled(true);setMessage(vi?'Đã bật thông báo cho thiết bị này.':'Notifications enabled on this device.');}
-   if(action==='disable'){await disablePush();setEnabled(false);}
-   if(action==='test'){await testPush();setMessage(vi?'Đã gửi thông báo thử đến các thiết bị đã bật.':'Test notification queued for your enabled devices.');}
-  }catch(e){setMessage(e instanceof Error?e.message:'Chưa kết nối được thông báo.');}
-  finally{setBusy(false);}
+   await changeDevicePush(action,user.id);
+   if(action==='test')useDevicePush.setState({message:vi?'Đã gửi thông báo thử đến các thiết bị đã bật.':'Test notification queued for your enabled devices.'});
+  }catch(error){useDevicePush.setState({message:error instanceof Error?error.message:(vi?'Chưa kết nối được thông báo.':'Unable to connect notifications.')});}
  };
  const available=Boolean(ready&&config?.enabled&&config.origins.includes(location.origin));
  // Avoid flashing the setup card while checking an already registered device, and hide if unavailable or unsupported in popover.

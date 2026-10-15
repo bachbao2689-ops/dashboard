@@ -43,8 +43,8 @@ export function NotificationPopupStack(){
  };
  const open=async(n:NotificationItem)=>{
   dismiss(n.id);
-  try{await markNotificationsRead([n.id]);}catch{/* history stays unread; bell retries */}
-  const href=entityLink(n.entity_type,n.entity_id);if(href)navigate(href);
+  void markNotificationsRead([n.id]).catch(()=>{});
+  const href=entityLink(n.entity_type,n.entity_id,n.metadata);if(href)navigate(href);
  };
  const extra=stack.length>1?Math.min(stack.length,VISIBLE)-1:0;
  return <>
@@ -52,8 +52,8 @@ export function NotificationPopupStack(){
    <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-slate-700/80"><b className="text-xs font-semibold text-gray-900 dark:text-gray-100">Thông báo mới · {log.length}</b><span className="flex items-center gap-1.5"><button type="button" onClick={()=>void markAllRead()} title="Đã đọc tất cả" aria-label="Đã đọc tất cả" className="notif-action p-1.5 rounded-lg text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 transition-colors"><Check size={15} strokeWidth={2.5}/></button><button type="button" onClick={clearAll} title="Xoá tất cả" aria-label="Xoá tất cả" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"><Trash2 size={13}/><span>Xoá tất cả</span></button><button type="button" onClick={()=>setExpanded(false)} title="Thu gọn" aria-label="Thu gọn" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><ChevronUp size={14}/><span>Thu gọn</span></button></span></div>
    <div className="notif-panel-list">{log.map(n=>{const tone=TONES[toneOf(n)];
     return <div key={n.id} role="button" tabIndex={0} onClick={()=>void open(n)} onKeyDown={e=>{if(e.key==='Enter')void open(n);}} style={toneStyle(n)} className="notif-row group flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60">
-     <NotificationIcon message={n.message}/>
-     <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{tone.label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={n.message}/>}</span></span>
+     <NotificationIcon message={n.message} metadata={n.metadata}/>
+     <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{tone.label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span></span>
      <button type="button" aria-label="Bỏ qua" onClick={e=>{e.stopPropagation();dismiss(n.id);}} className="notif-x notif-x-static"><X size={13}/></button>
     </div>;})}</div>
   </div>}
@@ -64,8 +64,8 @@ export function NotificationPopupStack(){
     return <div key={n.id} data-depth={depth} role="button" tabIndex={depth===0?0:-1} aria-hidden={depth>0} aria-label={depth===0&&extra?`Xem tất cả ${stack.length} thông báo`:undefined} onClick={activate} onKeyDown={e=>{if(e.key==='Enter')activate();}}
      style={{...toneStyle(n),transform:`translateY(${l.y}px) scale(${l.s})`,opacity:l.o,zIndex:100-depth}}
      className="notif-card notif-glass group flex items-start gap-3 rounded-2xl border border-gray-200/80 bg-white/85 p-3.5 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/85">
-     <NotificationIcon message={n.message}/>
-     <span className="min-w-0 flex-1 pr-14"><b className="block truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-msg mt-0.5 line-clamp-2 text-xs leading-4">{<PicText message={n.message}/>}</span></span>
+     <NotificationIcon message={n.message} metadata={n.metadata}/>
+     <span className="min-w-0 flex-1 pr-14"><b className="block truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-msg mt-0.5 line-clamp-2 text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span></span>
      {depth===0&&<>
       {/* Count chip is permanent; on hover the X grows in and pushes it left. */}
       <span className="notif-corner"><span className="notif-count">{extra>0&&<span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-bold">+{extra}</span>}<button type="button" aria-label="Đóng" onClick={e=>{e.stopPropagation();dismiss(n.id);}} className="notif-x"><X size={13}/></button></span></span>

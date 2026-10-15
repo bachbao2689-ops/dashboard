@@ -1,3 +1,4 @@
+import {useWorkspaceDirectory} from '../hooks/useWorkspaceData';
 import {taskOverdue,taskDueWithin} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
 import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
@@ -5,7 +6,6 @@ import {useTaskListActions} from '../hooks/useTaskListActions';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
-import { supabase } from '../services/supabase';
 import { TaskListToolbar } from '../components/features/tasks/list/TaskListToolbar';
 import { TaskListLayout } from '../components/features/tasks/list/TaskListLayout';
 import { TaskListCollection } from '../components/features/tasks/list/TaskListCollection';
@@ -52,21 +52,8 @@ export const TaskList: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
-  // People list from Supabase for PIC filter
-  const [people, setPeople] = useState<FilterPerson[]>([]);
-
-  useEffect(() => {
-    supabase
-      .from('users')
-      .select('id, name, avatar_url, departments(name)')
-      .eq('is_active', true)
-      .order('name')
-      .then(res => {
-        if (res.data) {
-          setPeople(res.data as any);
-        }
-      });
-  }, []);
+  const directory=useWorkspaceDirectory();
+  const people=directory.data?.users||[];
 
   // Merge people with any task assignees not yet in people
   const allPeople = useMemo<FilterPerson[]>(() => {

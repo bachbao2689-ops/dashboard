@@ -8,7 +8,7 @@ import {taskActive,taskOpen,taskOverdue} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
 export interface DashboardData {myTasksCount:number;dueSoonCount:number;borrowedCount:number;overdueCount:number;upcomingTasks:any[];recentRequests:any[];tasks:any[];assetStatusData:{name:string;value:number;fill:string}[];}
 export function useDashboard(){
- const actor=useAuthStore(s=>s.profile?.id);const workspace=useWorkspaceData();
+ const actor=useAuthStore(s=>s.profile?.id);const workspace=useWorkspaceData({includeAssets:true});
  const [requests,setRequests]=useState<{actor?:number;rows:any[];error:string|null}>({rows:[],error:null});const generation=useRef(0);
  const load=useCallback(async()=>{const token=++generation.current;if(!actor)return;try{const rows=await readAll(supabase.from('borrow_requests').select('id,approval_status,due_date,returned_at,requested_at,asset:asset_id(name),requester:requester_id(name)').eq('requester_id',actor).order('requested_at',{ascending:false}).order('id'));if(token===generation.current)setRequests({actor,rows,error:null});}catch(e){if(token===generation.current)setRequests({actor,rows:[],error:e instanceof Error?e.message:'Không thể tải phiếu mượn.'});}},[actor]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[load]);useWorkspaceRealtime(['borrow_requests'],load,actor);
