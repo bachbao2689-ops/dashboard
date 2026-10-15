@@ -105,3 +105,8 @@ Theo dõi trạng thái `push_deliveries` và lỗi Edge; không log endpoint, k
 - Edge `dashboard-push` v2 đã deploy, giữ verify_jwt=false và toàn bộ kiểm tra session/webhook/origin; không thay VAPID hay subscriptions.
 - Frontend chỉ phát hành nhánh `codex/develop-dashboard`; Official cần quy trình duyệt/merge riêng.
 - Advisor vẫn báo cấu hình cũ của `users` (RLS đang tắt), một số bảng/hàm và FK/index ngoài phạm vi sửa lần này. Chưa thay cơ chế quản trị tài khoản hoặc xóa index/bảng tùy tiện vì có thể ảnh hưởng vận hành.
+
+
+### Popup thông báo giữ trên màn hình
+
+Popup mới không tự hết hạn sau vài giây. Chỉ gỡ khi mở, đóng, xóa popup hoặc được đánh dấu đã đọc ở chuông/phiên khác. Giữ animation xếp lớp và giới hạn số thẻ hiển thị; không xóa lịch sử thông báo.

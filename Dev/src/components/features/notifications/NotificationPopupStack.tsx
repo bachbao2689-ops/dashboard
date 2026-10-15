@@ -7,12 +7,12 @@ import {useNotificationCenter} from '../../../hooks/useNotificationCenter';
 import {entityLink} from '../../../lib/taskTracking';
 import {NotificationIcon,TONES,toneOf,toneStyle,PicText} from './notificationVisual';
 
-const VISIBLE=4,EXIT_MS=550,LIFETIME_MS=9000,HISTORY=12;
+const VISIBLE=4,EXIT_MS=550,HISTORY=12;
 // Per-depth visual targets: scale down, dim and sink with each layer; last layer fades to 0.
 const LAYERS=[{y:0,s:1,o:1},{y:11,s:.95,o:.78},{y:21,s:.9,o:.5},{y:30,s:.85,o:.26},{y:36,s:.8,o:0}];
 export function NotificationPopupStack(){
  const {items}=useNotificationCenter(),actor=useAuthStore(s=>s.profile?.id),navigate=useNavigate();
- const [stack,setStack]=useState<NotificationItem[]>([]),[log,setLog]=useState<NotificationItem[]>([]),[paused,setPaused]=useState(false),[expanded,setExpanded]=useState(false);
+ const [stack,setStack]=useState<NotificationItem[]>([]),[log,setLog]=useState<NotificationItem[]>([]),[expanded,setExpanded]=useState(false);
  const seen=useRef<Set<string>|null>(null),owner=useRef<number|undefined>(undefined);
  const push=(fresh:NotificationItem[])=>{
   setStack(cur=>[...fresh,...cur].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i).slice(0,VISIBLE+1));
@@ -30,15 +30,14 @@ export function NotificationPopupStack(){
  useEffect(()=>{const read=new Set(items.filter(i=>i.is_read).map(i=>i.id));const strip=(cur:NotificationItem[])=>cur.some(i=>read.has(i.id))?cur.filter(i=>!read.has(i.id)):cur;setStack(strip);setLog(strip);},[items]);
  // Layer beyond the limit has faded to 0: remove it from the DOM.
  useEffect(()=>{if(stack.length<=VISIBLE)return;const t=setTimeout(()=>setStack(cur=>cur.slice(0,VISIBLE)),EXIT_MS);return()=>clearTimeout(t);},[stack.length]);
- // Oldest visible card expires on its own so the stack drains when idle (never while reading the expanded list).
- useEffect(()=>{if(!stack.length||paused||expanded)return;const t=setTimeout(()=>setStack(cur=>cur.slice(0,-1)),LIFETIME_MS);return()=>clearTimeout(t);},[stack,paused,expanded]);
+ // Visible cards stay until opened, dismissed, cleared, or marked read elsewhere.
  useEffect(()=>{if(!expanded)return;if(!log.length){setExpanded(false);return;}const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')setExpanded(false);};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[expanded,log.length]);
  const dismiss=(id:string)=>{setStack(cur=>cur.filter(i=>i.id!==id));setLog(cur=>cur.filter(i=>i.id!==id));};
  // Clear all only hides popups; the bell history and unread badge stay untouched.
- const clearAll=()=>{setStack([]);setLog([]);setExpanded(false);setPaused(false);};
+ const clearAll=()=>{setStack([]);setLog([]);setExpanded(false);};
  const markAllRead=async()=>{
   const ids=log.map(i=>i.id);
-  setStack([]);setLog([]);setExpanded(false);setPaused(false);
+  setStack([]);setLog([]);setExpanded(false);
   if(ids.length){try{await markNotificationsRead(ids);}catch{}}
  };
  const open=async(n:NotificationItem)=>{
@@ -57,7 +56,7 @@ export function NotificationPopupStack(){
      <button type="button" aria-label="Bỏ qua" onClick={e=>{e.stopPropagation();dismiss(n.id);}} className="notif-x notif-x-static"><X size={13}/></button>
     </div>;})}</div>
   </div>}
-  {!expanded&&stack.length>0&&<div className="notif-stack" role="region" aria-live="polite" aria-label="Thông báo mới" onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}>
+  {!expanded&&stack.length>0&&<div className="notif-stack" role="region" aria-live="polite" aria-label="Thông báo mới">
    {stack.map((n,depth)=>{const l=LAYERS[Math.min(depth,LAYERS.length-1)];
     // With several popups, tapping the stack opens the full readable list instead of jumping to one item.
     const activate=()=>{if(depth===0&&stack.length>1)setExpanded(true);else void open(n);};
