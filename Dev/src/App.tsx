@@ -55,7 +55,13 @@ function App() {
   useEffect(() => {
     initialize();
   }, [initialize]);
-  useEffect(()=>{if(session?.user.id)void syncPush(session.user.id).catch(()=>{});},[session?.user.id,session?.access_token]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (userId) {
+      void syncPush(userId).catch(() => {});
+    }
+  }, [session?.user?.id, session?.access_token]);
 
   return (
     <>
