@@ -11,7 +11,7 @@
 Desktop Mac/Windows là nơi làm việc chính. Mobile ưu tiên nhận thông báo và xem tiến độ. Sự kiện được gửi từ server; không cần máy tính mở Dashboard.
 Task/subtask detail trên Mobile hiển thị nội dung và lịch sử bình luận, ẩn composer/Sửa/Complete; All Tasks không hiện tạo mới/chọn hàng loạt trên màn hình nhỏ. Đây là cách trình bày theo thiết bị, không thay thế phân quyền server.
 
-iPhone: mở link Develop bằng Safari → Chia sẻ → Thêm vào Màn hình chính → mở icon → đăng nhập → chuông thông báo → Bật thông báo → Cho phép. Có nút Gửi thử và Tắt trên thiết bị này.
+iPhone: mở link Official bằng Safari → Chia sẻ → Thêm vào Màn hình chính → mở icon → đăng nhập → chuông thông báo → Bật thông báo → Cho phép. Có nút Gửi thử và Tắt trên thiết bị này. Develop vẫn có thể đăng ký riêng để test.
 
 Chỉ request quyền từ thao tác bấm của người dùng. Cài web app chưa đồng nghĩa đã cấp quyền push. iOS cần 16.4 trở lên; Focus và cài đặt hệ điều hành có thể tắt âm thanh/ẩn thông báo.
 
@@ -28,14 +28,14 @@ Chỉ request quyền từ thao tác bấm của người dùng. Cài web app ch
 
 ## Môi trường
 
-Người dùng xác nhận **Cho bật chỉ trên Develop** trong chat ngày 15/10/2026.
+Người dùng ban đầu bật Develop; ngày 15/10/2026 đã xác nhận rõ **Bật Web Push trên Official, cho phép gửi thông báo thật tới các thiết bị tự đăng ký.** Cấu hình đã áp dụng cho cả hai môi trường.
 
-- Allowed origin: `https://dashboard-git-codex-develop-dashboard-bart-c8ff.vercel.app`.
-- Official hiện không được đăng ký/gửi thử Web Push. Không merge main trong đợt này.
+- Allowed origins: `https://dashboard-git-codex-develop-dashboard-bart-c8ff.vercel.app` và `https://dashboard-nu-tan-30.vercel.app`.
+- Migration `20261015101500_enable_official_push.sql` thêm Official; giữ nguyên khóa VAPID và các thiết bị Develop đã đăng ký, không phát lại thông báo cũ.
 - Supabase dùng chung: migration thêm index, hàm tổng hợp thông báo và hạ tầng push đã áp dụng. Không tạo bản sao task hay di chuyển dữ liệu nghiệp vụ.
 - Kiểm tra sau deploy phát hiện `complete_tracked_tasks` và `save_task_weekly_reports` chưa có trên DB; đã áp dụng migration `20261014105438_workspace_tracking_reports.sql` đã qua test, để source Develop không còn khóa tính năng dự phòng.
 - Khóa riêng chỉ trong bảng server bị khóa quyền; không đưa vào Git hoặc biến VITE.
-- Chưa có điện thoại đăng ký khi triển khai. Cần kiểm tra nhận trên iPhone thật sau bước cấp quyền của chủ thiết bị.
+- Khi bật Official đã có một thiết bị Develop và bốn delivery trạng thái sent. Thiết bị Official cần tự đăng ký riêng vì quyền push gắn với origin; vẫn cần kiểm tra nhận trên điện thoại thật sau bước cấp quyền.
 
 ## Tối ưu tải
 
@@ -52,7 +52,7 @@ Người dùng xác nhận **Cho bật chỉ trên Develop** trong chat ngày 15
 - Build production thành công; kiểm tra fixture read-only Desktop và Mobile 430px, không tràn ngang dropdown.
 - 39 pure checks: tracking, ngày tháng, calendar, phase, service-worker push/click và ngăn link khác origin.
 - 123 DB checks dùng fixture rollback: 13 push, 21 tracking/report, 62 Workflow, 12 Calendar, 15 comments/quyền.
-- Online Edge: worker 200 với hàng đợi rỗng; thiếu xác thực 401; Gửi thử không có phiên 401; origin Official 403.
+- Online Edge: worker 200 với hàng đợi rỗng; sau khi mở Official, preflight trả 204 đúng origin, Gửi thử thiếu phiên vẫn 401, origin lạ 403. Đăng ký Official bằng authenticated đã qua kiểm tra fixture rollback; cron retry đang active.
 
 ## Bảo trì
 
