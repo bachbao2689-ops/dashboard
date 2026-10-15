@@ -7,7 +7,7 @@ CREATE TABLE workspaces (
     slug VARCHAR(50) UNIQUE NOT NULL,
     logo_url TEXT,
     tagline TEXT,
-    owner_id BIGINT NOT NULL REFERENCES users(id),
+    owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -28,7 +28,7 @@ CREATE TABLE departments (
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20),
-    head_id BIGINT REFERENCES users(id),
+    head_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -44,7 +44,7 @@ CREATE TABLE projects (
     status VARCHAR(50) DEFAULT 'active',
     start_date DATE,
     due_date DATE,
-    created_by BIGINT NOT NULL REFERENCES users(id),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -65,8 +65,8 @@ CREATE TABLE tasks (
     task_ref VARCHAR(20) UNIQUE,
     title VARCHAR(500) NOT NULL,
     description TEXT,
-    department_id UUID REFERENCES departments(id),
-    assignee_id BIGINT REFERENCES users(id),
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    assignee_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     priority VARCHAR(20) DEFAULT 'medium',
     status VARCHAR(50) DEFAULT 'todo',
     start_date DATE,
@@ -76,7 +76,7 @@ CREATE TABLE tasks (
     comments_count INTEGER DEFAULT 0,
     column_id UUID REFERENCES columns(id),
     position NUMERIC(20, 6) DEFAULT 0,
-    created_by BIGINT NOT NULL REFERENCES users(id),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -116,7 +116,7 @@ CREATE TABLE assets (
     image_url TEXT,
     maintenance_scheduled DATE,
     maintenance_notes TEXT,
-    added_by BIGINT NOT NULL REFERENCES users(id),
+    added_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -134,8 +134,8 @@ CREATE TABLE borrow_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
-    requester_id BIGINT NOT NULL REFERENCES users(id),
-    department_id UUID REFERENCES departments(id),
+    requester_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
     requested_at TIMESTAMPTZ DEFAULT NOW(),
     borrow_date DATE NOT NULL,
     due_date DATE NOT NULL,
@@ -143,10 +143,10 @@ CREATE TABLE borrow_requests (
     purpose TEXT,
     condition_at_borrow TEXT,
     approval_status VARCHAR(50) DEFAULT 'pending',
-    approved_by BIGINT REFERENCES users(id),
+    approved_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     return_condition TEXT,
-    return_confirmed_by BIGINT REFERENCES users(id),
+    return_confirmed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     return_confirmed_at TIMESTAMPTZ,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
