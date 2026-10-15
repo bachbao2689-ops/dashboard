@@ -33,6 +33,7 @@ Người dùng xác nhận **Cho bật chỉ trên Develop** trong chat ngày 15
 - Allowed origin: `https://dashboard-git-codex-develop-dashboard-bart-c8ff.vercel.app`.
 - Official hiện không được đăng ký/gửi thử Web Push. Không merge main trong đợt này.
 - Supabase dùng chung: migration thêm index, hàm tổng hợp thông báo và hạ tầng push đã áp dụng. Không tạo bản sao task hay di chuyển dữ liệu nghiệp vụ.
+- Kiểm tra sau deploy phát hiện `complete_tracked_tasks` và `save_task_weekly_reports` chưa có trên DB; đã áp dụng migration `20261014105438_workspace_tracking_reports.sql` đã qua test, để source Develop không còn khóa tính năng dự phòng.
 - Khóa riêng chỉ trong bảng server bị khóa quyền; không đưa vào Git hoặc biến VITE.
 - Chưa có điện thoại đăng ký khi triển khai. Cần kiểm tra nhận trên iPhone thật sau bước cấp quyền của chủ thiết bị.
 

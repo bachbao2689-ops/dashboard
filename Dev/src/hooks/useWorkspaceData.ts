@@ -26,5 +26,9 @@ export function useWorkspaceData():WorkspaceData {
   useEffect(()=>{void reload();return()=>{generation.current++;};},[reload]);
   useWorkspaceRealtime(['assets','users','departments'],reload,profile?.id);
   const visible=extra.actor===profile?.id;
-  return {tasks:source.tasks,assets:visible?extra.assets:[],users:visible?extra.users:[],departments:visible?extra.departments:[],loading:source.loading,error:source.error||(visible?extra.error:null),refetch:async()=>{await Promise.all([source.refetch(),reload()]);}};
+  const role=(profile?.role||'').toLowerCase(),level=(profile?.employment_level||'').toLowerCase();
+  const globalScope=role==='admin'||level==='admin'||level==='manager'||(role==='manager'&&!['leader','staff','member'].includes(level));
+  const assigned=new Set(source.tasks.map(task=>String(task.assignee_id)));
+  const scopedUsers=extra.users.filter(user=>globalScope||String(user.id)===String(profile?.id)||Boolean(profile?.department_id&&user.department_id===profile.department_id)||assigned.has(String(user.id)));
+  return {tasks:source.tasks,assets:visible?extra.assets:[],users:visible?scopedUsers:[],departments:visible?extra.departments:[],loading:source.loading,error:source.error||(visible?extra.error:null),refetch:async()=>{await Promise.all([source.refetch(),reload()]);}};
 }
