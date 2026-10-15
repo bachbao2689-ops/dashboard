@@ -355,7 +355,7 @@ export const Header: React.FC = () => {
                   <span>{lang === 'en' ? 'Notifications' : 'Thông báo'}</span>
                   <button type="button" disabled={markingRead||!unread} className="text-xs text-primary hover:underline disabled:opacity-50" onClick={()=>void markAllNotificationsRead()}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</button>
                 </div>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto">
                   <PushNotificationSettings hideWhenEnabled />
                   {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
