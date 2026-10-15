@@ -12,17 +12,19 @@ export function useWorkspaceRealtime(tables: readonly string[], refresh: () => u
     setConnected(false);
     if (!actor) return;
     let disposed = false;
+    let connectedOnce=false;
     let debounce: ReturnType<typeof setTimeout>;
     const schedule = () => {
       clearTimeout(debounce);
-      debounce = setTimeout(() => { if (!disposed) void refreshRef.current(); }, 180);
+      if(document.visibilityState==='hidden')return;
+      debounce = setTimeout(() => { if (!disposed) void refreshRef.current(); }, 300);
     };
     let channel = supabase.channel(`workspace-${actor}-${Math.random().toString(36).slice(2)}`);
     for (const table of key.split(',')) channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
     channel.subscribe(status => {
       if (disposed) return;
       setConnected(status === 'SUBSCRIBED');
-      if (status === 'SUBSCRIBED') schedule();
+      if (status === 'SUBSCRIBED') {if(connectedOnce)schedule();connectedOnce=true;}
     });
     const visible = () => { if (document.visibilityState === 'visible') schedule(); };
     const events = ['tasks:changed', 'projects:changed', 'campaigns:changed', 'workspace:changed'];

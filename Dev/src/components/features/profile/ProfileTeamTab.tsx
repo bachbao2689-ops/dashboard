@@ -1,6 +1,3 @@
-import {readVisibleTasks} from '../../../hooks/useTasks';
-import {useWorkspaceRealtime} from '../../../hooks/useWorkspaceRealtime';
-import {readWeeklyReports,weeklyEntity} from '../../../services/weeklyReports';
 import { useTranslation } from '../../../i18n/translations';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronRight, FileText, Search, UsersRound } from 'lucide-react';
@@ -41,7 +38,6 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [reminding, setReminding] = useState(false);
   const [teamPanelWidth, setTeamPanelWidth] = useState(42);
   const reportGridRef = useRef<HTMLDivElement>(null);
-  const teamRequest=useRef(0),memberRequest=useRef(0);
 
   const resizeTeamPanel = (clientX: number) => {
     const bounds = reportGridRef.current?.getBoundingClientRect();
@@ -50,11 +46,9 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   };
 
   const loadTeam = useCallback(async (silent = false) => {
-    const token=++teamRequest.current;
-    try {
       const normalizedRole = (profile?.role || '').toLowerCase();
       const normalizedLevel = (profile?.employment_level || '').toLowerCase();
-      const canViewAll = ['admin', 'manager'].includes(normalizedRole) || ['admin', 'manager'].includes(normalizedLevel);
+      const canViewAll = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
       if (!profile || (!canViewAll && !profile.department_id)) {
         setMembers([]); if(!silent) if(!silent) setLoadingTeam(false);
         return;
@@ -71,17 +65,20 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       const loadedMembers = (data || []) as TeamMember[];
       const memberIds = loadedMembers.map(member => member.id);
       const [taskResult] = memberIds.length ? await Promise.all([
-        readVisibleTasks().then(data=>({data:data.filter(t=>memberIds.includes(Number(t.assignee_id))),error:null})),
+        supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,assignee_id,project:project_id(id,name)').in('assignee_id', memberIds),
       ]) : [{ data: [], error: null } as any];
       if (taskResult.error) console.warn('Could not load team report tasks:', taskResult.error.message);
       const allMemberTasks = (taskResult.data || []) as WeeklyReportTask[];
       const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
       const weeklyTaskIds = weeklyTasks.map((task: any) => task.id);
-      const reportRows=await readWeeklyReports(weeklyTaskIds,weekStart,weekEnd);
+      const { data: reportRows, error: reportError } = weeklyTaskIds.length
+        ? await supabase.from('activity_log').select('id,user_id,entity_id,created_at,metadata,action').eq('entity_type', 'task').eq('action', 'weekly_report').in('entity_id', weeklyTaskIds).order('created_at', { ascending: false })
+        : { data: [], error: null };
         
       const { data: imageRows } = memberIds.length
         ? await supabase.from('activity_log').select('user_id,metadata').eq('action', 'weekly_summary_image').in('user_id', memberIds).order('created_at', { ascending: false })
         : { data: [] };
+      if (reportError) console.warn('Could not load team report status:', reportError.message);
       const taskIdsByMember = new Map<number, string[]>();
       weeklyTasks.forEach((task: any) => {
         const memberId = Number(task.assignee_id);
@@ -100,8 +97,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         if (!latestReports[key]) latestReports[key] = row as TeamReportRow;
       });
       const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
-      if(token!==teamRequest.current)return;
-      setMembers(loadedMembers);
+            setMembers(loadedMembers);
       setTaskCount(counts);
       setReportProgress(progress);
       setWeeklyTasksByMember(groupedTasks);
@@ -114,10 +110,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       });
       setSummaryImages(imgMap);
       if(!silent) setLoadingTeam(false);
-    } catch(error) {
-      if(token===teamRequest.current){setMembers([]);setLoadingTeam(false);console.warn('Team report unavailable',error);toast.error('Không thể đồng bộ report của team.');}
-    }
-  }, [profile?.department_id, profile?.id, profile?.role, profile?.employment_level, weekEnd, weekStart]);
+  }, [profile?.department_id, profile?.id, profile?.role, weekEnd, weekStart]);
 
   useEffect(() => {
     void loadTeam();
@@ -126,7 +119,14 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
-  useWorkspaceRealtime(['activity_log','tasks','project_subtasks','campaign_subtasks','users','project_members','campaign_members'],()=>{void loadTeam(true);if(selectedMember)void openReport(selectedMember,true);},profile?.id);
+  useEffect(() => {
+    const channel = supabase.channel('team-report-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+        void loadTeam(true);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadTeam]);
 
   useEffect(() => {
     const el = document.getElementById('team-report-calendar');
@@ -148,8 +148,6 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     }
   };
   const openReport = async (member: TeamMember, silent = false) => {
-    const token=++memberRequest.current;
-    try {
     setSelectedMember(member);
     if (!silent) setLoadingReport(true);
     setMemberTasks([]);
@@ -161,13 +159,13 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       campaignQuery = campaignQuery.eq('department_id', member.department_id);
     }
     const [taskResult, projectResult, campaignResult] = await Promise.all([
-      readVisibleTasks().then(data=>({data:data.filter(t=>Number(t.assignee_id)===member.id),error:null})),
+      supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,project:project_id(id,name)').eq('assignee_id', member.id).order('updated_at', { ascending: false }),
       projectQuery,
       campaignQuery,
     ]);
+    if (taskResult.error) console.warn('Could not load member tasks:', taskResult.error.message);
     if (projectResult.error) console.warn('Could not load member projects:', projectResult.error.message);
     if (campaignResult.error) console.warn('Could not load member campaigns:', campaignResult.error.message);
-    if(token!==memberRequest.current)return;
     setMemberTasks((taskResult.data || []) as WeeklyReportTask[]);
     const referenceMap = new Map<string, ReportReference>();
     (projectResult.data || []).forEach((item: any) => referenceMap.set(`project-${item.id}`, { ...item, kind: 'project' }));
@@ -179,7 +177,6 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     (campaignResult.data || []).forEach((item: any) => referenceMap.set(`campaign-${item.id}`, { id: item.id, name: item.name, status: item.status, description: item.objective, kind: 'campaign' }));
     setReferences([...referenceMap.values()]);
     if (!silent) setLoadingReport(false);
-    } catch(error) {if(token===memberRequest.current){setMemberTasks([]);setLoadingReport(false);toast.error('Không thể tải report của PIC');console.warn(error);}}
   };
 
   const notify = async (task?: WeeklyReportTask) => {
@@ -192,7 +189,8 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     const { error } = await supabase.from('notifications').insert({
       user_id: selectedMember.id,
       type: 'report_reminder',
-      ...(task ? weeklyEntity(task.id) : {entity_type:'weekly_report',entity_id:null}),
+      entity_type: task ? 'task' : 'weekly_report',
+      entity_id: task?.id || null,
       message,
       metadata: { week_start: weekStart, week_end: weekEnd, reminder_scope: task ? 'task' : 'member', task_title: task?.title || null, workspace_id: workspaceId },
     });

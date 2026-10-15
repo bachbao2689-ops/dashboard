@@ -1,39 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import { readWorkspaceTasks } from '../services/workspaceTasks';
+export {readWorkspaceTasks as readVisibleTasks} from '../services/workspaceTasks';
 import { useWorkspaceRealtime } from './useWorkspaceRealtime';
 
 export interface Task {
   id: string; task_ref: string; title: string; status: string; priority: string; due_date: string;
   start_date?: string; completed_at?: string; description?: string; project_id?: string; campaign_id?: string;
-  department_id?: string; workflow_phase_id?: string; created_at?: string; updated_at?: string;
+  department_id?: string; workspace_id?: string; workflow_phase_id?: string; created_at?: string; updated_at?: string;
   workflow_status?: string | null;
-  project?: { id?: string; name: string; status?: string }; campaign?: { id?: string; name: string; status?: string }; assignee_id?: string;
-  assignee?: { id?: string; name: string; avatar_url: string }; department?: { name: string }; column?: { name: string };
-}
-// Read all visible pages. RLS is authoritative for department + invitation scope.
-async function allRows(table: string, select: string) {
-  const result: any[] = [];
-  for (let offset = 0; ; offset += 500) {
-    const { data, error } = await supabase.from(table).select(select).neq('status', 'deleted').neq('status', 'archived').order('created_at', { ascending: false }).order('id').range(offset, offset + 499);
-    if (error) throw error;
-    result.push(...(data || []));
-    if (!data || data.length < 500) return result;
-  }
-}
-export async function readVisibleTasks(): Promise<Task[]> {
-      const [real, projects, campaigns] = await Promise.all([
-        allRows('tasks', 'id,task_ref,title,status,priority,due_date,start_date,completed_at,created_at,updated_at,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(id,name,status),campaign:campaign_id(id,name,status),assignee:assignee_id(id,name,avatar_url),department:department_id(name),column:column_id(name)'),
-        allRows('project_subtasks', 'id,title,status,start_date,due_date,created_at,updated_at,completed_at,project_id,workflow_phase_id,workflow_status,projects(id,name,status,department_id),assignee:assignee_id(id,name,avatar_url)'),
-        allRows('campaign_subtasks', 'id,title,status,start_date,due_date,created_at,updated_at,completed_at,campaign_id,workflow_phase_id,workflow_status,campaigns(id,name,status,department_id),assignee:assignee_id(id,name,avatar_url)')
-      ]);
-      const legacy = (items: any[], kind: 'project' | 'campaign') => items.map(s => ({
-        id: `${kind === 'project' ? 'ps' : 'cs'}-${s.id}`, task_ref: '', title: s.title,
-        status: s.status || 'todo', priority: 'medium', start_date: s.start_date, due_date: s.due_date, created_at: s.created_at, updated_at: s.updated_at, completed_at: s.completed_at, workflow_phase_id: s.workflow_phase_id, workflow_status: s.workflow_status,
-        [`${kind}_id`]: s[`${kind}_id`], [kind]: s[`${kind}s`] ? { id: s[`${kind}_id`], name: s[`${kind}s`].name, status: s[`${kind}s`].status } : null,
-        assignee: s.assignee, assignee_id: s.assignee?.id, department_id: s[`${kind}s`]?.department_id
-      }));
-      return [...real, ...legacy(projects, 'project'), ...legacy(campaigns, 'campaign')].filter(t=>!['deleted','archived'].includes((t.project?.status || t.campaign?.status || '').toLowerCase())) as Task[];
+  project?: { id?: string; name: string }; campaign?: { id?: string; name: string }; assignee_id?: string;
+  assignee?: { id?: string; name: string; avatar_url: string }; department?: { id?: string; name: string }; column?: { name: string };
 }
 export function useTasks() {
   const profile = useAuthStore(state => state.profile);
@@ -47,8 +24,8 @@ export function useTasks() {
     setLoading(loadedActor.current !== profile?.id); setError(null);
     try {
       if (!profile) { setTasks([]); return; }
-      const rows = await readVisibleTasks();
-      if (token === request.current) { loadedActor.current = profile.id; setTasks(rows); }
+      const all = await readWorkspaceTasks();
+      if (token === request.current) { loadedActor.current = profile.id; setTasks(all); }
     } catch (err: any) {
       // Never substitute fixtures for real assignments after a request failure.
       if (token === request.current) { setTasks([]); setError(err.message || 'Không thể tải Tasks. Vui lòng thử lại.'); }
@@ -58,6 +35,6 @@ export function useTasks() {
     loadedActor.current = null; setTasks([]); void fetchTasks();
     return () => { request.current++; };
   }, [profile?.id, profile?.department_id, profile?.role]);
-  useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments'], fetchTasks, profile?.id);
-  return { tasks, loading, error, refetch: fetchTasks };
+  useWorkspaceRealtime(['tasks', 'project_subtasks', 'campaign_subtasks', 'projects', 'campaigns', 'workflow_phase_members', 'project_members', 'campaign_members', 'comments','activity_log'], fetchTasks, profile?.id);
+  return { tasks:loadedActor.current===profile?.id?tasks:[], loading, error, refetch: fetchTasks };
 }

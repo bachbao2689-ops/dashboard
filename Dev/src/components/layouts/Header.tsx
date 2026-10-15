@@ -6,11 +6,13 @@ import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
-import { supabase } from '../../services/supabase';
-import {entityHref} from '../../lib/taskTracking';
+import {useNotificationCenter} from '../../hooks/useNotificationCenter';
+import {markNotificationsRead,type NotificationItem} from '../../store/notificationStore';
+import {PushNotificationSettings} from '../features/notifications/PushNotificationSettings';
+import toast from 'react-hot-toast';
+import {entityLink} from '../../lib/taskTracking';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 
-type NotificationItem = { id: string; title: string; message: string; entity_type?: string | null; entity_id?: string | null };
 
 export const Header: React.FC = () => {
   const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
@@ -44,9 +46,8 @@ export const Header: React.FC = () => {
   useEffect(() => {
     setShowNotifs(false);
   }, [location.pathname]);
-  const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const {items:notifications,unread} = useNotificationCenter();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -77,43 +78,13 @@ export const Header: React.FC = () => {
   
   const canViewDashboard = ['admin', 'manager', 'leader'].includes((profile?.role || '').toLowerCase()) || ['admin', 'manager', 'leader'].includes((profile?.employment_level || '').toLowerCase());
 
-  useEffect(() => {
-    let active = true;
-    const loadNotifications = async () => {
-      if (!profileId) { if (active) setNotifications([]); return; }
-      const { data } = await supabase.from('notifications').select('id, type, message, entity_type, entity_id, is_read').eq('user_id', profileId).eq('is_read', false).order('created_at', { ascending: false }).limit(12);
-      if (!active) return;
-      setNotifications((data || []).map((notification: any) => ({ id: notification.id, title: notification.type === 'task_completed' ? 'Task completed' : notification.type === 'task_comment' ? 'Bình luận mới' : notification.type === 'weekly_report' ? 'Weekly Report mới' : notification.type === 'report_reminder' ? 'Nhắc report' : 'Thông báo', message: notification.message, entity_type: notification.entity_type, entity_id: notification.entity_id })));
-    };
-    void loadNotifications();
-    const channel = profileId
-      ? supabase
-          .channel(`header-notifications-${profileId}`)
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profileId}` },
-            () => { void loadNotifications(); },
-          )
-          .subscribe()
-      : null;
-
-    return () => {
-      active = false;
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [profileId]);
-
   const markAllNotificationsRead = async () => {
-    const ids = notifications.map(notification => notification.id);
-    setNotifications([]);
-    if (ids.length) await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).in('id', ids);
+    try{await markNotificationsRead();}catch{toast.error('Chưa đánh dấu đã đọc được. Vui lòng thử lại.');}
   };
-
   const openNotification = async (notification: NotificationItem) => {
-    setNotifications(current => current.filter(item => item.id !== notification.id));
-    await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', notification.id);
+    try{await markNotificationsRead([notification.id]);}catch{toast.error('Chưa đồng bộ trạng thái đã đọc.');}
     setShowNotifs(false);
-    const href=entityHref(notification.entity_type,notification.entity_id);
+    const href=entityLink(notification.entity_type,notification.entity_id);
     if(href)navigate(href);
   };
 
@@ -371,7 +342,7 @@ export const Header: React.FC = () => {
               )}
             >
               <Bell size={20} />
-              {notifications.length > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{notifications.length > 99 ? "99+" : notifications.length}</span>}
+              {unread > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{unread > 99 ? "99+" : unread}</span>}
             </button>
             
             {showNotifs && (
@@ -381,6 +352,7 @@ export const Header: React.FC = () => {
                   <span className="text-xs text-primary cursor-pointer hover:underline" onClick={markAllNotificationsRead}>{lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
+                  <PushNotificationSettings />
                   {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No new notifications.' : 'Không có thông báo mới.'}</p> : notifications.map(notification => <button type="button" onClick={() => void openNotification(notification)} key={notification.id} className="w-full text-left p-4 border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{notification.title}</p><p className="text-xs text-gray-500 mt-1">{notification.message}</p></button>)}
                 </div>
                 <div onClick={() => { setShowNotifs(false); navigate('/my-tasks'); }} className="p-3 text-center text-xs text-gray-500 hover:text-primary cursor-pointer border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 transition-colors">

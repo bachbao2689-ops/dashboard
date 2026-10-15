@@ -47,7 +47,6 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   {groupTasks.map(task => (
                     <div key={task.id} className="px-3 py-3">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <input type="checkbox" aria-label={`Chọn ${task.title}`} checked={selectedTasks.includes(task.id)} onChange={() => toggleSelectTask(task.id)} className="shrink-0 rounded border-gray-300 text-primary focus:ring-primary" />
                         <button type="button" onClick={() => onOpenTask(task)} className="task-list-mobile-title">
                           <span className="min-w-0 flex-1 truncate">{task.title}</span>
                           <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
@@ -61,7 +60,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                       <div className="task-list-mobile-status">
                         <StatusBadge status={task.status} />
                         <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${new Date(task.due_date).toLocaleDateString()}` : t('common.noDueDate')}</span>
-                        {mapPriority(task.priority) === 'High' && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">High</span>}
+                        {['High','Urgent'].includes(mapPriority(task.priority)) && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">{mapPriority(task.priority)}</span>}
                       </div>
                     </div>
                   ))}
@@ -138,7 +137,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           <StatusBadge status={task.status} />
                         </td>
                         <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
-                          <span className="task-list-priority" data-priority={mapPriority(task.priority).toLowerCase()}>
+                          <span className="task-list-priority" data-priority={mapPriority(task.priority)==='Urgent'?'high':mapPriority(task.priority).toLowerCase()}>
                             {mapPriority(task.priority)}
                           </span>
                         </td>

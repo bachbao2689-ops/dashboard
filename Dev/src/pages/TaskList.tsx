@@ -1,3 +1,7 @@
+import {taskOverdue,taskDueWithin} from '../lib/taskTracking';
+import {calendarDay} from '../lib/profileCalendar';
+import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
+import {useTaskListActions} from '../hooks/useTaskListActions';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
@@ -14,15 +18,12 @@ import { TaskDetailPanel } from '../components/features/tasks/TaskDetailPanel';
 import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetailPanel';
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
-import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { recordTaskDeletion } from '../services/taskDeletionLog';
-import { completeTrackedTask } from '../services/taskTracking';
 import { useTranslation } from '../i18n/translations';
 
 export const TaskList: React.FC = () => {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
   const profileId = useAuthStore(state => state.profile?.id);
@@ -42,24 +43,12 @@ export const TaskList: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const [completing, setCompleting] = useState(false);
-  const completeSelected = async () => {
-    if(completing)return;
-    setCompleting(true);
-    const results=await Promise.allSettled(selectedTasks.map(completeTrackedTask));
-    const failed=selectedTasks.filter((_,index)=>results[index].status==='rejected');
-    const count=selectedTasks.length-failed.length;
-    if(count)toast.success(`Đã hoàn thành ${count} công việc`);
-    if(failed.length)toast.error(`Không thể hoàn thành ${failed.length} công việc. Kiểm tra quyền hoặc tải lại.`);
-    setSelectedTasks(failed);setCompleting(false);void refetch();
-  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
-  const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
-  const { tasks, loading, error:taskError, refetch } = useTasks();
+  const { tasks, loading, error, refetch } = useTasks();
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
@@ -138,6 +127,11 @@ export const TaskList: React.FC = () => {
     }
   }, [searchParams, tasks]);
 
+  const canBulkComplete=useTrackingAvailability();
+  const actions=useTaskListActions(tasks,profileId,refetch);
+  const {deletingIds}=actions;
+  const handleBulkComplete=async()=>{if(await actions.complete(selectedTasks))setSelectedTasks([]);};
+  useEffect(()=>{setSelectedTask((current:any)=>current?tasks.find(t=>t.id===current.id)||null:null);},[tasks]);
   const toggleSelectTask = (id: string) => {
     if (selectedTasks.includes(id)) {
       setSelectedTasks(selectedTasks.filter(taskId => taskId !== id));
@@ -153,7 +147,8 @@ export const TaskList: React.FC = () => {
     calendarFilter !== 'all' ||
     customStartDate ||
     customEndDate ||
-    priorityFilter !== 'all'
+    priorityFilter !== 'all' ||
+    ['scope','start','end','department','department_id','project_id','campaign_id'].some(key => searchParams.has(key))
   );
 
   const handleResetFilters = () => {
@@ -165,92 +160,28 @@ export const TaskList: React.FC = () => {
     setCustomEndDate('');
     setPriorityFilter('all');
     setActiveDropdown(null);
+    const query = new URLSearchParams(searchParams);
+    ['search','status','priority','assignee','scope','start','end','department','department_id','project_id','campaign_id'].forEach(key => query.delete(key));
+    setSearchParams(query, {replace:true});
   };
 
   const shortcutScope = searchParams.get('scope');
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
   const departmentParam = searchParams.get('department');
-  const isOpenTask = (task: any) => !['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((task.status || '').toLowerCase());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
 
-  const handleBulkDelete = async () => {
-    setDeletingIds(prev => [...prev, ...selectedTasks]);
-    const cachedSelected = [...selectedTasks];
-    setIsBulkDeleteModalOpen(false);
-
-    setTimeout(async () => {
-      let deletedCount = 0;
-      for (const taskId of cachedSelected) {
-        const task = tasks.find(item => item.id === taskId);
-        let entityType: 'task' | 'project_subtask' | 'campaign_subtask';
-        let rawId = taskId;
-        let error: any;
-        if (taskId.startsWith('ps-')) {
-          entityType = 'project_subtask'; rawId = taskId.replace('ps-', '');
-          ({ error } = await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', rawId));
-        } else if (taskId.startsWith('cs-')) {
-          entityType = 'campaign_subtask'; rawId = taskId.replace('cs-', '');
-          ({ error } = await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', rawId));
-        } else {
-          entityType = 'task';
-          ({ error } = await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId));
-        }
-        if (!error) {
-          deletedCount++;
-          if (profileId && task) {
-            const { error: logError } = await recordTaskDeletion({ userId: profileId, taskId: rawId, entityType, title: task.title, parentName: task.project?.name, parentType: entityType === 'project_subtask' ? 'project' : entityType === 'campaign_subtask' ? 'campaign' : null });
-            if (logError) toast.error(`Đã xóa "${task.title}" nhưng chưa ghi được vào Log`);
-          }
-        }
-      }
-      if (deletedCount) toast.success(`Đã chuyển ${deletedCount} task vào thùng rác`);
-      if (deletedCount < cachedSelected.length) toast.error(`Không xóa được ${cachedSelected.length - deletedCount} task`);
-      setSelectedTasks([]);
-      window.dispatchEvent(new Event('tasks:changed'));
-      refetch();
-      setDeletingIds(prev => prev.filter(id => !cachedSelected.includes(id)));
-    }, 300);
-  };
-
-  const handleSingleDelete = async () => {
-    if (!taskToDelete) return;
-    const taskId = taskToDelete.id;
-    let entityType: 'task' | 'project_subtask' | 'campaign_subtask';
-    let rawId = taskId;
-    let error: any;
-
-    setDeletingIds(prev => [...prev, taskId]);
-    const cachedTask = taskToDelete;
-    setTaskToDelete(null);
-
-    setTimeout(async () => {
-      if (taskId.startsWith('ps-')) {
-        entityType = 'project_subtask'; rawId = taskId.replace('ps-', '');
-        ({ error } = await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', rawId));
-      } else if (taskId.startsWith('cs-')) {
-        entityType = 'campaign_subtask'; rawId = taskId.replace('cs-', '');
-        ({ error } = await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', rawId));
-      } else {
-        entityType = 'task';
-        ({ error } = await supabase.from('tasks').update({ status: 'deleted' }).eq('id', taskId));
-      }
-      if (error) { toast.error('Không thể xóa task'); return; }
-      if (profileId) {
-        const { error: logError } = await recordTaskDeletion({ userId: profileId, taskId: rawId, entityType, title: cachedTask.title, parentName: cachedTask.project?.name, parentType: entityType === 'project_subtask' ? 'project' : entityType === 'campaign_subtask' ? 'campaign' : null });
-        if (logError) toast.error('Task đã xóa nhưng chưa ghi được vào Log');
-      }
-      toast.success(`Đã chuyển task vào thùng rác`);
-      window.dispatchEvent(new Event('tasks:changed'));
-      refetch();
-      setDeletingIds(prev => prev.filter(id => id !== taskId));
-    }, 300);
-  };
+  const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);const removed=await actions.remove(selectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
+  const handleSingleDelete=async()=>{if(!taskToDelete)return;const key=taskToDelete.id;setTaskToDelete(null);await actions.remove([key]);};
 
   const filteredTasks = tasks.filter(t => {
+    if(searchParams.get('department_id')&&((t.department_id||'unassigned')!==searchParams.get('department_id')))return false;
+    if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
+    if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
     // 1. Status Filter
-    if (statusFilter !== 'all') {
+    if(statusFilter==='overdue'){if(!taskOverdue(t,calendarDay(today.toISOString())!))return false;}
+    else if (statusFilter !== 'all') {
       const ms = mapStatus(t.status || '');
       const mapped = ms === 'in-progress' ? 'in_progress' : ms;
       if (mapped !== statusFilter && t.status?.toLowerCase() !== statusFilter.toLowerCase()) {
@@ -294,8 +225,8 @@ export const TaskList: React.FC = () => {
         return false;
       }
     } else if (startParam || endParam) {
-      if (startParam && t.due_date && new Date(t.due_date) < new Date(`${startParam}T00:00:00`)) return false;
-      if (endParam && t.due_date && new Date(t.due_date) > new Date(`${endParam}T23:59:59`)) return false;
+      if (startParam && t.due_date && calendarDay(t.due_date)! < startParam) return false;
+      if (endParam && t.due_date && calendarDay(t.due_date)! > endParam) return false;
     }
 
     // 6. Shortcut scope
@@ -304,11 +235,11 @@ export const TaskList: React.FC = () => {
         return false;
       }
       if (shortcutScope === 'due-soon') {
-        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) >= today && new Date(t.due_date) <= inSevenDays)) {
+        if (!(taskDueWithin(t,calendarDay(today.toISOString())!,calendarDay(inSevenDays.toISOString())!))) {
           return false;
         }
       } else if (shortcutScope === 'overdue') {
-        if (!(isOpenTask(t) && !!t.due_date && new Date(t.due_date) < today)) {
+        if (!(taskOverdue(t,calendarDay(today.toISOString())!))) {
           return false;
         }
       }
@@ -341,6 +272,7 @@ export const TaskList: React.FC = () => {
   return (
     <TaskListLayout panelKey={isModalOpen ? 'create' : selectedTask?.id || null}>
       <div className="task-list-main" data-detail-open={!!selectedTask}>
+        {error && <p role="alert">{error}</p>}
         <div ref={toolbarContainerRef} className="w-full">
           <TaskListToolbar
             searchTerm={searchTerm}
@@ -396,8 +328,7 @@ export const TaskList: React.FC = () => {
           </div>
         )}
 
-        {taskError && <div role="alert" className="card-hub p-4 text-sm text-red-600"><p>{taskError}</p><button onClick={()=>void refetch()} className="mt-2 underline">Thử lại</button></div>}
-        {!taskError && <TaskListCollection
+        <TaskListCollection
           loading={loading}
           filteredTasks={filteredTasks}
           groupedTasks={groupedTasks}
@@ -409,12 +340,13 @@ export const TaskList: React.FC = () => {
           toggleSelectTask={toggleSelectTask}
           onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }}
           deletingIds={deletingIds}
-        />}
+        />
 
         <TaskListBulkActions
-          busy={completing}
-          onComplete={completeSelected}
           selectedTasks={selectedTasks}
+          onComplete={handleBulkComplete}
+          busy={actions.busy}
+          canComplete={canBulkComplete}
           onDelete={() => setIsBulkDeleteModalOpen(true)}
           onClear={() => setSelectedTasks([])}
         />
@@ -427,7 +359,7 @@ export const TaskList: React.FC = () => {
           parentName={selectedTask.project?.name || selectedTask.campaign?.name}
           profile={profile}
           people={allPeople as any}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {setSelectedTask(null); const query=new URLSearchParams(searchParams);query.delete("task");setSearchParams(query,{replace:true});}}
           onUpdated={updated => {
             if (updated) setSelectedTask((current: any) => ({ ...current, ...updated, id: current.id }));
             void refetch();
@@ -437,7 +369,7 @@ export const TaskList: React.FC = () => {
         <TaskDetailPanel
           task={selectedTask}
           isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {setSelectedTask(null); const query=new URLSearchParams(searchParams);query.delete("task");setSearchParams(query,{replace:true});}}
           onTaskUpdated={(updated) => {
             if (updated) setSelectedTask((current: any) => ({ ...current, ...updated }));
             refetch();

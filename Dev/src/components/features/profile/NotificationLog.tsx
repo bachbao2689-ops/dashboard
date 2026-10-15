@@ -1,9 +1,11 @@
+import {entityLink} from '../../../lib/taskTracking';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronRight, MessageSquare, CheckCircle2, Clock3, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {entityHref} from '../../../lib/taskTracking';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import {markNotificationsRead} from '../../../store/notificationStore';
+import toast from 'react-hot-toast';
 
 type NotificationEntry = {
   id: string;
@@ -63,18 +65,20 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
       setLoading(false);
     };
     void load();
+    const refreshVisible=()=>{if(document.visibilityState==='visible')void load();};
+    const fallback=setInterval(refreshVisible,30000);window.addEventListener('focus',refreshVisible);window.addEventListener('workspace:changed',refreshVisible);document.addEventListener('visibilitychange',refreshVisible);
     const channel = profile?.id ? supabase.channel(`profile-notification-log-${profile.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => { void load(); })
       .subscribe() : null;
-    return () => { active = false; if (channel) void supabase.removeChannel(channel); };
+    return () => { active=false;clearInterval(fallback);window.removeEventListener('focus',refreshVisible);window.removeEventListener('workspace:changed',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible); if (channel) void supabase.removeChannel(channel); };
   }, [includeTeam, profile?.department_id, profile?.id, profile?.role]);
 
   const subtitle = useMemo(() => includeTeam ? 'Thông báo của bạn và đội ngũ' : 'Thông báo liên quan đến bạn', [includeTeam]);
   const clearAll = async () => {
     if (!profile?.id) return;
     setLoading(true);
-    await supabase.from('notifications').delete().eq('user_id', profile.id);
-    setEntries([]);
+    try{await markNotificationsRead();setEntries(current=>current.map(entry=>entry.user_id===profile.id?{...entry,is_read:true}:entry));}
+    catch{toast.error('Chưa cập nhật được thông báo. Vui lòng thử lại.');}
     setLoading(false);
   };
 
@@ -87,7 +91,7 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
             <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            {entries.length > 0 && <button type="button" onClick={clearAll} className="rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-600 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 transition-colors">Xóa tất cả</button>}
+            {entries.some(entry=>!entry.is_read&&entry.user_id===profile?.id) && <button type="button" onClick={clearAll} className="rounded-lg bg-gray-100 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 transition-colors">Đánh dấu đã đọc</button>}
             <span className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-500 shadow-sm dark:bg-slate-700">{entries.length} gần nhất</span>{onClose && <button type="button" aria-label="Đóng thông báo nội bộ" onClick={onClose} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={18} /></button>}</div>
         </div>
       </div>
@@ -95,12 +99,13 @@ export const NotificationLog: React.FC<{ includeTeam?: boolean; onClose?: () => 
         {loading ? <p className="p-5 text-center text-sm text-gray-500">Đang tải log thông báo…</p> : entries.length === 0 ? <p className="p-5 text-center text-sm text-gray-500">Chưa có thông báo liên quan.</p> : entries.map(entry => {
           const display = labelFor(entry.type);
           const Icon = display.icon;
-          const canOpen = Boolean(entityHref(entry.entity_type,entry.entity_id));
+          const canOpen = Boolean(entityLink(entry.entity_type,entry.entity_id));
           const handleClick = () => {
             if (!canOpen) return;
+            if(entry.user_id===profile?.id)void markNotificationsRead([entry.id]).catch(()=>{});
             const handled = onOpenEntity?.(entry.entity_type!, entry.entity_id!);
             if (handled) return;
-            const href=entityHref(entry.entity_type,entry.entity_id);if(href)navigate(href);
+            const link=entityLink(entry.entity_type,entry.entity_id);if(link)navigate(link);
           };
           return <button key={entry.id} type="button" onClick={handleClick} className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${canOpen ? 'hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer' : 'cursor-default'}`}>
             <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${display.color} dark:bg-slate-700`}><Icon size={15} /></span>

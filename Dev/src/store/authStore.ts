@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
+import {disablePush} from '../services/pushNotifications';
 
 export interface StaffProfile {
   id: number;
@@ -29,6 +30,7 @@ interface AuthState {
 
 let authListenerStarted = false;
 let staffValidationStarted = false;
+let initializing=false;
 
 const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
 const nameFromEmail = (email?: string | null) => (email || 'Staff').split('@')[0];
@@ -94,7 +96,9 @@ function enrichUser(authUser: User, profile: StaffProfile | null): User {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => {
+  let sessionEpoch=0;
   const applySession = async (session: Session | null, markSignedIn = false) => {
+    const epoch=++sessionEpoch;
     const authUser = session?.user || null;
     if (!authUser) {
       set({ session: null, user: null, profile: null, loading: false });
@@ -104,6 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     try {
       const profile = await loadStaffProfile(authUser, markSignedIn);
+      if(epoch!==sessionEpoch)return;
       if (profile?.is_active === false) {
         await supabase.auth.signOut();
         set({ session: null, user: null, profile: null, loading: false });
@@ -111,6 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       }
       set({ session, profile, user: enrichUser(authUser, profile), loading: false });
     } catch (error) {
+      if(epoch!==sessionEpoch)return;
       console.error('Could not load staff profile:', error);
       // Keep an existing staff account usable even if an optional profile
       // enrichment query fails. This direct fallback is especially important
@@ -118,6 +124,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, is_active';
         const { data: fallback } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
+        if(epoch!==sessionEpoch)return;
         const profile = fallback ? { ...fallback, department_name: null } as StaffProfile : null;
         if (profile?.is_active === false) {
           await supabase.auth.signOut();
@@ -126,6 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
         set({ session, profile, user: enrichUser(authUser, profile), loading: false });
       } catch {
+        if(epoch!==sessionEpoch)return;
         set({ session, profile: null, user: enrichUser(authUser, null), loading: false });
       }
     }
@@ -138,6 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     loading: true,
 
     initialize: async () => {
+      if(initializing)return;initializing=true;
       try {
         const devSession = localStorage.getItem('kcoffee_dev_session');
         const isRememberMe = localStorage.getItem('kcoffee_auth_remember') === 'true';
@@ -155,19 +164,23 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (!authListenerStarted) {
           authListenerStarted = true;
           supabase.auth.onAuthStateChange((event, nextSession) => {
-            if (get().user?.id !== 'dev-admin-id') void applySession(nextSession, event === 'SIGNED_IN');
+            if (get().user?.id === 'dev-admin-id')return;
+            if(nextSession&&get().profile&&get().user?.id===nextSession.user.id){set({session:nextSession,user:enrichUser(nextSession.user,get().profile)});return;}
+            // Database calls must run outside the Auth callback's internal lock.
+            setTimeout(()=>void applySession(nextSession,event==='SIGNED_IN'),0);
           });
         }
         if (!staffValidationStarted) {
           staffValidationStarted = true;
           window.setInterval(() => {
-            if (get().session && get().user?.id !== 'dev-admin-id') void applySession(get().session);
-          }, 60_000);
+            if (document.visibilityState==='visible'&&get().session && get().user?.id !== 'dev-admin-id') void applySession(get().session);
+          }, 300_000);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         set({ loading: false });
       }
+      finally{initializing=false;}
     },
 
     devLogin: (rememberMe = true) => {
@@ -200,6 +213,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     signOut: async () => {
+      sessionEpoch++;
+      try { await disablePush(); } catch { /* Auth session revocation also stops queued push. */ }
       try { await supabase.auth.signOut(); }
       catch (error) { console.error('Error signing out:', error); }
       finally {

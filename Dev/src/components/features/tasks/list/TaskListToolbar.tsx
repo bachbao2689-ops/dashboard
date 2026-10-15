@@ -1,4 +1,5 @@
 import React from 'react';
+import {useMobileReadOnly} from '../../../../hooks/useMobileReadOnly';
 import { Plus, X } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/translations';
 import {
@@ -69,6 +70,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   canCreateTask
 }) => {
   const { t, lang } = useTranslation();
+  const readOnly=useMobileReadOnly();
   const isEn = lang === 'en';
 
   const statusOptions = [
@@ -77,6 +79,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
     { key: 'in_progress', label: isEn ? 'In Progress' : 'Đang làm', dot: 'bg-sky-400' },
     { key: 'review', label: isEn ? 'In Review' : 'Đang duyệt', dot: 'bg-amber-400' },
     { key: 'done', label: isEn ? 'Done' : 'Hoàn thành', dot: 'bg-emerald-500' },
+    { key: 'cancelled', label: isEn ? 'Cancelled' : 'Đã hủy', dot: 'bg-gray-400' },
     { key: 'overdue', label: isEn ? 'Overdue' : 'Quá hạn', dot: 'bg-rose-500' }
   ];
 
@@ -162,7 +165,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
         )}
 
         {/* 8. Add New Task Button */}
-        {canCreateTask && (
+        {canCreateTask && !readOnly && (
           <button
             type="button"
             onClick={onCreate}

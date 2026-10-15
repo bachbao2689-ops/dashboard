@@ -5,12 +5,14 @@ import {Avatar} from '../../common/Avatar';
 import {useAuthStore} from '../../../store/authStore';
 import {useTranslation} from '../../../i18n/translations';
 import {useTaskComments} from '../../../hooks/useTaskComments';
+import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import type {CommentTarget} from '../../../services/taskComments';
 import '../../../styles/task-comments.css';
 
 type Person={id:number;name:string};
 interface Props {target:CommentTarget;people:Person[];focusRequest?:string;onSent?:(body:string,mentions:number[])=>void|Promise<void>}
 export function TaskComments({target,people,focusRequest,onSent}:Props) {
+  const readOnly=useMobileReadOnly();
   const profile=useAuthStore(state=>state.profile);
   const {t,lang}=useTranslation();const en=lang==='en';
   const thread=useTaskComments(target,profile?.id);
@@ -32,7 +34,7 @@ export function TaskComments({target,people,focusRequest,onSent}:Props) {
     input.current?.focus();
   };
   const send=async()=>{
-    if(thread.saving||!text.trim())return;
+    if(readOnly||thread.saving||!text.trim())return;
     const draft=text,body=text.trim();
     const ids=mentions.filter(person=>body.includes(`@${person.name.replace(/\s+/g,'')}`)).map(person=>person.id);
     try {
@@ -62,15 +64,15 @@ export function TaskComments({target,people,focusRequest,onSent}:Props) {
             </div>
           </div>
           {mine&&<Avatar name={author} src={comment.author?.avatar_url||undefined} className="w-7 h-7 text-[10px] shrink-0 mb-1"/>}
-          {person&&<button type="button" onClick={()=>chooseMention(person,true)} className="p-1.5 rounded-lg text-gray-400 hover:text-primary" title={en?'Reply and mention':'Trả lời và nhắc tên'}><Reply size={14}/></button>}
+          {!readOnly&&person&&<button type="button" onClick={()=>chooseMention(person,true)} className="p-1.5 rounded-lg text-gray-400 hover:text-primary" title={en?'Reply and mention':'Trả lời và nhắc tên'}><Reply size={14}/></button>}
         </article>;
       })}
     </div>
-    <div className="relative mt-4">
+    {!readOnly&&<div className="relative mt-4">
       {options.length>0&&<div className="task-comment-mentions">{options.map(person=><button type="button" key={person.id} onMouseDown={event=>event.preventDefault()} onClick={()=>chooseMention(person)} className="block w-full p-2 text-sm text-left hover:bg-blue-50 dark:hover:bg-slate-700">@{person.name}</button>)}</div>}
       <textarea ref={input} value={text} onChange={event=>setText(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();void send();}}} rows={3} placeholder={t('common.commentPlaceholder')} aria-label={en?'Write a task comment':'Viết bình luận công việc'} className="task-comment-input"/>
       <button type="button" disabled={!text.trim()||thread.saving||!profile?.id} onClick={()=>void send()} className="task-comment-send"><Send size={16}/>{thread.saving?(en?'Sending…':'Đang gửi…'):t('common.sendComment')}</button>
       <p className="mt-2 text-[11px] text-gray-400"><MessageSquare size={11} className="inline mr-1"/>{en?'Enter to send · Shift+Enter for a new line':'Enter để gửi · Shift+Enter để xuống dòng'}</p>
-    </div>
+    </div>}
   </section>;
 }

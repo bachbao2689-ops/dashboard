@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useTeamWorkload } from '../hooks/useTeamWorkload';
-import type { TeamMemberWorkload } from "../hooks/useTeamWorkload";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTranslation } from '../i18n/translations';
+import { useNavigate } from 'react-router-dom';
+import {taskLink} from '../lib/taskTracking';
 import { Users, AlertTriangle, Activity, Calendar } from 'lucide-react';
 
 export const TeamWorkload: React.FC = () => {
   const { t } = useTranslation();
-  const { workloads, isLoading } = useTeamWorkload();
-  const [selectedMember, setSelectedMember] = useState<TeamMemberWorkload | null>(null);
+  const navigate=useNavigate();
+  const { workloads, isLoading, error } = useTeamWorkload();
+  const [selectedMemberId, setSelectedMemberId] = useState<string|null>(null);
+  const selectedMember=workloads.find(w=>w.id===selectedMemberId);
 
   if (isLoading) {
     return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading team workload...</div>;
@@ -17,7 +20,7 @@ export const TeamWorkload: React.FC = () => {
   const totalMembers = workloads.length;
   const totalTasks = workloads.reduce((sum, w) => sum + w.activeTasksCount, 0);
   const averageLoad = totalMembers > 0 ? (totalTasks / totalMembers).toFixed(1) : '0';
-  const overloadedCount = workloads.filter(w => w.capacityPercentage >= 80).length;
+  const overloadedCount = workloads.filter(w => w.capacityPercentage > 100).length;
 
   const chartData = workloads.map(w => ({
     name: w.name,
@@ -50,6 +53,8 @@ export const TeamWorkload: React.FC = () => {
         </div>
       </div>
 
+      {error && <p role="alert">{error}</p>}
+      <p className="text-xs text-gray-500">Tải ước tính: 5 công việc đang mở tương ứng 100%; chưa có dữ liệu giờ làm thực tế.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="glass-panel p-4 rounded-xl flex items-center gap-4">
           <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -115,7 +120,7 @@ export const TeamWorkload: React.FC = () => {
                 <div 
                   key={member.id} 
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedMember?.id === member.id ? 'bg-gray-50 dark:bg-gray-800 border-blue-500' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                  onClick={() => setSelectedMember(member === selectedMember ? null : member)}
+                  onClick={() => setSelectedMemberId(member.id === selectedMemberId ? null : member.id)}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">{member.name}</span>
@@ -149,7 +154,7 @@ export const TeamWorkload: React.FC = () => {
                           {member.tasks.map(task => (
                             <li key={task.id} className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
                               <div className="w-1.5 h-1.5 rounded-full bg-[#002e6d]" />
-                              <span className="truncate">{task.title || `Task #${task.id.substring(0,6)}`}</span>
+                              <button type="button" onClick={e=>{e.stopPropagation();navigate(taskLink(task.id));}} className="truncate text-left">{task.title}</button>
                             </li>
                           ))}
                         </ul>

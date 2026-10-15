@@ -38,26 +38,20 @@ export function useProfileCalendar(targetUserId?: string | number) {
       if (!profileId || !active) { setLoading(false); return; }
       if (loadingNow) { pending = true; return; }
       loadingNow = true;
-      setLoading(true);
       try {
-        const [mentionRows, campaignMemberships, legacyMentions] = await Promise.all([
+        const [mentionRows, legacyMentions, campaignMemberships] = await Promise.all([
           allRows(supabase.from('comments').select('id,task_id').contains('mentions', [Number(profileId)]).order('id')),
-          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id')),
-          allRows(supabase.from('activity_log').select('entity_type,entity_id').eq('action','comment').in('entity_type',['project_subtask','campaign_subtask']).contains('metadata',{mentions:[Number(profileId)]}).order('id'))
+          allRows(supabase.from('activity_log').select('entity_type,entity_id').eq('action','comment').in('entity_type',['project_subtask','campaign_subtask']).contains('metadata',{mentions:[Number(profileId)]}).order('id')),
+          allRows(supabase.from('campaign_members').select('campaign_id').eq('user_id', profileId).order('campaign_id'))
         ]);
         const mentionedIds = [...new Set(mentionRows.map(r => r.task_id))];
-        const subtaskQuery=(kind:string,table:string)=>{
-          const ids=[...new Set(legacyMentions.filter(r=>r.entity_type===kind).map(r=>r.entity_id))];
-          let q=supabase.from(table).select('*,assignee:assignee_id(name,avatar_url)').neq('status','deleted').neq('status','archived');
-          return ids.length?q.or(`assignee_id.eq.${profileId},id.in.(${ids.join(',')})`):q.eq('assignee_id',profileId);
-        };
         let personalTaskQuery = supabase.from('tasks').select('*,project:project_id(id,name),campaign:campaign_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)');
         personalTaskQuery = mentionedIds.length ? personalTaskQuery.or(`assignee_id.eq.${profileId},id.in.(${mentionedIds.join(',')})`) : personalTaskQuery.eq('assignee_id', profileId);
         const [tasks, memberships, projectSubtasks, campaignSubtasks, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
           allRows(personalTaskQuery.order('id')),
           allRows(supabase.from('project_members').select('project_id,user:user_id(name)').eq('user_id', profileId).order('project_id')),
-          allRows(subtaskQuery('project_subtask','project_subtasks').order('id')),
-          allRows(subtaskQuery('campaign_subtask','campaign_subtasks').order('id')),
+          allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name,avatar_url)').or(`assignee_id.eq.${profileId}${legacyMentions.filter(m=>m.entity_type==='project_subtask').length?`,id.in.(${legacyMentions.filter(m=>m.entity_type==='project_subtask').map(m=>m.entity_id).join(',')})`:''}`).neq('status', 'deleted').order('id')),
+          allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').or(`assignee_id.eq.${profileId}${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').length?`,id.in.(${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').map(m=>m.entity_id).join(',')})`:''}`).neq('status', 'deleted').order('id')),
           allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').eq('created_by', profileId).order('id')),
           allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
           supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
@@ -66,10 +60,10 @@ export function useProfileCalendar(targetUserId?: string | number) {
         const projectIds = [...new Set([...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
         const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').in('id', projectIds).order('id')) : [];
         const linkedProjectMembers = projectIds.length ? await allRows(supabase.from('project_members').select('project_id,user:user_id(name)').in('project_id', projectIds).order('project_id')) : [];
-        const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()];
+        const projects = [...new Map([...ownedProjects, ...linkedProjects].map(row => [row.id, row])).values()].filter(row=>isCalendarVisible(row.status));
         const campaignIds = [...new Set([...campaignMemberships.map(row => row.campaign_id), ...projects.map(row => row.campaign_id), ...tasks.map(row => row.campaign_id), ...campaignSubtasks.map(row => row.campaign_id)].filter(Boolean))];
         const linkedCampaigns = campaignIds.length ? await allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').in('id', campaignIds).order('id')) : [];
-        const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()];
+        const campaigns = [...new Map([...ownedCampaigns, ...linkedCampaigns].map(row => [row.id, row])).values()].filter(row=>isCalendarVisible(row.status));
         const projectMap = new Map(projects.map(row => [row.id, row]));
         const campaignMap = new Map(campaigns.map(row => [row.id, row]));
         const projectMemberNames = new Map<string, string[]>();
@@ -85,18 +79,18 @@ export function useProfileCalendar(targetUserId?: string | number) {
           return {
             key: `${kind}:${record.id}`, id: record.id, kind, title: record.title || record.name,
             status: record.status, priority: record.priority, description: record.description || record.objective,
-            ...calendarDates(record, kind), parentId: parent?.id, parentName: parent?.name || record.project?.name || record.campaign?.name,
+            ...calendarDates(record, kind), parentId: parent?.id, parentName: parent?.name || record.project?.name,
             campaignId: record.campaign_id || parent?.campaign_id,
             owner: record.assignee?.name || record.lead?.name || record.creator?.name,
             record: { ...record, memberNames: kind === 'project' ? projectMemberNames.get(record.id) || [] : undefined, campaign: campaignMap.get(record.campaign_id) || null },
           };
         };
         const items = [
-          ...tasks.map(row => makeItem(row, 'task')),
+          ...tasks.filter(row=>isCalendarVisible(row.status)&&(!row.project_id||projectMap.has(row.project_id))&&(!row.campaign_id||campaignMap.has(row.campaign_id))).map(row => makeItem(row, 'task')),
           ...projects.map(row => makeItem(row, 'project')),
           ...campaigns.map(row => makeItem(row, 'campaign')),
-          ...projectSubtasks.filter(row => isCalendarVisible(row.status)).map(row => makeItem(row, 'project_subtask')),
-          ...campaignSubtasks.filter(row => isCalendarVisible(row.status)).map(row => makeItem(row, 'campaign_subtask')),
+          ...projectSubtasks.filter(row => isCalendarVisible(row.status) && projectMap.has(row.project_id)).map(row => makeItem(row, 'project_subtask')),
+          ...campaignSubtasks.filter(row => isCalendarVisible(row.status) && campaignMap.has(row.campaign_id)).map(row => makeItem(row, 'campaign_subtask')),
         ];
         if (active) { setSnapshot({ userId: profileId, items, notifications: notificationResult.data || [], updatedAt: new Date() }); setError(null); }
       } catch (cause) {
@@ -107,15 +101,25 @@ export function useProfileCalendar(targetUserId?: string | number) {
         if (active) { setLoading(false); if (pending) { pending = false; void load(); } }
       }
     };
-    const schedule = () => { clearTimeout(debounce); debounce = setTimeout(() => void load(), 250); };
+    const schedule = () => { clearTimeout(debounce); if(document.visibilityState==='hidden')return;debounce = setTimeout(() => void load(), 400); };
     const onVisible = () => { if (document.visibilityState === 'visible') schedule(); };
     reloadRef.current = schedule;
+    setLoading(true);
     void load();
     const channel = profileId ? supabase.channel(`profile-calendar-${profileId}`) : null;
-    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'notifications', 'comments', 'activity_log', 'workflow_phase_members'].forEach(table => {
+    ['tasks', 'projects', 'project_members', 'project_subtasks', 'campaigns', 'campaign_members', 'campaign_subtasks', 'comments', 'activity_log', 'workflow_phase_members'].forEach(table => {
       channel?.on('postgres_changes', { event: '*', schema: 'public', table }, schedule);
     });
-    channel?.subscribe();
+    let connectedOnce=false;
+    channel?.subscribe(status=>{if(status==='SUBSCRIBED'){if(connectedOnce)schedule();connectedOnce=true;}});
+    let notificationTimer:ReturnType<typeof setTimeout>;
+    const notificationChannel=profileId?supabase.channel(`calendar-notifications-${profileId}`).on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${profileId}`},()=>{
+      clearTimeout(notificationTimer);notificationTimer=setTimeout(async()=>{
+        if(!active||document.visibilityState==='hidden')return;
+        const {data,error}=await supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id',profileId).order('created_at',{ascending:false}).limit(50);
+        if(active&&!error)setSnapshot(previous=>previous.userId===profileId?{...previous,notifications:data||[]}:previous);
+      },300);
+    }).subscribe():null;
     // Reconnect/focus and polling also cover tables not enabled for Realtime yet.
     const interval = setInterval(onVisible, 60000);
     window.addEventListener('focus', onVisible);
@@ -123,13 +127,16 @@ export function useProfileCalendar(targetUserId?: string | number) {
     window.addEventListener('projects:changed', schedule);
     window.addEventListener('campaigns:changed', schedule);
     window.addEventListener('tasks:changed', schedule);
+    window.addEventListener('workspace:changed',schedule);
     return () => {
       active = false; clearTimeout(debounce); clearInterval(interval);
+      clearTimeout(notificationTimer);if(notificationChannel)void supabase.removeChannel(notificationChannel);
       window.removeEventListener('focus', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('projects:changed', schedule);
       window.removeEventListener('campaigns:changed', schedule);
       window.removeEventListener('tasks:changed', schedule);
+      window.removeEventListener('workspace:changed',schedule);
       if (channel) void supabase.removeChannel(channel);
     };
   }, [profileId]);

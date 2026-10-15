@@ -1,9 +1,9 @@
+import {completionMetrics,taskOpen} from '../../../lib/taskTracking';
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, PlayCircle, UsersRound, Info } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
 import { useTranslation } from '../../../i18n/translations';
 
-const isDone = (status?: string | null) => ['done', 'completed', 'complete', 'cancelled', 'canceled'].includes((status || '').toLowerCase());
 
 interface MetricTooltip {
   title: string;
@@ -31,13 +31,10 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
   inThreeDays.setDate(now.getDate() + 3);
 
   const manager = role === 'manager';
-  const completed = tasks.filter(task => isDone(task.status));
-  const completedOnTime = completed.filter(task => !task.due_date || new Date(task.updated_at) <= new Date(`${task.due_date}T23:59:59`)).length;
-  const cycleDays = completed.length
-    ? completed.reduce((sum, task) => sum + Math.max(0, new Date(task.updated_at).getTime() - new Date(task.created_at).getTime()), 0) / completed.length / 86_400_000
-    : 0;
-  const todayCount = tasks.filter(task => !isDone(task.status) && task.due_date && new Date(task.due_date).toDateString() === now.toDateString()).length;
-  const dueSoon = tasks.filter(task => !isDone(task.status) && task.due_date && new Date(task.due_date) > now && new Date(task.due_date) <= inThreeDays).length;
+  const completion=completionMetrics(tasks);
+  const cycleDays=completion.averageDays;
+  const todayCount = tasks.filter(task => taskOpen(task) && task.due_date && new Date(task.due_date).toDateString() === now.toDateString()).length;
+  const dueSoon = tasks.filter(task => taskOpen(task) && task.due_date && new Date(task.due_date) > now && new Date(task.due_date) <= inThreeDays).length;
 
   useEffect(() => {
     if (!activeTooltip) return;
@@ -50,7 +47,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
     {
       id: 'onTime',
       label: t('profile.onTime'),
-      value: completed.length ? `${Math.round(completedOnTime / completed.length * 100)}%` : '—',
+      value: completion.onTime==null?'—':`${completion.onTime}%`,
       icon: <CheckCircle2 size={14} />,
       tone: 'text-teal-600',
       tooltip: {
@@ -82,7 +79,7 @@ export const ProfileKpis: React.FC<{ role: string }> = ({ role }) => {
     {
       id: 'velocity',
       label: t('profile.velocity'),
-      value: completed.length ? `${cycleDays.toFixed(1)} ${t('profile.daysUnit')}` : '—',
+      value: cycleDays==null?'—':`${cycleDays.toFixed(1)} ${t('profile.daysUnit')}`,
       icon: <Clock3 size={14} />,
       tone: 'text-blue-600',
       tooltip: {

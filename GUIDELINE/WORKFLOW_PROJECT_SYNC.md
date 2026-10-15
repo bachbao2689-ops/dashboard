@@ -56,3 +56,25 @@ Kiểm tra database nằm trong transaction và luôn rollback: quyền theo sco
 - RPC `workflow_task_comment_counts` đọc số lượng và thời điểm mới nhất dưới RLS của người đăng nhập (security invoker), không dùng bộ đếm cache có thể cũ khi xóa. Migration: `20261013160019_workflow_comment_tracking.sql`.
 - Thread cập nhật qua Realtime, reconnect, focus và dự phòng 30 giây. Đổi task loại phản hồi cũ; refresh nền không làm mất bản nháp. Gửi lỗi giữ nội dung, khóa gửi khi đang xử lý; Enter gửi, Shift+Enter xuống dòng.
 - Kiểm tra database: `DATABASE_URL='<connection string>' node scripts/testWorkflowComments.mjs`. Các fixture đều rollback, kiểm tra ba loại task, quyền tác giả/scope, count khi sửa/xóa và giữ thread khi gắn chặng.
+
+## Phạm vi tracking hiện tại (14/10/2026)
+
+Theo brief mới nhất: **Projects/Campaigns ↔ All Tasks ↔ Workflow Management / Team Workload ↔ Dashboard ↔ Profile**. Các chỉnh sửa trực tiếp ở Tab Reports, Phòng ban, Kho thiết bị và Duyệt Mượn/Trả đã được rút khỏi bản này để tiếp tục develop sau.
+
+- `readWorkspaceTasks` phân trang ba nguồn Tasks, Project Subtasks, Campaign Subtasks. Các màn trong phạm vi dùng cùng ID (`UUID`, `ps-UUID`, `cs-UUID`), timestamp và parent scope. Parent ẩn/xóa được lọc thống nhất.
+- Project Subtask kế thừa ưu tiên từ Project. Campaign chưa có trường ưu tiên nên hiển thị `—`, không tự gán Medium; mô tả lấy đúng metadata `details_updated`. Đổi mô tả làm mới nguồn tracking qua Realtime.
+- KPI loại công việc đã hủy; deadline vẫn đúng hạn trong ngày hết hạn. Chart hoàn thành/cycle time dùng `completed_at`, không lấy thời gian sửa mô tả. Công việc hoàn thành cũ thiếu timestamp không được gán ngày giả.
+- Workload dùng số task/subtask đang mở; tỷ lệ là ước tính được ghi rõ: 5 task/người = 100%.
+- Panel Project/Campaign mở từ Profile dùng cùng tiến độ Workflow; bấm task/subtask mở đúng ID trong All Tasks. Bình luận Project đọc/ghi `project_comments.author_id`, Campaign dùng `activity_log`; lịch tạo subtask lấy từ parent và giới hạn trong khoảng đó.
+- Profile Calendar theo dõi task/subtask được giao hoặc được mention. Report cá nhân đọc/lưu cả ba loại trong `activity_log`, tách theo kind và UUID gốc. `tasksForProfileWeek` dành riêng cho Profile/Dashboard; helper của Tab Reports giữ luồng cũ.
+- Link thông báo công việc mở đúng task/subtask hoặc Project/Campaign. Realtime có refresh khi reconnect/focus và dự phòng cho bảng chưa publish.
+
+### Migration đang chờ áp dụng
+
+**Theo lựa chọn của người dùng: chỉ sửa source; chưa áp dụng migration lên Supabase dùng chung.**
+
+`Dev/supabase/migrations/20261014105438_workspace_tracking_reports.sql` chứa source trigger timestamp đã có, RPC `save_task_weekly_reports` và `complete_tracked_tasks` (security invoker, RLS hiện tại, không backfill dữ liệu). Hai RPC xử lý batch trong một transaction: lỗi một task thì toàn bộ batch rollback. Đã kiểm tra với fixture trong transaction rollback.
+
+Trong khi chưa áp dụng: report cá nhân thông thường dùng luồng ghi log hiện có với đúng kind/UUID/author/workspace; hoàn thành hàng loạt và hoàn thành từ Report chưa bật. Hoàn thành từng công việc trong panel chi tiết vẫn dùng luồng hiện có. Sau khi migration được phê duyệt và áp dụng, tải lại trang để phát hiện RPC và bật thao tác batch.
+
+Kiểm tra source: `cd Dev && npm run build && node --test tests/taskTracking.test.mjs tests/workflowHub.test.mjs tests/workflowMetrics.test.mjs tests/workflowCalendar.test.mjs`. Kiểm tra migration: `DATABASE_URL='<connection string>' node scripts/testTrackingReports.mjs` (DDL/fixture đều rollback; không áp dụng migration thật).

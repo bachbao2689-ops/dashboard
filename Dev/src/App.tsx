@@ -1,23 +1,24 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
+import {syncPush} from './services/pushNotifications';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
+const Login=lazy(()=>import('./pages/auth/Login').then(module=>({default:module.Login})));
+const Register=lazy(()=>import('./pages/auth/Register').then(module=>({default:module.Register})));
 import { DashboardLayout } from './components/layouts/DashboardLayout';
-import { Overview } from './pages/Overview';
-import { WorkflowManagement } from './pages/WorkflowManagement';
-import { Dashboard } from './pages/Dashboard';
-import { Departments2 } from './pages/Departments2';
-import { TaskList } from './pages/TaskList';
-import { AssetInventory } from './pages/AssetInventory';
-import { BorrowRequests } from './pages/BorrowRequests';
-import { MyTasks } from './pages/MyTasks';
-import { TeamWorkload } from './pages/TeamWorkload';
-import { Reports } from './pages/Reports';
-import { MemberManagement } from './pages/MemberManagement';
-import { Projects } from './pages/Projects';
+const Overview=lazy(()=>import('./pages/Overview').then(module=>({default:module.Overview})));
+const WorkflowManagement=lazy(()=>import('./pages/WorkflowManagement').then(module=>({default:module.WorkflowManagement})));
+const Dashboard=lazy(()=>import('./pages/Dashboard').then(module=>({default:module.Dashboard})));
+const Departments2=lazy(()=>import('./pages/Departments2').then(module=>({default:module.Departments2})));
+const TaskList=lazy(()=>import('./pages/TaskList').then(module=>({default:module.TaskList})));
+const AssetInventory=lazy(()=>import('./pages/AssetInventory').then(module=>({default:module.AssetInventory})));
+const BorrowRequests=lazy(()=>import('./pages/BorrowRequests').then(module=>({default:module.BorrowRequests})));
+const MyTasks=lazy(()=>import('./pages/MyTasks').then(module=>({default:module.MyTasks})));
+const TeamWorkload=lazy(()=>import('./pages/TeamWorkload').then(module=>({default:module.TeamWorkload})));
+const Reports=lazy(()=>import('./pages/Reports').then(module=>({default:module.Reports})));
+const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>({default:module.MemberManagement})));
+const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 import { useLocation } from 'react-router-dom';
 
 function RootRedirect() {
@@ -49,16 +50,18 @@ function RootRedirect() {
 
 function App() {
   const initialize = useAuthStore(state => state.initialize);
+  const session=useAuthStore(state=>state.session);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+  useEffect(()=>{if(session?.user.id)void syncPush(session.user.id).catch(()=>{});},[session?.user.id,session?.access_token]);
 
   return (
     <>
       <Toaster position="top-right" />
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={<div className="p-8 animate-pulse text-gray-500" role="status">Đang tải…</div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={
@@ -87,7 +90,7 @@ function App() {
               </div>
             } />
           </Route>
-        </Routes>
+        </Routes></Suspense>
       </BrowserRouter>
     </>
   );

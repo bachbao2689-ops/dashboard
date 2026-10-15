@@ -1,28 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { workflowLink } from '../../../lib/workflowHub';
+import { inputDate } from '../../../lib/workflowHub';
+import { taskKey, taskLink } from '../../../lib/taskTracking';
+import { workflowDateError } from '../../../lib/workflowCalendar';
+import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
+import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
+import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
 import { X, Edit3, CheckCircle2, MessageSquare, Trash2, Plus, Users, Send } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
-export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: { item: any, kind: 'project' | 'campaign', onClose: () => void, onUpdated?: () => void }) {
+type PanelProps = {item:any; kind:'project' | 'campaign'; onClose:() => void; onUpdated?:() => void};
+export function ProjectCampaignDetailPanel(props:PanelProps) {
+  const profile = useAuthStore(s => s.profile);
+  return <ProjectCampaignDetailContent key={`${profile?.id}:${profile?.role}:${profile?.department_id}:${props.kind}:${props.item.id}`} {...props} />;
+}
+function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const profile = useAuthStore(s => s.profile);
-  const [data, setData] = useState<any>(item);
-  const [canManage, setCanManage] = useState(false);
-  useEffect(() => {
-    let active = true; setCanManage(false);
-    supabase.rpc('workflow_root', { k: kind, e: item.id }).then(({ data }) => { if (active) setCanManage(data === true); });
-    return () => { active = false; };
-  }, [kind, item.id, profile?.id]);
-  const [subtasks, setSubtasks] = useState<any[]>([]);
-  const [comments, setComments] = useState<any[]>([]);
+  const details = useProjectCampaignDetails(kind, item.id);
+  const { profile, subtasks, comments, people, busy } = details;
+  const readOnly=useMobileReadOnly();
+  const canManage=details.canManage&&!readOnly;
+  const data = details.data || item;
+  const hub = useWorkflowHub();
   const [commentText, setCommentText] = useState('');
   const [width, setWidth] = useState(500);
   const [resizing, setResizing] = useState(false);
@@ -41,8 +48,6 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
   const [newSubtaskOwner, setNewSubtaskOwner] = useState('');
   const [newSubtaskDue, setNewSubtaskDue] = useState('');
 
-  const [people, setPeople] = useState<any[]>([]);
-
   useEffect(() => {
     if (!resizing) return;
     const move = (e: MouseEvent) => setWidth(Math.max(400, Math.min(window.innerWidth - e.clientX, 800)));
@@ -51,95 +56,46 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
     return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
   }, [resizing]);
 
-  const loadData = async () => {
-    
-    try {
-      const pRes = await supabase.from('users').select('id,name').eq('is_active', true);
-      if (pRes.data) setPeople(pRes.data);
-
-      if (kind === 'project') {
-        const [dRes, sRes, cRes] = await Promise.all([
-          supabase.from('projects').select('*, creator:created_by(name,avatar_url)').eq('id', item.id).single(),
-          supabase.from('project_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('project_id', item.id).neq('status', 'deleted'),
-          supabase.from('project_comments').select('*, author:user_id(name,avatar_url)').eq('project_id', item.id).order('created_at', { ascending: true })
-        ]);
-        if (dRes.data) setData(dRes.data);
-        if (sRes.data) setSubtasks(sRes.data);
-        if (cRes.data) setComments(cRes.data);
-      } else {
-        const [dRes, sRes, cRes] = await Promise.all([
-          supabase.from('campaigns').select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').eq('id', item.id).single(),
-          supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', item.id).neq('status', 'deleted'),
-          supabase.from('campaign_comments').select('*, author:user_id(name,avatar_url)').eq('campaign_id', item.id).order('created_at', { ascending: true })
-        ]);
-        if (dRes.data) setData(dRes.data);
-        if (sRes.data) setSubtasks(sRes.data);
-        if (cRes.data) setComments(cRes.data);
-      }
-    } catch (e) {}
-    
-  };
-
-  useEffect(() => { loadData(); }, [item.id, kind]);
-
   const saveEdit = async () => {
-    if (!title.trim()) return;
-    const table = kind === 'project' ? 'projects' : 'campaigns';
-    const payload = kind === 'project' 
-      ? { name: title.trim(), description: desc, start_date: start || null, due_date: due || null }
-      : { name: title.trim(), objective: desc, start_date: start || null, end_date: due || null };
-    
-    const { error } = await supabase.from(table).update(payload).eq('id', item.id);
-    if (!error) {
-      toast.success('Đã lưu thay đổi');
-      setEditMode(false);
-      loadData();
-      onUpdated?.();
+    if (!title.trim() || !canManage) return;
+    const startDate = inputDate(start), dueDate = inputDate(due);
+    if (startDate && dueDate && startDate > dueDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu.');
+    const payload = kind === 'project'
+      ? { name:title.trim(), description:desc, start_date:startDate, due_date:dueDate }
+      : { name:title.trim(), objective:desc, start_date:startDate, end_date:dueDate };
+    if (await details.mutate(() => supabase.from(`${kind}s`).update(payload).eq('id', item.id).select('id').single(), 'Đã lưu thay đổi')) {
+      setEditMode(false); onUpdated?.();
     }
   };
 
   const completeItem = async () => {
-    const table = kind === 'project' ? 'projects' : 'campaigns';
-    const { error } = await supabase.from(table).update({ status: 'completed' }).eq('id', item.id);
-    if (!error) {
-      toast.success('Đã hoàn thành');
-      loadData();
-      onUpdated?.();
-    }
+    if (!canManage) return;
+    if (await details.mutate(() => supabase.from(`${kind}s`).update({status:'completed'}).eq('id', item.id).select('id').single(), 'Đã hoàn thành')) onUpdated?.();
   };
 
   const addComment = async () => {
-    if (!commentText.trim()) return;
-    const table = kind === 'project' ? 'project_comments' : 'campaign_comments';
-    const payload: any = kind === 'project' ? { project_id: item.id, user_id: profile?.id, body: commentText } : { campaign_id: item.id, user_id: profile?.id, body: commentText };
-    const { error } = await supabase.from(table).insert(payload);
-    if (!error) {
-      setCommentText('');
-      loadData();
-    }
+    const body = commentText.trim();
+    if (readOnly||!body || !profile?.id) return;
+    if (await details.mutate(() => kind === 'project'
+      ? supabase.from('project_comments').insert({project_id:item.id, author_id:profile.id, body}).select('id').single()
+      : supabase.from('activity_log').insert({workspace_id:data.workspace_id, user_id:profile.id, entity_type:'campaign', entity_id:item.id, action:'comment', metadata:{body}}).select('id').single(), 'Đã gửi bình luận')) setCommentText(current => current.trim() === body ? '' : current);
   };
 
   const addSubtask = async () => {
-    if (!newSubtaskTitle.trim()) return;
-    const table = kind === 'project' ? 'project_subtasks' : 'campaign_subtasks';
-    const payload: any = { title: newSubtaskTitle.trim(), due_date: newSubtaskDue || null, status: 'todo' };
-    if (newSubtaskOwner) payload.assignee_id = newSubtaskOwner;
-    if (kind === 'project') payload.project_id = item.id; else payload.campaign_id = item.id;
-    
-    const { error } = await supabase.from(table).insert(payload);
-    if (!error) {
-      toast.success('Đã thêm subtask');
-      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setShowSubtaskForm(false);
-      loadData();
-      onUpdated?.();
+    if (!newSubtaskTitle.trim() || !canManage) return;
+    const startDate = data.start_date || '', dueDate = inputDate(newSubtaskDue) || data.due_date || data.end_date || '';
+    const bounds = {start:startDate, due:data.due_date || data.end_date || ''};
+    if (workflowDateError(startDate, dueDate, bounds)) return toast.error('Lịch subtask phải nằm trong lịch Project/Campaign.');
+    const payload = {title:newSubtaskTitle.trim(), start_date:startDate || null, due_date:dueDate || null, status:'todo',
+      assignee_id:newSubtaskOwner ? Number(newSubtaskOwner) : null, [`${kind}_id`]:item.id};
+    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).insert(payload).select('id').single(), 'Đã thêm subtask')) {
+      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setShowSubtaskForm(false); onUpdated?.();
     }
   };
 
   const removeSubtask = async (id: string) => {
-    const table = kind === 'project' ? 'project_subtasks' : 'campaign_subtasks';
-    await supabase.from(table).update({ status: 'deleted' }).eq('id', id);
-    loadData();
-    onUpdated?.();
+    if (!canManage) return;
+    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({status:'deleted'}).eq('id', id).select('id').single(), 'Đã xóa subtask')) onUpdated?.();
   };
 
   const shadowClass = kind === 'project' ? 'shadow-drawer-project border-violet-500/20' : 'shadow-drawer-campaign border-amber-500/20';
@@ -164,24 +120,25 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
       </div>
       
       <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-        {editMode ? (
+        {details.error && <p role="alert" className="mb-4 text-sm text-red-500">{details.error}<button onClick={() => void details.refresh()} className="ml-2 underline">Thử lại</button></p>}
+        {!details.data ? <p role="status" className="text-sm text-gray-500">{details.loading ? 'Đang tải Project/Campaign…' : ''}</p> : editMode&&!readOnly ? (
           <div className="space-y-5">
             <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="detail-panel-start" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-start', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
-              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="detail-panel-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-due', mode: 'single' }, e)} value={due} onChange={e=>setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
+              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="detail-panel-start" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-start', mode: 'single', maxDate: due || undefined }, e)} value={start ? dateValue(start) : ''} onChange={e=>setStart(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
+              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="detail-panel-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-due', mode: 'single', minDate: start || undefined }, e)} value={due ? dateValue(due) : ''} onChange={e=>setDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
             </div>
             <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.description')}</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div>
-            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div>
+            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button disabled={busy} onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div>
           </div>
         ) : (
           <div className="space-y-7">
             <div className="flex gap-2"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{data.status || 'planning'}</span></div>
             <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm">
-              <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.creator?.name || data.lead?.name || '---'} src={data.creator?.avatar_url || data.lead?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.creator?.name || data.lead?.name || '---'}</span></div></div>
+              <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.lead?.name || data.creator?.name || '---'} src={data.lead?.avatar_url || data.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.lead?.name || data.creator?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
-            <button onClick={() => navigate(workflowLink(kind, item.id))} className="w-full rounded-xl border border-blue-100 dark:border-slate-700 py-2.5 text-sm font-semibold">Mở Workflow Management →</button>
+            <WorkflowTrackingSummary kind={kind} id={item.id} hub={hub} onOpenTask={task => navigate(taskLink(task.id))} />
             <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || t('tasks.noDescription')}</div></section>
             
             <section>
@@ -190,25 +147,25 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
                 {subtasks.map(sub => (
                   <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm flex justify-between items-start">
                     <div>
-                      <b className="text-gray-900 dark:text-white">{sub.title}</b>
+                      <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className="text-left font-bold text-gray-900 dark:text-white">{sub.title}</button>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5"><Avatar name={sub.assignee?.name || t('common.unassigned')} src={sub.assignee?.avatar_url} className="w-4 h-4 text-[9px]" /> {sub.assignee?.name || t('common.unassigned')}</span>
                         {sub.due_date && <span className="font-bold text-red-600 dark:text-red-400">{dateValue(sub.due_date)}</span>}
                       </div>
                     </div>
-                    <button onClick={() => removeSubtask(sub.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
+                    <button aria-label={`Xóa ${sub.title}`} disabled={busy || !canManage} onClick={() => removeSubtask(sub.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
                   </div>
                 ))}
               </div>
-              {!showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
-              {showSubtaskForm && (
+              {canManage && !showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
+              {canManage && showSubtaskForm && (
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
                   <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
                   <div className="grid grid-cols-2 gap-2">
                     <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single' }, e)} value={newSubtaskDue} onChange={e=>setNewSubtaskDue(e.target.value)} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm w-full cursor-pointer"/></div>
+                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm w-full cursor-pointer"/></div>
                   </div>
-                  <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">{t('common.cancel')}</button><button onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">{t('common.add')}</button></div>
+                  <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">{t('common.cancel')}</button><button disabled={busy} onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">{t('common.add')}</button></div>
                 </div>
               )}
             </section>
@@ -217,7 +174,7 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
               <h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> {t('common.activityComments')}</h3>
               <div className="space-y-3">
                 {comments.map(c => {
-                  const isMe = c.user_id === profile?.id;
+                  const isMe = String(c.user_id) === String(profile?.id);
                   return (
                     <div key={c.id} className={`flex gap-3 ${isMe ? 'justify-end' : 'justify-start'} items-end`}>
                       {!isMe && <Avatar name={c.author?.name || 'Member'} src={c.author?.avatar_url} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
@@ -232,18 +189,18 @@ export function ProjectCampaignDetailPanel({ item, kind, onClose, onUpdated }: {
                   );
                 })}
               </div>
-              <div className="mt-4">
+              {!readOnly&&<div className="mt-4">
                 <textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder={t('common.commentPlaceholder')} className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" />
-                <button type="button" disabled={!commentText.trim()} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"><Send className="mr-1 inline h-4 w-4" />{t('common.sendComment')}</button>
-              </div>
+                <button type="button" disabled={busy || !commentText.trim()} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"><Send className="mr-1 inline h-4 w-4" />{t('common.sendComment')}</button>
+              </div>}
             </section>
           </div>
         )}
       </div>
-      {!editMode && canManage && (
+      {details.data && !editMode && canManage && (
         <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button>
-          <button onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button>
+          <button disabled={busy || data.status === 'completed'} onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button>
         </div>
       )}
     </aside>

@@ -4,7 +4,10 @@ import { Avatar } from '../../common/Avatar';
 
 import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Save, User, X, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
+import { updateTrackedTask } from '../../../services/workspaceTasks';
+import { taskKey } from '../../../lib/taskTracking';
 import { useTranslation } from '../../../i18n/translations';
 
 type Person = { id: number; name: string };
@@ -38,6 +41,7 @@ interface SubtaskDetailPanelProps {
 
 export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask', parentName, embedded = false, commentsFocusToken = 0 }) => {
   const { t } = useTranslation();
+  const readOnly=useMobileReadOnly();
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
   const [parentLoading, setParentLoading] = useState(false);
   const [commentFocus, setCommentFocus] = useState(0);
@@ -66,8 +70,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setParentDetails(null);
     setParentLoading(true);
     const loadParent = async () => {
-      const table = entityType === 'campaign_subtask' ? 'campaigns' : 'projects';
-      const { data: parent, error } = await supabase.from(table).select('name,priority,department_id').eq('id', parentId).maybeSingle();
+      const { data: parent, error } = await (entityType === 'project_subtask'
+        ? supabase.from('projects').select('name,priority,department_id').eq('id', parentId).maybeSingle()
+        : supabase.from('campaigns').select('name,department_id').eq('id', parentId).maybeSingle());
       if (!active) return;
       if (error || !parent) {
         if (error) console.warn('Could not load subtask parent', error.message);
@@ -81,7 +86,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         departmentName = department?.name || null;
       }
       if (active) {
-        setParentDetails({ name: parent.name, priority: parent.priority, departmentName });
+        setParentDetails({ name: parent.name, priority: 'priority' in parent ? parent.priority as string : null, departmentName });
         setParentLoading(false);
       }
     };
@@ -89,13 +94,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     return () => { active = false; };
   }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType]);
 
+  const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
-    if (!subtask?.id) return;
-    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtask.id).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
+    if (!subtaskId) return;
+    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
     const details = detailsResult.data?.[0]?.metadata || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
-  }, [subtask?.id, entityType]);
+  }, [subtaskId, entityType]);
 
   useEffect(() => {
     setCommentFocus(0);
@@ -117,7 +123,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const saveDetails = async () => {
-    if (!subtask || !profile?.id) return;
+    if (readOnly||!subtask || !profile?.id) return;
     setSaving(true);
     const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
@@ -136,7 +142,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const uploadImage = async (file?: File) => {
-    if (!file) return;
+    if (readOnly||!file) return;
     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
     setSaving(true);
     const { data, error } = await supabase.storage.from('attachments').upload(`subtasks/${Date.now()}-${cleanName}`, file, { upsert: false });
@@ -148,15 +154,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const complete = async () => {
-    if (!subtask || isDone(subtask.status)) return;
+    if (readOnly||!subtask || saving || isDone(subtask.status)) return;
     setSaving(true);
-    const { data, error } = await supabase.from(entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks').update({ status: 'completed',workflow_status:'completed' }).eq('id', subtask.id).select('id').maybeSingle();
-    setSaving(false);
-    if (error || !data) return toast.error('Không thể hoàn thành subtask. Kiểm tra quyền cập nhật.');
-    const updated = { ...subtask, status: 'completed' };
-    onUpdated(updated);
-    window.dispatchEvent(new Event('tasks:changed'));
-    toast.success('Đã hoàn thành subtask');
+    try {
+      await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
+      onUpdated({ ...subtask, status: 'completed' });
+      toast.success('Đã hoàn thành subtask');
+    } catch (error: any) { toast.error(error.message || 'Không thể hoàn thành subtask'); }
+    finally { setSaving(false); }
   };
 
   useEffect(() => {
@@ -200,17 +205,17 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         </section>
 
         <section>
-          <div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editing && <button onClick={() => { setDraftDescription(description); setDraftImageUrl(imageUrl); setEditing(true); }} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>
-          {editing ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
+          <div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editing && !readOnly && <button onClick={() => { setDraftDescription(description); setDraftImageUrl(imageUrl); setEditing(true); }} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>
+          {editing && !readOnly ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
         </section>
 
         <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }}/>
       </div>
 
-      <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      {readOnly?<div className="push-mobile-readonly">Xem tiến độ trên điện thoại · Cập nhật công việc trên máy tính</div>:(<div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
         <button disabled={completed || saving} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
-      </div>
+      </div>)}
     </aside>
   </>
   );

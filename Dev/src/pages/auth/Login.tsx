@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useLocation } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
@@ -11,13 +11,15 @@ export const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location=useLocation();
+  const from=typeof location.state?.from==='string'&&location.state.from.startsWith('/')&&!location.state.from.startsWith('//')?location.state.from:'/';
   const user = useAuthStore(state => state.user);
 
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate,from]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
