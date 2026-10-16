@@ -12,6 +12,7 @@ import {useAuthStore} from '../store/authStore';
 import {checkDateMatch,type CampaignFilters} from '../components/features/projects/CampaignPanel';
 import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
+import {canViewTeamManagement,isGlobalManager} from '../lib/roleScope';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -19,7 +20,8 @@ export function useProjectsController(){
   const [sourceTask, setSourceTask] = useState<Task | null>(null);
   const loadRequest = useRef(0);
   const profile = useAuthStore(s => s.profile);
-  const canCreate = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'leader' || profile?.employment_level === 'Leader';
+  const canCreate = canViewTeamManagement(profile) && (isGlobalManager(profile) || Boolean(profile?.department_id));
+  const canManageProject = (project: Project) => Boolean(profile && (project.created_by === profile.id || workflow.tracks.some(track => track.entity_type === 'project' && track.entity_id === project.id && track.root)));
   const [projects, setProjects] = useState<Project[]>([]);   const directory=useWorkspaceDirectory();
   const people=useMemo(()=>(directory.data?.users||[]).map(user=>({...user,id:Number(user.id),departments:user.department})),[directory.data]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
@@ -547,8 +549,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 
   const executeHideProject = async () => {
     if (!projectToHide) return;
-    const { error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', projectToHide.id);
-    if (error) {
+    if (!canManageProject(projectToHide)) { toast.error('Bạn không có quyền ẩn Project này.'); setProjectToHide(null); return; }
+    const { data, error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', projectToHide.id).select('id').maybeSingle();
+    if (error || !data) {
       toast.error('Không thể ẩn Project');
     } else {
       if (selected?.id === projectToHide.id) setSelected(null);
@@ -559,6 +562,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const archiveProject = (project: Project) => {
+    if (!canManageProject(project)) return toast.error('Bạn không có quyền ẩn Project này.');
     setProjectToHide(project);
   };
 
@@ -566,8 +570,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 
   const executeRemoveProject = async () => {
     if (!projectToDelete) return;
-    const { error } = await supabase.from('projects').update({ status: 'deleted' }).eq('id', projectToDelete.id);
-    if (!error) {
+    if (!canManageProject(projectToDelete)) { toast.error('Bạn không có quyền xóa Project này.'); setProjectToDelete(null); return; }
+    const { data, error } = await supabase.from('projects').update({ status: 'deleted' }).eq('id', projectToDelete.id).select('id').maybeSingle();
+    if (!error && data) {
       await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('project_id', projectToDelete.id);
       toast.success('Đã chuyển Project vào thùng rác');
       if (selected?.id === projectToDelete.id) setSelected(null);
@@ -580,6 +585,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const removeProject = (project: Project) => {
+    if (!canManageProject(project)) return toast.error('Bạn không có quyền xóa Project này.');
     setProjectToDelete(project);
   };
 
@@ -633,5 +639,5 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim()) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
 
- return {t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,campaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,editingCommentId,setEditingCommentId,editingCommentText,setEditingCommentText,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignEditingCommentId,setCampaignEditingCommentId,campaignEditingCommentText,setCampaignEditingCommentText,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
+ return {t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,campaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,editingCommentId,setEditingCommentId,editingCommentText,setEditingCommentText,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignEditingCommentId,setCampaignEditingCommentId,campaignEditingCommentText,setCampaignEditingCommentText,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
 }

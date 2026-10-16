@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { Download, CheckCircle, Clock, TrendingUp, Activity } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import {canViewTeamManagement} from '../lib/roleScope';
 import { LeaderReports } from '../components/features/reports/LeaderReports';
 
 import { statusMeta, priorityColor } from '../utils/statusTheme';
@@ -16,13 +17,8 @@ const chartTooltip = { backgroundColor: 'var(--chart-tooltip)', border: '1px sol
 
 export const Reports: React.FC = () => {
   const profile = useAuthStore(state => state.profile);
-  const role = (profile?.role || '').toLowerCase();
-  const level = (profile?.employment_level || '').toLowerCase();
-  const isLeader = role === 'leader' || level === 'leader';
-  const isAdminOrManager = ['admin', 'manager'].includes(role) || ['admin', 'manager'].includes(level);
-
-  if (isAdminOrManager || isLeader) return <AdminReports />;
-  return <LeaderReports />;
+  if (!canViewTeamManagement(profile)) return null;
+  return <AdminReports />;
 };
 
 const AdminReports: React.FC = () => {

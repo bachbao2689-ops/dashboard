@@ -3,7 +3,6 @@ import {taskKey,taskTarget} from '../lib/taskTracking';
 import {useSearchParams} from 'react-router-dom';
 import { ProjectCampaignDetailPanel } from '../components/features/projects/ProjectCampaignDetailPanel';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../services/supabase';
 import { RotateCcw } from 'lucide-react';
 import { useTranslation } from '../i18n/translations';
 import { DepartmentFilterDropdown, PicFilterDropdown } from '../components/common/filters';
@@ -18,40 +17,34 @@ import { useProfileCalendar } from '../hooks/useProfileCalendar';
 import { weeklyReportRange } from '../lib/weeklyReport';
 import type { WeekSelection } from '../lib/weeklyReport';
 import { useAuthStore } from '../store/authStore';
+import {canViewPersonInTeam,canViewTeamManagement,isDepartmentLeader,isGlobalManager} from '../lib/roleScope';
+import {useWorkspaceDirectory} from '../hooks/useWorkspaceData';
 
 export const MyTasks: React.FC = () => {
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
-  const isGlobalManager = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
-  const isLeader = profile?.employment_level === 'Leader' || profile?.role === 'leader';
-  const isManager = isGlobalManager || isLeader;
+  const globalScope = isGlobalManager(profile);
+  const leaderScope = isDepartmentLeader(profile);
+  const isManager = canViewTeamManagement(profile);
   const role = isManager ? 'manager' : 'staff';
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const directory = useWorkspaceDirectory(isManager);
+  const departments = useMemo(() => (directory.data?.departments || []).filter(department => globalScope || (leaderScope && department.id === profile?.department_id)), [directory.data, globalScope, leaderScope, profile?.department_id]);
+  const users = useMemo(() => (directory.data?.users || []).filter(user => canViewPersonInTeam(profile, user)), [directory.data, profile]);
   const [filterDept, setFilterDept] = useState('');
   const [filterPic, setFilterPic] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<'dept' | 'pic' | null>(null);
 
   useEffect(() => {
-    if (!isManager) return;
-    let deptQuery = supabase.from('departments').select('id, name');
-    let userQuery = supabase.from('users').select('id, name, department_id, avatar_url').eq('is_active', true);
-    if (!isManager && profile?.department_id) {
-      deptQuery = deptQuery.eq('id', profile.department_id);
-      userQuery = userQuery.eq('department_id', profile.department_id);
-    }
-    Promise.all([deptQuery, userQuery]).then(([d, u]) => {
-      if (d.data) setDepartments(d.data);
-      if (u.data) setUsers(u.data);
-    });
-  }, [isManager, profile?.department_id]);
+    setFilterDept('');
+    setFilterPic('');
+  }, [profile?.department_id, profile?.id, profile?.role, profile?.employment_level]);
 
   const visibleUsers = useMemo(() => {
     if (!filterDept) return users;
     return users.filter(u => String(u.department_id) === filterDept);
   }, [filterDept, users]);
 
-  const targetUserId = filterPic || profile?.id;
+  const targetUserId = isManager && filterPic && visibleUsers.some(user => String(user.id) === String(filterPic) && canViewPersonInTeam(profile, user)) ? filterPic : profile?.id;
   const calendar = useProfileCalendar(targetUserId);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [searchParams]=useSearchParams();
@@ -95,8 +88,8 @@ export const MyTasks: React.FC = () => {
                   onChange={val => setFilterPic(val)}
                   people={visibleUsers}
                   allKey=""
-                  allLabel={filterDept ? t('common.allStaff') : t('common.selectPic')}
-                  label={filterDept ? t('common.allStaff') : t('common.selectPic')}
+                  allLabel={t('common.selectPic')}
+                  label={t('common.selectPic')}
                   showMe={false}
                   showUnassigned={false}
                   isOpen={activeDropdown === 'pic'}

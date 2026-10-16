@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
 import { useAuthStore } from "../store/authStore";
 import { workflowFiles } from "../lib/workflowFiles";
+import { isGlobalManager, canViewTeamManagement } from "../lib/roleScope";
 import type { WorkflowFile } from "../lib/workflowFiles";
 import type {
   WorkflowKind,
@@ -58,13 +59,8 @@ export function useWorkflow2() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const role = (profile?.role || "").toLowerCase(),
-    level = (profile?.employment_level || "").toLowerCase();
-  const global =
-    role === "admin" ||
-    level === "manager" ||
-    (role === "manager" && level !== "leader");
-  const canEdit = global || role === "leader" || level === "leader";
+  const global = isGlobalManager(profile);
+  const canEdit = canViewTeamManagement(profile);
   const refresh = useCallback(async () => {
     if (!profile) return;
     try {

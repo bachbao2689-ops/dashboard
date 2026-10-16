@@ -5,6 +5,7 @@ import type { Member } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
 import { useTranslation } from '../i18n/translations';
+import {canViewPersonInTeam,isGlobalManager} from '../lib/roleScope';
 import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
 import { SearchInput, StatusFilterDropdown } from '../components/common/filters';
 
@@ -20,17 +21,18 @@ export function MemberManagement() {
   const [collapsedDepartments, setCollapsedDepartments] = useState<string[]>([]);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [savingMember, setSavingMember] = useState(false);
-  const canManageAll = profile?.role === 'admin' || profile?.employment_level === 'manager' || (profile?.role === 'manager' && profile?.employment_level !== 'Leader');
+  const canManageAll = isGlobalManager(profile);
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
+      if (!canViewPersonInTeam(profile, member)) return false;
       const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
       const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [members, searchTerm, roleFilter, statusFilter]);
+  }, [members, profile, searchTerm, roleFilter, statusFilter]);
 
   const memberGroups = useMemo(() => {
     const sortMembers = (a: any, b: any) => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Navigate,useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import {isAdmin,canViewTeamManagement} from '../../lib/roleScope';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,9 +31,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export const AdminRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuthStore();
+  const { user, profile, loading } = useAuthStore();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  const isAdmin = user.id === 'dev-admin-id' || user.user_metadata?.role === 'admin';
-  return isAdmin ? <>{children}</> : <Navigate to="/my-tasks" replace />;
+  return isAdmin(profile) ? <>{children}</> : <Navigate to="/my-tasks" replace />;
+};
+
+export const TeamManagementRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, profile, loading } = useAuthStore();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return canViewTeamManagement(profile) ? <>{children}</> : <Navigate to="/my-tasks" replace />;
 };

@@ -150,10 +150,11 @@ const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, i
 export const CampaignPanel: React.FC<{ 
   onSelect?: (campaign: any) => void;
   filters?: CampaignFilters;
-}> = ({ onSelect, filters }) => {
+  rootCampaignIds?: ReadonlySet<string>;
+}> = ({ onSelect, filters, rootCampaignIds }) => {
   const { t, lang } = useTranslation();
   const profile = useAuthStore(s => s.profile);
-  const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.employment_level === 'Leader';
+  const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
@@ -196,8 +197,9 @@ export const CampaignPanel: React.FC<{
   
   const executeHide = async () => {
     if (!campaignToHide) return;
-    const { error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaignToHide.id);
-    if (error) {
+    if (!canManage(campaignToHide)) { toast.error('Bạn không có quyền ẩn Campaign này.'); setCampaignToHide(null); return; }
+    const { data, error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaignToHide.id).select('id').maybeSingle();
+    if (error || !data) {
       toast.error('Không thể ẩn Campaign');
     } else {
       await load();
@@ -207,6 +209,7 @@ export const CampaignPanel: React.FC<{
   };
 
   const archive = (campaign: any) => {
+    if (!canManage(campaign)) return toast.error('Bạn không có quyền ẩn Campaign này.');
     setCampaignToHide(campaign);
   };
 
@@ -214,12 +217,13 @@ export const CampaignPanel: React.FC<{
   
   const executeRemove = async () => {
     if (!campaignToDelete) return;
+    if (!canManage(campaignToDelete)) { toast.error('Bạn không có quyền xóa Campaign này.'); setCampaignToDelete(null); return; }
     setDeletingIds(prev => [...prev, campaignToDelete.id]);
     const cached = campaignToDelete;
     setCampaignToDelete(null);
     setTimeout(async () => {
-      const { error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', cached.id);
-      if (!error) {
+      const { data, error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', cached.id).select('id').maybeSingle();
+      if (!error && data) {
         await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('campaign_id', cached.id);
         toast.success('Đã chuyển Campaign vào thùng rác');
         await load();
@@ -232,6 +236,7 @@ export const CampaignPanel: React.FC<{
   };
 
   const remove = (campaign: any) => {
+    if (!canManage(campaign)) return toast.error('Bạn không có quyền xóa Campaign này.');
     setCampaignToDelete(campaign);
   };
 
@@ -327,7 +332,7 @@ export const CampaignPanel: React.FC<{
             <StatusBadge status={c.status || 'planning'} />
             <span className="min-w-0 truncate">{c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}</span>
             {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
-            {canManage && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
+            {canManage(c) && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
         </article>)}
         {!visibleCampaigns.length && (
@@ -363,7 +368,7 @@ export const CampaignPanel: React.FC<{
             <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
             <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
             <td><StatusBadge status={c.status || 'planning'} /></td>
-            <td className="w-16 pr-4">{canManage && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
+            <td className="w-16 pr-4">{canManage(c) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
           </tr>)}</tbody>
         </table>
         {!visibleCampaigns.length && (

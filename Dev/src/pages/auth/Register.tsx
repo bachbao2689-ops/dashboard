@@ -38,7 +38,7 @@ export const Register: React.FC = () => {
         const { error: updateError } = await supabase
           .from('users')
           .update({ name: fullName })
-          .eq('id', user.id);
+          .eq('auth_id', user.id);
           
         if (updateError) {
           console.error('Failed to update user profile:', updateError);

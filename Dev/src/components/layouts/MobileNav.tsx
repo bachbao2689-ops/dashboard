@@ -7,17 +7,17 @@ import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
+import {canViewTeamManagement} from '../../lib/roleScope';
 
 export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false}) => {
   const { t } = useTranslation();
   const taskDetailsOpen=useOverlayStore(state=>state.taskDetails>0);
   const isHidden=scrollHidden||taskDetailsOpen;
   const profile = useAuthStore(s => s.profile);
-  const role = profile?.role || 'member';
-  const isLeader = (profile?.employment_level || '').toLowerCase() === 'leader' || ['leader', 'manager', 'admin'].includes(role.toLowerCase());
+  const isLeader = canViewTeamManagement(profile);
   const badges = useSidebarBadges();
   
-  const canViewDashboard = ['admin', 'manager', 'leader'].includes(role.toLowerCase()) || (profile?.employment_level || '').toLowerCase() === 'leader';
+  const canViewDashboard = isLeader;
   
   const navItems = [
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, hidden: !canViewDashboard },

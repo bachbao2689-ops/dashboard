@@ -15,6 +15,7 @@ import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
+import {canViewTeamManagement} from '../../lib/roleScope';
 import {
   buildSidebarGroups,
   type DrillMenuItem,
@@ -569,9 +570,7 @@ export const Sidebar: React.FC = () => {
   }, [resizing]);
 
   const role = profile?.role || 'member';
-  const isLeader =
-    (profile?.employment_level || '').toLowerCase() === 'leader' ||
-    ['leader', 'manager', 'admin'].includes(role.toLowerCase());
+  const isLeader = canViewTeamManagement(profile);
 
   const groups = useMemo(
     () =>

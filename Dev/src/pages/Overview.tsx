@@ -11,6 +11,7 @@ import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
+import {isAdmin} from '../lib/roleScope';
 import { transitionBorrowRequest } from '../services/borrowWorkflow';
 import type { BorrowAction } from '../services/borrowWorkflow';
 
@@ -38,18 +39,11 @@ export const Overview: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const profile = useAuthStore(s => s.profile);
-  const role = profile?.role || 'member';
-
-  useEffect(() => {
-    if (role !== 'admin') {
-      navigate('/my-tasks', { replace: true });
-    }
-  }, [role, navigate]);
   const { data, loading, error, refetch } = useDashboard();
   const theme = useUiStore(state => state.theme);
   const isDark = theme === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
   const user = useAuthStore(state => state.user);
-  const isAdmin = user?.id === 'dev-admin-id' || user?.user_metadata?.role === 'admin';
+  const canAdmin = isAdmin(profile);
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Admin';
 
   const [dateRange, setDateRange] = useState('');
@@ -346,7 +340,7 @@ export const Overview: React.FC = () => {
                   <b>{req.requester?.name}</b> {t('overview.wantsToBorrow')} <b>{req.asset?.name}</b>
                 </p>
                 <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
-                {req.approval_status === 'pending' && isAdmin ? (
+                {req.approval_status === 'pending' && canAdmin ? (
                   <div className="flex gap-2 mt-2.5">
                     <button onClick={() => void handleUpdateStatus(req.id, 'approve')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>
                     <button onClick={() => void handleUpdateStatus(req.id, 'reject')} className={`flex-1 bg-white dark:bg-slate-700 ${INNER} ${INK} py-1.5 rounded-[8px] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors`}>{t('overview.reject')}</button>

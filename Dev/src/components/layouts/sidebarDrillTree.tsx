@@ -303,11 +303,10 @@ export function buildSidebarGroups({
   togglePin: (taskId: string) => void;
 }): SidebarGroupModel[] {
   const roleLower = (role || 'member').toLowerCase();
-  const canViewDashboard = ['admin', 'leader', 'manager'].includes(roleLower);
+  const canViewDashboard = isLeader;
   const canViewDepartments = roleLower === 'admin';
   const canManageBorrow = ['admin', 'manager'].includes(roleLower);
-  const canViewReports =
-    roleLower === 'admin' || (!['member', 'staff'].includes(roleLower) || isLeader);
+  const canViewReports = isLeader;
 
   // ==========================================
   // GROUP 1: MAIN (Dashboard [plain], Workflow Management [drill-down])
@@ -593,12 +592,12 @@ export function buildSidebarGroups({
   // ==========================================
   const trNodes: Record<string, DrillNode> = {};
   const trRootItems: DrillMenuItem[] = [
-    {
+    ...(isLeader ? [{
       id: 'tr:root:team',
       label: t('nav.team'),
       icon: <Users size={18} />,
       path: '/team',
-    },
+    }] : []),
     {
       id: 'tr:root:members',
       label: t('nav.members'),

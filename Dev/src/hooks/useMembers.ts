@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 import toast from 'react-hot-toast';
+import {isGlobalManager} from '../lib/roleScope';
 
 export type UserRole = 'admin' | 'member' | 'manager' | 'leader';
 export type UserStatus = 'active' | 'removed';
@@ -34,19 +35,32 @@ export interface NewMember {
 const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
 
 export function useMembers() {
+  const profile = useAuthStore(state => state.profile);
   const [members, setMembers] = useState<Member[]>([]);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedProfileId, setLoadedProfileId] = useState<number | null>(null);
+  const request = useRef(0);
 
   const fetchMembers = useCallback(async () => {
+    const token = ++request.current;
     setLoading(true);
     try {
+      if (!profile) { setMembers([]); setDepartments([]); setLoadedProfileId(null); return; }
+      const globalScope = isGlobalManager(profile);
+      let usersQuery = supabase.from('users').select('id,name,email,role,is_active,created_at,avatar_url,employment_level,job_title,department_id').order('created_at', { ascending: false });
+      let departmentsQuery = supabase.from('departments').select('id,name').order('name');
+      if (!globalScope) {
+        usersQuery = profile.department_id ? usersQuery.eq('department_id', profile.department_id) : usersQuery.eq('id', profile.id);
+        if (profile.department_id) departmentsQuery = departmentsQuery.eq('id', profile.department_id);
+      }
       const [usersResult, departmentsResult] = await Promise.all([
-        supabase.from('users').select('id,name,email,role,is_active,created_at,avatar_url,employment_level,job_title,department_id').order('created_at', { ascending: false }),
-        supabase.from('departments').select('id,name').order('name'),
+        usersQuery,
+        departmentsQuery,
       ]);
       if (usersResult.error) throw usersResult.error;
       if (departmentsResult.error) throw departmentsResult.error;
+      if (token !== request.current) return;
 
       const departmentOptions = (departmentsResult.data || []) as DepartmentOption[];
       const names = new Map(departmentOptions.map(department => [department.id, department.name]));
@@ -64,16 +78,17 @@ export function useMembers() {
         department_id: user.department_id,
         department: user.department_id ? { name: names.get(user.department_id) || 'Chưa cập nhật team' } : null,
       })));
+      setLoadedProfileId(profile.id);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không tải được danh sách thành viên');
+      if (token === request.current) toast.error(error instanceof Error ? error.message : 'Không tải được danh sách thành viên');
     } finally {
-      setLoading(false);
+      if (token === request.current) setLoading(false);
     }
-  }, []);
+  }, [profile?.id, profile?.role, profile?.employment_level, profile?.department_id]);
 
   const requireManager = () => {
     const profile = useAuthStore.getState().profile;
-    if (!profile || !(profile.role === 'admin' || profile.employment_level === 'manager' || (profile.role === 'manager' && profile.employment_level !== 'Leader'))) {
+    if (!profile || !isGlobalManager(profile)) {
       throw new Error('Bạn không có quyền quản lý thành viên');
     }
     return profile;
@@ -130,9 +145,9 @@ export function useMembers() {
     }
   };
 
-  useEffect(() => { void fetchMembers(); }, [fetchMembers]);
+  useEffect(() => { void fetchMembers(); return () => { request.current++; }; }, [fetchMembers]);
   const actor=useAuthStore(state=>state.profile?.id);
   useWorkspaceRealtime(['users','departments'],fetchMembers,actor);
 
-  return { members, departments, loading, refetch: fetchMembers, addMember, setMemberRemoved };
+  return { members: loadedProfileId === profile?.id ? members : [], departments: loadedProfileId === profile?.id ? departments : [], loading: loading || loadedProfileId !== profile?.id, refetch: fetchMembers, addMember, setMemberRemoved };
 }

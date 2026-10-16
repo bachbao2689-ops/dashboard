@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import {canViewPersonInTeam,canViewTeamManagement,isGlobalManager} from '../../../lib/roleScope';
 import { WeeklyReportDrawer } from '../reports/WeeklyReportDrawer';
 import { WeeklyReportPreview } from '../reports/WeeklyReportPreview';
 import type { ReportReference, WeeklyReportTask } from '../reports/WeeklyReportDrawer';
@@ -21,6 +22,7 @@ const formatReportDate = (value: string) => new Date(`${value}T00:00:00`).toLoca
 export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
+  const scopeKey = `${profile?.id ?? ''}:${profile?.role ?? ''}:${profile?.employment_level ?? ''}:${profile?.department_id ?? ''}`;
   const navigate = useNavigate();
   const [weekSelection, setWeekSelection] = useState<WeekSelection>('previous');
   const { start: weekStart, end: weekEnd } = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
@@ -35,10 +37,12 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [memberTasks, setMemberTasks] = useState<WeeklyReportTask[]>([]);
   const [references, setReferences] = useState<ReportReference[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(true);
+  const [loadedScope, setLoadedScope] = useState('');
   const [loadingReport, setLoadingReport] = useState(false);
   const [reminding, setReminding] = useState(false);
   const [teamPanelWidth, setTeamPanelWidth] = useState(42);
   const reportGridRef = useRef<HTMLDivElement>(null);
+  const teamRequest = useRef(0);
 
   const resizeTeamPanel = (clientX: number) => {
     const bounds = reportGridRef.current?.getBoundingClientRect();
@@ -47,14 +51,14 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   };
 
   const loadTeam = useCallback(async (silent = false) => {
-      const normalizedRole = (profile?.role || '').toLowerCase();
-      const normalizedLevel = (profile?.employment_level || '').toLowerCase();
-      const canViewAll = ['admin', 'manager', 'leader'].includes(normalizedRole) || ['admin', 'manager', 'leader'].includes(normalizedLevel);
-      if (!profile || (!canViewAll && !profile.department_id)) {
-        setMembers([]); if(!silent) if(!silent) setLoadingTeam(false);
+      const token = ++teamRequest.current;
+      const canViewAll = isGlobalManager(profile);
+      if (!profile || (!canViewAll && (!canViewTeamManagement(profile) || !profile.department_id))) {
+        setMembers([]); setSelectedMember(null); setLoadedScope(scopeKey); if(!silent) setLoadingTeam(false);
         return;
       }
       if(!silent) setLoadingTeam(true);
+      try {
       let query = supabase.from('users')
         .select('id,name,avatar_url,employment_level,job_title,department_id,role')
         .eq('is_active', true)
@@ -68,6 +72,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
       const [taskResult] = memberIds.length ? await Promise.all([
         supabase.from('tasks').select('id,task_ref,title,status,description,due_date,created_at,updated_at,assignee_id,project:project_id(id,name)').in('assignee_id', memberIds),
       ]) : [{ data: [], error: null } as any];
+      if (token !== teamRequest.current) return;
       if (taskResult.error) console.warn('Could not load team report tasks:', taskResult.error.message);
       const allMemberTasks = (taskResult.data || []) as WeeklyReportTask[];
       const weeklyTasks = tasksForWeeklyReport(allMemberTasks, weekStart, weekEnd);
@@ -98,7 +103,9 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         if (!latestReports[key]) latestReports[key] = row as TeamReportRow;
       });
       const counts = Object.fromEntries(loadedMembers.map(member => [member.id, allMemberTasks.filter((task: any) => Number(task.assignee_id) === member.id).length]));
-            setMembers(loadedMembers);
+      if (token !== teamRequest.current) return;
+      setMembers(loadedMembers);
+      setSelectedMember(previous => previous && !loadedMembers.some(member => member.id === previous.id) ? null : previous);
       setTaskCount(counts);
       setReportProgress(progress);
       setWeeklyTasksByMember(groupedTasks);
@@ -110,14 +117,23 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
         }
       });
       setSummaryImages(imgMap);
+      setLoadedScope(scopeKey);
       if(!silent) setLoadingTeam(false);
-  }, [profile?.department_id, profile?.id, profile?.role, weekEnd, weekStart]);
+      } catch (error) {
+        if (token !== teamRequest.current) return;
+        console.warn('Could not load team reports:', error);
+        setMembers([]);
+        setSelectedMember(null);
+        setLoadedScope(scopeKey);
+        if (!silent) setLoadingTeam(false);
+      }
+  }, [scopeKey, weekEnd, weekStart]);
 
   useEffect(() => {
     void loadTeam();
   }, [loadTeam]);
 
-  const visibleMembers = useMemo(() => members.filter(member => `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, search]);
+  const visibleMembers = useMemo(() => members.filter(member => canViewPersonInTeam(profile, member) && `${member.name} ${member.job_title || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [members, profile, search]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(memberTasks, weekStart, weekEnd), [memberTasks, weekStart, weekEnd]);
 
   useEffect(() => {
@@ -149,6 +165,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     }
   };
   const openReport = async (member: TeamMember, silent = false) => {
+    if (!canViewTeamManagement(profile) || !canViewPersonInTeam(profile, member)) return;
     setSelectedMember(member);
     if (!silent) setLoadingReport(true);
     setMemberTasks([]);
@@ -247,6 +264,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
     })}</div>
   </section>;
 
+  if (loadedScope !== scopeKey) return <p className="p-5 text-sm text-gray-500">Đang tải đội ngũ…</p>;
   return (
     <div ref={reportGridRef} style={embedded ? { '--team-panel-width': `${teamPanelWidth}%` } as React.CSSProperties : undefined} className={embedded ? 'grid min-w-0 gap-x-2 gap-y-4 lg:grid-cols-[minmax(280px,var(--team-panel-width))_2px_minmax(0,1fr)]' : 'space-y-4'}>
       {(embedded || !selectedMember) && <section className={embedded ? 'card-hub min-w-0 rounded-2xl p-4 shadow-sm md:p-5' : 'card-hub rounded-2xl p-6 shadow-sm'}>

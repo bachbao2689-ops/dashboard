@@ -12,6 +12,7 @@ import { StylizedPinIcon } from '../common/StylizedPinIcon';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
+import {canViewTeamManagement} from '../../lib/roleScope';
 import { useSidebarPinStore } from '../../store/sidebarPinStore';
 import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import {
@@ -611,9 +612,7 @@ export const TopCollapsedNavbar: React.FC = () => {
   const totalPinnedCount = pinnedEntities.length + pinnedTaskItems.length;
 
   const role = profile?.role || 'member';
-  const isLeader =
-    (profile?.employment_level || '').toLowerCase() === 'leader' ||
-    ['leader', 'manager', 'admin'].includes(role.toLowerCase());
+  const isLeader = canViewTeamManagement(profile);
 
   const groups = useMemo<SidebarGroupModel[]>(
     () =>

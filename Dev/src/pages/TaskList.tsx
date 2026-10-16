@@ -1,4 +1,4 @@
-import {useWorkspaceDirectory} from '../hooks/useWorkspaceData';
+import {useWorkspaceData} from '../hooks/useWorkspaceData';
 import {taskOverdue,taskDueWithin} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
 import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
@@ -52,8 +52,7 @@ export const TaskList: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
-  const directory=useWorkspaceDirectory();
-  const people=directory.data?.users||[];
+  const {users:people}=useWorkspaceData();
 
   // Merge people with any task assignees not yet in people
   const allPeople = useMemo<FilterPerson[]>(() => {
