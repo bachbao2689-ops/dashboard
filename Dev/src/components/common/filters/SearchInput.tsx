@@ -24,7 +24,7 @@ export function SearchInput({value, onChange, placeholder = 'Search...', classNa
       if (event.key === 'Escape') {setTop(null); trigger.current?.focus();}
     };
     const reposition = () => {
-      if (!window.matchMedia('(max-width: 767px)').matches) setTop(null);
+      if (!window.matchMedia('(max-width: 1279px)').matches) setTop(null);
       else if (trigger.current) setTop(Math.max(8, Math.min(window.innerHeight - 80, trigger.current.getBoundingClientRect().bottom + 8)));
     };
     document.addEventListener('pointerdown', outside);

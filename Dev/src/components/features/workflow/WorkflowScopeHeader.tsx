@@ -42,11 +42,11 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
           </div>
 
           {/* Main Title as Filter Dropdown */}
-          <div className="relative inline-block my-0.5">
+          <div className="relative my-0.5 min-w-0 max-w-full">
             <button
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
-              className="flex items-center gap-2 group text-left focus:outline-none cursor-pointer"
+              className="flex w-full min-w-0 items-center gap-2 group text-left focus:outline-none cursor-pointer"
               title={isEn ? "Click to select and filter Project / Campaign" : "Bấm để chọn và lọc Project / Campaign"}
             >
               <div className={`p-1.5 rounded-xl transition-colors ${
@@ -56,8 +56,8 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               }`}>
                 {isCampaign ? <FolderKanban size={20} /> : <Globe size={20} />}
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <h1 className="min-w-0 flex-1 truncate text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
                   {currentEntity.name.startsWith('[Project]') || currentEntity.name.startsWith('[Campaign]') 
                     ? currentEntity.name 
                     : `[${isCampaign ? 'Campaign' : 'Project'}] ${currentEntity.name}`}
@@ -78,7 +78,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                   className="fixed inset-0 z-40 bg-transparent"
                   onClick={() => setIsTitleDropdownOpen(false)}
                 />
-                <div className="absolute z-50 left-0 top-full mt-2 w-80 sm:w-96 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95">
+                <div className="absolute z-50 left-0 top-full mt-2 w-[min(24rem,calc(100vw-3rem))] p-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95">
                   <div className="relative mb-2">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input

@@ -18,6 +18,6 @@ export function opensSidebarNotification(n: Signal, pathname: string, search: st
   if (!href) return false;
   const [path, query] = href.split('?');
   const target = new URLSearchParams(query), current = new URLSearchParams(search);
-  const sameSurface = path === pathname || (path === '/projects' && pathname === '/workflow' && !current.has('phase'));
+  const sameSurface = path === pathname;
   return sameSurface && [...target].length > 0 && [...target].every(([key, value]) => current.get(key) === value);
 }

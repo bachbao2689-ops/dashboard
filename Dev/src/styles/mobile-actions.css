@@ -12,7 +12,7 @@
 }
 .dark .mobile-action-hint { background: rgba(18,38,60,.96); color: #e2f3ff; border-color: rgba(140,195,230,.3); }
 .mobile-search-panel { display: none; }
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
   .mobile-icon-action {
     display: inline-flex !important; position: relative; align-items: center; justify-content: center;
     width: 40px !important; min-width: 32px !important; height: 44px !important;

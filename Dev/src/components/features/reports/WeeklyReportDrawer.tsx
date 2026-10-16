@@ -383,9 +383,9 @@ export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
       <button type="button" aria-label="Đóng báo cáo" onClick={onClose} className="fixed inset-0 z-[105] cursor-default bg-slate-900/30 dark:bg-slate-900/60 backdrop-blur-xs transition-opacity" />
       <aside 
         style={{ '--panel-width': `${drawerWidth}px` } as React.CSSProperties}
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),75vw)] border border-primary/20 shadow-drawer-task z-[110] drawer-slide-in ${!isResizingDrawer ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),75vw)] border border-primary/20 shadow-drawer-task z-[110] drawer-slide-in ${!isResizingDrawer ? 'transition-[width] duration-300' : ''}`}
       >
-        <div onMouseDown={() => setIsResizingDrawer(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-[120]" />
+        <div onMouseDown={() => setIsResizingDrawer(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-[120]" />
         {content}
       </aside>
     </>

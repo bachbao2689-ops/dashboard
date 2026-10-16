@@ -5,9 +5,9 @@
    ======================================================== */
 
 /* 1. Resizable Left Sidebar Shell (scales like Detail Tasks) */
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   div.w-\[272px\]:has(.app-sidebar) {
-    width: var(--sidebar-width, 272px) !important;
+    width: min(var(--sidebar-width, 272px), calc(100vw - 1040px)) !important;
   }
 }
 

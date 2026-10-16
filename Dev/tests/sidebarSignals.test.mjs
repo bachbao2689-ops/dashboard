@@ -21,7 +21,7 @@ test('opening one task cannot read siblings, other legacy kinds or its parent', 
 test('parent and phase destinations stay distinct, list navigation reads nothing', () => {
   const parent=n('project','p');
   assert.equal(opensSidebarNotification(parent,'/projects',''),false);
-  assert.equal(opensSidebarNotification(parent,'/workflow','?project=p'),true);
+  assert.equal(opensSidebarNotification(parent,'/workflow','?project=p'),false);
   assert.equal(opensSidebarNotification(parent,'/workflow','?project=p&phase=a'),false);
   const phase=n('project','p',{metadata:{origin:'dashboard:v2',target:'workflow',phase_id:'a'}});
   assert.equal(opensSidebarNotification(phase,'/workflow','?project=p'),false);

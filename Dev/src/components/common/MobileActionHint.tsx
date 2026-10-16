@@ -8,7 +8,7 @@ export function MobileActionHint() {
     let timer: ReturnType<typeof setTimeout>;
     const clear = () => {clearTimeout(timer); setHint(null);};
     const show = (event: MouseEvent) => {
-      if (!window.matchMedia('(max-width: 767px)').matches || !(event.target instanceof Element)) return;
+      if (!window.matchMedia('(max-width: 1279px)').matches || !(event.target instanceof Element)) return;
       const button = event.target.closest<HTMLElement>('[data-mobile-label], .mobile-nav-container a, .dashboard-top-chrome button');
       if (!button || button.matches(':disabled') || button.closest('[inert]')) return;
       const label = button.dataset.mobileLabel || button.getAttribute('aria-label') || button.getAttribute('title');

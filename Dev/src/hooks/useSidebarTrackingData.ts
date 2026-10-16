@@ -9,9 +9,7 @@ import { taskKey, taskOpen, taskOverdue, taskDone, taskActive, taskLink } from '
 import { workflowLink, projectsLink, type HubTrack } from '../lib/workflowHub';
 import type { Task } from './useTasks';
 import type { NotificationItem } from '../store/notificationStore';
-import { markNotificationsRead } from '../store/notificationStore';
-import { useLocation } from 'react-router-dom';
-import { isSidebarMention as isMentionNotif, isSidebarComment as isCommentNotif, opensSidebarNotification } from '../lib/sidebarSignals';
+import { isSidebarMention as isMentionNotif, isSidebarComment as isCommentNotif } from '../lib/sidebarSignals';
 
 export interface EnrichedSidebarTask {
   task: Task;
@@ -55,7 +53,6 @@ export interface EnrichedProjectTrack {
 }
 
 export function useSidebarTrackingData() {
-  const location = useLocation();
   const profile = useAuthStore(s => s.profile);
   const notifCenter = useNotificationCenter();
   const workspace = useWorkspaceData({ includeAssets: false });
@@ -72,22 +69,13 @@ export function useSidebarTrackingData() {
     if (notifCenter.actor !== profile?.id) return [];
     const map = new Map<string, NotificationItem>();
     for (const item of notifCenter.items || []) map.set(item.id, item);
-    for (const item of notifCenter.history || []) {
+    for (const item of [...(notifCenter.history || []), ...(notifCenter.sidebarUnread || [])]) {
       if (!map.has(item.id)) map.set(item.id, item);
     }
     return Array.from(map.values()).filter(n => String(n.user_id ?? notifCenter.actor) === String(profile?.id)).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [notifCenter.items, notifCenter.history, notifCenter.actor, profile?.id]);
-
-  // Read only the opened destination. Opening a parent must not clear its children's dots.
-  useEffect(() => {
-    const ids = allNotifications.filter(n => {
-      if (n.is_read || !(isMentionNotif(n, profile?.name) || isCommentNotif(n))) return false;
-      return opensSidebarNotification(n, location.pathname, location.search);
-    }).map(n => n.id);
-    if (ids.length) void markNotificationsRead(ids).catch(console.error);
-  }, [location.pathname, location.search, allNotifications, profile?.name]);
+  }, [notifCenter.items, notifCenter.history, notifCenter.sidebarUnread, notifCenter.actor, profile?.id]);
 
   const enrichedTasks = useMemo<EnrichedSidebarTask[]>(() => {
     const myId = profile?.id != null ? String(profile.id) : '';

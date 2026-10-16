@@ -1,3 +1,4 @@
+import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inputDate } from '../../../lib/workflowHub';
@@ -23,6 +24,7 @@ export function ProjectCampaignDetailPanel(props:PanelProps) {
 }
 function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) {
   const { t } = useTranslation();
+  useReadEntityNotifications(kind,item.id);
   const navigate = useNavigate();
   const details = useProjectCampaignDetails(kind, item.id);
   const { profile, subtasks, comments, people, busy } = details;
@@ -111,9 +113,9 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       />
       <aside 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
-      <div onMouseDown={() => setResizing(true)} className="hidden md:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
+      <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
         <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>

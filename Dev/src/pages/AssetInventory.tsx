@@ -63,19 +63,19 @@ export const AssetInventory: React.FC = () => {
 
   return (
     <div className="relative z-10 flex min-h-full min-w-0">
-      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedAsset || isBorrowDrawerOpen ? 'hidden md:flex xl:mr-[500px] pr-2' : 'pr-0 lg:pr-4'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedAsset || isBorrowDrawerOpen ? 'hidden xl:flex xl:mr-[500px] pr-2' : 'pr-0 lg:pr-4'}`}>
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={refetch} 
       />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('assets.title')}</h2>
         
         <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <SearchInput className="md:hidden" value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
-          <div className={`hidden md:flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
+          <SearchInput className="xl:hidden" value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
+          <div className={`hidden xl:flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
             <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
               <Search className="w-5 h-5" />
             </button>
@@ -102,7 +102,7 @@ export const AssetInventory: React.FC = () => {
       </div>
 
       <div className="card-hub flex-1 overflow-hidden rounded-2xl shadow-sm">
-        <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
+        <div className="divide-y divide-gray-100 dark:divide-slate-700 xl:hidden">
           {loading ? <p className="p-6 text-center text-sm text-gray-500">{t('assets.loading')}</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || t('assets.noAssets')}</p> : filteredAssets.map(asset => {
             const inCart = cart.some(item => item.id === asset.id);
             const canBorrow = asset.status === 'available' && asset.is_available !== false;
@@ -121,7 +121,7 @@ export const AssetInventory: React.FC = () => {
             </div>;
           })}
         </div>
-        <div className="hidden h-full overflow-x-auto md:block">
+        <div className="hidden h-full overflow-x-auto xl:block">
           <table className="w-full min-w-max text-left">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">

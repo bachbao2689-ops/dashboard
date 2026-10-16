@@ -7,7 +7,7 @@ export function useMobileChrome(){
  const [hidden,setHidden]=useState(false);
  useEffect(()=>{
   const surface=document.getElementById('main-scroll-container');
-  const media=window.matchMedia('(max-width: 767px)');
+  const media=window.matchMedia('(max-width: 1279px)');
   if(!surface)return;
   let last=surface.scrollTop,travel=0,frame=0;
   const reset=()=>{last=surface.scrollTop;travel=0;setHidden(false);};

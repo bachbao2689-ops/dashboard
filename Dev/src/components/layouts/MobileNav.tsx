@@ -72,7 +72,7 @@ export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false
       {/* Background Mask (Dark mode only) */}
       <div 
         className={cn(
-          "hidden dark:md:hidden dark:fixed dark:bottom-0 dark:left-0 dark:right-0 pointer-events-none z-[98] mobile-nav-mask backdrop-blur-[32px] backdrop-saturate-[165%]",
+          "hidden dark:xl:hidden dark:fixed dark:bottom-0 dark:left-0 dark:right-0 pointer-events-none z-[98] mobile-nav-mask backdrop-blur-[32px] backdrop-saturate-[165%]",
           isHidden && "nav-hidden",
           taskDetailsOpen && "nav-detail-hidden"
         )}
@@ -83,7 +83,7 @@ export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false
         inert={isHidden}
         aria-hidden={isHidden}
         className={cn(
-          "md:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container backdrop-blur-xl",
+          "xl:hidden fixed left-3 right-3 mobile-liquid-glass rounded-full z-[99] flex items-center justify-between overflow-x-auto p-1.5 mobile-nav-container backdrop-blur-xl",
           isHidden && "nav-hidden",
           taskDetailsOpen && "nav-detail-hidden"
         )}

@@ -317,7 +317,7 @@ export const CampaignPanel: React.FC<{
         </button>
       </div>
       {expanded && <>
-      <div className="space-y-3 p-3 md:hidden">
+      <div className="space-y-3 p-3 xl:hidden">
         {visibleCampaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
           <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
             <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span><ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
@@ -336,7 +336,7 @@ export const CampaignPanel: React.FC<{
           </p>
         )}
       </div>
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden overflow-x-auto xl:block">
         <table className="w-full min-w-max text-left">
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
             <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />

@@ -597,7 +597,7 @@ export const Sidebar: React.FC = () => {
         }}
         onDoubleClick={() => setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)}
         title="Kéo để thay đổi độ rộng Sidebar (Nhấp đúp để đặt lại)"
-        className={cn('sb-resize-handle hidden md:flex', resizing && 'is-resizing')}
+        className={cn('sb-resize-handle hidden xl:flex', resizing && 'is-resizing')}
       >
         <span className="sb-resize-grip" />
       </div>

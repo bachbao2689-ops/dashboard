@@ -43,7 +43,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
               )}
               {!collapsedGroups.includes(groupName) && (
                 <>
-                <div className="divide-y divide-gray-100 dark:divide-slate-700 md:hidden">
+                <div className="divide-y divide-gray-100 dark:divide-slate-700 xl:hidden">
                   {groupTasks.map(task => (
                     <div key={task.id} className="px-3 py-3">
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -65,7 +65,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                     </div>
                   ))}
                 </div>
-                <div className="task-list-table-scroll hidden md:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
+                <div className="task-list-table-scroll hidden xl:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
                 <table className="task-list-table">
                   <thead>
                     <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">

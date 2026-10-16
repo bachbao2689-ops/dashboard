@@ -66,7 +66,7 @@ export const MyTasks: React.FC = () => {
   const references: ReportReference[] = calendar.items.filter(item => item.kind === 'project' || item.kind === 'campaign').map(item => ({ id: item.id, name: item.title, status: item.status, description: item.description, kind: item.kind as 'project' | 'campaign' }));
   return (
     <div className="relative flex min-h-full min-w-0">
-      <div className={`min-w-0 flex-1 space-y-6 pb-6 transition-all duration-300 ${selected ? 'hidden md:block xl:mr-[516px] pr-2' : 'pr-0 lg:pr-4'}`}>
+      <div className={`min-w-0 flex-1 space-y-6 pb-6 transition-all duration-300 ${selected ? 'hidden xl:block xl:mr-[516px] pr-2' : 'pr-0 lg:pr-4'}`}>
         <ProfileHeader role={role} />
         {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
         <ProfileCalendar 

@@ -101,23 +101,23 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
       
       {/* Floating Liquid Glass Top Header Pill */}
       <header className={cn(
-        "liquid-glass-header pointer-events-auto relative mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 md:mx-4 md:mt-2.5 md:h-12 md:rounded-2xl md:px-5 transition-all duration-300",
+        "liquid-glass-header pointer-events-auto relative mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 xl:mx-4 xl:mt-2.5 xl:h-12 xl:rounded-2xl xl:px-5 transition-all duration-300",
         showNotifs ? "z-[9999]" : "z-20",
         isScrolled && "is-scrolled"
       )}>
       
       {/* LEFT AREA */}
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
-        <Sidebar size={20} onClick={toggleSidebar} className="cursor-pointer hover:text-primary transition-colors hidden md:block shrink-0" />
+        <Sidebar size={20} onClick={toggleSidebar} className="cursor-pointer hover:text-primary transition-colors hidden xl:block shrink-0" />
         
         {isSidebarOpen ? (
-          <div className="hidden md:flex items-center gap-2" />
+          <div className="hidden xl:flex items-center gap-2" />
         ) : (
           <TopCollapsedNavbar />
         )}
 
         {/* Mobile Left: Lang and Theme */}
-        <div className="flex md:hidden items-center gap-1">
+        <div className="flex xl:hidden items-center gap-1">
           <button 
             onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
             className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all flex items-center gap-1 font-bold text-xs"
@@ -136,14 +136,14 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
       </div>
 
       {/* CENTER AREA (Mobile Logo) */}
-      <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
+      <div className="xl:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
         <img src="/logo-light.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md block dark:hidden" />
         <img src="/logo-dark.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md hidden dark:block" />
       </div>
 
       {/* RIGHT AREA */}
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative group hidden sm:block" >
+        <div className="relative group hidden xl:block" >
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
@@ -155,13 +155,13 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
             }}
             className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 focus:w-64 transition-all text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono pointer-events-none">⌘K</kbd>
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono pointer-events-none">⌘K</kbd>
         </div>
         
         <div className="flex items-center gap-1 md:gap-3 text-gray-600 dark:text-gray-300">
           <button 
             onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden md:flex items-center gap-1 font-bold text-xs"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden xl:flex items-center gap-1 font-bold text-xs"
           >
             <Globe size={18} /> {lang.toUpperCase()}
           </button>
@@ -170,14 +170,14 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
             onClick={toggleTheme}
             aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
             aria-pressed={theme === 'dark'}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden md:block"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden xl:block"
           >
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
           </button>
 
           
-          <div className={`sm:hidden flex items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
-            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
+          <div className={`flex xl:hidden items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
+            <button aria-label={t('header.search')} onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
               <Search size={18} />
             </button>
             <input

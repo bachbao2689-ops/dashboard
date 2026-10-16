@@ -56,7 +56,13 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   }, []);
   const [cursor, setCursor] = useState(() => new Date());
   const [range, setRange] = useState<CalendarRange>('month');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'list' : 'grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1279px)').matches ? 'list' : 'grid');
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1279px)');
+    const sync = () => setViewMode(media.matches ? 'list' : 'grid');
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
   const [rangeOpen, setRangeOpen] = useState(false);
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);

@@ -881,7 +881,7 @@ export const TopCollapsedNavbar: React.FC = () => {
       <div
         ref={navContainerRef}
         onMouseLeave={handleNavbarAreaLeave}
-        className="top-pill-navbar hidden md:flex items-center gap-1 overflow-x-auto scrollbar-hide w-full py-0.5"
+        className="top-pill-navbar hidden xl:flex items-center gap-1 overflow-x-auto scrollbar-hide w-full py-0.5"
       >
         {/* Effect 1: Shared Horizontal Sliding Highlight Pill */}
         <div
@@ -1080,7 +1080,7 @@ export const TopCollapsedNavbar: React.FC = () => {
               width: `${activePopover.width}px`,
             }}
             className={cn(
-              'top-nav-morph-popover hidden md:block',
+              'top-nav-morph-popover hidden xl:block',
               isPopoverInstantX && 'is-instant-x',
               isPopoverClosing && 'is-closing'
             )}
