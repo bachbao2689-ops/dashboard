@@ -101,7 +101,16 @@ export function useProjectsController(){
   const chooseCampaignMention = (person: any) => { setCampaignComment(value => value.replace(/@[^\s@]*$/, `@${person.name.replace(/\s+/g, '')} `)); campaignCommentInput.current?.focus(); };
 
   const removeCampaignSubtask = async (id: string) => { await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', id); setCampaignSubtasks(campaignSubtasks.filter(s => s.id !== id)); };
-  const completeCampaignSubtask = async (subtask: any) => { if (!selectedCampaign || ['done', 'complete', 'completed'].includes((subtask.status || '').toLowerCase())) return; await supabase.from('campaign_subtasks').update({ status: 'completed' }).eq('id', subtask.id); const { data } = await supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'); setCampaignSubtasks(data || []); };
+  const completeCampaignSubtask = async (subtask: any) => {
+    if (!selectedCampaign || ['done', 'complete', 'completed'].includes((subtask.status || '').toLowerCase())) return;
+    const { error } = await supabase.from('campaign_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
+    if (error) return toast.error('Không thể hoàn thành subtask');
+    const { data } = await supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at');
+    setCampaignSubtasks(data || []);
+    window.dispatchEvent(new Event('tasks:changed'));
+    window.dispatchEvent(new Event('campaigns:changed'));
+    toast.success('Đã hoàn thành subtask');
+  };
   const saveEditedCampaignSubtask = async (id: string) => { await supabase.from('campaign_subtasks').update({ title: campaignEditSubtaskTitle, due_date: campaignEditSubtaskDue ? (campaignEditSubtaskDue.includes('/') ? campaignEditSubtaskDue.split('/').reverse().join('-') : campaignEditSubtaskDue) : null, assignee_id: campaignEditSubtaskOwner ? Number(campaignEditSubtaskOwner) : null }).eq('id', id); setCampaignEditingSubtaskId(null); const { data } = await supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'); setCampaignSubtasks(data || []); };
 
   const removeCampaignComment = async (id: string) => { await supabase.from('activity_log').delete().eq('id', id); setCampaignComments(campaignComments.filter(c => c.id !== id)); };
@@ -619,6 +628,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     setRecentlyCompletedSubtaskId(subtask.id);
     window.setTimeout(() => setRecentlyCompletedSubtaskId(current => current === subtask.id ? null : current), 900);
     await notifyStakeholders('project', selected.id, `đã hoàn thành subtask: ${subtask.title}`);
+    window.dispatchEvent(new Event('tasks:changed'));
+    window.dispatchEvent(new Event('projects:changed'));
     toast.success('Đã hoàn thành subtask');
   };
   const addComment = async () => {

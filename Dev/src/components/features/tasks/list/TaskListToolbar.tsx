@@ -104,6 +104,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
           value={statusFilter}
           onChange={onStatusChange}
           options={statusOptions}
+          allKey="open"
           isOpen={activeDropdown === 'status'}
           onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
           onClose={() => setActiveDropdown(null)}

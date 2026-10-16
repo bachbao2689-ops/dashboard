@@ -270,11 +270,11 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
           <StatusFilterDropdown
             value={status}
             onChange={setStatus}
-            allKey="all"
+            allKey="open"
             label={t('profile.allStatus')}
             options={[
-              { key: 'all', label: t('profile.allStatus'), dot: 'bg-gray-400' },
               { key: 'open', label: t('profile.incomplete'), dot: 'bg-blue-500' },
+              { key: 'all', label: t('profile.allStatus'), dot: 'bg-gray-400' },
               { key: 'done', label: t('profile.completed'), dot: 'bg-emerald-500' },
               { key: 'overdue', label: t('profile.overdue'), dot: 'bg-rose-500' },
               { key: 'hidden', label: t('profile.archived'), dot: 'bg-slate-500' },

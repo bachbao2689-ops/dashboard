@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {taskTarget,taskKey,entityLink,taskActive,taskOpen,taskOverdue,taskDueWithin,completionMetrics} from '../src/lib/taskTracking.ts';
+import {taskTarget,taskKey,entityLink,taskActive,taskOpen,taskDone,taskOverdue,taskDueWithin,completionMetrics} from '../src/lib/taskTracking.ts';
 import {mapWorkspaceTasks} from '../src/lib/workspaceTaskMapping.ts';
 import {taskProgress,parentTasks} from '../src/lib/workflowHub.ts';
 import {mapPriority,mapStatus} from '../src/components/features/tasks/list/taskListPresentation.ts';
@@ -47,3 +47,19 @@ test('due-soon shortcuts and Dashboard include the last deadline day and exclude
  assert.equal(taskDueWithin({status:'done',due_date:'2026-10-21'},'2026-10-14','2026-10-21'),false);
  assert.equal(taskDueWithin({status:'todo',due_date:'2026-10-22'},'2026-10-14','2026-10-21'),false);
 });
+
+test('completed work is hidden by default and only shown under completed or all filter',()=>{
+ const tasks = [
+  { ...base, id: '1', status: 'in_progress' },
+  { ...base, id: '2', status: 'completed' },
+  { ...base, id: '3', status: 'done' },
+  { ...base, id: '4', status: 'todo' },
+ ];
+ const openTasks = tasks.filter(taskOpen);
+ assert.deepEqual(openTasks.map(t => t.id), ['1', '4']);
+ const doneTasks = tasks.filter(taskDone);
+ assert.deepEqual(doneTasks.map(t => t.id), ['2', '3']);
+ const allTasks = tasks.filter(taskActive);
+ assert.deepEqual(allTasks.map(t => t.id), ['1', '2', '3', '4']);
+});
+

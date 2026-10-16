@@ -2,7 +2,7 @@ import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotificati
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inputDate } from '../../../lib/workflowHub';
-import { taskKey, taskLink } from '../../../lib/taskTracking';
+import { taskKey, taskLink, isTaskDone } from '../../../lib/taskTracking';
 import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
@@ -95,6 +95,23 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     }
   };
 
+  const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('open');
+
+  const completeSubtask = async (sub: any) => {
+    if (readOnly || isTaskDone(sub.status)) return;
+    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({ status: 'completed' }).eq('id', sub.id).select('id').single(), 'Đã hoàn thành subtask')) {
+      window.dispatchEvent(new Event('tasks:changed'));
+      onUpdated?.();
+    }
+  };
+
+  const visibleSubtasks = subtasks.filter(sub => {
+    if (sub.status === 'deleted' || sub.status === 'archived') return false;
+    if (subtaskFilter === 'open') return !isTaskDone(sub.status);
+    if (subtaskFilter === 'completed') return isTaskDone(sub.status);
+    return true;
+  });
+
   const removeSubtask = async (id: string) => {
     if (!canManage) return;
     if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({status:'deleted'}).eq('id', id).select('id').single(), 'Đã xóa subtask')) onUpdated?.();
@@ -140,22 +157,38 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.lead?.name || data.creator?.name || '---'} src={data.lead?.avatar_url || data.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.lead?.name || data.creator?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
-            <WorkflowTrackingSummary kind={kind} id={item.id} hub={hub} onOpenTask={task => navigate(taskLink(task.id))} />
+            <WorkflowTrackingSummary kind={kind} id={item.id} hub={hub} onOpenTask={task => navigate(taskLink(task.id))} statusFilter={subtaskFilter} />
             <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || t('tasks.noDescription')}</div></section>
             
             <section>
-              <h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-sm flex gap-2 items-center"><Users size={16}/> {t('projects.subtasks')}</h3>
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs">
+                  <button type="button" onClick={() => setSubtaskFilter('open')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'open' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.active') || 'Chưa xong'}</button>
+                  <button type="button" onClick={() => setSubtaskFilter('completed')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'completed' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.completed') || 'Đã xong'}</button>
+                  <button type="button" onClick={() => setSubtaskFilter('all')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'all' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.all') || 'Tất cả'}</button>
+                </div>
+              </div>
               <div className="space-y-2">
-                {subtasks.map(sub => (
+                {visibleSubtasks.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
+                ) : visibleSubtasks.map(sub => (
                   <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm flex justify-between items-start">
                     <div>
-                      <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className="text-left font-bold text-gray-900 dark:text-white">{sub.title}</button>
+                      <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className={`text-left font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{sub.title}</button>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5"><Avatar name={sub.assignee?.name || t('common.unassigned')} src={sub.assignee?.avatar_url} className="w-4 h-4 text-[9px]" /> {sub.assignee?.name || t('common.unassigned')}</span>
                         {sub.due_date && <span className="font-bold text-red-600 dark:text-red-400">{dateValue(sub.due_date)}</span>}
                       </div>
                     </div>
-                    <button aria-label={`Xóa ${sub.title}`} disabled={busy || !canManage} onClick={() => removeSubtask(sub.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {Number(sub.assignee_id) === Number(profile?.id) && !isTaskDone(sub.status) && (
+                        <button aria-label={t('common.complete')} disabled={busy} onClick={() => void completeSubtask(sub)} className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-colors" title={t('common.complete')}>
+                          <CheckCircle2 size={15}/>
+                        </button>
+                      )}
+                      <button aria-label={`Xóa ${sub.title}`} disabled={busy || !canManage} onClick={() => removeSubtask(sub.id)} className="p-1 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -66,8 +66,9 @@ export const Dashboard: React.FC = () => {
 
   const {s,pct,rangeStart,rangeEnd,selectedTasks,periodTasks,chartData,selectedReferences,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,users,activeId,range,customStart,customEnd,search);
   const trackRing=isDark?'#334155':'#edf3f8';const trackOrbit=isDark?'#334155':'#e8eff8';
-  const openFilteredTasks=()=>{
+  const openFilteredTasks=(statusParam?: string)=>{
     if(!s)return;const query=new URLSearchParams({start:rangeStart,end:rangeEnd});
+    if(statusParam)query.set('status',statusParam);
     if(s.type==='staff')query.set('assignee',s.id.slice(5));
     if(s.type==='department')query.set('department_id',s.id.slice(5));
     if(s.type==='project')query.set(s.id.startsWith('campaign-')?'campaign_id':'project_id',s.id.slice(s.id.indexOf('-')+1));
@@ -169,8 +170,8 @@ export const Dashboard: React.FC = () => {
                     <div
                       key={l as string}
                       onClick={() => {
-                        if (type === 'open') openFilteredTasks();
-                        else if (type === 'done') openFilteredTasks();
+                        if (type === 'open') openFilteredTasks('open');
+                        else if (type === 'done') openFilteredTasks('completed');
                         else navigate('/projects');
                       }}
                       className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer ${
@@ -204,7 +205,7 @@ export const Dashboard: React.FC = () => {
                             ) : (
                               <div className="space-y-1 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-1">
                                 {items.map((item, idx) => (
-                                  <button key={item.id || idx} onClick={(e) => { e.stopPropagation(); if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(); }} className="w-full px-2.5 py-1.5 rounded-lg bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
+                                  <button key={item.id || idx} onClick={(e) => { e.stopPropagation(); if (item.status !== 'info') navigate('/tasks?task=' + item.id); else openFilteredTasks(type === 'done' ? 'completed' : 'open'); }} className="w-full px-2.5 py-1.5 rounded-lg bg-white/40 dark:bg-slate-900/40 text-left border border-white/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-slate-600 shadow-sm transition-colors">
                                     <p className={`text-xs font-semibold truncate ${INK}`}>{item.title || item.name}</p>
                                     {item.status !== 'info' && <p className="text-[9px] text-gray-500 mt-0.5 uppercase font-bold tracking-wider">{item.status || 'Active'}</p>}
                                   </button>
@@ -220,7 +221,7 @@ export const Dashboard: React.FC = () => {
               </div>
 
               <div className="w-full border-t border-gray-200 dark:border-slate-700 pt-2.5">
-                <TextButton onClick={openFilteredTasks} className={INK}>{t('dashboard.viewAllTasks', { count: s.total })}</TextButton>
+                <TextButton onClick={() => openFilteredTasks('all')} className={INK}>{t('dashboard.viewAllTasks', { count: s.total })}</TextButton>
               </div>
             </div>
           </div>
@@ -274,7 +275,7 @@ export const Dashboard: React.FC = () => {
               <strong className={`text-sm font-semibold ${INK}`}>{t('dashboard.trackingIncomplete', { name: s.name, count: s.open })}</strong>
               <p className="text-xs text-[#7e94b1] dark:text-slate-400 mt-[3px]">{t('dashboard.openNoDeadline', { count: s.noDeadline })}</p>
             </div>
-            <button onClick={openFilteredTasks} aria-label="Xem công việc đang theo dõi" className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
+            <button onClick={() => openFilteredTasks('open')} aria-label="Xem công việc đang theo dõi" className={`ml-auto shrink-0 ${MUTED} hover:text-gray-900 dark:hover:text-white`}><ArrowRight size={16} /></button>
           </div>
         </div>
       </section>
