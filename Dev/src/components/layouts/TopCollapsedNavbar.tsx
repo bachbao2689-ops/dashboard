@@ -13,6 +13,7 @@ import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
 import { useSidebarPinStore } from '../../store/sidebarPinStore';
+import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import {
   buildSidebarGroups,
   type DrillMenuItem,
@@ -64,7 +65,7 @@ const TrackedDrilldownContent: React.FC<{
   onNavigate,
   onToggleTaskPin,
 }) => {
-  const pinnedEntities = useSidebarPinStore(s => s.pinnedEntities);
+  const pinnedEntities = useVisibleSidebarPins();
   const toggleEntityPin = useSidebarPinStore(s => s.toggleEntityPin);
   const isEntityPinned = (kind: 'project' | 'campaign', id: string) =>
     pinnedEntities.some(e => e.kind === kind && e.id === id);
@@ -440,7 +441,7 @@ const PinnedPopoverContent: React.FC<{
   onToggleTaskPin: (taskId: string) => void;
   pinnedTaskItems: ReturnType<typeof useSidebarTrackingData>['enrichedTasks'];
 }> = ({ onNavigate, onToggleTaskPin, pinnedTaskItems }) => {
-  const pinnedEntities = useSidebarPinStore(s => s.pinnedEntities);
+  const pinnedEntities = useVisibleSidebarPins();
   const unpinEntity = useSidebarPinStore(s => s.unpinEntity);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -602,7 +603,7 @@ export const TopCollapsedNavbar: React.FC = () => {
 
   const { profile, enrichedTasks, enrichedTracks, summary, togglePin } =
     useSidebarTrackingData();
-  const pinnedEntities = useSidebarPinStore(s => s.pinnedEntities);
+  const pinnedEntities = useVisibleSidebarPins();
   const pinnedTaskItems = useMemo(
     () => enrichedTasks.filter(task => task.isPinned),
     [enrichedTasks]

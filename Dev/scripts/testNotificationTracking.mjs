@@ -10,6 +10,7 @@ try{
  await db.query(fs.readFileSync(new URL('../supabase/migrations/'+migration,import.meta.url),'utf8'));
  const cleanup=fs.readdirSync(new URL('../supabase/migrations/',import.meta.url)).find(file=>file.endsWith('_consolidate_project_comment_policies.sql'));
  await db.query(fs.readFileSync(new URL('../supabase/migrations/'+cleanup,import.meta.url),'utf8'));
+ await db.query(fs.readFileSync(new URL('../supabase/migrations/20261016143000_sidebar_mention_metadata.sql',import.meta.url),'utf8'));
  await db.query("select set_config('dashboard.push_woken','yes',true)");
  const space=(await db.query('select id from workspaces order by id limit 1')).rows[0].id;
  const departments=[];
@@ -36,6 +37,9 @@ try{
  await db.query('insert into comments(task_id,author_id,body,mentions) values($1,$2,$3,$4)',[id,actor.id,'[QA rollback] canonical comment',[assignee.id,assignee.id]]);
  check(await count('task',id,'task_comment'),1,'Canonical comment and duplicate mentions share one notification');
  check(await count('task',id,'task_comment',leader.id),1,'Project PIC/leader gets task comment');
+ const mentionFlags=(await db.query("select user_id,metadata->'is_mention' as mentioned from notifications where entity_type='task' and entity_id=$1 and type='task_comment'",[id])).rows;
+ check(mentionFlags.find(n=>String(n.user_id)===String(assignee.id))?.mentioned,true,'Explicit mention flag belongs to tagged PIC');
+ check(mentionFlags.find(n=>String(n.user_id)===String(leader.id))?.mentioned,false,'Untyped PIC comment recipient is not a mention');
  await db.query("insert into notifications(user_id,type,entity_type,entity_id,message) values($1,'task_comment','task',$2,'QAActor0 đã bình luận tại Task')",[assignee.id,id]);
  check(await count('task',id,'task_comment'),1,'Existing Official client duplicate is suppressed');
  for(const kind of ['project_subtask','campaign_subtask']){

@@ -51,6 +51,7 @@ export const useSidebarPinStore = create<SidebarPinState>((set, get) => ({
   },
   togglePin: (taskId, userId) => {
     const key = userId != null ? String(userId) : get().ownerId;
+    get().syncOwner(key);
     const current = get().pinnedIds;
     const next = current.includes(taskId) ? current.filter(id => id !== taskId) : [taskId, ...current];
     save(STORAGE_PREFIX, key, next);
@@ -59,6 +60,7 @@ export const useSidebarPinStore = create<SidebarPinState>((set, get) => ({
   isPinned: (taskId) => get().pinnedIds.includes(taskId),
   toggleEntityPin: (entity, userId) => {
     const key = userId != null ? String(userId) : get().ownerId;
+    get().syncOwner(key);
     const current = get().pinnedEntities;
     const exists = current.some(e => e.kind === entity.kind && e.id === entity.id);
     const next = exists

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { StylizedPinIcon } from '../common/StylizedPinIcon';
 import { useSidebarPinStore } from '../../store/sidebarPinStore';
+import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
@@ -525,7 +526,7 @@ export const Sidebar: React.FC = () => {
   });
   const [resizing, setResizing] = useState(false);
   const [openDropdownItemId, setOpenDropdownItemId] = useState<string | null>(null);
-  const pinnedEntities = useSidebarPinStore(s => s.pinnedEntities);
+  const pinnedEntities = useVisibleSidebarPins();
   const unpinEntity = useSidebarPinStore(s => s.unpinEntity);
   const pinnedTaskItems = useMemo(() => enrichedTasks.filter(task => task.isPinned), [enrichedTasks]);
 

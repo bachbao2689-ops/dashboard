@@ -378,9 +378,9 @@ export function buildSidebarGroups({
         <SignalBadges
           isPinned={tr.pinnedCount > 0}
           isMentioned={tr.mentionCount > 0}
-          hasUnreadMention={tr.hasUnreadSignal && tr.mentionCount > 0}
+          hasUnreadMention={tr.hasUnreadMention}
           isCommented={tr.commentCount > 0}
-          hasUnreadComment={tr.hasUnreadSignal && tr.commentCount > 0}
+          hasUnreadComment={tr.hasUnreadComment}
         />
       ),
       rightBadge: <CountPill count={tr.openCount} tone={tr.hasUnreadSignal ? 'blue' : 'neutral'} />,
@@ -488,9 +488,9 @@ export function buildSidebarGroups({
         <SignalBadges
           isPinned={tr.pinnedCount > 0}
           isMentioned={tr.mentionCount > 0}
-          hasUnreadMention={tr.hasUnreadSignal && tr.mentionCount > 0}
+          hasUnreadMention={tr.hasUnreadMention}
           isCommented={tr.commentCount > 0}
-          hasUnreadComment={tr.hasUnreadSignal && tr.commentCount > 0}
+          hasUnreadComment={tr.hasUnreadComment}
         />
       ),
       rightBadge: <CountPill count={tr.openCount} tone={tr.hasUnreadSignal ? 'blue' : 'neutral'} />,
