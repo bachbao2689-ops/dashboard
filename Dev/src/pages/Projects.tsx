@@ -14,6 +14,9 @@ import {SearchInput,StatusFilterDropdown,PicFilterDropdown,DateFilterDropdown,Pr
 import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../components/features/projects/projectPresentation';
 import {useProjectsController} from '../hooks/useProjectsController';
 import {CampaignDetailDrawer} from '../components/features/projects/CampaignDetailDrawer';
+import {EntityPinButton} from '../components/features/projects/EntityPinButton';
+import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
+import {taskKey} from '../lib/taskTracking';
 export const Projects:React.FC=()=>{
  const state=useProjectsController();
  const {t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,editingCommentId,setEditingCommentId,editingCommentText,setEditingCommentText,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
@@ -193,10 +196,13 @@ export const Projects:React.FC=()=>{
       {selected && (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-            <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3>
-            <button onClick={() => { setSelected(null); setParams({}, { replace: true }); }} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex items-center gap-1 min-w-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3></div>
+            <div className="flex items-center gap-1 shrink-0">
+              <EntityPinButton kind="project" id={selected.id} name={selected.name} />
+              <button onClick={() => { setSelected(null); setParams({}, { replace: true }); }} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
           <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
             {editMode ? (
@@ -254,7 +260,8 @@ export const Projects:React.FC=()=>{
       </div>
     </div>
   </div>
-  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 shrink-0" onClick={event => event.stopPropagation()}>
+  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0" onClick={event => event.stopPropagation()}>
+          <TaskPinButton taskId={taskKey('project_subtask', s.id)} size={14} className="!p-1.5" />
           {Number(s.assignee_id) === Number(profile?.id) && !['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) && <ActionButton icon={<CheckCircle2 size={14}/>} onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}></ActionButton>}
           {canCreate && <><button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>
           <button onClick={()=>removeSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button></>}

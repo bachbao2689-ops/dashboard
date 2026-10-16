@@ -10,6 +10,15 @@ import {NotificationIcon,TONES,toneOf,toneStyle,PicText} from './notificationVis
 const VISIBLE=4,EXIT_MS=550,HISTORY=12;
 // Per-depth visual targets: scale down, dim and sink with each layer; last layer fades to 0.
 const LAYERS=[{y:0,s:1,o:1},{y:11,s:.95,o:.78},{y:21,s:.9,o:.5},{y:30,s:.85,o:.26},{y:36,s:.8,o:0}];
+// Local UI preview samples (only used by the dev-only test button).
+const DEMO:[string,string,string][]=[
+ ['Task mới được giao','Thái Đặng giao bạn công việc: Thiết kế Banner Tết','task'],
+ ['Bình luận mới','Bách Bảo đã bình luận trong chiến dịch: Camp 10','campaign'],
+ ['Nhắc report','Nga Phạm đã nhắc bạn trong dự án: Create Dashboard Management','project'],
+ ['Task completed','ADMIN đã hoàn thành subtask: Key Visual','project_subtask'],
+];
+let demoCount=0;
+
 export function NotificationPopupStack(){
  const {items}=useNotificationCenter(),actor=useAuthStore(s=>s.profile?.id),navigate=useNavigate();
  const [stack,setStack]=useState<NotificationItem[]>([]),[log,setLog]=useState<NotificationItem[]>([]),[expanded,setExpanded]=useState(false);
@@ -32,21 +41,24 @@ export function NotificationPopupStack(){
  useEffect(()=>{if(stack.length<=VISIBLE)return;const t=setTimeout(()=>setStack(cur=>cur.slice(0,VISIBLE)),EXIT_MS);return()=>clearTimeout(t);},[stack.length]);
  // Visible cards stay until opened, dismissed, cleared, or marked read elsewhere.
  useEffect(()=>{if(!expanded)return;if(!log.length){setExpanded(false);return;}const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')setExpanded(false);};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[expanded,log.length]);
+ const demo=()=>{const n=++demoCount,[title,message,entity_type]=DEMO[n%DEMO.length];push([{id:`demo-${n}`,type:'task_assigned',title,message,entity_type,entity_id:null,is_read:false,created_at:new Date().toISOString()}]);};
  const dismiss=(id:string)=>{setStack(cur=>cur.filter(i=>i.id!==id));setLog(cur=>cur.filter(i=>i.id!==id));};
  // Clear all only hides popups; the bell history and unread badge stay untouched.
  const clearAll=()=>{setStack([]);setLog([]);setExpanded(false);};
  const markAllRead=async()=>{
-  const ids=log.map(i=>i.id);
+  const ids=log.filter(i=>!i.id.startsWith('demo-')).map(i=>i.id);
   setStack([]);setLog([]);setExpanded(false);
   if(ids.length){try{await markNotificationsRead(ids);}catch{}}
  };
  const open=async(n:NotificationItem)=>{
   dismiss(n.id);
+  if(n.id.startsWith('demo-'))return;
   void markNotificationsRead([n.id]).catch(()=>{});
   const href=entityLink(n.entity_type,n.entity_id,n.metadata);if(href)navigate(href);
  };
  const extra=stack.length>1?Math.min(stack.length,VISIBLE)-1:0;
  return <>
+  {import.meta.env.DEV&&<button type="button" onClick={demo} className="fixed bottom-24 right-4 z-[9400] rounded-full bg-[#002e6d] px-4 py-2 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-[#001f4d] md:bottom-6">Test popup</button>}
   {expanded&&log.length>0&&<div className="notif-panel notif-glass rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/90" role="dialog" aria-label="Tất cả thông báo mới">
    <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-slate-700/80"><b className="text-xs font-semibold text-gray-900 dark:text-gray-100">Thông báo mới · {log.length}</b><span className="flex items-center gap-1.5"><button type="button" onClick={()=>void markAllRead()} title="Đã đọc tất cả" aria-label="Đã đọc tất cả" className="notif-action p-1.5 rounded-lg text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 transition-colors"><Check size={15} strokeWidth={2.5}/></button><button type="button" onClick={clearAll} title="Xoá tất cả" aria-label="Xoá tất cả" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"><Trash2 size={13}/><span>Xoá tất cả</span></button><button type="button" onClick={()=>setExpanded(false)} title="Thu gọn" aria-label="Thu gọn" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><ChevronUp size={14}/><span>Thu gọn</span></button></span></div>
    <div className="notif-panel-list">{log.map(n=>{const tone=TONES[toneOf(n)];

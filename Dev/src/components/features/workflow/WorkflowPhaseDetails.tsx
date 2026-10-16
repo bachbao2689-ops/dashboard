@@ -8,9 +8,12 @@ import {WorkflowGateChecklist} from './WorkflowGateChecklist';
 import {MultiSelect} from '../../common/MultiSelect';
 import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
 import {Avatar} from '../../common/Avatar';
+import {TaskPinButton} from '../tasks/TaskPinButton';
+import {useSidebarPinStore} from '../../../store/sidebarPinStore';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
   const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, editingTaskId, setEditingTaskId, editTaskTitle, setEditTaskTitle, editTaskAssignee, setEditTaskAssignee, editTaskStatus, setEditTaskStatus, editTaskDue, setEditTaskDue, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleStartEditTask, handleSaveEditTask, handleQuickChangeStatus, pct} = model;
+  const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
 
   const [splitPct, setSplitPct] = useState(58);
   const [resizing, setResizing] = useState(false);
@@ -197,6 +200,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                     ) : (
                       currentPhaseSubtasks.map((s) => {
                         const done = s.status === 'completed';
+                        const isPinned = pinnedTaskIds.includes(String(s.id));
                         const isEditing = editingTaskId === s.id;
 
                         if (isEditing) {
@@ -263,7 +267,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         return (
                           <div
                             key={s.id}
-                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group/task relative ${
+                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group group/task relative ${
                               'z-10'
                             } ${
                               done
@@ -310,57 +314,72 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                             </div>
 
                             {/* Right: Assignee (Avatar + Name), Due date & Actions */}
-                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto ml-6 sm:ml-0">
-                              {/* PIC Avatar + Name */}
-                              {s.record.assignee?.name || s.assignee ? (
-                                <span
-                                  className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
-                                  title={`${isEn ? 'Assignee' : 'Người thực hiện'}: ${s.record.assignee?.name || s.assignee}`}
-                                >
-                                  <Avatar
-                                    name={s.record.assignee?.name || s.assignee}
-                                    src={s.record.assignee?.avatar_url}
-                                    className="w-4 h-4 text-[7px] shrink-0"
-                                  />
-                                  <span className="font-semibold truncate max-w-[95px]">
-                                    {s.record.assignee?.name || s.assignee}
+                            <div className="flex items-center shrink-0 self-end sm:self-auto ml-6 sm:ml-0">
+                              {/* Basic Info: PIC Avatar + Name & Due date */}
+                              <div className="flex items-center gap-1.5">
+                                {/* PIC Avatar + Name */}
+                                {s.record.assignee?.name || s.assignee ? (
+                                  <span
+                                    className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
+                                    title={`${isEn ? 'Assignee' : 'Người thực hiện'}: ${s.record.assignee?.name || s.assignee}`}
+                                  >
+                                    <Avatar
+                                      name={s.record.assignee?.name || s.assignee}
+                                      src={s.record.assignee?.avatar_url}
+                                      className="w-4 h-4 text-[7px] shrink-0"
+                                    />
+                                    <span className="font-semibold truncate max-w-[95px]">
+                                      {s.record.assignee?.name || s.assignee}
+                                    </span>
                                   </span>
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
-                                  <User size={10} />
-                                  <span className="truncate max-w-[80px]">{isEn ? 'Unassigned' : 'Chưa giao PIC'}</span>
-                                </span>
-                              )}
+                                ) : (
+                                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
+                                    <User size={10} />
+                                    <span className="truncate max-w-[80px]">{isEn ? 'Unassigned' : 'Chưa giao PIC'}</span>
+                                  </span>
+                                )}
 
-                              {s.due_date && (
-                                <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
-                                  <Calendar size={10} />
-                                  <span>{displayDate(s.due_date)}</span>
-                                </span>
-                              )}
+                                {s.due_date && (
+                                  <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
+                                    <Calendar size={10} />
+                                    <span>{displayDate(s.due_date)}</span>
+                                  </span>
+                                )}
+                              </div>
 
-                              {/* Edit Action */}
-                              <button
-                                type="button"
-                                disabled={!s.canEdit || hub.busy}
-                                onClick={(e) => handleStartEditTask(s, e)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title={isEn ? 'Edit task' : 'Chỉnh sửa đầu việc'}
+                              {/* Actions (Pin, Edit, Delete): collapses to 0 width when idle (sitting flush right), expands on hover pushing info left */}
+                              <div
+                                className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${
+                                  isPinned
+                                    ? 'max-w-[32px] opacity-100 pl-1.5 group-hover:max-w-[120px] group-hover/task:max-w-[120px] focus-within:max-w-[120px]'
+                                    : 'max-w-0 opacity-0 pl-0 group-hover:max-w-[120px] group-hover:opacity-100 group-hover:pl-1.5 group-hover/task:max-w-[120px] group-hover/task:opacity-100 group-hover/task:pl-1.5 focus-within:max-w-[120px] focus-within:opacity-100 focus-within:pl-1.5'
+                                }`}
                               >
-                                <Edit3 size={12} />
-                              </button>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <TaskPinButton taskId={s.id} size={12} className="!p-1" />
+                                  {/* Edit Action */}
+                                  <button
+                                    type="button"
+                                    disabled={!s.canEdit || hub.busy}
+                                    onClick={(e) => handleStartEditTask(s, e)}
+                                    className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer disabled:hidden shrink-0"
+                                    title={isEn ? 'Edit task' : 'Chỉnh sửa đầu việc'}
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
 
-                              {/* Delete Action */}
-                              <button
-                                type="button"
-                                disabled={!s.canEdit || hub.busy}
-                                onClick={(e) => handleDeleteTask(s.id, e)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:hidden"
-                                title={isEn ? 'Delete task' : 'Xóa đầu việc'}
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                                  {/* Delete Action */}
+                                  <button
+                                    type="button"
+                                    disabled={!s.canEdit || hub.busy}
+                                    onClick={(e) => handleDeleteTask(s.id, e)}
+                                    className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:hidden shrink-0"
+                                    title={isEn ? 'Delete task' : 'Xóa đầu việc'}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );

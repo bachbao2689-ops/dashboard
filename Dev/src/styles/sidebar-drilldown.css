@@ -1,0 +1,673 @@
+/* ========================================================
+   Sidebar Left — Resizable Shell, Section Dropdowns &
+   Per-Button Fixed Multi-level Drill-down Menu
+   Follows Brief/Multi-level Drill-down Task.docx & UI Modification Policy
+   ======================================================== */
+
+/* 1. Resizable Left Sidebar Shell (scales like Detail Tasks) */
+@media (min-width: 768px) {
+  div.w-\[272px\]:has(.app-sidebar) {
+    width: var(--sidebar-width, 272px) !important;
+  }
+}
+
+html[data-sidebar-resizing="true"] div:has(.app-sidebar) {
+  transition: none !important;
+}
+
+html[data-sidebar-resizing="true"],
+html[data-sidebar-resizing="true"] * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.sb-resize-handle {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  right: 0px;
+  width: 10px;
+  cursor: col-resize;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-resize-grip {
+  width: 3px;
+  height: 36px;
+  border-radius: 9999px;
+  opacity: 0;
+  transition: opacity 0.2s ease, height 0.2s ease, background-color 0.2s ease;
+}
+
+html:not(.dark) .sb-resize-grip {
+  background: rgba(37, 99, 235, 0.45);
+}
+
+.dark .sb-resize-grip {
+  background: rgba(78, 182, 72, 0.55);
+}
+
+.sb-resize-handle:hover .sb-resize-grip,
+.sb-resize-handle.is-resizing .sb-resize-grip {
+  opacity: 1;
+  height: 52px;
+}
+
+/* 2. Group Title Dropdown Button */
+.sb-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              margin-bottom 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sb-group-header.is-collapsed {
+  margin-bottom: 0px !important;
+}
+
+html:not(.dark) .sb-group-header {
+  color: #64748b;
+  background: transparent;
+}
+
+html:not(.dark) .sb-group-header:hover {
+  color: #002e6d;
+  background: rgba(226, 239, 255, 0.55);
+}
+
+.dark .sb-group-header {
+  color: #94a3b8;
+}
+
+.dark .sb-group-header:hover {
+  color: #f1f5f9;
+  background: rgba(38, 59, 83, 0.55);
+}
+
+.sb-group-chevron {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  flex-shrink: 0;
+}
+
+.sb-group-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+/* Group Collapsible Body */
+.sb-group-body {
+  overflow: hidden;
+  transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sb-group-body.is-collapsed {
+  max-height: 0px !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 3. Fixed Button + Dropdown Trigger */
+/* Move active indicator to left edge on drillable root rows so right dropdown button stays clear */
+html:not(.dark) .app-sidebar .sb-root-row.has-drill.sidebar-link-active::after {
+  right: auto !important;
+  left: 0 !important;
+  width: 3.5px !important;
+  height: 52% !important;
+  border-radius: 4px !important;
+}
+
+/* When a button's detail dropdown is open, fix/highlight the button cleanly above its panel */
+html:not(.dark) .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
+  color: #002e6d !important;
+  background: rgba(219, 234, 254, 0.65) !important;
+  border: 1px solid rgba(147, 197, 253, 0.75) !important;
+  font-weight: 600 !important;
+}
+
+.dark .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
+  color: #ffffff;
+  background: #23374f;
+  border: 1px solid #385270;
+}
+
+.sb-drop-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: transparent !important;
+  border: none;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .sb-drop-icon-btn {
+  color: #64748b;
+  opacity: 0.78;
+}
+
+html:not(.dark) .sb-drop-icon-btn:hover,
+html:not(.dark) .sb-drop-icon-btn.is-open {
+  color: #002e6d;
+  opacity: 1;
+}
+
+.dark .sb-drop-icon-btn {
+  color: #94a3b8;
+  opacity: 0.8;
+}
+
+.dark .sb-drop-icon-btn:hover,
+.dark .sb-drop-icon-btn.is-open {
+  color: #f8fafc;
+  opacity: 1;
+}
+
+.sb-drop-icon-btn.is-open svg {
+  transform: rotate(180deg);
+}
+
+.sb-drop-icon-btn svg {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 4. Per-Button In-place Multi-level Drill-down Container (Smooth Height Morphing) */
+.sb-drill-viewport {
+  position: relative;
+  width: 100%;
+  margin-top: 6px;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              margin-top 0.24s ease;
+  will-change: height, opacity;
+}
+
+html:not(.dark) .sb-drill-viewport {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.88) 0%, rgba(235, 245, 255, 0.76) 100%);
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+              0 8px 20px -8px rgba(18, 48, 94, 0.12);
+}
+
+.dark .sb-drill-viewport {
+  background: rgba(15, 26, 42, 0.72);
+  border: 1px solid rgba(52, 75, 101, 0.8);
+}
+
+.sb-drill-viewport.is-collapsed {
+  height: 0px !important;
+  opacity: 0;
+  margin-top: 0px;
+  border-width: 0px;
+  pointer-events: none;
+}
+
+/* Horizontal Slide + Crossfade Animations */
+.sb-drill-stage {
+  position: relative;
+  width: 100%;
+}
+
+.sb-drill-panel {
+  width: 100%;
+  padding: 6px;
+}
+
+.sb-drill-panel.anim-forward-in {
+  animation: sb-slide-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sb-drill-panel.anim-backward-in {
+  animation: sb-slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sb-drill-panel-exit {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  padding: 6px;
+  pointer-events: none;
+}
+
+.sb-drill-panel-exit.anim-forward-out {
+  animation: sb-slide-out-left 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sb-drill-panel-exit.anim-backward-out {
+  animation: sb-slide-out-right 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sb-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(26%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sb-slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-26%);
+  }
+}
+
+@keyframes sb-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-26%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sb-slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(26%);
+  }
+}
+
+/* Back Header Row (Level 2 & Level 3+) */
+.sb-back-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 6.5px 9px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .sb-back-row {
+  color: #002e6d;
+  background: rgba(219, 234, 254, 0.6);
+  border-bottom: 1px solid rgba(191, 219, 254, 0.7);
+}
+
+html:not(.dark) .sb-back-row:hover {
+  background: rgba(191, 219, 254, 0.9);
+}
+
+.dark .sb-back-row {
+  color: #e2e8f0;
+  background: rgba(38, 59, 83, 0.65);
+  border-bottom: 1px solid rgba(52, 75, 101, 0.75);
+}
+
+.dark .sb-back-row:hover {
+  background: rgba(51, 78, 108, 0.85);
+}
+
+/* Drill-down Menu Item Row */
+.sb-item-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7.5px 9px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .sb-item-row {
+  color: #334155;
+}
+
+html:not(.dark) .sb-item-row:hover {
+  color: #002e6d;
+  background: rgba(226, 239, 255, 0.68);
+  border-color: rgba(191, 219, 254, 0.65);
+}
+
+.dark .sb-item-row {
+  color: #c3d2e5;
+}
+
+.dark .sb-item-row:hover {
+  color: #ffffff;
+  background: #263b53;
+}
+
+/* Keyboard Focus Ring */
+.sb-item-row:focus-visible,
+.sb-back-row:focus-visible,
+.sb-root-row:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: -2px !important;
+}
+
+.dark .sb-item-row:focus-visible,
+.dark .sb-back-row:focus-visible,
+.dark .sb-root-row:focus-visible {
+  outline: 2px solid #4eb648 !important;
+}
+
+/* Danger / Alert Row Variant */
+html:not(.dark) .sb-item-row.is-danger {
+  color: #be123c;
+  background: rgba(255, 241, 242, 0.65);
+}
+
+html:not(.dark) .sb-item-row.is-danger:hover {
+  background: rgba(254, 226, 226, 0.85);
+  border-color: rgba(253, 164, 175, 0.6);
+}
+
+.dark .sb-item-row.is-danger {
+  color: #fda4af;
+}
+
+.dark .sb-item-row.is-danger:hover {
+  background: rgba(159, 18, 57, 0.28);
+}
+
+/* Highlighted Task Row (Pinned / Mentioned / Commented) */
+html:not(.dark) .sb-item-row.is-priority-task {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(239, 246, 255, 0.68) 100%);
+  border-color: rgba(191, 219, 254, 0.6);
+}
+
+html:not(.dark) .sb-item-row.is-priority-task:hover {
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.88) 0%, rgba(191, 219, 254, 0.6) 100%);
+  border-color: rgba(147, 197, 253, 0.88);
+}
+
+/* Pin button inside task rows */
+.sb-pin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  opacity: 0.45;
+  transition: opacity 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.sb-item-row:hover .sb-pin-btn,
+.sb-pin-btn.is-pinned,
+.sb-pin-btn:focus-visible {
+  opacity: 1;
+}
+
+html:not(.dark) .sb-pin-btn:hover {
+  background: rgba(15, 23, 42, 0.07);
+  transform: scale(1.08);
+}
+
+.dark .sb-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.08);
+}
+
+.sb-drill-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+html:not(.dark) .sb-drill-trigger:hover {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+  transform: translateX(1.5px);
+}
+
+.dark .sb-drill-trigger:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(1.5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-drill-viewport,
+  .sb-drill-panel,
+  .sb-drill-panel-exit,
+  .sb-group-chevron,
+  .sb-drop-icon-btn svg,
+  .top-nav-hover-pill,
+  .top-nav-morph-popover,
+  .top-nav-morph-viewport,
+  .top-nav-vertical-pill {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================================
+   Top Collapsed Sidebar — Floating Pill Navbar with
+   Shared-Layout Morphing Dropdown (Brief: UX_UI - Side Bar Top Khi Crop.docx)
+   ======================================================== */
+
+.top-pill-navbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Effect 1: Horizontal Sliding Pill on Top Navbar */
+.top-nav-hover-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.18s ease;
+}
+
+.top-nav-hover-pill.is-instant {
+  transition: opacity 0.16s ease !important;
+}
+
+html:not(.dark) .top-nav-hover-pill {
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.85) 0%, rgba(191, 219, 254, 0.65) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+              0 2px 8px -2px rgba(30, 64, 175, 0.12);
+}
+
+.dark .top-nav-hover-pill {
+  background: rgba(38, 59, 83, 0.78);
+  border: 1px solid rgba(147, 197, 253, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Parent Lock highlight state when cursor is inside Dropdown Popover */
+html:not(.dark) .top-nav-item-locked {
+  color: #002e6d !important;
+  font-weight: 600;
+}
+
+.dark .top-nav-item-locked {
+  color: #ffffff !important;
+}
+
+/* Effect 2: Shared-Layout Morphing Popover */
+.top-nav-morph-popover {
+  position: fixed;
+  left: 0;
+  z-index: 9995;
+  border-radius: 18px;
+  pointer-events: auto;
+  will-change: transform, width, opacity;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.top-nav-morph-popover.is-instant-x {
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.top-nav-morph-surface {
+  border-radius: 18px;
+  overflow: hidden;
+  transform-origin: top center;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.25s ease;
+}
+
+html:not(.dark) .top-nav-morph-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 247, 255, 0.94) 100%);
+  border: 1px solid rgba(191, 219, 254, 0.92);
+  box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+              0 18px 42px -10px rgba(15, 42, 90, 0.18),
+              0 4px 12px -2px rgba(15, 42, 90, 0.08);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+}
+
+.dark .top-nav-morph-surface {
+  background: linear-gradient(165deg, rgba(23, 39, 60, 0.96) 0%, rgba(15, 25, 42, 0.96) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12),
+              0 20px 48px -10px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+}
+
+@keyframes topNavPopoverOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.top-nav-morph-surface.is-opening {
+  animation: topNavPopoverOpen 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Effect 4: Contextual Dismiss */
+.top-nav-morph-popover.is-closing {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.top-nav-morph-popover.is-closing .top-nav-morph-surface {
+  transform: translateY(-5px) scale(0.96);
+  opacity: 0;
+}
+
+/* Invisible Hover Bridge (~8px gap bridge between Navbar and Popover) */
+.top-nav-hover-bridge {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* Smooth Height Morphing Viewport inside Popover */
+.top-nav-morph-viewport {
+  position: relative;
+  overflow: hidden;
+  transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Crossfade when switching between different tracked buttons on Navbar */
+@keyframes topNavCrossfadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--cf-offset, 10px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.top-nav-crossfade-panel {
+  animation: topNavCrossfadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Effect 3: Vertical Sliding Pill inside Dropdown */
+.top-nav-vertical-pill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.15s ease;
+}
+
+.top-nav-vertical-pill.is-instant {
+  transition: opacity 0.14s ease !important;
+}
+
+html:not(.dark) .top-nav-vertical-pill {
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.9) 0%, rgba(226, 239, 255, 0.65) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.72);
+  box-shadow: 0 2px 6px -2px rgba(30, 64, 175, 0.08);
+}
+
+.dark .top-nav-vertical-pill {
+  background: rgba(38, 59, 83, 0.75);
+  border: 1px solid rgba(147, 197, 253, 0.2);
+}
+
