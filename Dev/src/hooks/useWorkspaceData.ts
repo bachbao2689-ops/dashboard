@@ -14,5 +14,5 @@ export function useWorkspaceData({includeAssets=false}:{includeAssets?:boolean}=
  const assets=useSharedResource(assetSummaryResource,workspaceScope(),Boolean(profile&&includeAssets));
  const users=directory.data?.users||[],departments=directory.data?.departments||[];
  const scopedUsers=users.filter(user=>String(user.id)===String(profile?.id)||canViewPersonInTeam(profile,user));
- return {tasks:source.tasks,assets:assets.data||[],users:scopedUsers,departments,loading:source.loading||directory.loading||assets.loading,error:source.error||directory.error||assets.error,refetch:async()=>{await Promise.all([source.refetch(),directory.refetch(),assets.refetch()]);}};
+ return {tasks:source.tasks,assets:assets.data||[],users:scopedUsers,departments,loading:source.loading||directory.loading||(includeAssets&&assets.loading),error:source.error||directory.error||(includeAssets?assets.error:null),refetch:async()=>{await Promise.all([source.refetch(),directory.refetch(),...(includeAssets?[assets.refetch()]:[])]);}};
 }
