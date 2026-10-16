@@ -7,9 +7,10 @@ import type { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import type { Task } from '../../../hooks/useTasks';
 import { StatusBadge } from '../../common/StatusBadge';
 import { Avatar } from '../../common/Avatar';
+import {taskDone} from '../../../lib/taskTracking';
 
-export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpanded = false }: {
-  kind: 'project' | 'campaign'; id: string; hub: ReturnType<typeof useWorkflowHub>; onOpenTask: (task: Task) => void; defaultExpanded?: boolean;
+export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpanded = false, statusFilter = 'open' }: {
+  kind: 'project' | 'campaign'; id: string; hub: ReturnType<typeof useWorkflowHub>; onOpenTask: (task: Task) => void; defaultExpanded?: boolean; statusFilter?: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const navigate = useNavigate();
@@ -18,7 +19,8 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
   const track = hub.tracks.find(t => t.entity_type === kind && t.entity_id === id);
   const tasks = parentTasks(hub.tasks, kind, id);
   const progress = taskProgress(tasks);
-  const canonical = tasks.filter(t => !t.id.startsWith('ps-') && !t.id.startsWith('cs-'));
+  const canonical = tasks.filter(t => !t.id.startsWith('ps-') && !t.id.startsWith('cs-') &&
+    (statusFilter === 'all' || (statusFilter === 'completed' ? taskDone(t) : !taskDone(t))));
   const unplanned = tasks.filter(t => !t.workflow_phase_id).length;
 
   return (

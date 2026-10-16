@@ -75,6 +75,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   const isEn = lang === 'en';
 
   const statusOptions = [
+    { key: 'open', label: isEn ? 'Incomplete' : 'Chưa hoàn thành', dot: 'bg-blue-500' },
     { key: 'all', label: isEn ? 'All Statuses' : 'Tất cả trạng thái', dot: 'bg-gray-400' },
     { key: 'todo', label: isEn ? 'To Do' : 'Cần làm', dot: 'bg-slate-400' },
     { key: 'in_progress', label: isEn ? 'In Progress' : 'Đang làm', dot: 'bg-sky-400' },

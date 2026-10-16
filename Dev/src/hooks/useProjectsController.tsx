@@ -13,6 +13,7 @@ import {checkDateMatch,type CampaignFilters} from '../components/features/projec
 import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
 import {canViewTeamManagement,isGlobalManager} from '../lib/roleScope';
+import {isTaskDone} from '../lib/taskTracking';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -116,7 +117,7 @@ export function useProjectsController(){
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('open');
   const [picFilter, setPicFilter] = useState<string>('all');
   const [calendarFilter, setCalendarFilter] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -142,7 +143,7 @@ export function useProjectsController(){
 
   const hasActiveFilters = Boolean(
     searchTerm.trim() ||
-    statusFilter !== 'all' ||
+    statusFilter !== 'open' ||
     picFilter !== 'all' ||
     calendarFilter !== 'all' ||
     customStartDate ||
@@ -152,7 +153,7 @@ export function useProjectsController(){
 
   const handleResetFilters = () => {
     setSearchTerm('');
-    setStatusFilter('all');
+    setStatusFilter('open');
     setPicFilter('all');
     setCalendarFilter('all');
     setCustomStartDate('');
@@ -183,7 +184,8 @@ export function useProjectsController(){
       }
 
       // 2. Status filter
-      if (statusFilter !== 'all') {
+      if (statusFilter === 'open' && isTaskDone(p.status)) return false;
+      if (statusFilter !== 'all' && statusFilter !== 'open') {
         const norm = (p.status || 'active').toLowerCase();
         if (statusFilter === 'in_progress') {
           if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;

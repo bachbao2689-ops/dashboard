@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+import {isTaskDone} from '../../../lib/taskTracking';
 
 export interface CampaignFilters {
   searchTerm: string;
@@ -257,7 +258,8 @@ export const CampaignPanel: React.FC<{
       }
 
       // 2. Status filter
-      if (status && status !== 'all') {
+      if (status === 'open' && isTaskDone(c.status)) return false;
+      if (status && status !== 'all' && status !== 'open') {
         const norm = (c.status || 'planning').toLowerCase();
         if (status === 'in_progress') {
           if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;

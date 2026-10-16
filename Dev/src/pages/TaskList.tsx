@@ -1,5 +1,5 @@
 import {useWorkspaceData} from '../hooks/useWorkspaceData';
-import {taskOverdue,taskDueWithin} from '../lib/taskTracking';
+import {taskOverdue,taskDueWithin,taskDone,taskOpen} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
 import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
 import {useTaskListActions} from '../hooks/useTaskListActions';
@@ -33,7 +33,7 @@ export const TaskList: React.FC = () => {
   const canCreateTask = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
 
   // Modular filter states matching Projects.tsx
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'open');
   const [assigneeFilter, setAssigneeFilter] = useState<string>(searchParams.get('assignee') || 'all');
   const [calendarFilter, setCalendarFilter] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -95,9 +95,7 @@ export const TaskList: React.FC = () => {
     if (searchParams.has('search')) {
       setSearchTerm(searchParams.get('search') || '');
     }
-    if (searchParams.has('status')) {
-      setStatusFilter(searchParams.get('status') || 'all');
-    }
+    setStatusFilter(searchParams.get('status') || 'open');
     if (searchParams.has('priority')) {
       setPriorityFilter(searchParams.get('priority') || 'all');
     }
@@ -129,7 +127,7 @@ export const TaskList: React.FC = () => {
 
   const hasActiveFilters = Boolean(
     searchTerm.trim() ||
-    statusFilter !== 'all' ||
+    statusFilter !== 'open' ||
     assigneeFilter !== 'all' ||
     calendarFilter !== 'all' ||
     customStartDate ||
@@ -140,7 +138,7 @@ export const TaskList: React.FC = () => {
 
   const handleResetFilters = () => {
     setSearchTerm('');
-    setStatusFilter('all');
+    setStatusFilter('open');
     setAssigneeFilter('all');
     setCalendarFilter('all');
     setCustomStartDate('');
@@ -167,7 +165,9 @@ export const TaskList: React.FC = () => {
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
     // 1. Status Filter
-    if(statusFilter==='overdue'){if(!taskOverdue(t,calendarDay(today.toISOString())!))return false;}
+    if(statusFilter==='open'){if(!taskOpen(t))return false;}
+    else if(statusFilter==='done'||statusFilter==='completed'){if(!taskDone(t))return false;}
+    else if(statusFilter==='overdue'){if(!taskOverdue(t,calendarDay(today.toISOString())!))return false;}
     else if (statusFilter !== 'all') {
       const ms = mapStatus(t.status || '');
       const mapped = ms === 'in-progress' ? 'in_progress' : ms;
@@ -202,7 +202,7 @@ export const TaskList: React.FC = () => {
     }
 
     // 5. Calendar Filter (Custom inline calendar & presets)
-    const isDone = ['done', 'completed', 'complete'].includes((t.status || '').toLowerCase());
+    const isDone = taskDone(t);
     if (calendarFilter !== 'all') {
       if (!checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, isDone)) {
         return false;
