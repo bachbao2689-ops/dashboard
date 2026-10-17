@@ -6,7 +6,7 @@ export {readWorkspaceTasks as readVisibleTasks} from '../services/workspaceTasks
 export interface Task {
   id: string; task_ref: string; title: string; status: string; priority: string; due_date: string;
   start_date?: string; completed_at?: string; description?: string; project_id?: string; campaign_id?: string;
-  department_id?: string; workspace_id?: string; workflow_phase_id?: string; created_at?: string; updated_at?: string;
+  department_id?: string; workspace_id?: string; workflow_phase_id?: string; created_by?: number | null; created_at?: string; updated_at?: string;
   workflow_status?: string | null;
   project?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; campaign?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; assignee_id?: string;
   assignee?: { id?: string; name: string; avatar_url: string }; department?: { id?: string; name: string }; column?: { name: string };
