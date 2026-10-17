@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { StaffProfile } from '../store/authStore';
+import {canSubmitAssetRequest,isAssetApprover} from '../lib/roleScope';
 
 export type BorrowAction = 'approve' | 'reject' | 'return';
 
@@ -33,6 +34,7 @@ export async function submitBorrowRequests(input: {
 }) {
   const { assetIds, dueDate, purpose, profile } = input;
   assert(profile?.id, 'Vui lòng đăng nhập bằng tài khoản nhân viên để mượn thiết bị.');
+  assert(canSubmitAssetRequest(profile), 'Bạn không có quyền gửi yêu cầu mượn thiết bị.');
   assert(assetIds.length > 0 && new Set(assetIds).size === assetIds.length, 'Danh sách thiết bị không hợp lệ.');
   assert(/^\d{4}-\d{2}-\d{2}$/.test(dueDate) && dueDate >= localToday(), 'Hạn trả phải từ hôm nay trở đi.');
   assert(purpose.trim().length > 0, 'Vui lòng nhập lý do mượn.');
@@ -93,7 +95,7 @@ export async function submitBorrowRequests(input: {
 }
 
 export async function transitionBorrowRequest(id: string, action: BorrowAction, profile: StaffProfile | null) {
-  assert(profile?.id && ['admin', 'manager'].includes(profile.role), 'Bạn không có quyền duyệt hoặc xác nhận trả thiết bị.');
+  assert(profile?.id && isAssetApprover(profile), 'Chỉ Leader Design hoặc Admin được duyệt và xác nhận trả thiết bị.');
   const { data: request, error: readError } = await supabase.from('borrow_requests')
     .select('id, asset_id, approval_status, returned_at').eq('id', id).single();
   if (readError) throw readError;

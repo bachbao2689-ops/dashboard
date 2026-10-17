@@ -1,6 +1,8 @@
 import {ActionButton} from '../components/common/ActionButton';
 import {DashboardAllocationChart} from '../components/features/dashboard/DashboardAllocationChart';
-import {useDashboardPerformance} from '../hooks/useDashboardPerformance';
+import {taskOwningDepartment,useDashboardPerformance} from '../hooks/useDashboardPerformance';
+import {isDepartmentLeader} from '../lib/roleScope';
+import {useAuthStore} from '../store/authStore';
 import {taskActive} from '../lib/taskTracking';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Avatar } from "../components/common/Avatar";
@@ -39,7 +41,10 @@ export const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const isDark = useUiStore(state => state.theme) === 'dark';
   const { tasks: allTasks, users, loading, error, refetch } = useWorkspaceData();
-  const tasks=useMemo(()=>allTasks.filter(taskActive),[allTasks]);
+  const profile=useAuthStore(state=>state.profile);
+  const ownDepartment=isDepartmentLeader(profile)?profile?.department_id:null;
+  const restrictDepartment=isDepartmentLeader(profile);
+  const tasks=useMemo(()=>allTasks.filter(task=>taskActive(task)&&(!restrictDepartment||Boolean(ownDepartment&&taskOwningDepartment(task)===ownDepartment))),[allTasks,ownDepartment,restrictDepartment]);
   const navigate = useNavigate();
 
   const [activeId, setActiveId] = useState('s1');
@@ -69,6 +74,7 @@ export const Dashboard: React.FC = () => {
   const openFilteredTasks=(statusParam?: string)=>{
     if(!s)return;const query=new URLSearchParams({start:rangeStart,end:rangeEnd});
     if(statusParam)query.set('status',statusParam);
+    if(ownDepartment)query.set('department_id',ownDepartment);
     if(s.type==='staff')query.set('assignee',s.id.slice(5));
     if(s.type==='department')query.set('department_id',s.id.slice(5));
     if(s.type==='project')query.set(s.id.startsWith('campaign-')?'campaign_id':'project_id',s.id.slice(s.id.indexOf('-')+1));

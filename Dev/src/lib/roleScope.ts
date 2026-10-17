@@ -3,6 +3,7 @@ export type RoleProfile = {
   role?: string | null;
   employment_level?: string | null;
   department_id?: string | null;
+  department_name?: string | null;
 } | null | undefined;
 
 const normalized = (value?: string | null) => (value || '').trim().toLowerCase();
@@ -20,6 +21,14 @@ export function isGlobalManager(profile: RoleProfile): boolean {
 export function isDepartmentLeader(profile: RoleProfile): boolean {
   if (isGlobalManager(profile)) return false;
   return normalized(profile?.role) === 'leader' || normalized(profile?.employment_level) === 'leader';
+}
+
+export function isAssetApprover(profile: RoleProfile): boolean {
+  return isAdmin(profile) || (isDepartmentLeader(profile) && normalized(profile?.department_name) === 'design');
+}
+
+export function canSubmitAssetRequest(profile: RoleProfile): boolean {
+  return Boolean(profile && ((normalized(profile.role) === 'member' && !isDepartmentLeader(profile) && !isGlobalManager(profile)) || isAssetApprover(profile)));
 }
 
 export function canViewTeamManagement(profile: RoleProfile): boolean {

@@ -33,6 +33,8 @@ const WEEK_LABELS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const toYmd=(d:Date)=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const startOfCurrentWeek=(day:string)=>{const d=new Date(`${day}T00:00:00`);d.setDate(d.getDate()-((d.getDay()+6)%7));d.setHours(0,0,0,0);return d;};
 const dayKey=(value?:string|null)=>calendarDay(value)||'';
+export const taskOwningDepartment = (task: Task) => task.project?.department_id || task.campaign?.department_id || task.department_id || null;
+const taskOwningDepartmentName = (task: Task) => task.project?.department?.name || task.campaign?.department?.name || task.department?.name || null;
 export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'],activeId:string,range:'weekly'|'custom',customStart:string,customEnd:string,search:string){
  const {t,lang}=useTranslation();
  const [todayKey,setTodayKey]=useState(()=>toYmd(new Date()));
@@ -68,8 +70,8 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
       tasks.filter(task => String(task.assignee_id) === String(user.id)),
       user.avatar_url
     ));
-    const deptMap=new Map(tasks.map(task=>[task.department_id||'unassigned',task.department?.name||t('dashboard.unassignedDept')]));
-    const depts=[...deptMap].map(([id,name])=>stats(`dept-${id}`,'department',name,t('dashboard.department'),t('dashboard.department'),tasks.filter(task=>(task.department_id||'unassigned')===id)));
+    const deptMap=new Map(tasks.map(task=>[taskOwningDepartment(task)||'unassigned',taskOwningDepartmentName(task)||t('dashboard.unassignedDept')]));
+    const depts=[...deptMap].map(([id,name])=>stats(`dept-${id}`,'department',name,t('dashboard.department'),t('dashboard.department'),tasks.filter(task=>(taskOwningDepartment(task)||'unassigned')===id)));
     const projectMap=new Map(tasks.filter(task=>task.project_id||task.campaign_id).map(task=>[task.project_id?`project-${task.project_id}`:`campaign-${task.campaign_id}`,task.project?.name||task.campaign?.name||'Project/Campaign']));
     const projects=[...projectMap].map(([key,name])=>stats(key,'project',name,'Project/Campaign','Project/Campaign',tasks.filter(task=>task.project_id?`project-${task.project_id}`===key:`campaign-${task.campaign_id}`===key)));
     return [...members, ...depts, ...projects];
@@ -82,7 +84,7 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
   const selectedTasks = useMemo(() => {
     if (!s) return [];
     if (s.type === 'staff') return tasks.filter(task => `user-${task.assignee_id}` === s.id);
-    if(s.type==='department')return tasks.filter(task=>`dept-${task.department_id||'unassigned'}`===s.id);
+    if(s.type==='department')return tasks.filter(task=>`dept-${taskOwningDepartment(task)||'unassigned'}`===s.id);
     return tasks.filter(task=>task.project_id?`project-${task.project_id}`===s.id:`campaign-${task.campaign_id}`===s.id);
   }, [s, tasks]);
   const periodTasks = useMemo(() => tasksForWeeklyReport(selectedTasks, rangeStart, rangeEnd), [selectedTasks, rangeStart, rangeEnd]);

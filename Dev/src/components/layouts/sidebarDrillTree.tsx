@@ -289,6 +289,8 @@ export function buildSidebarGroups({
   t,
   role,
   isLeader,
+  canManageBorrow,
+  canBorrow,
   enrichedTasks,
   enrichedTracks,
   summary,
@@ -297,6 +299,8 @@ export function buildSidebarGroups({
   t: (key: any) => string;
   role: string;
   isLeader: boolean;
+  canManageBorrow: boolean;
+  canBorrow: boolean;
   enrichedTasks: EnrichedSidebarTask[];
   enrichedTracks: EnrichedProjectTrack[];
   summary: ReturnType<typeof import('../../hooks/useSidebarTrackingData').useSidebarTrackingData>['summary'];
@@ -305,7 +309,6 @@ export function buildSidebarGroups({
   const roleLower = (role || 'member').toLowerCase();
   const canViewDashboard = isLeader;
   const canViewDepartments = roleLower === 'admin';
-  const canManageBorrow = ['admin', 'manager'].includes(roleLower);
   const canViewReports = isLeader;
 
   // ==========================================
@@ -570,7 +573,7 @@ export function buildSidebarGroups({
         icon: <Box size={18} />,
         path: '/assets',
       },
-      {
+      ...(canBorrow ? [{
         id: 'assets:root:borrow',
         label: borrowLabel,
         icon: <History size={18} />,
@@ -583,7 +586,7 @@ export function buildSidebarGroups({
               title="Đơn cần duyệt / mượn"
             />
           ) : undefined,
-      },
+      }] : []),
     ],
   };
 

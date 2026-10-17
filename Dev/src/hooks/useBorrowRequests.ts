@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { transitionBorrowRequest } from '../services/borrowWorkflow';
 import type { BorrowAction } from '../services/borrowWorkflow';
 import { useAuthStore } from '../store/authStore';
+import {canSubmitAssetRequest,isAssetApprover} from '../lib/roleScope';
 
 export interface BorrowRequest {
   id: string;
@@ -28,7 +29,8 @@ export function useBorrowRequests() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRequests();
+    if (!canSubmitAssetRequest(profile)) { setRequests([]); setLoading(false); return; }
+    void fetchRequests();
     
     const channel = supabase
       .channel('borrow_channel')
@@ -40,13 +42,13 @@ export function useBorrowRequests() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.id, profile?.role]);
+  }, [profile?.id, profile?.role, profile?.employment_level, profile?.department_name]);
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-      if (!profile?.id) {
+      if (!profile?.id || !canSubmitAssetRequest(profile)) {
         setRequests([]);
         return;
       }
@@ -59,7 +61,7 @@ export function useBorrowRequests() {
           department:department_id(name)
         `)
         .order('requested_at', { ascending: false });
-      if (!['admin', 'manager'].includes(profile.role)) query = query.eq('requester_id', profile.id);
+      if (!isAssetApprover(profile)) query = query.eq('requester_id', profile.id);
       const { data, error } = await query;
 
       if (error) throw error;

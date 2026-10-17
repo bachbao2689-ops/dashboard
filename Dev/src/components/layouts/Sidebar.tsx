@@ -15,7 +15,7 @@ import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
-import {canViewTeamManagement} from '../../lib/roleScope';
+import {canSubmitAssetRequest,canViewTeamManagement,isAssetApprover} from '../../lib/roleScope';
 import {
   buildSidebarGroups,
   type DrillMenuItem,
@@ -571,6 +571,7 @@ export const Sidebar: React.FC = () => {
 
   const role = profile?.role || 'member';
   const isLeader = canViewTeamManagement(profile);
+  const canManageBorrow=isAssetApprover(profile),canBorrow=canSubmitAssetRequest(profile);
 
   const groups = useMemo(
     () =>
@@ -578,12 +579,14 @@ export const Sidebar: React.FC = () => {
         t,
         role,
         isLeader,
+        canManageBorrow,
+        canBorrow,
         enrichedTasks,
         enrichedTracks,
         summary,
         togglePin,
       }),
-    [t, role, isLeader, enrichedTasks, enrichedTracks, summary, togglePin]
+    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
   );
 
   return (

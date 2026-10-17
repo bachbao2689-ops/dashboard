@@ -11,6 +11,7 @@ import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
 import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
 import { useAuthStore } from '../store/authStore';
+import {canSubmitAssetRequest} from '../lib/roleScope';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -24,6 +25,7 @@ const getIcon = (cat: string | undefined) => {
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
+  const canBorrowAsset=canSubmitAssetRequest(profile);
   const roleStr = (profile?.role || '').toLowerCase();
   const levelStr = (profile?.employment_level || '').toLowerCase();
   const canAddAsset = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
@@ -40,6 +42,7 @@ export const AssetInventory: React.FC = () => {
   const [bounce, setBounce] = useState(false);
 
   const toggleCart = (asset: Asset) => {
+    if (!canBorrowAsset) return;
     if (asset.status !== 'available' && !cart.some(a => a.id === asset.id)) return;
     if (asset.is_available === false && !cart.some(a => a.id === asset.id)) return;
     if (cart.some(a => a.id === asset.id)) {
@@ -63,7 +66,7 @@ export const AssetInventory: React.FC = () => {
 
   return (
     <div className="relative z-10 flex min-h-full min-w-0">
-      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedAsset || isBorrowDrawerOpen ? 'hidden xl:flex xl:mr-[500px] pr-2' : 'pr-0 lg:pr-4'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${selectedAsset || (canBorrowAsset && isBorrowDrawerOpen) ? 'hidden xl:flex xl:mr-[500px] pr-2' : 'pr-0 lg:pr-4'}`}>
       <AssetModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -89,10 +92,9 @@ export const AssetInventory: React.FC = () => {
           </div>
           
 
-          <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+          {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
              <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
-
-          </ActionButton>
+          </ActionButton>}
           {canAddAsset && (
             <ActionButton icon={<Plus size={18} />} onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
                <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
@@ -116,7 +118,7 @@ export const AssetInventory: React.FC = () => {
               <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || t('common.unassigned')}</p>
               <div className="ml-6 mt-2 flex min-w-0 items-center justify-between gap-2">
                 <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
-                {(canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
+                {canBorrowAsset && (canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
               </div>
             </div>;
           })}
@@ -173,7 +175,7 @@ export const AssetInventory: React.FC = () => {
                     <td className="p-4">
                       {(() => {
                         const inCart = cart.find(a => a.id === asset.id);
-                        if (inCart) {
+                        if (canBorrowAsset && inCart) {
                           return (
                             <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600">
                               {t('assets.inSlip')}
@@ -200,6 +202,7 @@ export const AssetInventory: React.FC = () => {
                         if (asset.status !== 'available' || asset.is_available === false) {
                           return <span className="text-xs text-gray-500">{t('assets.statusUnavailable')}</span>;
                         }
+                        if (!canBorrowAsset) return <span className="text-xs text-gray-500">{t('assets.statusAvailable')}</span>;
                         return (
                           <div className="flex items-center gap-1">
                             <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
@@ -219,7 +222,7 @@ export const AssetInventory: React.FC = () => {
     
       </div>
       <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} onOpenQR={() => setQrAsset(selectedAsset)} />
-      <BorrowDrawer isOpen={isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={refetch} />
+      <BorrowDrawer isOpen={canBorrowAsset && isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={refetch} />
       <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
 </div>
   );

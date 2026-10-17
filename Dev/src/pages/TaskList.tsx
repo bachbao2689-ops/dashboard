@@ -161,7 +161,7 @@ export const TaskList: React.FC = () => {
   const handleSingleDelete=async()=>{if(!taskToDelete)return;const key=taskToDelete.id;setTaskToDelete(null);await actions.remove([key]);};
 
   const filteredTasks = tasks.filter(t => {
-    if(searchParams.get('department_id')&&((t.department_id||'unassigned')!==searchParams.get('department_id')))return false;
+    if(searchParams.get('department_id')&&((t.project?.department_id||t.campaign?.department_id||t.department_id||'unassigned')!==searchParams.get('department_id')))return false;
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
     // 1. Status Filter

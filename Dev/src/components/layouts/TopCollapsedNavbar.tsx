@@ -12,7 +12,7 @@ import { StylizedPinIcon } from '../common/StylizedPinIcon';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
-import {canViewTeamManagement} from '../../lib/roleScope';
+import {canSubmitAssetRequest,canViewTeamManagement,isAssetApprover} from '../../lib/roleScope';
 import { useSidebarPinStore } from '../../store/sidebarPinStore';
 import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import {
@@ -613,6 +613,7 @@ export const TopCollapsedNavbar: React.FC = () => {
 
   const role = profile?.role || 'member';
   const isLeader = canViewTeamManagement(profile);
+  const canManageBorrow=isAssetApprover(profile),canBorrow=canSubmitAssetRequest(profile);
 
   const groups = useMemo<SidebarGroupModel[]>(
     () =>
@@ -620,12 +621,14 @@ export const TopCollapsedNavbar: React.FC = () => {
         t,
         role,
         isLeader,
+        canManageBorrow,
+        canBorrow,
         enrichedTasks,
         enrichedTracks,
         summary,
         togglePin,
       }),
-    [t, role, isLeader, enrichedTasks, enrichedTracks, summary, togglePin]
+    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
   );
 
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(() => {

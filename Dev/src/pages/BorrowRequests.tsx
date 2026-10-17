@@ -8,6 +8,7 @@ import type { BorrowAction } from '../services/borrowWorkflow';
 import { BorrowRequestDetailModal } from '../components/features/assets/BorrowRequestDetailModal';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
+import {canSubmitAssetRequest,isAssetApprover} from '../lib/roleScope';
 
 const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('vi-VN');
 
@@ -19,10 +20,12 @@ export const BorrowRequests: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const profile = useAuthStore(state => state.profile);
-  const canManage = !!profile && ['admin', 'manager'].includes(profile.role);
+  const canManage = isAssetApprover(profile);
   const { requests, loading, error, busyId, updateStatus } = useBorrowRequests();
   const mine = !canManage || searchParams.get('scope') === 'mine';
   const selectedRequest = requests.find(request => request.id === selectedId) || null;
+
+  if (profile && !canSubmitAssetRequest(profile)) return <div className="p-8 text-center text-gray-500">Bạn không có quyền xem hoặc gửi yêu cầu mượn thiết bị.</div>;
 
   const getStatusLabel = (status: string, returnedAt?: string | null) => {
     if (returnedAt) return t('borrow.statusReturned');
