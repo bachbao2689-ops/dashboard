@@ -10,7 +10,10 @@ import { useTranslation } from '../i18n/translations';
 import { OverallView } from '../components/departments/OverallView';
 import { DepartmentDetailView } from '../components/departments/DepartmentDetailView';
 
-export const Departments2: React.FC = () => {
+const DepartmentsLegacyPreview = React.lazy(() => import('./DepartmentsLegacyPreview').then(module => ({ default: module.DepartmentsLegacyPreview })));
+const canPreviewLegacy = import.meta.env.VITE_SUPABASE_URL?.includes('samuuyxxtocqmtujnnhe.supabase.co') || false;
+
+const TrackedDepartments: React.FC = () => {
   const isDark = useUiStore((state) => state.theme === 'dark');
   const { t } = useTranslation();
   const [view, setView] = useState<'overall' | 'detail'>('overall');
@@ -123,6 +126,32 @@ export const Departments2: React.FC = () => {
           />
         )}
       </div>
+    </div>
+  );
+};
+
+export const Departments2: React.FC = () => {
+  const [mode, setMode] = useState<'legacy' | 'tracked'>(canPreviewLegacy ? 'legacy' : 'tracked');
+
+  return (
+    <div className="min-w-0 space-y-4">
+      {canPreviewLegacy && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/70">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Xem lại giao diện Departments</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Bản trước tracking dùng dữ liệu minh họa; không phản ánh số liệu đang vận hành.</p>
+          </div>
+          <div role="group" aria-label="Chọn phiên bản Departments" className="inline-flex max-w-full gap-1 rounded-xl border border-blue-100 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+            <button type="button" onClick={() => setMode('legacy')} aria-pressed={mode === 'legacy'} className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${mode === 'legacy' ? 'bg-[#093570] text-white' : 'text-gray-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-slate-800'}`}>UI trước tracking</button>
+            <button type="button" onClick={() => setMode('tracked')} aria-pressed={mode === 'tracked'} className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${mode === 'tracked' ? 'bg-[#093570] text-white' : 'text-gray-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-slate-800'}`}>Dữ liệu hiện tại</button>
+          </div>
+        </div>
+      )}
+      {mode === 'legacy' && canPreviewLegacy ? (
+        <React.Suspense fallback={<div role="status" className="rounded-2xl bg-gray-100 p-6 text-sm text-gray-500 animate-pulse dark:bg-slate-800">Đang tải giao diện…</div>}>
+          <DepartmentsLegacyPreview />
+        </React.Suspense>
+      ) : <TrackedDepartments />}
     </div>
   );
 };
