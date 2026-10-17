@@ -2,6 +2,7 @@ import { useTranslation } from '../../../i18n/translations';
 import React from 'react';
 import { UsersRound } from 'lucide-react';
 import { ProfileTeamTab } from '../profile/ProfileTeamTab';
+import { TeamWorkloadVisuals } from '../../common/TeamWorkloadVisuals';
 
 export const LeaderReports: React.FC = () => {
   const { t } = useTranslation();
@@ -13,7 +14,14 @@ export const LeaderReports: React.FC = () => {
           <UsersRound size={15} />{t('reports.subtitle')}
         </p>
       </header>
+      <TeamWorkloadVisuals
+        showKpiRibbon
+        showComparisonChart
+        showHeatmap
+        showMemberDrilldown
+      />
       <ProfileTeamTab embedded />
     </div>
   );
 };
+

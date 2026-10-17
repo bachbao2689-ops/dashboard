@@ -1,4 +1,4 @@
-import {ActionButton} from '../components/common/ActionButton';
+import { ActionButton } from '../components/common/ActionButton';
 import React from 'react';
 import { useReports } from '../hooks/useReports';
 import type { TimeRange } from "../hooks/useReports";
@@ -8,8 +8,9 @@ import {
 } from 'recharts';
 import { Download, CheckCircle, Clock, TrendingUp, Activity } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import {canViewTeamManagement} from '../lib/roleScope';
+import { canViewTeamManagement } from '../lib/roleScope';
 import { LeaderReports } from '../components/features/reports/LeaderReports';
+import { TeamWorkloadVisuals } from '../components/common/TeamWorkloadVisuals';
 
 import { statusMeta, priorityColor } from '../utils/statusTheme';
 import { useTranslation } from '../i18n/translations';
@@ -151,6 +152,14 @@ const ManagerReports: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">From creation to done</p>
         </div>
       </div>
+
+      {/* Team Workload Live Visualizations (Burndown + Member Capacity % + Stacked Breakdown + Heatmap) */}
+      <TeamWorkloadVisuals
+        showKpiRibbon={false}
+        showComparisonChart
+        showHeatmap
+        showMemberDrilldown
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel p-6 rounded-xl">
