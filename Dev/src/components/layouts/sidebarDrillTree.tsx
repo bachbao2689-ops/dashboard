@@ -595,12 +595,12 @@ export function buildSidebarGroups({
   // ==========================================
   const trNodes: Record<string, DrillNode> = {};
   const trRootItems: DrillMenuItem[] = [
-    ...(isLeader ? [{
+    {
       id: 'tr:root:team',
       label: t('nav.team'),
       icon: <Users size={18} />,
       path: '/team',
-    }] : []),
+    },
     {
       id: 'tr:root:members',
       label: t('nav.members'),

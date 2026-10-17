@@ -99,7 +99,7 @@ function App() {
                         <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
-            <Route path="team" element={<TeamManagementRoute><TeamWorkload /></TeamManagementRoute>} />
+            <Route path="team" element={<TeamWorkload />} />
             <Route path="reports" element={<TeamManagementRoute><Reports /></TeamManagementRoute>} />
             <Route path="members" element={<MemberManagement />} />
             <Route path="*" element={

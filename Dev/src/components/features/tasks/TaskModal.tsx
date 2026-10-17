@@ -4,6 +4,8 @@ import { X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
+import { canViewTeamManagement, isGlobalManager } from '../../../lib/roleScope';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -14,7 +16,8 @@ interface TaskModalProps {
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
-  const canChooseDepartment = true;
+  const directory = useWorkspaceDirectory(isOpen);
+  const canChooseDepartment = isGlobalManager(profile) && !profile?.department_id;
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -25,8 +28,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const [description, setDescription] = useState('');
   
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
 
   const [width, setWidth] = useState(500);
@@ -54,8 +55,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
   useEffect(() => {
     if (isOpen) {
-      fetchFormData();
-      if (!canChooseDepartment && profile?.department_id) setDepartmentId(profile.department_id);
+      setDepartmentId(profile?.department_id || '');
+      void supabase.from('projects').select('id, name').then(({ data, error }) => {
+        if (error) console.error('Could not load projects for task form:', error);
+        setProjects(data || []);
+      });
     } else {
       // Reset form when closed
       setTitle('');
@@ -65,54 +69,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       setStartDate('');
       setAssigneeId('');
       setProjectId('');
-      if (canChooseDepartment) setDepartmentId('');
+      setDepartmentId('');
+      setProjects([]);
     }
-  }, [isOpen, canChooseDepartment, profile?.department_id]);
+  }, [isOpen, profile?.department_id]);
 
   useEffect(() => {
     // Never retain an assignee from another department after changing the team.
-    if (assigneeId && !users.some(user => String(user.id) === assigneeId && user.department_id === departmentId)) {
+    if (assigneeId && directory.data && !directory.data.users.some(user => String(user.id) === assigneeId && user.department_id === departmentId)) {
       setAssigneeId('');
     }
-  }, [departmentId, assigneeId, users]);
+  }, [departmentId, assigneeId, directory.data]);
 
   const parseLocal = (s: string) => {
     if (!s) return null;
-    const p = s.split(/[-/]/);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const p = s.split('/');
     if (p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`;
     return s;
   };
 
-  const fetchFormData = async () => {
-    const [usersRes, deptsRes, projectsRes] = await Promise.all([
-      supabase.from('users').select('id, name, department_id').eq('is_active', true),
-      supabase.from('departments').select('id, name'),
-      supabase.from('projects').select('id, name')
-    ]);
-    if (usersRes.data) setUsers(usersRes.data);
-    
-    // Seed departments if empty (since DB is fresh)
-    if (deptsRes.data && deptsRes.data.length > 0) {
-      setDepartments(deptsRes.data);
-    } else {
-      setDepartments([
-        { id: '1', name: 'ECOMMERCE' },
-        { id: '2', name: 'KSHOP' },
-        { id: '3', name: 'MARKETING' },
-        { id: '4', name: 'DESIGN' }
-      ]);
-    }
-
-    if (projectsRes.data) setProjects(projectsRes.data);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !departmentId) return;
+    if (!title.trim() || !departmentId || !profile?.id) return;
+    if (assigneeId && !visibleUsers.some(user => String(user.id) === assigneeId)) {
+      toast.error('Người thực hiện không thuộc phòng ban này.');
+      return;
+    }
     
     setLoading(true);
     try {
-      const { data: wsData } = await supabase.from('workspaces').select('id, owner_id').limit(1).single();
+      const { data: wsData } = await supabase.from('workspaces').select('id').limit(1).single();
       if (!wsData) throw new Error("No workspace found");
       
       const columnData = await supabase.from('columns').select('id').eq('workspace_id', wsData.id).eq('name', 'Yet to Start').single();
@@ -131,7 +118,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
          status: 'todo',
          column_id: colId,
          workspace_id: wsData.id,
-         created_by: wsData.owner_id
+         created_by: profile.id
       }]);
 
       if (insertError) throw insertError;
@@ -148,7 +135,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       setStartDate('');
       setAssigneeId('');
       setProjectId('');
-      setDepartmentId('');
+      setDepartmentId(profile.department_id || '');
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || 'Failed to create task');
@@ -165,11 +152,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  const visibleDepartments = canChooseDepartment
-    ? departments
-    : departments.filter(department => department.id === profile?.department_id);
+  const departments = directory.data?.departments || [];
+  const users = directory.data?.users || [];
+  const departmentName = departments.find(department => String(department.id) === String(departmentId))?.name || profile?.department_name || t('tasks.selectDepartment');
   const visibleUsers = departmentId
-    ? users.filter(user => user.department_id === departmentId)
+    ? users.filter(user => String(user.department_id) === String(departmentId) && (canViewTeamManagement(profile) || String(user.id) === String(profile?.id)))
     : [];
   const visibleProjects = projects;
 
@@ -228,18 +215,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
                         {t('common.department')} <span className="text-red-500">*</span>
                       </label>
-                      <select 
-                        required
-                        value={departmentId}
-                        onChange={e => setDepartmentId(e.target.value)}
-                        disabled={!canChooseDepartment}
-                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
-                      >
-                        {canChooseDepartment && <option value="">{t('tasks.selectDepartment')}</option>}
-                        {visibleDepartments.map(d => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </select>
+                      {canChooseDepartment ? (
+                        <select required value={departmentId} onChange={e => { setDepartmentId(e.target.value); setAssigneeId(''); }} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm">
+                          <option value="">{t('tasks.selectDepartment')}</option>
+                          {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
+                        </select>
+                      ) : (
+                        <div className="flex min-h-11 items-center truncate rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 font-medium text-gray-900 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white" title={departmentName}>{departmentName}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
@@ -248,13 +231,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                       <select 
                         value={assigneeId}
                         onChange={e => setAssigneeId(e.target.value)}
+                        disabled={directory.loading || !!directory.error || !departmentId}
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       >
                         <option value="">{t('common.unassigned')}</option>
+                        {directory.loading && <option disabled>{t('common.loading')}</option>}
                         {visibleUsers.map(u => (
                           <option key={u.id} value={u.id}>{u.name}</option>
                         ))}
                       </select>
+                      {directory.error && <p className="mt-1 text-xs text-red-600" role="alert">{directory.error}</p>}
+                      {!directory.loading && !directory.error && departmentId && visibleUsers.length === 0 && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Chưa có thành viên đang hoạt động trong phòng ban này.</p>}
                     </div>
                   </div>
 
@@ -349,7 +336,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                   {t('common.cancel')}
                 </button>
                 <button 
-                  disabled={loading || !title.trim() || !departmentId} 
+                  disabled={loading || directory.loading || !!directory.error || !title.trim() || !departmentId}
                   type="submit" 
                   className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
                 >

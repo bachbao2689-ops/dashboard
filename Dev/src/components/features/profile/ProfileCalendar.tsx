@@ -236,7 +236,7 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
               }}
             /></FilterPopover>}
           </div>
-          <ActionButton icon={<FileText size={15} />} type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90">{reportOpen ? t('profile.closeReport') : t('profile.myReport')}</ActionButton>
+          <ActionButton icon={<FileText size={15} />} type="button" onClick={onReport} aria-expanded={reportOpen} className="hover-magnetic-btn magnetic-primary inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-white shadow-sm hover:bg-primary/90">{t('profile.myReport')}</ActionButton>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
