@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = require('./devDbGuard')(process.env.DATABASE_URL);
 if (!connectionString) {
   throw new Error('DATABASE_URL is required. Add it to backend/.env.');
 }

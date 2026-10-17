@@ -16,6 +16,7 @@ import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
 import { useRememberedState } from '../../hooks/useRememberedState';
+import {officialReadEnabled} from '../../services/officialReadOnly';
 import {canSubmitAssetRequest,canViewTeamManagement,isAssetApprover} from '../../lib/roleScope';
 import {
   buildSidebarGroups,
@@ -669,6 +670,7 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
+      {officialReadEnabled && <div className="border-t border-gray-200/70 px-3.5 pt-3 dark:border-slate-700/70"><NavLink to="/main-view" className={({isActive})=>cn('sidebar-link flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',isActive?'sidebar-link-active':'sidebar-link-idle')}><ExternalLink size={16}/><span className="truncate">Theo dõi Main · Chỉ đọc</span></NavLink></div>}
       <div className="mt-auto pt-3 px-6 text-center">
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
           Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>

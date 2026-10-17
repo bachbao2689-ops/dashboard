@@ -3,10 +3,12 @@ import {ActionButton} from '../components/common/ActionButton';
 import {StatusBadge} from '../components/common/StatusBadge';
 import {MultiSelect} from '../components/common/MultiSelect';
 import React from 'react';
+import {Link} from 'react-router-dom';
+import {officialReadEnabled} from '../services/officialReadOnly';
 import {WorkflowTrackingSummary} from '../components/features/projects/WorkflowTrackingSummary';
 import {TaskDetailPanel} from '../components/features/tasks/TaskDetailPanel';
 import {Avatar} from '../components/common/Avatar';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,EyeOff,Reply,Send} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Eye,EyeOff,Reply,Send} from 'lucide-react';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
 import {CampaignPanel} from '../components/features/projects/CampaignPanel';
@@ -132,6 +134,7 @@ export const Projects:React.FC=()=>{
           )}
 
           {/* 7. Add New Button */}
+          {officialReadEnabled && <Link to="/main-view" aria-label="Theo dõi Main chỉ đọc" title="Theo dõi Main chỉ đọc" className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-950/30 dark:text-blue-200"><Eye size={16}/><span className="hidden sm:inline">Xem Main</span></Link>}
           {canCreate && (
             <ActionButton icon={<FolderKanban className="w-4 h-4" />}
               onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 

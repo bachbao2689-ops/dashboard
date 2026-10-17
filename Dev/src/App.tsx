@@ -21,6 +21,7 @@ const TeamWorkload=lazy(()=>import('./pages/TeamWorkload').then(module=>({defaul
 const Reports=lazy(()=>import('./pages/Reports').then(module=>({default:module.Reports})));
 const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>({default:module.MemberManagement})));
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
+const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
 
 function RootRedirect() {
@@ -93,6 +94,7 @@ function App() {
             <Route path="ui-dashboard" element={<TeamManagementRoute><Dashboard /></TeamManagementRoute>} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<Projects />} />
+            <Route path="main-view" element={<MainReadOnly />} />
             <Route path="my-tasks" element={<MyTasks />} />
                         <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />

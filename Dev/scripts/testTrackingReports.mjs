@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {workflowDbClient} from './workflowDbClient.mjs';
 const db=workflowDbClient();
-if(process.env.KCOFFEE_USE_POOLER==='1'){db.connectionParameters.host='aws-0-ap-northeast-2.pooler.supabase.com';db.connectionParameters.user='postgres.jxrwphjriuqbpdpwpqcn';}
 let checks=0;const check=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;};
 try{
  await db.connect();await db.query('begin');

@@ -13,7 +13,14 @@ Tài liệu này bổ sung `UX_UI_DESIGN_SYSTEM/GUIDELINE/DEPLOYMENT_RULES.md`. 
 
 Hai bundle Vercel đã tách hoàn toàn ranh giới dữ liệu: Official (`main`) trỏ vào `jxrwphjriuqbpdpwpqcn.supabase.co`, còn Develop (`codex/develop-dashboard`) trỏ vào `samuuyxxtocqmtujnnhe.supabase.co`.
 
-Vercel project ID: `prj_ZzwTKDS2fFmU8JOmtkSftNvHia6B`. Hai biến `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` gốc vẫn áp dụng cho Production và Preview chung; hai override mới đã được đặt **chỉ cho Preview của nhánh `codex/develop-dashboard`**. Kết nối Vercel đọc được project qua ID không kèm team slug; thao tác có team slug `bart-c8ff` trả 403. Không sửa giá trị Production.
+Vercel project ID: `prj_ZzwTKDS2fFmU8JOmtkSftNvHia6B`. Từ 17/10/2026, hai biến `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` mặc định của **Production chỉ áp dụng cho Production**; hai biến mặc định của **Preview trỏ Supabase Dev**. Override riêng của nhánh `codex/develop-dashboard` cũng trỏ Supabase Dev. Không đổi giá trị Production. Việc đổi biến chỉ có hiệu lực với bản build mới; các deployment Preview cũ cần build lại nếu tiếp tục sử dụng.
+
+## Local và chế độ xem Main
+
+- `Dev/.env` trên máy này đã chuyển sang Supabase Dev (`samuuyxxtocqmtujnnhe`). `.env` được Git bỏ qua; máy khác phải tự cấu hình theo `Dev/.env.example` và tuyệt đối không kéo biến Production vào Local. Mã ứng dụng chặn Local/Develop nếu client chính trỏ Official; script trong `Dev/scripts` và `backend` chỉ chấp nhận connection string của Supabase Dev.
+- Develop/Local có trang `/main-view` để **xem** Project, Campaign và Task Main. Trang dùng phiên đăng nhập Official riêng, bắt buộc cùng `auth.users.id` với người đang đăng nhập Dev, và chỉ gọi Auth cùng REST `GET`/`HEAD` tới Official. Danh sách được RLS Official lọc theo tài khoản; không đọc thông báo Main, không ghi dữ liệu Main và không sao chép dữ liệu Main vào Dev. Có thể tải thêm các mục cũ, làm mới thủ công hoặc tự cập nhật mỗi phút khi trang đang mở.
+- `VITE_OFFICIAL_VIEW_URL` và `VITE_OFFICIAL_VIEW_KEY` chỉ là URL cùng **publishable key** cho trang xem Main trên Preview/Local. Không dùng service-role key. Production không có hai biến này, và trang xem Main không hoạt động ở domain Official.
+- Các luồng tạo/sửa Project, Campaign, Task, Workflow, Profile, cache người dùng và thông báo vẫn dùng duy nhất client chính theo từng môi trường. Mỗi môi trường có phiên Auth, dữ liệu và hàng đợi thông báo của Supabase riêng.
 
 ## Phạm vi dữ liệu
 

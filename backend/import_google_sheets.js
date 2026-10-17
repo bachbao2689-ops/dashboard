@@ -3,7 +3,7 @@ const path = require('path');
 const { Client } = require('pg');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = require('./devDbGuard')(process.env.DATABASE_URL);
 if (!connectionString) throw new Error('DATABASE_URL is required in backend/.env.');
 
 const source = JSON.parse(fs.readFileSync(path.join(__dirname, '.import-source.json'), 'utf8'));

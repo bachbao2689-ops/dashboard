@@ -2,7 +2,7 @@
 
 ## Preview deployments
 
-Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. Preview for this branch must use the isolated Supabase Dev project via branch-scoped `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; Production retains its existing Supabase project. Check the deployed bundle's project URL before any Official data reset. See `../GUIDELINE/ENVIRONMENT_SPLIT_AND_OFFICIAL_RESET.md` for the current migration status and rollout order.
+Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. All Preview branches and Local use the isolated Supabase Dev project via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; Production retains Supabase Official. Copy `.env.example` to the ignored `.env` and fill in the Dev publishable key. Optional `VITE_OFFICIAL_VIEW_URL`/`VITE_OFFICIAL_VIEW_KEY` enable `/main-view`, a separate, authenticated, RLS-scoped read-only view of Official Project/Campaign/Task data. Never use a service-role key in Vite variables. See `../GUIDELINE/ENVIRONMENT_SPLIT_AND_OFFICIAL_RESET.md` for environment boundaries.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

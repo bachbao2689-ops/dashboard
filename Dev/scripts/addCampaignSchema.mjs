@@ -1,7 +1,6 @@
-import pg from 'pg';
+import {workflowDbClient} from './workflowDbClient.mjs';
 
-const connectionString = `postgresql://postgres:${encodeURIComponent(process.env.DB_PASSWORD || '')}@db.jxrwphjriuqbpdpwpqcn.supabase.co:5432/postgres`;
-const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
+const client = workflowDbClient();
 
 await client.connect();
 await client.query(`
