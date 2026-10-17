@@ -13,6 +13,8 @@ Tài liệu này bổ sung `UX_UI_DESIGN_SYSTEM/GUIDELINE/DEPLOYMENT_RULES.md`. 
 
 Hai bundle Vercel hiện cùng chứa URL Supabase `jxrwphjriuqbpdpwpqcn.supabase.co`. Khác nhánh Git/Vercel **chưa** tạo được ranh giới dữ liệu. Không chạy lệnh xóa trên project này khi Develop còn trỏ vào nó.
 
+Vercel project ID: `prj_ZzwTKDS2fFmU8JOmtkSftNvHia6B`. Hai biến `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` hiện cùng áp dụng cho Production và Preview. Kết nối Vercel đọc được project qua ID không kèm team slug; thao tác có team slug `bart-c8ff` trả 403. Khi có Dev project, thêm hai giá trị **Preview, giới hạn nhánh `codex/develop-dashboard`** rồi build lại Preview; không sửa giá trị Production.
+
 ## Phạm vi dữ liệu
 
 Snapshot chỉ để ước lượng trước khi thao tác (17/10/2026; số thực tế có thể đổi): 65 `projects`, 11 `campaigns`, 171 `tasks`, 15 `project_subtasks`, 11 `campaign_subtasks`, 76 `workflow_tracks`, 18 `workflow_phases`, 10 `comments`, 27 `project_comments`, 145 `activity_log`, 395 `notifications`. Có 7 `auth.users`, 13 `public.users`, 23 tệp Storage và 12 đăng ký push trên project hiện tại.
@@ -35,6 +37,6 @@ Trong 395 notification có 392 bản ghi thuộc `project`, `campaign`, `task` h
 ## Điều kiện chặn
 
 - Chưa có Supabase Dev và chưa chuyển Preview sang project đó: **không dọn Official**.
-- Chưa có quyền cấu hình Vercel team `bart-c8ff`: không đổi build/runtime bằng mẹo hardcode URL; cần quyền Vercel hoặc người sở hữu team nhập hai biến môi trường Preview.
+- Nếu Vercel từ chối biến môi trường Preview theo project ID: không đổi build/runtime bằng mẹo hardcode URL; cần người sở hữu team cấu hình hai biến Preview cho đúng nhánh.
 - Chưa sao chép Auth/Storage hoặc chưa xác minh dữ liệu test: không coi Develop đã được bảo toàn.
 - Không đưa service-role key, mật khẩu database, dump dữ liệu hoặc token vào Git.
