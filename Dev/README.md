@@ -2,7 +2,7 @@
 
 ## Preview deployments
 
-Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. **As of 17 October 2026, Preview and Production still connect to the same Supabase project.** Do not reset Production data or run destructive test writes until Develop has its own Supabase project and the deployed Preview has been checked against it. See `../GUIDELINE/ENVIRONMENT_SPLIT_AND_OFFICIAL_RESET.md` for the current data boundary and rollout order.
+Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. Preview for this branch must use the isolated Supabase Dev project via branch-scoped `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; Production retains its existing Supabase project. Check the deployed bundle's project URL before any Official data reset. See `../GUIDELINE/ENVIRONMENT_SPLIT_AND_OFFICIAL_RESET.md` for the current migration status and rollout order.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
