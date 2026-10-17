@@ -1,7 +1,7 @@
 import {useOverlayStore} from '../../store/overlayStore';
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { CheckSquare, Package, User, Layers } from 'lucide-react';
+import { CheckSquare, Package, User, Users, Layers } from 'lucide-react';
 import { FolderKanban, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
@@ -25,6 +25,7 @@ export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} /> },
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} />, badgeCount: badges.projectCount },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} />, badgeCount: badges.borrowCount },
+    { name: t('nav.team'), path: '/team', icon: <Users size={20} strokeWidth={1.8} /> },
     { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} /> },
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader },
   ];
