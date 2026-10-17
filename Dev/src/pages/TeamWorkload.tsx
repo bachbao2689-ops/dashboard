@@ -4,13 +4,15 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { useTranslation } from '../i18n/translations';
 import { useNavigate } from 'react-router-dom';
 import { taskLink } from '../lib/taskTracking';
-import { Users, AlertTriangle, Activity, Calendar } from 'lucide-react';
+import { Users, AlertTriangle, Activity, Calendar, Building2 } from 'lucide-react';
 import { TeamWorkloadVisuals } from '../components/common/TeamWorkloadVisuals';
+import { useRememberedState } from '../hooks/useRememberedState';
 
 export const TeamWorkload: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { workloads, isLoading, error } = useTeamWorkload();
+  const [selectedDepartment, setSelectedDepartment] = useRememberedState<string>('workload.departmentFilter', 'all');
+  const { workloads, departments, isLoading, error } = useTeamWorkload(selectedDepartment);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const selectedMember = workloads.find((w) => w.id === selectedMemberId);
 
@@ -41,18 +43,64 @@ export const TeamWorkload: React.FC = () => {
     }
   };
 
+  const segBtn = (active: boolean) =>
+    `px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${
+      active
+        ? 'bg-[#093570] text-white shadow-sm dark:bg-blue-600'
+        : 'text-gray-500 hover:text-gray-900 hover:bg-white dark:text-gray-400 dark:hover:text-white dark:hover:bg-slate-700'
+    }`;
+
   return (
     <div className="p-6 w-full space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('workload.title')}</h1>
           <p className="text-gray-500 dark:text-gray-400">{t('workload.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-          <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t('workload.weekOf')} {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </span>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Department Filter Buttons */}
+          {departments.length > 0 && (
+            <div
+              role="group"
+              aria-label="Lọc theo phòng ban"
+              className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full"
+            >
+              <span className="pl-2 pr-1 text-gray-400 dark:text-gray-500 flex items-center">
+                <Building2 className="w-3.5 h-3.5" />
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDepartment('all');
+                  setSelectedMemberId(null);
+                }}
+                className={segBtn(selectedDepartment === 'all')}
+              >
+                {t('departments.tabOverall')}
+              </button>
+              {departments.map((dept) => (
+                <button
+                  key={dept.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDepartment(dept.id);
+                    setSelectedMemberId(null);
+                  }}
+                  className={segBtn(String(selectedDepartment) === String(dept.id))}
+                >
+                  {dept.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('workload.weekOf')} {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -98,6 +146,7 @@ export const TeamWorkload: React.FC = () => {
         <>
           {/* Restored Departments-Style Visualizations (Burndown + Member Capacity % + Stacked Breakdown + Heatmap) */}
           <TeamWorkloadVisuals
+            departmentFilter={selectedDepartment}
             selectedMemberId={selectedMemberId}
             onSelectMember={setSelectedMemberId}
             showKpiRibbon={false}

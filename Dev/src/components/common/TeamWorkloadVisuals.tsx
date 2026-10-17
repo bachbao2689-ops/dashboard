@@ -17,6 +17,7 @@ import { useUiStore } from '../../store/uiStore';
 import { taskLink } from '../../lib/taskTracking';
 
 interface TeamWorkloadVisualsProps {
+  departmentFilter?: string;
   selectedMemberId?: string | null;
   onSelectMember?: (id: string | null) => void;
   showMemberDrilldown?: boolean;
@@ -27,6 +28,7 @@ interface TeamWorkloadVisualsProps {
 }
 
 export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
+  departmentFilter = 'all',
   selectedMemberId: controlledMemberId,
   onSelectMember,
   showMemberDrilldown = false,
@@ -38,7 +40,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isDark = useUiStore((state) => state.theme === 'dark');
-  const { workloads, burndown, heatmap, summary } = useTeamWorkload();
+  const { workloads, burndown, heatmap, summary } = useTeamWorkload(departmentFilter);
   const [internalMemberId, setInternalMemberId] = useState<string | null>(null);
 
   const activeMemberId = controlledMemberId !== undefined ? controlledMemberId : internalMemberId;
