@@ -1,5 +1,5 @@
 import {ActionButton} from '../components/common/ActionButton';
-import React, { useState } from 'react';
+import React from 'react';
 import { useReports } from '../hooks/useReports';
 import type { TimeRange } from "../hooks/useReports";
 import { 
@@ -13,6 +13,7 @@ import { LeaderReports } from '../components/features/reports/LeaderReports';
 
 import { statusMeta, priorityColor } from '../utils/statusTheme';
 import { useTranslation } from '../i18n/translations';
+import { useRememberedState } from '../hooks/useRememberedState';
 const chartTooltip = { backgroundColor: 'var(--chart-tooltip)', border: '1px solid var(--chart-border)', borderRadius: '12px', color: 'var(--chart-text)', boxShadow: '0 12px 32px #0003' };
 
 export const Reports: React.FC = () => {
@@ -23,7 +24,7 @@ export const Reports: React.FC = () => {
 
 const AdminReports: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'analytics' | 'team-report'>('analytics');
+  const [activeTab, setActiveTab] = useRememberedState<'analytics' | 'team-report'>('reports.activeTab', 'analytics');
 
   return (
     <div className="space-y-5">

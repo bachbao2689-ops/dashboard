@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useWorkspaceData } from './useWorkspaceData';
+import { useRememberedState } from './useRememberedState';
 import { reportAnalytics } from '../lib/taskTracking';
 export type TimeRange = 'week'|'month'|'quarter'|'all';
 export const useReports = () => {
- const [timeRange,setTimeRange]=useState<TimeRange>('month');
+ const [timeRange,setTimeRange]=useRememberedState<TimeRange>('reports.timeRange','month');
  const {tasks,loading,error,refetch}=useWorkspaceData();
  const data=useMemo(()=>reportAnalytics(tasks,timeRange),[tasks,timeRange]);
  const exportCSV=()=>{

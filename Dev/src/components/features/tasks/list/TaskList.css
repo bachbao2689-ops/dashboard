@@ -106,7 +106,19 @@
 .all-tasks-page .dashboard-detail-drawer { height: auto; }
 .all-tasks-page .task-list-table-scroll { min-width: 0; overflow-x: auto; }
 .all-tasks-page .task-list-table { width: 100%; min-width: 960px; border-collapse: collapse; text-align: left; }
-.all-tasks-page .task-list-row { @apply cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-700/50 transition-all duration-300; }
+.all-tasks-page .task-list-row {
+  @apply cursor-pointer transition-all duration-200;
+  outline: none !important;
+  box-shadow: none !important;
+}
+html:not(.dark) .all-tasks-page .task-list-row:hover {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+html.dark .all-tasks-page .task-list-row:hover {
+  @apply dark:hover:bg-slate-700/50;
+}
 .all-tasks-page .task-list-row[data-selected="true"] { background: color-mix(in srgb, var(--color-primary) 5%, transparent); }
 .all-tasks-page .task-list-row[data-completed="true"] { @apply bg-emerald-50/30 dark:bg-emerald-900/10 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20; }
 .all-tasks-page .task-list-row-title { @apply max-w-[360px] truncate font-medium cursor-pointer hover:text-primary transition-colors text-gray-900 dark:text-gray-100; }

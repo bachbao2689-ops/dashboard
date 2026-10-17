@@ -19,6 +19,7 @@ import type { WeekSelection } from '../lib/weeklyReport';
 import { useAuthStore } from '../store/authStore';
 import {canViewPersonInTeam,canViewTeamManagement,isDepartmentLeader,isGlobalManager} from '../lib/roleScope';
 import {useWorkspaceDirectory} from '../hooks/useWorkspaceData';
+import { useRememberedState } from '../hooks/useRememberedState';
 
 export const MyTasks: React.FC = () => {
   const { t } = useTranslation();
@@ -52,7 +53,7 @@ export const MyTasks: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null);
   useEffect(()=>{if(searchParams.get("report")==="1")setReportOpen(true);},[searchParams]);
   useEffect(() => { if (reportOpen) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [reportOpen]);
-  const [weekSelection, setWeekSelection] = useState<WeekSelection>('current');
+  const [weekSelection, setWeekSelection] = useRememberedState<WeekSelection>('profile.weekSelection', 'current');
   const selected = calendar.items.find(item => item.key === selectedKey);
   const week = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
   const reportTasks = useMemo(() => tasksForWeeklyReport(calendar.items.filter(item => ['task','project_subtask','campaign_subtask'].includes(item.kind)&&String(item.record.assignee_id)===String(targetUserId)).map(item => ({...item.record,id:taskKey(item.kind,item.id),project:item.kind==='project_subtask'?{id:item.parentId,name:item.parentName}:item.record.project,campaign:item.kind==='campaign_subtask'?{id:item.parentId,name:item.parentName}:item.record.campaign}) as any), week.start, week.end), [calendar.items, week.start, week.end,targetUserId]);

@@ -15,6 +15,7 @@ import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
+import { useRememberedState } from '../../hooks/useRememberedState';
 import {canSubmitAssetRequest,canViewTeamManagement,isAssetApprover} from '../../lib/roleScope';
 import {
   buildSidebarGroups,
@@ -24,7 +25,6 @@ import {
 } from './sidebarDrillTree';
 import '../../styles/sidebar-drilldown.css';
 
-const SIDEBAR_WIDTH_KEY = 'kcoffee_sidebar_width';
 const DEFAULT_SIDEBAR_WIDTH = 272;
 const MIN_SIDEBAR_WIDTH = 236;
 const MAX_SIDEBAR_WIDTH = 520;
@@ -518,13 +518,7 @@ export const Sidebar: React.FC = () => {
   const { profile, enrichedTasks, enrichedTracks, summary, togglePin } =
     useSidebarTrackingData();
 
-  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
-    if (typeof window === 'undefined') return DEFAULT_SIDEBAR_WIDTH;
-    const saved = Number(window.localStorage.getItem(SIDEBAR_WIDTH_KEY));
-    return Number.isFinite(saved) && saved >= MIN_SIDEBAR_WIDTH && saved <= MAX_SIDEBAR_WIDTH
-      ? saved
-      : DEFAULT_SIDEBAR_WIDTH;
-  });
+  const [sidebarWidth, setSidebarWidth] = useRememberedState<number>('layout.sidebarWidth', DEFAULT_SIDEBAR_WIDTH);
   const [resizing, setResizing] = useState(false);
   const [openDropdownItemId, setOpenDropdownItemId] = useState<string | null>(null);
   const pinnedEntities = useVisibleSidebarPins();
@@ -538,12 +532,9 @@ export const Sidebar: React.FC = () => {
   // Sync --sidebar-width CSS variable to html element so layout wrapper scales smoothly
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
-    try {
-      window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth));
-    } catch {
-      // Ignore storage errors
-    }
+    const width = Number.isFinite(sidebarWidth) && sidebarWidth >= MIN_SIDEBAR_WIDTH && sidebarWidth <= MAX_SIDEBAR_WIDTH
+      ? sidebarWidth : DEFAULT_SIDEBAR_WIDTH;
+    document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
   }, [sidebarWidth]);
 
   // Drag resize handler (same mechanics as TaskDetailPanel / SubtaskDetailPanel)

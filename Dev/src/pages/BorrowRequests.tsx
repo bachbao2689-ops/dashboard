@@ -9,12 +9,13 @@ import { BorrowRequestDetailModal } from '../components/features/assets/BorrowRe
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import {canSubmitAssetRequest,isAssetApprover} from '../lib/roleScope';
+import { useRememberedState } from '../hooks/useRememberedState';
 
 const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('vi-VN');
 
 export const BorrowRequests: React.FC = () => {
   const { t } = useTranslation();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useRememberedState('assets.requestsFilter', 'all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();

@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore';
 import {initializeDevicePush,resetDevicePush} from './store/devicePushStore';
 import { ProtectedRoute, AdminRoute, TeamManagementRoute } from './components/auth/ProtectedRoute';
 import {canViewTeamManagement} from './lib/roleScope';
+import {userCache} from './lib/userCache';
 const Login=lazy(()=>import('./pages/auth/Login').then(module=>({default:module.Login})));
 const Register=lazy(()=>import('./pages/auth/Register').then(module=>({default:module.Register})));
 import { DashboardLayout } from './components/layouts/DashboardLayout';
@@ -47,6 +48,7 @@ function RootRedirect() {
 function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session=useAuthStore(state=>state.session);
+  const profileId=useAuthStore(state=>state.profile?.id);
 
   useEffect(() => {
     initialize();
@@ -58,6 +60,19 @@ function App() {
       void initializeDevicePush(userId,true);
     } else resetDevicePush();
   }, [session?.user?.id, session?.access_token]);
+
+  useEffect(() => {
+    if (profileId == null) return;
+    void userCache.sync(profileId);
+    const refresh = () => { if (document.visibilityState === 'visible') void userCache.sync(profileId); };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+      userCache.cancelPending(profileId);
+    };
+  }, [profileId]);
 
   return (
     <>

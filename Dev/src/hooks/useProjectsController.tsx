@@ -14,6 +14,7 @@ import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
 import {canViewTeamManagement,isGlobalManager} from '../lib/roleScope';
 import {isTaskDone} from '../lib/taskTracking';
+import {useRememberedState} from './useRememberedState';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -37,7 +38,7 @@ export function useProjectsController(){
     if (id) supabase.rpc('workflow_root', { k: selected ? 'project' : 'campaign', e: id }).then(({ data }) => { if (active) setSelectedRoot(data === true); });
     return () => { active = false; };
   }, [selected?.id, selectedCampaign?.id, profile?.id,profile?.role,profile?.employment_level]);
-  const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [projectsExpanded, setProjectsExpanded] = useRememberedState('projects.expanded', true);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const creationLock = React.useRef(false);
@@ -125,13 +126,13 @@ export function useProjectsController(){
   }, [legacySubtaskMembers, workflow.tasks, workflow.tracks]);
 
   // Filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('open');
-  const [picFilter, setPicFilter] = useState<string>('all');
-  const [calendarFilter, setCalendarFilter] = useState<string>('all');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useRememberedState('projects.search', '');
+  const [statusFilter, setStatusFilter] = useRememberedState<string>('projects.status', 'open');
+  const [picFilter, setPicFilter] = useRememberedState<string>('projects.pic', 'all');
+  const [calendarFilter, setCalendarFilter] = useRememberedState<string>('projects.calendar', 'all');
+  const [customStartDate, setCustomStartDate] = useRememberedState<string>('projects.startDate', '');
+  const [customEndDate, setCustomEndDate] = useRememberedState<string>('projects.endDate', '');
+  const [priorityFilter, setPriorityFilter] = useRememberedState<string>('projects.priority', 'all');
 
   // Dropdown open state
   const [activeDropdown, setActiveDropdown] = useState<'status' | 'pic' | 'calendar' | 'priority' | null>(null);

@@ -32,7 +32,10 @@ export const ProfileSettingsTab: React.FC = () => {
     setSettings(next); setSaving(true);
     const { error } = await supabase.from('user_preferences').upsert({ user_id: profileId, ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
     setSaving(false);
-    if (error) toast.error('Không thể lưu cài đặt'); else toast.success('Đã lưu cài đặt');
+    if (error) toast.error('Không thể lưu cài đặt'); else {
+      if (next.language !== useUiStore.getState().lang) useUiStore.getState().setLang(next.language === 'en' ? 'en' : 'vi');
+      toast.success('Đã lưu cài đặt');
+    }
   };
   const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => <button type="button" aria-pressed={value} onClick={onChange} className={`w-10 h-5 p-1 flex items-center rounded-full transition-colors ${value ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}><span className={`w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-4.5' : ''}`} /></button>;
   const setValue = <K extends keyof Preferences>(key: K, value: Preferences[K]) => void save({ ...settings, [key]: value });

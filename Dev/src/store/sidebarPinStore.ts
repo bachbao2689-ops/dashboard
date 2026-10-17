@@ -1,35 +1,25 @@
 import { create } from 'zustand';
-
-const STORAGE_PREFIX = 'kcoffee_sidebar_pinned_tasks_';
-const ENTITY_PREFIX = 'kcoffee_sidebar_pinned_entities_';
+import { userCache } from '../lib/userCache';
+import { useAuthStore } from './authStore';
 
 export type PinnedEntity = { kind: 'project' | 'campaign'; id: string; name: string };
 
-function load<T>(prefix: string, userId?: number | string | null): T[] {
-  if (!userId || typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(`${prefix}${userId}`);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function save(prefix: string, userId: number | string | null | undefined, value: unknown) {
-  if (!userId || typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(`${prefix}${userId}`, JSON.stringify(value));
-  } catch {
-    // Ignore storage quota errors
-  }
-}
+const loadTasks = (userId?: number | string | null) => {
+  const value = userCache.get<unknown>(userId, 'pinnedTasks', []);
+  return Array.isArray(value) ? value.map(String) : [];
+};
+const loadEntities = (userId?: number | string | null) => {
+  const value = userCache.get<unknown>(userId, 'pinnedEntities', []);
+  return Array.isArray(value) ? value.filter((entry): entry is PinnedEntity =>
+    Boolean(entry && typeof entry === 'object' && ['project', 'campaign'].includes(entry.kind) && typeof entry.id === 'string' && typeof entry.name === 'string')) : [];
+};
 
 interface SidebarPinState {
   ownerId: string | null;
   pinnedIds: string[];
   pinnedEntities: PinnedEntity[];
   syncOwner: (userId?: number | string | null) => void;
+  refreshOwner: () => void;
   togglePin: (taskId: string, userId?: number | string | null) => void;
   isPinned: (taskId: string) => boolean;
   toggleEntityPin: (entity: PinnedEntity, userId?: number | string | null) => void;
@@ -45,16 +35,20 @@ export const useSidebarPinStore = create<SidebarPinState>((set, get) => ({
     if (get().ownerId === key) return;
     set({
       ownerId: key,
-      pinnedIds: load<string>(STORAGE_PREFIX, key).map(String),
-      pinnedEntities: load<PinnedEntity>(ENTITY_PREFIX, key),
+      pinnedIds: loadTasks(key),
+      pinnedEntities: loadEntities(key),
     });
+  },
+  refreshOwner: () => {
+    const key = get().ownerId;
+    set({ pinnedIds: loadTasks(key), pinnedEntities: loadEntities(key) });
   },
   togglePin: (taskId, userId) => {
     const key = userId != null ? String(userId) : get().ownerId;
     get().syncOwner(key);
     const current = get().pinnedIds;
     const next = current.includes(taskId) ? current.filter(id => id !== taskId) : [taskId, ...current];
-    save(STORAGE_PREFIX, key, next);
+    userCache.set(key, 'pinnedTasks', next);
     set({ ownerId: key, pinnedIds: next });
   },
   isPinned: (taskId) => get().pinnedIds.includes(taskId),
@@ -66,13 +60,28 @@ export const useSidebarPinStore = create<SidebarPinState>((set, get) => ({
     const next = exists
       ? current.filter(e => !(e.kind === entity.kind && e.id === entity.id))
       : [entity, ...current];
-    save(ENTITY_PREFIX, key, next);
+    userCache.set(key, 'pinnedEntities', next);
     set({ ownerId: key, pinnedEntities: next });
   },
   unpinEntity: (kind, id) => {
     const key = get().ownerId;
     const next = get().pinnedEntities.filter(e => !(e.kind === kind && e.id === id));
-    save(ENTITY_PREFIX, key, next);
+    userCache.set(key, 'pinnedEntities', next);
     set({ pinnedEntities: next });
   },
 }));
+
+let releasePins = () => {};
+function bindPins(userId?: number | null) {
+  releasePins();
+  useSidebarPinStore.getState().syncOwner(userId);
+  if (userId == null) { releasePins = () => {}; return; }
+  const refresh = () => useSidebarPinStore.getState().refreshOwner();
+  const releaseTasks = userCache.subscribe(userId, 'pinnedTasks', refresh);
+  const releaseEntities = userCache.subscribe(userId, 'pinnedEntities', refresh);
+  releasePins = () => { releaseTasks(); releaseEntities(); };
+}
+bindPins(useAuthStore.getState().profile?.id);
+useAuthStore.subscribe((state, previous) => {
+  if (state.profile?.id !== previous.profile?.id) bindPins(state.profile?.id);
+});

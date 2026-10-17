@@ -770,10 +770,9 @@ html.dark .hover-magnetic-card.is-magnetic-active {
 /* 3. TABLE / LIST ROWS (.hover-row-effect) */
 .hover-row-effect {
   --row-glow-color: 59, 130, 246; /* default blue for tasks */
-  outline: 1px solid transparent !important;
-  transition: outline 0.3s ease,
-              box-shadow 0.3s ease,
-              background-color 0.25s ease !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease !important;
 }
 .hover-row-campaign {
   --row-glow-color: 245, 158, 11; /* amber-500 */
@@ -782,18 +781,27 @@ html.dark .hover-magnetic-card.is-magnetic-active {
   --row-glow-color: 139, 92, 246; /* violet-500 */
 }
 
-/* Light mode hover row - soft subtle tint without harsh outline or glow */
+/* Light mode hover row - clean, soft, light styling without any dark outline, line, or shadow */
+html:not(.dark) .hover-row-effect {
+  outline: none !important;
+  box-shadow: none !important;
+}
 html:not(.dark) .hover-row-effect:hover,
 html:not(.dark) .hover-row-effect.is-magnetic-active {
-  background-color: rgba(var(--row-glow-color), 0.05) !important;
+  background-color: rgba(var(--row-glow-color), 0.04) !important;
   background-image: none !important;
   outline: none !important;
   box-shadow: none !important;
-  position: relative;
-  z-index: 2;
+  transform: none !important;
 }
 
-/* Dark mode hover row */
+/* Dark mode hover row - KEEP UNCHANGED */
+html.dark .hover-row-effect {
+  outline: 1px solid transparent !important;
+  transition: outline 0.3s ease,
+              box-shadow 0.3s ease,
+              background-color 0.25s ease !important;
+}
 html.dark .hover-row-effect:hover,
 html.dark .hover-row-effect.is-magnetic-active {
   background-color: #0f172a !important;

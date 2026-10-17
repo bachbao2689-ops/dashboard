@@ -3,6 +3,7 @@ import {useState,useEffect,useMemo,useRef} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {useWorkflowHub} from './useWorkflowHub';
 import {useTranslation} from '../i18n/translations';
+import {useRememberedState} from './useRememberedState';
 import type {Task} from './useTasks';
 import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,parentTasks,daysUntil,type HubPhase,type GateCriterion} from '../lib/workflowHub';
 import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/workflowCalendar';
@@ -27,7 +28,7 @@ export function useWorkflowManagement() {
   const { lang } = useTranslation();
   const isEn = lang === 'en';
   const [params, setParams] = useSearchParams();
-  const [entityFilter, setEntityFilter] = useState<'project' | 'campaign'>(params.has('campaign') ? 'campaign' : 'project');
+  const [entityFilter, setEntityFilter] = useRememberedState<'project' | 'campaign'>('workflow.entityFilter', params.has('campaign') ? 'campaign' : 'project');
   const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState(false);
   const [searchEntityQuery, setSearchEntityQuery] = useState('');
   const entities = useMemo(() => hub.tracks.map(track => ({ ...track, type: track.entity_type })), [hub.tracks]);

@@ -41,7 +41,11 @@ export const useUiStore = create<UiState>((set) => ({
   },
   syncWithUser: () => {
     const profileId = useAuthStore.getState().profile?.id;
-    if (!profileId) return;
+    if (!profileId) {
+      document.documentElement.classList.remove('dark');
+      set({ theme: 'light', lang: 'vi', isSidebarOpen: true });
+      return;
+    }
     
     const cachedTheme = userCache.get<'light' | 'dark'>(profileId, 'theme', 'light');
     const cachedLang = userCache.get<'en' | 'vi'>(profileId, 'lang', 'vi');
@@ -60,3 +64,16 @@ useAuthStore.subscribe((state, prevState) => {
     useUiStore.getState().syncWithUser();
   }
 });
+
+for (const key of ['theme', 'lang', 'sidebar']) {
+  let unsubscribe = () => {};
+  const bind = (userId?: number) => {
+    unsubscribe();
+    if (userId == null) return;
+    unsubscribe = userCache.subscribe(userId, key, () => useUiStore.getState().syncWithUser());
+  };
+  bind(useAuthStore.getState().profile?.id);
+  useAuthStore.subscribe((state, previous) => {
+    if (state.profile?.id !== previous.profile?.id) bind(state.profile?.id);
+  });
+}

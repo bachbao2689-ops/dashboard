@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
+import { useRememberedState } from '../hooks/useRememberedState';
 import { useNavigate } from 'react-router-dom';
 import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportDrawer';
 import { useTranslation } from '../i18n/translations';
@@ -47,10 +48,10 @@ export const Dashboard: React.FC = () => {
   const tasks=useMemo(()=>allTasks.filter(task=>taskActive(task)&&(!restrictDepartment||Boolean(ownDepartment&&taskOwningDepartment(task)===ownDepartment))),[allTasks,ownDepartment,restrictDepartment]);
   const navigate = useNavigate();
 
-  const [activeId, setActiveId] = useState('s1');
-  const [range, setRange] = useState<'weekly' | 'custom'>('weekly');
-  const [customStart, setCustomStart] = useState(() => toYmd(startOfCurrentWeek()));
-  const [customEnd, setCustomEnd] = useState(() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); });
+  const [activeId, setActiveId] = useRememberedState('dashboard.activeScope', 's1');
+  const [range, setRange] = useRememberedState<'weekly' | 'custom'>('dashboard.range', 'weekly');
+  const [customStart, setCustomStart] = useRememberedState('dashboard.customStart', toYmd(startOfCurrentWeek()));
+  const [customEnd, setCustomEnd] = useRememberedState('dashboard.customEnd', (() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); })());
     const [performanceOpen, setPerformanceOpen] = useState(false);
 
   const [openDept, setOpenDept] = useState<string | null>(null);

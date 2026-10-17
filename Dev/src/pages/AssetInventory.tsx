@@ -12,6 +12,7 @@ import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal
 import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
 import { useAuthStore } from '../store/authStore';
 import {canSubmitAssetRequest} from '../lib/roleScope';
+import { useRememberedState } from '../hooks/useRememberedState';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -29,7 +30,7 @@ export const AssetInventory: React.FC = () => {
   const roleStr = (profile?.role || '').toLowerCase();
   const levelStr = (profile?.employment_level || '').toLowerCase();
   const canAddAsset = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useRememberedState('assets.search', '');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);

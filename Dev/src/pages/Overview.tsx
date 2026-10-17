@@ -1,6 +1,6 @@
 import {taskDone,taskOpen} from '../lib/taskTracking';
 import toast from "react-hot-toast";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -11,6 +11,7 @@ import { useTranslation } from '../i18n/translations';
 import { useDashboard } from '../hooks/useDashboard';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
+import { useRememberedState } from '../hooks/useRememberedState';
 import {isAdmin} from '../lib/roleScope';
 import { transitionBorrowRequest } from '../services/borrowWorkflow';
 import type { BorrowAction } from '../services/borrowWorkflow';
@@ -46,7 +47,7 @@ export const Overview: React.FC = () => {
   const canAdmin = isAdmin(profile);
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Admin';
 
-  const [dateRange, setDateRange] = useState('');
+  const [dateRange, setDateRange] = useRememberedState('overview.dateRange', '');
 
   useEffect(() => {
     const el = document.getElementById('overview-date-range');

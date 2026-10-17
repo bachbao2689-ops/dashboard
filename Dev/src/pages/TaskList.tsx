@@ -19,12 +19,13 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
 import { useAuthStore } from '../store/authStore';
+import {useRememberedState} from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
 
 export const TaskList: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [searchTerm, setSearchTerm] = useRememberedState('tasks.search', searchParams.get('search') || '');
 
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
@@ -33,13 +34,13 @@ export const TaskList: React.FC = () => {
   const canCreateTask = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
 
   // Modular filter states matching Projects.tsx
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'open');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>(searchParams.get('assignee') || 'all');
-  const [calendarFilter, setCalendarFilter] = useState<string>('all');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
-  const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get('priority') || 'all');
-  const [groupBy, setGroupBy] = useState<string>('none');
+  const [statusFilter, setStatusFilter] = useRememberedState<string>('tasks.status', searchParams.get('status') || 'open');
+  const [assigneeFilter, setAssigneeFilter] = useRememberedState<string>('tasks.assignee', searchParams.get('assignee') || 'all');
+  const [calendarFilter, setCalendarFilter] = useRememberedState<string>('tasks.calendar', 'all');
+  const [customStartDate, setCustomStartDate] = useRememberedState<string>('tasks.startDate', '');
+  const [customEndDate, setCustomEndDate] = useRememberedState<string>('tasks.endDate', '');
+  const [priorityFilter, setPriorityFilter] = useRememberedState<string>('tasks.priority', searchParams.get('priority') || 'all');
+  const [groupBy, setGroupBy] = useRememberedState<string>('tasks.groupBy', 'none');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
@@ -49,7 +50,7 @@ export const TaskList: React.FC = () => {
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
 
   const { tasks, loading, error, refetch } = useTasks();
-  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useRememberedState<string[]>('tasks.collapsedGroups', []);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
   const {users:people}=useWorkspaceData();
@@ -95,7 +96,7 @@ export const TaskList: React.FC = () => {
     if (searchParams.has('search')) {
       setSearchTerm(searchParams.get('search') || '');
     }
-    setStatusFilter(searchParams.get('status') || 'open');
+    if (searchParams.has('status')) setStatusFilter(searchParams.get('status') || 'open');
     if (searchParams.has('priority')) {
       setPriorityFilter(searchParams.get('priority') || 'all');
     }

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
+import { useRememberedState } from '../../../hooks/useRememberedState';
 import {canViewPersonInTeam,canViewTeamManagement,isGlobalManager} from '../../../lib/roleScope';
 import { WeeklyReportDrawer } from '../reports/WeeklyReportDrawer';
 import { WeeklyReportPreview } from '../reports/WeeklyReportPreview';
@@ -24,7 +25,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const profile = useAuthStore(state => state.profile);
   const scopeKey = `${profile?.id ?? ''}:${profile?.role ?? ''}:${profile?.employment_level ?? ''}:${profile?.department_id ?? ''}`;
   const navigate = useNavigate();
-  const [weekSelection, setWeekSelection] = useState<WeekSelection>('previous');
+  const [weekSelection, setWeekSelection] = useRememberedState<WeekSelection>('reports.teamWeek', 'previous');
   const { start: weekStart, end: weekEnd } = useMemo(() => weeklyReportRange(weekSelection), [weekSelection]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [taskCount, setTaskCount] = useState<Record<number, number>>({});
@@ -32,7 +33,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [weeklyTasksByMember, setWeeklyTasksByMember] = useState<Record<number, WeeklyReportTask[]>>({});
   const [teamReports, setTeamReports] = useState<Record<string, TeamReportRow>>({});
   const [summaryImages, setSummaryImages] = useState<Record<number, string | null>>({});
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useRememberedState('reports.teamSearch', '');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberTasks, setMemberTasks] = useState<WeeklyReportTask[]>([]);
   const [references, setReferences] = useState<ReportReference[]>([]);
@@ -40,7 +41,7 @@ export const ProfileTeamTab: React.FC<{ embedded?: boolean }> = ({ embedded = fa
   const [loadedScope, setLoadedScope] = useState('');
   const [loadingReport, setLoadingReport] = useState(false);
   const [reminding, setReminding] = useState(false);
-  const [teamPanelWidth, setTeamPanelWidth] = useState(42);
+  const [teamPanelWidth, setTeamPanelWidth] = useRememberedState('reports.teamPanelWidth', 42);
   const reportGridRef = useRef<HTMLDivElement>(null);
   const teamRequest = useRef(0);
 

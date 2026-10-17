@@ -10,6 +10,7 @@ import { NotificationLog } from './NotificationLog';
 import { Avatar } from '../../common/Avatar';
 import { SearchInput, StatusFilterDropdown } from '../../common/filters';
 import { useTranslation } from '../../../i18n/translations';
+import { useRememberedState } from '../../../hooks/useRememberedState';
 import './ProfileCalendar.css';
 
 interface Props {
@@ -71,10 +72,10 @@ export function ProfileCalendar({ items, notifications, loading, error, updatedA
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
-  const [filter, setFilter] = useState<(typeof filterIds)[number]>('task');
-  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useRememberedState<(typeof filterIds)[number]>('profile.calendarFilter', 'task');
+  const [query, setQuery] = useRememberedState('profile.calendarSearch', '');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [status, setStatus] = useState('open');
+  const [status, setStatus] = useRememberedState('profile.calendarStatus', 'open');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [hovered, setHovered] = useState<{ item: CalendarItem; left: number; top: number } | null>(null);
