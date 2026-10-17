@@ -131,18 +131,19 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
   const scopedTasks = useMemo(() => {
     if (!departmentFilter || departmentFilter === 'all') return tasks;
     const memberIds = new Set(filteredUsers.map((u) => String(u.id)));
-    return tasks.filter(
-      (t) =>
-        String(t.department?.id) === String(departmentFilter) ||
-        (t.assignee_id != null && memberIds.has(String(t.assignee_id))),
-    );
+    return tasks.filter((t) => {
+      if (t.assignee_id != null) {
+        return memberIds.has(String(t.assignee_id));
+      }
+      return String(t.department?.id) === String(departmentFilter);
+    });
   }, [tasks, filteredUsers, departmentFilter]);
 
   const workloads = useMemo(() => {
     const week = weeklyReportRange('current');
     return filteredUsers
       .map((u) => {
-        const memberTasks = tasks.filter(
+        const memberTasks = scopedTasks.filter(
           (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
         );
         const openList = memberTasks.filter((t) => taskOpen(t));
