@@ -31,14 +31,15 @@ export const MyTasks: React.FC = () => {
   const directory = useWorkspaceDirectory(isManager);
   const departments = useMemo(() => (directory.data?.departments || []).filter(department => globalScope || (leaderScope && department.id === profile?.department_id)), [directory.data, globalScope, leaderScope, profile?.department_id]);
   const users = useMemo(() => (directory.data?.users || []).filter(user => canViewPersonInTeam(profile, user)), [directory.data, profile]);
-  const [filterDept, setFilterDept] = useState('');
-  const [filterPic, setFilterPic] = useState('');
+  const [filterDept, setFilterDept] = useRememberedState('profile.departmentFilter', '');
+  const [filterPic, setFilterPic] = useRememberedState('profile.picFilter', '');
   const [activeDropdown, setActiveDropdown] = useState<'dept' | 'pic' | null>(null);
 
   useEffect(() => {
-    setFilterDept('');
-    setFilterPic('');
-  }, [profile?.department_id, profile?.id, profile?.role, profile?.employment_level]);
+    if (!directory.data) return;
+    if (filterDept && !departments.some(department => String(department.id) === filterDept)) setFilterDept('');
+    if (filterPic && !users.some(user => String(user.id) === filterPic)) setFilterPic('');
+  }, [directory.data, filterDept, filterPic, departments, users, setFilterDept, setFilterPic]);
 
   const visibleUsers = useMemo(() => {
     if (!filterDept) return users;
