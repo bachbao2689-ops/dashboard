@@ -86,7 +86,9 @@ export function useWorkflowManagement() {
   const subtasks: WorkflowSubtask[] = allTasks.filter(t => t.workflow_phase_id).map(t => ({
     id: t.id, phaseId: t.workflow_phase_id, title: t.title, assignee: t.assignee?.name || 'Chưa giao PIC',
     assignee_id: t.assignee_id, status: toWorkflowStage(t), due_date: t.due_date, record: t,
-    canEdit: Boolean(phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks || String(t.assignee_id) === String(hub.profile?.id)),
+    canEdit: Boolean(phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
+      || (hub.profile?.id != null && (String(t.assignee_id) === String(hub.profile.id)
+        || (t.created_by != null && String(t.created_by) === String(hub.profile.id))))),
   }));
   const currentPhaseSubtasks = subtasks.filter(t => t.phaseId === activePhase?.id);
   const doneSubtasksCount = currentPhaseSubtasks.filter(t => t.status === 'completed').length;

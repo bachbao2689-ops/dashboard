@@ -67,7 +67,20 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   }, [resizing]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    setCanEdit(false);
+    setEditing(false);
+    if (subtask?.id && profile?.id) {
+      const kind = entityType === 'project_subtask' ? 'project' : 'campaign';
+      void supabase.rpc('workflow_old_task_access', { k: kind, tid: subtask.id, editing: true })
+        .then(({ data }) => { if (active) setCanEdit(data === true); });
+    }
+    return () => { active = false; };
+  }, [subtask?.id, entityType, profile?.id]);
 
   useEffect(() => {
     const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
@@ -129,7 +142,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const saveDetails = async () => {
-    if (readOnly||!subtask || !profile?.id) return;
+    if (readOnly||!canEdit||!subtask || !profile?.id) return;
     setSaving(true);
     const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
@@ -148,7 +161,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const uploadImage = async (file?: File) => {
-    if (readOnly||!file) return;
+    if (readOnly||!canEdit||!file) return;
     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
     setSaving(true);
     const { data, error } = await supabase.storage.from('attachments').upload(`subtasks/${Date.now()}-${cleanName}`, file, { upsert: false });
@@ -160,7 +173,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const complete = async () => {
-    if (readOnly||!subtask || saving || isDone(subtask.status)) return;
+    if (readOnly||!canEdit||!subtask || saving || isDone(subtask.status)) return;
     setSaving(true);
     try {
       await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
@@ -211,8 +224,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         </section>
 
         <section>
-          <div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editing && !readOnly && <button onClick={() => { setDraftDescription(description); setDraftImageUrl(imageUrl); setEditing(true); }} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>
-          {editing && !readOnly ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
+          <div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editing && !readOnly && canEdit && <button onClick={() => { setDraftDescription(description); setDraftImageUrl(imageUrl); setEditing(true); }} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>
+          {editing && !readOnly && canEdit ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
         </section>
 
         <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }}/>
@@ -220,7 +233,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
       {readOnly?<div className="push-mobile-readonly">Xem tiến độ trên điện thoại · Cập nhật công việc trên máy tính</div>:(<div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
-        <button disabled={completed || saving} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
+        <button disabled={completed || saving || !canEdit} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
       </div>)}
     </aside>
   </>
