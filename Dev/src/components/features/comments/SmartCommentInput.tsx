@@ -24,7 +24,6 @@ import { useSidebarTrackingData } from '../../../hooks/useSidebarTrackingData';
 import {
   COMMENT_COLOR_MAP,
   CommentImagePreviewModal,
-  RichCommentBody,
   isImageAttachment,
 } from './RichCommentBody';
 import '../../../styles/task-comments.css';
@@ -53,12 +52,25 @@ interface AttachmentChip {
   sizeLabel?: string;
 }
 
+interface MentionPill {
+  id: string;
+  kind: 'date' | 'page';
+  dateKind?: 'today' | 'tomorrow' | 'nextweek';
+  pageKind?: 'project' | 'campaign' | 'page';
+  label: string;
+  sublabel?: string;
+  href?: string;
+  token: string;
+}
+
 interface MentionCandidate {
   id: string;
   category: 'date' | 'person' | 'page';
   dateKind?: 'today' | 'tomorrow' | 'nextweek';
+  pageKind?: 'project' | 'campaign' | 'page';
   label: string;
   sublabel?: string;
+  href?: string;
   insertText: string;
   ghostText: string;
   person?: CommentMentionPerson;
@@ -226,6 +238,10 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   const [hoveredCandidateId, setHoveredCandidateId] = useState<string | null>(null);
   const [activeCandidateIdx, setActiveCandidateIdx] = useState<number>(0);
 
+  // Inline Mention Pills (Date/Reminder pills & Project/Campaign pills rendered directly inside the input bar!)
+  const [mentionPills, setMentionPills] = useState<MentionPill[]>([]);
+  const [hoveredPillId, setHoveredPillId] = useState<string | null>(null);
+
   // Floating Bubble Toolbar state on text selection
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [hoveredToolId, setHoveredToolId] = useState<string | null>(null);
@@ -295,7 +311,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
 
   // Build staff-related Projects & Campaigns dynamically from workspace tracks
   const staffRelatedProjects = useMemo<SmartPageSuggestion[]>(() => {
-    // Check if any staff is already mentioned in the comment text
     const mentionedPeopleIds = new Set<number>();
     people.forEach(p => {
       const tag = `@${p.name.replace(/\s+/g, '').toLowerCase()}`;
@@ -353,7 +368,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
     if (!isMentionPopoverOpen) return [];
     const list: MentionCandidate[] = [];
 
-    // Category 1: Date / Reminder (with matching pill colors in popup & chat)
+    // Category 1: Date / Reminder (with matching pill colors in popup & input bar & chat)
     const todayDate = formatDateVi(0);
     const tomorrowDate = formatDateVi(1);
     const nextWeekDate = formatDateVi(7);
@@ -365,8 +380,8 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         dateKind: 'today',
         label: isEn ? 'Today' : 'Hôm nay',
         sublabel: todayDate,
-        insertText: `@Today(${todayDate}) `,
-        ghostText: isEn ? `Today (${todayDate})` : `Hôm nay (${todayDate})`,
+        insertText: `@Today(${todayDate})`,
+        ghostText: isEn ? 'Today' : 'Hôm nay',
         icon: <Clock size={13} className="text-amber-500" />,
       },
       {
@@ -375,8 +390,8 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         dateKind: 'tomorrow',
         label: isEn ? 'Tomorrow' : 'Ngày mai',
         sublabel: tomorrowDate,
-        insertText: `@Tomorrow(${tomorrowDate}) `,
-        ghostText: isEn ? `Tomorrow (${tomorrowDate})` : `Ngày mai (${tomorrowDate})`,
+        insertText: `@Tomorrow(${tomorrowDate})`,
+        ghostText: isEn ? 'Tomorrow' : 'Ngày mai',
         icon: <Calendar size={13} className="text-blue-500" />,
       },
       {
@@ -385,8 +400,8 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         dateKind: 'nextweek',
         label: isEn ? 'Next week' : 'Tuần tới',
         sublabel: nextWeekDate,
-        insertText: `@NextWeek(${nextWeekDate}) `,
-        ghostText: isEn ? `Next week (${nextWeekDate})` : `Tuần tới (${nextWeekDate})`,
+        insertText: `@NextWeek(${nextWeekDate})`,
+        ghostText: isEn ? 'Next week' : 'Tuần tới',
         icon: <Calendar size={13} className="text-violet-500" />,
       },
     ];
@@ -412,7 +427,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       .slice(0, 6)
       .forEach(person => {
         const compactTag = person.name.replace(/\s+/g, '');
-        // Find which projects this staff member belongs to so we can show it in sublabel!
         const staffProjects = staffRelatedProjects
           .filter(proj => proj.relatedStaffNames?.includes(person.name))
           .map(proj => proj.title);
@@ -447,9 +461,11 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         list.push({
           id: proj.id,
           category: 'page',
+          pageKind: proj.kind,
           label: proj.title,
           sublabel: proj.parentPath,
-          insertText: `[${prefixIcon} ${proj.title}](${proj.href}) `,
+          href: proj.href,
+          insertText: `[${prefixIcon} ${proj.title}](${proj.href})`,
           ghostText: proj.title,
           icon:
             proj.kind === 'campaign' ? (
@@ -493,6 +509,49 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         onPickPerson(candidate.person);
       }
 
+      // For Date/Reminder or Project/Campaign tags: render directly as a clean visual Pill inside the input bar
+      // (instead of dumping raw `@NextWeek(25/10/2026)` or `[📂 Project](/projects?...)` syntax into the text input!)
+      if (candidate.category === 'date' || candidate.category === 'page') {
+        setMentionPills(prev => {
+          const filtered = prev.filter(p => p.id !== candidate.id);
+          return [
+            ...filtered,
+            {
+              id: candidate.id,
+              kind: candidate.category === 'date' ? 'date' : 'page',
+              dateKind: candidate.dateKind,
+              pageKind: candidate.pageKind,
+              label: candidate.label,
+              sublabel: candidate.sublabel,
+              href: candidate.href,
+              token: candidate.insertText.trim(),
+            },
+          ];
+        });
+
+        if (mentionMatch) {
+          const before = value.slice(0, mentionMatch.atIndex);
+          const after = value.slice(mentionMatch.endIndex).replace(/^\s+/, '');
+          const next = `${before}${after}`;
+          onChange(next);
+          const nextCursor = before.length;
+          setCaretPos(nextCursor);
+          requestAnimationFrame(() => {
+            textareaRef.current?.focus();
+            textareaRef.current?.setSelectionRange(nextCursor, nextCursor);
+          });
+        } else {
+          requestAnimationFrame(() => {
+            textareaRef.current?.focus();
+          });
+        }
+
+        setForceMentionOpen(false);
+        setHoveredCandidateId(null);
+        return;
+      }
+
+      // For @Person mentions: insert clean `@Name ` into the text input
       if (mentionMatch) {
         const before = value.slice(0, mentionMatch.atIndex);
         const after = value.slice(mentionMatch.endIndex);
@@ -704,7 +763,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         ]);
         toast.success(isEn ? `Uploaded ${file.name}` : `Đã tải lên ${file.name}`);
       } else {
-        // Fallback: try 'avatars' bucket or compact Data URL for images so preview & modal always work
         let fallbackUrl = `#attachment-${cleanName}`;
         if (isImg) {
           try {
@@ -751,26 +809,27 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   };
 
   const canSend =
-    (value.trim().length > 0 || attachments.length > 0) &&
+    (value.trim().length > 0 || mentionPills.length > 0 || attachments.length > 0) &&
     !disabled &&
     !saving &&
     !uploadingFile;
 
   const triggerSend = async () => {
     if (!canSend) return;
+    const pillMarkdown = mentionPills.map(p => p.token).join(' ');
+    const textWithPills = [pillMarkdown, value.trim()].filter(Boolean).join(' ');
     const attachmentMarkdown = attachments
       .map(att => {
         const prefix = att.isImage ? '🖼️' : '📎';
         return `[${prefix} ${att.name}](${att.url})`;
       })
       .join(' ');
-    const combined = [value.trim(), attachmentMarkdown].filter(Boolean).join('\n');
-    if (attachments.length > 0 && value.trim() !== combined) {
-      onChange(combined);
-    }
+    const combined = [textWithPills, attachmentMarkdown].filter(Boolean).join('\n');
+    setMentionPills([]);
     setAttachments([]);
     setForceMentionOpen(false);
     setSelectionRange(null);
+    onChange('');
     await onSubmit(combined);
   };
 
@@ -798,6 +857,18 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         setShowLinkInput(true);
         return;
       }
+    }
+
+    // Backspace at position 0 removes the last inline MentionPill
+    if (
+      e.key === 'Backspace' &&
+      !value &&
+      mentionPills.length > 0 &&
+      (textareaRef.current?.selectionStart ?? 0) === 0
+    ) {
+      e.preventDefault();
+      setMentionPills(prev => prev.slice(0, -1));
+      return;
     }
 
     // Mention Popover keyboard navigation
@@ -843,14 +914,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
     }
   };
 
-  // Detect whether `value` contains rich formatting or special tags to show the Live Formatted Preview bar
-  const hasRichTokensInDraft = useMemo(() => {
-    if (!value.trim()) return false;
-    return /(\*\*[^*]+\*\*|\*[^*]+\*|<u>[\s\S]+?<\/u>|\[color:[a-zA-Z0-9#]+\][\s\S]+?\[\/color\]|@(?:Today|Tomorrow|NextWeek)\([^)]+\)|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s]+)/.test(
-      value
-    );
-  }, [value]);
-
   const dateCandidates = candidates.filter(c => c.category === 'date');
   const personCandidates = candidates.filter(c => c.category === 'person');
   const pageCandidates = candidates.filter(c => c.category === 'page');
@@ -865,7 +928,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           role="toolbar"
           aria-label="Text formatting toolbar"
           onMouseDown={e => {
-            // Keep textarea selection intact unless clicking inside the link URL input
             if ((e.target as HTMLElement).tagName !== 'INPUT') {
               e.preventDefault();
             }
@@ -976,7 +1038,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           aria-label="Mention suggestions"
           className="smart-mention-popover custom-scrollbar"
         >
-          {/* Category 1: Date / Reminder (Same colored pills as rendered in chat!) */}
+          {/* Category 1: Date / Reminder (Same colored pills as rendered in input & chat!) */}
           {dateCandidates.length > 0 && (
             <div className="mb-1.5">
               <div className="smart-mention-category-title">
@@ -1092,20 +1154,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       )}
 
       {/* ========================================================
-          LIVE RICH FORMATTING & TAG PREVIEW (Shows live Bold/Italic/Underline/Color/Links/Date pills while composing)
-         ======================================================== */}
-      {hasRichTokensInDraft && (
-        <div className="mb-2 px-3 py-1.5 rounded-xl bg-blue-50/55 dark:bg-slate-800/70 border border-blue-200/60 dark:border-slate-700 text-xs text-gray-800 dark:text-slate-100 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mr-2">
-              Xem trước:
-            </span>
-            <RichCommentBody body={value} className="inline text-xs" />
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================
           ATTACHED FILE / IMAGE CHIPS (Bold filename, Hover mini image preview, Click full image modal)
          ======================================================== */}
       {attachments.length > 0 && (
@@ -1175,7 +1223,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       )}
 
       {/* ========================================================
-          BASE INPUT BAR (Strictly aligned single-line layout)
+          BASE INPUT BAR (Clean single-line layout with inline visual MentionPills)
          ======================================================== */}
       <div className="smart-comment-bar">
         {/* Left: Current User Circular Avatar */}
@@ -1185,51 +1233,126 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           className="w-7 h-7 text-[10px] shrink-0 self-center"
         />
 
-        {/* Middle: Input area + Ghost Text Preview Overlay */}
-        <div className="relative flex-1 min-w-0 flex items-center min-h-[28px]">
-          {/* Ghost Preview Mirror Layer right after `@query` */}
-          {isMentionPopoverOpen && ghostSuffix && mentionMatch && ! value.includes('\n') && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none select-none absolute inset-0 flex items-center overflow-hidden whitespace-pre text-sm leading-6"
-            >
-              <span className="invisible">{value.slice(0, mentionMatch.endIndex)}</span>
-              <span className="text-gray-400/75 dark:text-slate-500 font-medium">
-                {ghostSuffix}
-              </span>
-            </div>
-          )}
+        {/* Middle: Inline Visual Pills (Date/Reminder & Project/Campaign) + Textarea Input */}
+        <div className="relative flex-1 min-w-0 flex flex-wrap items-center gap-1.5 min-h-[28px]">
+          {mentionPills.map(pill => {
+            const isHovered = hoveredPillId === pill.id;
+            const toneClass =
+              pill.kind === 'date'
+                ? pill.dateKind === 'today'
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                  : pill.dateKind === 'tomorrow'
+                  ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
+                  : 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30'
+                : pill.pageKind === 'campaign'
+                ? 'bg-amber-500/12 text-amber-800 dark:text-amber-300 border-amber-500/30'
+                : 'bg-violet-500/12 text-violet-800 dark:text-violet-300 border-violet-500/30';
 
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            disabled={disabled}
-            value={value}
-            onChange={e => {
-              onChange(e.target.value);
-              setCaretPos(e.target.selectionStart ?? e.target.value.length);
-              if (!e.target.value.includes('@')) {
-                setForceMentionOpen(false);
-              }
-            }}
-            onPaste={e => {
-              const files = e.clipboardData?.files;
-              if (files && files.length > 0) {
-                const imgFile = Array.from(files).find(f => f.type.startsWith('image/'));
-                if (imgFile) {
-                  e.preventDefault();
-                  void handleFileUpload(imgFile);
+            return (
+              <span
+                key={pill.id}
+                onMouseEnter={() => setHoveredPillId(pill.id)}
+                onMouseLeave={() => setHoveredPillId(prev => (prev === pill.id ? null : prev))}
+                className={`relative inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-bold shrink-0 select-none ${toneClass}`}
+              >
+                {pill.kind === 'date' ? (
+                  pill.dateKind === 'today' ? (
+                    <Clock size={12} className="text-amber-500 shrink-0" />
+                  ) : (
+                    <Calendar
+                      size={12}
+                      className={
+                        pill.dateKind === 'tomorrow' ? 'text-blue-500 shrink-0' : 'text-violet-500 shrink-0'
+                      }
+                    />
+                  )
+                ) : pill.pageKind === 'campaign' ? (
+                  <Layers size={12} className="text-amber-500 shrink-0" />
+                ) : (
+                  <FolderKanban size={12} className="text-violet-500 shrink-0" />
+                )}
+                <span className="truncate max-w-[160px]">
+                  {pill.kind === 'date' ? `@${pill.label}` : pill.label}
+                </span>
+                <button
+                  type="button"
+                  title="Xoá thẻ"
+                  onClick={() => setMentionPills(prev => prev.filter(p => p.id !== pill.id))}
+                  className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  <X size={11} />
+                </button>
+
+                {/* Hover Tooltip: dd/mm/yyyy for Date pill, or full URL path for Project/Campaign pill */}
+                {isHovered && (
+                  <span
+                    role="tooltip"
+                    className="smart-inline-hover-card bottom-full left-0 mb-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-[11px] font-semibold whitespace-nowrap shadow-xl border border-white/15 z-[95] pointer-events-none"
+                  >
+                    {pill.kind === 'date'
+                      ? `📅 ${pill.sublabel}`
+                      : pill.href
+                      ? typeof window !== 'undefined' && pill.href.startsWith('/')
+                        ? `${window.location.origin}${pill.href}`
+                        : pill.href
+                      : pill.sublabel}
+                  </span>
+                )}
+              </span>
+            );
+          })}
+
+          <div className="relative flex-1 min-w-[110px] flex items-center">
+            {/* Ghost Preview Mirror Layer right after `@query` */}
+            {isMentionPopoverOpen && ghostSuffix && mentionMatch && !value.includes('\n') && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none select-none absolute inset-0 flex items-center overflow-hidden whitespace-pre text-sm leading-6"
+              >
+                <span className="invisible">{value.slice(0, mentionMatch.endIndex)}</span>
+                <span className="text-gray-400/75 dark:text-slate-500 font-medium">
+                  {ghostSuffix}
+                </span>
+              </div>
+            )}
+
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              disabled={disabled}
+              value={value}
+              onChange={e => {
+                onChange(e.target.value);
+                setCaretPos(e.target.selectionStart ?? e.target.value.length);
+                if (!e.target.value.includes('@')) {
+                  setForceMentionOpen(false);
                 }
+              }}
+              onPaste={e => {
+                const files = e.clipboardData?.files;
+                if (files && files.length > 0) {
+                  const imgFile = Array.from(files).find(f => f.type.startsWith('image/'));
+                  if (imgFile) {
+                    e.preventDefault();
+                    void handleFileUpload(imgFile);
+                  }
+                }
+              }}
+              onSelect={syncSelectionState}
+              onKeyUp={syncSelectionState}
+              onMouseUp={syncSelectionState}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                mentionPills.length > 0
+                  ? isEn
+                    ? 'Write a message...'
+                    : 'Nhập nội dung...'
+                  : placeholder || (isEn ? 'Add a comment...' : 'Add a comment...')
               }
-            }}
-            onSelect={syncSelectionState}
-            onKeyUp={syncSelectionState}
-            onMouseUp={syncSelectionState}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || (isEn ? 'Add a comment...' : 'Add a comment...')}
-            aria-label={ariaLabel || (isEn ? 'Add a comment' : 'Viết bình luận')}
-            className="smart-comment-textarea"
-          />
+              aria-label={ariaLabel || (isEn ? 'Add a comment' : 'Viết bình luận')}
+              className="smart-comment-textarea"
+            />
+          </div>
         </div>
 
         {/* Right: Cluster of 3 Action Icons (Paperclip, @, Circular Up-Arrow Send) */}
