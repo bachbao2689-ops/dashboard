@@ -369,6 +369,8 @@ export const dict = {
     'workload.capacityBreakdown': 'Capacity Breakdown',
     'workload.warning': 'Warning',
     'workload.weekOf': 'Week of',
+    'workload.teamScope': 'Showing performance for {team} only',
+    'workload.personalScope': 'Your performance only',
 
     // Profile & Calendar
     'profile.editProfile': 'Edit Profile',
@@ -904,6 +906,8 @@ export const dict = {
     'workload.capacityBreakdown': 'Chi tiết Năng suất',
     'workload.warning': 'Cảnh báo',
     'workload.weekOf': 'Tuần của',
+    'workload.teamScope': 'Chỉ hiển thị năng suất team {team}',
+    'workload.personalScope': 'Chỉ hiển thị năng suất của bạn',
 
     // Profile & Calendar
     'profile.editProfile': 'Chỉnh sửa hồ sơ',

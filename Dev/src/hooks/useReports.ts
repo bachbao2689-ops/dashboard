@@ -2,10 +2,14 @@ import { useMemo } from 'react';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useRememberedState } from './useRememberedState';
 import { reportAnalytics } from '../lib/taskTracking';
+import { scopeTeamWorkload } from '../lib/workloadScope';
+import { useAuthStore } from '../store/authStore';
 export type TimeRange = 'week'|'month'|'quarter'|'all';
 export const useReports = () => {
  const [timeRange,setTimeRange]=useRememberedState<TimeRange>('reports.timeRange','month');
- const {tasks,loading,error,refetch}=useWorkspaceData();
+ const profile=useAuthStore(state=>state.profile);
+ const {tasks:workspaceTasks,users,departments,loading,error,refetch}=useWorkspaceData();
+ const tasks=useMemo(()=>scopeTeamWorkload(profile,'all',users,departments,workspaceTasks).tasks,[profile,users,departments,workspaceTasks]);
  const data=useMemo(()=>reportAnalytics(tasks,timeRange),[tasks,timeRange]);
  const exportCSV=()=>{
   const rows=[['Task','Title','PIC','Status','Completed at'],...tasks.map(t=>[t.id,t.title,t.assignee?.name||'',t.status,t.completed_at||''])];

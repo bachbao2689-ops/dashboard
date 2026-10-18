@@ -50,7 +50,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isDark = useUiStore((state) => state.theme === 'dark');
-  const { workloads, departments, burndown, heatmap, summary } = useTeamWorkload(departmentFilter);
+  const { workloads, departments, effectiveDepartmentFilter, burndown, heatmap, summary } = useTeamWorkload(departmentFilter);
   const [internalMemberId, setInternalMemberId] = useState<string | null>(null);
   const [comparisonChartMode, setComparisonChartMode] = useRememberedState<'horizontal' | 'column'>(
     'workload.comparisonChartMode',
@@ -68,8 +68,8 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
   };
 
   const selectedDeptName =
-    departmentFilter && departmentFilter !== 'all'
-      ? departments.find((d) => String(d.id) === String(departmentFilter))?.name || null
+    effectiveDepartmentFilter !== 'all' && effectiveDepartmentFilter !== 'self'
+      ? departments.find((d) => String(d.id) === String(effectiveDepartmentFilter))?.name || null
       : null;
 
   const tickColor = isDark ? '#94a3b8' : '#52514e';

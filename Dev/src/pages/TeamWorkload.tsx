@@ -8,7 +8,7 @@ import { useRememberedState } from '../hooks/useRememberedState';
 export const TeamWorkload: React.FC = () => {
   const { t } = useTranslation();
   const [selectedDepartment, setSelectedDepartment] = useRememberedState<string>('workload.departmentFilter', 'all');
-  const { workloads, departments, isLoading, error } = useTeamWorkload(selectedDepartment);
+  const { workloads, departments, effectiveDepartmentFilter, canViewAllDepartments, isLoading, error } = useTeamWorkload(selectedDepartment);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   if (isLoading) {
@@ -33,11 +33,12 @@ export const TeamWorkload: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('workload.title')}</h1>
           <p className="text-gray-500 dark:text-gray-400">{t('workload.subtitle')}</p>
+          {!canViewAllDepartments && <p className="text-xs text-gray-500 dark:text-gray-400">{departments[0]?.name ? t('workload.teamScope', { team: departments[0].name }) : t('workload.personalScope')}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Department Filter Buttons */}
-          {departments.length > 0 && (
+          {(canViewAllDepartments || departments.length > 0) && (
             <div
               role="group"
               aria-label="Lọc theo phòng ban"
@@ -46,17 +47,17 @@ export const TeamWorkload: React.FC = () => {
               <span className="pl-2 pr-1 text-gray-400 dark:text-gray-500 flex items-center shrink-0">
                 <Building2 className="w-3.5 h-3.5" />
               </span>
-              <button
+              {canViewAllDepartments && <button
                 type="button"
                 onClick={() => {
                   setSelectedDepartment('all');
                   setSelectedMemberId(null);
                 }}
-                className={segBtn(selectedDepartment === 'all')}
+                className={segBtn(effectiveDepartmentFilter === 'all')}
               >
                 {t('departments.tabOverall')}
-              </button>
-              {departments.map((dept) => (
+              </button>}
+              {canViewAllDepartments ? departments.map((dept) => (
                 <button
                   key={dept.id}
                   type="button"
@@ -64,11 +65,11 @@ export const TeamWorkload: React.FC = () => {
                     setSelectedDepartment(dept.id);
                     setSelectedMemberId(null);
                   }}
-                  className={segBtn(String(selectedDepartment) === String(dept.id))}
+                  className={segBtn(String(effectiveDepartmentFilter) === String(dept.id))}
                 >
                   {dept.name}
                 </button>
-              ))}
+              )) : <span className="px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:text-blue-100">{departments[0]?.name || t('workload.personalScope')}</span>}
             </div>
           )}
 
@@ -121,7 +122,7 @@ export const TeamWorkload: React.FC = () => {
         </div>
       ) : (
         <TeamWorkloadVisuals
-          departmentFilter={selectedDepartment}
+          departmentFilter={effectiveDepartmentFilter}
           selectedMemberId={selectedMemberId}
           onSelectMember={setSelectedMemberId}
           showKpiRibbon={false}

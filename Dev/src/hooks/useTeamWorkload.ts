@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useWorkspaceData } from './useWorkspaceData';
+import { useAuthStore } from '../store/authStore';
+import { scopeTeamWorkload } from '../lib/workloadScope';
 import {
   isTaskClosed,
   isTaskDone,
@@ -101,6 +103,7 @@ export function computeWorkloadHeatmap(
 // Explicit planning estimate: 5 active tasks = 100%; no stored hours exist yet.
 export const useTeamWorkload = (departmentFilter = 'all') => {
   const { tasks, users, departments: workspaceDepartments, loading, error, refetch } = useWorkspaceData();
+  const profile = useAuthStore((state) => state.profile);
   const today = taskDay(new Date().toISOString());
 
   const departments = useMemo(() => {
@@ -123,21 +126,12 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   }, [workspaceDepartments, users, tasks]);
 
-  const filteredUsers = useMemo(() => {
-    if (!departmentFilter || departmentFilter === 'all') return users;
-    return users.filter((u) => String(u.department_id) === String(departmentFilter));
-  }, [users, departmentFilter]);
-
-  const scopedTasks = useMemo(() => {
-    if (!departmentFilter || departmentFilter === 'all') return tasks;
-    const memberIds = new Set(filteredUsers.map((u) => String(u.id)));
-    return tasks.filter((t) => {
-      if (t.assignee_id != null) {
-        return memberIds.has(String(t.assignee_id));
-      }
-      return String(t.department?.id) === String(departmentFilter);
-    });
-  }, [tasks, filteredUsers, departmentFilter]);
+  const scope = useMemo(
+    () => scopeTeamWorkload(profile, departmentFilter, users, departments, tasks),
+    [profile, departmentFilter, users, departments, tasks],
+  );
+  const filteredUsers = scope.users;
+  const scopedTasks = scope.tasks;
 
   const workloads = useMemo(() => {
     const week = weeklyReportRange('current');
@@ -192,7 +186,7 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
         };
       })
       .sort((a, b) => b.capacityPercentage - a.capacityPercentage || b.totalTasksCount - a.totalTasksCount);
-  }, [tasks, filteredUsers, today]);
+  }, [scopedTasks, filteredUsers, today]);
 
   const burndown = useMemo(() => computeBurndownSeries(scopedTasks), [scopedTasks]);
 
@@ -202,11 +196,11 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
         workloads.slice(0, 6).map((w) => ({
           id: w.id,
           name: w.name,
-          tasks: tasks.filter((t) => String(t.assignee_id) === String(w.id)),
+          tasks: scopedTasks.filter((t) => String(t.assignee_id) === String(w.id)),
           memberCount: 1,
         })),
       ),
-    [workloads, tasks],
+    [workloads, scopedTasks],
   );
 
   const summary = useMemo(() => {
@@ -246,7 +240,7 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
     };
   }, [scopedTasks, workloads, today]);
 
-  return { workloads, departments, burndown, heatmap, summary, isLoading: loading, error, refetch };
+  return { workloads, departments: scope.departments, effectiveDepartmentFilter: scope.effectiveDepartmentFilter, canViewAllDepartments: scope.canViewAllDepartments, burndown, heatmap, summary, isLoading: loading, error, refetch };
 };
 
 
