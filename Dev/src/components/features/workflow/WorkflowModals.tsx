@@ -18,7 +18,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  isCampaign ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                  isCampaign ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
                 }`}>
                   <Plus size={16} strokeWidth={2.5} />
                 </div>
@@ -52,7 +52,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
                   placeholder={isEn ? 'Enter phase name...' : 'Nhập tên giai đoạn...'}
                   autoFocus
                   required
-                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
                 />
               </div>
 
@@ -65,7 +65,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
                   value={newPhaseDesc}
                   onChange={e => setNewPhaseDesc(e.target.value)}
                   placeholder={isEn ? 'Objective and expected deliverables...' : 'Mục tiêu và kết quả cần bàn giao...'}
-                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none"
                 />
               </div>
 
@@ -87,7 +87,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
                   className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ${
                     isCampaign
                       ? 'bg-amber-500 hover:bg-amber-600'
-                      : 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-violet-600 hover:bg-violet-700'
                   }`}
                 >
                   <Plus size={14} strokeWidth={2.5} />

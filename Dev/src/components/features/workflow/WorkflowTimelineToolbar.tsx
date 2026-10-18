@@ -129,15 +129,22 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
             <span className="text-xs text-gray-500 whitespace-nowrap">{isEn ? 'Selected phase:' : 'Chặng đang chọn:'}</span>
             <div className="relative">
               <select
-                value={activePhaseIndex}
+                value={phases.length > 0 ? activePhaseIndex : 0}
+                disabled={phases.length === 0}
                 onChange={e => handlePhaseClick(Number(e.target.value))}
-                className="max-w-full appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-xl pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-primary transition-colors"
+                className="min-w-[140px] max-w-full appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-xl pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-violet-400 dark:hover:border-violet-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {phases.map((p, idx) => (
-                  <option key={p.id} value={idx} className="dark:bg-slate-800">
-                    {p.name}
+                {phases.length === 0 ? (
+                  <option value={0} className="dark:bg-slate-800">
+                    {isEn ? 'No phases yet' : 'Chưa có chặng'}
                   </option>
-                ))}
+                ) : (
+                  phases.map((p, idx) => (
+                    <option key={p.id} value={idx} className="dark:bg-slate-800">
+                      {p.name}
+                    </option>
+                  ))
+                )}
               </select>
               <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
             </div>

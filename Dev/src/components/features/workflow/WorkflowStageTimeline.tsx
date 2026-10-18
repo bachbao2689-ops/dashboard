@@ -62,7 +62,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                       isSelected
                         ? isCampaign
                           ? 'border-amber-500 ring-2 ring-amber-500/25 bg-amber-50/10 dark:bg-amber-950/15 shadow-md -translate-y-0.5'
-                          : 'border-blue-600 ring-2 ring-blue-600/25 bg-blue-50/10 dark:bg-blue-950/15 shadow-md -translate-y-0.5'
+                          : 'border-violet-600 ring-2 ring-violet-600/25 bg-violet-50/10 dark:bg-violet-950/15 shadow-md -translate-y-0.5'
                         : isCompleted
                         ? 'border-emerald-500/40 bg-white dark:bg-slate-800 hover:border-emerald-500/70'
                         : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60 hover:border-gray-300 dark:hover:border-slate-600'
@@ -76,7 +76,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                           : isActive
                           ? isCampaign
                             ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
                           : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
                       }`}>
                         {isEn ? `Phase ${p.position}` : `Chặng ${p.position}`}{currentEntity.root ? '/' + phases.length : (isEn ? ' · assigned' : ' · được giao')}
@@ -90,7 +90,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                               e.stopPropagation();
                               handleOpenAddPhaseModal(idx, e, p);
                             }}
-                            className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
+                            className="p-1 rounded-lg text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors cursor-pointer"
                             title={isEn ? `Edit phase: ${p.name}` : `Chỉnh sửa giai đoạn: ${p.name}`}
                           >
                             <Pencil size={12} />
@@ -120,16 +120,16 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                       ) : isActive ? (
                         /* Chặng đang chạy: Soft Conic Liquid Glass Dial (No harsh strokes) */
                         <div
-                          className="w-16 h-16 rounded-full p-[3.5px] flex items-center justify-center relative transition-transform duration-300 hover:scale-105 shadow-[0_4px_16px_rgba(37,99,235,0.22)]"
+                          className="w-16 h-16 rounded-full p-[3.5px] flex items-center justify-center relative transition-transform duration-300 hover:scale-105 shadow-[0_4px_16px_rgba(124,58,237,0.22)]"
                           style={{
                             background: `conic-gradient(from 180deg, ${
-                              isCampaign ? '#f59e0b, #fbbf24' : '#2563eb, #38bdf8'
+                              isCampaign ? '#f59e0b, #fbbf24' : '#7c3aed, #a78bfa'
                             } ${(p.progress ?? 0) * 3.6}deg, rgba(148, 163, 184, 0.15) ${(p.progress ?? 0) * 3.6}deg 360deg)`
                           }}
                         >
                           <div className="w-full h-full rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center shadow-[inset_0_1px_1.5px_rgba(255,255,255,0.85),0_2px_8px_rgba(0,0,0,0.12)]">
                             <span className={`text-xs font-black tracking-tight ${
-                              isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-cyan-400'
+                              isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-violet-600 dark:text-violet-400'
                             }`}>
                               {pct(p.progress)}
                             </span>
@@ -155,7 +155,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         : isActive
                         ? isCampaign
                           ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                          : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
                         : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
                     }`}>
                       {isCompleted ? (isEn ? '✓ Completed' : '✓ Hoàn thành') : p.status === 'cancelled' ? (isEn ? 'Canceled' : 'Đã hủy') : p.status === 'on_hold' ? (isEn ? 'On Hold' : 'Tạm dừng') : p.status === 'in_review' ? (isEn ? 'In Review' : 'Đang nghiệm thu') : isActive ? (isEn ? '● In Progress' : '● Đang triển khai') : (isEn ? '○ Not Started' : '○ Chờ bắt đầu')}
@@ -164,7 +164,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     {/* Phase Name & Desc */}
                     <b className={`text-xs block line-clamp-1 w-full ${
                       isSelected
-                        ? (isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400')
+                        ? (isCampaign ? 'text-amber-600 dark:text-amber-400' : 'text-violet-600 dark:text-violet-400')
                         : 'text-gray-900 dark:text-white'
                     }`} title={p.name}>
                       {p.name}
@@ -224,7 +224,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         isSelected && isDetailOpen
                           ? isCampaign
                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                            : 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30'
                           : 'bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600'
                       }`}
                     >
@@ -240,7 +240,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         isCompleted
                           ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-xs'
                           : isActive
-                          ? (isCampaign ? 'bg-gradient-to-r from-amber-400 to-amber-200 dark:to-slate-700' : 'bg-gradient-to-r from-blue-500 to-blue-200 dark:to-slate-700')
+                          ? (isCampaign ? 'bg-gradient-to-r from-amber-400 to-amber-200 dark:to-slate-700' : 'bg-gradient-to-r from-violet-500 to-violet-200 dark:to-slate-700')
                           : 'bg-gray-200 dark:bg-slate-700'
                       }`} />
 
@@ -249,7 +249,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         type="button"
                         disabled={!currentEntity.root}
                         onClick={(e) => handleOpenAddPhaseModal(p.position, e)}
-                        className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
+                        className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-violet-500 dark:hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 flex items-center justify-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
                         title={isEn ? `Insert new phase after phase ${idx + 1}` : `Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
                       >
                         <Plus size={12} strokeWidth={2.5} />
@@ -268,7 +268,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                 className={`w-14 h-14 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-all hover:scale-105 shadow-sm group cursor-pointer ${
                   isCampaign
                     ? 'border-amber-400/70 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-amber-600 dark:text-amber-400'
-                    : 'border-blue-400/70 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-blue-600 dark:text-blue-400'
+                    : 'border-violet-400/70 hover:border-violet-600 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 text-violet-600 dark:text-violet-400'
                 }`}
                 title={isEn ? "Add new phase to end of roadmap" : "Thêm giai đoạn mới vào cuối lộ trình"}
               >

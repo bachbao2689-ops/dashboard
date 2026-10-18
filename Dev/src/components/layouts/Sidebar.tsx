@@ -26,6 +26,7 @@ import {
   ExternalLink,
   FolderKanban,
   Layers,
+  Megaphone,
   MessageSquare,
 } from 'lucide-react';
 import { StylizedPinIcon } from '../common/StylizedPinIcon';
@@ -1313,7 +1314,12 @@ export const Sidebar: React.FC = () => {
                           location.pathname === '/projects' &&
                           location.search.includes(`${entity.kind}=${entity.id}`);
                         const sortableId = `pinned-entity:${entity.kind}:${entity.id}`;
-                        const icon = <FolderKanban size={16} />;
+                        const icon =
+                          entity.kind === 'campaign' ? (
+                            <Megaphone size={16} className="text-amber-500" />
+                          ) : (
+                            <FolderKanban size={16} className="text-violet-500" />
+                          );
 
                         return (
                           <SortablePinnedItemRow
@@ -1323,7 +1329,7 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-entity',
                               label: entity.name,
-                              accentColor: '#2563EB',
+                              accentColor: entity.kind === 'campaign' ? '#F59E0B' : '#7C3AED',
                               entity,
                             }}
                             label={entity.name}

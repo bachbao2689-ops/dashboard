@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BarChart2, Layers, CheckSquare, FolderKanban, User, Users,
+  BarChart2, Layers, CheckSquare, FolderKanban, Megaphone, User, Users,
   Box, History, MessageSquare, AtSign, AlertTriangle,
   Clock, CheckCircle2, ExternalLink
 } from 'lucide-react';
@@ -482,11 +482,10 @@ export function buildSidebarGroups({
       id: `tp:proj:item:${tr.key}`,
       label: tr.name,
       sublabel: `${tr.kind === 'campaign' ? 'Campaign' : 'Project'} · ${tr.openCount} việc mở`,
-      icon: (
-        <FolderKanban
-          size={15}
-          className={tr.kind === 'campaign' ? 'text-amber-500' : 'text-violet-500'}
-        />
+      icon: tr.kind === 'campaign' ? (
+        <Megaphone size={15} className="text-amber-500" />
+      ) : (
+        <FolderKanban size={15} className="text-violet-500" />
       ),
       path: tr.projectsHref,
       targetNodeId: pNodeId,

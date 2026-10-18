@@ -1,5 +1,5 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {FolderKanban, ChevronDown, Globe, Search, User, Clock} from 'lucide-react';
+import {FolderKanban, Megaphone, ChevronDown, Search, User, Clock} from 'lucide-react';
 import {Avatar} from '../../common/Avatar';
 
 export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
@@ -15,11 +15,11 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                 onClick={() => handleFilterChange('project')}
                 className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                   entityFilter === 'project'
-                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/20 dark:!text-blue-100 dark:ring-blue-300/40'
+                    ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <Globe size={11} className={entityFilter === 'project' ? 'text-blue-600 dark:text-blue-300' : ''} />
+                <FolderKanban size={11} className={entityFilter === 'project' ? 'text-violet-600 dark:text-violet-300' : ''} />
                 <span>Projects</span>
               </button>
               <button
@@ -31,7 +31,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
-                <FolderKanban size={11} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
+                <Megaphone size={11} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
                 <span>Campaigns</span>
               </button>
             </div>
@@ -46,29 +46,44 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
             <button
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
-              className="flex w-full min-w-0 items-center gap-2 group text-left focus:outline-none cursor-pointer"
+              className={`inline-flex max-w-full min-w-0 items-center gap-2.5 px-2.5 py-1.5 -ml-1 rounded-2xl border transition-all duration-200 group text-left focus:outline-none cursor-pointer ${
+                isTitleDropdownOpen
+                  ? isCampaign
+                    ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-700/60 shadow-xs'
+                    : 'bg-violet-50/70 dark:bg-violet-950/30 border-violet-300/80 dark:border-violet-700/60 shadow-xs'
+                  : 'bg-gray-50/60 hover:bg-gray-100/80 dark:bg-slate-800/50 dark:hover:bg-slate-800 border-gray-200/80 dark:border-slate-700/80 hover:border-violet-300/70 dark:hover:border-violet-500/40'
+              }`}
               title={isEn ? "Click to select and filter Project / Campaign" : "Bấm để chọn và lọc Project / Campaign"}
             >
-              <div className={`p-1.5 rounded-xl transition-colors ${
+              <div className={`p-1.5 rounded-xl shrink-0 transition-colors border ${
                 isCampaign
-                  ? 'bg-amber-500/10 text-amber-600 group-hover:bg-amber-500/20'
-                  : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25 group-hover:bg-amber-500/25'
+                  : 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/25 group-hover:bg-violet-500/25'
               }`}>
-                {isCampaign ? <FolderKanban size={20} /> : <Globe size={20} />}
+                {isCampaign ? <Megaphone size={18} /> : <FolderKanban size={18} />}
               </div>
-              <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <h1 className="min-w-0 flex-1 truncate text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight group-hover:text-primary transition-colors">
-                  {currentEntity.name.startsWith('[Project]') || currentEntity.name.startsWith('[Campaign]') 
-                    ? currentEntity.name 
-                    : `[${isCampaign ? 'Campaign' : 'Project'}] ${currentEntity.name}`}
-                </h1>
+              <h1 className={`min-w-0 truncate text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors ${
+                isCampaign ? 'group-hover:text-amber-600 dark:group-hover:text-amber-300' : 'group-hover:text-violet-600 dark:group-hover:text-violet-300'
+              }`}>
+                {currentEntity.name.startsWith('[Project]') || currentEntity.name.startsWith('[Campaign]') 
+                  ? currentEntity.name 
+                  : `[${isCampaign ? 'Campaign' : 'Project'}] ${currentEntity.name}`}
+              </h1>
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-200 ${
+                isTitleDropdownOpen
+                  ? isCampaign
+                    ? 'bg-amber-500/20 border-amber-400/50 text-amber-600 dark:text-amber-300'
+                    : 'bg-violet-500/20 border-violet-400/50 text-violet-600 dark:text-violet-300'
+                  : 'bg-white dark:bg-slate-900/80 border-gray-200/90 dark:border-slate-700 text-gray-500 dark:text-slate-400 group-hover:border-violet-300 dark:group-hover:border-violet-600 group-hover:text-violet-600 dark:group-hover:text-violet-300'
+              }`}>
                 <ChevronDown
-                  size={18}
-                  className={`text-gray-400 group-hover:text-primary transition-transform duration-200 ${
-                    isTitleDropdownOpen ? 'rotate-180 text-primary' : ''
+                  size={15}
+                  strokeWidth={2.4}
+                  className={`transition-transform duration-200 ${
+                    isTitleDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
-              </div>
+              </span>
             </button>
 
             {/* Dropdown Menu to choose Project / Campaign */}
@@ -86,7 +101,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                       value={searchEntityQuery}
                       onChange={e => setSearchEntityQuery(e.target.value)}
                       placeholder={isEn ? "Search project or campaign..." : "Tìm kiếm dự án hoặc chiến dịch..."}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-primary"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-violet-500"
                       autoFocus
                     />
                   </div>
@@ -104,22 +119,24 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                             key={e.id}
                             type="button"
                             onClick={() => handleSelectEntity(e.id)}
-                            className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-colors ${
+                            className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                               isSelected
-                                ? 'bg-primary/10 text-primary font-bold'
+                                ? e.type === 'campaign'
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
+                                  : 'bg-violet-500/15 text-violet-700 dark:text-violet-300 font-bold'
                                 : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200'
                             }`}
                           >
                             <div className="flex items-center gap-2 truncate">
                               {e.type === 'campaign' ? (
-                                <FolderKanban size={14} className="shrink-0 text-amber-500" />
+                                <Megaphone size={14} className="shrink-0 text-amber-500" />
                               ) : (
-                                <Globe size={14} className="shrink-0 text-blue-500" />
+                                <FolderKanban size={14} className="shrink-0 text-violet-500" />
                               )}
                               <span className="truncate">{e.name}</span>
                             </div>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
-                              e.type === 'campaign' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                              e.type === 'campaign' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-violet-500/15 text-violet-600 dark:text-violet-300'
                             }`}>
                               {e.type === 'campaign' ? 'Campaign' : 'Project'}
                             </span>
@@ -153,7 +170,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
             {/* Lead chính badge */}
             <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-full border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-xs ${
-                isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-600'
+                isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
               }`}>
                 {leadInfo.avatar ? (
                   <img src={leadInfo.avatar} alt={leadInfo.name} className="w-full h-full rounded-full object-cover" />
@@ -165,7 +182,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                 {leadInfo.name}
               </span>
               <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-md ${
-                isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
               }`}>
                 {leadInfo.role}
               </span>

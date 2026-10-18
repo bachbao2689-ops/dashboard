@@ -81,7 +81,7 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-3">
             <button onClick={() => setExpandProjects(!expandProjects)} className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-lg transition-colors">
-              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-blue-500" size={18}/> Projects đã lưu trữ ({deletedProjects.length})</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-violet-500" size={18}/> Projects đã lưu trữ ({deletedProjects.length})</h3>
               {expandProjects ? <ChevronDown size={18} className="text-gray-400"/> : <ChevronRight size={18} className="text-gray-400"/>}
             </button>
             {expandProjects && (

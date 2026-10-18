@@ -105,7 +105,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700/80 pb-2.5 mb-2.5">
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-blue-600'} />
+                        <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-violet-600 dark:text-violet-400'} />
                         {isEn ? 'Tasks' : 'Đầu việc'} ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
                       <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
@@ -120,7 +120,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
                           isCampaign
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-violet-600 hover:bg-violet-700 text-white'
                         }`}
                         title={isEn ? 'Add new task to this phase' : 'Thêm đầu việc mới vào chặng này'}
                       >
