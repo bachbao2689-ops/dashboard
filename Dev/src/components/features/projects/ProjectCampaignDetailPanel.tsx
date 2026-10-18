@@ -10,6 +10,7 @@ import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
 import { X, Edit3, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { SmartCommentInput } from '../comments/SmartCommentInput';
+import { RichCommentBody } from '../comments/RichCommentBody';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
@@ -76,12 +77,13 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     if (await details.mutate(() => supabase.from(`${kind}s`).update({status:'completed'}).eq('id', item.id).select('id').single(), 'Đã hoàn thành')) onUpdated?.();
   };
 
-  const addComment = async () => {
-    const body = commentText.trim();
+  const addComment = async (overrideBody?: string) => {
+    const raw = typeof overrideBody === 'string' ? overrideBody : commentText;
+    const body = raw.trim();
     if (readOnly||!body || !profile?.id) return;
     if (await details.mutate(() => kind === 'project'
       ? supabase.from('project_comments').insert({project_id:item.id, author_id:profile.id, body}).select('id').single()
-      : supabase.from('activity_log').insert({workspace_id:data.workspace_id, user_id:profile.id, entity_type:'campaign', entity_id:item.id, action:'comment', metadata:{body}}).select('id').single(), 'Đã gửi bình luận')) setCommentText(current => current.trim() === body ? '' : current);
+      : supabase.from('activity_log').insert({workspace_id:data.workspace_id, user_id:profile.id, entity_type:'campaign', entity_id:item.id, action:'comment', metadata:{body}}).select('id').single(), 'Đã gửi bình luận')) setCommentText('');
   };
 
   const addSubtask = async () => {
@@ -216,8 +218,8 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       {!isMe && <Avatar name={c.author?.name || 'Member'} src={c.author?.avatar_url} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
                       <div className={`group relative max-w-[85%] ${isMe ? 'order-1' : 'order-2'}`}>
                         <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-[#002e6d] text-white rounded-br-sm' : 'bg-slate-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-bl-sm'}`}>
-                          <p className={`text-[11px] font-bold mb-1 ${isMe ? 'text-blue-200' : 'text-gray-500 dark:text-slate-400'}`}>{c.author?.name || 'Member'}</p>
-                          <p className="whitespace-pre-wrap leading-relaxed">{c.body}</p>
+                          <p className={`text-[11px] font-extrabold tracking-tight mb-1 ${isMe ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{c.author?.name || 'Member'}</p>
+                          <RichCommentBody body={c.body} isMineBubble={isMe} />
                         </div>
                       </div>
                       {isMe && <Avatar name={profile?.name || ''} src={profile?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
@@ -229,7 +231,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 <SmartCommentInput
                   value={commentText}
                   onChange={setCommentText}
-                  onSubmit={() => void addComment()}
+                  onSubmit={body => void addComment(body)}
                   people={people}
                   disabled={busy || !profile?.id}
                   saving={busy}

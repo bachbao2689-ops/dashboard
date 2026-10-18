@@ -2,6 +2,7 @@ import {StatusBadge} from '../../common/StatusBadge';
 import {WorkflowTrackingSummary} from './WorkflowTrackingSummary';
 import {Avatar} from '../../common/Avatar';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
+import {RichCommentBody} from '../comments/RichCommentBody';
 import {MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Reply} from 'lucide-react';
 import {dateValue} from './projectPresentation';
 import {EntityPinButton} from './EntityPinButton';
@@ -67,14 +68,14 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             {!mine && <Avatar name={c.user?.name || 'Member'} src={(c.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
             <div className={`flex max-w-[85%] items-end gap-1.5 ${mine ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`rounded-2xl px-3 py-2.5 text-sm shadow-sm flex flex-col ${mine ? 'rounded-br-md bg-[#002e6d] text-white items-end' : 'rounded-bl-md bg-slate-100 text-gray-800 dark:bg-slate-700 dark:text-slate-100 items-start'}`}>
-                <p className={`mb-1 text-[11px] font-bold ${mine ? 'text-blue-100' : 'text-gray-500 dark:text-slate-300'}`}>{c.user?.name || 'Member'}</p>
+                <p className={`mb-1 text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{c.user?.name || 'Member'}</p>
                 {campaignEditingCommentId === c.id ? (
                   <div>
                     <textarea value={campaignEditingCommentText} onChange={e=>setCampaignEditingCommentText(e.target.value)} className="w-full min-w-56 rounded-lg border border-blue-200 bg-white p-2 text-gray-900 outline-none" rows={2} />
                     <div className="mt-1 flex justify-end gap-2"><button onClick={() => setCampaignEditingCommentId(null)} className="text-xs">{t('common.cancel')}</button><button onClick={() => saveEditedCampaignComment(c.id)} className="text-xs font-bold">{t('common.save')}</button></div>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap">{c.metadata?.body}</p>
+                  <RichCommentBody body={c.metadata?.body || ''} isMineBubble={mine} />
                 )}
               </div>
               <div className="flex opacity-0 transition-opacity group-hover:opacity-100 pb-2">
@@ -85,7 +86,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             {mine && <Avatar name={c.user?.name || 'Member'} src={(c.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
           </div>
         );
-      })}</div><div className="mt-4"><SmartCommentInput inputRef={campaignCommentInput} value={campaignComment} onChange={setCampaignComment} onSubmit={() => void addCampaignComment()} people={visiblePeople} placeholder="Add a comment..." /></div></section></div>}
+      })}</div><div className="mt-4"><SmartCommentInput inputRef={campaignCommentInput} value={campaignComment} onChange={setCampaignComment} onSubmit={body => void addCampaignComment(body)} people={visiblePeople} placeholder="Add a comment..." /></div></section></div>}
           </div>
           {!campaignEditMode && selectedRoot && <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selectedCampaign.name); setStart(selectedCampaign.start_date || ''); setDue(selectedCampaign.end_date || ''); setCampaignObjective(selectedCampaign.objective || ''); setCampaignBudget(selectedCampaign.budget ? String(selectedCampaign.budget) : ''); setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : ''); setCampaignEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeCampaign} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>}
         </div>

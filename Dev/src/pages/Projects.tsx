@@ -9,6 +9,7 @@ import {WorkflowTrackingSummary} from '../components/features/projects/WorkflowT
 import {TaskDetailPanel} from '../components/features/tasks/TaskDetailPanel';
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
+import {RichCommentBody} from '../components/features/comments/RichCommentBody';
 import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Eye,EyeOff,Reply} from 'lucide-react';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
@@ -287,14 +288,14 @@ export const Projects:React.FC=()=>{
             {!mine && <Avatar name={c.author?.name || 'Member'} src={(c.author as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
             <div className={`flex max-w-[85%] items-end gap-1.5 ${mine ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`rounded-2xl px-3 py-2.5 text-sm shadow-sm flex flex-col ${mine ? 'rounded-br-md bg-[#002e6d] text-white items-end' : 'rounded-bl-md bg-slate-100 text-gray-800 dark:bg-slate-700 dark:text-slate-100 items-start'}`}>
-                <p className={`mb-1 text-[11px] font-bold ${mine ? 'text-blue-100' : 'text-gray-500 dark:text-slate-300'}`}>{c.author?.name || 'Member'}</p>
+                <p className={`mb-1 text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{c.author?.name || 'Member'}</p>
                 {editingCommentId === c.id ? (
                   <div>
                     <textarea value={editingCommentText} onChange={e=>setEditingCommentText(e.target.value)} className="w-full min-w-56 rounded-lg border border-blue-200 bg-white p-2 text-gray-900 outline-none" rows={2} />
                     <div className="mt-1 flex justify-end gap-2"><button onClick={() => setEditingCommentId(null)} className="text-xs">{t('common.cancel')}</button><button onClick={() => saveEditedComment(c.id)} className="text-xs font-bold">{t('common.save')}</button></div>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap">{c.body}</p>
+                  <RichCommentBody body={c.body} isMineBubble={mine} />
                 )}
               </div>
               <div className="flex opacity-0 transition-opacity group-hover:opacity-100 pb-2">
@@ -305,7 +306,7 @@ export const Projects:React.FC=()=>{
             {mine && <Avatar name={c.author?.name || 'Member'} src={(c.author as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
           </div>
         );
-      })}</div><div className="mt-4"><SmartCommentInput inputRef={projectCommentInput} value={comment} onChange={setComment} onSubmit={() => void addComment()} people={visiblePeople} placeholder="Add a comment..." /></div></section>
+      })}</div><div className="mt-4"><SmartCommentInput inputRef={projectCommentInput} value={comment} onChange={setComment} onSubmit={body => void addComment(body)} people={visiblePeople} placeholder="Add a comment..." /></div></section>
             </div>
             )}
           </div>

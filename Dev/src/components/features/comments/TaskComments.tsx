@@ -8,6 +8,7 @@ import { useTaskComments } from '../../../hooks/useTaskComments';
 import { useMobileReadOnly } from '../../../hooks/useMobileReadOnly';
 import type { CommentTarget } from '../../../services/taskComments';
 import { SmartCommentInput, type CommentMentionPerson } from './SmartCommentInput';
+import { RichCommentBody } from './RichCommentBody';
 import '../../../styles/task-comments.css';
 
 type Person = CommentMentionPerson;
@@ -117,7 +118,7 @@ export function TaskComments({ target, people, focusRequest, onSent }: Props) {
                 <div className="task-comment-content">
                   <div className="task-comment-bubble">
                     <div className="task-comment-meta">
-                      <span className="font-bold">{author}</span>
+                      <span className={`font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{author}</span>
                       <time
                         dateTime={comment.created_at}
                         title={new Date(comment.created_at).toLocaleString(en ? 'en-GB' : 'vi-VN')}
@@ -131,7 +132,7 @@ export function TaskComments({ target, people, focusRequest, onSent }: Props) {
                         })}
                       </time>
                     </div>
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">{comment.body}</p>
+                    <RichCommentBody body={comment.body} isMineBubble={mine} />
                   </div>
                 </div>
                 {mine && (
