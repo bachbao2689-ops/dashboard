@@ -21,10 +21,10 @@ export const TeamWorkload: React.FC = () => {
   const overloadedCount = workloads.filter((w) => w.capacityPercentage > 100).length;
 
   const segBtn = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${
+    `px-2.5 py-1 text-[11px] font-bold rounded-xl whitespace-nowrap transition-all duration-200 cursor-pointer ${
       active
-        ? 'bg-[#093570] text-white shadow-sm dark:bg-blue-600'
-        : 'text-gray-500 hover:text-gray-900 hover:bg-white dark:text-gray-400 dark:hover:text-white dark:hover:bg-slate-700'
+        ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(30,90,170,.18)] ring-1 ring-blue-300/80 dark:from-blue-500/35 dark:to-cyan-500/20 dark:!text-blue-100 dark:ring-blue-300/40'
+        : 'text-gray-500 hover:text-gray-900 hover:bg-white/80 dark:text-gray-400 dark:hover:text-white dark:hover:bg-slate-700/60'
     }`;
 
   return (
@@ -41,9 +41,9 @@ export const TeamWorkload: React.FC = () => {
             <div
               role="group"
               aria-label="Lọc theo phòng ban"
-              className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full"
+              className="inline-flex items-center gap-1 p-1 rounded-2xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs overflow-x-auto custom-scrollbar max-w-full"
             >
-              <span className="pl-2 pr-1 text-gray-400 dark:text-gray-500 flex items-center">
+              <span className="pl-2 pr-1 text-gray-400 dark:text-gray-500 flex items-center shrink-0">
                 <Building2 className="w-3.5 h-3.5" />
               </span>
               <button

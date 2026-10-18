@@ -508,7 +508,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                     </span>
                   </div>
 
-                  {/* 2 UI Mode Toggle: Horizontal (Dạng ngang) vs Column (Dạng cột) */}
+                  {/* 2 UI Mode Toggle: Horizontal (Dạng ngang) vs Column (Dạng cột) - Icon only per UX request */}
                   <div
                     role="group"
                     aria-label="Chế độ hiển thị biểu đồ phân bổ trạng thái"
@@ -517,28 +517,28 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                     <button
                       type="button"
                       onClick={() => setComparisonChartMode('horizontal')}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                      className={`p-1.5 rounded-md transition-all ${
                         comparisonChartMode === 'horizontal'
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
-                      title="Hiển thị dạng thanh ngang"
+                      title="Dạng ngang"
+                      aria-label="Dạng ngang"
                     >
-                      <AlignLeft className="w-3 h-3" />
-                      <span>Dạng ngang</span>
+                      <AlignLeft className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setComparisonChartMode('column')}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                      className={`p-1.5 rounded-md transition-all ${
                         comparisonChartMode === 'column'
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
-                      title="Hiển thị dạng cột đứng"
+                      title="Dạng cột"
+                      aria-label="Dạng cột"
                     >
-                      <BarChart3 className="w-3 h-3" />
-                      <span>Dạng cột</span>
+                      <BarChart3 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
