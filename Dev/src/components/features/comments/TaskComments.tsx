@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { Reply } from 'lucide-react';
+import { Reply, Trash2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar } from '../../common/Avatar';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import { useTaskComments } from '../../../hooks/useTaskComments';
 import { useMobileReadOnly } from '../../../hooks/useMobileReadOnly';
+import { isAdmin, isGlobalManager } from '../../../lib/roleScope';
 import type { CommentTarget } from '../../../services/taskComments';
 import { SmartCommentInput, type CommentMentionPerson } from './SmartCommentInput';
 import { RichCommentBody } from './RichCommentBody';
@@ -18,9 +19,10 @@ interface Props {
   people: Person[];
   focusRequest?: string;
   onSent?: (body: string, mentions: number[]) => void | Promise<void>;
+  onDeleted?: (commentId: string) => void | Promise<void>;
 }
 
-export function TaskComments({ target, people, focusRequest, onSent }: Props) {
+export function TaskComments({ target, people, focusRequest, onSent, onDeleted }: Props) {
   const readOnly = useMobileReadOnly();
   const profile = useAuthStore(state => state.profile);
   const { t, lang } = useTranslation();
@@ -30,7 +32,31 @@ export function TaskComments({ target, people, focusRequest, onSent }: Props) {
   const draftRef = useRef(text);
   draftRef.current = text;
   const [mentions, setMentions] = useState<Person[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (readOnly || deletingId) return;
+    const ok = window.confirm(
+      en ? 'Delete this comment?' : 'Bạn có chắc chắn muốn xoá tin nhắn này?'
+    );
+    if (!ok) return;
+
+    setDeletingId(commentId);
+    try {
+      await thread.remove(commentId);
+      toast.success(en ? 'Comment deleted' : 'Đã xoá bình luận');
+      try {
+        await onDeleted?.(commentId);
+      } catch {
+        // Notification ignored
+      }
+    } catch {
+      toast.error(en ? 'Could not delete comment.' : 'Không thể xoá bình luận.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const registerMention = (person: Person) => {
     setMentions(current => [...current.filter(p => p.id !== person.id), person]);
@@ -103,9 +129,11 @@ export function TaskComments({ target, people, focusRequest, onSent }: Props) {
       {thread.comments.length > 0 && (
         <div className="space-y-3.5 mb-4" aria-live="polite" aria-relevant="additions text">
           {thread.comments.map(comment => {
-            const mine = Number(comment.author_id) === Number(profile?.id);
+            const mine = String(comment.author_id) === String(profile?.id);
             const author = comment.author?.name || 'Staff';
-            const person = people.find(person => person.id === Number(comment.author_id));
+            const person = people.find(p => String(p.id) === String(comment.author_id));
+            const canDelete = !readOnly && (mine || isAdmin(profile) || isGlobalManager(profile) || Boolean(profile?.id));
+
             return (
               <article key={comment.id} className={`task-comment-row group ${mine ? 'is-mine' : ''}`}>
                 {!mine && (
@@ -142,15 +170,36 @@ export function TaskComments({ target, people, focusRequest, onSent }: Props) {
                     className="w-7 h-7 text-[10px] shrink-0 mb-1"
                   />
                 )}
-                {!readOnly && person && (
-                  <button
-                    type="button"
-                    onClick={() => replyToPerson(person)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                    title={en ? 'Reply and mention' : 'Trả lời và nhắc tên'}
-                  >
-                    <Reply size={14} />
-                  </button>
+                {!readOnly && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0 mb-1">
+                    {person && (
+                      <button
+                        type="button"
+                        onClick={() => replyToPerson(person)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer"
+                        title={en ? 'Reply and mention' : 'Trả lời và nhắc tên'}
+                        aria-label={en ? 'Reply and mention' : 'Trả lời và nhắc tên'}
+                      >
+                        <Reply size={13} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        type="button"
+                        disabled={deletingId === comment.id}
+                        onClick={() => void handleDeleteComment(comment.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-50 cursor-pointer"
+                        title={en ? 'Delete comment' : 'Xoá tin nhắn'}
+                        aria-label={en ? 'Delete comment' : 'Xoá tin nhắn'}
+                      >
+                        {deletingId === comment.id ? (
+                          <Loader2 size={13} className="animate-spin text-red-500" />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                      </button>
+                    )}
+                  </div>
                 )}
               </article>
             );

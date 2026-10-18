@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
-import {commentKey,readTaskComments,writeTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
+import {commentKey,readTaskComments,writeTaskComment,deleteTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
 
 export function useTaskComments(target: CommentTarget, actorId?: number) {
   const key = `${actorId || ''}:${commentKey(target)}`;
@@ -40,6 +40,21 @@ export function useTaskComments(target: CommentTarget, actorId?: number) {
     try {await writeTaskComment(target,actorId,body,mentions);await refresh();return true;}
     finally {sending.current=false;setSaving(false);}
   };
+  const remove = async (commentId: string) => {
+    if (!actorId || !commentId) return false;
+    setState(previous => ({
+      ...previous,
+      rows: previous.rows.filter(c => String(c.id) !== String(commentId)),
+    }));
+    try {
+      await deleteTaskComment(target, commentId);
+      await refresh();
+      return true;
+    } catch (err) {
+      await refresh();
+      throw err;
+    }
+  };
   const visible=state.key===key;
-  return {comments:visible?state.rows:[],loading:!visible||state.loading,error:visible?state.error:'',saving,send,refresh};
+  return {comments:visible?state.rows:[],loading:!visible||state.loading,error:visible?state.error:'',saving,send,remove,refresh};
 }

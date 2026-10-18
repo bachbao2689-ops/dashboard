@@ -39,5 +39,17 @@ export async function writeTaskComment(target: CommentTarget, authorId: number, 
     const {error} = await supabase.from('activity_log').insert({workspace_id:parent.workspace_id,user_id:authorId,action:'comment',entity_type:target.kind,entity_id:target.id,metadata:{body:text,mentions:mentionIds}});
     if (error) throw error;
   }
-  window.dispatchEvent(new CustomEvent('task-comments:changed',{detail:target}));
+  window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
+}
+
+export async function deleteTaskComment(target: CommentTarget, commentId: string) {
+  if (!commentId) throw new Error('ID bình luận không hợp lệ.');
+  if (target.kind === 'task') {
+    const { error } = await supabase.from('comments').delete().eq('id', commentId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('activity_log').delete().eq('id', commentId);
+    if (error) throw error;
+  }
+  window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
 }
