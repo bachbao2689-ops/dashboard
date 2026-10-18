@@ -1052,6 +1052,10 @@ export const Sidebar: React.FC = () => {
     [groups]
   );
 
+  const [openGroupIds, setOpenGroupIds] = useState<string[]>(() => {
+    const initial = findGroupForRoute(location.pathname, location.search) || 'main';
+    return initial === 'main' ? ['main'] : ['main', initial];
+  });
   const [activeGroupId, setActiveGroupId] = useState<string>(
     () => findGroupForRoute(location.pathname, location.search) || groups[0]?.id || 'main'
   );
@@ -1059,7 +1063,10 @@ export const Sidebar: React.FC = () => {
   // Keep accordion synced when route changes
   useEffect(() => {
     const matched = findGroupForRoute(location.pathname, location.search);
-    if (matched) setActiveGroupId(matched);
+    if (matched) {
+      setActiveGroupId(matched);
+      setOpenGroupIds(prev => (prev.includes(matched) ? prev : [...prev, matched]));
+    }
   }, [location.pathname, location.search, findGroupForRoute]);
 
   // Measure active group header position for the Left Spine Active Indicator Bar
@@ -1099,6 +1106,13 @@ export const Sidebar: React.FC = () => {
   const handleSelectGroup = useCallback(
     (group: SidebarGroupModel) => {
       setActiveGroupId(group.id);
+      setOpenGroupIds(prev => {
+        if (prev.includes(group.id)) {
+          return prev.filter(id => id !== group.id);
+        }
+        return [...prev, group.id];
+      });
+
       const root = group.nodes[group.rootNodeId];
       const items = root?.items || [];
       const alreadyInGroup = items.some(it => {
@@ -1399,7 +1413,7 @@ export const Sidebar: React.FC = () => {
               <SidebarTreeGroupSection
                 key={group.id}
                 group={group}
-                isOpen={activeGroupId === group.id}
+                isOpen={openGroupIds.includes(group.id)}
                 onSelectGroup={handleSelectGroup}
                 currentPath={location.pathname}
                 currentSearch={location.search}
@@ -1443,7 +1457,7 @@ export const Sidebar: React.FC = () => {
       {/* ==========================================
           ZONE 3: BOTTOM STAFF PROFILE CARD (/my-tasks)
          ========================================== */}
-      <div className="mt-auto border-t border-gray-200/70 dark:border-slate-700/70 px-3.5 pt-3 space-y-2">
+      <div className="mt-auto px-3.5 pt-2 space-y-2">
         <NavLink
           to="/my-tasks"
           title={t('nav.profile')}

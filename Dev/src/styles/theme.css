@@ -142,18 +142,10 @@ html:not(.dark) .sidebar-link-active svg {
   color: #1d4ed8 !important;
 }
 
-/* Small active indicator dot on the right edge (Left sidebar only) */
+/* Small active indicator dot on the right edge (Left sidebar only) - Removed per UX request */
 html:not(.dark) .app-sidebar .sidebar-link-active::after {
-  content: '';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background-color: #2563eb; /* bg-blue-600 */
-  box-shadow: 0 0 6px rgba(37, 99, 235, 0.5);
+  content: none !important;
+  display: none !important;
 }
 .dark .app-sidebar.card-hub { background: linear-gradient(170deg, #172b32, #101c2c 42%, #101a29) !important; }
 .dark .sidebar-link-idle { color: #c3d2e5; }

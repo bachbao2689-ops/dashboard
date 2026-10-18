@@ -348,11 +348,8 @@ html:not(.dark) .sb-tree-active-path {
 
 /* Child Item Row inside Tree Accordion — Restores original .sidebar-link button UI & stroke */
 html:not(.dark) .app-sidebar .sb-root-row.has-drill.sidebar-link-active::after {
-  right: auto !important;
-  left: 0 !important;
-  width: 3.5px !important;
-  height: 52% !important;
-  border-radius: 4px !important;
+  content: none !important;
+  display: none !important;
 }
 
 html:not(.dark) .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
