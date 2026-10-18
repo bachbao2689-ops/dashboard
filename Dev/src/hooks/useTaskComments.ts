@@ -1,11 +1,12 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
+import {ownsComment} from '../lib/commentDeletion';
 import {commentKey,readTaskComments,writeTaskComment,deleteTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
 
 export function useTaskComments(target: CommentTarget, actorId?: number) {
   const key = `${actorId || ''}:${commentKey(target)}`;
   const current = useRef(key); current.current = key;
-  const generation = useRef(0), sending = useRef(false);
+  const generation = useRef(0), sending = useRef(false), removing = useRef(false);
   const [state,setState] = useState<{key:string;rows:ThreadComment[];loading:boolean;error:string}>({key,rows:[],loading:true,error:''});
   const [saving,setSaving] = useState(false);
   const refresh = useCallback(async () => {
@@ -41,18 +42,23 @@ export function useTaskComments(target: CommentTarget, actorId?: number) {
     finally {sending.current=false;setSaving(false);}
   };
   const remove = async (commentId: string) => {
-    if (!actorId || !commentId) return false;
-    setState(previous => ({
-      ...previous,
-      rows: previous.rows.filter(c => String(c.id) !== String(commentId)),
-    }));
+    if (!actorId || !commentId || removing.current || current.current !== key) return false;
+    const comment = state.key === key ? state.rows.find(row => String(row.id) === String(commentId)) : undefined;
+    if (!comment || !ownsComment(actorId, comment.author_id)) {
+      throw new Error('Bạn chỉ được xóa bình luận của mình.');
+    }
+    removing.current = true;
     try {
-      await deleteTaskComment(target, commentId);
+      await deleteTaskComment(target, commentId, actorId);
+      if (current.current === key) {
+        setState(previous => previous.key === key ? {
+          ...previous, rows: previous.rows.filter(row => String(row.id) !== String(commentId)),
+        } : previous);
+      }
       await refresh();
       return true;
-    } catch (err) {
-      await refresh();
-      throw err;
+    } finally {
+      removing.current = false;
     }
   };
   const visible=state.key===key;

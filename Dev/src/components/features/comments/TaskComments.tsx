@@ -6,7 +6,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import { useTaskComments } from '../../../hooks/useTaskComments';
 import { useMobileReadOnly } from '../../../hooks/useMobileReadOnly';
-import { isAdmin, isGlobalManager } from '../../../lib/roleScope';
+import { ownsComment } from '../../../lib/commentDeletion';
 import type { CommentTarget } from '../../../services/taskComments';
 import { SmartCommentInput, type CommentMentionPerson } from './SmartCommentInput';
 import { RichCommentBody } from './RichCommentBody';
@@ -47,7 +47,8 @@ export function TaskComments({ target, people, collaboratorIds, focusRequest, on
 
 
   const handleDeleteComment = async (commentId: string) => {
-    if (readOnly || deletingId) return;
+    const comment = thread.comments.find(row => String(row.id) === String(commentId));
+    if (readOnly || deletingId || !comment || !ownsComment(profile?.id, comment.author_id)) return;
     const ok = window.confirm(
       en ? 'Delete this comment?' : 'Bạn có chắc chắn muốn xoá tin nhắn này?'
     );
@@ -55,7 +56,7 @@ export function TaskComments({ target, people, collaboratorIds, focusRequest, on
 
     setDeletingId(commentId);
     try {
-      await thread.remove(commentId);
+      if (!(await thread.remove(commentId))) return;
       toast.success(en ? 'Comment deleted' : 'Đã xoá bình luận');
       try {
         await onDeleted?.(commentId);
@@ -142,10 +143,10 @@ export function TaskComments({ target, people, collaboratorIds, focusRequest, on
       {thread.comments.length > 0 && (
         <div className="space-y-3.5 mb-4" aria-live="polite" aria-relevant="additions text">
           {thread.comments.map(comment => {
-            const mine = String(comment.author_id) === String(profile?.id);
+            const mine = ownsComment(profile?.id, comment.author_id);
             const author = comment.author?.name || 'Staff';
             const person = people.find(p => String(p.id) === String(comment.author_id));
-            const canDelete = !readOnly && (mine || isAdmin(profile) || isGlobalManager(profile) || Boolean(profile?.id));
+            const canDelete = !readOnly && mine;
 
             return (
               <article key={comment.id} className={`task-comment-row group ${mine ? 'is-mine' : ''}`}>

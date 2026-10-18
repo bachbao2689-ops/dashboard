@@ -14,6 +14,7 @@ import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
 import {canViewTeamManagement,isGlobalManager} from '../lib/roleScope';
 import {isTaskDone} from '../lib/taskTracking';
+import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {useRememberedState} from './useRememberedState';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
@@ -63,7 +64,20 @@ export function useProjectsController(){
   const [recentlyCompletedSubtaskId, setRecentlyCompletedSubtaskId] = useState<string | null>(null);
   const [refreshDetailTrigger, setRefreshDetailTrigger] = useState(0);
 
-  const removeComment = async (id: string) => { await supabase.from('project_comments').delete().eq('id', id); setComments(comments.filter(c => c.id !== id)); };
+  const commentDeleteLock = useRef(new Set<string>());
+  const removeComment = async (id: string) => {
+    const comment = comments.find(c => String(c.id) === String(id));
+    const key = `project:${id}`;
+    if (!selected || !profile?.id || !comment || !ownsComment(profile.id, comment.author_id) || commentDeleteLock.current.has(key)) return;
+    commentDeleteLock.current.add(key);
+    try {
+      await deleteOwnedComment(supabase, {kind:'project',id:selected.id}, id, profile.id);
+      setComments(current => current.filter(c => String(c.id) !== String(id)));
+      toast.success(lang === 'en' ? 'Comment deleted' : 'Đã xóa bình luận');
+    } catch {
+      toast.error(lang === 'en' ? 'Could not delete comment.' : 'Không thể xóa bình luận.');
+    } finally { commentDeleteLock.current.delete(key); }
+  };
   const saveEditedComment = async (id: string) => { await supabase.from('project_comments').update({ body: editingCommentText }).eq('id', id); setComments(comments.map(c => c.id === id ? { ...c, body: editingCommentText } : c)); setEditingCommentId(null); };
   const [newSubtask, setNewSubtask] = useState(''); const [editMode, setEditMode] = useState(false); const [showSubtaskForm, setShowSubtaskForm] = useState(false); const [width, setWidth] = useState(500); const [resizing, setResizing] = useState(false); const [subtaskOwner, setSubtaskOwner] = useState(''); const [subtaskDue, setSubtaskDue] = useState(''); const [comment, setComment] = useState('');
 
@@ -114,7 +128,19 @@ export function useProjectsController(){
   };
   const saveEditedCampaignSubtask = async (id: string) => { await supabase.from('campaign_subtasks').update({ title: campaignEditSubtaskTitle, due_date: campaignEditSubtaskDue ? (campaignEditSubtaskDue.includes('/') ? campaignEditSubtaskDue.split('/').reverse().join('-') : campaignEditSubtaskDue) : null, assignee_id: campaignEditSubtaskOwner ? Number(campaignEditSubtaskOwner) : null }).eq('id', id); setCampaignEditingSubtaskId(null); const { data } = await supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at'); setCampaignSubtasks(data || []); };
 
-  const removeCampaignComment = async (id: string) => { await supabase.from('activity_log').delete().eq('id', id); setCampaignComments(campaignComments.filter(c => c.id !== id)); };
+  const removeCampaignComment = async (id: string) => {
+    const comment = campaignComments.find(c => String(c.id) === String(id));
+    const key = `campaign:${id}`;
+    if (!selectedCampaign || !profile?.id || !comment || !ownsComment(profile.id, comment.user_id) || commentDeleteLock.current.has(key)) return;
+    commentDeleteLock.current.add(key);
+    try {
+      await deleteOwnedComment(supabase, {kind:'campaign',id:selectedCampaign.id}, id, profile.id);
+      setCampaignComments(current => current.filter(c => String(c.id) !== String(id)));
+      toast.success(lang === 'en' ? 'Comment deleted' : 'Đã xóa bình luận');
+    } catch {
+      toast.error(lang === 'en' ? 'Could not delete comment.' : 'Không thể xóa bình luận.');
+    } finally { commentDeleteLock.current.delete(key); }
+  };
   const saveEditedCampaignComment = async (id: string) => { await supabase.from('activity_log').update({ metadata: { body: campaignEditingCommentText } }).eq('id', id); setCampaignComments(campaignComments.map(c => c.id === id ? { ...c, metadata: { ...c.metadata, body: campaignEditingCommentText } } : c)); setCampaignEditingCommentId(null); };
     const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
   const [legacySubtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});

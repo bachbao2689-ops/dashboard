@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { deleteOwnedComment } from '../lib/commentDeletion';
 
 export type CommentKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type CommentTarget = { kind: CommentKind; id: string };
@@ -42,14 +43,7 @@ export async function writeTaskComment(target: CommentTarget, authorId: number, 
   window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
 }
 
-export async function deleteTaskComment(target: CommentTarget, commentId: string) {
-  if (!commentId) throw new Error('ID bình luận không hợp lệ.');
-  if (target.kind === 'task') {
-    const { error } = await supabase.from('comments').delete().eq('id', commentId);
-    if (error) throw error;
-  } else {
-    const { error } = await supabase.from('activity_log').delete().eq('id', commentId);
-    if (error) throw error;
-  }
+export async function deleteTaskComment(target: CommentTarget, commentId: string, actorId: number) {
+  await deleteOwnedComment(supabase, target, commentId, actorId);
   window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
 }
