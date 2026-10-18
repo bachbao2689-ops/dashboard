@@ -25,6 +25,7 @@ import {
   ChevronRight,
   ExternalLink,
   FolderKanban,
+  Layers,
   MessageSquare,
 } from 'lucide-react';
 import { StylizedPinIcon } from '../common/StylizedPinIcon';
@@ -57,7 +58,6 @@ interface ActiveDragPayload {
   id: string;
   source: 'workspace-nav' | 'pinned-nav' | 'pinned-entity' | 'pinned-task';
   label: string;
-  icon: React.ReactNode;
   accentColor: string;
   navId?: string;
   entity?: PinnedEntity;
@@ -99,7 +99,8 @@ export const ButtonDrilldownDrawer: React.FC<{
     const el = activePanelRef.current;
     if (!el) return;
     const updateHeight = () => {
-      setPanelHeight(el.offsetHeight);
+      const nextH = el.offsetHeight;
+      setPanelHeight(prev => (prev === nextH ? prev : nextH));
     };
     updateHeight();
 
@@ -493,7 +494,6 @@ const TreeAccordionChildRow: React.FC<{
   onToggleItemDropdown: (itemId: string) => void;
   onToggleNavPin: (item: DrillMenuItem, group: SidebarGroupModel) => void;
   onToggleTaskPin: (taskId: string) => void;
-  rowRef: (el: HTMLDivElement | null) => void;
 }> = ({
   item,
   group,
@@ -508,30 +508,23 @@ const TreeAccordionChildRow: React.FC<{
   onToggleItemDropdown,
   onToggleNavPin,
   onToggleTaskPin,
-  rowRef,
 }) => {
   const dragId = `workspace-nav:${item.id}`;
-  const dragPayload: ActiveDragPayload = {
-    id: dragId,
-    source: 'workspace-nav',
-    label: item.label,
-    icon: item.icon,
-    accentColor: group.accentColor,
-    navId: item.id,
-  };
+  const dragPayload = useMemo<ActiveDragPayload>(
+    () => ({
+      id: dragId,
+      source: 'workspace-nav',
+      label: item.label,
+      accentColor: group.accentColor,
+      navId: item.id,
+    }),
+    [dragId, item.label, item.id, group.accentColor]
+  );
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: dragId,
     data: dragPayload,
   });
-
-  const combinedRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      setNodeRef(node);
-      rowRef(node);
-    },
-    [setNodeRef, rowRef]
-  );
 
   const highlighted = active || isHovered;
   const subNode = hasDrill && item.targetNodeId ? group.nodes[item.targetNodeId] : undefined;
@@ -540,7 +533,8 @@ const TreeAccordionChildRow: React.FC<{
   return (
     <li className="group/child">
       <div
-        ref={combinedRef}
+        ref={setNodeRef}
+        data-tree-item-id={item.id}
         {...attributes}
         {...listeners}
         role="button"
@@ -663,7 +657,6 @@ const SidebarTreeGroupSection: React.FC<{
   group: SidebarGroupModel;
   isOpen: boolean;
   onSelectGroup: (group: SidebarGroupModel) => void;
-  headerRef: (el: HTMLButtonElement | null) => void;
   currentPath: string;
   currentSearch: string;
   openDropdownItemId: string | null;
@@ -676,7 +669,6 @@ const SidebarTreeGroupSection: React.FC<{
   group,
   isOpen,
   onSelectGroup,
-  headerRef,
   currentPath,
   currentSearch,
   openDropdownItemId,
@@ -689,10 +681,9 @@ const SidebarTreeGroupSection: React.FC<{
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [childCenters, setChildCenters] = useState<Record<string, number>>({});
   const childrenWrapRef = useRef<HTMLDivElement | null>(null);
-  const childRowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const rootNode = group.nodes[group.rootNodeId];
-  const items = rootNode?.items || [];
+  const items = rootNode?.items ?? [];
 
   const isRouteActive = useCallback(
     (itemPath?: string) => {
@@ -710,15 +701,25 @@ const SidebarTreeGroupSection: React.FC<{
     if (!wrap) return;
     const wrapRect = wrap.getBoundingClientRect();
     const next: Record<string, number> = {};
-    items.forEach(item => {
-      const rowEl = childRowRefs.current.get(item.id);
-      if (rowEl) {
-        const rowRect = rowEl.getBoundingClientRect();
-        next[item.id] = Math.round(rowRect.top - wrapRect.top + rowRect.height / 2);
-      }
+    const rows = wrap.querySelectorAll<HTMLElement>('[data-tree-item-id]');
+    rows.forEach(rowEl => {
+      const id = rowEl.getAttribute('data-tree-item-id');
+      if (!id) return;
+      const rowRect = rowEl.getBoundingClientRect();
+      next[id] = Math.round(rowRect.top - wrapRect.top + rowRect.height / 2);
     });
-    setChildCenters(next);
-  }, [items]);
+    setChildCenters(prev => {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (
+        prevKeys.length === nextKeys.length &&
+        nextKeys.every(k => prev[k] === next[k])
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -728,7 +729,7 @@ const SidebarTreeGroupSection: React.FC<{
     const observer = new ResizeObserver(() => measureChildCenters());
     observer.observe(wrap);
     return () => observer.disconnect();
-  }, [isOpen, items, openDropdownItemId, measureChildCenters]);
+  }, [isOpen, items.length, openDropdownItemId, measureChildCenters]);
 
   if (!rootNode || items.length === 0) return null;
 
@@ -744,8 +745,8 @@ const SidebarTreeGroupSection: React.FC<{
     <div className={cn('transition-all duration-200', isOpen ? 'mb-2.5' : 'mb-1')}>
       {/* Parent Group Header (Single-expand accordion trigger, no right-side chevron clutter) */}
       <button
-        ref={headerRef}
         type="button"
+        data-tree-group-id={group.id}
         onClick={() => onSelectGroup(group)}
         aria-expanded={isOpen}
         className={cn('sb-group-header', isOpen && 'is-open')}
@@ -845,10 +846,6 @@ const SidebarTreeGroupSection: React.FC<{
                   onToggleItemDropdown={onToggleItemDropdown}
                   onToggleNavPin={onToggleNavPin}
                   onToggleTaskPin={onToggleTaskPin}
-                  rowRef={el => {
-                    if (el) childRowRefs.current.set(item.id, el);
-                    else childRowRefs.current.delete(item.id);
-                  }}
                 />
               );
             })}
@@ -937,9 +934,9 @@ export const Sidebar: React.FC = () => {
     };
   }, []);
 
-  const handleToggleItemDropdown = (itemId: string) => {
+  const handleToggleItemDropdown = useCallback((itemId: string) => {
     setOpenDropdownItemId(prev => (prev === itemId ? null : itemId));
-  };
+  }, []);
 
   // Sync --sidebar-width CSS variable to html element so layout wrapper scales smoothly
   useEffect(() => {
@@ -1048,7 +1045,6 @@ export const Sidebar: React.FC = () => {
 
   // Measure active group header position for the Left Spine Active Indicator Bar
   const accordionRootRef = useRef<HTMLDivElement | null>(null);
-  const groupHeaderRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [spineIndicator, setSpineIndicator] = useState<{
     top: number;
     height: number;
@@ -1057,15 +1053,27 @@ export const Sidebar: React.FC = () => {
 
   const updateSpineIndicator = useCallback(() => {
     const rootEl = accordionRootRef.current;
-    const headerEl = groupHeaderRefs.current.get(activeGroupId);
     const activeGroup = groups.find(g => g.id === activeGroupId) || groups[0];
-    if (!rootEl || !headerEl || !activeGroup) return;
+    if (!rootEl || !activeGroup) return;
+    const headerEl = rootEl.querySelector<HTMLElement>(
+      `[data-tree-group-id="${activeGroup.id}"]`
+    );
+    if (!headerEl) return;
     const rootRect = rootEl.getBoundingClientRect();
     const headerRect = headerEl.getBoundingClientRect();
-    setSpineIndicator({
-      top: Math.max(4, Math.round(headerRect.top - rootRect.top + 5)),
-      height: Math.max(18, Math.round(headerRect.height - 10)),
-      color: activeGroup.accentColor,
+    const nextTop = Math.max(4, Math.round(headerRect.top - rootRect.top + 5));
+    const nextHeight = Math.max(18, Math.round(headerRect.height - 10));
+    const nextColor = activeGroup.accentColor;
+
+    setSpineIndicator(prev => {
+      if (
+        prev.top === nextTop &&
+        prev.height === nextHeight &&
+        prev.color === nextColor
+      ) {
+        return prev;
+      }
+      return { top: nextTop, height: nextHeight, color: nextColor };
     });
   }, [activeGroupId, groups]);
 
@@ -1073,22 +1081,24 @@ export const Sidebar: React.FC = () => {
     updateSpineIndicator();
     const timer = setTimeout(updateSpineIndicator, 330);
     return () => clearTimeout(timer);
-  }, [activeGroupId, groups, openDropdownItemId, updateSpineIndicator]);
+  }, [activeGroupId, openDropdownItemId, updateSpineIndicator]);
 
-  const handleSelectGroup = (group: SidebarGroupModel) => {
-    setActiveGroupId(group.id);
-    // Per Brief 1: clicking a closed Parent Group expands it and defaults/activates its first child if none in the group is currently active
-    const root = group.nodes[group.rootNodeId];
-    const items = root?.items || [];
-    const alreadyInGroup = items.some(it => {
-      if (!it.path) return false;
-      const [basePath] = it.path.split('?');
-      return location.pathname === basePath;
-    });
-    if (!alreadyInGroup && items[0]?.path) {
-      navigate(items[0].path);
-    }
-  };
+  const handleSelectGroup = useCallback(
+    (group: SidebarGroupModel) => {
+      setActiveGroupId(group.id);
+      const root = group.nodes[group.rootNodeId];
+      const items = root?.items || [];
+      const alreadyInGroup = items.some(it => {
+        if (!it.path) return false;
+        const [basePath] = it.path.split('?');
+        return location.pathname === basePath;
+      });
+      if (!alreadyInGroup && items[0]?.path) {
+        navigate(items[0].path);
+      }
+    },
+    [location.pathname, navigate]
+  );
 
   const handleToggleNavPin = useCallback(
     (item: DrillMenuItem, _group: SidebarGroupModel) => {
@@ -1184,6 +1194,16 @@ export const Sidebar: React.FC = () => {
     [visiblePinnedNavs, pinnedEntities, pinnedTaskItems]
   );
 
+  const renderDragOverlayIcon = (drag: ActiveDragPayload) => {
+    if (drag.navId) {
+      const found = navLookup.get(drag.navId);
+      if (found) return found.item.icon;
+    }
+    if (drag.source === 'pinned-entity') return <FolderKanban size={16} />;
+    if (drag.source === 'pinned-task') return <CheckSquare size={16} />;
+    return <Layers size={16} />;
+  };
+
   return (
     <aside className="app-sidebar w-full h-full card-hub flex flex-col pt-5 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
       {/* Right-edge Drag Resize Handle */}
@@ -1260,7 +1280,6 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-nav',
                               label: item.label,
-                              icon: item.icon,
                               accentColor: group.accentColor,
                               navId: item.id,
                             }}
@@ -1294,7 +1313,6 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-entity',
                               label: entity.name,
-                              icon,
                               accentColor,
                               entity,
                             }}
@@ -1324,7 +1342,6 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-task',
                               label: task.title,
-                              icon,
                               accentColor,
                               taskId: task.id,
                             }}
@@ -1373,10 +1390,6 @@ export const Sidebar: React.FC = () => {
                 group={group}
                 isOpen={activeGroupId === group.id}
                 onSelectGroup={handleSelectGroup}
-                headerRef={el => {
-                  if (el) groupHeaderRefs.current.set(group.id, el);
-                  else groupHeaderRefs.current.delete(group.id);
-                }}
                 currentPath={location.pathname}
                 currentSearch={location.search}
                 openDropdownItemId={openDropdownItemId}
@@ -1404,7 +1417,7 @@ export const Sidebar: React.FC = () => {
                 className="shrink-0 inline-flex items-center justify-center"
                 style={{ color: activeDrag.accentColor }}
               >
-                {activeDrag.icon}
+                {renderDragOverlayIcon(activeDrag)}
               </span>
               <span className="truncate max-w-[180px]">{activeDrag.label}</span>
             </div>
