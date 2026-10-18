@@ -7,8 +7,9 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
-import { X, Edit3, CheckCircle2, MessageSquare, Trash2, Plus, Users, Send } from 'lucide-react';
+import { X, Edit3, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
+import { SmartCommentInput } from '../comments/SmartCommentInput';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
@@ -206,8 +207,8 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
             </section>
 
             <section>
-              <h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> {t('common.activityComments')}</h3>
-              <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-3">Comments {comments.length > 0 && <span>({comments.length})</span>}</p>
+              {comments.length > 0 && <div className="space-y-3 mb-4">
                 {comments.map(c => {
                   const isMe = String(c.user_id) === String(profile?.id);
                   return (
@@ -223,10 +224,17 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                     </div>
                   );
                 })}
-              </div>
-              {!readOnly&&<div className="mt-4">
-                <textarea value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }} rows={3} placeholder={t('common.commentPlaceholder')} className="w-full p-3 rounded-xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm" />
-                <button type="button" disabled={busy || !commentText.trim()} onClick={addComment} className="mt-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold disabled:opacity-50"><Send className="mr-1 inline h-4 w-4" />{t('common.sendComment')}</button>
+              </div>}
+              {!readOnly&&<div className="mt-2">
+                <SmartCommentInput
+                  value={commentText}
+                  onChange={setCommentText}
+                  onSubmit={() => void addComment()}
+                  people={people}
+                  disabled={busy || !profile?.id}
+                  saving={busy}
+                  placeholder="Add a comment..."
+                />
               </div>}
             </section>
           </div>
