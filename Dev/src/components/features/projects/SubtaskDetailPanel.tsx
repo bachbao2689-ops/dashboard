@@ -113,6 +113,37 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     return () => { active = false; };
   }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType]);
 
+  const [subtaskCollaborators, setSubtaskCollaborators] = useState<(string | number)[]>([]);
+  useEffect(() => {
+    let active = true;
+    const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
+    const ids = new Set<string | number>();
+    if (subtask?.assignee_id) ids.add(subtask.assignee_id);
+
+    if (parentId) {
+      const table = entityType === 'campaign_subtask' ? 'campaign_subtasks' : 'project_subtasks';
+      const parentKey = entityType === 'campaign_subtask' ? 'campaign_id' : 'project_id';
+      supabase
+        .from(table)
+        .select('assignee_id')
+        .eq(parentKey, parentId)
+        .neq('status', 'deleted')
+        .then(({ data }) => {
+          if (!active) return;
+          (data || []).forEach(r => {
+            if (r.assignee_id) ids.add(r.assignee_id);
+          });
+          setSubtaskCollaborators(Array.from(ids));
+        });
+    } else {
+      setSubtaskCollaborators(Array.from(ids));
+    }
+    return () => {
+      active = false;
+    };
+  }, [subtask?.id, subtask?.assignee_id, subtask?.project_id, subtask?.campaign_id, entityType]);
+
+
   const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
     if (!subtaskId) return;
@@ -228,7 +259,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           {editing && !readOnly && canEdit ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
         </section>
 
-        <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }} onDeleted={() => { onUpdated(); }}/>
+        <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} collaboratorIds={subtaskCollaborators} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }} onDeleted={() => { onUpdated(); }}/>
+
       </div>
 
       {readOnly?<div className="push-mobile-readonly">Xem tiến độ trên điện thoại · Cập nhật công việc trên máy tính</div>:(<div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>

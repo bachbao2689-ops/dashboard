@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Reply, Trash2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar } from '../../common/Avatar';
@@ -17,12 +17,14 @@ type Person = CommentMentionPerson;
 interface Props {
   target: CommentTarget;
   people: Person[];
+  collaboratorIds?: (string | number)[];
   focusRequest?: string;
   onSent?: (body: string, mentions: number[]) => void | Promise<void>;
   onDeleted?: (commentId: string) => void | Promise<void>;
 }
 
-export function TaskComments({ target, people, focusRequest, onSent, onDeleted }: Props) {
+export function TaskComments({ target, people, collaboratorIds, focusRequest, onSent, onDeleted }: Props) {
+
   const readOnly = useMobileReadOnly();
   const profile = useAuthStore(state => state.profile);
   const { t, lang } = useTranslation();
@@ -34,6 +36,15 @@ export function TaskComments({ target, people, focusRequest, onSent, onDeleted }
   const [mentions, setMentions] = useState<Person[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+
+  const commentAuthorIds = useMemo(() => {
+    return (thread.comments || []).map(c => c.author_id).filter(Boolean);
+  }, [thread.comments]);
+
+  const allCollaboratorIds = useMemo(() => {
+    return Array.from(new Set([...(collaboratorIds || []), ...commentAuthorIds]));
+  }, [collaboratorIds, commentAuthorIds]);
+
 
   const handleDeleteComment = async (commentId: string) => {
     if (readOnly || deletingId) return;
@@ -80,7 +91,9 @@ export function TaskComments({ target, people, focusRequest, onSent, onDeleted }
           mentions.some(m => m.id === person.id) ||
           body.includes(`@${person.name.replace(/\s+/g, '')}`)
       )
-      .map(person => person.id);
+      .map(person => Number(person.id))
+      .filter(id => !Number.isNaN(id));
+
     try {
       if (!(await thread.send(body, ids))) return;
       if (draftRef.current === draft) {
@@ -214,6 +227,7 @@ export function TaskComments({ target, people, focusRequest, onSent, onDeleted }
           onChange={setText}
           onSubmit={send}
           people={people}
+          collaboratorIds={allCollaboratorIds}
           onPickPerson={registerMention}
           disabled={!profile?.id}
           saving={thread.saving}
@@ -225,3 +239,4 @@ export function TaskComments({ target, people, focusRequest, onSent, onDeleted }
     </section>
   );
 }
+

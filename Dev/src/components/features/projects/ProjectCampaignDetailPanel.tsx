@@ -1,6 +1,7 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { inputDate } from '../../../lib/workflowHub';
 import { taskKey, taskLink, isTaskDone } from '../../../lib/taskTracking';
 import { workflowDateError } from '../../../lib/workflowCalendar';
@@ -37,8 +38,16 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [commentText, setCommentText] = useState('');
   const [width, setWidth] = useState(500);
   const [resizing, setResizing] = useState(false);
-  
-  
+
+  const itemCollaboratorIds = useMemo(() => {
+    const ids = new Set<string | number>();
+    if ((data as any)?.created_by) ids.add((data as any).created_by);
+    if ((data as any)?.lead_id) ids.add((data as any).lead_id);
+    (subtasks || []).forEach(s => { if (s.assignee_id) ids.add(s.assignee_id); });
+    (comments || []).forEach(c => { if (c.user_id) ids.add(c.user_id); });
+    return Array.from(ids);
+  }, [data, subtasks, comments]);
+
   // Edit mode states
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
@@ -233,11 +242,13 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                   onChange={setCommentText}
                   onSubmit={body => void addComment(body)}
                   people={people}
+                  collaboratorIds={itemCollaboratorIds}
                   disabled={busy || !profile?.id}
                   saving={busy}
                   placeholder="Add a comment..."
                 />
               </div>}
+
             </section>
           </div>
         )}

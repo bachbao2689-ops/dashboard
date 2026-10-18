@@ -1,5 +1,7 @@
+import React from 'react';
 import {StatusBadge} from '../../common/StatusBadge';
 import {WorkflowTrackingSummary} from './WorkflowTrackingSummary';
+
 import {Avatar} from '../../common/Avatar';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {RichCommentBody} from '../comments/RichCommentBody';
@@ -11,7 +13,19 @@ import {taskKey,isTaskDone} from '../../../lib/taskTracking';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
  const {t,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignEditingCommentId,setCampaignEditingCommentId,campaignEditingCommentText,setCampaignEditingCommentText,campaignCommentInput,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit}=state;
+ const campaignCollaboratorIds = React.useMemo(() => {
+   if (!selectedCampaign) return [];
+   const ids = new Set<string>();
+   if (selectedCampaign.created_by) ids.add(String(selectedCampaign.created_by));
+   if (selectedCampaign.lead_id) ids.add(String(selectedCampaign.lead_id));
+   const pics = (workflow.tracks.find(track => track.entity_type === 'campaign' && track.entity_id === selectedCampaign.id)?.pics || []);
+   pics.forEach(p => ids.add(String(p.id)));
+   (campaignSubtasks || []).forEach(s => { if (s.assignee_id) ids.add(String(s.assignee_id)); });
+   (campaignComments || []).forEach(c => { if (c.user_id) ids.add(String(c.user_id)); });
+   return Array.from(ids);
+ }, [selectedCampaign, workflow.tracks, campaignSubtasks, campaignComments]);
  return <>{selectedCampaign && (
+
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
             <div className="flex items-center gap-1 min-w-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selectedCampaign.name}</h3></div>
@@ -86,7 +100,8 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             {mine && <Avatar name={c.user?.name || 'Member'} src={(c.user as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
           </div>
         );
-      })}</div><div className="mt-4"><SmartCommentInput inputRef={campaignCommentInput} value={campaignComment} onChange={setCampaignComment} onSubmit={body => void addCampaignComment(body)} people={visiblePeople} placeholder="Add a comment..." /></div></section></div>}
+      })}</div><div className="mt-4"><SmartCommentInput inputRef={campaignCommentInput} value={campaignComment} onChange={setCampaignComment} onSubmit={body => void addCampaignComment(body)} people={visiblePeople} collaboratorIds={campaignCollaboratorIds} placeholder="Add a comment..." /></div></section></div>}
+
           </div>
           {!campaignEditMode && selectedRoot && <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><button onClick={() => { setTitle(selectedCampaign.name); setStart(selectedCampaign.start_date || ''); setDue(selectedCampaign.end_date || ''); setCampaignObjective(selectedCampaign.objective || ''); setCampaignBudget(selectedCampaign.budget ? String(selectedCampaign.budget) : ''); setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : ''); setCampaignEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button><button onClick={completeCampaign} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button></div>}
         </div>

@@ -26,7 +26,18 @@ export const Projects:React.FC=()=>{
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
  const {t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,editingCommentId,setEditingCommentId,editingCommentText,setEditingCommentText,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
+ const projectCollaboratorIds = React.useMemo(() => {
+   if (!selected) return [];
+   const ids = new Set<string>();
+   if (selected.created_by) ids.add(String(selected.created_by));
+   if (selected.lead_id) ids.add(String(selected.lead_id));
+   (picMembers[selected.id] || []).forEach(id => ids.add(String(id)));
+   (subtaskMembers[selected.id] || []).forEach(id => ids.add(String(id)));
+   (comments || []).forEach(c => { if (c.user_id) ids.add(String(c.user_id)); });
+   return Array.from(ids);
+ }, [selected, picMembers, subtaskMembers, comments]);
  useReadEntityNotifications(selectedCampaign ? 'campaign' : 'project', selectedCampaign?.id || selected?.id, Boolean(panelOpen && !createOpen && (selectedCampaign || selected)));
+
  return (
   <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className="relative flex min-h-full">
     {/* Mobile/Tablet Backdrop when Detail Drawer is open */}
@@ -306,7 +317,8 @@ export const Projects:React.FC=()=>{
             {mine && <Avatar name={c.author?.name || 'Member'} src={(c.author as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
           </div>
         );
-      })}</div><div className="mt-4"><SmartCommentInput inputRef={projectCommentInput} value={comment} onChange={setComment} onSubmit={body => void addComment(body)} people={visiblePeople} placeholder="Add a comment..." /></div></section>
+      })}</div><div className="mt-4"><SmartCommentInput inputRef={projectCommentInput} value={comment} onChange={setComment} onSubmit={body => void addComment(body)} people={visiblePeople} collaboratorIds={projectCollaboratorIds} placeholder="Add a comment..." /></div></section>
+
             </div>
             )}
           </div>

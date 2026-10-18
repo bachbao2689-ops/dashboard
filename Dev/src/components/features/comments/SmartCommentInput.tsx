@@ -21,6 +21,8 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import { supabase } from '../../../services/supabase';
 import { useSidebarTrackingData } from '../../../hooks/useSidebarTrackingData';
+import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
+import { canMentionPerson } from '../../../lib/roleScope';
 import {
   COMMENT_COLOR_MAP,
   CommentImagePreviewModal,
@@ -29,11 +31,17 @@ import {
 import '../../../styles/task-comments.css';
 
 export interface CommentMentionPerson {
-  id: number;
+  id: number | string;
   name: string;
   avatar_url?: string | null;
-  departments?: { name?: string } | null;
+  departments?: { name?: string; id?: string | number } | null;
+  department?: { name?: string; id?: string | number } | null;
+  department_id?: string | number | null;
+  role?: string | null;
+  employment_level?: string | null;
+  job_title?: string | null;
 }
+
 
 export interface SmartPageSuggestion {
   id: string;
@@ -369,6 +377,7 @@ export interface SmartCommentInputProps {
   onChange: (nextValue: string) => void;
   onSubmit: (finalBody?: string) => void | Promise<void>;
   people?: CommentMentionPerson[];
+  collaboratorIds?: (string | number)[];
   onPickPerson?: (person: CommentMentionPerson) => void;
   disabled?: boolean;
   saving?: boolean;
@@ -383,6 +392,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   onChange,
   onSubmit,
   people = [],
+  collaboratorIds,
   onPickPerson,
   disabled = false,
   saving = false,
@@ -395,6 +405,46 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   const isEn = lang === 'en';
   const profile = useAuthStore(s => s.profile);
   const { enrichedTracks } = useSidebarTrackingData();
+  const directory = useWorkspaceDirectory(Boolean(profile));
+
+  const collabSet = useMemo(
+    () => new Set((collaboratorIds || []).map(id => String(id))),
+    [collaboratorIds]
+  );
+
+  const mentionablePeople = useMemo(() => {
+    const map = new Map<string, CommentMentionPerson>();
+    (people || []).forEach(p => {
+      map.set(String(p.id), p);
+    });
+
+    // Enrich existing people with directory data and add workspace users if people list is minimal
+    (directory.data?.users || []).forEach(u => {
+      const existing = map.get(String(u.id));
+      if (existing) {
+        map.set(String(u.id), {
+          ...existing,
+          role: existing.role || u.role,
+          employment_level: existing.employment_level || u.employment_level,
+          department_id: existing.department_id || u.department_id,
+          departments: existing.departments || (u.department ? { name: u.department.name } : null),
+        });
+      } else if (!people || people.length <= 1) {
+        map.set(String(u.id), {
+          id: Number(u.id),
+          name: u.name,
+          avatar_url: u.avatar_url,
+          role: u.role,
+          employment_level: u.employment_level,
+          department_id: u.department_id,
+          departments: u.department ? { name: u.department.name } : null,
+        });
+      }
+    });
+
+    return Array.from(map.values()).filter(person => canMentionPerson(profile, person, collabSet));
+  }, [people, directory.data?.users, profile, collabSet]);
+
 
   const internalRef = useRef<HTMLTextAreaElement | null>(null);
   const textareaRef = (externalRef || internalRef) as React.RefObject<HTMLTextAreaElement | null>;
@@ -603,7 +653,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
     });
 
     // Category 2: People (Staff PICs)
-    people
+    mentionablePeople
       .filter(
         p =>
           !activeQuery ||
@@ -663,7 +713,8 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       });
 
     return list;
-  }, [isMentionPopoverOpen, activeQuery, people, staffRelatedProjects, isEn]);
+  }, [isMentionPopoverOpen, activeQuery, mentionablePeople, staffRelatedProjects, isEn]);
+
 
   useEffect(() => {
     setActiveCandidateIdx(0);
