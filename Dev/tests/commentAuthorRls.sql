@@ -29,15 +29,21 @@ BEGIN
   EXECUTE 'SET LOCAL ROLE authenticated';
   PERFORM set_config('request.jwt.claims',json_build_object('sub',root_record.auth_id,'role','authenticated')::text,true);
   IF NOT public.workflow_root('project',parent_id) THEN RAISE EXCEPTION 'Expected Project root actor'; END IF;
+  UPDATE public.project_comments SET body='unauthorized edit' WHERE id=fixture_id;
+  GET DIAGNOSTICS deleted_count=ROW_COUNT;
+  IF deleted_count<>0 THEN RAISE EXCEPTION 'Project root edited another author comment'; END IF;
   DELETE FROM public.project_comments WHERE id=fixture_id;
   GET DIAGNOSTICS deleted_count=ROW_COUNT;
   IF deleted_count<>0 THEN RAISE EXCEPTION 'Project root deleted another author comment'; END IF;
 
   PERFORM set_config('request.jwt.claims',json_build_object('sub',author_record.auth_id,'role','authenticated')::text,true);
+  UPDATE public.project_comments SET body='authorized edit' WHERE id=fixture_id;
+  GET DIAGNOSTICS deleted_count=ROW_COUNT;
+  IF deleted_count<>1 THEN RAISE EXCEPTION 'Author could not edit own comment'; END IF;
   DELETE FROM public.project_comments WHERE id=fixture_id;
   GET DIAGNOSTICS deleted_count=ROW_COUNT;
   IF deleted_count<>1 THEN RAISE EXCEPTION 'Author could not delete own comment'; END IF;
   EXECUTE 'RESET ROLE';
 END $$;
 ROLLBACK;
-SELECT 'PASS: Project root cannot delete another author comment; author can delete own; fixtures rolled back' AS result;
+SELECT 'PASS: Project root cannot edit/delete another author comment; author can edit/delete own; fixtures rolled back' AS result;

@@ -11,7 +11,9 @@ import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
 import { X, Edit3, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { SmartCommentInput } from '../comments/SmartCommentInput';
-import { RichCommentBody } from '../comments/RichCommentBody';
+import { CommentMessage } from '../comments/CommentMessage';
+import { deleteOwnedComment } from '../../../lib/commentDeletion';
+import { editOwnedComment } from '../../../lib/commentEditing';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
@@ -220,21 +222,19 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
             <section>
               <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-3">Comments {comments.length > 0 && <span>({comments.length})</span>}</p>
               {comments.length > 0 && <div className="space-y-3 mb-4">
-                {comments.map(c => {
-                  const isMe = String(c.user_id) === String(profile?.id);
-                  return (
-                    <div key={c.id} className={`flex gap-3 ${isMe ? 'justify-end' : 'justify-start'} items-end`}>
-                      {!isMe && <Avatar name={c.author?.name || 'Member'} src={c.author?.avatar_url} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
-                      <div className={`group relative max-w-[85%] ${isMe ? 'order-1' : 'order-2'}`}>
-                        <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-[#002e6d] text-white rounded-br-sm' : 'bg-slate-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-bl-sm'}`}>
-                          <p className={`text-[11px] font-extrabold tracking-tight mb-1 ${isMe ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{c.author?.name || 'Member'}</p>
-                          <RichCommentBody body={c.body} isMineBubble={isMe} />
-                        </div>
-                      </div>
-                      {isMe && <Avatar name={profile?.name || ''} src={profile?.avatar_url || undefined} className="w-7 h-7 text-[10px] shadow-sm shrink-0 mb-1" />}
-                    </div>
-                  );
-                })}
+                {comments.map(c => <CommentMessage key={c.id} id={c.id} authorId={c.user_id}
+                  actorId={profile?.id} authorName={c.author?.name || 'Member'} avatarUrl={c.author?.avatar_url}
+                  body={c.body} readOnly={readOnly}
+                  onEdit={async(id,body)=>{
+                    if(readOnly||!profile?.id) return false;
+                    await editOwnedComment(supabase,{kind,id:item.id},id,profile.id,body);
+                    await details.refresh();onUpdated?.();return true;
+                  }}
+                  onDelete={async id=>{
+                    if(readOnly||!profile?.id) return false;
+                    await deleteOwnedComment(supabase,{kind,id:item.id},id,profile.id);
+                    await details.refresh();onUpdated?.();return true;
+                  }}/>) }
               </div>}
               {!readOnly&&<div className="mt-2">
                 <SmartCommentInput

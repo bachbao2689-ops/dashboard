@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
 import {ownsComment} from '../lib/commentDeletion';
-import {commentKey,readTaskComments,writeTaskComment,deleteTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
+import {commentKey,readTaskComments,writeTaskComment,deleteTaskComment,editTaskComment,type CommentTarget,type ThreadComment} from '../services/taskComments';
 
 export function useTaskComments(target: CommentTarget, actorId?: number) {
   const key = `${actorId || ''}:${commentKey(target)}`;
@@ -61,6 +61,17 @@ export function useTaskComments(target: CommentTarget, actorId?: number) {
       removing.current = false;
     }
   };
+  const edit = async (commentId: string, body: string) => {
+    if (!actorId || !body.trim() || removing.current || current.current !== key) return false;
+    const comment=state.key===key ? state.rows.find(row=>String(row.id)===String(commentId)) : undefined;
+    if (!comment || !ownsComment(actorId,comment.author_id)) throw new Error('Bạn chỉ được sửa bình luận của mình.');
+    removing.current=true;
+    try {
+      await editTaskComment(target,commentId,actorId,body);
+      if(current.current===key) setState(previous=>previous.key===key ? {...previous,rows:previous.rows.map(row=>String(row.id)===String(commentId)?{...row,body:body.trim()}:row)} : previous);
+      await refresh(); return true;
+    } finally { removing.current=false; }
+  };
   const visible=state.key===key;
-  return {comments:visible?state.rows:[],loading:!visible||state.loading,error:visible?state.error:'',saving,send,remove,refresh};
+  return {comments:visible?state.rows:[],loading:!visible||state.loading,error:visible?state.error:'',saving,send,remove,edit,refresh};
 }

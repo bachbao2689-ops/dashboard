@@ -83,3 +83,6 @@ npm run build
 
 ---
 *Bản quyền phát triển: K COFFEE Digital Team & BART.*
+## Đồng bộ UX bình luận và phát hành
+
+Áp dụng [quy chuẩn đồng bộ chỉnh sửa và xóa bình luận](GUIDELINE/COMMENT_UI_DEPLOYMENT_CONSISTENCY.md) trên Local, Develop và Main. Mọi panel comment dùng chung component `CommentMessage`; bản phát hành phải xác nhận đủ tính năng và cùng SHA giữa hai nhánh chuẩn.

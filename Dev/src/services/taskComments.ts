@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { deleteOwnedComment } from '../lib/commentDeletion';
+import { editOwnedComment } from '../lib/commentEditing';
 
 export type CommentKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type CommentTarget = { kind: CommentKind; id: string };
@@ -45,5 +46,10 @@ export async function writeTaskComment(target: CommentTarget, authorId: number, 
 
 export async function deleteTaskComment(target: CommentTarget, commentId: string, actorId: number) {
   await deleteOwnedComment(supabase, target, commentId, actorId);
+  window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
+}
+
+export async function editTaskComment(target: CommentTarget, commentId: string, actorId: number, body: string) {
+  await editOwnedComment(supabase,target,commentId,actorId,body);
   window.dispatchEvent(new CustomEvent('task-comments:changed', { detail: target }));
 }
