@@ -63,6 +63,174 @@ interface MentionPill {
   token: string;
 }
 
+interface RichSpan {
+  start: number;
+  end: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  link?: string;
+}
+
+/**
+ * Adjust character-range spans when plain text changes from `oldText` to `newText`
+ */
+function adjustSpansForTextEdit(
+  spans: RichSpan[],
+  oldText: string,
+  newText: string
+): RichSpan[] {
+  if (!spans.length || !newText) return [];
+  if (oldText === newText) return spans;
+
+  let prefixLen = 0;
+  const minLen = Math.min(oldText.length, newText.length);
+  while (prefixLen < minLen && oldText[prefixLen] === newText[prefixLen]) {
+    prefixLen++;
+  }
+
+  let oldSuffix = oldText.length;
+  let newSuffix = newText.length;
+  while (
+    oldSuffix > prefixLen &&
+    newSuffix > prefixLen &&
+    oldText[oldSuffix - 1] === newText[newSuffix - 1]
+  ) {
+    oldSuffix--;
+    newSuffix--;
+  }
+
+  const delta = newText.length - oldText.length;
+
+  return spans
+    .map(sp => {
+      let s = sp.start;
+      let e = sp.end;
+
+      if (e <= prefixLen) {
+        // Edit happened completely after this span
+        return sp;
+      }
+      if (s >= oldSuffix) {
+        // Edit happened completely before this span
+        return { ...sp, start: s + delta, end: e + delta };
+      }
+      // Edit overlapped or occurred inside this span
+      if (s > prefixLen) {
+        s = Math.max(prefixLen, s + delta);
+      }
+      e = Math.max(s, e + delta);
+      return { ...sp, start: s, end: e };
+    })
+    .filter(sp => sp.end > sp.start);
+}
+
+/**
+ * Serialize plain text + RichSpan[] into stored Markdown tokens when sending the comment
+ */
+function serializeTextWithRichSpans(text: string, spans: RichSpan[]): string {
+  if (!text || spans.length === 0) return text;
+
+  const points = new Set<number>([0, text.length]);
+  spans.forEach(sp => {
+    points.add(Math.max(0, Math.min(text.length, sp.start)));
+    points.add(Math.max(0, Math.min(text.length, sp.end)));
+  });
+  const sorted = Array.from(points).sort((a, b) => a - b);
+
+  let out = '';
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const segStart = sorted[i];
+    const segEnd = sorted[i + 1];
+    if (segEnd <= segStart) continue;
+    const rawSeg = text.slice(segStart, segEnd);
+    if (!rawSeg) continue;
+
+    const active = spans.filter(sp => sp.start <= segStart && sp.end >= segEnd);
+    if (active.length === 0) {
+      out += rawSeg;
+      continue;
+    }
+
+    const isBold = active.some(a => a.bold);
+    const isItalic = active.some(a => a.italic);
+    const isUnderline = active.some(a => a.underline);
+    const colorSpan = [...active].reverse().find(a => a.color);
+    const linkSpan = [...active].reverse().find(a => a.link);
+
+    let formatted = rawSeg;
+    if (isBold) formatted = `**${formatted}**`;
+    if (isItalic) formatted = `*${formatted}*`;
+    if (isUnderline) formatted = `<u>${formatted}</u>`;
+    if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
+    if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+
+    out += formatted;
+  }
+
+  return out;
+}
+
+/**
+ * Render WYSIWYG styled segments for the live mirror layer inside the input bar
+ */
+function renderMirrorSegments(text: string, spans: RichSpan[]): React.ReactNode {
+  if (!text) return null;
+  if (spans.length === 0) return text;
+
+  const points = new Set<number>([0, text.length]);
+  spans.forEach(sp => {
+    points.add(Math.max(0, Math.min(text.length, sp.start)));
+    points.add(Math.max(0, Math.min(text.length, sp.end)));
+  });
+  const sorted = Array.from(points).sort((a, b) => a - b);
+
+  const nodes: React.ReactNode[] = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const segStart = sorted[i];
+    const segEnd = sorted[i + 1];
+    if (segEnd <= segStart) continue;
+    const segText = text.slice(segStart, segEnd);
+    const active = spans.filter(sp => sp.start <= segStart && sp.end >= segEnd);
+
+    if (active.length === 0) {
+      nodes.push(<React.Fragment key={i}>{segText}</React.Fragment>);
+      continue;
+    }
+
+    const isBold = active.some(a => a.bold);
+    const isItalic = active.some(a => a.italic);
+    const isUnderline = active.some(a => a.underline);
+    const colorSpan = [...active].reverse().find(a => a.color);
+    const linkSpan = [...active].reverse().find(a => a.link);
+
+    const colorHex = colorSpan?.color
+      ? COMMENT_COLOR_MAP[colorSpan.color]?.hex || colorSpan.color
+      : linkSpan?.link
+      ? '#38bdf8'
+      : undefined;
+
+    nodes.push(
+      <span
+        key={i}
+        style={{
+          fontWeight: isBold ? 700 : undefined,
+          fontStyle: isItalic ? 'italic' : undefined,
+          textDecoration:
+            isUnderline || linkSpan?.link ? 'underline' : undefined,
+          textUnderlineOffset: isUnderline || linkSpan?.link ? '2px' : undefined,
+          color: colorHex,
+        }}
+      >
+        {segText}
+      </span>
+    );
+  }
+
+  return nodes;
+}
+
 interface MentionCandidate {
   id: string;
   category: 'date' | 'person' | 'page';
@@ -242,6 +410,9 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   const [mentionPills, setMentionPills] = useState<MentionPill[]>([]);
   const [hoveredPillId, setHoveredPillId] = useState<string | null>(null);
 
+  // Clean WYSIWYG inline formatting spans (so `value` never shows ugly `[color:rose]...[/color]` or `**...**` code!)
+  const [richSpans, setRichSpans] = useState<RichSpan[]>([]);
+
   // Floating Bubble Toolbar state on text selection
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [hoveredToolId, setHoveredToolId] = useState<string | null>(null);
@@ -254,6 +425,21 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [hoveredAttachmentId, setHoveredAttachmentId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ name: string; url: string } | null>(null);
+
+  // Reset richSpans if value becomes empty externally
+  useEffect(() => {
+    if (!value) {
+      setRichSpans([]);
+    }
+  }, [value]);
+
+  const updateValueAndSpans = useCallback(
+    (nextValue: string) => {
+      setRichSpans(prev => adjustSpansForTextEdit(prev, value, nextValue));
+      onChange(nextValue);
+    },
+    [value, onChange]
+  );
 
   // Auto-focus when requested by parent
   useEffect(() => {
@@ -510,7 +696,6 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       }
 
       // For Date/Reminder or Project/Campaign tags: render directly as a clean visual Pill inside the input bar
-      // (instead of dumping raw `@NextWeek(25/10/2026)` or `[📂 Project](/projects?...)` syntax into the text input!)
       if (candidate.category === 'date' || candidate.category === 'page') {
         setMentionPills(prev => {
           const filtered = prev.filter(p => p.id !== candidate.id);
@@ -533,7 +718,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           const before = value.slice(0, mentionMatch.atIndex);
           const after = value.slice(mentionMatch.endIndex).replace(/^\s+/, '');
           const next = `${before}${after}`;
-          onChange(next);
+          updateValueAndSpans(next);
           const nextCursor = before.length;
           setCaretPos(nextCursor);
           requestAnimationFrame(() => {
@@ -556,7 +741,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
         const before = value.slice(0, mentionMatch.atIndex);
         const after = value.slice(mentionMatch.endIndex);
         const next = `${before}${candidate.insertText}${after}`;
-        onChange(next);
+        updateValueAndSpans(next);
         const nextCursor = before.length + candidate.insertText.length;
         setCaretPos(nextCursor);
         requestAnimationFrame(() => {
@@ -566,7 +751,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       } else {
         const spacer = value && !value.endsWith(' ') ? ' ' : '';
         const next = `${value}${spacer}${candidate.insertText}`;
-        onChange(next);
+        updateValueAndSpans(next);
         const nextCursor = next.length;
         setCaretPos(nextCursor);
         requestAnimationFrame(() => {
@@ -578,7 +763,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       setForceMentionOpen(false);
       setHoveredCandidateId(null);
     },
-    [mentionMatch, value, onChange, onPickPerson, textareaRef]
+    [mentionMatch, value, updateValueAndSpans, onPickPerson, textareaRef]
   );
 
   // Sync text selection inside textarea for Floating Bubble Toolbar
@@ -610,32 +795,41 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
-  // Apply formatting from Floating Bubble Toolbar (with toggle support!)
+  // Apply WYSIWYG formatting from Floating Bubble Toolbar (without injecting raw tags into `value`!)
   const applyFormatting = useCallback(
     (toolId: BubbleToolItem['id'], extraArg?: string) => {
       const el = textareaRef.current;
       if (!el || !selectionRange) return;
       const { start, end } = selectionRange;
-      const selectedText = value.slice(start, end);
-      if (!selectedText) return;
+      if (end <= start) return;
 
-      let prefix = '';
-      let suffix = '';
+      setRichSpans(prev => {
+        const existingIdx = prev.findIndex(s => s.start === start && s.end === end);
 
-      switch (toolId) {
-        case 'bold':
-          prefix = '**';
-          suffix = '**';
-          break;
-        case 'italic':
-          prefix = '*';
-          suffix = '*';
-          break;
-        case 'underline':
-          prefix = '<u>';
-          suffix = '</u>';
-          break;
-        case 'link': {
+        if (toolId === 'bold' || toolId === 'italic' || toolId === 'underline') {
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            const curr = { ...updated[existingIdx] };
+            curr[toolId] = !curr[toolId];
+            updated[existingIdx] = curr;
+            return updated;
+          }
+          return [...prev, { start, end, [toolId]: true }];
+        }
+
+        if (toolId === 'color') {
+          const colorName = extraArg || 'blue';
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            const curr = { ...updated[existingIdx] };
+            curr.color = curr.color === colorName ? undefined : colorName;
+            updated[existingIdx] = curr;
+            return updated;
+          }
+          return [...prev, { start, end, color: colorName }];
+        }
+
+        if (toolId === 'link') {
           const rawUrl = (extraArg || 'https://').trim();
           const url =
             rawUrl.startsWith('http://') ||
@@ -643,66 +837,26 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
             rawUrl.startsWith('/')
               ? rawUrl
               : `https://${rawUrl}`;
-          prefix = '[';
-          suffix = `](${url})`;
-          break;
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated[existingIdx] = { ...updated[existingIdx], link: url };
+            return updated;
+          }
+          return [...prev, { start, end, link: url }];
         }
-        case 'color': {
-          const colorName = extraArg || 'blue';
-          prefix = `[color:${colorName}]`;
-          suffix = '[/color]';
-          break;
-        }
-      }
 
-      // Toggle off if already wrapped with the same formatting
-      const beforeSlice = value.slice(Math.max(0, start - prefix.length), start);
-      const afterSlice = value.slice(end, end + suffix.length);
-      if (
-        toolId !== 'link' &&
-        toolId !== 'color' &&
-        beforeSlice === prefix &&
-        afterSlice === suffix
-      ) {
-        const nextValue = `${value.slice(0, start - prefix.length)}${selectedText}${value.slice(
-          end + suffix.length
-        )}`;
-        onChange(nextValue);
-        const newStart = start - prefix.length;
-        const newEnd = newStart + selectedText.length;
-        setSelectionRange({ start: newStart, end: newEnd });
-        requestAnimationFrame(() => {
-          el.focus();
-          el.setSelectionRange(newStart, newEnd);
-        });
-        return;
-      }
+        return prev;
+      });
 
-      // If selectedText is already wrapped in [color:...]...[/color] and user picks a new color, replace the color tag
-      let cleanSelected = selectedText;
-      if (toolId === 'color') {
-        cleanSelected = selectedText.replace(
-          /^\[color:[a-zA-Z0-9#]+\]([\s\S]*)\[\/color\]$/,
-          '$1'
-        );
-      }
-
-      const replacement = `${prefix}${cleanSelected}${suffix}`;
-      const nextValue = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
-      onChange(nextValue);
       setShowLinkInput(false);
       setShowColorMenu(false);
 
-      const newStart = start + prefix.length;
-      const newEnd = newStart + cleanSelected.length;
-      setSelectionRange({ start: newStart, end: newEnd });
-
       requestAnimationFrame(() => {
         el.focus();
-        el.setSelectionRange(newStart, newEnd);
+        el.setSelectionRange(start, end);
       });
     },
-    [selectionRange, textareaRef, value, onChange]
+    [selectionRange, textareaRef]
   );
 
   // Trigger `@` button click on the right of the input bar
@@ -722,7 +876,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       const spacer = before.length > 0 && !before.endsWith(' ') ? ' ' : '';
       const next = `${before}${spacer}@${after}`;
       const nextPos = before.length + spacer.length + 1;
-      onChange(next);
+      updateValueAndSpans(next);
       setCaretPos(nextPos);
       setForceMentionOpen(true);
       requestAnimationFrame(() => {
@@ -816,8 +970,9 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
 
   const triggerSend = async () => {
     if (!canSend) return;
+    const serializedText = serializeTextWithRichSpans(value, richSpans).trim();
     const pillMarkdown = mentionPills.map(p => p.token).join(' ');
-    const textWithPills = [pillMarkdown, value.trim()].filter(Boolean).join(' ');
+    const textWithPills = [pillMarkdown, serializedText].filter(Boolean).join(' ');
     const attachmentMarkdown = attachments
       .map(att => {
         const prefix = att.isImage ? '🖼️' : '📎';
@@ -826,6 +981,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       .join(' ');
     const combined = [textWithPills, attachmentMarkdown].filter(Boolean).join('\n');
     setMentionPills([]);
+    setRichSpans([]);
     setAttachments([]);
     setForceMentionOpen(false);
     setSelectionRange(null);
@@ -914,9 +1070,24 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
     }
   };
 
+  // Check if current selection has active formatting for toolbar button highlight
+  const activeSelectionFormats = useMemo(() => {
+    if (!selectionRange) return {};
+    const { start, end } = selectionRange;
+    const overlapping = richSpans.filter(s => s.start <= start && s.end >= end);
+    return {
+      bold: overlapping.some(s => s.bold),
+      italic: overlapping.some(s => s.italic),
+      underline: overlapping.some(s => s.underline),
+      link: overlapping.some(s => Boolean(s.link)),
+      color: overlapping.some(s => Boolean(s.color)),
+    };
+  }, [selectionRange, richSpans]);
+
   const dateCandidates = candidates.filter(c => c.category === 'date');
   const personCandidates = candidates.filter(c => c.category === 'person');
   const pageCandidates = candidates.filter(c => c.category === 'page');
+  const hasMirroredFormatting = richSpans.length > 0 && value.length > 0;
 
   return (
     <div ref={rootRef} className="smart-comment-root relative">
@@ -952,7 +1123,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
                   }
                 }}
                 placeholder="https://..."
-                className="bg-zinc-800 text-white text-xs px-2 py-1 rounded-md outline-none border border-zinc-700 focus:border-blue-500 w-48"
+                className="bg-slate-800 text-white text-xs px-2 py-1 rounded-md outline-none border border-slate-600 focus:border-blue-500 w-48"
               />
               <button
                 type="button"
@@ -967,51 +1138,56 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
               <button
                 type="button"
                 onClick={() => setShowLinkInput(false)}
-                className="p-1 text-zinc-400 hover:text-white"
+                className="p-1 text-slate-400 hover:text-white"
               >
                 <X size={12} />
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-0.5 relative">
-              {BUBBLE_TOOLS.map(tool => (
-                <div key={tool.id} className="relative">
-                  <button
-                    type="button"
-                    onMouseEnter={() => setHoveredToolId(tool.id)}
-                    onMouseLeave={() =>
-                      setHoveredToolId(prev => (prev === tool.id ? null : prev))
-                    }
-                    onClick={() => {
-                      if (tool.id === 'link') {
-                        setShowLinkInput(true);
-                        setShowColorMenu(false);
-                      } else if (tool.id === 'color') {
-                        setShowColorMenu(prev => !prev);
-                      } else {
-                        applyFormatting(tool.id);
+              {BUBBLE_TOOLS.map(tool => {
+                const isActive = Boolean(
+                  activeSelectionFormats[tool.id as keyof typeof activeSelectionFormats]
+                );
+                return (
+                  <div key={tool.id} className="relative">
+                    <button
+                      type="button"
+                      onMouseEnter={() => setHoveredToolId(tool.id)}
+                      onMouseLeave={() =>
+                        setHoveredToolId(prev => (prev === tool.id ? null : prev))
                       }
-                    }}
-                    className="smart-bubble-tool-btn"
-                  >
-                    {tool.icon}
-                  </button>
+                      onClick={() => {
+                        if (tool.id === 'link') {
+                          setShowLinkInput(true);
+                          setShowColorMenu(false);
+                        } else if (tool.id === 'color') {
+                          setShowColorMenu(prev => !prev);
+                        } else {
+                          applyFormatting(tool.id);
+                        }
+                      }}
+                      className={`smart-bubble-tool-btn ${isActive ? 'is-active' : ''}`}
+                    >
+                      {tool.icon}
+                    </button>
 
-                  {/* 2-Line Shortcut Tooltip */}
-                  {hoveredToolId === tool.id && !showColorMenu && (
-                    <div className="smart-bubble-tooltip" role="tooltip">
-                      <span className="font-semibold text-white leading-tight">{tool.label}</span>
-                      <span className="text-[10px] text-zinc-400 leading-tight mt-0.5">
-                        {tool.shortcut}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {/* 2-Line Shortcut Tooltip */}
+                    {hoveredToolId === tool.id && !showColorMenu && (
+                      <div className="smart-bubble-tooltip" role="tooltip">
+                        <span className="font-semibold text-white leading-tight">{tool.label}</span>
+                        <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                          {tool.shortcut}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Compact Color Swatch Menu */}
               {showColorMenu && (
-                <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/90 rounded-xl px-2.5 py-1.5 shadow-xl z-50">
+                <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 shadow-xl z-50">
                   {TEXT_COLOR_PRESETS.map(preset => (
                     <button
                       key={preset.id}
@@ -1201,17 +1377,17 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
                 {isHovered && att.isImage && att.url && !att.url.startsWith('#') && (
                   <div
                     role="tooltip"
-                    className="smart-inline-hover-card bottom-full left-0 mb-2 p-1.5 rounded-xl bg-zinc-900/95 text-white shadow-2xl border border-white/15 z-[95] pointer-events-none flex flex-col gap-1 w-40"
+                    className="smart-inline-hover-card bottom-full left-0 mb-2 p-1.5 rounded-xl bg-slate-900/95 text-white shadow-2xl border border-white/15 z-[95] pointer-events-none flex flex-col gap-1 w-40"
                   >
                     <img
                       src={att.url}
                       alt={att.name}
-                      className="w-full h-24 object-cover rounded-lg bg-zinc-800"
+                      className="w-full h-24 object-cover rounded-lg bg-slate-800"
                     />
-                    <span className="text-[10px] font-bold truncate px-0.5 text-zinc-100">
+                    <span className="text-[10px] font-bold truncate px-0.5 text-slate-100">
                       {att.name}
                     </span>
-                    <span className="text-[9.5px] text-zinc-400 px-0.5">
+                    <span className="text-[9.5px] text-slate-400 px-0.5">
                       Nhấn để xem thông tin ảnh
                     </span>
                   </div>
@@ -1223,7 +1399,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
       )}
 
       {/* ========================================================
-          BASE INPUT BAR (Clean single-line layout with inline visual MentionPills)
+          BASE INPUT BAR (Clean single-line layout with inline visual MentionPills & WYSIWYG formatted text)
          ======================================================== */}
       <div className="smart-comment-bar">
         {/* Left: Current User Circular Avatar */}
@@ -1233,7 +1409,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           className="w-7 h-7 text-[10px] shrink-0 self-center"
         />
 
-        {/* Middle: Inline Visual Pills (Date/Reminder & Project/Campaign) + Textarea Input */}
+        {/* Middle: Inline Visual Pills (Date/Reminder & Project/Campaign) + WYSIWYG Textarea Input */}
         <div className="relative flex-1 min-w-0 flex flex-wrap items-center gap-1.5 min-h-[28px]">
           {mentionPills.map(pill => {
             const isHovered = hoveredPillId === pill.id;
@@ -1287,7 +1463,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
                 {isHovered && (
                   <span
                     role="tooltip"
-                    className="smart-inline-hover-card bottom-full left-0 mb-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-[11px] font-semibold whitespace-nowrap shadow-xl border border-white/15 z-[95] pointer-events-none"
+                    className="smart-inline-hover-card bottom-full left-0 mb-1.5 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[11px] font-semibold whitespace-nowrap shadow-xl border border-white/15 z-[95] pointer-events-none"
                   >
                     {pill.kind === 'date'
                       ? `📅 ${pill.sublabel}`
@@ -1303,6 +1479,13 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
           })}
 
           <div className="relative flex-1 min-w-[110px] flex items-center">
+            {/* WYSIWYG Formatted Mirror Layer (renders Bold, Italic, Underline, Color, Link directly in place without raw tags!) */}
+            {hasMirroredFormatting && (
+              <div aria-hidden="true" className="smart-comment-rich-mirror">
+                {renderMirrorSegments(value, richSpans)}
+              </div>
+            )}
+
             {/* Ghost Preview Mirror Layer right after `@query` */}
             {isMentionPopoverOpen && ghostSuffix && mentionMatch && !value.includes('\n') && (
               <div
@@ -1310,7 +1493,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
                 className="pointer-events-none select-none absolute inset-0 flex items-center overflow-hidden whitespace-pre text-sm leading-6"
               >
                 <span className="invisible">{value.slice(0, mentionMatch.endIndex)}</span>
-                <span className="text-gray-400/75 dark:text-slate-500 font-medium">
+                <span className="text-gray-400/75 dark:text-slate-400 font-medium">
                   {ghostSuffix}
                 </span>
               </div>
@@ -1322,7 +1505,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
               disabled={disabled}
               value={value}
               onChange={e => {
-                onChange(e.target.value);
+                updateValueAndSpans(e.target.value);
                 setCaretPos(e.target.selectionStart ?? e.target.value.length);
                 if (!e.target.value.includes('@')) {
                   setForceMentionOpen(false);
@@ -1350,7 +1533,7 @@ export const SmartCommentInput: React.FC<SmartCommentInputProps> = ({
                   : placeholder || (isEn ? 'Add a comment...' : 'Add a comment...')
               }
               aria-label={ariaLabel || (isEn ? 'Add a comment' : 'Viết bình luận')}
-              className="smart-comment-textarea"
+              className={`smart-comment-textarea ${hasMirroredFormatting ? 'is-mirrored' : ''}`}
             />
           </div>
         </div>
