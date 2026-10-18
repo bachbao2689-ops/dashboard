@@ -40,6 +40,8 @@ export interface DrillNode {
 export interface SidebarGroupModel {
   id: string;
   title: string;
+  accentColor: string;
+  accentSoft: string;
   badgeCount: number;
   hasUnreadSignal: boolean;
   pinnedCount: number;
@@ -628,6 +630,8 @@ export function buildSidebarGroups({
     {
       id: 'main',
       title: t('nav.main'),
+      accentColor: '#EA580C',
+      accentSoft: 'rgba(234, 88, 12, 0.14)',
       badgeCount: summary.counts.workflowCount,
       hasUnreadSignal: summary.counts.workflowCount > 0,
       pinnedCount: wfPinnedCount,
@@ -637,6 +641,8 @@ export function buildSidebarGroups({
     {
       id: 'tasksProj',
       title: t('nav.tasksProj'),
+      accentColor: '#2563EB',
+      accentSoft: 'rgba(37, 99, 235, 0.14)',
       badgeCount: summary.counts.projectCount,
       hasUnreadSignal: summary.counts.projectCount > 0,
       pinnedCount: wfPinnedCount,
@@ -646,6 +652,8 @@ export function buildSidebarGroups({
     {
       id: 'assets',
       title: t('nav.assets'),
+      accentColor: '#7C3AED',
+      accentSoft: 'rgba(124, 58, 237, 0.14)',
       badgeCount: summary.counts.borrowCount,
       hasUnreadSignal: false,
       pinnedCount: 0,
@@ -655,6 +663,8 @@ export function buildSidebarGroups({
     {
       id: 'teamRep',
       title: t('nav.teamRep'),
+      accentColor: '#059669',
+      accentSoft: 'rgba(5, 150, 105, 0.14)',
       badgeCount: 0,
       hasUnreadSignal: false,
       pinnedCount: 0,

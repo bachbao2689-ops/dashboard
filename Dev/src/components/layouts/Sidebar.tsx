@@ -1,7 +1,25 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ChevronDown,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -10,14 +28,14 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { StylizedPinIcon } from '../common/StylizedPinIcon';
-import { useSidebarPinStore } from '../../store/sidebarPinStore';
+import { useSidebarPinStore, type PinnedEntity } from '../../store/sidebarPinStore';
 import { useVisibleSidebarPins } from '../../hooks/useVisibleSidebarPins';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
-import { useSidebarTrackingData } from '../../hooks/useSidebarTrackingData';
+import { useSidebarTrackingData, type EnrichedSidebarTask } from '../../hooks/useSidebarTrackingData';
 import { useRememberedState } from '../../hooks/useRememberedState';
-import {officialReadEnabled} from '../../services/officialReadOnly';
-import {canSubmitAssetRequest,canViewTeamManagement,isAssetApprover} from '../../lib/roleScope';
+import { officialReadEnabled } from '../../services/officialReadOnly';
+import { canSubmitAssetRequest, canViewTeamManagement, isAssetApprover } from '../../lib/roleScope';
 import {
   buildSidebarGroups,
   type DrillMenuItem,
@@ -35,8 +53,19 @@ interface StackEntry {
   focusedIndex: number;
 }
 
+interface ActiveDragPayload {
+  id: string;
+  source: 'workspace-nav' | 'pinned-nav' | 'pinned-entity' | 'pinned-task';
+  label: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  navId?: string;
+  entity?: PinnedEntity;
+  taskId?: string;
+}
+
 /**
- * In-place Multi-level Drill-down Drawer anchored directly underneath its fixed parent button.
+ * In-place Multi-level Drill-down Drawer anchored directly underneath its parent item.
  */
 export const ButtonDrilldownDrawer: React.FC<{
   isOpen: boolean;
@@ -235,8 +264,6 @@ export const ButtonDrilldownDrawer: React.FC<{
                       item.onAction();
                       return;
                     }
-                    // Clicking the item row navigates to its board/task;
-                    // if it has no path (pure branch), it drills down.
                     if (item.path) {
                       onNavigate(item.path);
                     } else if (hasChildren && item.targetNodeId) {
@@ -370,45 +397,360 @@ export const ButtonDrilldownDrawer: React.FC<{
   );
 };
 
-const SidebarGroupSection: React.FC<{
+/**
+ * Sortable Pinned Pill Item inside the top "Pinned" zone (Brief: UX_UI pin hover custom.docx)
+ */
+const SortablePinnedItemRow: React.FC<{
+  sortableId: string;
+  dragPayload: ActiveDragPayload;
+  label: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  active: boolean;
+  onClick: () => void;
+  onUnpin: () => void;
+}> = ({ sortableId, dragPayload, label, icon, accentColor, active, onClick, onUnpin }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: sortableId,
+    data: dragPayload,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.32 : 1,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} className="group">
+      <div
+        {...attributes}
+        {...listeners}
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        className={cn('sb-pinned-pill-item', active && 'is-active')}
+      >
+        <span className="flex items-center gap-2.5 min-w-0 flex-1">
+          <span
+            className="shrink-0 inline-flex items-center justify-center transition-transform duration-150 group-hover:scale-105"
+            style={{ color: accentColor }}
+          >
+            {icon}
+          </span>
+          <span className="truncate">{label}</span>
+        </span>
+
+        <button
+          type="button"
+          title="Bỏ ghim khỏi thanh truy cập nhanh"
+          aria-label="Bỏ ghim"
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => {
+            e.stopPropagation();
+            onUnpin();
+          }}
+          className="sb-pin-btn is-pinned opacity-0 group-hover:opacity-100 shrink-0"
+        >
+          <StylizedPinIcon
+            size={12.5}
+            pinned
+            className="text-zinc-500 hover:text-zinc-900 dark:text-slate-400 dark:hover:text-white"
+          />
+        </button>
+      </div>
+    </li>
+  );
+};
+
+/**
+ * Draggable Child Item inside the Tree Accordion ("Workspaces" zone)
+ */
+const TreeAccordionChildRow: React.FC<{
+  item: DrillMenuItem;
   group: SidebarGroupModel;
+  active: boolean;
+  isHovered: boolean;
+  isNavPinned: boolean;
+  hasDrill: boolean;
+  isDropdownOpen: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onNavigate: (path: string) => void;
+  onToggleItemDropdown: (itemId: string) => void;
+  onToggleNavPin: (item: DrillMenuItem, group: SidebarGroupModel) => void;
+  onToggleTaskPin: (taskId: string) => void;
+  rowRef: (el: HTMLDivElement | null) => void;
+}> = ({
+  item,
+  group,
+  active,
+  isHovered,
+  isNavPinned,
+  hasDrill,
+  isDropdownOpen,
+  onMouseEnter,
+  onMouseLeave,
+  onNavigate,
+  onToggleItemDropdown,
+  onToggleNavPin,
+  onToggleTaskPin,
+  rowRef,
+}) => {
+  const dragId = `workspace-nav:${item.id}`;
+  const dragPayload: ActiveDragPayload = {
+    id: dragId,
+    source: 'workspace-nav',
+    label: item.label,
+    icon: item.icon,
+    accentColor: group.accentColor,
+    navId: item.id,
+  };
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: dragId,
+    data: dragPayload,
+  });
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      rowRef(node);
+    },
+    [setNodeRef, rowRef]
+  );
+
+  const highlighted = active || isHovered;
+  const subNode = hasDrill && item.targetNodeId ? group.nodes[item.targetNodeId] : undefined;
+  const subItemCount = subNode ? subNode.items.length : 0;
+
+  return (
+    <li className="group/child">
+      <div
+        ref={combinedRef}
+        {...attributes}
+        {...listeners}
+        role="button"
+        tabIndex={0}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={() => {
+          if (item.path) onNavigate(item.path);
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (item.path) onNavigate(item.path);
+          }
+        }}
+        style={
+          {
+            '--group-accent': group.accentColor,
+            '--group-accent-soft': group.accentSoft,
+            opacity: isDragging ? 0.4 : 1,
+          } as React.CSSProperties
+        }
+        className={cn(
+          'sb-tree-child-row sb-root-row',
+          active && 'is-active'
+        )}
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <span
+            className="shrink-0 inline-flex items-center justify-center transition-colors duration-200"
+            style={{ color: highlighted ? group.accentColor : undefined }}
+          >
+            {item.icon}
+          </span>
+          <span className="truncate">{item.label}</span>
+          {item.inlineBadge}
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0 ml-1">
+          {item.rightBadge}
+
+          {/* Hover Pin / Unpin shortcut button */}
+          <button
+            type="button"
+            tabIndex={-1}
+            title={
+              isNavPinned
+                ? `Bỏ ghim ${item.label}`
+                : `Ghim ${item.label} lên đầu Sidebar (hoặc kéo thả lên vùng Đã ghim)`
+            }
+            aria-label={isNavPinned ? `Bỏ ghim ${item.label}` : `Ghim ${item.label}`}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => {
+              e.stopPropagation();
+              onToggleNavPin(item, group);
+            }}
+            className={cn(
+              'sb-pin-btn',
+              isNavPinned
+                ? 'is-pinned opacity-100'
+                : 'opacity-0 group-hover/child:opacity-100'
+            )}
+          >
+            <StylizedPinIcon
+              size={12.5}
+              pinned={isNavPinned}
+              className={
+                isNavPinned
+                  ? 'text-zinc-800 dark:text-slate-100'
+                  : 'text-zinc-400 hover:text-zinc-800 dark:hover:text-slate-200'
+              }
+            />
+          </button>
+
+          {/* Clean compact pill trigger for multi-level sub-drawer (replaces noisy chevrons) */}
+          {hasDrill && (
+            <button
+              type="button"
+              aria-expanded={isDropdownOpen}
+              title={
+                isDropdownOpen
+                  ? `Thu gọn danh sách nhanh ${item.label}`
+                  : `Mở danh sách nhanh ${item.label} (${subItemCount})`
+              }
+              aria-label={
+                isDropdownOpen
+                  ? `Thu gọn danh sách nhanh ${item.label}`
+                  : `Mở danh sách nhanh ${item.label}`
+              }
+              onPointerDown={e => e.stopPropagation()}
+              onClick={e => {
+                e.stopPropagation();
+                onToggleItemDropdown(item.id);
+              }}
+              className={cn('sb-subdrawer-pill-btn', isDropdownOpen && 'is-open')}
+            >
+              <span>{subItemCount}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {hasDrill && item.targetNodeId && (
+        <ButtonDrilldownDrawer
+          isOpen={isDropdownOpen}
+          rootDetailNodeId={item.targetNodeId}
+          nodes={group.nodes}
+          onNavigate={onNavigate}
+          onTogglePin={onToggleTaskPin}
+        />
+      )}
+    </li>
+  );
+};
+
+/**
+ * Single-Expand Tree Accordion Group with Dynamic SVG Branch (Brief: UI_UX sidebar.docx)
+ */
+const SidebarTreeGroupSection: React.FC<{
+  group: SidebarGroupModel;
+  isOpen: boolean;
+  onSelectGroup: (group: SidebarGroupModel) => void;
+  headerRef: (el: HTMLButtonElement | null) => void;
   currentPath: string;
   currentSearch: string;
   openDropdownItemId: string | null;
   onToggleItemDropdown: (itemId: string) => void;
   onNavigate: (path: string) => void;
-  onTogglePin: (taskId: string) => void;
+  pinnedNavIds: string[];
+  onToggleNavPin: (item: DrillMenuItem, group: SidebarGroupModel) => void;
+  onToggleTaskPin: (taskId: string) => void;
 }> = ({
   group,
+  isOpen,
+  onSelectGroup,
+  headerRef,
   currentPath,
   currentSearch,
   openDropdownItemId,
   onToggleItemDropdown,
   onNavigate,
-  onTogglePin,
+  pinnedNavIds,
+  onToggleNavPin,
+  onToggleTaskPin,
 }) => {
-  const [isGroupCollapsed, setIsGroupCollapsed] = useState(false);
-  const rootNode = group.nodes[group.rootNodeId];
-  if (!rootNode || rootNode.items.length === 0) return null;
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [childCenters, setChildCenters] = useState<Record<string, number>>({});
+  const childrenWrapRef = useRef<HTMLDivElement | null>(null);
+  const childRowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const isRouteActive = (itemPath?: string) => {
-    if (!itemPath) return false;
-    const [basePath, query] = itemPath.split('?');
-    if (currentPath !== basePath) return false;
-    if (!query) return true;
-    return currentSearch.includes(query);
-  };
+  const rootNode = group.nodes[group.rootNodeId];
+  const items = rootNode?.items || [];
+
+  const isRouteActive = useCallback(
+    (itemPath?: string) => {
+      if (!itemPath) return false;
+      const [basePath, query] = itemPath.split('?');
+      if (currentPath !== basePath) return false;
+      if (!query) return true;
+      return currentSearch.includes(query);
+    },
+    [currentPath, currentSearch]
+  );
+
+  const measureChildCenters = useCallback(() => {
+    const wrap = childrenWrapRef.current;
+    if (!wrap) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const next: Record<string, number> = {};
+    items.forEach(item => {
+      const rowEl = childRowRefs.current.get(item.id);
+      if (rowEl) {
+        const rowRect = rowEl.getBoundingClientRect();
+        next[item.id] = Math.round(rowRect.top - wrapRect.top + rowRect.height / 2);
+      }
+    });
+    setChildCenters(next);
+  }, [items]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    measureChildCenters();
+    const wrap = childrenWrapRef.current;
+    if (!wrap || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => measureChildCenters());
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, [isOpen, items, openDropdownItemId, measureChildCenters]);
+
+  if (!rootNode || items.length === 0) return null;
+
+  const activeItem = items.find(it => isRouteActive(it.path)) || items[0];
+  const targetItemId = hoveredItemId || activeItem?.id;
+  const targetY = targetItemId ? childCenters[targetItemId] : undefined;
+  const allYs = items
+    .map(it => childCenters[it.id])
+    .filter((v): v is number => typeof v === 'number' && v > 0);
+  const maxY = allYs.length > 0 ? Math.max(...allYs) : 0;
 
   return (
-    <div className={cn('transition-all duration-200', isGroupCollapsed ? 'mb-1.5' : 'mb-3.5')}>
-      {/* Group Title Header with Dropdown Toggle */}
+    <div className={cn('transition-all duration-200', isOpen ? 'mb-2.5' : 'mb-1')}>
+      {/* Parent Group Header (Single-expand accordion trigger, no right-side chevron clutter) */}
       <button
+        ref={headerRef}
         type="button"
-        onClick={() => setIsGroupCollapsed(prev => !prev)}
-        aria-expanded={!isGroupCollapsed}
-        className={cn('sb-group-header', isGroupCollapsed && 'is-collapsed')}
+        onClick={() => onSelectGroup(group)}
+        aria-expanded={isOpen}
+        className={cn('sb-group-header', isOpen && 'is-open')}
       >
-        <span className="flex items-center gap-1.5 min-w-0">
+        <span className="flex items-center gap-2 min-w-0">
           <span className="truncate">{group.title}</span>
           {group.hasUnreadSignal && (
             <span
@@ -421,93 +763,119 @@ const SidebarGroupSection: React.FC<{
           )}
         </span>
 
-        <ChevronDown
-          size={14}
-          className={cn('sb-group-chevron', isGroupCollapsed && 'is-collapsed')}
-        />
+        {group.badgeCount > 0 && (
+          <span
+            className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
+            style={{
+              backgroundColor: isOpen ? group.accentSoft : 'rgba(113, 113, 122, 0.12)',
+              color: isOpen ? group.accentColor : undefined,
+            }}
+          >
+            {group.badgeCount > 99 ? '99+' : group.badgeCount}
+          </span>
+        )}
       </button>
 
-      {/* Group Buttons List */}
+      {/* Collapsible Children Container with Dynamic SVG Tree Branch */}
       <div
-        style={{ maxHeight: isGroupCollapsed ? '0px' : '1800px' }}
-        className={cn('sb-group-body', isGroupCollapsed && 'is-collapsed')}
+        style={{ maxHeight: isOpen ? '1800px' : '0px' }}
+        className={cn('sb-group-body', !isOpen && 'is-collapsed')}
       >
-        <ul className="space-y-1.5">
-          {rootNode.items.map(item => {
-            const active = isRouteActive(item.path);
-            const hasDrill = Boolean(item.targetNodeId && group.nodes[item.targetNodeId]);
-            const isDropdownOpen = hasDrill && openDropdownItemId === item.id;
+        <div ref={childrenWrapRef} className="sb-tree-children-wrap">
+          {/* Dynamic SVG Tree Branch Overlay */}
+          {maxY > 0 && (
+            <svg className="sb-tree-svg-overlay" aria-hidden="true">
+              {/* Passive background trunk & branches */}
+              <path
+                d={`M 8 0 L 8 ${Math.max(0, maxY - 8)}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                className="text-zinc-200 dark:text-slate-700/80"
+              />
+              {allYs.map((y, idx) => (
+                <path
+                  key={idx}
+                  d={`M 8 ${Math.max(0, y - 8)} Q 8 ${y} 16 ${y} L 20 ${y}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  className="text-zinc-200 dark:text-slate-700/80"
+                />
+              ))}
 
-            return (
-              <li key={item.id}>
-                {/* Fixed Navigation Button: clicking the button opens its board; clicking the chevron toggles its detail drill-down */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (item.path) onNavigate(item.path);
+              {/* Active / Hovered Animated Colored Branch Path */}
+              {typeof targetY === 'number' && targetY > 0 && (
+                <path
+                  d={`M 8 0 L 8 ${Math.max(0, targetY - 8)} Q 8 ${targetY} 16 ${targetY} L 20 ${targetY}`}
+                  fill="none"
+                  stroke={group.accentColor}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  className="sb-tree-active-path"
+                />
+              )}
+            </svg>
+          )}
+
+          <ul className="space-y-1">
+            {items.map(item => {
+              const active = isRouteActive(item.path);
+              const hasDrill = Boolean(item.targetNodeId && group.nodes[item.targetNodeId]);
+              const isDropdownOpen = hasDrill && openDropdownItemId === item.id;
+              const isNavPinned = pinnedNavIds.includes(item.id);
+
+              return (
+                <TreeAccordionChildRow
+                  key={item.id}
+                  item={item}
+                  group={group}
+                  active={active}
+                  isHovered={hoveredItemId === item.id}
+                  isNavPinned={isNavPinned}
+                  hasDrill={hasDrill}
+                  isDropdownOpen={isDropdownOpen}
+                  onMouseEnter={() => setHoveredItemId(item.id)}
+                  onMouseLeave={() =>
+                    setHoveredItemId(prev => (prev === item.id ? null : prev))
+                  }
+                  onNavigate={onNavigate}
+                  onToggleItemDropdown={onToggleItemDropdown}
+                  onToggleNavPin={onToggleNavPin}
+                  onToggleTaskPin={onToggleTaskPin}
+                  rowRef={el => {
+                    if (el) childRowRefs.current.set(item.id, el);
+                    else childRowRefs.current.delete(item.id);
                   }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (item.path) onNavigate(item.path);
-                    }
-                  }}
-                  className={cn(
-                    'sidebar-link sb-root-row flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer select-none',
-                    hasDrill && 'has-drill',
-                    isDropdownOpen && 'is-dropdown-open',
-                    active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle'
-                  )}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {item.icon}
-                    <span className="truncate">{item.label}</span>
-                    {item.inlineBadge}
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0 ml-1">
-                    {item.rightBadge}
-                    {hasDrill && (
-                      <button
-                        type="button"
-                        aria-expanded={isDropdownOpen}
-                        title={
-                          isDropdownOpen
-                            ? `Thu gọn chi tiết ${item.label}`
-                            : `Xổ chi tiết ${item.label}`
-                        }
-                        aria-label={
-                          isDropdownOpen
-                            ? `Thu gọn chi tiết ${item.label}`
-                            : `Xổ chi tiết ${item.label}`
-                        }
-                        onClick={e => {
-                          e.stopPropagation();
-                          onToggleItemDropdown(item.id);
-                        }}
-                        className={cn('sb-drop-icon-btn', isDropdownOpen && 'is-open')}
-                      >
-                        <ChevronDown size={15} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {hasDrill && item.targetNodeId && (
-                  <ButtonDrilldownDrawer
-                    isOpen={isDropdownOpen}
-                    rootDetailNodeId={item.targetNodeId}
-                    nodes={group.nodes}
-                    onNavigate={onNavigate}
-                    onTogglePin={onTogglePin}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                />
+              );
+            })}
+          </ul>
+        </div>
       </div>
+    </div>
+  );
+};
+
+/**
+ * Droppable Pinned Zone Container at the top of the Sidebar
+ */
+const PinnedDropZone: React.FC<{
+  isDraggingAny: boolean;
+  children: React.ReactNode;
+}> = ({ isDraggingAny, children }) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: 'sidebar-pinned-dropzone',
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn('sb-pin-dropzone', (isOver || isDraggingAny) && isOver && 'is-drag-over')}
+    >
+      {children}
     </div>
   );
 };
@@ -519,12 +887,55 @@ export const Sidebar: React.FC = () => {
   const { profile, enrichedTasks, enrichedTracks, summary, togglePin } =
     useSidebarTrackingData();
 
-  const [sidebarWidth, setSidebarWidth] = useRememberedState<number>('layout.sidebarWidth', DEFAULT_SIDEBAR_WIDTH);
+  const [sidebarWidth, setSidebarWidth] = useRememberedState<number>(
+    'layout.sidebarWidth',
+    DEFAULT_SIDEBAR_WIDTH
+  );
   const [resizing, setResizing] = useState(false);
   const [openDropdownItemId, setOpenDropdownItemId] = useState<string | null>(null);
+  const [pinToastMessage, setPinToastMessage] = useState<string | null>(null);
+  const [activeDrag, setActiveDrag] = useState<ActiveDragPayload | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const pinnedEntities = useVisibleSidebarPins();
   const unpinEntity = useSidebarPinStore(s => s.unpinEntity);
-  const pinnedTaskItems = useMemo(() => enrichedTasks.filter(task => task.isPinned), [enrichedTasks]);
+  const reorderPinnedEntities = useSidebarPinStore(s => s.reorderPinnedEntities);
+  const pinnedNavIds = useSidebarPinStore(s => s.pinnedNavIds);
+  const toggleNavPinStore = useSidebarPinStore(s => s.toggleNavPin);
+  const reorderPinnedNavs = useSidebarPinStore(s => s.reorderPinnedNavs);
+  const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
+  const reorderPinnedTasks = useSidebarPinStore(s => s.reorderPinnedTasks);
+
+  const pinnedTaskItems = useMemo(() => {
+    const byId = new Map<string, EnrichedSidebarTask>();
+    enrichedTasks.forEach(task => {
+      if (task.isPinned) byId.set(task.id, task);
+    });
+    const ordered: EnrichedSidebarTask[] = [];
+    pinnedTaskIds.forEach(id => {
+      const match = byId.get(id);
+      if (match) {
+        ordered.push(match);
+        byId.delete(id);
+      }
+    });
+    byId.forEach(task => ordered.push(task));
+    return ordered;
+  }, [enrichedTasks, pinnedTaskIds]);
+
+  const showPinToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setPinToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => {
+      setPinToastMessage(null);
+    }, 2200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const handleToggleItemDropdown = (itemId: string) => {
     setOpenDropdownItemId(prev => (prev === itemId ? null : itemId));
@@ -533,12 +944,16 @@ export const Sidebar: React.FC = () => {
   // Sync --sidebar-width CSS variable to html element so layout wrapper scales smoothly
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const width = Number.isFinite(sidebarWidth) && sidebarWidth >= MIN_SIDEBAR_WIDTH && sidebarWidth <= MAX_SIDEBAR_WIDTH
-      ? sidebarWidth : DEFAULT_SIDEBAR_WIDTH;
+    const width =
+      Number.isFinite(sidebarWidth) &&
+      sidebarWidth >= MIN_SIDEBAR_WIDTH &&
+      sidebarWidth <= MAX_SIDEBAR_WIDTH
+        ? sidebarWidth
+        : DEFAULT_SIDEBAR_WIDTH;
     document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
   }, [sidebarWidth]);
 
-  // Drag resize handler (same mechanics as TaskDetailPanel / SubtaskDetailPanel)
+  // Drag resize handler
   useEffect(() => {
     if (!resizing) {
       document.documentElement.removeAttribute('data-sidebar-resizing');
@@ -559,11 +974,12 @@ export const Sidebar: React.FC = () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.documentElement.removeAttribute('data-sidebar-resizing');
     };
-  }, [resizing]);
+  }, [resizing, setSidebarWidth]);
 
   const role = profile?.role || 'member';
   const isLeader = canViewTeamManagement(profile);
-  const canManageBorrow=isAssetApprover(profile),canBorrow=canSubmitAssetRequest(profile);
+  const canManageBorrow = isAssetApprover(profile);
+  const canBorrow = canSubmitAssetRequest(profile);
 
   const groups = useMemo(
     () =>
@@ -581,9 +997,196 @@ export const Sidebar: React.FC = () => {
     [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
   );
 
+  // Lookup map of all root nav items across groups for Pinned Nav shortcuts
+  const navLookup = useMemo(() => {
+    const map = new Map<string, { item: DrillMenuItem; group: SidebarGroupModel }>();
+    groups.forEach(group => {
+      const root = group.nodes[group.rootNodeId];
+      root?.items.forEach(item => {
+        map.set(item.id, { item, group });
+      });
+    });
+    return map;
+  }, [groups]);
+
+  const visiblePinnedNavs = useMemo(
+    () =>
+      pinnedNavIds
+        .map(id => navLookup.get(id))
+        .filter((entry): entry is { item: DrillMenuItem; group: SidebarGroupModel } => Boolean(entry)),
+    [pinnedNavIds, navLookup]
+  );
+
+  // Single-Expand Accordion State (Brief: UI_UX sidebar.docx)
+  const findGroupForRoute = useCallback(
+    (pathname: string, search: string): string => {
+      for (const group of groups) {
+        const root = group.nodes[group.rootNodeId];
+        if (!root) continue;
+        for (const item of root.items) {
+          if (!item.path) continue;
+          const [basePath, query] = item.path.split('?');
+          if (pathname === basePath && (!query || search.includes(query))) {
+            return group.id;
+          }
+        }
+      }
+      return groups[0]?.id || 'main';
+    },
+    [groups]
+  );
+
+  const [activeGroupId, setActiveGroupId] = useState<string>(() =>
+    findGroupForRoute(location.pathname, location.search)
+  );
+
+  // Keep accordion synced when route changes
+  useEffect(() => {
+    const matched = findGroupForRoute(location.pathname, location.search);
+    if (matched) setActiveGroupId(matched);
+  }, [location.pathname, location.search, findGroupForRoute]);
+
+  // Measure active group header position for the Left Spine Active Indicator Bar
+  const accordionRootRef = useRef<HTMLDivElement | null>(null);
+  const groupHeaderRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [spineIndicator, setSpineIndicator] = useState<{
+    top: number;
+    height: number;
+    color: string;
+  }>({ top: 6, height: 22, color: '#EA580C' });
+
+  const updateSpineIndicator = useCallback(() => {
+    const rootEl = accordionRootRef.current;
+    const headerEl = groupHeaderRefs.current.get(activeGroupId);
+    const activeGroup = groups.find(g => g.id === activeGroupId) || groups[0];
+    if (!rootEl || !headerEl || !activeGroup) return;
+    const rootRect = rootEl.getBoundingClientRect();
+    const headerRect = headerEl.getBoundingClientRect();
+    setSpineIndicator({
+      top: Math.max(4, Math.round(headerRect.top - rootRect.top + 5)),
+      height: Math.max(18, Math.round(headerRect.height - 10)),
+      color: activeGroup.accentColor,
+    });
+  }, [activeGroupId, groups]);
+
+  useLayoutEffect(() => {
+    updateSpineIndicator();
+    const timer = setTimeout(updateSpineIndicator, 330);
+    return () => clearTimeout(timer);
+  }, [activeGroupId, groups, openDropdownItemId, updateSpineIndicator]);
+
+  const handleSelectGroup = (group: SidebarGroupModel) => {
+    setActiveGroupId(group.id);
+    // Per Brief 1: clicking a closed Parent Group expands it and defaults/activates its first child if none in the group is currently active
+    const root = group.nodes[group.rootNodeId];
+    const items = root?.items || [];
+    const alreadyInGroup = items.some(it => {
+      if (!it.path) return false;
+      const [basePath] = it.path.split('?');
+      return location.pathname === basePath;
+    });
+    if (!alreadyInGroup && items[0]?.path) {
+      navigate(items[0].path);
+    }
+  };
+
+  const handleToggleNavPin = useCallback(
+    (item: DrillMenuItem, _group: SidebarGroupModel) => {
+      const nowPinned = toggleNavPinStore(item.id, profile?.id);
+      if (nowPinned) {
+        showPinToast(`📌 Đã ghim "${item.label}"`);
+      }
+    },
+    [toggleNavPinStore, profile?.id, showPinToast]
+  );
+
+  // @dnd-kit Sensors & Handlers (Brief: UX_UI pin hover custom.docx)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const payload = event.active.data.current as ActiveDragPayload | undefined;
+    if (payload) setActiveDrag(payload);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const payload = event.active.data.current as ActiveDragPayload | undefined;
+    setActiveDrag(null);
+    if (!payload || !event.over) return;
+
+    const overId = String(event.over.id);
+    const activeId = String(event.active.id);
+
+    // 1. Dragged a Workspace Nav Item onto the Pinned Zone -> Pin it!
+    if (payload.source === 'workspace-nav' && payload.navId) {
+      const isOverPinZone =
+        overId === 'sidebar-pinned-dropzone' ||
+        overId.startsWith('pinned-nav:') ||
+        overId.startsWith('pinned-entity:') ||
+        overId.startsWith('pinned-task:');
+      if (isOverPinZone && !pinnedNavIds.includes(payload.navId)) {
+        toggleNavPinStore(payload.navId, profile?.id);
+        showPinToast(`📌 Đã ghim "${payload.label}"`);
+      }
+      return;
+    }
+
+    if (activeId === overId) return;
+
+    // 2. Reordering Pinned Nav Items
+    if (payload.source === 'pinned-nav' && overId.startsWith('pinned-nav:')) {
+      const oldNavId = activeId.replace('pinned-nav:', '');
+      const newNavId = overId.replace('pinned-nav:', '');
+      const oldIndex = pinnedNavIds.indexOf(oldNavId);
+      const newIndex = pinnedNavIds.indexOf(newNavId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderPinnedNavs(arrayMove(pinnedNavIds, oldIndex, newIndex), profile?.id);
+      }
+      return;
+    }
+
+    // 3. Reordering Pinned Entities (Projects / Campaigns)
+    if (payload.source === 'pinned-entity' && overId.startsWith('pinned-entity:')) {
+      const keys = pinnedEntities.map(e => `pinned-entity:${e.kind}:${e.id}`);
+      const oldIndex = keys.indexOf(activeId);
+      const newIndex = keys.indexOf(overId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderPinnedEntities(arrayMove(pinnedEntities, oldIndex, newIndex), profile?.id);
+      }
+      return;
+    }
+
+    // 4. Reordering Pinned Tasks
+    if (payload.source === 'pinned-task' && overId.startsWith('pinned-task:')) {
+      const taskIds = pinnedTaskItems.map(t => t.id);
+      const oldTaskId = activeId.replace('pinned-task:', '');
+      const newTaskId = overId.replace('pinned-task:', '');
+      const oldIndex = taskIds.indexOf(oldTaskId);
+      const newIndex = taskIds.indexOf(newTaskId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderPinnedTasks(arrayMove(taskIds, oldIndex, newIndex), profile?.id);
+      }
+    }
+  };
+
+  const totalPinnedCount =
+    visiblePinnedNavs.length + pinnedEntities.length + pinnedTaskItems.length;
+
+  const sortableIds = useMemo(
+    () => [
+      ...visiblePinnedNavs.map(({ item }) => `pinned-nav:${item.id}`),
+      ...pinnedEntities.map(e => `pinned-entity:${e.kind}:${e.id}`),
+      ...pinnedTaskItems.map(t => `pinned-task:${t.id}`),
+    ],
+    [visiblePinnedNavs, pinnedEntities, pinnedTaskItems]
+  );
+
   return (
-    <aside className="app-sidebar w-full h-full card-hub flex flex-col pt-6 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
-      {/* Right-edge Drag Resize Handle (scales like Detail Tasks) */}
+    <aside className="app-sidebar w-full h-full card-hub flex flex-col pt-5 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
+      {/* Right-edge Drag Resize Handle */}
       <div
         onMouseDown={e => {
           e.preventDefault();
@@ -598,79 +1201,240 @@ export const Sidebar: React.FC = () => {
 
       <NavLink
         to="/"
-        className="mb-6 flex items-center justify-center bg-white dark:bg-slate-800 mx-6 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105"
+        className="mb-4 flex items-center justify-center bg-white dark:bg-slate-800 mx-5 p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-[1.02]"
       >
         <img
           src="/logo-light.svg"
           alt="K COFFEE Logo"
-          className="h-11 w-auto filter drop-shadow-md block dark:hidden"
+          className="h-10 w-auto filter drop-shadow-md block dark:hidden"
         />
         <img
           src="/logo-dark.svg"
           alt="K COFFEE Logo"
-          className="h-11 w-auto filter drop-shadow-md hidden dark:block"
+          className="h-10 w-auto filter drop-shadow-md hidden dark:block"
         />
       </NavLink>
 
-      <div className="flex-1 overflow-y-auto px-3.5 custom-scrollbar">
-        {groups.map(group => (
-          <SidebarGroupSection
-            key={group.id}
-            group={group}
-            currentPath={location.pathname}
-            currentSearch={location.search}
-            openDropdownItemId={openDropdownItemId}
-            onToggleItemDropdown={handleToggleItemDropdown}
-            onNavigate={path => navigate(path)}
-            onTogglePin={togglePin}
-          />
-        ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveDrag(null)}
+      >
+        <div className="flex-1 overflow-y-auto px-3.5 custom-scrollbar">
+          {/* ==========================================
+              ZONE 1: PINNED (ĐÃ GHIM - Sortable & Drop-to-Pin)
+             ========================================== */}
+          {(totalPinnedCount > 0 || activeDrag?.source === 'workspace-nav') && (
+            <div className="mb-3">
+              <div className="sb-section-divider">
+                <span className="flex items-center gap-1.5">
+                  <StylizedPinIcon size={11.5} pinned className="text-orange-500" />
+                  <span>Đã ghim</span>
+                </span>
+                <span className="text-[10px] font-bold opacity-75">{totalPinnedCount}</span>
+              </div>
 
-        {(pinnedEntities.length > 0 || pinnedTaskItems.length > 0) && (
-          <div className="mb-3 pt-3 border-t border-gray-200/70 dark:border-slate-700/70">
-            <div className="px-2.5 mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
-              <StylizedPinIcon size={12} pinned className="text-slate-500 dark:text-slate-400" /> Đã ghim
+              <PinnedDropZone isDraggingAny={Boolean(activeDrag)}>
+                {totalPinnedCount === 0 ? (
+                  <div className="py-2.5 px-3 text-center text-[11.5px] font-medium text-zinc-500 dark:text-slate-400">
+                    Thả mục vào đây để ghim lên đầu Sidebar
+                  </div>
+                ) : (
+                  <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+                    <ul className="space-y-0.5">
+                      {visiblePinnedNavs.map(({ item, group }) => {
+                        const [basePath, query] = (item.path || '').split('?');
+                        const active =
+                          Boolean(item.path) &&
+                          location.pathname === basePath &&
+                          (!query || location.search.includes(query));
+                        const sortableId = `pinned-nav:${item.id}`;
+
+                        return (
+                          <SortablePinnedItemRow
+                            key={sortableId}
+                            sortableId={sortableId}
+                            dragPayload={{
+                              id: sortableId,
+                              source: 'pinned-nav',
+                              label: item.label,
+                              icon: item.icon,
+                              accentColor: group.accentColor,
+                              navId: item.id,
+                            }}
+                            label={item.label}
+                            icon={item.icon}
+                            accentColor={group.accentColor}
+                            active={active}
+                            onClick={() => item.path && navigate(item.path)}
+                            onUnpin={() => toggleNavPinStore(item.id, profile?.id)}
+                          />
+                        );
+                      })}
+
+                      {pinnedEntities.map(entity => {
+                        const href =
+                          entity.kind === 'campaign'
+                            ? `/projects?campaign=${encodeURIComponent(entity.id)}`
+                            : `/projects?project=${encodeURIComponent(entity.id)}`;
+                        const active =
+                          location.pathname === '/projects' &&
+                          location.search.includes(`${entity.kind}=${entity.id}`);
+                        const sortableId = `pinned-entity:${entity.kind}:${entity.id}`;
+                        const accentColor = entity.kind === 'campaign' ? '#F59E0B' : '#8B5CF6';
+                        const icon = <FolderKanban size={16} />;
+
+                        return (
+                          <SortablePinnedItemRow
+                            key={sortableId}
+                            sortableId={sortableId}
+                            dragPayload={{
+                              id: sortableId,
+                              source: 'pinned-entity',
+                              label: entity.name,
+                              icon,
+                              accentColor,
+                              entity,
+                            }}
+                            label={entity.name}
+                            icon={icon}
+                            accentColor={accentColor}
+                            active={active}
+                            onClick={() => navigate(href)}
+                            onUnpin={() => unpinEntity(entity.kind, entity.id)}
+                          />
+                        );
+                      })}
+
+                      {pinnedTaskItems.map(task => {
+                        const active =
+                          location.pathname === '/tasks' &&
+                          location.search.includes(encodeURIComponent(task.id));
+                        const sortableId = `pinned-task:${task.id}`;
+                        const accentColor = '#0EA5E9';
+                        const icon = <CheckSquare size={16} />;
+
+                        return (
+                          <SortablePinnedItemRow
+                            key={sortableId}
+                            sortableId={sortableId}
+                            dragPayload={{
+                              id: sortableId,
+                              source: 'pinned-task',
+                              label: task.title,
+                              icon,
+                              accentColor,
+                              taskId: task.id,
+                            }}
+                            label={task.title}
+                            icon={icon}
+                            accentColor={accentColor}
+                            active={active}
+                            onClick={() => navigate(task.href)}
+                            onUnpin={() => togglePin(task.id)}
+                          />
+                        );
+                      })}
+                    </ul>
+                  </SortableContext>
+                )}
+              </PinnedDropZone>
             </div>
-            <ul className="space-y-1">
-              {pinnedEntities.map(entity => {
-                const href = entity.kind === 'campaign' ? `/projects?campaign=${encodeURIComponent(entity.id)}` : `/projects?project=${encodeURIComponent(entity.id)}`;
-                const active = location.pathname === '/projects' && location.search.includes(`${entity.kind}=${entity.id}`);
-                return (
-                  <li key={`${entity.kind}:${entity.id}`} className="group">
-                    <div role="button" tabIndex={0} onClick={() => navigate(href)} onKeyDown={e => { if (e.key === 'Enter') navigate(href); }}
-                      className={cn('sidebar-link flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-[13px] font-medium cursor-pointer select-none', active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle')}>
-                      <span className="flex items-center gap-2 min-w-0">
-                        <FolderKanban size={15} className={entity.kind === 'campaign' ? 'text-amber-500 shrink-0' : 'text-violet-500 shrink-0'} />
-                        <span className="truncate">{entity.name}</span>
-                      </span>
-                      <button type="button" title="Bỏ ghim" aria-label="Bỏ ghim" onClick={e => { e.stopPropagation(); unpinEntity(entity.kind, entity.id); }}
-                        className="sb-pin-btn is-pinned shrink-0"><StylizedPinIcon size={13} pinned className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white" /></button>
-                    </div>
-                  </li>
-                );
-              })}
-              {pinnedTaskItems.map(task => {
-                const active = location.pathname === '/tasks' && location.search.includes(encodeURIComponent(task.id));
-                return (
-                  <li key={`task:${task.id}`} className="group">
-                    <div role="button" tabIndex={0} onClick={() => navigate(task.href)} onKeyDown={e => { if (e.key === 'Enter') navigate(task.href); }}
-                      className={cn('sidebar-link flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-[13px] font-medium cursor-pointer select-none', active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle')}>
-                      <span className="flex items-center gap-2 min-w-0">
-                        <CheckSquare size={15} className="text-sky-500 shrink-0" />
-                        <span className="truncate">{task.title}</span>
-                      </span>
-                      <button type="button" title="Bỏ ghim" aria-label="Bỏ ghim" onClick={e => { e.stopPropagation(); togglePin(task.id); }}
-                        className="sb-pin-btn is-pinned shrink-0"><StylizedPinIcon size={13} pinned className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white" /></button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </div>
+          )}
 
-      {officialReadEnabled && <div className="border-t border-gray-200/70 px-3.5 pt-3 dark:border-slate-700/70"><NavLink to="/main-view" className={({isActive})=>cn('sidebar-link flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',isActive?'sidebar-link-active':'sidebar-link-idle')}><ExternalLink size={16}/><span className="truncate">Theo dõi Main · Chỉ đọc</span></NavLink></div>}
+          {/* ==========================================
+              ZONE 2: WORKSPACES (Tree Accordion with Dynamic SVG Branch)
+             ========================================== */}
+          <div className="sb-section-divider mt-1">
+            <span>Không gian làm việc</span>
+          </div>
+
+          <div ref={accordionRootRef} className="sb-tree-accordion-root">
+            {/* Left Vertical Spine Track */}
+            <div className="sb-left-spine-track" aria-hidden="true" />
+
+            {/* Sliding Colored Active Group Bar on Left Spine */}
+            <div
+              aria-hidden="true"
+              className="sb-spine-active-bar"
+              style={{
+                transform: `translateY(${spineIndicator.top}px)`,
+                height: `${spineIndicator.height}px`,
+                backgroundColor: spineIndicator.color,
+                boxShadow: `0 0 10px ${spineIndicator.color}66`,
+              }}
+            />
+
+            {groups.map(group => (
+              <SidebarTreeGroupSection
+                key={group.id}
+                group={group}
+                isOpen={activeGroupId === group.id}
+                onSelectGroup={handleSelectGroup}
+                headerRef={el => {
+                  if (el) groupHeaderRefs.current.set(group.id, el);
+                  else groupHeaderRefs.current.delete(group.id);
+                }}
+                currentPath={location.pathname}
+                currentSearch={location.search}
+                openDropdownItemId={openDropdownItemId}
+                onToggleItemDropdown={handleToggleItemDropdown}
+                onNavigate={path => navigate(path)}
+                pinnedNavIds={pinnedNavIds}
+                onToggleNavPin={handleToggleNavPin}
+                onToggleTaskPin={taskId => {
+                  const wasPinned = pinnedTaskIds.includes(taskId);
+                  togglePin(taskId);
+                  if (!wasPinned) {
+                    showPinToast('📌 Đã ghim công việc lên đầu danh sách');
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Floating Drag Overlay (#18181B solid black pill with original colored icon) */}
+        <DragOverlay dropAnimation={null}>
+          {activeDrag ? (
+            <div className="sb-dragging-floating-pill">
+              <span
+                className="shrink-0 inline-flex items-center justify-center"
+                style={{ color: activeDrag.accentColor }}
+              >
+                {activeDrag.icon}
+              </span>
+              <span className="truncate max-w-[180px]">{activeDrag.label}</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Floating Toast Pill Feedback when pinning */}
+      {pinToastMessage && (
+        <div role="status" aria-live="polite" className="sb-pin-toast-pill">
+          <span>{pinToastMessage}</span>
+        </div>
+      )}
+
+      {officialReadEnabled && (
+        <div className="border-t border-gray-200/70 px-3.5 pt-3 dark:border-slate-700/70">
+          <NavLink
+            to="/main-view"
+            className={({ isActive }) =>
+              cn(
+                'sidebar-link flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
+                isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
+              )
+            }
+          >
+            <ExternalLink size={16} />
+            <span className="truncate">Theo dõi Main · Chỉ đọc</span>
+          </NavLink>
+        </div>
+      )}
       <div className="mt-auto pt-3 px-6 text-center">
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
           Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>

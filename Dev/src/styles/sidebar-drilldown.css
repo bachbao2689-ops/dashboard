@@ -56,38 +56,232 @@ html:not(.dark) .sb-resize-grip {
   height: 52px;
 }
 
-/* 2. Group Title Dropdown Button */
+/* 2. Pinned Zone & Drag-to-Pin (Brief: UX_UI pin hover custom.docx) */
+.sb-section-divider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+html:not(.dark) .sb-section-divider {
+  color: #71717a;
+}
+
+.dark .sb-section-divider {
+  color: #94a3b8;
+}
+
+.sb-pin-dropzone {
+  position: relative;
+  border-radius: 16px;
+  padding: 6px;
+  margin-bottom: 14px;
+  transition: background-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .sb-pin-dropzone {
+  background: rgba(244, 244, 245, 0.72);
+  border: 1px solid rgba(228, 228, 231, 0.9);
+}
+
+.dark .sb-pin-dropzone {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(51, 65, 85, 0.65);
+}
+
+html:not(.dark) .sb-pin-dropzone.is-drag-over {
+  background: rgba(254, 243, 199, 0.55);
+  border: 1.5px dashed #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+}
+
+.dark .sb-pin-dropzone.is-drag-over {
+  background: rgba(234, 88, 12, 0.14);
+  border: 1.5px dashed #fb923c;
+}
+
+.sb-pinned-pill-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.18s ease,
+              color 0.18s ease,
+              box-shadow 0.18s ease;
+}
+
+.sb-pinned-pill-item:active {
+  cursor: grabbing;
+}
+
+html:not(.dark) .sb-pinned-pill-item {
+  color: #3f3f46;
+  background: transparent;
+}
+
+html:not(.dark) .sb-pinned-pill-item:hover {
+  color: #18181b;
+  background: rgba(228, 228, 231, 0.65);
+}
+
+html:not(.dark) .sb-pinned-pill-item.is-active {
+  color: #18181b;
+  font-weight: 700;
+  background: #e4e4e7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .sb-pinned-pill-item {
+  color: #cbd5e1;
+}
+
+.dark .sb-pinned-pill-item:hover {
+  color: #f8fafc;
+  background: rgba(51, 65, 85, 0.55);
+}
+
+.dark .sb-pinned-pill-item.is-active {
+  color: #ffffff;
+  font-weight: 700;
+  background: rgba(51, 65, 85, 0.9);
+}
+
+/* Dragging Floating State (#18181B solid black pill, white text, deep shadow, scale ~1.02) */
+.sb-dragging-floating-pill {
+  background: #18181b !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 8px 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  transform: scale(1.02);
+  box-shadow: 0 18px 34px -6px rgba(0, 0, 0, 0.42),
+              0 6px 14px -4px rgba(0, 0, 0, 0.28),
+              0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Toast Pill Feedback ("📌 Pinned...") */
+@keyframes sbPinToastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.sb-pin-toast-pill {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 9999px;
+  background: #18181b;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.35);
+  animation: sbPinToastIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+/* 3. Animated Tree Accordion Menu with Dynamic SVG Branch (Brief: UI_UX sidebar.docx) */
+.sb-tree-accordion-root {
+  position: relative;
+  padding-left: 14px;
+}
+
+/* Left Spine Track (Trục dọc chính) */
+.sb-left-spine-track {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+html:not(.dark) .sb-left-spine-track {
+  background: #e4e4e7;
+}
+
+.dark .sb-left-spine-track {
+  background: rgba(71, 85, 105, 0.55);
+}
+
+/* Sliding Active Indicator Bar on the Left Spine */
+.sb-spine-active-bar {
+  position: absolute;
+  left: 3px;
+  width: 4px;
+  border-radius: 9999px;
+  pointer-events: none;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.28s ease,
+              box-shadow 0.28s ease;
+}
+
+/* Parent Group Header (Mục Cha) */
 .sb-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 6px 10px;
-  margin-bottom: 6px;
+  padding: 7px 10px;
   border-radius: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-              color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-              margin-bottom 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sb-group-header.is-collapsed {
-  margin-bottom: 0px !important;
+              color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-group-header {
-  color: #64748b;
+  color: #71717a;
   background: transparent;
 }
 
 html:not(.dark) .sb-group-header:hover {
-  color: #002e6d;
-  background: rgba(226, 239, 255, 0.55);
+  color: #27272a;
+  background: rgba(244, 244, 245, 0.85);
+}
+
+html:not(.dark) .sb-group-header.is-open {
+  color: #18181b;
+  font-weight: 700;
 }
 
 .dark .sb-group-header {
@@ -96,19 +290,15 @@ html:not(.dark) .sb-group-header:hover {
 
 .dark .sb-group-header:hover {
   color: #f1f5f9;
-  background: rgba(38, 59, 83, 0.55);
+  background: rgba(38, 59, 83, 0.45);
 }
 
-.sb-group-chevron {
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  flex-shrink: 0;
+.dark .sb-group-header.is-open {
+  color: #ffffff;
+  font-weight: 700;
 }
 
-.sb-group-chevron.is-collapsed {
-  transform: rotate(-90deg);
-}
-
-/* Group Collapsible Body */
+/* Group Collapsible Body (Single-expand slide + fade) */
 .sb-group-body {
   overflow: hidden;
   transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
@@ -121,71 +311,110 @@ html:not(.dark) .sb-group-header:hover {
   pointer-events: none;
 }
 
-/* 3. Fixed Button + Dropdown Trigger */
-/* Move active indicator to left edge on drillable root rows so right dropdown button stays clear */
-html:not(.dark) .app-sidebar .sb-root-row.has-drill.sidebar-link-active::after {
-  right: auto !important;
-  left: 0 !important;
-  width: 3.5px !important;
-  height: 52% !important;
-  border-radius: 4px !important;
+/* Tree Branch Container & Child Items */
+.sb-tree-children-wrap {
+  position: relative;
+  padding-left: 22px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
-/* When a button's detail dropdown is open, fix/highlight the button cleanly above its panel */
-html:not(.dark) .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
-  color: #002e6d !important;
-  background: rgba(219, 234, 254, 0.65) !important;
-  border: 1px solid rgba(147, 197, 253, 0.75) !important;
-  font-weight: 600 !important;
+.sb-tree-svg-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.dark .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
+.sb-tree-active-path {
+  transition: d 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              stroke 0.25s ease,
+              opacity 0.2s ease;
+}
+
+/* Child Item Row inside Tree Accordion */
+.sb-tree-child-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7.5px 11px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.18s ease,
+              color 0.18s ease,
+              transform 0.18s ease;
+}
+
+html:not(.dark) .sb-tree-child-row {
+  color: #71717a;
+}
+
+html:not(.dark) .sb-tree-child-row:hover {
+  color: #18181b;
+  background: rgba(244, 244, 245, 0.9);
+}
+
+html:not(.dark) .sb-tree-child-row.is-active {
+  color: #18181b;
+  font-weight: 700;
+  background: #f4f4f5;
+}
+
+.dark .sb-tree-child-row {
+  color: #94a3b8;
+}
+
+.dark .sb-tree-child-row:hover {
+  color: #f8fafc;
+  background: rgba(38, 59, 83, 0.45);
+}
+
+.dark .sb-tree-child-row.is-active {
   color: #ffffff;
-  background: #23374f;
-  border: 1px solid #385270;
+  font-weight: 700;
+  background: rgba(38, 59, 83, 0.78);
 }
 
-.sb-drop-icon-btn {
+/* Sub-drawer trigger button on child items (subtle pill badge instead of noisy chevrons) */
+.sb-subdrawer-pill-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  background: transparent !important;
-  border: none;
-  transition: color 0.2s ease, opacity 0.2s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-html:not(.dark) .sb-drop-icon-btn {
-  color: #64748b;
-  opacity: 0.78;
+html:not(.dark) .sb-subdrawer-pill-btn {
+  background: rgba(228, 228, 231, 0.7);
+  color: #52525b;
 }
 
-html:not(.dark) .sb-drop-icon-btn:hover,
-html:not(.dark) .sb-drop-icon-btn.is-open {
-  color: #002e6d;
-  opacity: 1;
+html:not(.dark) .sb-subdrawer-pill-btn:hover,
+html:not(.dark) .sb-subdrawer-pill-btn.is-open {
+  background: var(--group-accent-soft, rgba(37, 99, 235, 0.15));
+  color: var(--group-accent, #2563eb);
 }
 
-.dark .sb-drop-icon-btn {
-  color: #94a3b8;
-  opacity: 0.8;
+.dark .sb-subdrawer-pill-btn {
+  background: rgba(51, 65, 85, 0.65);
+  color: #cbd5e1;
 }
 
-.dark .sb-drop-icon-btn:hover,
-.dark .sb-drop-icon-btn.is-open {
-  color: #f8fafc;
-  opacity: 1;
-}
-
-.sb-drop-icon-btn.is-open svg {
-  transform: rotate(180deg);
-}
-
-.sb-drop-icon-btn svg {
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+.dark .sb-subdrawer-pill-btn:hover,
+.dark .sb-subdrawer-pill-btn.is-open {
+  background: var(--group-accent-soft, rgba(37, 99, 235, 0.25));
+  color: #ffffff;
 }
 
 /* 4. Per-Button In-place Multi-level Drill-down Container (Smooth Height Morphing) */
@@ -202,10 +431,10 @@ html:not(.dark) .sb-drop-icon-btn.is-open {
 }
 
 html:not(.dark) .sb-drill-viewport {
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.88) 0%, rgba(235, 245, 255, 0.76) 100%);
-  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 244, 245, 0.88) 100%);
+  border: 1px solid rgba(228, 228, 231, 0.95);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95),
-              0 8px 20px -8px rgba(18, 48, 94, 0.12);
+              0 8px 20px -8px rgba(24, 24, 27, 0.08);
 }
 
 .dark .sb-drill-viewport {
