@@ -86,3 +86,7 @@ npm run build
 ## Đồng bộ UX bình luận và phát hành
 
 Áp dụng [quy chuẩn đồng bộ chỉnh sửa và xóa bình luận](GUIDELINE/COMMENT_UI_DEPLOYMENT_CONSISTENCY.md) trên Local, Develop và Main. Mọi panel comment dùng chung component `CommentMessage`; bản phát hành phải xác nhận đủ tính năng và cùng SHA giữa hai nhánh chuẩn.
+
+## Phạm vi Team Workload
+
+Xem [quy tắc hiển thị Team Workload](GUIDELINE/TEAM_WORKLOAD_VISIBILITY.md) để đối chiếu quyền xem theo phòng ban trên Local, Develop và Main.
