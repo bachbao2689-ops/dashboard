@@ -297,6 +297,7 @@ export function buildSidebarGroups({
   enrichedTracks,
   summary,
   togglePin,
+  includeProfileInTree = true,
 }: {
   t: (key: any) => string;
   role: string;
@@ -307,6 +308,7 @@ export function buildSidebarGroups({
   enrichedTracks: EnrichedProjectTrack[];
   summary: ReturnType<typeof import('../../hooks/useSidebarTrackingData').useSidebarTrackingData>['summary'];
   togglePin: (taskId: string) => void;
+  includeProfileInTree?: boolean;
 }): SidebarGroupModel[] {
   const roleLower = (role || 'member').toLowerCase();
   const canViewDashboard = isLeader;
@@ -534,13 +536,15 @@ export function buildSidebarGroups({
     ),
   });
 
-  // 2.3 My Profile (Plain button, no drill-down)
-  tpRootItems.push({
-    id: 'tp:root:profile',
-    label: t('nav.profile'),
-    icon: <User size={18} />,
-    path: '/my-tasks',
-  });
+  // 2.3 My Profile (Included in tree only when requested, e.g., collapsed top navbar; Left Sidebar renders Profile card at bottom)
+  if (includeProfileInTree) {
+    tpRootItems.push({
+      id: 'tp:root:profile',
+      label: t('nav.profile'),
+      icon: <User size={18} />,
+      path: '/my-tasks',
+    });
+  }
 
   // 2.4 Departments (Plain button, Admin only)
   if (canViewDepartments) {
@@ -626,12 +630,15 @@ export function buildSidebarGroups({
     items: trRootItems,
   };
 
+  const unifiedAccent = '#2563EB';
+  const unifiedAccentSoft = 'rgba(37, 99, 235, 0.14)';
+
   return [
     {
       id: 'main',
       title: t('nav.main'),
-      accentColor: '#EA580C',
-      accentSoft: 'rgba(234, 88, 12, 0.14)',
+      accentColor: unifiedAccent,
+      accentSoft: unifiedAccentSoft,
       badgeCount: summary.counts.workflowCount,
       hasUnreadSignal: summary.counts.workflowCount > 0,
       pinnedCount: wfPinnedCount,
@@ -641,8 +648,8 @@ export function buildSidebarGroups({
     {
       id: 'tasksProj',
       title: t('nav.tasksProj'),
-      accentColor: '#2563EB',
-      accentSoft: 'rgba(37, 99, 235, 0.14)',
+      accentColor: unifiedAccent,
+      accentSoft: unifiedAccentSoft,
       badgeCount: summary.counts.projectCount,
       hasUnreadSignal: summary.counts.projectCount > 0,
       pinnedCount: wfPinnedCount,
@@ -652,8 +659,8 @@ export function buildSidebarGroups({
     {
       id: 'assets',
       title: t('nav.assets'),
-      accentColor: '#7C3AED',
-      accentSoft: 'rgba(124, 58, 237, 0.14)',
+      accentColor: unifiedAccent,
+      accentSoft: unifiedAccentSoft,
       badgeCount: summary.counts.borrowCount,
       hasUnreadSignal: false,
       pinnedCount: 0,
@@ -663,8 +670,8 @@ export function buildSidebarGroups({
     {
       id: 'teamRep',
       title: t('nav.teamRep'),
-      accentColor: '#059669',
-      accentSoft: 'rgba(5, 150, 105, 0.14)',
+      accentColor: unifiedAccent,
+      accentSoft: unifiedAccentSoft,
       badgeCount: 0,
       hasUnreadSignal: false,
       pinnedCount: 0,

@@ -406,11 +406,10 @@ const SortablePinnedItemRow: React.FC<{
   dragPayload: ActiveDragPayload;
   label: string;
   icon: React.ReactNode;
-  accentColor: string;
   active: boolean;
   onClick: () => void;
   onUnpin: () => void;
-}> = ({ sortableId, dragPayload, label, icon, accentColor, active, onClick, onUnpin }) => {
+}> = ({ sortableId, dragPayload, label, icon, active, onClick, onUnpin }) => {
   const {
     attributes,
     listeners,
@@ -443,13 +442,13 @@ const SortablePinnedItemRow: React.FC<{
             onClick();
           }
         }}
-        className={cn('sb-pinned-pill-item', active && 'is-active')}
+        className={cn(
+          'sidebar-link sb-pinned-pill-item',
+          active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle'
+        )}
       >
         <span className="flex items-center gap-2.5 min-w-0 flex-1">
-          <span
-            className="shrink-0 inline-flex items-center justify-center transition-transform duration-150 group-hover:scale-105"
-            style={{ color: accentColor }}
-          >
+          <span className="shrink-0 inline-flex items-center justify-center transition-transform duration-150 group-hover:scale-105">
             {icon}
           </span>
           <span className="truncate">{label}</span>
@@ -469,7 +468,7 @@ const SortablePinnedItemRow: React.FC<{
           <StylizedPinIcon
             size={12.5}
             pinned
-            className="text-zinc-500 hover:text-zinc-900 dark:text-slate-400 dark:hover:text-white"
+            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
           />
         </button>
       </div>
@@ -498,7 +497,6 @@ const TreeAccordionChildRow: React.FC<{
   item,
   group,
   active,
-  isHovered,
   isNavPinned,
   hasDrill,
   isDropdownOpen,
@@ -526,7 +524,6 @@ const TreeAccordionChildRow: React.FC<{
     data: dragPayload,
   });
 
-  const highlighted = active || isHovered;
   const subNode = hasDrill && item.targetNodeId ? group.nodes[item.targetNodeId] : undefined;
   const subItemCount = subNode ? subNode.items.length : 0;
 
@@ -550,23 +547,16 @@ const TreeAccordionChildRow: React.FC<{
             if (item.path) onNavigate(item.path);
           }
         }}
-        style={
-          {
-            '--group-accent': group.accentColor,
-            '--group-accent-soft': group.accentSoft,
-            opacity: isDragging ? 0.4 : 1,
-          } as React.CSSProperties
-        }
+        style={{ opacity: isDragging ? 0.4 : 1 }}
         className={cn(
-          'sb-tree-child-row sb-root-row',
-          active && 'is-active'
+          'sidebar-link sb-root-row flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer select-none border border-transparent',
+          hasDrill && 'has-drill',
+          isDropdownOpen && 'is-dropdown-open',
+          active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle'
         )}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <span
-            className="shrink-0 inline-flex items-center justify-center transition-colors duration-200"
-            style={{ color: highlighted ? group.accentColor : undefined }}
-          >
+          <span className="shrink-0 inline-flex items-center justify-center">
             {item.icon}
           </span>
           <span className="truncate">{item.label}</span>
@@ -603,13 +593,13 @@ const TreeAccordionChildRow: React.FC<{
               pinned={isNavPinned}
               className={
                 isNavPinned
-                  ? 'text-zinc-800 dark:text-slate-100'
-                  : 'text-zinc-400 hover:text-zinc-800 dark:hover:text-slate-200'
+                  ? 'text-slate-800 dark:text-slate-100'
+                  : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }
             />
           </button>
 
-          {/* Clean compact pill trigger for multi-level sub-drawer (replaces noisy chevrons) */}
+          {/* Clean compact pill trigger for multi-level sub-drawer */}
           {hasDrill && (
             <button
               type="button"
@@ -651,7 +641,7 @@ const TreeAccordionChildRow: React.FC<{
 };
 
 /**
- * Single-Expand Tree Accordion Group with Dynamic SVG Branch (Brief: UI_UX sidebar.docx)
+ * Single-Expand Tree Accordion Group with Dynamic SVG Branch (Unified Brand Theme)
  */
 const SidebarTreeGroupSection: React.FC<{
   group: SidebarGroupModel;
@@ -742,8 +732,8 @@ const SidebarTreeGroupSection: React.FC<{
   const maxY = allYs.length > 0 ? Math.max(...allYs) : 0;
 
   return (
-    <div className={cn('transition-all duration-200', isOpen ? 'mb-2.5' : 'mb-1')}>
-      {/* Parent Group Header (Single-expand accordion trigger, no right-side chevron clutter) */}
+    <div className={cn('transition-all duration-200', isOpen ? 'mb-3' : 'mb-1')}>
+      {/* Parent Group Header (Single-expand accordion trigger) */}
       <button
         type="button"
         data-tree-group-id={group.id}
@@ -765,13 +755,7 @@ const SidebarTreeGroupSection: React.FC<{
         </span>
 
         {group.badgeCount > 0 && (
-          <span
-            className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
-            style={{
-              backgroundColor: isOpen ? group.accentSoft : 'rgba(113, 113, 122, 0.12)',
-              color: isOpen ? group.accentColor : undefined,
-            }}
-          >
+          <span className="sb-group-badge px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none">
             {group.badgeCount > 99 ? '99+' : group.badgeCount}
           </span>
         )}
@@ -788,31 +772,30 @@ const SidebarTreeGroupSection: React.FC<{
             <svg className="sb-tree-svg-overlay" aria-hidden="true">
               {/* Passive background trunk & branches */}
               <path
-                d={`M 8 0 L 8 ${Math.max(0, maxY - 8)}`}
+                d={`M 7 0 L 7 ${Math.max(0, maxY - 8)}`}
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={1.5}
                 strokeLinecap="round"
-                className="text-zinc-200 dark:text-slate-700/80"
+                className="text-blue-200/80 dark:text-slate-700/80"
               />
               {allYs.map((y, idx) => (
                 <path
                   key={idx}
-                  d={`M 8 ${Math.max(0, y - 8)} Q 8 ${y} 16 ${y} L 20 ${y}`}
+                  d={`M 7 ${Math.max(0, y - 8)} Q 7 ${y} 15 ${y} L 18 ${y}`}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
                   strokeLinecap="round"
-                  className="text-zinc-200 dark:text-slate-700/80"
+                  className="text-blue-200/80 dark:text-slate-700/80"
                 />
               ))}
 
-              {/* Active / Hovered Animated Colored Branch Path */}
+              {/* Active / Hovered Animated Brand-Themed Branch Path */}
               {typeof targetY === 'number' && targetY > 0 && (
                 <path
-                  d={`M 8 0 L 8 ${Math.max(0, targetY - 8)} Q 8 ${targetY} 16 ${targetY} L 20 ${targetY}`}
+                  d={`M 7 0 L 7 ${Math.max(0, targetY - 8)} Q 7 ${targetY} 15 ${targetY} L 18 ${targetY}`}
                   fill="none"
-                  stroke={group.accentColor}
                   strokeWidth={2}
                   strokeLinecap="round"
                   className="sb-tree-active-path"
@@ -821,7 +804,7 @@ const SidebarTreeGroupSection: React.FC<{
             </svg>
           )}
 
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {items.map(item => {
               const active = isRouteActive(item.path);
               const hasDrill = Boolean(item.targetNodeId && group.nodes[item.targetNodeId]);
@@ -978,6 +961,36 @@ export const Sidebar: React.FC = () => {
   const canManageBorrow = isAssetApprover(profile);
   const canBorrow = canSubmitAssetRequest(profile);
 
+  const staffName = (profile?.name || 'Nhân viên').trim();
+  const staffInitials =
+    staffName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(part => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'NV';
+
+  const staffPositionLabel = useMemo(() => {
+    const dbRole = (profile?.role || 'member').toLowerCase();
+    const roleLabel =
+      dbRole === 'admin'
+        ? 'Admin'
+        : dbRole === 'manager'
+        ? 'Manager'
+        : dbRole === 'leader'
+        ? 'Team Leader'
+        : 'Nhân viên';
+    const jobTitle = (profile?.job_title || profile?.employment_level || roleLabel).trim();
+    const dept = (profile?.department_name || '').trim();
+    const hasValidDept =
+      Boolean(dept) &&
+      dept !== 'Chưa phân team' &&
+      dept !== 'Unassigned team' &&
+      !jobTitle.toLowerCase().includes(dept.toLowerCase());
+    return hasValidDept ? `${jobTitle} · ${dept}` : jobTitle;
+  }, [profile]);
+
   const groups = useMemo(
     () =>
       buildSidebarGroups({
@@ -990,6 +1003,7 @@ export const Sidebar: React.FC = () => {
         enrichedTracks,
         summary,
         togglePin,
+        includeProfileInTree: false,
       }),
     [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
   );
@@ -1000,7 +1014,9 @@ export const Sidebar: React.FC = () => {
     groups.forEach(group => {
       const root = group.nodes[group.rootNodeId];
       root?.items.forEach(item => {
-        map.set(item.id, { item, group });
+        if (item.id !== 'tp:root:profile') {
+          map.set(item.id, { item, group });
+        }
       });
     });
     return map;
@@ -1009,6 +1025,7 @@ export const Sidebar: React.FC = () => {
   const visiblePinnedNavs = useMemo(
     () =>
       pinnedNavIds
+        .filter(id => id !== 'tp:root:profile')
         .map(id => navLookup.get(id))
         .filter((entry): entry is { item: DrillMenuItem; group: SidebarGroupModel } => Boolean(entry)),
     [pinnedNavIds, navLookup]
@@ -1016,7 +1033,8 @@ export const Sidebar: React.FC = () => {
 
   // Single-Expand Accordion State (Brief: UI_UX sidebar.docx)
   const findGroupForRoute = useCallback(
-    (pathname: string, search: string): string => {
+    (pathname: string, search: string): string | null => {
+      if (pathname === '/my-tasks') return null;
       for (const group of groups) {
         const root = group.nodes[group.rootNodeId];
         if (!root) continue;
@@ -1033,8 +1051,8 @@ export const Sidebar: React.FC = () => {
     [groups]
   );
 
-  const [activeGroupId, setActiveGroupId] = useState<string>(() =>
-    findGroupForRoute(location.pathname, location.search)
+  const [activeGroupId, setActiveGroupId] = useState<string>(
+    () => findGroupForRoute(location.pathname, location.search) || groups[0]?.id || 'main'
   );
 
   // Keep accordion synced when route changes
@@ -1048,8 +1066,7 @@ export const Sidebar: React.FC = () => {
   const [spineIndicator, setSpineIndicator] = useState<{
     top: number;
     height: number;
-    color: string;
-  }>({ top: 6, height: 22, color: '#EA580C' });
+  }>({ top: 6, height: 22 });
 
   const updateSpineIndicator = useCallback(() => {
     const rootEl = accordionRootRef.current;
@@ -1063,17 +1080,12 @@ export const Sidebar: React.FC = () => {
     const headerRect = headerEl.getBoundingClientRect();
     const nextTop = Math.max(4, Math.round(headerRect.top - rootRect.top + 5));
     const nextHeight = Math.max(18, Math.round(headerRect.height - 10));
-    const nextColor = activeGroup.accentColor;
 
     setSpineIndicator(prev => {
-      if (
-        prev.top === nextTop &&
-        prev.height === nextHeight &&
-        prev.color === nextColor
-      ) {
+      if (prev.top === nextTop && prev.height === nextHeight) {
         return prev;
       }
-      return { top: nextTop, height: nextHeight, color: nextColor };
+      return { top: nextTop, height: nextHeight };
     });
   }, [activeGroupId, groups]);
 
@@ -1250,7 +1262,7 @@ export const Sidebar: React.FC = () => {
             <div className="mb-3">
               <div className="sb-section-divider">
                 <span className="flex items-center gap-1.5">
-                  <StylizedPinIcon size={11.5} pinned className="text-orange-500" />
+                  <StylizedPinIcon size={11.5} pinned className="text-blue-600 dark:text-emerald-400" />
                   <span>Đã ghim</span>
                 </span>
                 <span className="text-[10px] font-bold opacity-75">{totalPinnedCount}</span>
@@ -1258,12 +1270,12 @@ export const Sidebar: React.FC = () => {
 
               <PinnedDropZone isDraggingAny={Boolean(activeDrag)}>
                 {totalPinnedCount === 0 ? (
-                  <div className="py-2.5 px-3 text-center text-[11.5px] font-medium text-zinc-500 dark:text-slate-400">
+                  <div className="py-2.5 px-3 text-center text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
                     Thả mục vào đây để ghim lên đầu Sidebar
                   </div>
                 ) : (
                   <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-                    <ul className="space-y-0.5">
+                    <ul className="space-y-1">
                       {visiblePinnedNavs.map(({ item, group }) => {
                         const [basePath, query] = (item.path || '').split('?');
                         const active =
@@ -1285,7 +1297,6 @@ export const Sidebar: React.FC = () => {
                             }}
                             label={item.label}
                             icon={item.icon}
-                            accentColor={group.accentColor}
                             active={active}
                             onClick={() => item.path && navigate(item.path)}
                             onUnpin={() => toggleNavPinStore(item.id, profile?.id)}
@@ -1302,7 +1313,6 @@ export const Sidebar: React.FC = () => {
                           location.pathname === '/projects' &&
                           location.search.includes(`${entity.kind}=${entity.id}`);
                         const sortableId = `pinned-entity:${entity.kind}:${entity.id}`;
-                        const accentColor = entity.kind === 'campaign' ? '#F59E0B' : '#8B5CF6';
                         const icon = <FolderKanban size={16} />;
 
                         return (
@@ -1313,12 +1323,11 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-entity',
                               label: entity.name,
-                              accentColor,
+                              accentColor: '#2563EB',
                               entity,
                             }}
                             label={entity.name}
                             icon={icon}
-                            accentColor={accentColor}
                             active={active}
                             onClick={() => navigate(href)}
                             onUnpin={() => unpinEntity(entity.kind, entity.id)}
@@ -1331,7 +1340,6 @@ export const Sidebar: React.FC = () => {
                           location.pathname === '/tasks' &&
                           location.search.includes(encodeURIComponent(task.id));
                         const sortableId = `pinned-task:${task.id}`;
-                        const accentColor = '#0EA5E9';
                         const icon = <CheckSquare size={16} />;
 
                         return (
@@ -1342,12 +1350,11 @@ export const Sidebar: React.FC = () => {
                               id: sortableId,
                               source: 'pinned-task',
                               label: task.title,
-                              accentColor,
+                              accentColor: '#2563EB',
                               taskId: task.id,
                             }}
                             label={task.title}
                             icon={icon}
-                            accentColor={accentColor}
                             active={active}
                             onClick={() => navigate(task.href)}
                             onUnpin={() => togglePin(task.id)}
@@ -1372,15 +1379,13 @@ export const Sidebar: React.FC = () => {
             {/* Left Vertical Spine Track */}
             <div className="sb-left-spine-track" aria-hidden="true" />
 
-            {/* Sliding Colored Active Group Bar on Left Spine */}
+            {/* Sliding Active Group Bar on Left Spine */}
             <div
               aria-hidden="true"
               className="sb-spine-active-bar"
               style={{
                 transform: `translateY(${spineIndicator.top}px)`,
                 height: `${spineIndicator.height}px`,
-                backgroundColor: spineIndicator.color,
-                boxShadow: `0 0 10px ${spineIndicator.color}66`,
               }}
             />
 
@@ -1409,14 +1414,11 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Floating Drag Overlay (#18181B solid black pill with original colored icon) */}
+        {/* Floating Drag Overlay (#18181B solid black pill) */}
         <DragOverlay dropAnimation={null}>
           {activeDrag ? (
             <div className="sb-dragging-floating-pill">
-              <span
-                className="shrink-0 inline-flex items-center justify-center"
-                style={{ color: activeDrag.accentColor }}
-              >
+              <span className="shrink-0 inline-flex items-center justify-center text-blue-400">
                 {renderDragOverlayIcon(activeDrag)}
               </span>
               <span className="truncate max-w-[180px]">{activeDrag.label}</span>
@@ -1432,26 +1434,68 @@ export const Sidebar: React.FC = () => {
         </div>
       )}
 
-      {officialReadEnabled && (
-        <div className="border-t border-gray-200/70 px-3.5 pt-3 dark:border-slate-700/70">
+      {/* ==========================================
+          ZONE 3: BOTTOM STAFF PROFILE CARD (/my-tasks)
+         ========================================== */}
+      <div className="mt-auto border-t border-gray-200/70 dark:border-slate-700/70 px-3.5 pt-3 space-y-2">
+        <NavLink
+          to="/my-tasks"
+          title={t('nav.profile')}
+          className={({ isActive }) =>
+            cn(
+              'sidebar-link sb-profile-footer-card flex items-center gap-3 w-full cursor-pointer select-none',
+              isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
+            )
+          }
+        >
+          <div className="relative shrink-0">
+            <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-sm shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={staffName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{staffInitials}</span>
+              )}
+            </div>
+            <span
+              aria-hidden="true"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+            />
+          </div>
+
+          <div className="min-w-0 flex-1 text-left">
+            <p className="truncate text-sm font-bold leading-tight text-gray-900 dark:text-white">
+              {staffName}
+            </p>
+            <p className="truncate text-xs font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
+              {staffPositionLabel}
+            </p>
+          </div>
+        </NavLink>
+
+        {officialReadEnabled && (
           <NavLink
             to="/main-view"
             className={({ isActive }) =>
               cn(
-                'sidebar-link flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium',
+                'sidebar-link flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium border border-transparent',
                 isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
               )
             }
           >
-            <ExternalLink size={16} />
+            <ExternalLink size={14} />
             <span className="truncate">Theo dõi Main · Chỉ đọc</span>
           </NavLink>
+        )}
+
+        <div className="pt-1 text-center">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
+            Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
+          </p>
         </div>
-      )}
-      <div className="mt-auto pt-3 px-6 text-center">
-        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
-          Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
-        </p>
       </div>
     </aside>
   );
