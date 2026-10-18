@@ -1052,22 +1052,28 @@ export const Sidebar: React.FC = () => {
     [groups]
   );
 
-  const [openGroupIds, setOpenGroupIds] = useState<string[]>(() => {
-    const initial = findGroupForRoute(location.pathname, location.search) || 'main';
-    return initial === 'main' ? ['main'] : ['main', initial];
-  });
+  const ALL_GROUP_IDS = useMemo(() => ['main', 'tasksProj', 'assets', 'teamRep'], []);
+  const [openGroupIds, setOpenGroupIds] = useRememberedState<string[]>(
+    'sidebar_open_groups',
+    ALL_GROUP_IDS
+  );
   const [activeGroupId, setActiveGroupId] = useState<string>(
     () => findGroupForRoute(location.pathname, location.search) || groups[0]?.id || 'main'
   );
 
-  // Keep accordion synced when route changes
+  // Keep active group indicator and accordion synced ONLY when route actually changes
+  const lastPathnameRef = useRef(location.pathname);
   useEffect(() => {
-    const matched = findGroupForRoute(location.pathname, location.search);
-    if (matched) {
-      setActiveGroupId(matched);
-      setOpenGroupIds(prev => (prev.includes(matched) ? prev : [...prev, matched]));
+    const isRouteChange = lastPathnameRef.current !== location.pathname;
+    if (isRouteChange) {
+      lastPathnameRef.current = location.pathname;
+      const matched = findGroupForRoute(location.pathname, location.search);
+      if (matched) {
+        setActiveGroupId(matched);
+        setOpenGroupIds(prev => (prev.includes(matched) ? prev : [...prev, matched]));
+      }
     }
-  }, [location.pathname, location.search, findGroupForRoute]);
+  }, [location.pathname, location.search, findGroupForRoute, setOpenGroupIds]);
 
   // Measure active group header position for the Left Spine Active Indicator Bar
   const accordionRootRef = useRef<HTMLDivElement | null>(null);
@@ -1101,30 +1107,18 @@ export const Sidebar: React.FC = () => {
     updateSpineIndicator();
     const timer = setTimeout(updateSpineIndicator, 330);
     return () => clearTimeout(timer);
-  }, [activeGroupId, openDropdownItemId, updateSpineIndicator]);
+  }, [activeGroupId, openGroupIds, openDropdownItemId, updateSpineIndicator]);
 
   const handleSelectGroup = useCallback(
     (group: SidebarGroupModel) => {
-      setActiveGroupId(group.id);
       setOpenGroupIds(prev => {
         if (prev.includes(group.id)) {
           return prev.filter(id => id !== group.id);
         }
         return [...prev, group.id];
       });
-
-      const root = group.nodes[group.rootNodeId];
-      const items = root?.items || [];
-      const alreadyInGroup = items.some(it => {
-        if (!it.path) return false;
-        const [basePath] = it.path.split('?');
-        return location.pathname === basePath;
-      });
-      if (!alreadyInGroup && items[0]?.path) {
-        navigate(items[0].path);
-      }
     },
-    [location.pathname, navigate]
+    [setOpenGroupIds]
   );
 
   const handleToggleNavPin = useCallback(
