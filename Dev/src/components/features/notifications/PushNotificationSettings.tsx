@@ -2,7 +2,7 @@ import {useEffect} from 'react';
 import {BellRing} from 'lucide-react';
 import {useAuthStore} from '../../../store/authStore';
 import {useUiStore} from '../../../store/uiStore';
-import {isIOS,isStandalone,supportsPush} from '../../../services/pushNotifications';
+import {isIOS,isStandalone,supportsPush,pushErrorMessage} from '../../../services/pushNotifications';
 import '../../../styles/push-notifications.css';
 import {useDevicePush,initializeDevicePush,changeDevicePush} from '../../../store/devicePushStore';
 
@@ -16,7 +16,7 @@ export function PushNotificationSettings({hideWhenEnabled=false}:{hideWhenEnable
   try{
    await changeDevicePush(action,user.id);
    if(action==='test')useDevicePush.setState({message:vi?'Đã gửi thông báo thử đến các thiết bị đã bật.':'Test notification queued for your enabled devices.'});
-  }catch(error){useDevicePush.setState({message:error instanceof Error?error.message:(vi?'Chưa kết nối được thông báo.':'Unable to connect notifications.')});}
+  }catch(error){useDevicePush.setState({message:pushErrorMessage(error,vi)});}
  };
  const available=Boolean(ready&&config?.enabled&&config.origins.includes(location.origin));
  // Avoid flashing the setup card while checking an already registered device, and hide if unavailable or unsupported in popover.
@@ -28,6 +28,6 @@ export function PushNotificationSettings({hideWhenEnabled=false}:{hideWhenEnable
    <button type="button" className="push-settings-primary" disabled={busy} onClick={()=>void run(enabled?'test':'enable')}>{busy?(vi?'Đang xử lý…':'Working…'):enabled?(vi?'Gửi thử':'Send test'):(vi?'Bật thông báo':'Enable notifications')}</button>
    {enabled&&<button type="button" className="push-settings-secondary" disabled={busy} onClick={()=>void run('disable')}>{vi?'Tắt trên thiết bị này':'Disable on this device'}</button>}
   </div>}
-  {message&&<p className="push-settings-note" role="status">{message}</p>}
+  {message&&<p className="push-settings-note" role="status">{pushErrorMessage(new Error(message),vi)}</p>}
  </section>;
 }

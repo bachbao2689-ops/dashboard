@@ -6,6 +6,19 @@ const ownerKey='kcoffee_push_owner';
 export const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 export const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||Boolean((navigator as Navigator&{standalone?:boolean}).standalone);
 export const supportsPush=()=>window.isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+/** Browser push registration can fail even when the Push API is present (e.g. Brave messaging disabled). */
+export function pushErrorMessage(error:unknown,vi=true,brave=Boolean((navigator as Navigator&{brave?:unknown}).brave)){
+ const message=error instanceof Error?error.message:String(error||'');
+ const name=error instanceof Error?error.name:'';
+ if(/push service|registration failed|push registration/i.test(message)||name==='AbortError'){
+  if(brave)return vi
+   ?'Brave chưa kết nối được dịch vụ thông báo. Vào Cài đặt → Quyền riêng tư và bảo mật → bật “Use Google services for push messaging”. Khởi động lại Brave rồi bấm “Bật thông báo” lần nữa. Nếu đã bật, hãy kiểm tra kết nối mạng.'
+   :'Brave could not connect to its push service. Open Settings → Privacy and security → enable “Use Google services for push messaging”. Restart Brave and enable notifications again. If already enabled, check your network connection.';
+  return vi?'Chưa kết nối được dịch vụ thông báo của trình duyệt. Kiểm tra mạng, VPN hoặc tiện ích chặn kết nối, rồi bấm “Bật thông báo” để thử lại.':'Could not connect to the browser push service. Check your network, VPN or connection-blocking extensions, then enable notifications again.';
+ }
+ if(name==='NotAllowedError')return vi?'Thông báo đang bị chặn. Mở quyền của trang web, cho phép Thông báo rồi thử lại.':'Notifications are blocked. Allow notifications in this site’s permissions, then try again.';
+ return message||(vi?'Chưa kết nối được thông báo. Vui lòng thử lại.':'Unable to connect notifications. Please try again.');
+}
 let registration:Promise<ServiceWorkerRegistration>|undefined;
 export function registerPushWorker(){
  if(!window.isSecureContext||!('serviceWorker' in navigator))return Promise.reject(new Error('Thiết bị chưa hỗ trợ thông báo web.'));
@@ -23,6 +36,7 @@ async function saveSubscription(subscription:PushSubscription){
  try{const {error}=await supabase.rpc('register_dashboard_push',{p_endpoint:value.endpoint,p_p256dh:value.keys?.p256dh,p_auth:value.keys?.auth,p_origin:location.origin}).abortSignal(abort.signal);if(error)throw new Error(error.message||'Không lưu được đăng ký thông báo.');}finally{clearTimeout(timer);}
 }
 export async function enablePush(publicKey:string,authId:string){
+ if(!supportsPush())throw new Error('Trình duyệt chưa hỗ trợ thông báo thiết bị.');
  // Permission must be requested directly from the tap, before any network await (iOS).
  const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
  if(permission!=='granted')throw new Error('Bạn chưa cho phép thông báo. Có thể bật lại trong cài đặt thiết bị.');
