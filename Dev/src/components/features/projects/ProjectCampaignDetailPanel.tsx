@@ -1,3 +1,4 @@
+import {EntityStatusField} from './EntityStatusField';
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +53,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
   // Edit mode states
   const [editMode, setEditMode] = useState(false);
+  const [editStatus, setEditStatus] = useState('active');
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [start, setStart] = useState('');
@@ -76,8 +78,8 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     const startDate = inputDate(start), dueDate = inputDate(due);
     if (startDate && dueDate && startDate > dueDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu.');
     const payload = kind === 'project'
-      ? { name:title.trim(), description:desc, start_date:startDate, due_date:dueDate }
-      : { name:title.trim(), objective:desc, start_date:startDate, end_date:dueDate };
+      ? { name:title.trim(), description:desc, status:editStatus, start_date:startDate, due_date:dueDate }
+      : { name:title.trim(), objective:desc, status:editStatus, start_date:startDate, end_date:dueDate };
     if (await details.mutate(() => supabase.from(`${kind}s`).update(payload).eq('id', item.id).select('id').single(), 'Đã lưu thay đổi')) {
       setEditMode(false); onUpdated?.();
     }
@@ -161,6 +163,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="detail-panel-start" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-start', mode: 'single', maxDate: due || undefined }, e)} value={start ? dateValue(start) : ''} onChange={e=>setStart(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
               <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="detail-panel-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-due', mode: 'single', minDate: start || undefined }, e)} value={due ? dateValue(due) : ''} onChange={e=>setDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
             </div>
+            <EntityStatusField value={editStatus} onChange={setEditStatus} />
             <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.description')}</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div>
             <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button disabled={busy} onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div>
           </div>
@@ -255,7 +258,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       </div>
       {details.data && !editMode && canManage && (
         <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-          <button onClick={() => { setTitle(data.name); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button>
+          <button onClick={() => { setTitle(data.name); setEditStatus(data.status || (kind === 'project' ? 'active' : 'planning')); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button>
           <button disabled={busy || data.status === 'completed'} onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button>
         </div>
       )}
