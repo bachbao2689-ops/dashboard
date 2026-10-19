@@ -20,7 +20,7 @@ export const dict = {
     'nav.myBorrow': 'My Borrow Requests',
     'nav.team': 'Team Workload',
     'nav.members': 'Members',
-    'nav.reports': 'Weekly Report',
+    'nav.reports': 'Reports & Analytics',
 
     // Header
     'header.search': 'Search...',
@@ -427,9 +427,6 @@ export const dict = {
     'profile.belongsTo': 'Part of',
     'profile.noDeadline': 'None',
 
-    // Reports (Team Profile)
-    'reports.title': 'Weekly Report',
-
     // Classic Overview
     'overview.welcome': 'Welcome,',
     'overview.subtitle': "Here's your unified task and asset overview for today.",
@@ -544,7 +541,7 @@ export const dict = {
     'nav.myBorrow': 'Phiếu mượn của tôi',
     'nav.team': 'Năng suất Team',
     'nav.members': 'Thành viên',
-    'nav.reports': 'Báo cáo Tuần',
+    'nav.reports': 'Báo cáo & phân tích',
 
     // Header
     'header.search': 'Tìm kiếm...',
@@ -950,9 +947,6 @@ export const dict = {
     'profile.notSynced': 'Chưa đồng bộ',
     'profile.belongsTo': 'Thuộc',
     'profile.noDeadline': 'Chưa có',
-
-    // Reports (Team Profile)
-    'reports.title': 'Báo cáo tuần',
 
     // Classic Overview
     'overview.welcome': 'Chào,',
