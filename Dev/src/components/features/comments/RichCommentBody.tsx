@@ -372,7 +372,8 @@ export const RichCommentBody: React.FC<{
   body?: string | null;
   isMineBubble?: boolean;
   className?: string;
-}> = ({ body, isMineBubble = false, className = '' }) => {
+  renderDirectImages?: boolean;
+}> = ({ body, isMineBubble = false, className = '', renderDirectImages = false }) => {
   const [previewImage, setPreviewImage] = useState<ImagePopupState | null>(null);
 
   if (!body) return null;
@@ -381,7 +382,7 @@ export const RichCommentBody: React.FC<{
     const nodes: React.ReactNode[] = [];
     // Combined regex matching the earliest special token in `text`
     const tokenRegex =
-      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
+      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*\*([^\n*]+?)\*\*\*)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(!?\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
 
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -417,53 +418,62 @@ export const RichCommentBody: React.FC<{
           </u>
         );
       } else if (match[6]) {
-        // **bold**
+        // ***bold + italic***
         nodes.push(
           <strong key={key} className="font-bold">
-            {renderInlineTokens(match[7], `${key}-b`)}
+            <em className="italic">
+              {renderInlineTokens(match[7], `${key}-bi`)}
+            </em>
           </strong>
         );
       } else if (match[8]) {
+        // **bold**
+        nodes.push(
+          <strong key={key} className="font-bold">
+            {renderInlineTokens(match[9], `${key}-b`)}
+          </strong>
+        );
+      } else if (match[10]) {
         // *italic*
         nodes.push(
           <em key={key} className="italic">
-            {renderInlineTokens(match[9], `${key}-i`)}
+            {renderInlineTokens(match[11], `${key}-i`)}
           </em>
         );
-      } else if (match[10]) {
+      } else if (match[12]) {
         // @Today(dd/mm/yyyy)
         nodes.push(
           <DateReminderPill
             key={key}
             kind="today"
-            dateStr={match[11]}
-            isMineBubble={isMineBubble}
-          />
-        );
-      } else if (match[12]) {
-        // @Tomorrow(dd/mm/yyyy)
-        nodes.push(
-          <DateReminderPill
-            key={key}
-            kind="tomorrow"
             dateStr={match[13]}
             isMineBubble={isMineBubble}
           />
         );
       } else if (match[14]) {
-        // @NextWeek(dd/mm/yyyy)
+        // @Tomorrow(dd/mm/yyyy)
         nodes.push(
           <DateReminderPill
             key={key}
-            kind="nextweek"
+            kind="tomorrow"
             dateStr={match[15]}
             isMineBubble={isMineBubble}
           />
         );
       } else if (match[16]) {
+        // @NextWeek(dd/mm/yyyy)
+        nodes.push(
+          <DateReminderPill
+            key={key}
+            kind="nextweek"
+            dateStr={match[17]}
+            isMineBubble={isMineBubble}
+          />
+        );
+      } else if (match[18]) {
         // [label](url)
-        const label = match[17];
-        const url = match[18];
+        const label = match[19];
+        const url = match[20];
         const isFileChip =
           label.startsWith('📎') ||
           label.startsWith('🖼️') ||
@@ -472,15 +482,54 @@ export const RichCommentBody: React.FC<{
           url.startsWith('#attachment-');
 
         if (isFileChip) {
-          nodes.push(
-            <AttachmentInlineChip
-              key={key}
-              rawLabel={label}
-              url={url}
-              isMineBubble={isMineBubble}
-              onOpenImage={img => setPreviewImage(img)}
-            />
-          );
+          const displayLabel =
+            label.startsWith('📎') || label.startsWith('🖼️')
+              ? label
+              : isImageAttachment(label, url)
+              ? `🖼️ ${label === 'image' ? 'Ảnh đính kèm' : label}`
+              : `📎 ${label}`;
+
+          const isImg = displayLabel.startsWith('🖼️') || isImageAttachment(label, url);
+          const cleanName = displayLabel.replace(/^[\s🖼️📎\uFE0F]+/u, '') || 'image.png';
+
+          if (renderDirectImages && isImg) {
+            nodes.push(
+              <div key={key} className="my-2 block max-w-full">
+                <img
+                  src={url}
+                  alt={cleanName}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setPreviewImage({ name: cleanName, url });
+                  }}
+                  className="max-h-64 max-w-full rounded-xl border border-gray-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-800/60 shadow-xs cursor-pointer hover:opacity-95 transition-all"
+                />
+              </div>
+            );
+          } else if (renderDirectImages) {
+            nodes.push(
+              <a
+                key={key}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 transition-colors my-1"
+              >
+                <FileText size={13} className="text-blue-500 shrink-0" />
+                <span className="font-semibold truncate max-w-[200px]">{cleanName}</span>
+              </a>
+            );
+          } else {
+            nodes.push(
+              <AttachmentInlineChip
+                key={key}
+                rawLabel={displayLabel}
+                url={url}
+                isMineBubble={isMineBubble}
+                onOpenImage={img => setPreviewImage(img)}
+              />
+            );
+          }
         } else {
           nodes.push(
             <InteractiveCommentLink
@@ -491,20 +540,36 @@ export const RichCommentBody: React.FC<{
             />
           );
         }
-      } else if (match[19]) {
+      } else if (match[21]) {
         // Raw URL https://...
-        const rawUrl = match[19];
+        const rawUrl = match[21];
         if (isImageAttachment(rawUrl, rawUrl)) {
           const fileName = rawUrl.split('/').pop()?.split('?')[0] || 'image.png';
-          nodes.push(
-            <AttachmentInlineChip
-              key={key}
-              rawLabel={`🖼️ ${fileName}`}
-              url={rawUrl}
-              isMineBubble={isMineBubble}
-              onOpenImage={img => setPreviewImage(img)}
-            />
-          );
+          if (renderDirectImages) {
+            nodes.push(
+              <div key={key} className="my-2 block max-w-full">
+                <img
+                  src={rawUrl}
+                  alt={fileName}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setPreviewImage({ name: fileName, url: rawUrl });
+                  }}
+                  className="max-h-64 max-w-full rounded-xl border border-gray-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-800/60 shadow-xs cursor-pointer hover:opacity-95 transition-all"
+                />
+              </div>
+            );
+          } else {
+            nodes.push(
+              <AttachmentInlineChip
+                key={key}
+                rawLabel={`🖼️ ${fileName}`}
+                url={rawUrl}
+                isMineBubble={isMineBubble}
+                onOpenImage={img => setPreviewImage(img)}
+              />
+            );
+          }
         } else {
           nodes.push(
             <InteractiveCommentLink
@@ -515,9 +580,9 @@ export const RichCommentBody: React.FC<{
             />
           );
         }
-      } else if (match[20]) {
+      } else if (match[22]) {
         // @PersonMention — Bold high-contrast PIC tag
-        const fullMatch = match[20];
+        const fullMatch = match[22];
         const leadingSpace = fullMatch.startsWith(' ') ? ' ' : '';
         const handle = fullMatch.trim();
         nodes.push(

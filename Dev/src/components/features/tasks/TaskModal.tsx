@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import { canViewTeamManagement, isGlobalManager } from '../../../lib/roleScope';
+import { TaskDescriptionEditor } from './TaskDescriptionEditor';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -315,11 +316,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
                       {t('common.description')}
                     </label>
-                    <textarea 
+                    <TaskDescriptionEditor 
                       value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      rows={4}
-                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 min-h-[100px] shadow-sm"
+                      onChange={setDescription}
                       placeholder={t('tasks.descPlaceholder')}
                     />
                   </div>

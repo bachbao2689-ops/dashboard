@@ -316,4 +316,75 @@
   z-index: 95;
 }
 
+/* ========================================================
+   Task Description Rich WYSIWYG Editor
+   ======================================================== */
+.desc-rich-textarea {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  resize: none;
+  font-size: 14px;
+  line-height: 24px;
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #18181b;
+  caret-color: #2563eb;
+}
+
+.dark .desc-rich-textarea {
+  color: #f1f5f9;
+  caret-color: #60a5fa;
+}
+
+.desc-rich-textarea.is-mirrored,
+.dark .desc-rich-textarea.is-mirrored {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.desc-rich-textarea::selection {
+  background: rgba(37, 99, 235, 0.24);
+  color: inherit;
+}
+
+.dark .desc-rich-textarea::selection {
+  background: rgba(96, 165, 250, 0.32);
+  color: inherit;
+}
+
+.desc-rich-textarea.is-mirrored::selection,
+.dark .desc-rich-textarea.is-mirrored::selection {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.desc-rich-mirror {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  font-size: 14px;
+  line-height: 24px;
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  color: #18181b;
+}
+
+.dark .desc-rich-mirror {
+  color: #f1f5f9;
+}
+
+
 
