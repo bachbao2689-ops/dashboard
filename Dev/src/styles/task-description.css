@@ -1,0 +1,100 @@
+/* Task Description Editor & Column Styles */
+@import './task-comments.css';
+
+.task-description-editor-root {
+  position: relative;
+  width: 100%;
+}
+
+.task-description-slash-menu {
+  position: absolute;
+  z-index: 90;
+  min-width: 260px;
+  max-width: 320px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+  animation: taskDescFadeIn 0.15s ease-out;
+}
+
+.dark .task-description-slash-menu {
+  background: #0f172a;
+  border-color: rgba(51, 65, 85, 0.85);
+  box-shadow: 0 20px 40px -6px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes taskDescFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.task-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-align: left;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.task-slash-item:hover,
+.task-slash-item.is-selected {
+  background: #f1f5f9;
+}
+
+.dark .task-slash-item:hover,
+.dark .task-slash-item.is-selected {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+.task-column-container {
+  position: relative;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(59, 130, 246, 0.35);
+  background: rgba(248, 250, 252, 0.7);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dark .task-column-container {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.task-column-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .task-column-card {
+  background: #1e293b;
+  border-color: rgba(51, 65, 85, 0.8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.task-column-card:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.dark .task-column-card:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}

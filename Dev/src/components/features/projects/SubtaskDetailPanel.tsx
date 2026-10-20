@@ -1,17 +1,19 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import {hasCanonicalNotifications} from '../../../store/notificationStore';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Save, User, X, Clock } from 'lucide-react';
+import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, User, X, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
 import { updateTrackedTask } from '../../../services/workspaceTasks';
 import { taskKey } from '../../../lib/taskTracking';
 import { TaskPinButton } from '../tasks/TaskPinButton';
+import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
+import { TaskDescriptionEditor } from '../tasks/TaskDescriptionEditor';
 import { useTranslation } from '../../../i18n/translations';
 
 type Person = { id: number; name: string };
@@ -68,7 +70,6 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
-  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -191,17 +192,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     toast.success('Đã lưu subtask');
   };
 
-  const uploadImage = async (file?: File) => {
-    if (readOnly||!canEdit||!file) return;
-    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-    setSaving(true);
-    const { data, error } = await supabase.storage.from('attachments').upload(`subtasks/${Date.now()}-${cleanName}`, file, { upsert: false });
-    setSaving(false);
-    if (error || !data) return toast.error('Chưa thể tải ảnh. Hãy dán link ảnh hoặc kiểm tra bucket attachments.');
-    const url = supabase.storage.from('attachments').getPublicUrl(data.path).data.publicUrl;
-    setDraftImageUrl(url);
-    toast.success('Đã tải ảnh lên, nhấn Lưu để cập nhật subtask');
-  };
+
 
   const complete = async () => {
     if (readOnly||!canEdit||!subtask || saving || isDone(subtask.status)) return;
@@ -255,8 +246,46 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         </section>
 
         <section>
-          <div className="flex justify-between items-center mb-2"><p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>{!editing && !readOnly && canEdit && <button onClick={() => { setDraftDescription(description); setDraftImageUrl(imageUrl); setEditing(true); }} className="text-xs text-primary font-semibold"><Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}</button>}</div>
-          {editing && !readOnly && canEdit ? <div className="space-y-3"><textarea rows={4} value={draftDescription} onChange={event => setDraftDescription(event.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full rounded-2xl border border-blue-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input value={draftImageUrl} onChange={event => setDraftImageUrl(event.target.value)} placeholder={t('projects.imagePlaceholder')} className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900" /><input ref={imageInputRef} type="file" accept="image/*" className="sr-only" onChange={event => void uploadImage(event.target.files?.[0])} /><button type="button" onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="h-4 w-4" />{t('projects.uploadImage')}</button><div className="flex justify-end gap-2"><button onClick={() => setEditing(false)} className="px-3 py-2 text-sm rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button disabled={saving} onClick={saveDetails} className="px-3 py-2 text-sm bg-[#002e6d] text-white rounded-xl"><Save className="mr-1 inline h-4 w-4" />{t('common.save')}</button></div></div> : <><div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 whitespace-pre-wrap text-sm min-h-[88px]">{description || t('tasks.noDescription')}</div>{imageUrl && <a href={imageUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}</a>}</>}
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>
+            {!editing && !readOnly && canEdit && (
+              <button
+                onClick={() => {
+                  setDraftDescription(description);
+                  setDraftImageUrl(imageUrl);
+                  setEditing(true);
+                }}
+                className="text-xs text-primary font-semibold cursor-pointer hover:underline"
+              >
+                <Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}
+              </button>
+            )}
+          </div>
+          {editing && !readOnly && canEdit ? (
+            <TaskDescriptionEditor
+              value={draftDescription}
+              onChange={setDraftDescription}
+              onSave={saveDetails}
+              onCancel={() => setEditing(false)}
+              saving={saving}
+              placeholder={t('projects.subtaskPlaceholder')}
+              autoFocus
+            />
+          ) : (
+            <>
+              <TaskDescriptionViewer description={description} />
+              {imageUrl && (
+                <a
+                  href={imageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+                >
+                  <ImagePlus className="h-4 w-4" />{t('projects.openSubtaskImage')}
+                </a>
+              )}
+            </>
+          )}
         </section>
 
         <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} collaboratorIds={subtaskCollaborators} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }} onDeleted={() => { onUpdated(); }}/>

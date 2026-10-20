@@ -14,6 +14,7 @@ import { SmartCommentInput } from '../comments/SmartCommentInput';
 import { CommentMessage } from '../comments/CommentMessage';
 import { deleteOwnedComment } from '../../../lib/commentDeletion';
 import { editOwnedComment } from '../../../lib/commentEditing';
+import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
 import { supabase } from '../../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
@@ -172,7 +173,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
             <WorkflowTrackingSummary kind={kind} id={item.id} hub={hub} onOpenTask={task => navigate(taskLink(task.id))} statusFilter={subtaskFilter} />
-            <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{data.description || data.objective || t('tasks.noDescription')}</div></section>
+            <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={data.description || data.objective} /></section>
             
             <section>
               <div className="flex items-center justify-between mb-3">
