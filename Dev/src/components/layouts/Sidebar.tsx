@@ -1226,35 +1226,36 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="app-sidebar w-full h-full card-hub flex flex-col pt-5 pb-4 flex-shrink-0 rounded-3xl z-10 relative shadow-sm">
-      {/* Right-edge Drag Resize Handle */}
-      <div
-        onMouseDown={e => {
-          e.preventDefault();
-          setResizing(true);
-        }}
-        onDoubleClick={() => setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)}
-        title="Kéo để thay đổi độ rộng Sidebar (Nhấp đúp để đặt lại)"
-        className={cn('sb-resize-handle hidden xl:flex', resizing && 'is-resizing')}
-      >
-        <span className="sb-resize-grip" />
-      </div>
+    <div className="app-sidebar-outer w-full h-full flex-shrink-0 z-10 relative">
+      <aside className="app-sidebar app-sidebar-inner w-full h-full card-hub flex flex-col pt-3 pb-3 flex-shrink-0 z-10 relative shadow-sm">
+        {/* Right-edge Drag Resize Handle */}
+        <div
+          onMouseDown={e => {
+            e.preventDefault();
+            setResizing(true);
+          }}
+          onDoubleClick={() => setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)}
+          title="Kéo để thay đổi độ rộng Sidebar (Nhấp đúp để đặt lại)"
+          className={cn('sb-resize-handle hidden xl:flex', resizing && 'is-resizing')}
+        >
+          <span className="sb-resize-grip" />
+        </div>
 
-      <NavLink
-        to="/"
-        className="mb-4 flex items-center justify-center bg-white dark:bg-slate-800 mx-5 p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-[1.02]"
-      >
-        <img
-          src="/logo-light.svg"
-          alt="K COFFEE Logo"
-          className="h-10 w-auto filter drop-shadow-md block dark:hidden"
-        />
-        <img
-          src="/logo-dark.svg"
-          alt="K COFFEE Logo"
-          className="h-10 w-auto filter drop-shadow-md hidden dark:block"
-        />
-      </NavLink>
+        <NavLink
+          to="/"
+          className="sb-logo-card mb-3 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
+        >
+          <img
+            src="/logo-light.svg"
+            alt="K COFFEE Logo"
+            className="h-9 w-auto filter drop-shadow-xs block dark:hidden"
+          />
+          <img
+            src="/logo-dark.svg"
+            alt="K COFFEE Logo"
+            className="h-9 w-auto filter drop-shadow-xs hidden dark:block"
+          />
+        </NavLink>
 
       <DndContext
         sensors={sensors}
@@ -1505,12 +1506,13 @@ export const Sidebar: React.FC = () => {
           </NavLink>
         )}
 
-        <div className="pt-1 text-center">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider">
+        <div className="pt-0.5 text-center">
+          <p className="text-[11px] font-medium text-[#A1A1AA] tracking-wider">
             Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
           </p>
         </div>
       </div>
     </aside>
-  );
+  </div>
+);
 };
