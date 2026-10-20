@@ -6,8 +6,7 @@
 
 /* 1. Resizable Left Sidebar Shell (scales like Detail Tasks) */
 @media (min-width: 1280px) {
-  div.w-\[272px\]:has(.app-sidebar),
-  div:has(.app-sidebar-outer) {
+  div.w-\[272px\]:has(.app-sidebar) {
     width: var(--sidebar-width, 268px) !important;
   }
 }
