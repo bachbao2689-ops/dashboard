@@ -23,6 +23,7 @@ const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
+import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 
 function RootRedirect() {
   const profile = useAuthStore(state => state.profile);
@@ -30,7 +31,7 @@ function RootRedirect() {
   const location = useLocation();
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading...</div>;
+    return <LoadingSplashScreen message="Đang khởi tạo hệ thống..." />;
   }
 
   // Preserve query params if coming with project/campaign links
@@ -79,7 +80,7 @@ function App() {
     <>
       <Toaster position="top-right" />
       <BrowserRouter>
-        <Suspense fallback={<div className="p-8 animate-pulse text-gray-500" role="status">Đang tải…</div>}><Routes>
+        <Suspense fallback={<LoadingSplashScreen message="Đang tải dữ liệu..." />}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={
