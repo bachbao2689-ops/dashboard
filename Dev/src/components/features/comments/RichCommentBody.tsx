@@ -381,7 +381,7 @@ export const RichCommentBody: React.FC<{
     const nodes: React.ReactNode[] = [];
     // Combined regex matching the earliest special token in `text`
     const tokenRegex =
-      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
+      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(!?\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
 
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -472,10 +472,16 @@ export const RichCommentBody: React.FC<{
           url.startsWith('#attachment-');
 
         if (isFileChip) {
+          const displayLabel =
+            label.startsWith('📎') || label.startsWith('🖼️')
+              ? label
+              : isImageAttachment(label, url)
+              ? `🖼️ ${label === 'image' ? 'Ảnh đính kèm' : label}`
+              : `📎 ${label}`;
           nodes.push(
             <AttachmentInlineChip
               key={key}
-              rawLabel={label}
+              rawLabel={displayLabel}
               url={url}
               isMineBubble={isMineBubble}
               onOpenImage={img => setPreviewImage(img)}
