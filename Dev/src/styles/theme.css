@@ -151,18 +151,24 @@ html:not(.dark) .app-sidebar .sidebar-link-active::after {
 .dark .sidebar-link-idle { color: #94a3b8; }
 .dark .sidebar-link-idle:hover { color: #fff; background: rgba(51, 65, 85, 0.5); }
 .dark .sidebar-link-active {
-  color: #dbeafe !important;
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.35), rgba(6, 182, 212, 0.15)) !important;
-  border: 1px solid rgba(147, 197, 253, 0.40) !important;
-  box-shadow: inset 0 1px 0 rgba(215, 235, 255, 0.12), 0 3px 10px rgba(0, 8, 24, 0.36) !important;
+  color: #85df7d !important;
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08)) !important;
+  border: 1px solid rgba(78, 182, 72, 0.45) !important;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 3px 10px rgba(0, 0, 0, 0.25) !important;
   font-weight: 600 !important;
 }
 .dark .sidebar-link-active svg {
-  color: #dbeafe !important;
+  color: #85df7d !important;
 }
 .dark .sidebar-link-active::before {
-  content: none !important;
-  display: none !important;
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 4px;
+  background: #4eb648;
 }
 .status-badge { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; line-height: 1.5; background: color-mix(in srgb, currentColor 11%, transparent); }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
