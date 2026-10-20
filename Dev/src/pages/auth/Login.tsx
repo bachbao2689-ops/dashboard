@@ -4,6 +4,9 @@ import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
+import loginTwoBackground from '../../../Login/Login 2/BG-LOGIN 2 .png';
+import loginTwoTagline from '../../../Login/Login 2/Tagline 2.png';
+import '../../styles/login-two.css';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -51,15 +54,16 @@ export const Login: React.FC = () => {
 
   return (
     <div 
-      className="relative min-h-screen w-full bg-cover bg-center bg-no-repeat overflow-hidden"
-      style={{ backgroundImage: `url('/bg-login-new.png')` }}
+      className="login-two-page relative min-h-screen w-full bg-cover bg-center bg-no-repeat overflow-hidden"
+      style={{ backgroundImage: `url('/bg-login-new.png')`, '--login-two-background': `url("${loginTwoBackground}")` } as React.CSSProperties}
     >
       {/* Logos */}
       <img src="/login-logo.svg" alt="Logo K Coffee" className="absolute top-10 left-1/2 -translate-x-1/2 md:top-12 md:left-12 md:translate-x-0 w-40 md:w-64 drop-shadow-xl z-0" />
       <img src="/login-30.svg" alt="3 Không" className="absolute bottom-10 left-1/2 -translate-x-1/2 md:bottom-12 md:left-12 md:translate-x-0 w-48 md:w-64 drop-shadow-xl z-0" />
 
-      {/* Login Box */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[8%] lg:right-[10%] w-[90%] max-w-[420px] md:max-w-none md:w-[520px] lg:w-[580px] p-8 md:p-10 lg:p-14 rounded-[2.5rem] border border-white/30 backdrop-blur-2xl bg-gradient-to-br from-white/20 via-white/10 to-transparent shadow-[0_32px_80px_-15px_rgba(0,0,0,0.5)] z-10">
+      {/* Login box and tagline share the same horizontal center. */}
+      <div className="login-two-composition">
+      <div className="login-two-card absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[8%] lg:right-[10%] w-[90%] max-w-[420px] md:max-w-none md:w-[520px] lg:w-[580px] p-8 md:p-10 lg:p-14 rounded-[2.5rem] border border-white/30 backdrop-blur-2xl bg-gradient-to-br from-white/20 via-white/10 to-transparent shadow-[0_32px_80px_-15px_rgba(0,0,0,0.5)] z-10">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight drop-shadow-lg">Welcome Back</h1>
           <p className="text-sm md:text-base text-gray-200 font-medium drop-shadow-md">Sign in to your K COFFEE dashboard</p>
@@ -67,7 +71,7 @@ export const Login: React.FC = () => {
 
         <form onSubmit={handleLogin} className="space-y-6 md:space-y-7">
           <div>
-            <label className="block text-sm font-bold text-white mb-3 drop-shadow-md">
+            <label htmlFor="login-email" className="block text-sm font-bold text-white mb-3 drop-shadow-md">
               Email Address
             </label>
             <div className="relative">
@@ -75,7 +79,9 @@ export const Login: React.FC = () => {
                 <Mail className="h-5 w-5 text-white/70" />
               </div>
               <input
+                id="login-email"
                 type="email"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -86,7 +92,7 @@ export const Login: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-white mb-3 drop-shadow-md">
+            <label htmlFor="login-password" className="block text-sm font-bold text-white mb-3 drop-shadow-md">
               Password
             </label>
             <div className="relative">
@@ -94,7 +100,9 @@ export const Login: React.FC = () => {
                 <Lock className="h-5 w-5 text-white/70" />
               </div>
               <input
+                id="login-password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -141,6 +149,8 @@ export const Login: React.FC = () => {
             )}
           </button>
         </form>
+      </div>
+      <img src={loginTwoTagline} alt="Mùa qua mùa, bông đơm trái — Giữ một hướng, trọn vị hai" className="login-two-tagline" />
       </div>
     </div>
   );

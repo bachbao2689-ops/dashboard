@@ -1,0 +1,68 @@
+/* Login 2: light-mode composition. Existing brand marks retain their placement. */
+.login-two-composition { display: contents; }
+.login-two-tagline { display: none; }
+html:not(.dark) .login-two-page {
+  min-height: 100svh;
+  background-image: var(--login-two-background) !important;
+}
+html:not(.dark) .login-two-composition {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(36px, 8vh, 76px);
+  width: clamp(360px, 31vw, 460px);
+  right: 8.6%;
+  top: 50%;
+  transform: translateY(-43%);
+  z-index: 10;
+}
+html:not(.dark) .login-two-card {
+  position: relative;
+  inset: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  padding: 36px;
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  background: linear-gradient(140deg, rgb(232 241 214 / 27%), rgb(118 141 87 / 15%) 52%, rgb(24 37 10 / 36%));
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 24px 70px rgb(0 12 0 / 18%);
+}
+html:not(.dark) .login-two-card > div { margin-bottom: 28px; }
+html:not(.dark) .login-two-card h1 { font-size: 26px; line-height: 1.2; margin-bottom: 8px; }
+html:not(.dark) .login-two-card h1 + p { font-size: 12px; line-height: 18px; }
+html:not(.dark) .login-two-page .login-two-card form > :not([hidden]) ~ :not([hidden]) { margin-top: 20px; margin-bottom: 0; }
+html:not(.dark) .login-two-card label { font-size: 11px; line-height: 16px; margin-bottom: 8px; }
+html:not(.dark) .login-two-card input:not([type='checkbox']) {
+  min-height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 16px;
+  border-radius: 13px;
+}
+html:not(.dark) .login-two-card form > div > .relative > div { padding-left: 14px; }
+html:not(.dark) .login-two-card input:not([type='checkbox']) { padding-left: 42px; }
+html:not(.dark) .login-two-card form > div > .relative svg { width: 16px; height: 16px; }
+html:not(.dark) .login-two-card input[type='checkbox'] { width: 14px; height: 14px; }
+html:not(.dark) .login-two-card label[for='remember-me'] { margin-bottom: 0; font-size: 11px; }
+html:not(.dark) .login-two-card form > .flex { padding-top: 4px; }
+html:not(.dark) .login-two-card button[type='submit'] { line-height: 18px; min-height: 46px; padding: 12px; border-radius: 13px; font-size: 12px; }
+html:not(.dark) .login-two-tagline { display: block; width: 116%; max-width: min(540px, 90vw); height: auto; flex-shrink: 0; }
+@media (max-width: 767px) {
+  html:not(.dark) .login-two-page { padding: 130px 20px 130px; overflow-y: auto; background-position: 40% center; }
+  html:not(.dark) .login-two-composition { position: relative; inset: auto; transform: none; width: min(420px, 100%); margin: 0 auto; gap: 32px; }
+  html:not(.dark) .login-two-card { padding: 30px 26px; }
+  html:not(.dark) .login-two-tagline { width: 100%; max-width: 420px; }
+}
+@media (min-width: 768px) and (max-height: 720px) {
+  html:not(.dark) .login-two-composition { gap: 40px; transform: translateY(-44%); }
+  html:not(.dark) .login-two-card { padding: 30px 34px; }
+  html:not(.dark) .login-two-card > div { margin-bottom: 24px; }
+  html:not(.dark) .login-two-page .login-two-card form > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+}
+@media (min-width: 768px) and (max-height: 560px) {
+  html:not(.dark) .login-two-page { min-height: 640px; }
+}

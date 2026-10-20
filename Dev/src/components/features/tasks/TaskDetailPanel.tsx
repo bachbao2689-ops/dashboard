@@ -102,7 +102,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   }, [resizing]);
 
   const saveDescription = async (newDesc?: string) => {
-    if (readOnly||!canEdit||!task) return;
+    if (readOnly || !canEdit || !task) return;
     const textToSave = typeof newDesc === 'string' ? newDesc : description;
     setSaving(true);
     const { data, error } = await supabase.from('tasks').update({ description: textToSave, updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
