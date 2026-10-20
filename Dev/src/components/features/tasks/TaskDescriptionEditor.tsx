@@ -9,6 +9,8 @@ import {
   Columns2,
   Columns3,
   FileText,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
@@ -66,7 +68,7 @@ export interface RichBlock {
   text?: string;
   spans?: RichSpan[];
   attachments?: AttachmentChip[];
-  columnCount?: 2 | 3;
+  columnCount?: number;
   columns?: ColumnData[];
 }
 
@@ -411,15 +413,19 @@ function serializeTextWithRichSpans(text: string, spans: RichSpan[]): string {
     const colorSpan = [...active].reverse().find(a => a.color);
     const linkSpan = [...active].reverse().find(a => a.link);
 
-    let formatted = rawSeg;
-    if (isBold && isItalic) formatted = `***${formatted}***`;
-    else if (isBold) formatted = `**${formatted}**`;
-    else if (isItalic) formatted = `*${formatted}*`;
-    if (isUnderline) formatted = `<u>${formatted}</u>`;
-    if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
-    if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+    const formatLine = (line: string) => {
+      if (!line) return '';
+      let formatted = line;
+      if (isBold && isItalic) formatted = `***${formatted}***`;
+      else if (isBold) formatted = `**${formatted}**`;
+      else if (isItalic) formatted = `*${formatted}*`;
+      if (isUnderline) formatted = `<u>${formatted}</u>`;
+      if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
+      if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+      return formatted;
+    };
 
-    out += formatted;
+    out += rawSeg.split('\n').map(formatLine).join('\n');
   }
 
   return out;
@@ -586,7 +592,7 @@ function parseRawToRichBlocks(raw?: string | null): RichBlock[] {
   const blocks = parseDescriptionToBlocks(raw);
   return blocks.map(b => {
     if (b.type === 'columns') {
-      const count = b.columnCount === 3 ? 3 : 2;
+      const count = b.columns?.length || b.columnCount || 2;
       const rawCols = (b.columns || []).slice(0, count);
       while (rawCols.length < count) {
         rawCols.push('');
@@ -626,7 +632,7 @@ function parseRawToRichBlocks(raw?: string | null): RichBlock[] {
 function serializeRichBlocksToRaw(blocks: RichBlock[]): string {
   const rawBlocks: DescriptionBlock[] = blocks.map(b => {
     if (b.type === 'columns') {
-      const count = b.columnCount === 3 ? 3 : 2;
+      const count = b.columns?.length || b.columnCount || 2;
       const cols = (b.columns || []).slice(0, count).map(col => {
         const textWithSpans = serializeTextWithRichSpans(col.text, col.spans).trim();
         const attsMarkdown = col.attachments
@@ -637,7 +643,7 @@ function serializeRichBlocksToRaw(blocks: RichBlock[]): string {
       return {
         id: b.id,
         type: 'columns',
-        columnCount: count,
+        columnCount: count as any,
         columns: cols,
       };
     }
@@ -936,6 +942,53 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     }, 50);
   };
 
+  // Add a new column to an existing columns block (up to 4 columns)
+  const handleAddColumn = (blockIndex: number) => {
+    const nextBlocks = [...blocks];
+    const target = { ...nextBlocks[blockIndex] };
+    if (target.type !== 'columns') return;
+    const currentCols = target.columns ? [...target.columns] : [];
+    if (currentCols.length >= 4) {
+      toast.error('Tối đa 4 cột');
+      return;
+    }
+    currentCols.push({ text: '', spans: [], attachments: [] });
+    target.columns = currentCols;
+    target.columnCount = currentCols.length;
+    nextBlocks[blockIndex] = target;
+    commitBlocks(nextBlocks);
+    toast.success(`Đã thêm cột (${currentCols.length} cột)`);
+  };
+
+  // Delete a specific column: if only 1 column remains, seamlessly convert to a single text block
+  const handleDeleteColumn = (blockIndex: number, colIndex: number) => {
+    const nextBlocks = [...blocks];
+    const target = { ...nextBlocks[blockIndex] };
+    if (target.type !== 'columns' || !target.columns) return;
+
+    const remainingCols = target.columns.filter((_, idx) => idx !== colIndex);
+
+    if (remainingCols.length <= 1) {
+      const leftover = remainingCols[0] || { text: '', spans: [], attachments: [] };
+      nextBlocks[blockIndex] = {
+        id: target.id,
+        type: 'text',
+        text: leftover.text,
+        spans: leftover.spans,
+        attachments: leftover.attachments,
+      };
+      commitBlocks(nextBlocks);
+      toast.success('Đã chuyển về khung văn bản đơn');
+      return;
+    }
+
+    target.columns = remainingCols;
+    target.columnCount = remainingCols.length;
+    nextBlocks[blockIndex] = target;
+    commitBlocks(nextBlocks);
+    toast.success(`Đã xoá cột (còn ${remainingCols.length} cột)`);
+  };
+
   // Normal text change with dynamic span adjustment and slash command detection
   const handleTextChange = (
     blockIndex: number,
@@ -1021,7 +1074,7 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     // Inside column navigation & "lúc xuống dòng sẽ hết tính năng column"
     if (colIndex !== undefined) {
       const targetBlock = blocks[blockIndex];
-      const count = targetBlock.columnCount || 2;
+      const count = targetBlock.columns?.length || targetBlock.columnCount || 2;
 
       // Tab moves between columns
       if (e.key === 'Tab') {
@@ -1347,86 +1400,125 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
             }
 
             if (block.type === 'columns') {
-              const count = block.columnCount === 3 ? 3 : 2;
-              const cols = (block.columns || []).slice(0, count);
+              const count = block.columns?.length || block.columnCount || 2;
+              const cols = block.columns || [];
+
+              const gridColsClass =
+                count === 4
+                  ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4'
+                  : count === 3
+                  ? 'grid-cols-1 sm:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2';
 
               return (
-                <div
-                  key={block.id || bIdx}
-                  className={`grid gap-2 my-1.5 ${
-                    count === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'
-                  }`}
-                >
-                  {cols.map((colData, cIdx) => {
-                    const hasMirrored =
-                      (colData.spans || []).length > 0 && (colData.text || '').length > 0;
-                    const colAtts = colData.attachments || [];
+                <div key={block.id || bIdx} className="space-y-1.5 my-2">
+                  {/* Column Header Bar with Add Column action */}
+                  <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-[11px]">
+                      <Columns2 size={13} className="text-blue-500" />
+                      <span>Bố cục {count} cột</span>
+                    </span>
 
-                    return (
-                      <div
-                        key={cIdx}
-                        className="relative min-w-0 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-900 transition-colors p-2.5 resize-y overflow-auto min-h-[76px] max-h-[500px] flex flex-col gap-1.5"
+                    {count < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddColumn(bIdx)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Thêm cột mới vào bố cục này"
                       >
-                        {/* Requirement 3: Local Attachment Chips inside this exact column! */}
-                        {colAtts.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pb-1">
-                            {colAtts.map(att => (
-                              <AttachmentChipItem
-                                key={att.id}
-                                att={att}
-                                onRemove={() => {
-                                  const newBlocks = [...blocks];
-                                  const target = { ...newBlocks[bIdx] };
-                                  if (!target.columns) return;
-                                  const nextCols = [...target.columns];
-                                  const targetCol = { ...nextCols[cIdx] };
-                                  targetCol.attachments = (targetCol.attachments || []).filter(
-                                    x => x.id !== att.id
-                                  );
-                                  nextCols[cIdx] = targetCol;
-                                  target.columns = nextCols;
-                                  newBlocks[bIdx] = target;
-                                  commitBlocks(newBlocks);
-                                }}
-                                onOpenLightbox={() =>
-                                  setLightboxImage({ name: att.name, url: att.url })
-                                }
-                              />
-                            ))}
-                          </div>
-                        )}
+                        <Plus size={12} />
+                        <span>Thêm cột</span>
+                      </button>
+                    )}
+                  </div>
 
-                        {/* WYSIWYG Column Input Layer */}
-                        <div className="relative flex-1 min-h-[36px]">
-                          {hasMirrored && (
-                            <div aria-hidden="true" className="desc-rich-mirror">
-                              {renderMirrorSegments(colData.text || '', colData.spans || [])}
+                  <div className={`grid gap-2 ${gridColsClass}`}>
+                    {cols.map((colData, cIdx) => {
+                      const hasMirrored =
+                        (colData.spans || []).length > 0 && (colData.text || '').length > 0;
+                      const colAtts = colData.attachments || [];
+
+                      return (
+                        <div
+                          key={cIdx}
+                          className="relative min-w-0 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-900 transition-colors p-2.5 resize-y overflow-auto min-h-[84px] max-h-[500px] flex flex-col gap-1.5"
+                        >
+                          {/* Column Top Bar: Column Label + Delete Column Button */}
+                          <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-slate-500 select-none border-b border-gray-100 dark:border-slate-700/60 pb-1 mb-0.5">
+                            <span className="font-semibold text-gray-500 dark:text-slate-400">
+                              Cột {cIdx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteColumn(bIdx, cIdx)}
+                              className="p-0.5 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors rounded cursor-pointer"
+                              title="Xoá cột này"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+
+                          {/* Local Attachment Chips inside this exact column */}
+                          {colAtts.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pb-1">
+                              {colAtts.map(att => (
+                                <AttachmentChipItem
+                                  key={att.id}
+                                  att={att}
+                                  onRemove={() => {
+                                    const newBlocks = [...blocks];
+                                    const target = { ...newBlocks[bIdx] };
+                                    if (!target.columns) return;
+                                    const nextCols = [...target.columns];
+                                    const targetCol = { ...nextCols[cIdx] };
+                                    targetCol.attachments = (targetCol.attachments || []).filter(
+                                      x => x.id !== att.id
+                                    );
+                                    nextCols[cIdx] = targetCol;
+                                    target.columns = nextCols;
+                                    newBlocks[bIdx] = target;
+                                    commitBlocks(newBlocks);
+                                  }}
+                                  onOpenLightbox={() =>
+                                    setLightboxImage({ name: att.name, url: att.url })
+                                  }
+                                />
+                              ))}
                             </div>
                           )}
-                          <textarea
-                            id={`desc-col-${bIdx}-${cIdx}`}
-                            value={colData.text || ''}
-                            onChange={e => handleColChange(bIdx, cIdx, e.target.value)}
-                            onSelect={e => syncSelection(e, bIdx, cIdx)}
-                            onKeyUp={e => syncSelection(e, bIdx, cIdx)}
-                            onMouseUp={e => syncSelection(e, bIdx, cIdx)}
-                            onKeyDown={e => handleKeyDown(e, bIdx, cIdx)}
-                            onPaste={e => void handlePaste(e, bIdx, cIdx)}
-                            onScroll={e => {
-                              const target = e.currentTarget;
-                              const mirror = target.previousElementSibling as HTMLElement | null;
-                              if (mirror) {
-                                mirror.scrollTop = target.scrollTop;
-                                mirror.scrollLeft = target.scrollLeft;
-                              }
-                            }}
-                            placeholder={`Cột ${cIdx + 1}...`}
-                            className={`desc-rich-textarea ${hasMirrored ? 'is-mirrored' : ''}`}
-                          />
+
+                          {/* WYSIWYG Column Input Layer */}
+                          <div className="relative flex-1 min-h-[36px]">
+                            {hasMirrored && (
+                              <div aria-hidden="true" className="desc-rich-mirror">
+                                {renderMirrorSegments(colData.text || '', colData.spans || [])}
+                              </div>
+                            )}
+                            <textarea
+                              id={`desc-col-${bIdx}-${cIdx}`}
+                              value={colData.text || ''}
+                              onChange={e => handleColChange(bIdx, cIdx, e.target.value)}
+                              onSelect={e => syncSelection(e, bIdx, cIdx)}
+                              onKeyUp={e => syncSelection(e, bIdx, cIdx)}
+                              onMouseUp={e => syncSelection(e, bIdx, cIdx)}
+                              onKeyDown={e => handleKeyDown(e, bIdx, cIdx)}
+                              onPaste={e => void handlePaste(e, bIdx, cIdx)}
+                              onScroll={e => {
+                                const target = e.currentTarget;
+                                const mirror = target.previousElementSibling as HTMLElement | null;
+                                if (mirror) {
+                                  mirror.scrollTop = target.scrollTop;
+                                  mirror.scrollLeft = target.scrollLeft;
+                                }
+                              }}
+                              placeholder={`Cột ${cIdx + 1}...`}
+                              className={`desc-rich-textarea ${hasMirrored ? 'is-mirrored' : ''}`}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               );
             }

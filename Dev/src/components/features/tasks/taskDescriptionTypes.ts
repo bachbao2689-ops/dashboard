@@ -2,11 +2,11 @@ export interface DescriptionBlock {
   id: string;
   type: 'text' | 'columns';
   text?: string;
-  columnCount?: 2 | 3;
+  columnCount?: number;
   columns?: string[];
 }
 
-const COLUMNS_BLOCK_REGEX = /\[columns:([23])\]([\s\S]*?)\[\/columns\]/g;
+const COLUMNS_BLOCK_REGEX = /\[columns:([2-6])\]([\s\S]*?)\[\/columns\]/g;
 const COL_ITEM_REGEX = /\[col\]([\s\S]*?)\[\/col\]/g;
 
 /**
@@ -32,7 +32,7 @@ export function parseDescriptionToBlocks(raw?: string | null): DescriptionBlock[
       });
     }
 
-    const count = parseInt(match[1], 10) === 3 ? 3 : 2;
+    const count = parseInt(match[1], 10) || 2;
     const innerColumnsText = match[2] || '';
     const columns: string[] = [];
 
@@ -85,7 +85,7 @@ export function serializeBlocksToDescription(blocks: DescriptionBlock[]): string
       const t = (block.text || '').trim();
       if (t) chunks.push(t);
     } else if (block.type === 'columns') {
-      const count = block.columnCount === 3 ? 3 : 2;
+      const count = block.columns?.length || block.columnCount || 2;
       const cols = (block.columns || []).slice(0, count).map(c => `[col]\n${(c || '').trim()}\n[/col]`);
       const hasContent = cols.some(c => c.trim().length > 13);
       if (hasContent || cols.length > 0) {

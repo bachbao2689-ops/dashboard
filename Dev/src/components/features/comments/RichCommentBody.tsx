@@ -382,7 +382,7 @@ export const RichCommentBody: React.FC<{
     const nodes: React.ReactNode[] = [];
     // Combined regex matching the earliest special token in `text`
     const tokenRegex =
-      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(!?\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
+      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*\*([^\n*]+?)\*\*\*)|(\*\*([^\n*]+?)\*\*)|(\*([^\n*]+?)\*)|(@(?:Today|Hôm_nay|Hom_nay)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:Tomorrow|Ngày_mai|Ngay_mai)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(@(?:NextWeek|Tuần_tới|Tuan_toi)\((\d{1,2}\/\d{1,2}\/\d{4})\))|(!?\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s<)]+)|((?:^|\s)@[A-Za-zÀ-ỹ0-9_.-]+)/g;
 
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -418,53 +418,62 @@ export const RichCommentBody: React.FC<{
           </u>
         );
       } else if (match[6]) {
-        // **bold**
+        // ***bold + italic***
         nodes.push(
           <strong key={key} className="font-bold">
-            {renderInlineTokens(match[7], `${key}-b`)}
+            <em className="italic">
+              {renderInlineTokens(match[7], `${key}-bi`)}
+            </em>
           </strong>
         );
       } else if (match[8]) {
+        // **bold**
+        nodes.push(
+          <strong key={key} className="font-bold">
+            {renderInlineTokens(match[9], `${key}-b`)}
+          </strong>
+        );
+      } else if (match[10]) {
         // *italic*
         nodes.push(
           <em key={key} className="italic">
-            {renderInlineTokens(match[9], `${key}-i`)}
+            {renderInlineTokens(match[11], `${key}-i`)}
           </em>
         );
-      } else if (match[10]) {
+      } else if (match[12]) {
         // @Today(dd/mm/yyyy)
         nodes.push(
           <DateReminderPill
             key={key}
             kind="today"
-            dateStr={match[11]}
-            isMineBubble={isMineBubble}
-          />
-        );
-      } else if (match[12]) {
-        // @Tomorrow(dd/mm/yyyy)
-        nodes.push(
-          <DateReminderPill
-            key={key}
-            kind="tomorrow"
             dateStr={match[13]}
             isMineBubble={isMineBubble}
           />
         );
       } else if (match[14]) {
-        // @NextWeek(dd/mm/yyyy)
+        // @Tomorrow(dd/mm/yyyy)
         nodes.push(
           <DateReminderPill
             key={key}
-            kind="nextweek"
+            kind="tomorrow"
             dateStr={match[15]}
             isMineBubble={isMineBubble}
           />
         );
       } else if (match[16]) {
+        // @NextWeek(dd/mm/yyyy)
+        nodes.push(
+          <DateReminderPill
+            key={key}
+            kind="nextweek"
+            dateStr={match[17]}
+            isMineBubble={isMineBubble}
+          />
+        );
+      } else if (match[18]) {
         // [label](url)
-        const label = match[17];
-        const url = match[18];
+        const label = match[19];
+        const url = match[20];
         const isFileChip =
           label.startsWith('📎') ||
           label.startsWith('🖼️') ||
@@ -531,9 +540,9 @@ export const RichCommentBody: React.FC<{
             />
           );
         }
-      } else if (match[19]) {
+      } else if (match[21]) {
         // Raw URL https://...
-        const rawUrl = match[19];
+        const rawUrl = match[21];
         if (isImageAttachment(rawUrl, rawUrl)) {
           const fileName = rawUrl.split('/').pop()?.split('?')[0] || 'image.png';
           if (renderDirectImages) {
@@ -571,9 +580,9 @@ export const RichCommentBody: React.FC<{
             />
           );
         }
-      } else if (match[20]) {
+      } else if (match[22]) {
         // @PersonMention — Bold high-contrast PIC tag
-        const fullMatch = match[20];
+        const fullMatch = match[22];
         const leadingSpace = fullMatch.startsWith(' ') ? ' ' : '';
         const handle = fullMatch.trim();
         nodes.push(
