@@ -1,6 +1,11 @@
 /* ==========================================================================
-   K-COFFEE CINEMATIC SPROUT LOGO ANIMATION (3.5s Timeline)
-   Story: Mầm cây nhú lên -> Chữ K vươn nở -> Vòng tròn vẽ bao quanh -> Chữ trượt ra
+   K-COFFEE CINEMATIC LOGO INTRO ANIMATION (3.5s Timeline)
+   Choreography:
+   1. Chữ K ở chính giữa trung tâm màn hình nhảy bung ra (0.0s -> 0.9s)
+   2. Line vòng tròn màu trắng vẽ 360 độ bao quanh K (0.5s -> 1.6s)
+   3. Huy hiệu tròn hoàn thiện ở giữa trung tâm màn hình (1.6s -> 1.9s)
+   4. Huy hiệu trượt êm sang trái, đồng thời cụm chữ K-COFFEE trượt ra bên phải (1.9s -> 2.7s)
+   5. Cả cụm logo hoàn chỉnh nằm ngay ngắn ở chính giữa trung tâm màn hình (2.7s -> 3.5s)
    ========================================================================== */
 
 .k-anim-stage {
@@ -10,272 +15,277 @@
   align-items: center;
   justify-content: center;
   user-select: none;
+  width: 100%;
+}
+
+.k-anim-breathe-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .k-anim-svg {
   width: 100%;
-  max-width: 440px;
+  max-width: 520px;
   height: auto;
   overflow: visible;
-  filter: drop-shadow(0 12px 36px rgba(0, 15, 45, 0.45));
+  filter: drop-shadow(0 16px 42px rgba(0, 15, 45, 0.55));
+}
+
+@media (max-width: 640px) {
+  .k-anim-svg {
+    max-width: 380px;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   STAGE 1: MẦM CÂY TRỒI LÊN VƯƠN THÀNH CHỮ K (0.0s -> 1.3s)
+   STAGE 1: HUY HIỆU Ở TRUNG TÂM MÀN HÌNH -> TRƯỢT SANG TRÁI
+   Emblem center = 83.65. Full SVG center = 262.01.
+   Delta = 262.01 - 83.65 = 178.36px.
+   translateX(178.36px) đưa tâm huy hiệu vào đúng tâm tuyệt đối của màn hình.
    -------------------------------------------------------------------------- */
 
-/* Seed Bud at the ground level (83.65, 105) */
-.k-anim-seed-glow {
-  transform-origin: 83.65px 105px;
-  animation: kSeedPulse 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+.k-anim-emblem-wrap {
+  transform-origin: 83.65px 77.2px;
+  animation: kEmblemCenterToLeft 3.5s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
 }
 
-@keyframes kSeedPulse {
+@keyframes kEmblemCenterToLeft {
+  0%, 54% {
+    transform: translateX(178.36px);
+  }
+  76%, 100% {
+    transform: translateX(0px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CHỮ K Ở TRUNG TÂM NHẢY BUNG RA (0.0s -> 0.9s)
+   -------------------------------------------------------------------------- */
+
+.k-anim-sprout-k {
+  transform-origin: 83.65px 77.2px;
+  animation: kKJumpCenter 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes kKJumpCenter {
   0% {
     opacity: 0;
     transform: scale(0);
+    filter: drop-shadow(0 0 24px #85df7d) brightness(1.7);
   }
-  20% {
+  14% {
     opacity: 1;
-    transform: scale(1.6);
-    filter: drop-shadow(0 0 10px #85df7d);
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 16px #4eb648) brightness(1.35);
   }
-  55% {
-    opacity: 0.9;
-    transform: scale(1.2);
-  }
-  85%, 100% {
-    opacity: 0;
-    transform: scale(0.2);
-  }
-}
-
-/* Green Sprout Growth into stylized K */
-.k-anim-sprout-k {
-  transform-origin: 83.65px 105px;
-  animation: kSproutGrow 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes kSproutGrow {
-  0% {
-    opacity: 0;
-    transform: translateY(22px) scale(0.08, 0.15);
-    filter: drop-shadow(0 0 20px #85df7d) brightness(1.6);
-  }
-  22% {
+  24% {
     opacity: 1;
-    transform: translateY(10px) scale(0.35, 0.7);
-    filter: drop-shadow(0 0 14px #4eb648) brightness(1.3);
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 10px rgba(78, 182, 72, 0.6)) brightness(1.1);
   }
-  38% {
+  34% {
     opacity: 1;
-    transform: translateY(-2px) scale(1.08, 1.05);
-    filter: drop-shadow(0 0 8px rgba(78, 182, 72, 0.6)) brightness(1.1);
-  }
-  48% {
-    opacity: 1;
-    transform: translateY(0) scale(1, 1);
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    transform: scale(1);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1, 1);
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    transform: scale(1);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
   }
 }
 
 /* --------------------------------------------------------------------------
-   STAGE 2: VÒNG TRÒN HUY HIỆU TỰ VẼ BAO QUANH (1.2s -> 2.3s)
+   LINE VÒNG TRÒN MÀU TRẮNG VẼ 360 ĐỘ (0.5s -> 1.6s)
+   Chu vi vòng tròn r = 64.39 -> C = 405px
    -------------------------------------------------------------------------- */
 
-/* Solid Navy Circular Backdrop */
+.k-anim-laser-stroke-white {
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 405;
+  stroke-dashoffset: 405;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+  animation: kDrawWhiteCircle 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes kDrawWhiteCircle {
+  0%, 14% {
+    stroke-dashoffset: 405;
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  48% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   NỀN XANH NAVY VÀ HOA VĂN CHI TIẾT HUY HIỆU HIỆN RA
+   -------------------------------------------------------------------------- */
+
 .k-anim-seal-bg {
   transform-origin: 83.65px 77.2px;
-  animation: kSealBgFade 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: kSealBgFade 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes kSealBgFade {
-  0%, 34% {
+  0%, 18% {
     opacity: 0;
-    transform: scale(0.75);
+    transform: scale(0.8);
   }
-  45% {
-    opacity: 0.85;
-    transform: scale(1.03);
+  34% {
+    opacity: 1;
+    transform: scale(1);
   }
-  56%, 100% {
+  100% {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-/* Circular Laser Stroke (Draws 360 deg) */
-.k-anim-laser-stroke {
-  transform-origin: 83.65px 77.2px;
-  stroke-dasharray: 405;
-  stroke-dashoffset: 405;
-  animation: kDrawLaser 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes kDrawLaser {
-  0%, 34% {
-    stroke-dashoffset: 405;
-    opacity: 0;
-  }
-  38% {
-    opacity: 1;
-  }
-  64% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  75%, 100% {
-    stroke-dashoffset: 0;
-    opacity: 0; /* hands over to official seal ring */
-  }
-}
-
-/* Official Detailed Seal Ring & Engravings */
 .k-anim-seal-details {
   transform-origin: 83.65px 77.2px;
-  animation: kSealDetailsReveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: kSealDetailsFade 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-@keyframes kSealDetailsReveal {
-  0%, 46% {
+@keyframes kSealDetailsFade {
+  0%, 26% {
     opacity: 0;
-    transform: rotate(-18deg) scale(0.92);
+    transform: scale(0.92);
   }
-  62% {
+  48% {
     opacity: 1;
-    transform: rotate(0deg) scale(1);
+    transform: scale(1);
   }
   100% {
     opacity: 1;
-    transform: rotate(0deg) scale(1);
+    transform: scale(1);
   }
 }
 
 /* --------------------------------------------------------------------------
-   STAGE 3: CỤM CHỮ THƯƠNG HIỆU TRƯỢT RA (2.2s -> 3.3s)
+   STAGE 3: CỤM LOGO CHỮ TRƯỢT RA (1.9s -> 2.7s)
    -------------------------------------------------------------------------- */
 
 .k-anim-typography-group {
-  animation: kTypoSlideOut 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: kTypoSlideOut 3.5s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
 }
 
 @keyframes kTypoSlideOut {
-  0%, 60% {
+  0%, 54% {
     opacity: 0;
     transform: translateX(-40px);
-    filter: blur(6px);
   }
-  74% {
-    opacity: 0.85;
-    transform: translateX(4px);
-    filter: blur(0px);
-  }
-  86%, 100% {
+  76%, 100% {
     opacity: 1;
     transform: translateX(0px);
-    filter: blur(0px);
   }
 }
 
-/* Big Green K in Typography */
+/* Từng thành phần chữ xuất hiện nối tiếp mượt mà */
 .k-anim-typo-bigk {
+  transform-origin: 213px 55px;
   animation: kBigKPop 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes kBigKPop {
-  0%, 62% {
+  0%, 55% {
     opacity: 0;
-    transform: scale(0.85);
+    transform: scale(0.7);
   }
-  76% {
-    opacity: 1;
-    transform: scale(1.04);
-  }
-  86%, 100% {
+  74%, 100% {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-/* Letters C-O-F-F-E-E staggered shimmer */
 .k-anim-typo-coffee {
   animation: kCoffeeLetters 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes kCoffeeLetters {
-  0%, 65% {
+  0%, 58% {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-18px);
   }
-  80% {
-    opacity: 0.95;
-    transform: translateX(2px);
-  }
-  90%, 100% {
+  78%, 100% {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
-/* Tagline: ĐẶC SẢN NGUYÊN CHẤT */
 .k-anim-typo-tagline {
   animation: kTaglineReveal 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes kTaglineReveal {
-  0%, 72% {
+  0%, 62% {
     opacity: 0;
     transform: translateY(8px);
   }
-  88%, 100% {
-    opacity: 0.95;
+  80%, 100% {
+    opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* Shimmer Light Reflection Sweep over completed logo */
+/* --------------------------------------------------------------------------
+   STAGE 4: VỆT SÁNG QUÉT QUA & NHỊP THỞ CHUYỂN ĐỘNG (2.7s -> 3.5s+)
+   -------------------------------------------------------------------------- */
+
 .k-anim-light-sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 62%,
+    transparent 100%
+  );
+  transform: translateX(-150%) skewX(-20deg);
   animation: kSheenPass 3.5s ease-in-out forwards;
 }
 
 @keyframes kSheenPass {
-  0%, 82% {
+  0%, 76% {
+    transform: translateX(-150%) skewX(-20deg);
     opacity: 0;
-    transform: translateX(-180%) skewX(-25deg);
   }
-  84% {
-    opacity: 0.7;
+  77% {
+    opacity: 1;
   }
-  96% {
-    opacity: 0.7;
-    transform: translateX(220%) skewX(-25deg);
+  92% {
+    transform: translateX(180%) skewX(-20deg);
+    opacity: 1;
   }
-  100% {
+  93%, 100% {
     opacity: 0;
-    transform: translateX(250%) skewX(-25deg);
+    transform: translateX(180%) skewX(-20deg);
   }
 }
 
-/* --------------------------------------------------------------------------
-   STAGE 4: TOÀN BỘ LOGO THỞ ÊM (AMBIENT BREATHING SAU KHI HOÀN THÀNH)
-   -------------------------------------------------------------------------- */
-
 .k-anim-breathe-container {
-  animation: kLogoBreathing 4.5s ease-in-out infinite 3.5s;
+  animation: kLogoBreathing 3.6s ease-in-out infinite 3.4s;
 }
 
 @keyframes kLogoBreathing {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 12px 36px rgba(0, 15, 45, 0.45));
+    filter: drop-shadow(0 14px 40px rgba(0, 15, 45, 0.55));
   }
   50% {
     transform: scale(1.02);
-    filter: drop-shadow(0 16px 42px rgba(78, 182, 72, 0.35));
+    filter: drop-shadow(0 18px 48px rgba(78, 182, 72, 0.35));
   }
 }
