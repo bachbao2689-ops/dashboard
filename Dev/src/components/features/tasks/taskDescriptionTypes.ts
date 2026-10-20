@@ -1,26 +1,20 @@
-export interface DescriptionColumn {
-  text: string;
-  imageUrl?: string;
-}
-
 export interface DescriptionBlock {
   id: string;
   type: 'text' | 'columns';
   text?: string;
   columnCount?: 2 | 3;
-  columns?: DescriptionColumn[];
+  columns?: string[];
 }
 
 const COLUMNS_BLOCK_REGEX = /\[columns:([23])\]([\s\S]*?)\[\/columns\]/g;
 const COL_ITEM_REGEX = /\[col\]([\s\S]*?)\[\/col\]/g;
-const IMG_EXTRACTION_REGEX = /(?:!\[([^\]]*)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)|\[img:(https?:\/\/[^\s\]]+|data:image\/[^\s\]]+)\])/;
 
 /**
- * Parses a raw description string (with markdown + [columns:N] tags) into structured blocks.
+ * Parses raw description string into structured text & column blocks.
  */
 export function parseDescriptionToBlocks(raw?: string | null): DescriptionBlock[] {
   if (!raw || !raw.trim()) {
-    return [{ id: 'b_init', type: 'text', text: '' }];
+    return [{ id: 'b_0', type: 'text', text: '' }];
   }
 
   const blocks: DescriptionBlock[] = [];
@@ -40,30 +34,16 @@ export function parseDescriptionToBlocks(raw?: string | null): DescriptionBlock[
 
     const count = parseInt(match[1], 10) === 3 ? 3 : 2;
     const innerColumnsText = match[2] || '';
-    const columns: DescriptionColumn[] = [];
+    const columns: string[] = [];
 
     let colMatch: RegExpExecArray | null;
     COL_ITEM_REGEX.lastIndex = 0;
     while ((colMatch = COL_ITEM_REGEX.exec(innerColumnsText)) !== null) {
-      const colContent = colMatch[1] || '';
-      const imgMatch = colContent.match(IMG_EXTRACTION_REGEX);
-      let imageUrl: string | undefined;
-      let textWithoutImg = colContent;
-
-      if (imgMatch) {
-        imageUrl = imgMatch[2] || imgMatch[3];
-        textWithoutImg = colContent.replace(imgMatch[0], '').trim();
-      }
-
-      columns.push({
-        text: textWithoutImg.trim(),
-        imageUrl: imageUrl?.trim(),
-      });
+      columns.push((colMatch[1] || '').trim());
     }
 
-    // Ensure we have at least `count` columns
     while (columns.length < count) {
-      columns.push({ text: '' });
+      columns.push('');
     }
 
     blocks.push({
@@ -93,7 +73,7 @@ export function parseDescriptionToBlocks(raw?: string | null): DescriptionBlock[
 }
 
 /**
- * Serializes structured blocks back into a stored markdown string.
+ * Serializes structured blocks back into stored markdown.
  */
 export function serializeBlocksToDescription(blocks: DescriptionBlock[]): string {
   if (!blocks || blocks.length === 0) return '';
@@ -106,15 +86,8 @@ export function serializeBlocksToDescription(blocks: DescriptionBlock[]): string
       if (t) chunks.push(t);
     } else if (block.type === 'columns') {
       const count = block.columnCount === 3 ? 3 : 2;
-      const cols = (block.columns || []).slice(0, count).map(col => {
-        const parts: string[] = [];
-        if (col.text?.trim()) parts.push(col.text.trim());
-        if (col.imageUrl?.trim()) parts.push(`![image](${col.imageUrl.trim()})`);
-        return `[col]\n${parts.join('\n')}\n[/col]`;
-      });
-
-      // Only serialize if at least one column has content or user explicitly kept the column layout
-      const hasContent = cols.some(c => c.trim().length > 13); // longer than empty [col][/col]
+      const cols = (block.columns || []).slice(0, count).map(c => `[col]\n${(c || '').trim()}\n[/col]`);
+      const hasContent = cols.some(c => c.trim().length > 13);
       if (hasContent || cols.length > 0) {
         chunks.push(`[columns:${count}]\n${cols.join('\n')}\n[/columns]`);
       }
