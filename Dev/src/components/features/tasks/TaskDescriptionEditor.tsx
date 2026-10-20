@@ -8,7 +8,6 @@ import {
   Save,
   Columns2,
   Columns3,
-  Image as ImageIcon,
   FileText,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -663,26 +662,40 @@ const AttachmentChipItem: React.FC<{
   onRemove: () => void;
   onOpenLightbox: () => void;
 }> = ({ att, onRemove, onOpenLightbox }) => {
-  const [hovered, setHovered] = useState(false);
+  if (att.isImage) {
+    return (
+      <div className="relative group inline-block max-w-full my-1">
+        <img
+          src={att.url}
+          alt={att.name}
+          onClick={onOpenLightbox}
+          className="max-h-48 max-w-full rounded-xl border border-gray-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-800/60 cursor-pointer shadow-xs hover:opacity-95 transition-all"
+        />
+        <button
+          type="button"
+          title="Xoá hình ảnh"
+          onClick={e => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-md cursor-pointer"
+        >
+          <X size={12} strokeWidth={2.5} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={() => {
-        if (att.isImage) {
-          onOpenLightbox();
-        } else if (att.url && !att.url.startsWith('#')) {
+        if (att.url && !att.url.startsWith('#')) {
           window.open(att.url, '_blank', 'noopener,noreferrer');
         }
       }}
-      className="relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs bg-blue-50/90 hover:bg-blue-100/80 text-blue-800 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 cursor-pointer transition-colors max-w-full shrink-0"
+      className="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-blue-50/90 hover:bg-blue-100/80 text-blue-800 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 cursor-pointer transition-colors max-w-full shrink-0 my-0.5"
     >
-      {att.isImage ? (
-        <ImageIcon size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
-      ) : (
-        <FileText size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
-      )}
+      <FileText size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
       <strong className="font-bold truncate max-w-[140px] text-[11.5px]">{att.name}</strong>
       {att.sizeLabel && (
         <span className="text-[9.5px] opacity-70 shrink-0">({att.sizeLabel})</span>
@@ -698,23 +711,6 @@ const AttachmentChipItem: React.FC<{
       >
         <X size={11} />
       </button>
-
-      {hovered && att.isImage && att.url && !att.url.startsWith('#') && (
-        <div
-          role="tooltip"
-          className="smart-inline-hover-card bottom-full left-0 mb-1.5 p-1.5 rounded-xl bg-slate-900/95 text-white shadow-2xl border border-white/15 z-[95] pointer-events-none flex flex-col gap-1 w-36"
-        >
-          <img
-            src={att.url}
-            alt={att.name}
-            className="w-full h-20 object-cover rounded-lg bg-slate-800"
-          />
-          <span className="text-[10px] font-bold truncate px-0.5 text-slate-100">
-            {att.name}
-          </span>
-          <span className="text-[9px] text-slate-400 px-0.5">Nhấn để xem thông tin ảnh</span>
-        </div>
-      )}
     </div>
   );
 };
