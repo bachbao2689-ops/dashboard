@@ -15,7 +15,7 @@ import { TopCollapsedNavbar } from './TopCollapsedNavbar';
 import { appUpdateService, type UpdateInfo } from '../../services/appUpdateService';
 
 
-export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) => {
+export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> = ({mobileHidden=false, entranceClass=''}) => {
   const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
   const { t } = useTranslation();
   const location = useLocation();
@@ -95,7 +95,7 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
 
   return (
     <>
-    <div inert={mobileHidden&&!showNotifs&&!isSearchExpanded} className={cn(mobileHidden&&!showNotifs&&!isSearchExpanded&&"mobile-header-hidden", "dashboard-top-chrome pointer-events-none absolute top-0 inset-x-0 select-none transition-all duration-200", showNotifs ? "z-[9999]" : "z-[60]")}>
+    <div inert={mobileHidden&&!showNotifs&&!isSearchExpanded} className={cn(mobileHidden&&!showNotifs&&!isSearchExpanded&&"mobile-header-hidden", "dashboard-top-chrome pointer-events-none absolute top-0 inset-x-0 select-none transition-all duration-200", showNotifs ? "z-[9999]" : "z-[60]", entranceClass)}>
       {/* Liquid Glass Top Depth Mask (fades from blur to transparent - dark mode only) */}
       <div
         aria-hidden="true"
