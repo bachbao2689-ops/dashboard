@@ -37,19 +37,45 @@ interface TaskDescriptionEditorProps {
   className?: string;
 }
 
-interface SelectionTarget {
-  blockIndex: number;
-  colIndex?: number;
+export interface RichSpan {
   start: number;
   end: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  link?: string;
 }
 
-interface AttachmentChip {
+export interface AttachmentChip {
   id: string;
   name: string;
   url: string;
   isImage: boolean;
   sizeLabel?: string;
+}
+
+export interface ColumnData {
+  text: string;
+  spans: RichSpan[];
+  attachments: AttachmentChip[];
+}
+
+export interface RichBlock {
+  id: string;
+  type: 'text' | 'columns';
+  text?: string;
+  spans?: RichSpan[];
+  attachments?: AttachmentChip[];
+  columnCount?: 2 | 3;
+  columns?: ColumnData[];
+}
+
+interface SelectionTarget {
+  blockIndex: number;
+  colIndex?: number;
+  start: number;
+  end: number;
 }
 
 interface BubbleToolItem {
@@ -59,10 +85,6 @@ interface BubbleToolItem {
   icon: React.ReactNode;
 }
 
-/**
- * 5 Exact formatting tools matching SmartCommentInput 1:1:
- * 1. Bold, 2. Italic, 3. Underline, 4. Link, 5. Color text (A with rainbow underline)
- */
 const BUBBLE_TOOLS: BubbleToolItem[] = [
   {
     id: 'bold',
@@ -159,21 +181,16 @@ async function fileToCompactDataUrl(file: File): Promise<string> {
 }
 
 /**
- * Extracts attached chips [🖼️ name](url) or legacy ![image](url) from raw description
- * so textareas remain completely clean, without raw URL spam.
+ * Extracts attached chips [🖼️ name](url) or legacy ![image](url) from raw string
  */
-function extractAttachmentsAndCleanText(rawText: string): {
-  cleanText: string;
-  attachments: AttachmentChip[];
-} {
-  if (!rawText || !rawText.trim()) return { cleanText: '', attachments: [] };
+function extractAttachments(raw?: string): { text: string; attachments: AttachmentChip[] } {
+  if (!raw || !raw.trim()) return { text: '', attachments: [] };
 
   const attachments: AttachmentChip[] = [];
   const seenUrls = new Set<string>();
 
-  // 1. Match [🖼️ name](url) or [📎 name](url) or attachment URLs
-  const chipRegex = /\[([📎🖼️]?\s*[^\]]+)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+|#[^\s)]+)\)/g;
-  let text = rawText.replace(chipRegex, (_fullMatch, label, url) => {
+  const chipRegex = /\[([📎🖼️]?\s*[^\]]+)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+|#[^\s)]+)\)/gu;
+  let text = raw.replace(chipRegex, (_fullMatch, label, url) => {
     const trimmedLabel = String(label).trim();
     const isImage =
       trimmedLabel.startsWith('🖼️') ||
@@ -181,7 +198,7 @@ function extractAttachmentsAndCleanText(rawText: string): {
       url.includes('/storage/v1/object/public/attachments/') ||
       url.startsWith('data:image/');
 
-    const cleanName = trimmedLabel.replace(/^[📎🖼️]\s*/, '').trim() || (isImage ? 'image.png' : 'file');
+    const cleanName = trimmedLabel.replace(/^[\s🖼️📎\uFE0F]+/u, '').trim() || (isImage ? 'image.png' : 'file');
 
     if (!seenUrls.has(url)) {
       seenUrls.add(url);
@@ -195,7 +212,6 @@ function extractAttachmentsAndCleanText(rawText: string): {
     return '';
   });
 
-  // 2. Match legacy ![image](url)
   const imgRegex = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g;
   text = text.replace(imgRegex, (_fullMatch, alt, url) => {
     if (!seenUrls.has(url)) {
@@ -212,25 +228,496 @@ function extractAttachmentsAndCleanText(rawText: string): {
   });
 
   return {
-    cleanText: text.trim(),
+    text: text.trim(),
     attachments,
   };
 }
 
 /**
- * Combines serialized structured blocks and attachment chips into single stored markdown string.
+ * Parses markdown formatting tokens ([color], <u>, ***, **, *, [link](url)) into plain text + RichSpan[]
  */
-function serializeAll(blocks: DescriptionBlock[], attachments: AttachmentChip[]): string {
-  const textContent = serializeBlocksToDescription(blocks).trim();
-  const attachmentMarkdown = attachments
-    .map(att => {
-      const prefix = att.isImage ? '🖼️' : '📎';
-      return `[${prefix} ${att.name}](${att.url})`;
-    })
-    .join(' ');
+function parseMarkdownToTextAndSpans(raw: string): { plainText: string; spans: RichSpan[] } {
+  if (!raw) return { plainText: '', spans: [] };
 
-  return [textContent, attachmentMarkdown].filter(Boolean).join('\n\n');
+  let plain = '';
+  const charStyles: Array<{
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: string;
+    link?: string;
+  }> = [];
+
+  function walk(
+    text: string,
+    currentStyle: {
+      bold?: boolean;
+      italic?: boolean;
+      underline?: boolean;
+      color?: string;
+      link?: string;
+    }
+  ) {
+    const tokenRegex =
+      /(\[color:([a-zA-Z0-9#]+)\]([\s\S]*?)\[\/color\])|(<u>([\s\S]*?)<\/u>)|(\*\*\*([\s\S]+?)\*\*\*)|(\*\*([\s\S]+?)\*\*)|(\*([\s\S]+?)\*)|(\[([^\]]+)\]\(([^)]+)\))/g;
+    let lastIdx = 0;
+    let m: RegExpExecArray | null;
+
+    while ((m = tokenRegex.exec(text)) !== null) {
+      if (m.index > lastIdx) {
+        const chunk = text.slice(lastIdx, m.index);
+        for (const ch of chunk) {
+          plain += ch;
+          charStyles.push({ ...currentStyle });
+        }
+      }
+      if (m[1]) {
+        walk(m[3], { ...currentStyle, color: m[2] });
+      } else if (m[4]) {
+        walk(m[5], { ...currentStyle, underline: true });
+      } else if (m[6]) {
+        walk(m[7], { ...currentStyle, bold: true, italic: true });
+      } else if (m[8]) {
+        walk(m[9], { ...currentStyle, bold: true });
+      } else if (m[10]) {
+        walk(m[11], { ...currentStyle, italic: true });
+      } else if (m[12]) {
+        walk(m[13], { ...currentStyle, link: m[14] });
+      }
+      lastIdx = m.index + m[0].length;
+    }
+
+    if (lastIdx < text.length) {
+      const chunk = text.slice(lastIdx);
+      for (const ch of chunk) {
+        plain += ch;
+        charStyles.push({ ...currentStyle });
+      }
+    }
+  }
+
+  walk(raw, {});
+
+  const spans: RichSpan[] = [];
+  let cur: RichSpan | null = null;
+  for (let i = 0; i < charStyles.length; i++) {
+    const s = charStyles[i];
+    const hasStyle = s.bold || s.italic || s.underline || s.color || s.link;
+    if (!hasStyle) {
+      if (cur) {
+        spans.push(cur);
+        cur = null;
+      }
+      continue;
+    }
+
+    const same =
+      cur &&
+      cur.bold === s.bold &&
+      cur.italic === s.italic &&
+      cur.underline === s.underline &&
+      cur.color === s.color &&
+      cur.link === s.link;
+
+    if (same && cur) {
+      cur.end = i + 1;
+    } else {
+      if (cur) spans.push(cur);
+      cur = {
+        start: i,
+        end: i + 1,
+        bold: s.bold,
+        italic: s.italic,
+        underline: s.underline,
+        color: s.color,
+        link: s.link,
+      };
+    }
+  }
+  if (cur) spans.push(cur);
+
+  return { plainText: plain, spans };
 }
+
+/**
+ * Adjust character-range spans when plain text changes from oldText to newText
+ */
+function adjustSpansForTextEdit(spans: RichSpan[], oldText: string, newText: string): RichSpan[] {
+  if (!spans.length || !newText) return [];
+  if (oldText === newText) return spans;
+
+  let prefixLen = 0;
+  const minLen = Math.min(oldText.length, newText.length);
+  while (prefixLen < minLen && oldText[prefixLen] === newText[prefixLen]) {
+    prefixLen++;
+  }
+
+  let oldSuffix = oldText.length;
+  let newSuffix = newText.length;
+  while (
+    oldSuffix > prefixLen &&
+    newSuffix > prefixLen &&
+    oldText[oldSuffix - 1] === newText[newSuffix - 1]
+  ) {
+    oldSuffix--;
+    newSuffix--;
+  }
+
+  const delta = newText.length - oldText.length;
+
+  return spans
+    .map(sp => {
+      let s = sp.start;
+      let e = sp.end;
+
+      if (e <= prefixLen) return sp;
+      if (s >= oldSuffix) return { ...sp, start: s + delta, end: e + delta };
+      if (s > prefixLen) s = Math.max(prefixLen, s + delta);
+      e = Math.max(s, e + delta);
+      return { ...sp, start: s, end: e };
+    })
+    .filter(sp => sp.end > sp.start);
+}
+
+/**
+ * Serializes plain text + RichSpan[] into stored Markdown tokens
+ */
+function serializeTextWithRichSpans(text: string, spans: RichSpan[]): string {
+  if (!text || spans.length === 0) return text;
+
+  const points = new Set<number>([0, text.length]);
+  spans.forEach(sp => {
+    points.add(Math.max(0, Math.min(text.length, sp.start)));
+    points.add(Math.max(0, Math.min(text.length, sp.end)));
+  });
+  const sorted = Array.from(points).sort((a, b) => a - b);
+
+  let out = '';
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const segStart = sorted[i];
+    const segEnd = sorted[i + 1];
+    if (segEnd <= segStart) continue;
+    const rawSeg = text.slice(segStart, segEnd);
+    if (!rawSeg) continue;
+
+    const active = spans.filter(sp => sp.start <= segStart && sp.end >= segEnd);
+    if (active.length === 0) {
+      out += rawSeg;
+      continue;
+    }
+
+    const isBold = active.some(a => a.bold);
+    const isItalic = active.some(a => a.italic);
+    const isUnderline = active.some(a => a.underline);
+    const colorSpan = [...active].reverse().find(a => a.color);
+    const linkSpan = [...active].reverse().find(a => a.link);
+
+    let formatted = rawSeg;
+    if (isBold && isItalic) formatted = `***${formatted}***`;
+    else if (isBold) formatted = `**${formatted}**`;
+    else if (isItalic) formatted = `*${formatted}*`;
+    if (isUnderline) formatted = `<u>${formatted}</u>`;
+    if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
+    if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+
+    out += formatted;
+  }
+
+  return out;
+}
+
+/**
+ * Render WYSIWYG styled segments for the live mirror layer inside the input box
+ */
+function renderMirrorSegments(text: string, spans: RichSpan[]): React.ReactNode {
+  if (!text) return null;
+  if (!spans || spans.length === 0) return text;
+
+  const points = new Set<number>([0, text.length]);
+  spans.forEach(sp => {
+    points.add(Math.max(0, Math.min(text.length, sp.start)));
+    points.add(Math.max(0, Math.min(text.length, sp.end)));
+  });
+  const sorted = Array.from(points).sort((a, b) => a - b);
+
+  const nodes: React.ReactNode[] = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const segStart = sorted[i];
+    const segEnd = sorted[i + 1];
+    if (segEnd <= segStart) continue;
+    const segText = text.slice(segStart, segEnd);
+    const active = spans.filter(sp => sp.start <= segStart && sp.end >= segEnd);
+
+    if (active.length === 0) {
+      nodes.push(<React.Fragment key={i}>{segText}</React.Fragment>);
+      continue;
+    }
+
+    const isBold = active.some(a => a.bold);
+    const isItalic = active.some(a => a.italic);
+    const isUnderline = active.some(a => a.underline);
+    const colorSpan = [...active].reverse().find(a => a.color);
+    const linkSpan = [...active].reverse().find(a => a.link);
+
+    const colorHex = colorSpan?.color
+      ? COMMENT_COLOR_MAP[colorSpan.color]?.hex || colorSpan.color
+      : linkSpan?.link
+      ? '#38bdf8'
+      : undefined;
+
+    nodes.push(
+      <span
+        key={i}
+        style={{
+          fontWeight: isBold ? 700 : undefined,
+          fontStyle: isItalic ? 'italic' : undefined,
+          textDecoration: isUnderline || linkSpan?.link ? 'underline' : undefined,
+          textUnderlineOffset: isUnderline || linkSpan?.link ? '2px' : undefined,
+          color: colorHex,
+        }}
+      >
+        {segText}
+      </span>
+    );
+  }
+
+  return nodes;
+}
+
+/**
+ * Toggle formatting on character range
+ */
+function toggleSpanFormat(
+  spans: RichSpan[],
+  textLen: number,
+  start: number,
+  end: number,
+  toolId: 'bold' | 'italic' | 'underline' | 'color' | 'link',
+  extraArg?: string
+): RichSpan[] {
+  if (end <= start) return spans;
+
+  const chars: Array<{
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: string;
+    link?: string;
+  }> = Array.from({ length: textLen }, () => ({}));
+
+  for (const sp of spans) {
+    const s = Math.max(0, Math.min(textLen, sp.start));
+    const e = Math.max(0, Math.min(textLen, sp.end));
+    for (let i = s; i < e; i++) {
+      if (sp.bold) chars[i].bold = true;
+      if (sp.italic) chars[i].italic = true;
+      if (sp.underline) chars[i].underline = true;
+      if (sp.color) chars[i].color = sp.color;
+      if (sp.link) chars[i].link = sp.link;
+    }
+  }
+
+  const clampedStart = Math.max(0, Math.min(textLen, start));
+  const clampedEnd = Math.max(0, Math.min(textLen, end));
+
+  let allActive = true;
+  for (let i = clampedStart; i < clampedEnd; i++) {
+    if (toolId === 'bold' && !chars[i].bold) allActive = false;
+    else if (toolId === 'italic' && !chars[i].italic) allActive = false;
+    else if (toolId === 'underline' && !chars[i].underline) allActive = false;
+    else if (toolId === 'color' && chars[i].color !== extraArg) allActive = false;
+    else if (toolId === 'link' && !chars[i].link) allActive = false;
+  }
+
+  const nextActive = !allActive;
+
+  for (let i = clampedStart; i < clampedEnd; i++) {
+    if (toolId === 'bold') chars[i].bold = nextActive;
+    else if (toolId === 'italic') chars[i].italic = nextActive;
+    else if (toolId === 'underline') chars[i].underline = nextActive;
+    else if (toolId === 'color') chars[i].color = nextActive ? extraArg : undefined;
+    else if (toolId === 'link') chars[i].link = nextActive ? extraArg : undefined;
+  }
+
+  const nextSpans: RichSpan[] = [];
+  let cur: RichSpan | null = null;
+  for (let i = 0; i < textLen; i++) {
+    const c = chars[i];
+    const hasAny = c.bold || c.italic || c.underline || c.color || c.link;
+    if (!hasAny) {
+      if (cur) {
+        nextSpans.push(cur);
+        cur = null;
+      }
+      continue;
+    }
+
+    const same =
+      cur &&
+      cur.bold === c.bold &&
+      cur.italic === c.italic &&
+      cur.underline === c.underline &&
+      cur.color === c.color &&
+      cur.link === c.link;
+
+    if (same && cur) {
+      cur.end = i + 1;
+    } else {
+      if (cur) nextSpans.push(cur);
+      cur = {
+        start: i,
+        end: i + 1,
+        bold: c.bold,
+        italic: c.italic,
+        underline: c.underline,
+        color: c.color,
+        link: c.link,
+      };
+    }
+  }
+  if (cur) nextSpans.push(cur);
+
+  return nextSpans;
+}
+
+/**
+ * Parses raw description into RichBlock[]
+ */
+function parseRawToRichBlocks(raw?: string | null): RichBlock[] {
+  const blocks = parseDescriptionToBlocks(raw);
+  return blocks.map(b => {
+    if (b.type === 'columns') {
+      const count = b.columnCount === 3 ? 3 : 2;
+      const rawCols = (b.columns || []).slice(0, count);
+      while (rawCols.length < count) {
+        rawCols.push('');
+      }
+      const columns: ColumnData[] = rawCols.map(colStr => {
+        const { text: cleanText, attachments } = extractAttachments(colStr);
+        const { plainText, spans } = parseMarkdownToTextAndSpans(cleanText);
+        return {
+          text: plainText,
+          spans,
+          attachments,
+        };
+      });
+      return {
+        id: b.id,
+        type: 'columns',
+        columnCount: count,
+        columns,
+      };
+    }
+
+    const { text: cleanText, attachments } = extractAttachments(b.text || '');
+    const { plainText, spans } = parseMarkdownToTextAndSpans(cleanText);
+    return {
+      id: b.id,
+      type: 'text',
+      text: plainText,
+      spans,
+      attachments,
+    };
+  });
+}
+
+/**
+ * Serializes RichBlock[] into stored Markdown string
+ */
+function serializeRichBlocksToRaw(blocks: RichBlock[]): string {
+  const rawBlocks: DescriptionBlock[] = blocks.map(b => {
+    if (b.type === 'columns') {
+      const count = b.columnCount === 3 ? 3 : 2;
+      const cols = (b.columns || []).slice(0, count).map(col => {
+        const textWithSpans = serializeTextWithRichSpans(col.text, col.spans).trim();
+        const attsMarkdown = col.attachments
+          .map(att => `[${att.isImage ? '🖼️' : '📎'} ${att.name}](${att.url})`)
+          .join(' ');
+        return [textWithSpans, attsMarkdown].filter(Boolean).join('\n');
+      });
+      return {
+        id: b.id,
+        type: 'columns',
+        columnCount: count,
+        columns: cols,
+      };
+    }
+
+    const textWithSpans = serializeTextWithRichSpans(b.text || '', b.spans || []).trim();
+    const attsMarkdown = (b.attachments || [])
+      .map(att => `[${att.isImage ? '🖼️' : '📎'} ${att.name}](${att.url})`)
+      .join(' ');
+    const combined = [textWithSpans, attsMarkdown].filter(Boolean).join('\n');
+    return {
+      id: b.id,
+      type: 'text',
+      text: combined,
+    };
+  });
+
+  return serializeBlocksToDescription(rawBlocks);
+}
+
+const AttachmentChipItem: React.FC<{
+  att: AttachmentChip;
+  onRemove: () => void;
+  onOpenLightbox: () => void;
+}> = ({ att, onRemove, onOpenLightbox }) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        if (att.isImage) {
+          onOpenLightbox();
+        } else if (att.url && !att.url.startsWith('#')) {
+          window.open(att.url, '_blank', 'noopener,noreferrer');
+        }
+      }}
+      className="relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs bg-blue-50/90 hover:bg-blue-100/80 text-blue-800 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 cursor-pointer transition-colors max-w-full shrink-0"
+    >
+      {att.isImage ? (
+        <ImageIcon size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
+      ) : (
+        <FileText size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
+      )}
+      <strong className="font-bold truncate max-w-[140px] text-[11.5px]">{att.name}</strong>
+      {att.sizeLabel && (
+        <span className="text-[9.5px] opacity-70 shrink-0">({att.sizeLabel})</span>
+      )}
+      <button
+        type="button"
+        title="Gỡ tệp đính kèm"
+        onClick={e => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="ml-0.5 text-blue-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+      >
+        <X size={11} />
+      </button>
+
+      {hovered && att.isImage && att.url && !att.url.startsWith('#') && (
+        <div
+          role="tooltip"
+          className="smart-inline-hover-card bottom-full left-0 mb-1.5 p-1.5 rounded-xl bg-slate-900/95 text-white shadow-2xl border border-white/15 z-[95] pointer-events-none flex flex-col gap-1 w-36"
+        >
+          <img
+            src={att.url}
+            alt={att.name}
+            className="w-full h-20 object-cover rounded-lg bg-slate-800"
+          />
+          <span className="text-[10px] font-bold truncate px-0.5 text-slate-100">
+            {att.name}
+          </span>
+          <span className="text-[9px] text-slate-400 px-0.5">Nhấn để xem thông tin ảnh</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
   value = '',
@@ -245,16 +732,11 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
   const { t } = useTranslation();
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Extract initial attachments and text blocks
-  const initialData = useMemo(() => extractAttachmentsAndCleanText(value), [value]);
-  const [blocks, setBlocks] = useState<DescriptionBlock[]>(() =>
-    parseDescriptionToBlocks(initialData.cleanText)
-  );
-  const [attachments, setAttachments] = useState<AttachmentChip[]>(initialData.attachments);
+  // Parse structured blocks with WYSIWYG spans and local attachments
+  const [blocks, setBlocks] = useState<RichBlock[]>(() => parseRawToRichBlocks(value));
 
-  // Image preview modal and hover tooltip state
+  // Lightbox preview modal state
   const [lightboxImage, setLightboxImage] = useState<{ name: string; url: string } | null>(null);
-  const [hoveredAttachmentId, setHoveredAttachmentId] = useState<string | null>(null);
 
   const isInternalUpdateRef = useRef(false);
   useEffect(() => {
@@ -262,12 +744,10 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
       isInternalUpdateRef.current = false;
       return;
     }
-    const parsed = extractAttachmentsAndCleanText(value);
-    setBlocks(parseDescriptionToBlocks(parsed.cleanText));
-    setAttachments(parsed.attachments);
+    setBlocks(parseRawToRichBlocks(value));
   }, [value]);
 
-  // Floating Bubble Toolbar state (exact same as comments)
+  // Floating Bubble Toolbar state
   const [selectionTarget, setSelectionTarget] = useState<SelectionTarget | null>(null);
   const [hoveredToolId, setHoveredToolId] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -282,12 +762,11 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     left: number;
   } | null>(null);
 
-  const commitAll = useCallback(
-    (newBlocks: DescriptionBlock[], newAtts: AttachmentChip[]) => {
+  const commitBlocks = useCallback(
+    (newBlocks: RichBlock[]) => {
       setBlocks(newBlocks);
-      setAttachments(newAtts);
       isInternalUpdateRef.current = true;
-      const serialized = serializeAll(newBlocks, newAtts);
+      const serialized = serializeRichBlocksToRaw(newBlocks);
       onChange?.(serialized);
     },
     [onChange]
@@ -307,7 +786,7 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
-  // Text selection tracking across all textareas
+  // Sync selection state across all textareas
   const syncSelection = (
     e: React.SyntheticEvent<HTMLTextAreaElement>,
     blockIndex: number,
@@ -324,44 +803,36 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     }
   };
 
-  // Check which formatting tools are active on current selection
+  // Determine which tools are active on current selection
   const activeSelectionFormats = useMemo(() => {
     if (!selectionTarget) return {};
     const { blockIndex, colIndex, start, end } = selectionTarget;
     const targetBlock = blocks[blockIndex];
     if (!targetBlock) return {};
-    const text =
-      (colIndex !== undefined && targetBlock.columns
-        ? targetBlock.columns[colIndex]
-        : targetBlock.text) || '';
 
-    if (end <= start || end > text.length) return {};
-    const before = text.slice(0, start);
-    const after = text.slice(end);
-    const selected = text.slice(start, end);
+    const targetSpans =
+      colIndex !== undefined && targetBlock.columns
+        ? targetBlock.columns[colIndex]?.spans || []
+        : targetBlock.spans || [];
 
-    const isBold =
-      (before.endsWith('**') && after.startsWith('**')) ||
-      (selected.startsWith('**') && selected.endsWith('**'));
-    const isItalic =
-      (before.endsWith('*') && after.startsWith('*') && !before.endsWith('**')) ||
-      (selected.startsWith('*') && selected.endsWith('*'));
-    const isUnderline =
-      (before.endsWith('<u>') && after.startsWith('</u>')) ||
-      (selected.startsWith('<u>') && selected.endsWith('</u>'));
-    const isColor = /\[color:[a-zA-Z0-9#]+\]$/.test(before) && after.startsWith('[/color]');
-    const isLink = /\[$/.test(before) && after.startsWith('](');
+    const targetText =
+      colIndex !== undefined && targetBlock.columns
+        ? targetBlock.columns[colIndex]?.text || ''
+        : targetBlock.text || '';
+
+    if (end <= start || end > targetText.length) return {};
+    const overlapping = targetSpans.filter(s => s.start < end && s.end > start);
 
     return {
-      bold: isBold,
-      italic: isItalic,
-      underline: isUnderline,
-      link: isLink,
-      color: isColor,
+      bold: overlapping.some(s => s.bold),
+      italic: overlapping.some(s => s.italic),
+      underline: overlapping.some(s => s.underline),
+      link: overlapping.some(s => Boolean(s.link)),
+      color: overlapping.some(s => Boolean(s.color)),
     };
   }, [selectionTarget, blocks]);
 
-  // Wrap selected text with formatting
+  // Apply WYSIWYG formatting without polluting text with raw markdown tags
   const applyFormatting = useCallback(
     (toolId: BubbleToolItem['id'], extraArg?: string) => {
       if (!selectionTarget) return;
@@ -371,70 +842,56 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
       const targetBlock = { ...newBlocks[blockIndex] };
 
       let currentText = '';
+      let currentSpans: RichSpan[] = [];
+
       if (colIndex !== undefined && targetBlock.columns) {
-        currentText = targetBlock.columns[colIndex] || '';
+        currentText = targetBlock.columns[colIndex].text;
+        currentSpans = targetBlock.columns[colIndex].spans;
       } else {
         currentText = targetBlock.text || '';
+        currentSpans = targetBlock.spans || [];
       }
 
       if (end <= start) return;
-      const selected = currentText.slice(start, end);
 
-      let prefix = '';
-      let suffix = '';
-
-      if (toolId === 'bold') {
-        prefix = '**';
-        suffix = '**';
-      } else if (toolId === 'italic') {
-        prefix = '*';
-        suffix = '*';
-      } else if (toolId === 'underline') {
-        prefix = '<u>';
-        suffix = '</u>';
-      } else if (toolId === 'link') {
-        prefix = '[';
-        suffix = `](${extraArg || 'https://'})`;
-      } else if (toolId === 'color') {
-        prefix = `[color:${extraArg || 'blue'}]`;
-        suffix = '[/color]';
-      }
-
-      let nextText = '';
-      if (
-        currentText.slice(Math.max(0, start - prefix.length), start) === prefix &&
-        currentText.slice(end, end + suffix.length) === suffix
-      ) {
-        // Toggle off
-        nextText =
-          currentText.slice(0, start - prefix.length) +
-          selected +
-          currentText.slice(end + suffix.length);
-      } else {
-        // Apply
-        nextText =
-          currentText.slice(0, start) +
-          prefix +
-          selected +
-          suffix +
-          currentText.slice(end);
-      }
+      const updatedSpans = toggleSpanFormat(
+        currentSpans,
+        currentText.length,
+        start,
+        end,
+        toolId,
+        extraArg
+      );
 
       if (colIndex !== undefined && targetBlock.columns) {
         const nextCols = [...targetBlock.columns];
-        nextCols[colIndex] = nextText;
+        nextCols[colIndex] = {
+          ...nextCols[colIndex],
+          spans: updatedSpans,
+        };
         targetBlock.columns = nextCols;
       } else {
-        targetBlock.text = nextText;
+        targetBlock.spans = updatedSpans;
       }
 
       newBlocks[blockIndex] = targetBlock;
-      commitAll(newBlocks, attachments);
-      setSelectionTarget(null);
+      commitBlocks(newBlocks);
+
       setShowColorMenu(false);
       setShowLinkInput(false);
+
+      // Re-focus and preserve selection highlight
+      requestAnimationFrame(() => {
+        const el = document.getElementById(
+          colIndex !== undefined ? `desc-col-${blockIndex}-${colIndex}` : `desc-txt-${blockIndex}`
+        ) as HTMLTextAreaElement | null;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(start, end);
+        }
+      });
     },
-    [selectionTarget, blocks, attachments, commitAll]
+    [selectionTarget, blocks, commitBlocks]
   );
 
   // Pick columns from slash command: IMMEDIATELY hides UI and activates columns
@@ -442,34 +899,39 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     const newBlocks = [...blocks];
     const current = newBlocks[blockIndex];
 
-    // Remove /column or /col trigger text
     let textBefore = current?.text || '';
     textBefore = textBefore.replace(/\/(column|col)(\s*[23])?$/i, '').trimEnd();
 
-    const columnBlock: DescriptionBlock = {
+    const columnBlock: RichBlock = {
       id: `col_${Date.now()}`,
       type: 'columns',
       columnCount: count,
-      columns: Array.from({ length: count }, () => ''),
+      columns: Array.from({ length: count }, () => ({
+        text: '',
+        spans: [],
+        attachments: [],
+      })),
     };
 
-    const nextNormalBlock: DescriptionBlock = {
+    const nextNormalBlock: RichBlock = {
       id: `txt_${Date.now() + 1}`,
       type: 'text',
       text: '',
+      spans: [],
+      attachments: [],
     };
 
     if (textBefore.trim()) {
       current.text = textBefore;
+      current.spans = adjustSpansForTextEdit(current.spans || [], current.text, textBefore);
       newBlocks.splice(blockIndex + 1, 0, columnBlock, nextNormalBlock);
     } else {
       newBlocks.splice(blockIndex, 1, columnBlock, nextNormalBlock);
     }
 
-    commitAll(newBlocks, attachments);
+    commitBlocks(newBlocks);
     setSlashMenu(null);
 
-    // Focus into the first column line immediately
     setTimeout(() => {
       const firstColInput = document.getElementById(
         `desc-col-${textBefore.trim() ? blockIndex + 1 : blockIndex}-0`
@@ -478,15 +940,19 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     }, 50);
   };
 
-  // Handle normal text change & detect /column
+  // Normal text change with dynamic span adjustment and slash command detection
   const handleTextChange = (
     blockIndex: number,
     textVal: string,
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
     const newBlocks = [...blocks];
-    newBlocks[blockIndex] = { ...newBlocks[blockIndex], text: textVal };
-    commitAll(newBlocks, attachments);
+    const target = { ...newBlocks[blockIndex] };
+    const oldText = target.text || '';
+    target.spans = adjustSpansForTextEdit(target.spans || [], oldText, textVal);
+    target.text = textVal;
+    newBlocks[blockIndex] = target;
+    commitBlocks(newBlocks);
 
     const match = textVal.match(/\/(column|col)(\s*[23])?$/i);
     if (match) {
@@ -502,6 +968,22 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     }
   };
 
+  // Column text change with dynamic span adjustment
+  const handleColChange = (blockIndex: number, colIndex: number, textVal: string) => {
+    const newBlocks = [...blocks];
+    const target = { ...newBlocks[blockIndex] };
+    if (!target.columns) return;
+    const nextCols = [...target.columns];
+    const targetCol = { ...nextCols[colIndex] };
+    const oldText = targetCol.text || '';
+    targetCol.spans = adjustSpansForTextEdit(targetCol.spans || [], oldText, textVal);
+    targetCol.text = textVal;
+    nextCols[colIndex] = targetCol;
+    target.columns = nextCols;
+    newBlocks[blockIndex] = target;
+    commitBlocks(newBlocks);
+  };
+
   // Keyboard shortcuts inside textareas
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>,
@@ -509,19 +991,25 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     colIndex?: number
   ) => {
     if ((e.metaKey || e.ctrlKey) && selectionTarget) {
-      if (e.key === 'b' || e.key === 'B') {
+      const key = e.key.toLowerCase();
+      if (key === 'b') {
         e.preventDefault();
         applyFormatting('bold');
         return;
       }
-      if (e.key === 'i' || e.key === 'I') {
+      if (key === 'i') {
         e.preventDefault();
         applyFormatting('italic');
         return;
       }
-      if (e.key === 'u' || e.key === 'U') {
+      if (key === 'u') {
         e.preventDefault();
         applyFormatting('underline');
+        return;
+      }
+      if (key === 'k') {
+        e.preventDefault();
+        setShowLinkInput(true);
         return;
       }
     }
@@ -534,43 +1022,50 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
       return;
     }
 
-    // Inside column navigation & "xuống dòng sẽ hết tính năng column"
+    // Inside column navigation & "lúc xuống dòng sẽ hết tính năng column"
     if (colIndex !== undefined) {
       const targetBlock = blocks[blockIndex];
       const count = targetBlock.columnCount || 2;
 
-      // Tab moves to next/prev column
+      // Tab moves between columns
       if (e.key === 'Tab') {
         e.preventDefault();
         const nextIdx = e.shiftKey ? colIndex - 1 : colIndex + 1;
         if (nextIdx >= 0 && nextIdx < count) {
-          const nextEl = document.getElementById(`desc-col-${blockIndex}-${nextIdx}`) as HTMLTextAreaElement | null;
+          const nextEl = document.getElementById(
+            `desc-col-${blockIndex}-${nextIdx}`
+          ) as HTMLTextAreaElement | null;
           nextEl?.focus();
         }
         return;
       }
 
       // Enter without Shift:
-      // If in earlier column and next column is empty, focus next column.
-      // Otherwise, drop down to the normal text line below ("hết tính năng column")
+      // If in col 0 and col 1 is empty -> focus col 1
+      // Otherwise -> drop down to normal line ("hết tính năng column")
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (colIndex < count - 1 && !(targetBlock.columns?.[colIndex + 1]?.trim())) {
-          const nextColInput = document.getElementById(`desc-col-${blockIndex}-${colIndex + 1}`) as HTMLTextAreaElement | null;
+        if (colIndex < count - 1 && !(targetBlock.columns?.[colIndex + 1]?.text?.trim())) {
+          const nextColInput = document.getElementById(
+            `desc-col-${blockIndex}-${colIndex + 1}`
+          ) as HTMLTextAreaElement | null;
           nextColInput?.focus();
         } else {
-          // Reached last column or finishing column row -> drop down to normal line
           const nextBlocks = [...blocks];
           if (blockIndex === nextBlocks.length - 1 || nextBlocks[blockIndex + 1]?.type !== 'text') {
             nextBlocks.splice(blockIndex + 1, 0, {
               id: `txt_${Date.now()}`,
               type: 'text',
               text: '',
+              spans: [],
+              attachments: [],
             });
-            commitAll(nextBlocks, attachments);
+            commitBlocks(nextBlocks);
           }
           setTimeout(() => {
-            const nextTextEl = document.getElementById(`desc-txt-${blockIndex + 1}`) as HTMLTextAreaElement | null;
+            const nextTextEl = document.getElementById(
+              `desc-txt-${blockIndex + 1}`
+            ) as HTMLTextAreaElement | null;
             nextTextEl?.focus();
           }, 50);
         }
@@ -578,20 +1073,12 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
     }
   };
 
-  // Update text inside a column
-  const handleColChange = (blockIndex: number, colIndex: number, textVal: string) => {
-    const newBlocks = [...blocks];
-    const target = { ...newBlocks[blockIndex] };
-    if (!target.columns) return;
-    const nextCols = [...target.columns];
-    nextCols[colIndex] = textVal;
-    target.columns = nextCols;
-    newBlocks[blockIndex] = target;
-    commitAll(newBlocks, attachments);
-  };
-
-  // Paste image clipboard handler (matches SmartCommentInput 1:1, creates attachment chip, NO raw URLs!)
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  // Paste image clipboard handler: "dán ở đâu thì ở đó"
+  const handlePaste = async (
+    e: React.ClipboardEvent<HTMLTextAreaElement>,
+    blockIndex: number,
+    colIndex?: number
+  ) => {
     const files = e.clipboardData?.files;
     if (files && files.length > 0) {
       const imgFile = Array.from(files).find(f => f.type.startsWith('image/'));
@@ -612,19 +1099,30 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
             publicUrl = await fileToCompactDataUrl(imgFile);
           }
 
-          const newAtts: AttachmentChip[] = [
-            ...attachments,
-            {
-              id: `${Date.now()}-${cleanName}`,
-              name: imgFile.name,
-              url: publicUrl,
-              isImage: true,
-              sizeLabel,
-            },
-          ];
+          const chip: AttachmentChip = {
+            id: `${Date.now()}-${cleanName}`,
+            name: imgFile.name,
+            url: publicUrl,
+            isImage: true,
+            sizeLabel,
+          };
 
-          commitAll(blocks, newAtts);
-          toast.success('Đã tải hình ảnh', { id: toastId });
+          const newBlocks = [...blocks];
+          const target = { ...newBlocks[blockIndex] };
+
+          if (colIndex !== undefined && target.type === 'columns' && target.columns) {
+            const nextCols = [...target.columns];
+            const targetCol = { ...nextCols[colIndex] };
+            targetCol.attachments = [...(targetCol.attachments || []), chip];
+            nextCols[colIndex] = targetCol;
+            target.columns = nextCols;
+          } else {
+            target.attachments = [...(target.attachments || []), chip];
+          }
+
+          newBlocks[blockIndex] = target;
+          commitBlocks(newBlocks);
+          toast.success('Đã dán hình ảnh', { id: toastId });
         } catch {
           toast.error('Không thể tải hình ảnh', { id: toastId });
         }
@@ -634,7 +1132,7 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
 
   return (
     <div ref={rootRef} className={`w-full space-y-2 ${className}`}>
-      {/* Outer relative wrapper to hold unclipped floating toolbar right above the box */}
+      {/* Outer wrapper to hold unclipped floating toolbar right above the box */}
       <div className="relative w-full">
         {/* ========================================================
             1. FLOATING BUBBLE TOOLBAR (Exact same as comments)
@@ -782,102 +1280,73 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
             3. RESIZABLE DESCRIPTION BOX CONTAINER
             `resize-y overflow-auto min-h-[140px]` gives the scale handle!
            ======================================================== */}
-        <div className="w-full rounded-2xl border border-primary/40 bg-white dark:bg-slate-900 p-3.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all relative resize-y overflow-auto min-h-[140px] max-h-[680px] space-y-2">
-          {/* ========================================================
-              ATTACHED IMAGE / FILE CHIPS (Clean chips, NO raw URLs!)
-             ======================================================== */}
-          {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pb-2 mb-1 border-b border-gray-100 dark:border-slate-800">
-              {attachments.map(att => {
-                const isHovered = hoveredAttachmentId === att.id;
-                return (
-                  <div
-                    key={att.id}
-                    onMouseEnter={() => setHoveredAttachmentId(att.id)}
-                    onMouseLeave={() =>
-                      setHoveredAttachmentId(prev => (prev === att.id ? null : prev))
-                    }
-                    onClick={() => {
-                      if (att.isImage) {
-                        setLightboxImage({ name: att.name, url: att.url });
-                      } else if (att.url && !att.url.startsWith('#')) {
-                        window.open(att.url, '_blank', 'noopener,noreferrer');
-                      }
-                    }}
-                    className="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-blue-50/90 hover:bg-blue-100/80 text-blue-800 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 cursor-pointer transition-colors"
-                  >
-                    {att.isImage ? (
-                      <ImageIcon size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
-                    ) : (
-                      <FileText size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
-                    )}
-                    <strong className="font-bold truncate max-w-[190px]">{att.name}</strong>
-                    {att.sizeLabel && (
-                      <span className="text-[10px] opacity-70 shrink-0">({att.sizeLabel})</span>
-                    )}
-                    <button
-                      type="button"
-                      title="Gỡ tệp đính kèm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        const next = attachments.filter(x => x.id !== att.id);
-                        commitAll(blocks, next);
-                      }}
-                      className="ml-0.5 text-blue-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
-
-                    {/* Hover Mini Thumbnail Preview for Images */}
-                    {isHovered && att.isImage && att.url && !att.url.startsWith('#') && (
-                      <div
-                        role="tooltip"
-                        className="smart-inline-hover-card bottom-full left-0 mb-2 p-1.5 rounded-xl bg-slate-900/95 text-white shadow-2xl border border-white/15 z-[95] pointer-events-none flex flex-col gap-1 w-40"
-                      >
-                        <img
-                          src={att.url}
-                          alt={att.name}
-                          className="w-full h-24 object-cover rounded-lg bg-slate-800"
-                        />
-                        <span className="text-[10px] font-bold truncate px-0.5 text-slate-100">
-                          {att.name}
-                        </span>
-                        <span className="text-[9.5px] text-slate-400 px-0.5">
-                          Nhấn để xem thông tin ảnh
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ========================================================
-              CONTENT LINES (Normal text lines & Clean Column Lines)
-             ======================================================== */}
+        <div className="w-full rounded-2xl border border-primary/40 bg-white dark:bg-slate-900 p-3.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all relative resize-y overflow-auto min-h-[140px] max-h-[680px] space-y-3">
           {blocks.map((block, bIdx) => {
             if (block.type === 'text') {
+              const hasMirrored = (block.spans || []).length > 0 && (block.text || '').length > 0;
+              const atts = block.attachments || [];
+
               return (
-                <textarea
-                  key={block.id || bIdx}
-                  id={`desc-txt-${bIdx}`}
-                  autoFocus={autoFocus && bIdx === 0}
-                  value={block.text || ''}
-                  rows={Math.max(2, Math.min(6, (block.text || '').split('\n').length))}
-                  onChange={e => handleTextChange(bIdx, e.target.value, e)}
-                  onSelect={e => syncSelection(e, bIdx)}
-                  onKeyUp={e => syncSelection(e, bIdx)}
-                  onMouseUp={e => syncSelection(e, bIdx)}
-                  onKeyDown={e => handleKeyDown(e, bIdx)}
-                  onPaste={e => void handlePaste(e)}
-                  placeholder={
-                    bIdx === 0
-                      ? placeholder || t('tasks.descPlaceholder')
-                      : 'Nhập tiếp nội dung (gõ /column để tạo cột)...'
-                  }
-                  className="w-full bg-transparent text-gray-900 dark:text-white text-sm outline-none resize-none leading-relaxed placeholder-gray-400 dark:placeholder-gray-500"
-                />
+                <div key={block.id || bIdx} className="space-y-1.5">
+                  {/* Local Attachment Chips for this text block */}
+                  {atts.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pb-1">
+                      {atts.map(att => (
+                        <AttachmentChipItem
+                          key={att.id}
+                          att={att}
+                          onRemove={() => {
+                            const newBlocks = [...blocks];
+                            const target = { ...newBlocks[bIdx] };
+                            target.attachments = (target.attachments || []).filter(
+                              x => x.id !== att.id
+                            );
+                            newBlocks[bIdx] = target;
+                            commitBlocks(newBlocks);
+                          }}
+                          onOpenLightbox={() =>
+                            setLightboxImage({ name: att.name, url: att.url })
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* WYSIWYG Input Layer */}
+                  <div className="relative min-h-[44px]">
+                    {hasMirrored && (
+                      <div aria-hidden="true" className="desc-rich-mirror">
+                        {renderMirrorSegments(block.text || '', block.spans || [])}
+                      </div>
+                    )}
+                    <textarea
+                      id={`desc-txt-${bIdx}`}
+                      autoFocus={autoFocus && bIdx === 0}
+                      value={block.text || ''}
+                      rows={Math.max(2, Math.min(6, (block.text || '').split('\n').length))}
+                      onChange={e => handleTextChange(bIdx, e.target.value, e)}
+                      onSelect={e => syncSelection(e, bIdx)}
+                      onKeyUp={e => syncSelection(e, bIdx)}
+                      onMouseUp={e => syncSelection(e, bIdx)}
+                      onKeyDown={e => handleKeyDown(e, bIdx)}
+                      onPaste={e => void handlePaste(e, bIdx)}
+                      onScroll={e => {
+                        const target = e.currentTarget;
+                        const mirror = target.previousElementSibling as HTMLElement | null;
+                        if (mirror) {
+                          mirror.scrollTop = target.scrollTop;
+                          mirror.scrollLeft = target.scrollLeft;
+                        }
+                      }}
+                      placeholder={
+                        bIdx === 0
+                          ? placeholder || t('tasks.descPlaceholder')
+                          : 'Nhập tiếp nội dung (gõ /column để tạo cột)...'
+                      }
+                      className={`desc-rich-textarea ${hasMirrored ? 'is-mirrored' : ''}`}
+                    />
+                  </div>
+                </div>
               );
             }
 
@@ -892,23 +1361,76 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
                     count === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'
                   }`}
                 >
-                  {cols.map((colVal, cIdx) => (
-                    <div key={cIdx} className="relative min-w-0">
-                      <textarea
-                        id={`desc-col-${bIdx}-${cIdx}`}
-                        rows={2}
-                        value={colVal}
-                        onChange={e => handleColChange(bIdx, cIdx, e.target.value)}
-                        onSelect={e => syncSelection(e, bIdx, cIdx)}
-                        onKeyUp={e => syncSelection(e, bIdx, cIdx)}
-                        onMouseUp={e => syncSelection(e, bIdx, cIdx)}
-                        onKeyDown={e => handleKeyDown(e, bIdx, cIdx)}
-                        onPaste={e => void handlePaste(e)}
-                        placeholder={`Cột ${cIdx + 1}...`}
-                        className="w-full p-2.5 text-sm rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-gray-900 dark:text-white outline-none resize-none leading-relaxed transition-colors"
-                      />
-                    </div>
-                  ))}
+                  {cols.map((colData, cIdx) => {
+                    const hasMirrored =
+                      (colData.spans || []).length > 0 && (colData.text || '').length > 0;
+                    const colAtts = colData.attachments || [];
+
+                    return (
+                      <div
+                        key={cIdx}
+                        className="relative min-w-0 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-900 transition-colors p-2.5 resize-y overflow-auto min-h-[76px] max-h-[500px] flex flex-col gap-1.5"
+                      >
+                        {/* Requirement 3: Local Attachment Chips inside this exact column! */}
+                        {colAtts.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pb-1">
+                            {colAtts.map(att => (
+                              <AttachmentChipItem
+                                key={att.id}
+                                att={att}
+                                onRemove={() => {
+                                  const newBlocks = [...blocks];
+                                  const target = { ...newBlocks[bIdx] };
+                                  if (!target.columns) return;
+                                  const nextCols = [...target.columns];
+                                  const targetCol = { ...nextCols[cIdx] };
+                                  targetCol.attachments = (targetCol.attachments || []).filter(
+                                    x => x.id !== att.id
+                                  );
+                                  nextCols[cIdx] = targetCol;
+                                  target.columns = nextCols;
+                                  newBlocks[bIdx] = target;
+                                  commitBlocks(newBlocks);
+                                }}
+                                onOpenLightbox={() =>
+                                  setLightboxImage({ name: att.name, url: att.url })
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* WYSIWYG Column Input Layer */}
+                        <div className="relative flex-1 min-h-[36px]">
+                          {hasMirrored && (
+                            <div aria-hidden="true" className="desc-rich-mirror">
+                              {renderMirrorSegments(colData.text || '', colData.spans || [])}
+                            </div>
+                          )}
+                          <textarea
+                            id={`desc-col-${bIdx}-${cIdx}`}
+                            value={colData.text || ''}
+                            onChange={e => handleColChange(bIdx, cIdx, e.target.value)}
+                            onSelect={e => syncSelection(e, bIdx, cIdx)}
+                            onKeyUp={e => syncSelection(e, bIdx, cIdx)}
+                            onMouseUp={e => syncSelection(e, bIdx, cIdx)}
+                            onKeyDown={e => handleKeyDown(e, bIdx, cIdx)}
+                            onPaste={e => void handlePaste(e, bIdx, cIdx)}
+                            onScroll={e => {
+                              const target = e.currentTarget;
+                              const mirror = target.previousElementSibling as HTMLElement | null;
+                              if (mirror) {
+                                mirror.scrollTop = target.scrollTop;
+                                mirror.scrollLeft = target.scrollLeft;
+                              }
+                            }}
+                            placeholder={`Cột ${cIdx + 1}...`}
+                            className={`desc-rich-textarea ${hasMirrored ? 'is-mirrored' : ''}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             }
@@ -937,7 +1459,7 @@ export const TaskDescriptionEditor: React.FC<TaskDescriptionEditorProps> = ({
             <button
               type="button"
               disabled={saving}
-              onClick={() => onSave(serializeAll(blocks, attachments))}
+              onClick={() => onSave(serializeRichBlocksToRaw(blocks))}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm bg-primary hover:bg-primary/90 text-white rounded-xl font-bold shadow-sm disabled:opacity-50 transition-colors cursor-pointer"
             >
               <Save size={14} />
