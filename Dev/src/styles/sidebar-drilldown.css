@@ -920,7 +920,7 @@ html:not(.dark) .top-nav-vertical-pill {
    Per Brief: New UI Sidebar.docx (Strict UI-Only Reskin)
    ======================================================== */
 
-/* A. Double-Border Bezel Frame */
+/* A. Double-Border Bezel Frame - Left Sidebar & Top Sidebar (Header) */
 .app-sidebar-outer {
   position: relative;
   width: 100%;
@@ -929,10 +929,23 @@ html:not(.dark) .top-nav-vertical-pill {
   flex-direction: column;
 }
 
+.app-top-sidebar-outer {
+  position: relative;
+  display: flex;
+}
+
 html:not(.dark) .app-sidebar-outer {
   background: #f8f8f8 !important;
   padding: 6px !important;
   border-radius: 20px !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+html:not(.dark) .app-top-sidebar-outer {
+  background: #f8f8f8 !important;
+  padding: 4px !important;
+  border-radius: 18px !important;
   border: 1px solid #e4e4e7 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
 }
@@ -945,6 +958,14 @@ html:not(.dark) .app-sidebar-inner {
   overflow: hidden;
 }
 
+html:not(.dark) .app-top-sidebar-inner {
+  background: #ffffff !important;
+  border-radius: 14px !important;
+  border: 1px solid #ebebef !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  width: 100%;
+}
+
 .dark .app-sidebar-outer {
   background: rgba(15, 23, 42, 0.6) !important;
   padding: 6px !important;
@@ -953,10 +974,25 @@ html:not(.dark) .app-sidebar-inner {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
 }
 
+.dark .app-top-sidebar-outer {
+  background: rgba(15, 23, 42, 0.6) !important;
+  padding: 4px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
 .dark .app-sidebar-inner {
   border-radius: 16px !important;
   border: 1px solid rgba(71, 85, 105, 0.3) !important;
   overflow: hidden;
+}
+
+.dark .app-top-sidebar-inner {
+  background: linear-gradient(170deg, #172b32, #101c2c 42%, #101a29) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  width: 100%;
 }
 
 /* B. Header: Logo K COFFEE Card */
