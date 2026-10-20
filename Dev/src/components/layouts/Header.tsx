@@ -105,118 +105,127 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
         )}
       />
       
-      {/* Floating Liquid Glass Top Header Pill */}
-      <header className={cn(
-        "liquid-glass-header pointer-events-auto relative mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] flex h-11 items-center justify-between rounded-full px-3 xl:mx-4 xl:mt-2.5 xl:h-12 xl:rounded-2xl xl:px-5 transition-all duration-300",
-        showNotifs ? "z-[9999]" : "z-20",
-        isScrolled && "is-scrolled"
-      )}>
-      
-      {/* LEFT AREA */}
-      <div className="flex items-center gap-4 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
-        <Sidebar size={20} onClick={toggleSidebar} className="cursor-pointer hover:text-primary transition-colors hidden xl:block shrink-0" />
+      {/* Floating Top Sidebar / Header Pill with Double-Border Bezel Frame */}
+      <div className="app-top-sidebar-outer pointer-events-auto relative mx-3 mt-[calc(6px+env(safe-area-inset-top,0px))] xl:mx-4 xl:mt-2.5 transition-all duration-300">
+        <header className={cn(
+          "app-top-sidebar-inner liquid-glass-header flex h-11 items-center justify-between rounded-full px-3 xl:h-11 xl:rounded-xl xl:px-4 transition-all duration-300 w-full",
+          showNotifs ? "z-[9999]" : "z-20",
+          isScrolled && "is-scrolled"
+        )}>
         
-        {isSidebarOpen ? (
-          <div className="hidden xl:flex items-center gap-2" />
-        ) : (
-          <TopCollapsedNavbar />
-        )}
-
-        {/* Mobile Left: Lang and Theme */}
-        <div className="flex xl:hidden items-center gap-1">
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
-            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all flex items-center gap-1 font-bold text-xs"
+        {/* LEFT AREA */}
+        <div className="flex items-center gap-3 text-sm font-medium text-gray-600 flex-1 min-w-0 pr-4">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={isSidebarOpen ? "Thu gọn Sidebar" : "Mở rộng Sidebar"}
+            aria-label={isSidebarOpen ? "Thu gọn Sidebar" : "Mở rộng Sidebar"}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-slate-700/60 transition-colors hidden xl:flex items-center justify-center cursor-pointer shrink-0"
           >
-            <Globe size={18} /> <span className="hidden sm:inline">{lang.toUpperCase()}</span>
-          </button>
-          <button 
-            onClick={toggleTheme}
-            aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
-            aria-pressed={theme === 'dark'}
-            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all text-gray-600 dark:text-gray-300"
-          >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-        </div>
-      </div>
-
-      {/* CENTER AREA (Mobile Logo) */}
-      <div className="xl:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
-        <img src="/logo-light.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md block dark:hidden" />
-        <img src="/logo-dark.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md hidden dark:block" />
-      </div>
-
-      {/* RIGHT AREA */}
-      <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative group hidden xl:block" >
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder={t('header.search')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
-              }
-            }}
-            className="pl-10 pr-16 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm w-32 md:w-56 focus:w-64 transition-all text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 font-mono pointer-events-none">⌘K</kbd>
-        </div>
-        
-        <div className="flex items-center gap-1 md:gap-3 text-gray-600 dark:text-gray-300">
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden xl:flex items-center gap-1 font-bold text-xs"
-          >
-            <Globe size={18} /> {lang.toUpperCase()}
+            <Sidebar size={18} />
           </button>
           
-          <button 
-            onClick={toggleTheme}
-            aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
-            aria-pressed={theme === 'dark'}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all hidden xl:block"
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          {isSidebarOpen ? (
+            <div className="hidden xl:flex items-center gap-2" />
+          ) : (
+            <TopCollapsedNavbar />
+          )}
 
-          
-          <div className={`flex xl:hidden items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
-            <button aria-label={t('header.search')} onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
-              <Search size={18} />
+          {/* Mobile Left: Lang and Theme */}
+          <div className="flex xl:hidden items-center gap-1">
+            <button 
+              onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
+              className="p-1.5 sm:p-2 hover:bg-[#F4F4F5] dark:hover:bg-slate-700 rounded-xl transition-all flex items-center gap-1 font-bold text-xs"
+            >
+              <Globe size={18} /> <span className="hidden sm:inline">{lang.toUpperCase()}</span>
             </button>
+            <button 
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
+              aria-pressed={theme === 'dark'}
+              className="p-1.5 sm:p-2 hover:bg-[#F4F4F5] dark:hover:bg-slate-700 rounded-xl transition-all text-gray-600 dark:text-gray-300"
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+          </div>
+        </div>
+
+        {/* CENTER AREA (Mobile Logo) */}
+        <div className="xl:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
+          <img src="/logo-light.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md block dark:hidden" />
+          <img src="/logo-dark.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md hidden dark:block" />
+        </div>
+
+        {/* RIGHT AREA */}
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative group hidden xl:block" >
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 group-focus-within:text-primary dark:group-focus-within:text-[#85df7d] transition-colors" />
             <input
               type="text"
-              placeholder={t("header.search")}
-              autoFocus={isSearchExpanded}
-              onBlur={() => setIsSearchExpanded(false)}
+              placeholder={t('header.search')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                   navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
-                  setIsSearchExpanded(false);
                 }
               }}
-              className={`bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 ${isSearchExpanded ? 'w-full opacity-100 pr-3' : 'w-0 opacity-0 pointer-events-none pr-0'}`}
+              className="pl-9 pr-14 py-1.5 bg-[#FAFAFA] dark:bg-slate-800/80 border border-[#E4E4E7] dark:border-slate-700 rounded-lg text-xs w-32 md:w-52 focus:w-60 transition-all text-gray-800 dark:text-gray-100 outline-none focus:border-primary dark:focus:border-[#85df7d]"
             />
+            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-white dark:bg-slate-700/80 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-600 font-mono pointer-events-none">⌘K</kbd>
           </div>
           
-          <div className={cn("relative", showNotifs && "z-[9999]")} ref={notifRef}>
+          <div className="flex items-center gap-1 md:gap-2 text-gray-600 dark:text-gray-300">
             <button 
-              type="button"
-              onClick={() => setShowNotifs(!showNotifs)}
-              aria-label={t('profile.notifications')}
-              aria-expanded={showNotifs}
-              className={cn(
-                "p-2 rounded-xl transition-all relative cursor-pointer",
-                showNotifs
-                  ? "bg-primary/10 text-primary dark:bg-slate-700 dark:text-blue-300"
-                  : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300"
-              )}
+              onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
+              className="p-1.5 hover:bg-[#F4F4F5] dark:hover:bg-slate-700/60 rounded-lg transition-all hidden xl:flex items-center gap-1 font-bold text-xs"
             >
-              <span className={unread > 0 ? 'notif-bell' : undefined} style={latestUnread ? toneStyle(latestUnread) : undefined}><Bell size={20} /></span>
-              {unread > 0 && <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{unread > 99 ? "99+" : unread}</span>}
+              <Globe size={16} /> {lang.toUpperCase()}
             </button>
+            
+            <button 
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? 'Bật giao diện tối' : 'Bật giao diện sáng'}
+              aria-pressed={theme === 'dark'}
+              className="p-1.5 hover:bg-[#F4F4F5] dark:hover:bg-slate-700/60 rounded-lg transition-all hidden xl:block"
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
+            
+            <div className={`flex xl:hidden items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
+              <button aria-label={t('header.search')} onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
+                <Search size={18} />
+              </button>
+              <input
+                type="text"
+                placeholder={t("header.search")}
+                autoFocus={isSearchExpanded}
+                onBlur={() => setIsSearchExpanded(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
+                    setIsSearchExpanded(false);
+                  }
+                }}
+                className={`bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 ${isSearchExpanded ? 'w-full opacity-100 pr-3' : 'w-0 opacity-0 pointer-events-none pr-0'}`}
+              />
+            </div>
+            
+            <div className={cn("relative", showNotifs && "z-[9999]")} ref={notifRef}>
+              <button 
+                type="button"
+                onClick={() => setShowNotifs(!showNotifs)}
+                aria-label={t('profile.notifications')}
+                aria-expanded={showNotifs}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all relative cursor-pointer",
+                  showNotifs
+                    ? "bg-primary/10 text-primary dark:bg-slate-700 dark:text-blue-300"
+                    : "hover:bg-[#F4F4F5] dark:hover:bg-slate-700/60 text-gray-600 dark:text-gray-300"
+                )}
+              >
+                <span className={unread > 0 ? 'notif-bell' : undefined} style={latestUnread ? toneStyle(latestUnread) : undefined}><Bell size={18} /></span>
+                {unread > 0 && <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{unread > 99 ? "99+" : unread}</span>}
+              </button>
             
             {showNotifs && createPortal(
               <div ref={panelRef} style={(() => { const r = notifRef.current?.getBoundingClientRect(); return r ? { top: r.bottom + 8, right: Math.max(12, window.innerWidth - r.right) } : { top: 64, right: 12 }; })()} className="notif-glass fixed w-[min(360px,calc(100vw-24px))] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -290,6 +299,7 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
         </div>
       </div>
     </header>
+    </div>
     </div>
     </>
   );
