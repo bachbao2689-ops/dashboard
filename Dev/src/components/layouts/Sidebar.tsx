@@ -44,6 +44,7 @@ import {
   type DrillNode,
   type SidebarGroupModel,
 } from './sidebarDrillTree';
+import { useSidebarNotificationDismissStore } from '../../store/sidebarNotificationDismissStore';
 import '../../styles/sidebar-drilldown.css';
 
 const DEFAULT_SIDEBAR_WIDTH = 272;
@@ -74,7 +75,8 @@ export const ButtonDrilldownDrawer: React.FC<{
   nodes: Record<string, DrillNode>;
   onNavigate: (path: string) => void;
   onTogglePin: (taskId: string) => void;
-}> = ({ isOpen, rootDetailNodeId, nodes, onNavigate, onTogglePin: _onTogglePin }) => {
+  onItemCheck?: (item: DrillMenuItem) => void;
+}> = ({ isOpen, rootDetailNodeId, nodes, onNavigate, onTogglePin: _onTogglePin, onItemCheck }) => {
   const [stack, setStack] = useState<StackEntry[]>([
     { nodeId: rootDetailNodeId, focusedIndex: 0 },
   ]);
@@ -237,7 +239,15 @@ export const ButtonDrilldownDrawer: React.FC<{
                 tabIndex={-1}
                 title="Mở trang này"
                 aria-label="Mở trang này"
-                onClick={() => interactive && node.headerPath && onNavigate(node.headerPath)}
+                onClick={() => {
+                  if (interactive && node.headerPath) {
+                    const firstItem = node.items[0];
+                    if (onItemCheck && firstItem && (firstItem.entityKind || firstItem.pinTaskId)) {
+                      onItemCheck(firstItem);
+                    }
+                    onNavigate(node.headerPath);
+                  }
+                }}
                 className="p-1.5 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-500/15 transition-colors shrink-0 mb-1"
               >
                 <ExternalLink size={13} />
@@ -262,6 +272,9 @@ export const ButtonDrilldownDrawer: React.FC<{
                   onFocus={() => interactive && setFocusedIndex(idx)}
                   onClick={() => {
                     if (!interactive) return;
+                    if (onItemCheck && (item.entityKind || item.pinTaskId)) {
+                      onItemCheck(item);
+                    }
                     if (item.onAction) {
                       item.onAction();
                       return;
@@ -276,6 +289,9 @@ export const ButtonDrilldownDrawer: React.FC<{
                     if (!interactive) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
+                      if (onItemCheck && (item.entityKind || item.pinTaskId)) {
+                        onItemCheck(item);
+                      }
                       if (item.onAction) {
                         item.onAction();
                         return;
@@ -469,6 +485,7 @@ const TreeAccordionChildRow: React.FC<{
   onToggleItemDropdown: (itemId: string) => void;
   onToggleNavPin: (item: DrillMenuItem, group: SidebarGroupModel) => void;
   onToggleTaskPin: (taskId: string) => void;
+  onItemCheck?: (item: DrillMenuItem) => void;
 }> = ({
   item,
   group,
@@ -482,6 +499,7 @@ const TreeAccordionChildRow: React.FC<{
   onToggleItemDropdown,
   onToggleNavPin: _onToggleNavPin,
   onToggleTaskPin,
+  onItemCheck,
 }) => {
   const dragId = `workspace-nav:${item.id}`;
   const dragPayload = useMemo<ActiveDragPayload>(
@@ -501,7 +519,7 @@ const TreeAccordionChildRow: React.FC<{
   });
 
   const subNode = hasDrill && item.targetNodeId ? group.nodes[item.targetNodeId] : undefined;
-  const subItemCount = subNode ? subNode.items.length : 0;
+  const subItemCount = subNode ? subNode.items.filter(it => !it.id.endsWith(':empty')).length : 0;
 
   return (
     <li className="group/child">
@@ -543,19 +561,19 @@ const TreeAccordionChildRow: React.FC<{
           {item.rightBadge}
 
           {/* Clean compact pill trigger for multi-level sub-drawer */}
-          {hasDrill && (
+          {hasDrill && (subItemCount > 0 || isDropdownOpen) && (
             <button
               type="button"
               aria-expanded={isDropdownOpen}
               title={
                 isDropdownOpen
-                  ? `Thu gọn danh sách nhanh ${item.label}`
-                  : `Mở danh sách nhanh ${item.label} (${subItemCount})`
+                  ? `Thu gọn thông báo ${item.label}`
+                  : `Mở thông báo ${item.label} (${subItemCount})`
               }
               aria-label={
                 isDropdownOpen
-                  ? `Thu gọn danh sách nhanh ${item.label}`
-                  : `Mở danh sách nhanh ${item.label}`
+                  ? `Thu gọn thông báo ${item.label}`
+                  : `Mở thông báo ${item.label}`
               }
               onPointerDown={e => e.stopPropagation()}
               onClick={e => {
@@ -577,6 +595,7 @@ const TreeAccordionChildRow: React.FC<{
           nodes={group.nodes}
           onNavigate={onNavigate}
           onTogglePin={onToggleTaskPin}
+          onItemCheck={onItemCheck}
         />
       )}
     </li>
@@ -598,6 +617,7 @@ const SidebarTreeGroupSection: React.FC<{
   pinnedNavIds: string[];
   onToggleNavPin: (item: DrillMenuItem, group: SidebarGroupModel) => void;
   onToggleTaskPin: (taskId: string) => void;
+  onItemCheck?: (item: DrillMenuItem) => void;
 }> = ({
   group,
   isOpen,
@@ -610,6 +630,7 @@ const SidebarTreeGroupSection: React.FC<{
   pinnedNavIds,
   onToggleNavPin,
   onToggleTaskPin,
+  onItemCheck,
 }) => {
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [childCenters, setChildCenters] = useState<Record<string, number>>({});
@@ -772,6 +793,7 @@ const SidebarTreeGroupSection: React.FC<{
                   onToggleItemDropdown={onToggleItemDropdown}
                   onToggleNavPin={onToggleNavPin}
                   onToggleTaskPin={onToggleTaskPin}
+                  onItemCheck={onItemCheck}
                 />
               );
             })}
@@ -904,6 +926,25 @@ export const Sidebar: React.FC = () => {
   const canManageBorrow = isAssetApprover(profile);
   const canBorrow = canSubmitAssetRequest(profile);
 
+  const { syncOwner: syncDismissOwner, isDismissed, dismissEntity } = useSidebarNotificationDismissStore();
+
+  useEffect(() => {
+    syncDismissOwner(profile?.id);
+  }, [profile?.id, syncDismissOwner]);
+
+  const handleItemCheck = useCallback(
+    (item: DrillMenuItem) => {
+      const kind = item.entityKind;
+      const id = item.entityId || item.pinTaskId;
+      if (kind && id) {
+        dismissEntity(kind, id);
+      } else if (item.pinTaskId) {
+        dismissEntity('task', item.pinTaskId);
+      }
+    },
+    [dismissEntity]
+  );
+
   const staffName = (profile?.name || 'Nhân viên').trim();
   const staffInitials =
     staffName
@@ -947,8 +988,9 @@ export const Sidebar: React.FC = () => {
         summary,
         togglePin,
         includeProfileInTree: false,
+        isDismissed,
       }),
-    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
+    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin, isDismissed]
   );
 
   // Lookup map of all root nav items across groups for Pinned Nav shortcuts
@@ -1185,17 +1227,17 @@ export const Sidebar: React.FC = () => {
 
         <NavLink
           to="/"
-          className="sb-logo-card mb-2 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 p-2 rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
+          className="sb-logo-card mb-3 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 py-3 px-4 min-h-[56px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
         >
           <img
             src="/logo-light.svg"
             alt="K COFFEE Logo"
-            className="h-7 sm:h-7.5 w-auto filter drop-shadow-xs block dark:hidden"
+            className="h-10 sm:h-10.5 w-auto object-contain filter drop-shadow-xs block dark:hidden"
           />
           <img
             src="/logo-dark.svg"
             alt="K COFFEE Logo"
-            className="h-7 sm:h-7.5 w-auto filter drop-shadow-xs hidden dark:block"
+            className="h-10 sm:h-10.5 w-auto object-contain filter drop-shadow-xs hidden dark:block"
           />
         </NavLink>
 
@@ -1366,6 +1408,7 @@ export const Sidebar: React.FC = () => {
                     showPinToast('📌 Đã ghim công việc lên đầu danh sách');
                   }
                 }}
+                onItemCheck={handleItemCheck}
               />
             ))}
           </div>

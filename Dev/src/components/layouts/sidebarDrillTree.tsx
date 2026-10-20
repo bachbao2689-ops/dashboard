@@ -19,6 +19,9 @@ export interface DrillMenuItem {
   targetNodeId?: string;
   /** Task ID if this item supports 1-click Staff Pin/Unpin */
   pinTaskId?: string;
+  /** Associated entity type and ID for notification dismissal */
+  entityKind?: 'task' | 'project' | 'campaign';
+  entityId?: string;
   isPinned?: boolean;
   isMentioned?: boolean;
   hasUnreadMention?: boolean;
@@ -220,6 +223,11 @@ function registerTaskDetailNode(
     }
   );
 
+  detailItems.forEach(item => {
+    item.entityKind = 'task';
+    item.entityId = t.id;
+  });
+
   nodes[detailNodeId] = {
     id: detailNodeId,
     title: t.title,
@@ -237,7 +245,7 @@ function buildTaskMenuItem(
   onTogglePin: (taskId: string) => void
 ): DrillMenuItem {
   const detailNodeId = registerTaskDetailNode(nodes, prefix, t, onTogglePin);
-  const hasPrioritySignal = t.isPinned || t.isMentioned || t.isCommented;
+  const hasPrioritySignal = t.hasUnreadMention || t.hasUnreadComment || t.latestNoteUnread;
 
   const subParts: string[] = [];
   if (t.latestNote) {
@@ -269,6 +277,8 @@ function buildTaskMenuItem(
     path: t.href,
     targetNodeId: detailNodeId,
     pinTaskId: t.id,
+    entityKind: 'task',
+    entityId: t.id,
     isPinned: t.isPinned,
     isMentioned: t.isMentioned,
     hasUnreadMention: t.hasUnreadMention,
@@ -298,6 +308,7 @@ export function buildSidebarGroups({
   summary,
   togglePin,
   includeProfileInTree = true,
+  isDismissed,
 }: {
   t: (key: any) => string;
   role: string;
@@ -309,6 +320,7 @@ export function buildSidebarGroups({
   summary: ReturnType<typeof import('../../hooks/useSidebarTrackingData').useSidebarTrackingData>['summary'];
   togglePin: (taskId: string) => void;
   includeProfileInTree?: boolean;
+  isDismissed?: (key: string) => boolean;
 }): SidebarGroupModel[] {
   const roleLower = (role || 'member').toLowerCase();
   const canViewDashboard = isLeader;
@@ -331,16 +343,30 @@ export function buildSidebarGroups({
   }
 
   // Workflow Management Drill-down (Level 2 & Level 3)
+  // Only tasks with active unread notifications
   const wfPriorityTasks = enrichedTasks
     .filter(
       task =>
-        (task.isPinned || task.isMentioned || task.isCommented) &&
-        (task.task.project_id || task.task.campaign_id || task.task.workflow_phase_id)
+        (task.hasUnreadMention || task.hasUnreadComment || task.latestNoteUnread) &&
+        (task.task.project_id || task.task.campaign_id || task.task.workflow_phase_id) &&
+        !(isDismissed && isDismissed(`task:${task.id}`))
     )
-    .slice(0, 5);
+    .slice(0, 8);
 
-  const wfTrackItems: DrillMenuItem[] = enrichedTracks.slice(0, 8).map(tr => {
+  const unreadWfTracks = enrichedTracks.filter(
+    tr =>
+      (tr.hasUnreadSignal || tr.hasUnreadMention || tr.hasUnreadComment) &&
+      !(isDismissed && isDismissed(`track:${tr.key}`))
+  );
+
+  const wfTrackItems: DrillMenuItem[] = unreadWfTracks.slice(0, 8).map(tr => {
     const trackNodeId = `main:wf:track:${tr.key}`;
+    const trackUnreadTasks = tr.tasks.filter(
+      task =>
+        (task.hasUnreadMention || task.hasUnreadComment || task.latestNoteUnread) &&
+        !(isDismissed && isDismissed(`task:${task.id}`))
+    );
+
     mainNodes[trackNodeId] = {
       id: trackNodeId,
       title: tr.name,
@@ -353,18 +379,21 @@ export function buildSidebarGroups({
           icon: <ExternalLink size={15} className="text-blue-600 dark:text-blue-400" />,
           path: tr.workflowHref,
           variant: 'priority',
+          entityKind: tr.kind,
+          entityId: String(tr.track.entity_id),
         },
-        ...(tr.tasks.length > 0
-          ? tr.tasks
+        ...(trackUnreadTasks.length > 0
+          ? trackUnreadTasks
               .slice(0, 8)
               .map(task => buildTaskMenuItem(mainNodes, trackNodeId, task, togglePin))
-          : tr.track.phases.map(ph => ({
-              id: `${trackNodeId}:phase:${ph.id}`,
-              label: ph.title,
-              sublabel: `Chặng ${ph.position} · ${ph.status}`,
-              icon: <Layers size={15} className="text-indigo-500" />,
-              path: `${tr.workflowHref}&phase=${encodeURIComponent(ph.id)}`,
-            }))),
+          : [
+              {
+                id: `${trackNodeId}:empty`,
+                label: 'Không có thông báo mới',
+                icon: <CheckCircle2 size={15} className="text-emerald-500" />,
+                path: tr.workflowHref,
+              },
+            ]),
       ],
     };
 
@@ -380,6 +409,8 @@ export function buildSidebarGroups({
       ),
       path: tr.workflowHref,
       targetNodeId: trackNodeId,
+      entityKind: tr.kind,
+      entityId: String(tr.track.entity_id),
       inlineBadge: (
         <SignalBadges
           isPinned={tr.pinnedCount > 0}
@@ -389,21 +420,33 @@ export function buildSidebarGroups({
           hasUnreadComment={tr.hasUnreadComment}
         />
       ),
-      rightBadge: <CountPill count={tr.openCount} tone={tr.hasUnreadSignal ? 'blue' : 'neutral'} />,
-      variant: tr.pinnedCount > 0 || tr.hasUnreadSignal ? 'priority' : 'default',
+      rightBadge: <CountPill count={trackUnreadTasks.length || 1} tone="blue" />,
+      variant: 'priority',
     };
   });
+
+  const activeWorkflowItems = [
+    ...wfPriorityTasks.map(task =>
+      buildTaskMenuItem(mainNodes, 'main:wf:prio', task, togglePin)
+    ),
+    ...wfTrackItems,
+  ];
 
   mainNodes['main:workflow'] = {
     id: 'main:workflow',
     title: t('nav.home'),
     headerPath: '/workflow',
-    items: [
-      ...wfPriorityTasks.map(task =>
-        buildTaskMenuItem(mainNodes, 'main:wf:prio', task, togglePin)
-      ),
-      ...wfTrackItems,
-    ],
+    items: activeWorkflowItems.length > 0
+      ? activeWorkflowItems
+      : [
+          {
+            id: 'main:workflow:empty',
+            label: 'Không có thông báo mới',
+            sublabel: 'Tất cả tiến độ đã được kiểm tra',
+            icon: <CheckCircle2 size={15} className="text-emerald-500" />,
+            path: '/workflow',
+          },
+        ],
   };
 
   const wfPinnedCount = enrichedTracks.reduce((acc, tr) => acc + tr.pinnedCount, 0);
@@ -415,7 +458,7 @@ export function buildSidebarGroups({
     path: '/workflow',
     targetNodeId: 'main:workflow',
     inlineBadge: (
-      <NavSignalBadge unreadCount={summary.counts.workflowCount} pinnedCount={wfPinnedCount} />
+      <NavSignalBadge unreadCount={activeWorkflowItems.length} pinnedCount={0} />
     ),
   });
 
@@ -439,17 +482,30 @@ export function buildSidebarGroups({
     path: '/tasks',
   });
 
-  // 2.2 Projects & Campaigns (Drill-down with prioritized tasks: Pinned, Mentioned, Commented)
+  // 2.2 Projects & Campaigns (Drill-down with notifications only)
   const projPriorityTasks = enrichedTasks
     .filter(
       task =>
-        (task.isPinned || task.isMentioned || task.isCommented) &&
-        (task.task.project_id || task.task.campaign_id)
+        (task.hasUnreadMention || task.hasUnreadComment || task.latestNoteUnread) &&
+        (task.task.project_id || task.task.campaign_id) &&
+        !(isDismissed && isDismissed(`task:${task.id}`))
     )
-    .slice(0, 5);
+    .slice(0, 8);
 
-  const projectBranchItems: DrillMenuItem[] = enrichedTracks.slice(0, 9).map(tr => {
+  const unreadProjTracks = enrichedTracks.filter(
+    tr =>
+      (tr.hasUnreadSignal || tr.hasUnreadMention || tr.hasUnreadComment) &&
+      !(isDismissed && isDismissed(`track:${tr.key}`))
+  );
+
+  const projectBranchItems: DrillMenuItem[] = unreadProjTracks.slice(0, 9).map(tr => {
     const pNodeId = `tp:proj:${tr.key}`;
+    const trackUnreadTasks = tr.tasks.filter(
+      task =>
+        (task.hasUnreadMention || task.hasUnreadComment || task.latestNoteUnread) &&
+        !(isDismissed && isDismissed(`task:${task.id}`))
+    );
+
     tpNodes[pNodeId] = {
       id: pNodeId,
       title: tr.name,
@@ -462,16 +518,18 @@ export function buildSidebarGroups({
           icon: <ExternalLink size={15} className="text-blue-600 dark:text-blue-400" />,
           path: tr.projectsHref,
           variant: 'priority',
+          entityKind: tr.kind,
+          entityId: String(tr.track.entity_id),
         },
-        ...(tr.tasks.length > 0
-          ? tr.tasks
+        ...(trackUnreadTasks.length > 0
+          ? trackUnreadTasks
               .slice(0, 8)
               .map(task => buildTaskMenuItem(tpNodes, pNodeId, task, togglePin))
           : [
               {
                 id: `${pNodeId}:empty`,
-                label: 'Chưa có subtask nào',
-                icon: <FolderKanban size={15} className="text-slate-400" />,
+                label: 'Không có thông báo mới',
+                icon: <CheckCircle2 size={15} className="text-emerald-500" />,
                 path: tr.projectsHref,
               },
             ]),
@@ -489,6 +547,8 @@ export function buildSidebarGroups({
       ),
       path: tr.projectsHref,
       targetNodeId: pNodeId,
+      entityKind: tr.kind,
+      entityId: String(tr.track.entity_id),
       inlineBadge: (
         <SignalBadges
           isPinned={tr.pinnedCount > 0}
@@ -498,30 +558,33 @@ export function buildSidebarGroups({
           hasUnreadComment={tr.hasUnreadComment}
         />
       ),
-      rightBadge: <CountPill count={tr.openCount} tone={tr.hasUnreadSignal ? 'blue' : 'neutral'} />,
-      variant: tr.pinnedCount > 0 || tr.hasUnreadSignal ? 'priority' : 'default',
+      rightBadge: <CountPill count={trackUnreadTasks.length || 1} tone="blue" />,
+      variant: 'priority',
     };
   });
+
+  const activeProjItems = [
+    ...projPriorityTasks.map(task =>
+      buildTaskMenuItem(tpNodes, 'tp:proj:prio', task, togglePin)
+    ),
+    ...projectBranchItems,
+  ];
 
   tpNodes['tp:projects'] = {
     id: 'tp:projects',
     title: t('nav.projects'),
     headerPath: '/projects',
-    items: [
-      ...projPriorityTasks.map(task =>
-        buildTaskMenuItem(tpNodes, 'tp:proj:prio', task, togglePin)
-      ),
-      ...(projectBranchItems.length > 0
-        ? projectBranchItems
-        : [
-            {
-              id: 'tp:projects:empty',
-              label: 'Chưa có dự án hoặc chiến dịch',
-              icon: <FolderKanban size={15} className="text-slate-400" />,
-              path: '/projects',
-            },
-          ]),
-    ],
+    items: activeProjItems.length > 0
+      ? activeProjItems
+      : [
+          {
+            id: 'tp:projects:empty',
+            label: 'Không có thông báo mới',
+            sublabel: 'Tất cả dự án & công việc đã được kiểm tra',
+            icon: <CheckCircle2 size={15} className="text-emerald-500" />,
+            path: '/projects',
+          },
+        ],
   };
 
   tpRootItems.push({
@@ -531,7 +594,7 @@ export function buildSidebarGroups({
     path: '/projects',
     targetNodeId: 'tp:projects',
     inlineBadge: (
-      <NavSignalBadge unreadCount={summary.counts.projectCount} pinnedCount={wfPinnedCount} />
+      <NavSignalBadge unreadCount={activeProjItems.length} pinnedCount={0} />
     ),
   });
 
