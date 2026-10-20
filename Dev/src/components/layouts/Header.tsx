@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, X, Search, Sun, Moon, Bell, Sidebar, Globe } from 'lucide-react';
+import { Check, X, Search, Sun, Moon, Bell, Sidebar, Globe, RefreshCw, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
@@ -12,6 +12,7 @@ import { NotificationIcon, TONES, toneOf, toneStyle, PicText } from '../features
 import toast from 'react-hot-toast';
 import { entityLink } from '../../lib/taskTracking';
 import { TopCollapsedNavbar } from './TopCollapsedNavbar';
+import { appUpdateService, type UpdateInfo } from '../../services/appUpdateService';
 
 
 export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) => {
@@ -52,6 +53,11 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
   const latestUnread = notifications.find(item => !item.is_read);
   const [markingRead, setMarkingRead] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
+
+  useEffect(() => {
+    return appUpdateService.subscribe(setUpdateInfo);
+  }, []);
 
   useEffect(() => {
     const scrollContainer = document.getElementById('main-scroll-container');
@@ -240,6 +246,39 @@ export const Header: React.FC<{mobileHidden?:boolean}> = ({mobileHidden=false}) 
                 </div>
                 <div className="max-h-[min(60vh,420px)] overflow-y-auto">
                   <PushNotificationSettings hideWhenEnabled />
+                  {updateInfo && (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => void appUpdateService.reloadApp()}
+                      className="m-3 p-3 rounded-xl bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                          <Sparkles size={16} className="animate-pulse" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                            {updateInfo.title || 'Cập nhật phiên bản mới'}
+                          </p>
+                          <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
+                            {updateInfo.message || 'Bấm để tải lại và trải nghiệm ngay'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          void appUpdateService.reloadApp();
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shrink-0 shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw size={11} />
+                        <span>Tải lại</span>
+                      </button>
+                    </div>
+                  )}
                   {notifications.length === 0 ? <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p> : notifications.map(notification => <div key={notification.id} role="button" tabIndex={0} onClick={() => void openNotification(notification)} onKeyDown={e => { if (e.key === 'Enter') void openNotification(notification); }} style={toneStyle(notification)} className="notif-row group flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"><NotificationIcon dim={notification.is_read} message={notification.message} metadata={notification.metadata} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{notification.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{TONES[toneOf(notification)].label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={notification.message} metadata={notification.metadata}/>}</span></span>{!notification.is_read && <button type="button" aria-label={lang === 'en' ? 'Mark as read' : 'Đánh dấu đã đọc'} onClick={e => { e.stopPropagation(); void markNotificationsRead([notification.id]).catch(() => toast.error('Chưa đồng bộ trạng thái đã đọc.')); }} className="notif-x notif-x-static"><X size={13} /></button>}</div>)}
                 </div>
               </div>,
