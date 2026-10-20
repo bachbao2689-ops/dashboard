@@ -44,9 +44,22 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     setDescription(task?.description || '');
     setEditingDescription(false);
     setCommentFocus(0);
+  }, [task?.id, task?.description, isOpen, profileId]);
+
+  useEffect(() => {
     setCanEdit(false);
     let active = true;
-    if (task?.id && !task.id.startsWith('ps-') && !task.id.startsWith('cs-')) supabase.rpc('workflow_task_access', { tid: task.id, editing: true }).then(({ data }) => { if (active) setCanEdit(data === true); });
+    if (isOpen && profileId != null && task?.id && !task.id.startsWith('ps-') && !task.id.startsWith('cs-')) supabase.rpc('workflow_task_access', { tid: task.id, editing: true }).then(({ data }) => {
+      if (!active) return;
+      setCanEdit(data === true);
+      if (data !== true) setEditingDescription(false);
+    });
+    return () => { active = false; };
+  }, [task?.id, task?.updated_at, task?.assignee_id, task?.project_id, task?.campaign_id, task?.workflow_phase_id, isOpen, profileId]);
+
+  useEffect(() => {
+    let active = true;
+    setMentionPeople([]);
     if (isOpen) {
       supabase
         .from('users')
@@ -56,7 +69,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         .then(({ data }) => { if (active) setMentionPeople(data || []); });
     }
     return () => { active = false; };
-  }, [task?.id, task?.description, isOpen]);
+  }, [isOpen, profileId]);
 
   useEffect(() => {
     let active = true;
@@ -87,7 +100,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   }, [resizing]);
 
   const saveDescription = async () => {
-    if (readOnly||!task) return;
+    if (readOnly||!canEdit||!task) return;
     setSaving(true);
     const { data, error } = await supabase.from('tasks').update({ description, updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
     setSaving(false);
@@ -97,7 +110,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   };
 
   const completeTask = async () => {
-    if (readOnly||!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
+    if (readOnly||!canEdit||!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
     setSaving(true);
     const { data, error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
     setSaving(false);

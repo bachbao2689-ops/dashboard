@@ -10,9 +10,23 @@ export interface HubTrack {
   id: string; entity_type: 'project' | 'campaign'; entity_id: string; name: string; status: string;
   start_date: string | null; due_date: string | null; root: boolean; asset: string | null;
   pics: WorkflowPerson[]; phases: HubPhase[];
+  creator?: WorkflowPerson | null;
   sub_pics?: WorkflowPerson[];
   description?: string | null; priority?: string | null; department_id?: string | null;
   campaign_id?: string | null; budget?: number | null; channels?: string[] | null;
+}
+export function workflowTaskPeople(
+  track: Pick<HubTrack, 'root' | 'pics' | 'creator'> | undefined,
+  phase: Pick<HubPhase, 'members'> | undefined,
+  actor: { id: number; name: string; avatar_url?: string | null } | null | undefined,
+): WorkflowPerson[] {
+  // The server's root flag grants the parent creator/PIC access without requiring
+  // them to be added to every phase. Phase-only participants keep their scope.
+  const people: WorkflowPerson[] = [...(phase?.members || []), ...(track?.pics || []), ...(track?.creator ? [track.creator] : [])];
+  if (track?.root && actor) people.push({ id: actor.id, name: actor.name, avatar_url: actor.avatar_url || undefined });
+  const unique = new Map<string, WorkflowPerson>();
+  for (const person of people) if (!unique.has(String(person.id))) unique.set(String(person.id), person);
+  return [...unique.values()];
 }
 export const workflowLink = (kind: 'project' | 'campaign', id: string, phase?: string) => `/workflow?${kind}=${encodeURIComponent(id)}${phase ? '&phase=' + encodeURIComponent(phase) : ''}`;
 export const projectsLink = (kind: 'project' | 'campaign', id: string) => `/projects?${kind}=${encodeURIComponent(id)}`;

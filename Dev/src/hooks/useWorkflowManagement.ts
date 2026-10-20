@@ -5,7 +5,7 @@ import {useWorkflowHub} from './useWorkflowHub';
 import {useTranslation} from '../i18n/translations';
 import {useRememberedState} from './useRememberedState';
 import type {Task} from './useTasks';
-import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,parentTasks,daysUntil,type HubPhase,type GateCriterion} from '../lib/workflowHub';
+import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,parentTasks,daysUntil,workflowTaskPeople,type HubPhase,type GateCriterion} from '../lib/workflowHub';
 import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/workflowCalendar';
 import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 import {supabase} from '../services/supabase';
@@ -170,7 +170,7 @@ export function useWorkflowManagement() {
   const [phaseOpportunity, setPhaseOpportunity] = useState('');
   const [phaseReason, setPhaseReason] = useState('');
   const editingPhase = phases.find(p => p.id === editingPhaseId);
-  const taskPeople = [...(activePhase?.members || []), ...(currentEntity?.pics || [])].filter((p,i,a) => a.findIndex(v => v.id === p.id) === i);
+  const taskPeople = workflowTaskPeople(currentEntity, activePhase, hub.profile);
   const personOptions = hub.people.map(p => ({value:String(p.id),label:p.name}));
   const taskOptions = taskPeople.map(p => ({value:String(p.id),label:p.name}));
   useEffect(() => { setIsDetailOpen(false); setActivePhaseId(params.get('phase') || ''); setShowAddTask(false); setEditingTaskId(null); setShowAddPhaseModal(false); setSelectedTask(null); }, [currentEntity?.id, hub.profile?.id]);
@@ -180,6 +180,7 @@ export function useWorkflowManagement() {
     if (selectedTask && !hub.tasks.some(t => t.id === selectedTask.id)) setSelectedTask(null);
     if (!currentEntity?.root) setShowAddPhaseModal(false);
     if (!activePhase?.can_edit_tasks) { setShowAddTask(false); setShowAddCriteria(false); }
+    if (editingTaskId && !subtasks.some(task => task.id === editingTaskId && task.canEdit)) setEditingTaskId(null);
   }, [hub.tasks, phases, currentEntity?.root]);
   const attempt = async (action: () => Promise<unknown>, success: string) => {
     try { await action(); toast.success(success); return true; }
@@ -208,17 +209,17 @@ export function useWorkflowManagement() {
     if (row?.canEdit && window.confirm('Ẩn task "' + row.title + '" khỏi danh sách? Dữ liệu vẫn được giữ.')) void attempt(() => hub.updateTask(row.record,{status:'deleted'}), 'Đã ẩn task');
   };
   const handleStartEditTask = (row: WorkflowSubtask, e: React.MouseEvent) => {
-    e.stopPropagation(); setEditingTaskId(row.id); setEditTaskTitle(row.title); setEditTaskAssignee(String(row.assignee_id || '')); setEditTaskStatus(row.status); setEditTaskDue(row.due_date || '');
+    e.stopPropagation(); if (!row.canEdit) return; setEditingTaskId(row.id); setEditTaskTitle(row.title); setEditTaskAssignee(String(row.assignee_id || '')); setEditTaskStatus(row.status); setEditTaskDue(row.due_date || '');
   };
   const handleSaveEditTask = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); const row = subtasks.find(t => t.id === id); if (!row || !editTaskTitle.trim()) return;
+    e.stopPropagation(); const row = subtasks.find(t => t.id === id); if (!row?.canEdit || !editTaskTitle.trim()) return;
     if (editTaskDue !== (row.due_date || '') && workflowDateError(row.record.start_date || '',editTaskDue,taskCalendar)) return toast.error(isEn ? 'Task dates must fit the phase calendar.' : 'Lịch task phải nằm trong lịch của chặng.');
     const values = {title:editTaskTitle.trim(),due_date:inputDate(editTaskDue),...stageValues(editTaskStatus),...(currentEntity?.root ? {assignee_id:Number(editTaskAssignee)} : {})};
     if (await attempt(() => hub.updateTask(row.record,values), 'Đã lưu task')) setEditingTaskId(null);
   };
   const handleQuickChangeStatus = (id: string, status: WorkflowTaskStatus) => {
     const row = subtasks.find(t => t.id === id);
-    return row ? hub.updateTask(row.record, stageValues(status)).catch(e => {toast.error(e.message); throw e;}) : Promise.reject(new Error('Task không còn trong phạm vi'));
+    return row?.canEdit ? hub.updateTask(row.record, stageValues(status)).catch(e => {toast.error(e.message); throw e;}) : Promise.reject(new Error('Task không còn trong phạm vi chỉnh sửa'));
   };
   const handleOpenAddPhaseModal = (index: number, e?: React.MouseEvent, phase?: Phase) => {
     e?.stopPropagation(); if (!currentEntity?.root) return;
