@@ -21,6 +21,7 @@ import {
   type DrillNode,
   type SidebarGroupModel,
 } from './sidebarDrillTree';
+import { useSidebarNotificationDismissStore } from '../../store/sidebarNotificationDismissStore';
 import '../../styles/sidebar-drilldown.css';
 
 type DropdownTriggerKind =
@@ -316,6 +317,11 @@ const TrackedDrilldownContent: React.FC<{
               }}
               onMouseEnter={() => handleRowMouseEnter(rowKey)}
               onClick={() => {
+                if (item.entityKind && item.entityId) {
+                  useSidebarNotificationDismissStore.getState().dismissEntity(item.entityKind, item.entityId);
+                } else if (item.pinTaskId) {
+                  useSidebarNotificationDismissStore.getState().dismissEntity('task', item.pinTaskId);
+                }
                 if (item.onAction) {
                   item.onAction();
                   return;
@@ -331,6 +337,11 @@ const TrackedDrilldownContent: React.FC<{
               onKeyDown={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
+                  if (item.entityKind && item.entityId) {
+                    useSidebarNotificationDismissStore.getState().dismissEntity(item.entityKind, item.entityId);
+                  } else if (item.pinTaskId) {
+                    useSidebarNotificationDismissStore.getState().dismissEntity('task', item.pinTaskId);
+                  }
                   if (item.onAction) item.onAction();
                   else if (item.path) onNavigate(item.path);
                   else if (hasChildNode && item.targetNodeId) drillInto(item.targetNodeId, idx);
@@ -614,6 +625,7 @@ export const TopCollapsedNavbar: React.FC = () => {
   const role = profile?.role || 'member';
   const isLeader = canViewTeamManagement(profile);
   const canManageBorrow=isAssetApprover(profile),canBorrow=canSubmitAssetRequest(profile);
+  const isDismissed = useSidebarNotificationDismissStore(s => s.isDismissed);
 
   const groups = useMemo<SidebarGroupModel[]>(
     () =>
@@ -627,8 +639,9 @@ export const TopCollapsedNavbar: React.FC = () => {
         enrichedTracks,
         summary,
         togglePin,
+        isDismissed,
       }),
-    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin]
+    [t, role, isLeader, canManageBorrow, canBorrow, enrichedTasks, enrichedTracks, summary, togglePin, isDismissed]
   );
 
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(() => {
