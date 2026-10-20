@@ -946,8 +946,17 @@ html:not(.dark) .app-sidebar-inner {
 }
 
 .dark .app-sidebar-outer {
-  background: transparent;
-  padding: 0;
+  background: rgba(15, 23, 42, 0.6) !important;
+  padding: 6px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark .app-sidebar-inner {
+  border-radius: 16px !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  overflow: hidden;
 }
 
 /* B. Header: Logo K COFFEE Card */
@@ -955,6 +964,11 @@ html:not(.dark) .sb-logo-card {
   background: #fafafa !important;
   border: 1px solid #e4e4e7 !important;
   box-shadow: none !important;
+}
+
+.dark .sb-logo-card {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
 }
 
 /* C. Middle Area: Section Dividers & Clean Tree Navigation */
@@ -965,14 +979,21 @@ html:not(.dark) .sb-section-divider {
   font-weight: 700 !important;
 }
 
+.dark .sb-section-divider {
+  color: #64748b !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+}
+
 /* Remove left blue spine and SVG curved lines */
-html:not(.dark) .sb-left-spine-track,
-html:not(.dark) .sb-spine-active-bar,
-html:not(.dark) .sb-tree-svg-overlay {
+.sb-left-spine-track,
+.sb-spine-active-bar,
+.sb-tree-svg-overlay {
   display: none !important;
 }
 
-html:not(.dark) .sb-tree-accordion-root {
+.sb-tree-accordion-root {
   padding-left: 0 !important;
 }
 
@@ -982,6 +1003,13 @@ html:not(.dark) .sb-tree-children-wrap {
   margin-left: 14px !important;
   padding-left: 10px !important;
   border-left: 1px solid #e4e4e7 !important;
+}
+
+.dark .sb-tree-children-wrap {
+  position: relative !important;
+  margin-left: 14px !important;
+  padding-left: 10px !important;
+  border-left: 1px solid rgba(71, 85, 105, 0.4) !important;
 }
 
 /* Parent Group Header */
@@ -1002,6 +1030,23 @@ html:not(.dark) .sb-group-header.is-open {
   color: #18181b !important;
 }
 
+.dark .sb-group-header {
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 5px 8px !important;
+  border-radius: 8px !important;
+}
+
+.dark .sb-group-header:hover {
+  color: #f1f5f9 !important;
+  background: rgba(51, 65, 85, 0.4) !important;
+}
+
+.dark .sb-group-header.is-open {
+  color: #f1f5f9 !important;
+}
+
 html:not(.dark) .sb-group-badge {
   background: #f4f4f5 !important;
   color: #3f3f46 !important;
@@ -1010,62 +1055,127 @@ html:not(.dark) .sb-group-badge {
   font-weight: 600 !important;
 }
 
-/* Menu Item Row */
+.dark .sb-group-badge {
+  background: rgba(30, 58, 138, 0.35) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+}
+
+/* Menu Item Row - Light Mode (Synced with UI Button.md) */
 html:not(.dark) .app-sidebar .sb-root-row,
 html:not(.dark) .app-sidebar .sidebar-link-idle {
   font-size: 13.5px !important;
   font-weight: 500 !important;
-  color: #52525b !important;
-  border-radius: 8px !important;
+  color: #4b5563 !important; /* text-gray-600 */
+  border-radius: 12px !important;
   border: 1px solid transparent !important;
   transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .app-sidebar .sb-root-row svg,
 html:not(.dark) .app-sidebar .sidebar-link-idle svg {
-  color: #52525b !important;
+  color: #6b7280 !important;
   width: 17px;
   height: 17px;
+  transition: color 0.18s ease;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row:hover,
 html:not(.dark) .app-sidebar .sidebar-link-idle:hover {
-  background: #f4f4f5 !important;
-  color: #18181b !important;
+  background: rgba(239, 246, 255, 0.6) !important;
+  color: #1d4ed8 !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row:hover svg,
 html:not(.dark) .app-sidebar .sidebar-link-idle:hover svg {
-  color: #18181b !important;
+  color: #1d4ed8 !important;
 }
 
+/* Active Button in Light Mode (Exact UI Button.md) */
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
-  background: #f4f4f5 !important;
-  color: #18181b !important;
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70)) !important;
+  color: #1d4ed8 !important; /* text-blue-700 */
   font-weight: 600 !important;
-  border-radius: 8px !important;
-  border: 1px solid #e4e4e7 !important;
-  box-shadow: none !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(147, 197, 253, 0.80) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px rgba(30, 90, 170, 0.18) !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active svg,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
-  color: #18181b !important;
+  color: #1d4ed8 !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
-  background: #f4f4f5 !important;
-  color: #18181b !important;
-  border: 1px solid #e4e4e7 !important;
+  background: rgba(239, 246, 255, 0.5) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(191, 219, 254, 0.6) !important;
   font-weight: 500 !important;
+  border-radius: 12px !important;
+}
+
+/* Menu Item Row - Dark Mode (Synced with UI Button.md) */
+.dark .app-sidebar .sb-root-row,
+.dark .app-sidebar .sidebar-link-idle {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #94a3b8 !important; /* dark:text-slate-300 */
+  border-radius: 12px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .app-sidebar .sb-root-row svg,
+.dark .app-sidebar .sidebar-link-idle svg {
+  color: #94a3b8 !important;
+  width: 17px;
+  height: 17px;
+  transition: color 0.18s ease;
+}
+
+.dark .app-sidebar .sb-root-row:hover,
+.dark .app-sidebar .sidebar-link-idle:hover {
+  background: rgba(51, 65, 85, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.dark .app-sidebar .sb-root-row:hover svg,
+.dark .app-sidebar .sidebar-link-idle:hover svg {
+  color: #ffffff !important;
+}
+
+/* Active Button in Dark Mode (Exact UI Button.md) */
+.dark .app-sidebar .sb-root-row.sidebar-link-active,
+.dark .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.35), rgba(6, 182, 212, 0.15)) !important;
+  color: #dbeafe !important; /* dark:!text-blue-100 */
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(147, 197, 253, 0.40) !important; /* dark:ring-blue-300/40 */
+  box-shadow: inset 0 1px 0 rgba(215, 235, 255, 0.12), 0 3px 10px rgba(0, 8, 24, 0.36) !important;
+}
+
+.dark .app-sidebar .sb-root-row.sidebar-link-active svg,
+.dark .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
+  color: #dbeafe !important;
+}
+
+.dark .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
+  background: rgba(30, 58, 138, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  font-weight: 500 !important;
+  border-radius: 12px !important;
 }
 
 /* Counter Badge (3) */
 html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn {
-  background: #f4f4f5 !important;
-  color: #3f3f46 !important;
-  border: 1px solid #e4e4e7 !important;
+  background: rgba(239, 246, 255, 0.9) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(191, 219, 254, 0.8) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
@@ -1074,22 +1184,35 @@ html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn {
 
 html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn:hover,
 html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn.is-open {
-  background: #e4e4e7 !important;
-  color: #18181b !important;
-  border-color: #d4d4d8 !important;
+  background: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #93c5fd !important;
 }
 
-/* Pin button */
-html:not(.dark) .app-sidebar .sb-pin-btn {
-  opacity: 0.4 !important;
-  color: #71717a !important;
+.dark .app-sidebar .sb-subdrawer-pill-btn {
+  background: rgba(30, 58, 138, 0.35) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  padding: 2px 7px !important;
 }
 
-html:not(.dark) .app-sidebar .sb-pin-btn:hover,
-html:not(.dark) .app-sidebar .sb-pin-btn.is-pinned {
-  opacity: 1 !important;
-  color: #18181b !important;
-  background: rgba(0, 0, 0, 0.05) !important;
+.dark .app-sidebar .sb-subdrawer-pill-btn:hover,
+.dark .app-sidebar .sb-subdrawer-pill-btn.is-open {
+  background: rgba(30, 58, 138, 0.55) !important;
+  color: #bfdbfe !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+}
+
+/* Pin button - Hidden from rows per UX requirement (hold to pin used instead) */
+.sb-pin-btn {
+  display: none !important;
+}
+
+.sb-pinned-pill-item .sb-pin-btn {
+  display: inline-flex !important;
 }
 
 /* In-place sub-drawer drilldown viewport */
@@ -1099,16 +1222,22 @@ html:not(.dark) .sb-drill-viewport {
   box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.08) !important;
 }
 
+.dark .sb-drill-viewport {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.3) !important;
+}
+
 html:not(.dark) .sb-item-row {
   font-size: 13px !important;
   font-weight: 500 !important;
   color: #52525b !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
 
 html:not(.dark) .sb-item-row:hover {
-  background: #f4f4f5 !important;
-  color: #18181b !important;
+  background: rgba(239, 246, 255, 0.6) !important;
+  color: #1d4ed8 !important;
 }
 
 html:not(.dark) .sb-item-row svg {
@@ -1116,7 +1245,27 @@ html:not(.dark) .sb-item-row svg {
 }
 
 html:not(.dark) .sb-item-row:hover svg {
-  color: #18181b !important;
+  color: #1d4ed8 !important;
+}
+
+.dark .sb-item-row {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #94a3b8 !important;
+  border-radius: 10px !important;
+}
+
+.dark .sb-item-row:hover {
+  background: rgba(51, 65, 85, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.dark .sb-item-row svg {
+  color: #94a3b8 !important;
+}
+
+.dark .sb-item-row:hover svg {
+  color: #ffffff !important;
 }
 
 /* D. Bottom User Profile Card */
@@ -1134,15 +1283,40 @@ html:not(.dark) .sb-profile-footer-card:hover {
   border-color: #d4d4d8 !important;
 }
 
+.dark .sb-profile-footer-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .sb-profile-footer-card:hover {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+}
+
 html:not(.dark) .sb-pinned-pill-item {
   background: #f4f4f5 !important;
   border: 1px solid #e4e4e7 !important;
   color: #18181b !important;
   font-size: 13px !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
 
 html:not(.dark) .sb-pinned-pill-item:hover {
   background: #ebebef !important;
+}
+
+.dark .sb-pinned-pill-item {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  color: #f1f5f9 !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+}
+
+.dark .sb-pinned-pill-item:hover {
+  background: rgba(51, 65, 85, 0.8) !important;
 }
 
