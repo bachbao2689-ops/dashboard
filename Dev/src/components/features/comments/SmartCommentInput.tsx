@@ -167,14 +167,19 @@ function serializeTextWithRichSpans(text: string, spans: RichSpan[]): string {
     const colorSpan = [...active].reverse().find(a => a.color);
     const linkSpan = [...active].reverse().find(a => a.link);
 
-    let formatted = rawSeg;
-    if (isBold) formatted = `**${formatted}**`;
-    if (isItalic) formatted = `*${formatted}*`;
-    if (isUnderline) formatted = `<u>${formatted}</u>`;
-    if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
-    if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+    const formatLine = (line: string) => {
+      if (!line) return '';
+      let formatted = line;
+      if (isBold && isItalic) formatted = `***${formatted}***`;
+      else if (isBold) formatted = `**${formatted}**`;
+      else if (isItalic) formatted = `*${formatted}*`;
+      if (isUnderline) formatted = `<u>${formatted}</u>`;
+      if (colorSpan?.color) formatted = `[color:${colorSpan.color}]${formatted}[/color]`;
+      if (linkSpan?.link) formatted = `[${formatted}](${linkSpan.link})`;
+      return formatted;
+    };
 
-    out += formatted;
+    out += rawSeg.split('\n').map(formatLine).join('\n');
   }
 
   return out;

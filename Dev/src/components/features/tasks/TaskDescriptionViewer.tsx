@@ -46,15 +46,20 @@ export const TaskDescriptionViewer: React.FC<TaskDescriptionViewerProps> = ({
         }
 
         if (block.type === 'columns') {
-          const count = block.columnCount === 3 ? 3 : 2;
+          const count = block.columns?.length || block.columnCount || 2;
           const cols = (block.columns || []).slice(0, count);
+
+          const gridClass =
+            count === 4
+              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4'
+              : count === 3
+              ? 'grid-cols-1 md:grid-cols-3'
+              : 'grid-cols-1 md:grid-cols-2';
 
           return (
             <div
               key={block.id || bIdx}
-              className={`grid gap-3 my-2 ${
-                count === 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'
-              }`}
+              className={`grid gap-3 my-2 ${gridClass}`}
             >
               {cols.map((colText, cIdx) => (
                 <div key={cIdx} className="min-w-0">
