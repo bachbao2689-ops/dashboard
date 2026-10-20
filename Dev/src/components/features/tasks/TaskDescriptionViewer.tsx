@@ -40,7 +40,7 @@ export const TaskDescriptionViewer: React.FC<TaskDescriptionViewerProps> = ({
           if (!block.text?.trim()) return null;
           return (
             <div key={block.id || bIdx} className="leading-relaxed text-gray-800 dark:text-gray-200">
-              <RichCommentBody body={block.text} />
+              <RichCommentBody body={block.text} renderDirectImages />
             </div>
           );
         }
@@ -58,7 +58,7 @@ export const TaskDescriptionViewer: React.FC<TaskDescriptionViewerProps> = ({
             >
               {cols.map((colText, cIdx) => (
                 <div key={cIdx} className="min-w-0">
-                  <RichCommentBody body={colText || ''} />
+                  <RichCommentBody body={colText || ''} renderDirectImages />
                 </div>
               ))}
             </div>

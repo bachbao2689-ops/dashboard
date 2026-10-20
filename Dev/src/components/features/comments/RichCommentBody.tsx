@@ -372,7 +372,8 @@ export const RichCommentBody: React.FC<{
   body?: string | null;
   isMineBubble?: boolean;
   className?: string;
-}> = ({ body, isMineBubble = false, className = '' }) => {
+  renderDirectImages?: boolean;
+}> = ({ body, isMineBubble = false, className = '', renderDirectImages = false }) => {
   const [previewImage, setPreviewImage] = useState<ImagePopupState | null>(null);
 
   if (!body) return null;
@@ -478,15 +479,48 @@ export const RichCommentBody: React.FC<{
               : isImageAttachment(label, url)
               ? `🖼️ ${label === 'image' ? 'Ảnh đính kèm' : label}`
               : `📎 ${label}`;
-          nodes.push(
-            <AttachmentInlineChip
-              key={key}
-              rawLabel={displayLabel}
-              url={url}
-              isMineBubble={isMineBubble}
-              onOpenImage={img => setPreviewImage(img)}
-            />
-          );
+
+          const isImg = displayLabel.startsWith('🖼️') || isImageAttachment(label, url);
+          const cleanName = displayLabel.replace(/^[\s🖼️📎\uFE0F]+/u, '') || 'image.png';
+
+          if (renderDirectImages && isImg) {
+            nodes.push(
+              <div key={key} className="my-2 block max-w-full">
+                <img
+                  src={url}
+                  alt={cleanName}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setPreviewImage({ name: cleanName, url });
+                  }}
+                  className="max-h-64 max-w-full rounded-xl border border-gray-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-800/60 shadow-xs cursor-pointer hover:opacity-95 transition-all"
+                />
+              </div>
+            );
+          } else if (renderDirectImages) {
+            nodes.push(
+              <a
+                key={key}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-slate-800 dark:text-blue-200 dark:border-slate-700 transition-colors my-1"
+              >
+                <FileText size={13} className="text-blue-500 shrink-0" />
+                <span className="font-semibold truncate max-w-[200px]">{cleanName}</span>
+              </a>
+            );
+          } else {
+            nodes.push(
+              <AttachmentInlineChip
+                key={key}
+                rawLabel={displayLabel}
+                url={url}
+                isMineBubble={isMineBubble}
+                onOpenImage={img => setPreviewImage(img)}
+              />
+            );
+          }
         } else {
           nodes.push(
             <InteractiveCommentLink
@@ -502,15 +536,31 @@ export const RichCommentBody: React.FC<{
         const rawUrl = match[19];
         if (isImageAttachment(rawUrl, rawUrl)) {
           const fileName = rawUrl.split('/').pop()?.split('?')[0] || 'image.png';
-          nodes.push(
-            <AttachmentInlineChip
-              key={key}
-              rawLabel={`🖼️ ${fileName}`}
-              url={rawUrl}
-              isMineBubble={isMineBubble}
-              onOpenImage={img => setPreviewImage(img)}
-            />
-          );
+          if (renderDirectImages) {
+            nodes.push(
+              <div key={key} className="my-2 block max-w-full">
+                <img
+                  src={rawUrl}
+                  alt={fileName}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setPreviewImage({ name: fileName, url: rawUrl });
+                  }}
+                  className="max-h-64 max-w-full rounded-xl border border-gray-200 dark:border-slate-700 object-contain bg-slate-50 dark:bg-slate-800/60 shadow-xs cursor-pointer hover:opacity-95 transition-all"
+                />
+              </div>
+            );
+          } else {
+            nodes.push(
+              <AttachmentInlineChip
+                key={key}
+                rawLabel={`🖼️ ${fileName}`}
+                url={rawUrl}
+                isMineBubble={isMineBubble}
+                onOpenImage={img => setPreviewImage(img)}
+              />
+            );
+          }
         } else {
           nodes.push(
             <InteractiveCommentLink
