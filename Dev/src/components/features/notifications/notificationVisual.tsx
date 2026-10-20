@@ -4,8 +4,8 @@ import {useWorkspaceDirectory} from '../../../hooks/useWorkspaceData';
 import type {NotificationItem} from '../../../store/notificationStore';
 import '../../../styles/notification-popup.css';
 
-// Track colors match the Profile calendar filters: Task blue, Project violet, Campaign amber.
-export const TONES={task:{label:'Task',rgb:'37,99,235'},project:{label:'Project',rgb:'124,58,237'},campaign:{label:'Campaign',rgb:'217,119,6'},other:{label:'Thông báo',rgb:'100,116,139'}};
+// Track colors match the Profile calendar filters: Task blue, Project violet, Campaign amber, Update sky.
+export const TONES={task:{label:'Task',rgb:'37,99,235'},project:{label:'Project',rgb:'124,58,237'},campaign:{label:'Campaign',rgb:'217,119,6'},other:{label:'Thông báo',rgb:'100,116,139'},update:{label:'Bản mới',rgb:'14,165,233'}};
 export type Tone=keyof typeof TONES;
 export const toneOf=(n:Pick<NotificationItem,'entity_type'>):Tone=>{
  const k=n.entity_type||'';
