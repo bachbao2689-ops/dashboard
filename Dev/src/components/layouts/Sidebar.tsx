@@ -525,7 +525,7 @@ const TreeAccordionChildRow: React.FC<{
         }}
         style={{ opacity: isDragging ? 0.4 : 1 }}
         className={cn(
-          'sidebar-link sb-root-row flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer select-none border border-transparent',
+          'sidebar-link sb-root-row flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-300 cursor-pointer select-none border border-transparent',
           hasDrill && 'has-drill',
           isDropdownOpen && 'is-dropdown-open',
           active ? 'sidebar-link-active font-semibold' : 'sidebar-link-idle'
@@ -1185,17 +1185,17 @@ export const Sidebar: React.FC = () => {
 
         <NavLink
           to="/"
-          className="sb-logo-card mb-3 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
+          className="sb-logo-card mb-2 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 p-2 rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
         >
           <img
             src="/logo-light.svg"
             alt="K COFFEE Logo"
-            className="h-9 w-auto filter drop-shadow-xs block dark:hidden"
+            className="h-7 sm:h-7.5 w-auto filter drop-shadow-xs block dark:hidden"
           />
           <img
             src="/logo-dark.svg"
             alt="K COFFEE Logo"
-            className="h-9 w-auto filter drop-shadow-xs hidden dark:block"
+            className="h-7 sm:h-7.5 w-auto filter drop-shadow-xs hidden dark:block"
           />
         </NavLink>
 

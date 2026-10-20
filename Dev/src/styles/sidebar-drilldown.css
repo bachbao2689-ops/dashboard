@@ -1063,13 +1063,15 @@ html:not(.dark) .sb-group-badge {
   font-weight: 600 !important;
 }
 
-/* Menu Item Row - Light Mode (Synced with UI Button.md) */
+/* Menu Item Row - Light Mode (Compact sizing per "kích thước box cho nhỏ lại") */
 html:not(.dark) .app-sidebar .sb-root-row,
 html:not(.dark) .app-sidebar .sidebar-link-idle {
-  font-size: 13.5px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
   color: #4b5563 !important; /* text-gray-600 */
-  border-radius: 12px !important;
+  border-radius: 9px !important;
   border: 1px solid transparent !important;
   transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1077,8 +1079,8 @@ html:not(.dark) .app-sidebar .sidebar-link-idle {
 html:not(.dark) .app-sidebar .sb-root-row svg,
 html:not(.dark) .app-sidebar .sidebar-link-idle svg {
   color: #6b7280 !important;
-  width: 17px;
-  height: 17px;
+  width: 16px !important;
+  height: 16px !important;
   transition: color 0.18s ease;
 }
 
@@ -1093,13 +1095,15 @@ html:not(.dark) .app-sidebar .sidebar-link-idle:hover svg {
   color: #1d4ed8 !important;
 }
 
-/* Active Button in Light Mode (Exact UI Button.md) */
+/* Active Button in Light Mode (Blue liquid glass, compact) */
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
   background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70)) !important;
   color: #1d4ed8 !important; /* text-blue-700 */
   font-weight: 600 !important;
-  border-radius: 12px !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
+  border-radius: 9px !important;
   border: 1px solid rgba(147, 197, 253, 0.80) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px rgba(30, 90, 170, 0.18) !important;
 }
@@ -1107,6 +1111,8 @@ html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active svg,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
   color: #1d4ed8 !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
@@ -1114,16 +1120,20 @@ html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-act
   color: #1d4ed8 !important;
   border: 1px solid rgba(191, 219, 254, 0.6) !important;
   font-weight: 500 !important;
-  border-radius: 12px !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
+  border-radius: 9px !important;
 }
 
-/* Menu Item Row - Dark Mode (Synced with UI Button.md) */
+/* Menu Item Row - Dark Mode (Compact & GREEN per user specification) */
 .dark .app-sidebar .sb-root-row,
 .dark .app-sidebar .sidebar-link-idle {
-  font-size: 13.5px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
   color: #94a3b8 !important; /* dark:text-slate-300 */
-  border-radius: 12px !important;
+  border-radius: 9px !important;
   border: 1px solid transparent !important;
   transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1131,8 +1141,8 @@ html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-act
 .dark .app-sidebar .sb-root-row svg,
 .dark .app-sidebar .sidebar-link-idle svg {
   color: #94a3b8 !important;
-  width: 17px;
-  height: 17px;
+  width: 16px !important;
+  height: 16px !important;
   transition: color 0.18s ease;
 }
 
@@ -1147,28 +1157,34 @@ html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-act
   color: #ffffff !important;
 }
 
-/* Active Button in Dark Mode (Exact UI Button.md) */
+/* Active Button in Dark Mode - GREEN per "Dark mode màu xanh lá cây mà bro" */
 .dark .app-sidebar .sb-root-row.sidebar-link-active,
 .dark .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.35), rgba(6, 182, 212, 0.15)) !important;
-  color: #dbeafe !important; /* dark:!text-blue-100 */
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08)) !important;
+  color: #85df7d !important;
   font-weight: 600 !important;
-  border-radius: 12px !important;
-  border: 1px solid rgba(147, 197, 253, 0.40) !important; /* dark:ring-blue-300/40 */
-  box-shadow: inset 0 1px 0 rgba(215, 235, 255, 0.12), 0 3px 10px rgba(0, 8, 24, 0.36) !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
+  border-radius: 9px !important;
+  border: 1px solid rgba(78, 182, 72, 0.45) !important;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 3px 10px rgba(0, 0, 0, 0.25) !important;
 }
 
 .dark .app-sidebar .sb-root-row.sidebar-link-active svg,
 .dark .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
-  color: #dbeafe !important;
+  color: #85df7d !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .dark .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
-  background: rgba(30, 58, 138, 0.25) !important;
-  color: #93c5fd !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  background: rgba(78, 182, 72, 0.12) !important;
+  color: #85df7d !important;
+  border: 1px solid rgba(78, 182, 72, 0.30) !important;
   font-weight: 500 !important;
-  border-radius: 12px !important;
+  padding: 5px 9px !important;
+  min-height: 33px !important;
+  border-radius: 9px !important;
 }
 
 /* Counter Badge (3) */
@@ -1176,10 +1192,10 @@ html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn {
   background: rgba(239, 246, 255, 0.9) !important;
   color: #1d4ed8 !important;
   border: 1px solid rgba(191, 219, 254, 0.8) !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
-  padding: 2px 7px !important;
+  padding: 1.5px 6.5px !important;
 }
 
 html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn:hover,
@@ -1190,20 +1206,20 @@ html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn.is-open {
 }
 
 .dark .app-sidebar .sb-subdrawer-pill-btn {
-  background: rgba(30, 58, 138, 0.35) !important;
-  color: #93c5fd !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  font-size: 11px !important;
+  background: rgba(78, 182, 72, 0.15) !important;
+  color: #85df7d !important;
+  border: 1px solid rgba(78, 182, 72, 0.35) !important;
+  font-size: 10.5px !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
-  padding: 2px 7px !important;
+  padding: 1.5px 6.5px !important;
 }
 
 .dark .app-sidebar .sb-subdrawer-pill-btn:hover,
 .dark .app-sidebar .sb-subdrawer-pill-btn.is-open {
-  background: rgba(30, 58, 138, 0.55) !important;
-  color: #bfdbfe !important;
-  border-color: rgba(96, 165, 250, 0.5) !important;
+  background: rgba(78, 182, 72, 0.28) !important;
+  color: #a3f79b !important;
+  border-color: rgba(78, 182, 72, 0.55) !important;
 }
 
 /* Pin button - Hidden from rows per UX requirement (hold to pin used instead) */
