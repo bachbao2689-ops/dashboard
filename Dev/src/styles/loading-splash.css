@@ -72,22 +72,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 40px;
-  border-radius: 28px;
+  padding: 36px 36px 28px 36px;
+  border-radius: 32px;
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 20px 50px rgba(0, 15, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  animation: kLogoFloat 3.6s ease-in-out infinite;
-  max-width: 380px;
-  width: 90%;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 24px 60px rgba(0, 15, 45, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: kLogoFloat 3.8s ease-in-out infinite;
+  max-width: 500px;
+  width: 92%;
 }
 
 .dark .k-splash-card {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.7);
   border-color: rgba(71, 85, 105, 0.45);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Logo Image Container with Shimmer Overlay */

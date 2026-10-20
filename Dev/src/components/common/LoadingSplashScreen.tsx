@@ -1,16 +1,19 @@
 import React from 'react';
+import { KCoffeeSproutLogoAnimation } from './KCoffeeSproutLogoAnimation';
 import '../../styles/loading-splash.css';
 
 interface LoadingSplashScreenProps {
   message?: string;
   submessage?: string;
   inline?: boolean;
+  showReplay?: boolean;
 }
 
 export const LoadingSplashScreen: React.FC<LoadingSplashScreenProps> = ({
   message = 'Đang tải dữ liệu...',
   submessage = 'K COFFEE DASHBOARD',
   inline = false,
+  showReplay = false,
 }) => {
   const content = (
     <>
@@ -22,21 +25,9 @@ export const LoadingSplashScreen: React.FC<LoadingSplashScreenProps> = ({
 
       {/* Floating Glassmorphic Brand Card */}
       <div className="k-splash-card">
-        {/* Animated Brand Logo with Light Sweep */}
-        <div className="k-splash-logo-wrap">
-          <img
-            src="/login-logo.svg"
-            alt="K COFFEE"
-            className="h-14 sm:h-16 w-auto object-contain select-none pointer-events-none"
-            onError={e => {
-              // Fallback to logo-dark.svg if login-logo isn't resolved
-              const target = e.currentTarget as HTMLImageElement;
-              if (!target.src.endsWith('logo-dark.svg')) {
-                target.src = '/logo-dark.svg';
-              }
-            }}
-          />
-          <div className="k-splash-shimmer" aria-hidden="true" />
+        {/* Animated Sprout -> Chữ K -> Vòng Tròn -> Chữ Trượt Logo */}
+        <div className="w-full flex items-center justify-center">
+          <KCoffeeSproutLogoAnimation showReplayButton={showReplay} />
         </div>
 
         {/* Modern Fluid Progress Bar */}
