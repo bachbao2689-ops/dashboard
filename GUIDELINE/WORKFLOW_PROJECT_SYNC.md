@@ -21,6 +21,15 @@
 - Tạo/sửa phase và phê duyệt Gate dùng các RPC Workflow hiện có. RLS giữ nguyên quyền Admin/PIC/sub-PIC/task assignee; UI chỉ hiển thị dữ liệu được phép đọc.
 - Ẩn/xóa parent loại nó khỏi danh sách active của cả hai tab, không tạo parent thay thế.
 
+## Quyền người tạo và PIC chính
+
+- Người tạo Project/Campaign và từng PIC chính cùng có quyền quản lý toàn bộ Workflow của parent, kể cả khi không là thành viên của từng phase. Backend xác định bằng `workflow_root`; UI dùng `root` và `can_edit_tasks` từ `workflow_hub_index`.
+- Quyền này gồm thêm/sửa/xóa chặng hợp lệ, tạo/gắn/sửa/hoàn thành task, chỉnh Gate và xác nhận chuyển chặng. Vẫn kiểm tra version, lịch trong parent, task hoàn thành và Gate đạt ít nhất 80%; chặng đã đóng cần mở lại trước khi thêm task/chỉnh Gate.
+- `workflow_hub_index.creator` trả thông tin người tạo độc lập với `pics`. Danh sách giao task gồm thành viên chặng, PIC chính và người tạo đang hoạt động; không tự thêm người tạo vào membership hoặc chuyển họ thành PIC.
+- Người làm subtask, sub-PIC, người được mention và Leader xem phòng ban giữ phạm vi hiện có. Không suy quyền quản lý toàn Workflow từ chức danh hoặc quyền xem một task.
+- Panel task đọc lại quyền khi đổi tài khoản, task, người nhận hoặc liên kết parent/phase; kết quả từ phiên trước không được dùng để bật nút sửa/Done.
+- Migration bổ sung dữ liệu creator: `Dev/migrations/workflow-parent-creator.sql`. Kiểm tra quyền dùng fixture rollback trong `Dev/scripts/testWorkflowParentOwners.sql`, áp dụng riêng cho Supabase Dev và Official.
+
 ## Lịch và trọng số Gate
 
 Migration `Dev/supabase/migrations/20261013133134_workflow_calendar_hierarchy.sql` bổ sung `start_date` cho hai bảng Subtasks và trigger kiểm tra lịch tại database.
