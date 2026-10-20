@@ -162,6 +162,13 @@ class AppUpdateService {
     }, 90000);
   }
 
+  public stopPolling() {
+    if (this.checkInterval != null) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
+  }
+
   private initVisibilityListeners() {
     if (typeof window === 'undefined') return;
     window.addEventListener('focus', () => void this.checkForUpdates());

@@ -36,20 +36,6 @@ function appVersionPlugin() {
       }
       fs.writeFileSync(path.resolve(publicDir, 'version.json'), versionData);
     },
-    generateBundle() {
-      this.emitFile({
-        type: 'asset',
-        fileName: 'version.json',
-        source: JSON.stringify(
-          {
-            version: buildVersion,
-            builtAt: buildTime,
-          },
-          null,
-          2
-        ),
-      });
-    },
   };
 }
 
