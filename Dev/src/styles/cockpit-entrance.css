@@ -1,0 +1,67 @@
+/* ==========================================================================
+   SPACESHIP COCKPIT DOCKING TRANSITION (Sidebars Entrance)
+   When intro finishes, Top Sidebar & Left Sidebar glide and dock into place:
+   - Sidebar Top: Moves down from above with fade in (opacity 0 -> 1)
+   - Sidebar Left: Moves out from left with fade in (opacity 0 -> 1)
+   - Main Surface: Follows right after with subtle bloom
+   ========================================================================== */
+
+/* Top Sidebar (Header): Moves down from above with opacity from faint to solid */
+@keyframes cockpitDockTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-42px);
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Left Sidebar: Moves out from left with opacity from faint to solid */
+@keyframes cockpitDockLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Main Dashboard Surface: Subtly blooms after sidebars have docked */
+@keyframes cockpitDockMain {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cockpit-dock-top {
+  animation: cockpitDockTop 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cockpit-dock-left {
+  animation: cockpitDockLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cockpit-dock-main {
+  animation: cockpitDockMain 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+}
+
+/* While waiting for intro to finish, keep elements hidden */
+.cockpit-dock-waiting {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

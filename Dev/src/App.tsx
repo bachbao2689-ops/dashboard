@@ -23,6 +23,7 @@ const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
+import { useUiStore } from './store/uiStore';
 import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 
 function RootRedirect() {
@@ -64,6 +65,7 @@ function App() {
 
   const handleFinishIntro = useCallback(() => {
     setIsFadingOut(true);
+    useUiStore.getState().setIntroFinished(true);
     const fadeTimer = setTimeout(() => {
       setIntroCompleted(true);
     }, 450);
