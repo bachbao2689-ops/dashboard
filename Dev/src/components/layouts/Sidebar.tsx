@@ -74,7 +74,7 @@ export const ButtonDrilldownDrawer: React.FC<{
   nodes: Record<string, DrillNode>;
   onNavigate: (path: string) => void;
   onTogglePin: (taskId: string) => void;
-}> = ({ isOpen, rootDetailNodeId, nodes, onNavigate, onTogglePin }) => {
+}> = ({ isOpen, rootDetailNodeId, nodes, onNavigate, onTogglePin: _onTogglePin }) => {
   const [stack, setStack] = useState<StackEntry[]>([
     { nodeId: rootDetailNodeId, focusedIndex: 0 },
   ]);
@@ -313,31 +313,6 @@ export const ButtonDrilldownDrawer: React.FC<{
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {item.pinTaskId && (
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        title={item.isPinned ? 'Bỏ ghim công việc' : 'Ghim công việc'}
-                        aria-label={item.isPinned ? 'Bỏ ghim công việc' : 'Ghim công việc'}
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (interactive && item.pinTaskId) {
-                            onTogglePin(item.pinTaskId);
-                          }
-                        }}
-                        className={cn('sb-pin-btn', item.isPinned && 'is-pinned')}
-                      >
-                        <StylizedPinIcon
-                          size={13}
-                          pinned={item.isPinned}
-                          className={
-                            item.isPinned
-                              ? 'text-slate-800 dark:text-slate-100'
-                              : 'text-gray-400 hover:text-gray-700 dark:hover:text-slate-200'
-                          }
-                        />
-                      </button>
-                    )}
                     {item.rightBadge}
                     {hasChildren && (
                       <button
@@ -498,14 +473,14 @@ const TreeAccordionChildRow: React.FC<{
   item,
   group,
   active,
-  isNavPinned,
+  isNavPinned: _isNavPinned,
   hasDrill,
   isDropdownOpen,
   onMouseEnter,
   onMouseLeave,
   onNavigate,
   onToggleItemDropdown,
-  onToggleNavPin,
+  onToggleNavPin: _onToggleNavPin,
   onToggleTaskPin,
 }) => {
   const dragId = `workspace-nav:${item.id}`;
@@ -566,39 +541,6 @@ const TreeAccordionChildRow: React.FC<{
 
         <div className="flex items-center gap-1 shrink-0 ml-1">
           {item.rightBadge}
-
-          {/* Hover Pin / Unpin shortcut button */}
-          <button
-            type="button"
-            tabIndex={-1}
-            title={
-              isNavPinned
-                ? `Bỏ ghim ${item.label}`
-                : `Ghim ${item.label} lên đầu Sidebar (hoặc kéo thả lên vùng Đã ghim)`
-            }
-            aria-label={isNavPinned ? `Bỏ ghim ${item.label}` : `Ghim ${item.label}`}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => {
-              e.stopPropagation();
-              onToggleNavPin(item, group);
-            }}
-            className={cn(
-              'sb-pin-btn',
-              isNavPinned
-                ? 'is-pinned opacity-100'
-                : 'opacity-0 group-hover/child:opacity-100'
-            )}
-          >
-            <StylizedPinIcon
-              size={12.5}
-              pinned={isNavPinned}
-              className={
-                isNavPinned
-                  ? 'text-slate-800 dark:text-slate-100'
-                  : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }
-            />
-          </button>
 
           {/* Clean compact pill trigger for multi-level sub-drawer */}
           {hasDrill && (
