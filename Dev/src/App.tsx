@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
@@ -49,12 +49,51 @@ function RootRedirect() {
 
 function App() {
   const initialize = useAuthStore(state => state.initialize);
-  const session=useAuthStore(state=>state.session);
-  const profileId=useAuthStore(state=>state.profile?.id);
+  const session = useAuthStore(state => state.session);
+  const profileId = useAuthStore(state => state.profile?.id);
+  const authLoading = useAuthStore(state => state.loading);
+
+  // App Startup Intro State (Plays ~3.5s cinematic logo animation before entering app)
+  const [introStarted] = useState(() => Date.now());
+  const [introCompleted, setIntroCompleted] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  const handleFinishIntro = useCallback(() => {
+    setIsFadingOut(true);
+    const fadeTimer = setTimeout(() => {
+      setIntroCompleted(true);
+    }, 450);
+    return () => clearTimeout(fadeTimer);
+  }, []);
+
+  // Ensure minimum 3500ms for intro animation
+  useEffect(() => {
+    if (introCompleted) return;
+
+    const elapsed = Date.now() - introStarted;
+    const remainingTime = Math.max(0, 3500 - elapsed);
+
+    const timer = setTimeout(() => {
+      if (!useAuthStore.getState().loading) {
+        handleFinishIntro();
+      }
+    }, remainingTime);
+
+    return () => clearTimeout(timer);
+  }, [introCompleted, introStarted, handleFinishIntro]);
+
+  // If auth was still loading at 3500ms, complete immediately once auth finishes
+  useEffect(() => {
+    if (introCompleted || authLoading) return;
+    const elapsed = Date.now() - introStarted;
+    if (elapsed >= 3500) {
+      handleFinishIntro();
+    }
+  }, [authLoading, introCompleted, introStarted, handleFinishIntro]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -112,6 +151,15 @@ function App() {
           </Route>
         </Routes></Suspense>
       </BrowserRouter>
+
+      {/* Startup Intro Splash Overlay (Plays ~3.5s cinematic logo story before entering app) */}
+      {!introCompleted && (
+        <LoadingSplashScreen
+          isIntro={true}
+          isExiting={isFadingOut}
+          onSkip={handleFinishIntro}
+        />
+      )}
     </>
   );
 }

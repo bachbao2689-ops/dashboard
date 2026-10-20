@@ -13,6 +13,13 @@
   z-index: 99999;
   background: radial-gradient(circle at 50% 45%, #003882 0%, #002e6d 50%, #00183b 100%);
   user-select: none;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.k-splash-container.k-splash-exit {
+  opacity: 0 !important;
+  transform: scale(1.025) !important;
+  pointer-events: none !important;
 }
 
 .dark .k-splash-container {
@@ -134,6 +141,10 @@
   position: relative;
 }
 
+.k-splash-progress-track.intro-mode {
+  width: 220px;
+}
+
 .dark .k-splash-progress-track {
   background: rgba(51, 65, 85, 0.5);
 }
@@ -155,6 +166,61 @@
   );
   background-size: 200% 100%;
   animation: kProgressBarFlow 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.k-splash-progress-bar-intro {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #4eb648 0%, #85df7d 60%, #ffffff 100%);
+  animation: kIntroProgressBar 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  box-shadow: 0 0 10px rgba(133, 223, 125, 0.5);
+}
+
+@keyframes kIntroProgressBar {
+  0% {
+    width: 0%;
+  }
+  30% {
+    width: 34%;
+  }
+  65% {
+    width: 75%;
+  }
+  90% {
+    width: 93%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+/* Skip Intro Button */
+.k-splash-skip-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100000;
+}
+
+.k-splash-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 /* Status Label */
