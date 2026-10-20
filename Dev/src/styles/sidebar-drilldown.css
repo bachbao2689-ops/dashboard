@@ -6,8 +6,9 @@
 
 /* 1. Resizable Left Sidebar Shell (scales like Detail Tasks) */
 @media (min-width: 1280px) {
-  div.w-\[272px\]:has(.app-sidebar) {
-    width: min(var(--sidebar-width, 272px), calc(100vw - 1040px)) !important;
+  div.w-\[272px\]:has(.app-sidebar),
+  div:has(.app-sidebar-outer) {
+    width: var(--sidebar-width, 268px) !important;
   }
 }
 
@@ -913,5 +914,236 @@ html:not(.dark) .top-nav-vertical-pill {
 .dark .top-nav-vertical-pill {
   background: rgba(38, 59, 83, 0.75);
   border: 1px solid rgba(147, 197, 253, 0.2);
+}
+
+/* ========================================================
+   Reskin Existing Sidebar to Zoma UI Style
+   Per Brief: New UI Sidebar.docx (Strict UI-Only Reskin)
+   ======================================================== */
+
+/* A. Double-Border Bezel Frame */
+.app-sidebar-outer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+html:not(.dark) .app-sidebar-outer {
+  background: #f8f8f8 !important;
+  padding: 6px !important;
+  border-radius: 20px !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+html:not(.dark) .app-sidebar-inner {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid #ebebef !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  overflow: hidden;
+}
+
+.dark .app-sidebar-outer {
+  background: transparent;
+  padding: 0;
+}
+
+/* B. Header: Logo K COFFEE Card */
+html:not(.dark) .sb-logo-card {
+  background: #fafafa !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: none !important;
+}
+
+/* C. Middle Area: Section Dividers & Clean Tree Navigation */
+html:not(.dark) .sb-section-divider {
+  color: #71717a !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+}
+
+/* Remove left blue spine and SVG curved lines */
+html:not(.dark) .sb-left-spine-track,
+html:not(.dark) .sb-spine-active-bar,
+html:not(.dark) .sb-tree-svg-overlay {
+  display: none !important;
+}
+
+html:not(.dark) .sb-tree-accordion-root {
+  padding-left: 0 !important;
+}
+
+/* Vertical guide line under each group header */
+html:not(.dark) .sb-tree-children-wrap {
+  position: relative !important;
+  margin-left: 14px !important;
+  padding-left: 10px !important;
+  border-left: 1px solid #e4e4e7 !important;
+}
+
+/* Parent Group Header */
+html:not(.dark) .sb-group-header {
+  color: #71717a !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 5px 8px !important;
+  border-radius: 8px !important;
+}
+
+html:not(.dark) .sb-group-header:hover {
+  color: #18181b !important;
+  background: #f4f4f5 !important;
+}
+
+html:not(.dark) .sb-group-header.is-open {
+  color: #18181b !important;
+}
+
+html:not(.dark) .sb-group-badge {
+  background: #f4f4f5 !important;
+  color: #3f3f46 !important;
+  border: 1px solid #e4e4e7 !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+}
+
+/* Menu Item Row */
+html:not(.dark) .app-sidebar .sb-root-row,
+html:not(.dark) .app-sidebar .sidebar-link-idle {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #52525b !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.dark) .app-sidebar .sb-root-row svg,
+html:not(.dark) .app-sidebar .sidebar-link-idle svg {
+  color: #52525b !important;
+  width: 17px;
+  height: 17px;
+}
+
+html:not(.dark) .app-sidebar .sb-root-row:hover,
+html:not(.dark) .app-sidebar .sidebar-link-idle:hover {
+  background: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .app-sidebar .sb-root-row:hover svg,
+html:not(.dark) .app-sidebar .sidebar-link-idle:hover svg {
+  color: #18181b !important;
+}
+
+html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active,
+html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
+  background: #f4f4f5 !important;
+  color: #18181b !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: none !important;
+}
+
+html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active svg,
+html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
+  color: #18181b !important;
+}
+
+html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
+  background: #f4f4f5 !important;
+  color: #18181b !important;
+  border: 1px solid #e4e4e7 !important;
+  font-weight: 500 !important;
+}
+
+/* Counter Badge (3) */
+html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn {
+  background: #f4f4f5 !important;
+  color: #3f3f46 !important;
+  border: 1px solid #e4e4e7 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  padding: 2px 7px !important;
+}
+
+html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn:hover,
+html:not(.dark) .app-sidebar .sb-subdrawer-pill-btn.is-open {
+  background: #e4e4e7 !important;
+  color: #18181b !important;
+  border-color: #d4d4d8 !important;
+}
+
+/* Pin button */
+html:not(.dark) .app-sidebar .sb-pin-btn {
+  opacity: 0.4 !important;
+  color: #71717a !important;
+}
+
+html:not(.dark) .app-sidebar .sb-pin-btn:hover,
+html:not(.dark) .app-sidebar .sb-pin-btn.is-pinned {
+  opacity: 1 !important;
+  color: #18181b !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* In-place sub-drawer drilldown viewport */
+html:not(.dark) .sb-drill-viewport {
+  background: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+html:not(.dark) .sb-item-row {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #52525b !important;
+  border-radius: 8px !important;
+}
+
+html:not(.dark) .sb-item-row:hover {
+  background: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .sb-item-row svg {
+  color: #52525b !important;
+}
+
+html:not(.dark) .sb-item-row:hover svg {
+  color: #18181b !important;
+}
+
+/* D. Bottom User Profile Card */
+html:not(.dark) .sb-profile-footer-card {
+  background: #f4f4f5 !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: none !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .sb-profile-footer-card:hover {
+  background: #ebebef !important;
+  border-color: #d4d4d8 !important;
+}
+
+html:not(.dark) .sb-pinned-pill-item {
+  background: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #18181b !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+}
+
+html:not(.dark) .sb-pinned-pill-item:hover {
+  background: #ebebef !important;
 }
 
