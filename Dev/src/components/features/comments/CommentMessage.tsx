@@ -72,12 +72,10 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
         <div className={bubble}>
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className={`text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{authorName}</span>
-            {createdAt && <time dateTime={createdAt} className={`text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
-              {new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
-            </time>}
-            {editedAt && <time dateTime={editedAt} title={new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN')} className={`text-[9px] italic ${mine ? 'text-blue-200/80' : 'text-gray-400'}`}>
-              {en ? `Edited ${new Date(editedAt).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}` : `Đã chỉnh sửa ${new Date(editedAt).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`}
-            </time>}
+            {createdAt && <span className={`inline-flex items-center gap-1 text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
+              <time dateTime={createdAt}>{new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</time>
+              {editedAt && <span title={`${en ? 'Edited' : 'Đã chỉnh sửa'} · ${new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`} aria-label={en ? 'Edited' : 'Đã chỉnh sửa'} className="inline-flex items-center"><Edit3 size={10} /></span>}
+            </span>}
           </div>
           {canManage && editing ? <form onSubmit={event => {event.preventDefault();void save();}}>
             <textarea autoFocus aria-label={en ? 'Edit comment' : 'Chỉnh sửa bình luận'} value={draft}
