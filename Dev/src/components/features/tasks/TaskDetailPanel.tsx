@@ -14,6 +14,7 @@ import { TaskPinButton } from './TaskPinButton';
 import { WorkflowStatusPicker, canonicalWorkflowStatus, type WorkflowTaskStatus } from './WorkflowStatusPicker';
 import { TaskDescriptionViewer } from './TaskDescriptionViewer';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
+import { canCompleteTrackedTask, completeTrackedTask } from '../../../services/workspaceTasks';
 
 interface TaskDetailPanelProps {
   task: any | null;
@@ -40,6 +41,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const [commentFocus, setCommentFocus] = useState(0);
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  const [canComplete, setCanComplete] = useState(false);
   const [mentionPeople, setMentionPeople] = useState<any[]>([]);
   const [taskCollaborators, setTaskCollaborators] = useState<(string | number)[]>([]);
   const [editingTask, setEditingTask] = useState(false);
@@ -63,14 +65,18 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
 
   useEffect(() => {
     setCanEdit(false);
+    setCanComplete(false);
     let active = true;
-    if (isOpen && profileId != null && task?.id && !task.id.startsWith('ps-') && !task.id.startsWith('cs-')) supabase.rpc('workflow_task_access', { tid: task.id, editing: true }).then(({ data }) => {
-      if (!active) return;
-      setCanEdit(data === true);
-      if (data !== true) { setEditingDescription(false); setEditingTask(false); }
-    });
+    if (isOpen && profileId != null && task?.id && !task.id.startsWith('ps-') && !task.id.startsWith('cs-')) {
+      supabase.rpc('workflow_task_access', { tid: task.id, editing: true }).then(({ data }) => {
+        if (!active) return;
+        setCanEdit(data === true);
+        if (data !== true) { setEditingDescription(false); setEditingTask(false); }
+      });
+      void canCompleteTrackedTask(task.id).then(value => { if (active) setCanComplete(value); }).catch(() => { if (active) setCanComplete(false); });
+    }
     return () => { active = false; };
-  }, [task?.id, task?.updated_at, task?.assignee_id, task?.project_id, task?.campaign_id, task?.workflow_phase_id, isOpen, profileId]);
+  }, [task?.id, task?.updated_at, task?.assignee_id, task?.project_id, task?.campaign_id, task?.workflow_phase_id, isOpen, profileId, profile?.role, profile?.employment_level]);
 
   useEffect(() => {
     let active = true;
@@ -154,11 +160,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   };
 
   const completeTask = async () => {
-    if (readOnly||!canEdit||!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
+    if (readOnly||!canComplete||!task || ['done', 'completed', 'complete'].includes((task.status || '').toLowerCase())) return;
     setSaving(true);
-    const { data, error } = await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', task.id).select('id').maybeSingle();
+    try { await completeTrackedTask(task.id); }
+    catch (error: any) { setSaving(false); return toast.error(error?.message || 'Không thể hoàn thành task. Kiểm tra lại quyền task.'); }
     setSaving(false);
-    if (error || !data) return toast.error('Không thể hoàn thành task. Kiểm tra lại quyền task.');
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_completed');
     onTaskUpdated?.({ status: 'done',workflow_status:'completed' }); window.dispatchEvent(new Event('tasks:changed'));toast.success('Task đã hoàn thành');
   };
@@ -260,7 +266,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           <TaskComments key={`${profileId}:task:${task.id}`} target={{kind:'task',id:task.id}} people={mentionPeople} collaboratorIds={taskCollaborators} allowMobileEditing focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (_body,mentions) => { onTaskUpdated?.(); await notifyTaskParticipants(task, {id:profileId,name:profile?.name,department_id:profile?.department_id}, 'task_comment',mentions); }} onDeleted={() => { onTaskUpdated?.(); }}/>
 
         </div>}
-        <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button><button disabled={isDone || saving || !canEdit} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary hover:bg-emerald-600 dark:hover:bg-emerald-500 px-3 py-2 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:hover:bg-primary"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? t('common.completed') : t('common.complete')}</button></div>
+        <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button><button disabled={isDone || saving || !canComplete} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary hover:bg-emerald-600 dark:hover:bg-emerald-500 px-3 py-2 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:hover:bg-primary"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? t('common.completed') : t('common.complete')}</button></div>
       </div>
     </>
   );

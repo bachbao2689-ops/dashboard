@@ -17,6 +17,7 @@ import {isTaskDone} from '../lib/taskTracking';
 import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {editOwnedComment} from '../lib/commentEditing';
 import {useRememberedState} from './useRememberedState';
+import {completeTrackedTask} from '../services/workspaceTasks';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -123,10 +124,10 @@ export function useProjectsController(){
 
   const removeCampaignSubtask = async (id: string) => { await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', id); setCampaignSubtasks(campaignSubtasks.filter(s => s.id !== id)); };
   const completeCampaignSubtask = async (subtask: any) => {
-    if (!selectedCampaign || !profile?.id || (!selectedRoot && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
-    const { data: completed, error } = await supabase.from('campaign_subtasks').update({ status: 'completed' }).eq('id', subtask.id).select('id,status').maybeSingle();
-    if (error || !completed) return toast.error(error?.message || 'Không thể hoàn thành subtask. Kiểm tra quyền hoặc tải lại dữ liệu.');
-    setCampaignSubtasks(current => current.map(item => item.id === subtask.id ? { ...item, status: completed.status || 'completed' } : item));
+    if (!selectedCampaign || !profile?.id || (!selectedRoot && !isGlobalManager(profile) && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
+    try { await completeTrackedTask(`cs-${subtask.id}`); }
+    catch (error: any) { return toast.error(error?.message || 'Không thể hoàn thành subtask. Kiểm tra quyền hoặc tải lại dữ liệu.'); }
+    setCampaignSubtasks(current => current.map(item => item.id === subtask.id ? { ...item, status: 'completed' } : item));
     window.dispatchEvent(new Event('tasks:changed'));
     window.dispatchEvent(new Event('campaigns:changed'));
     toast.success('Đã hoàn thành subtask');
@@ -661,10 +662,10 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     window.dispatchEvent(new Event('projects:changed'));
   };
   const completeSubtask = async (subtask: any) => {
-    if (!selected || !profile?.id || (!selectedRoot && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
-    const { data: completed, error } = await supabase.from('project_subtasks').update({ status: 'completed' }).eq('id', subtask.id).select('id,status').maybeSingle();
-    if (error || !completed) return toast.error(error?.message || 'Không thể hoàn thành subtask. Kiểm tra quyền hoặc tải lại dữ liệu.');
-    const updated = { ...subtask, status: completed.status || 'completed' };
+    if (!selected || !profile?.id || (!selectedRoot && !isGlobalManager(profile) && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
+    try { await completeTrackedTask(`ps-${subtask.id}`); }
+    catch (error: any) { return toast.error(error?.message || 'Không thể hoàn thành subtask. Kiểm tra quyền hoặc tải lại dữ liệu.'); }
+    const updated = { ...subtask, status: 'completed' };
     setSubtasks(current => current.map(item => item.id === subtask.id ? updated : item));
     setSelectedSubtask((current: any) => current?.id === subtask.id ? updated : current);
     setRecentlyCompletedSubtaskId(subtask.id);

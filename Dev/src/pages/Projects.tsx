@@ -24,6 +24,7 @@ import {CampaignDetailDrawer} from '../components/features/projects/CampaignDeta
 import {EntityPinButton} from '../components/features/projects/EntityPinButton';
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
+import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
@@ -290,7 +291,7 @@ export const Projects:React.FC=()=>{
   </div>
   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0" onClick={event => event.stopPropagation()}>
           <TaskPinButton taskId={taskKey('project_subtask', s.id)} size={14} className="!p-1.5" />
-          {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <ActionButton icon={<CheckCircle2 size={14}/>} onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}></ActionButton>}
+          {(selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <ActionButton icon={<CheckCircle2 size={14}/>} onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}></ActionButton>}
           {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && <button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>}
           {selectedRoot && <button onClick={()=>removeSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>}
         </div>

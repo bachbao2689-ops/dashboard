@@ -9,6 +9,8 @@ import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,p
 import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/workflowCalendar';
 import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 import {supabase} from '../services/supabase';
+import {completeTrackedTask} from '../services/workspaceTasks';
+import {isGlobalManager} from '../lib/roleScope';
 import toast from 'react-hot-toast';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
@@ -16,7 +18,7 @@ interface Phase extends HubPhase {
 }
 interface WorkflowSubtask {
   id: string; phaseId?: string; title: string; assignee: string; assignee_id?: string;
-  status: WorkflowTaskStatus; due_date?: string; record: Task; canEdit: boolean;
+  status: WorkflowTaskStatus; due_date?: string; record: Task; canEdit: boolean; canComplete: boolean;
 }
 const toWorkflowStage = (task: Task) => workflowStage(task.status, task.workflow_status);
 const pct = (value: number | null | undefined) => value == null ? '—' : value + '%';
@@ -89,6 +91,11 @@ export function useWorkflowManagement() {
     canEdit: Boolean(phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
       || (hub.profile?.id != null && (String(t.assignee_id) === String(hub.profile.id)
         || (t.created_by != null && String(t.created_by) === String(hub.profile.id))))),
+    canComplete: Boolean(isGlobalManager(hub.profile)
+      || phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
+      || (hub.profile?.id != null && (String(t.assignee_id) === String(hub.profile.id)
+        || (t.created_by != null && String(t.created_by) === String(hub.profile.id))))
+      || currentEntity?.root),
   }));
   const currentPhaseSubtasks = subtasks.filter(t => t.phaseId === activePhase?.id);
   const doneSubtasksCount = currentPhaseSubtasks.filter(t => t.status === 'completed').length;
@@ -189,7 +196,15 @@ export function useWorkflowManagement() {
     if (await attempt(() => saveGate([...criteria, {id:crypto.randomUUID(),label:newCriteriaLabel.trim(),weight,checked:false}]), 'Đã lưu tiêu chí')) { setNewCriteriaLabel(''); setNewCriteriaWeight('20'); setShowAddCriteria(false); }
   };
   const stageValues = (stage: WorkflowTaskStatus) => ({status:canonicalWorkflowStatus[stage],workflow_status:stage});
-  const toggleSubtask = (id: string) => { const row = subtasks.find(t => t.id === id); if (row?.canEdit) void attempt(() => hub.updateTask(row.record, stageValues(row.status === 'completed' ? 'in_progress' : 'completed')), 'Đã cập nhật All Tasks'); };
+  const toggleSubtask = (id: string) => {
+    const row = subtasks.find(t => t.id === id);
+    if (!row) return;
+    if (row.status === 'completed') {
+      if (row.canEdit) void attempt(() => hub.updateTask(row.record, stageValues('in_progress')), 'Đã cập nhật All Tasks');
+      return;
+    }
+    if (row.canComplete) void attempt(async () => { await completeTrackedTask(row.id); await hub.refresh(); }, 'Đã hoàn thành task');
+  };
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim() || !newTaskAssignee || !activePhase) return toast.error('Nhập tên và chọn PIC');

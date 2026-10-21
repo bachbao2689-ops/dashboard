@@ -21,6 +21,8 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
+import {completeTrackedTask} from '../../../services/workspaceTasks';
+import {isGlobalManager} from '../../../lib/roleScope';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -115,11 +117,14 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('all');
 
   const completeSubtask = async (sub: any) => {
-    if (readOnly || !profile?.id || (!canManage && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
-    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({ status: 'completed' }).eq('id', sub.id).select('id').single(), 'Đã hoàn thành subtask')) {
+    if (readOnly || !profile?.id || (!canManage && !isGlobalManager(profile) && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
+    try {
+      await completeTrackedTask(taskKey(`${kind}_subtask`, sub.id));
+      toast.success('Đã hoàn thành subtask');
+      void details.refresh();
       window.dispatchEvent(new Event('tasks:changed'));
       onUpdated?.();
-    }
+    } catch (error: any) { toast.error(error?.message || 'Không thể hoàn thành subtask.'); }
   };
 
   const visibleSubtasks = subtasks.filter(sub => {
@@ -200,7 +205,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {(canManage || Number(sub.assignee_id) === Number(profile?.id)) && !isTaskDone(sub.status) && (
+                      {(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id)) && !isTaskDone(sub.status) && (
                         <button aria-label={t('common.complete')} disabled={busy} onClick={() => void completeSubtask(sub)} className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-colors" title={t('common.complete')}>
                           <CheckCircle2 size={15}/>
                         </button>

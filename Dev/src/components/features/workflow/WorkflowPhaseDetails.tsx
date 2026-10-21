@@ -216,7 +216,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <input
                                 type="checkbox"
-                                disabled={!s.canEdit || hub.busy}
+                                disabled={(done ? !s.canEdit : !s.canComplete) || hub.busy}
                                 checked={done}
                                 onChange={() => toggleSubtask(s.id)}
                                 className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"

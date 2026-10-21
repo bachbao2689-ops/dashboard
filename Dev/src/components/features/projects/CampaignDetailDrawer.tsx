@@ -13,6 +13,7 @@ import {EntityPinButton} from './EntityPinButton';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
+import {isGlobalManager} from '../../../lib/roleScope';
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
  const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit}=state;
  const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
@@ -73,7 +74,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0" onClick={event => event.stopPropagation()}>
           <TaskPinButton taskId={taskKey('campaign_subtask', s.id)} size={14} className="!p-1.5" />
-          {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <button onClick={()=>void completeCampaignSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}><CheckCircle2 size={14}/></button>}
+          {(selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <button onClick={()=>void completeCampaignSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}><CheckCircle2 size={14}/></button>}
           {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && <button onClick={()=>{ setCampaignEditingSubtaskId(s.id); setCampaignEditSubtaskTitle(s.title); setCampaignEditSubtaskOwner(String(s.assignee_id || '')); setCampaignEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>}
           {selectedRoot && <button onClick={()=>removeCampaignSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>}
         </div>

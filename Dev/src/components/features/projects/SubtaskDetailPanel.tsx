@@ -9,7 +9,7 @@ import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, Use
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
-import { updateTrackedTask } from '../../../services/workspaceTasks';
+import { canCompleteTrackedTask, completeTrackedTask, updateTrackedTask } from '../../../services/workspaceTasks';
 import { taskKey } from '../../../lib/taskTracking';
 import { TaskPinButton } from '../tasks/TaskPinButton';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
@@ -76,7 +76,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
-  const [canManageParent, setCanManageParent] = useState(false);
+  const [canCompleteTask, setCanCompleteTask] = useState(false);
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -98,15 +98,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   useEffect(() => {
     let active = true;
-    const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
-    setCanManageParent(false);
-    if (parentId && profile?.id) {
-      const kind = entityType === 'project_subtask' ? 'project' : 'campaign';
-      void supabase.rpc('workflow_root', { k: kind, e: parentId })
-        .then(({ data }) => { if (active) setCanManageParent(data === true); });
+    setCanCompleteTask(false);
+    if (subtask?.id && profile?.id) {
+      void canCompleteTrackedTask(taskKey(entityType, subtask.id))
+        .then(value => { if (active) setCanCompleteTask(value); })
+        .catch(() => { if (active) setCanCompleteTask(false); });
     }
     return () => { active = false; };
-  }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType, profile?.id]);
+  }, [subtask?.id, entityType, profile?.id]);
 
   useEffect(() => {
     const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
@@ -256,10 +255,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
 
   const complete = async () => {
-    if (readOnly || !subtask || (!canManageParent && Number(subtask.assignee_id) !== Number(profile?.id)) || saving || isDone(subtask.status)) return;
+    if (readOnly || !subtask || !canCompleteTask || saving || isDone(subtask.status)) return;
     setSaving(true);
     try {
-      await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
+      await completeTrackedTask(taskKey(entityType, subtask.id));
       onUpdated({ ...subtask, status: 'completed' });
       toast.success('Đã hoàn thành subtask');
     } catch (error: any) { toast.error(error.message || 'Không thể hoàn thành subtask'); }
@@ -278,7 +277,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
-  const canComplete = Boolean(profile?.id && (canManageParent || Number(subtask.assignee_id) === Number(profile.id)));
+  const canComplete = canCompleteTask;
   const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
 
   return (
