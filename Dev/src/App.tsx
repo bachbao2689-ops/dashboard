@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
@@ -23,17 +23,13 @@ const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
-import { useUiStore } from './store/uiStore';
-import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 
 function RootRedirect() {
   const profile = useAuthStore(state => state.profile);
   const loading = useAuthStore(state => state.loading);
   const location = useLocation();
 
-  if (loading) {
-    return <LoadingSplashScreen message="Đang khởi tạo hệ thống..." />;
-  }
+  if (loading) return null;
 
   // Preserve query params if coming with project/campaign links
   if (location.search && (location.search.includes('project=') || location.search.includes('campaign='))) {
@@ -52,50 +48,10 @@ function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session = useAuthStore(state => state.session);
   const profileId = useAuthStore(state => state.profile?.id);
-  const authLoading = useAuthStore(state => state.loading);
-
-  // App Startup Intro State (Plays ~3.5s cinematic logo animation before entering app)
-  const [introStarted] = useState(() => Date.now());
-  const [introCompleted, setIntroCompleted] = useState(false);
-  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
-
-  const handleFinishIntro = useCallback(() => {
-    setIsFadingOut(true);
-    useUiStore.getState().setIntroFinished(true);
-    const fadeTimer = setTimeout(() => {
-      setIntroCompleted(true);
-    }, 450);
-    return () => clearTimeout(fadeTimer);
-  }, []);
-
-  // Ensure minimum 3500ms for intro animation
-  useEffect(() => {
-    if (introCompleted) return;
-
-    const elapsed = Date.now() - introStarted;
-    const remainingTime = Math.max(0, 3500 - elapsed);
-
-    const timer = setTimeout(() => {
-      if (!useAuthStore.getState().loading) {
-        handleFinishIntro();
-      }
-    }, remainingTime);
-
-    return () => clearTimeout(timer);
-  }, [introCompleted, introStarted, handleFinishIntro]);
-
-  // If auth was still loading at 3500ms, complete immediately once auth finishes
-  useEffect(() => {
-    if (introCompleted || authLoading) return;
-    const elapsed = Date.now() - introStarted;
-    if (elapsed >= 3500) {
-      handleFinishIntro();
-    }
-  }, [authLoading, introCompleted, introStarted, handleFinishIntro]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -121,7 +77,7 @@ function App() {
     <>
       <Toaster position="top-right" />
       <BrowserRouter>
-        <Suspense fallback={<LoadingSplashScreen message="Đang tải dữ liệu..." />}><Routes>
+        <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center text-sm text-gray-500 dark:text-gray-400"><span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />Đang tải…</span></div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={
@@ -154,14 +110,6 @@ function App() {
         </Routes></Suspense>
       </BrowserRouter>
 
-      {/* Startup Intro Splash Overlay (Plays ~3.5s cinematic logo story before entering app) */}
-      {!introCompleted && (
-        <LoadingSplashScreen
-          isIntro={true}
-          isExiting={isFadingOut}
-          onSkip={handleFinishIntro}
-        />
-      )}
     </>
   );
 }

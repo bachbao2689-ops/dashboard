@@ -13,7 +13,6 @@ interface LoginConcept {
   bgUrl: string;
   themeClass: string;
   btnClass: string;
-  hasTagline?: boolean;
 }
 
 const LOGIN_CONCEPTS: LoginConcept[] = [
@@ -30,7 +29,6 @@ const LOGIN_CONCEPTS: LoginConcept[] = [
     bgUrl: '/login/concept-2.png',
     themeClass: 'concept-theme-2',
     btnClass: 'concept-btn-2',
-    hasTagline: true,
   },
   {
     id: 'concept-3',
@@ -70,8 +68,6 @@ export const Login: React.FC = () => {
       const img = new Image();
       img.src = concept.bgUrl;
     });
-    const taglineImg = new Image();
-    taglineImg.src = '/login/concept-2-tagline.png';
   }, []);
 
   useEffect(() => {
@@ -325,16 +321,6 @@ export const Login: React.FC = () => {
           onSelect={goToConcept}
         />
 
-        {/* Tagline Image (Specific to Concept 2) */}
-        <div
-          className={`login-tagline-wrap ${currentIndex === 1 ? 'is-visible' : 'is-hidden'}`}
-        >
-          <img
-            src="/login/concept-2-tagline.png"
-            alt="Mùa qua mùa, bông đơm trái — Giữ một hướng, trọn vị hái"
-            className="login-tagline-img"
-          />
-        </div>
       </div>
     </div>
   );

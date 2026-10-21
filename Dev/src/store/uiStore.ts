@@ -6,8 +6,6 @@ interface UiState {
   theme: 'light' | 'dark';
   lang: 'en' | 'vi';
   isSidebarOpen: boolean;
-  introFinished: boolean;
-  setIntroFinished: (finished: boolean) => void;
   toggleTheme: () => void;
   setLang: (lang: 'en' | 'vi') => void;
   toggleSidebar: () => void;
@@ -18,8 +16,6 @@ export const useUiStore = create<UiState>((set) => ({
   theme: 'light',
   lang: 'vi',
   isSidebarOpen: true,
-  introFinished: false,
-  setIntroFinished: (introFinished) => set({ introFinished }),
   toggleTheme: () => {
     const profileId = useAuthStore.getState().profile?.id;
     set((state) => {

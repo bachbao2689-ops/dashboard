@@ -139,37 +139,6 @@
   box-shadow: 0 32px 85px -12px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.22);
 }
 
-/* Concept 2 Tagline Image */
-.login-tagline-wrap {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  transition: opacity 0.45s ease, max-height 0.45s ease, margin 0.45s ease, transform 0.45s ease;
-}
-
-.login-tagline-wrap.is-visible {
-  opacity: 1;
-  max-height: 90px;
-  margin-top: 18px;
-  transform: translateY(0);
-}
-
-.login-tagline-wrap.is-hidden {
-  opacity: 0;
-  max-height: 0;
-  margin-top: 0;
-  transform: translateY(-8px);
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.login-tagline-img {
-  width: 100%;
-  max-width: 440px;
-  height: auto;
-  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
-}
-
 /* ========================================================
    CAROUSEL INDICATOR CONTROLS (Dưới bảng login)
    Rules:
