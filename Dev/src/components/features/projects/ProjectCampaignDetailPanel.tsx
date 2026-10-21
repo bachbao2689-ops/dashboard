@@ -112,7 +112,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     }
   };
 
-  const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('open');
+  const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('all');
 
   const completeSubtask = async (sub: any) => {
     if (readOnly || !profile?.id || (!canManage && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;

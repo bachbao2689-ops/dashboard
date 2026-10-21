@@ -374,7 +374,9 @@ export const Projects:React.FC=()=>{
         onClose={() => setSelectedSubtask(null)}
         onUpdated={(updatedSubtask) => {
           if (updatedSubtask) {
-            setSubtasks(current => current.map(item => item.id === updatedSubtask.id ? { ...item, ...updatedSubtask } : item));
+            const updateItems = (current: any[]) => current.map(item => String(item.id) === String(updatedSubtask.id) ? { ...item, ...updatedSubtask } : item);
+            if (selectedCampaign) state.setCampaignSubtasks(updateItems);
+            else setSubtasks(updateItems);
             setSelectedSubtask(updatedSubtask);
             if ((updatedSubtask.status || '').toLowerCase() === 'completed') {
               setRecentlyCompletedSubtaskId(updatedSubtask.id);
