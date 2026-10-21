@@ -76,6 +76,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  const [canManageParent, setCanManageParent] = useState(false);
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -94,6 +95,18 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     }
     return () => { active = false; };
   }, [subtask?.id, entityType, profile?.id]);
+
+  useEffect(() => {
+    let active = true;
+    const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
+    setCanManageParent(false);
+    if (parentId && profile?.id) {
+      const kind = entityType === 'project_subtask' ? 'project' : 'campaign';
+      void supabase.rpc('workflow_root', { k: kind, e: parentId })
+        .then(({ data }) => { if (active) setCanManageParent(data === true); });
+    }
+    return () => { active = false; };
+  }, [subtask?.id, subtask?.project_id, subtask?.campaign_id, entityType, profile?.id]);
 
   useEffect(() => {
     const parentId = entityType === 'campaign_subtask' ? subtask?.campaign_id : subtask?.project_id;
@@ -243,7 +256,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
 
   const complete = async () => {
-    if (readOnly || !subtask || Number(subtask.assignee_id) !== Number(profile?.id) || saving || isDone(subtask.status)) return;
+    if (readOnly || !subtask || (!canManageParent && Number(subtask.assignee_id) !== Number(profile?.id)) || saving || isDone(subtask.status)) return;
     setSaving(true);
     try {
       await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
@@ -265,7 +278,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
-  const canComplete = Boolean(profile?.id && Number(subtask.assignee_id) === Number(profile.id));
+  const canComplete = Boolean(profile?.id && (canManageParent || Number(subtask.assignee_id) === Number(profile.id)));
   const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
 
   return (

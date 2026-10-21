@@ -123,7 +123,7 @@ export function useProjectsController(){
 
   const removeCampaignSubtask = async (id: string) => { await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('id', id); setCampaignSubtasks(campaignSubtasks.filter(s => s.id !== id)); };
   const completeCampaignSubtask = async (subtask: any) => {
-    if (!selectedCampaign || !profile?.id || Number(subtask.assignee_id) !== Number(profile.id) || isTaskDone(subtask.status)) return;
+    if (!selectedCampaign || !profile?.id || (!selectedRoot && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
     const { error } = await supabase.from('campaign_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
     if (error) return toast.error('Không thể hoàn thành subtask');
     const { data } = await supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at');
@@ -662,7 +662,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     window.dispatchEvent(new Event('projects:changed'));
   };
   const completeSubtask = async (subtask: any) => {
-    if (!selected || !profile?.id || Number(subtask.assignee_id) !== Number(profile.id) || isTaskDone(subtask.status)) return;
+    if (!selected || !profile?.id || (!selectedRoot && Number(subtask.assignee_id) !== Number(profile.id)) || isTaskDone(subtask.status)) return;
     const { error } = await supabase.from('project_subtasks').update({ status: 'completed' }).eq('id', subtask.id);
     if (error) return toast.error('Không thể hoàn thành subtask');
     const updated = { ...subtask, status: 'completed' };

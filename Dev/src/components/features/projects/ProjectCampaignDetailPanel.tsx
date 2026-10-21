@@ -115,7 +115,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('open');
 
   const completeSubtask = async (sub: any) => {
-    if (readOnly || !profile?.id || Number(sub.assignee_id) !== Number(profile.id) || isTaskDone(sub.status)) return;
+    if (readOnly || !profile?.id || (!canManage && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
     if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({ status: 'completed' }).eq('id', sub.id).select('id').single(), 'Đã hoàn thành subtask')) {
       window.dispatchEvent(new Event('tasks:changed'));
       onUpdated?.();
@@ -200,7 +200,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {Number(sub.assignee_id) === Number(profile?.id) && !isTaskDone(sub.status) && (
+                      {(canManage || Number(sub.assignee_id) === Number(profile?.id)) && !isTaskDone(sub.status) && (
                         <button aria-label={t('common.complete')} disabled={busy} onClick={() => void completeSubtask(sub)} className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-colors" title={t('common.complete')}>
                           <CheckCircle2 size={15}/>
                         </button>

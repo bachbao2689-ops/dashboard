@@ -73,7 +73,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0" onClick={event => event.stopPropagation()}>
           <TaskPinButton taskId={taskKey('campaign_subtask', s.id)} size={14} className="!p-1.5" />
-          {Number(s.assignee_id) === Number(profile?.id) && !isTaskDone(s.status) && <button onClick={()=>void completeCampaignSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}><CheckCircle2 size={14}/></button>}
+          {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <button onClick={()=>void completeCampaignSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}><CheckCircle2 size={14}/></button>}
           {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && <button onClick={()=>{ setCampaignEditingSubtaskId(s.id); setCampaignEditSubtaskTitle(s.title); setCampaignEditSubtaskOwner(String(s.assignee_id || '')); setCampaignEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>}
           {selectedRoot && <button onClick={()=>removeCampaignSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>}
         </div>
