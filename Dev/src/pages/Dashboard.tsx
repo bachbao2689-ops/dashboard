@@ -14,7 +14,6 @@ import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
 import { useRememberedState } from '../hooks/useRememberedState';
 import { useNavigate } from 'react-router-dom';
-import { WeeklyReportDrawer } from '../components/features/reports/WeeklyReportDrawer';
 import { useTranslation } from '../i18n/translations';
 
 /* Design tokens */
@@ -52,7 +51,6 @@ export const Dashboard: React.FC = () => {
   const [range, setRange] = useRememberedState<'weekly' | 'custom'>('dashboard.range', 'weekly');
   const [customStart, setCustomStart] = useRememberedState('dashboard.customStart', toYmd(startOfCurrentWeek()));
   const [customEnd, setCustomEnd] = useRememberedState('dashboard.customEnd', (() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); })());
-    const [performanceOpen, setPerformanceOpen] = useState(false);
 
   const [openDept, setOpenDept] = useState<string | null>(null);
 
@@ -70,7 +68,7 @@ export const Dashboard: React.FC = () => {
     return () => document.removeEventListener('mousedown', clickOut);
   }, []);
 
-  const {s,pct,rangeStart,rangeEnd,selectedTasks,periodTasks,chartData,selectedReferences,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,users,activeId,range,customStart,customEnd,search);
+  const {s,pct,rangeStart,rangeEnd,selectedTasks,chartData,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,users,activeId,range,customStart,customEnd,search);
   const trackRing=isDark?'#334155':'#edf3f8';const trackOrbit=isDark?'#334155':'#e8eff8';
   const openFilteredTasks=(statusParam?: string)=>{
     if(!s)return;const query=new URLSearchParams({start:rangeStart,end:rangeEnd});
@@ -274,7 +272,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <DashboardAllocationChart name={s.name} rangeStart={rangeStart} rangeEnd={rangeEnd} range={range} setRange={setRange} customStart={customStart} setCustomStart={setCustomStart} customEnd={customEnd} setCustomEnd={setCustomEnd} isDark={isDark} chartData={chartData} onOpenReport={()=>setPerformanceOpen(true)} />
+          <DashboardAllocationChart name={s.name} rangeStart={rangeStart} rangeEnd={rangeEnd} range={range} setRange={setRange} customStart={customStart} setCustomStart={setCustomStart} customEnd={customEnd} setCustomEnd={setCustomEnd} isDark={isDark} chartData={chartData} />
           {/* Insight strip */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-3.5 mt-1">
             <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
@@ -376,7 +374,6 @@ export const Dashboard: React.FC = () => {
             </div>
           </section>
         </div>
-        <WeeklyReportDrawer isOpen={performanceOpen} onClose={() => setPerformanceOpen(false)} ownerName={s?.name || 'Performance'} userId={s?.type === 'staff' ? Number(s.id.replace('user-', '')) : undefined} weekStart={rangeStart} weekEnd={rangeEnd} tasks={periodTasks} references={selectedReferences} onOpenTask={taskId => { setPerformanceOpen(false); navigate(`/tasks?task=${taskId}`); }} />
       </div>
     );
   };

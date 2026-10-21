@@ -5,8 +5,8 @@ import {AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContai
 import {useTranslation} from '../../../i18n/translations';
 const INK='text-gray-900 dark:text-white',MUTED='text-gray-500 dark:text-gray-400',INNER='border border-gray-200 dark:border-slate-700';
 const displayDate=(value:string,locale='vi-VN')=>new Date(`${value}T00:00:00`).toLocaleDateString(locale);
-type Props={name:string;rangeStart:string;rangeEnd:string;range:'weekly'|'custom';setRange:(value:'weekly'|'custom')=>void;customStart:string;setCustomStart:(value:string)=>void;customEnd:string;setCustomEnd:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[];onOpenReport:()=>void};
-export function DashboardAllocationChart({name,rangeStart,rangeEnd,range,setRange,customStart,setCustomStart,customEnd,setCustomEnd,isDark,chartData,onOpenReport}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
+type Props={name:string;rangeStart:string;rangeEnd:string;range:'weekly'|'custom';setRange:(value:'weekly'|'custom')=>void;customStart:string;setCustomStart:(value:string)=>void;customEnd:string;setCustomEnd:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[]};
+export function DashboardAllocationChart({name,rangeStart,rangeEnd,range,setRange,customStart,setCustomStart,customEnd,setCustomEnd,isDark,chartData}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
           {/* Chart */}
           <div className={`sm:col-span-2 ${INNER} rounded-[13px] px-4 pt-[15px] pb-[10px] flex flex-col min-w-0`}>
             <div className="flex items-start justify-between gap-2">
@@ -51,7 +51,7 @@ export function DashboardAllocationChart({name,rangeStart,rangeEnd,range,setRang
             </div>
             <div className="w-full mt-3 flex-1 min-h-[150px] 2xl:min-h-[190px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} onClick={onOpenReport} margin={{ left: -20, right: 8, top: 4 }}>
+                <AreaChart data={chartData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={isDark ? '#b4a3ff' : '#6953bd'} stopOpacity={0.25} />
