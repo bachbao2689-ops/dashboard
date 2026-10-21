@@ -1,7 +1,7 @@
 import {useTaskCommentCounts} from '../../../hooks/useTaskCommentCounts';
 import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {Plus, X, Code2, Calendar, User, Edit3, Trash2, Check, MessageSquare} from 'lucide-react';
+import {Plus, X, Code2, Calendar, User, Edit3, Trash2, MessageSquare} from 'lucide-react';
 import {displayDate} from '../../../lib/workflowHub';
 import {WorkflowStatusPicker, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
 import {WorkflowGateChecklist} from './WorkflowGateChecklist';
@@ -12,7 +12,7 @@ import {TaskPinButton} from '../tasks/TaskPinButton';
 import {useSidebarPinStore} from '../../../store/sidebarPinStore';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, editingTaskId, setEditingTaskId, editTaskTitle, setEditTaskTitle, editTaskAssignee, setEditTaskAssignee, editTaskStatus, setEditTaskStatus, editTaskDue, setEditTaskDue, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleStartEditTask, handleSaveEditTask, handleQuickChangeStatus, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
   const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
 
   const [splitPct, setSplitPct] = useState(58);
@@ -201,69 +201,6 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       currentPhaseSubtasks.map((s) => {
                         const done = s.status === 'completed';
                         const isPinned = pinnedTaskIds.includes(String(s.id));
-                        const isEditing = editingTaskId === s.id;
-
-                        if (isEditing) {
-                          return (
-                            <div
-                              key={s.id}
-                              className="p-3 rounded-xl border border-blue-400 bg-white dark:bg-slate-900 shadow-sm space-y-2"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase">{isEn ? 'Editing task' : 'Đang chỉnh sửa đầu việc'}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingTaskId(null)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <X size={12} />
-                                </button>
-                              </div>
-
-                              <input
-                                type="text"
-                                value={editTaskTitle}
-                                onChange={e => setEditTaskTitle(e.target.value)}
-                                className="w-full text-xs p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                              />
-
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                                {currentEntity.root ? <MultiSelect options={taskOptions} value={editTaskAssignee ? [editTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setEditTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} /> : <span className="text-xs">{s.assignee}</span>}
-                                <WorkflowDateField id="workflow-edit-task-due" value={editTaskDue} onChange={setEditTaskDue} minDate={s.record.start_date || taskCalendar.start} maxDate={taskCalendar.due}/>
-                                <select
-                                  value={editTaskStatus}
-                                  onChange={e => setEditTaskStatus(e.target.value as WorkflowTaskStatus)}
-                                  className="text-[11px] p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                                >
-                                  {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
-                                    <option key={st} value={st}>
-                                      {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="flex justify-end gap-1.5 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingTaskId(null)}
-                                  className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
-                                >
-                                  {isEn ? 'Cancel' : 'Hủy'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleSaveEditTask(s.id, e)}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
-                                >
-                                  <Check size={12} strokeWidth={2.5} /> {isEn ? 'Save changes' : 'Lưu thay đổi'}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        }
-
                         return (
                           <div
                             key={s.id}
@@ -361,7 +298,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                   <button
                                     type="button"
                                     disabled={!s.canEdit || hub.busy}
-                                    onClick={(e) => handleStartEditTask(s, e)}
+                                    onClick={(e) => { e.stopPropagation(); openTaskDetails(s.record); }}
                                     className="p-1 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer disabled:hidden shrink-0"
                                     title={isEn ? 'Edit task' : 'Chỉnh sửa đầu việc'}
                                   >

@@ -15,8 +15,9 @@
 - Panel nguồn dùng `/projects?project=<uuid>` hoặc `/projects?campaign=<uuid>` để mở đúng Project/Campaign.
 - Header Workflow tập trung tên, lịch, PIC, avatar người phụ trách task và trạng thái; không hiển thị mô tả, ưu tiên hoặc link nguồn/realtime phụ.
 - Chọn thẻ chặng hoặc dropdown chỉ đổi chặng đang chọn. Chỉ nút **Xem chi tiết** mở Gate và danh sách task; chọn chặng khác đóng phần chi tiết.
-- Thẻ chặng có hai hàng PIC/Subtask chỉ hiển thị avatar; tên nằm trong tooltip. Subtask lấy người phụ trách công việc thực tế, loại trùng theo ID.
+- Thẻ chặng có hai hàng PIC/Subtask chỉ hiển thị avatar; tên nằm trong tooltip. Hàng Subtask gộp Phase Sub-PIC và người được giao task trong chặng, loại trùng theo ID.
 - Panel nguồn hiển thị tiến độ chung, PIC/sub-PIC, phase và các Tasks tạo trong Workflow. Subtasks hiện có nằm ở phần Subtasks.
+- Mở/chỉnh task từ Workflow dùng chung Task Detail/Subtask Detail drawer với All Tasks/Projects; sửa title, PIC, lịch, trạng thái, mô tả và comments vẫn ghi về đúng bảng/UUID gốc.
 - Công việc chưa gắn giai đoạn vẫn được tính đúng theo parent. PIC mở Workflow và chọn phase để gắn tại chỗ.
 - Tạo/sửa phase và phê duyệt Gate dùng các RPC Workflow hiện có. RLS giữ nguyên quyền Admin/PIC/sub-PIC/task assignee; UI chỉ hiển thị dữ liệu được phép đọc.
 - Ẩn/xóa parent loại nó khỏi danh sách active của cả hai tab, không tạo parent thay thế.
