@@ -228,7 +228,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               {comments.length > 0 && <div className="space-y-3 mb-4">
                 {comments.map(c => <CommentMessage key={c.id} id={c.id} authorId={c.user_id}
                   actorId={profile?.id} authorName={c.author?.name || 'Member'} avatarUrl={c.author?.avatar_url}
-                  body={c.body} createdAt={c.created_at} editedAt={c.new_value?.edited_at || (c.updated_at !== c.created_at ? c.updated_at : null)} readOnly={readOnly}
+                  body={c.body} createdAt={c.created_at} editedAt={kind === 'project' ? c.edited_at : c.new_value?.edited_at} readOnly={readOnly}
                   onEdit={async(id,body)=>{
                     if(readOnly||!profile?.id) return false;
                     await editOwnedComment(supabase,{kind,id:item.id},id,profile.id,body);

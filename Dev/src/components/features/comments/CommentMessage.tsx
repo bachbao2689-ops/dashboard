@@ -75,7 +75,9 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
             <span className={`text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{authorName}</span>
             {createdAt && <span className={`inline-flex items-center gap-1 text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
               <time dateTime={createdAt}>{new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</time>
-              {editedAt && <span title={`${en ? 'Edited' : 'Đã chỉnh sửa'} · ${new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`} aria-label={en ? 'Edited' : 'Đã chỉnh sửa'} className="inline-flex items-center"><Edit3 size={10} /></span>}
+              {editedAt && <span title={`${en ? 'Edited' : 'Đã chỉnh sửa'} · ${new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`} aria-label={en ? 'Edited' : 'Đã chỉnh sửa'} className="inline-flex items-center gap-0.5">
+                <Edit3 size={10} /><span>{en ? 'Edited' : 'Đã chỉnh sửa'}</span>
+              </span>}
             </span>}
           </div>
           {canManage && editing ? <form onSubmit={event => {event.preventDefault();void save();}}>

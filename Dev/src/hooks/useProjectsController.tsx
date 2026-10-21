@@ -83,7 +83,7 @@ export function useProjectsController(){
     commentMutationLock.current.add(key);
     try {
       await editOwnedComment(supabase,{kind:'project',id:selected.id},id,profile.id,body);
-      setComments(current=>current.map(c=>String(c.id)===String(id)?{...c,body:body.trim()}:c)); return true;
+      setComments(current=>current.map(c=>String(c.id)===String(id)?{...c,body:body.trim(),edited_at:new Date().toISOString()}:c)); return true;
     } finally {commentMutationLock.current.delete(key);}
   };
   const [editStatus, setEditStatus] = useState('active');

@@ -18,7 +18,7 @@ export async function editOwnedComment(
     query = client.from('comments').update({body:text,is_edited:true,updated_at:new Date().toISOString()}).eq('id',commentId)
       .eq('task_id',target.id).eq('author_id',actorId);
   } else if (target.kind === 'project') {
-    query = client.from('project_comments').update({body:text}).eq('id',commentId)
+    query = client.from('project_comments').update({body:text,edited_at:new Date().toISOString()}).eq('id',commentId)
       .eq('project_id',target.id).eq('author_id',actorId);
   } else {
     const {data:existing,error:readError} = await client.from('activity_log').select('metadata,new_value')

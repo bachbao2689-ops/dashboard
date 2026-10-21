@@ -27,7 +27,7 @@ export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: stri
         : supabase.from('campaigns').select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').eq('id', id).single();
       const comments = kind === 'project'
         ? supabase.from('project_comments').select('*, author:author_id(name,avatar_url)').eq('project_id', id)
-        : supabase.from('activity_log').select('id,user_id,metadata,created_at,author:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', id).eq('action', 'comment');
+        : supabase.from('activity_log').select('id,user_id,metadata,new_value,created_at,author:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', id).eq('action', 'comment');
       const [p, rows, thread, people, permission] = await Promise.all([
         parent,
         readAll(supabase.from(`${kind}_subtasks`).select('*, assignee:assignee_id(name,avatar_url)').eq(`${kind}_id`, id).order('created_at').order('id')),
