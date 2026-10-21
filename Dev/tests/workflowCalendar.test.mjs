@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {workflowCalendarWindow,workflowDateError,taskContributors} from '../src/lib/workflowCalendar.ts';
+import {workflowCalendarWindow,workflowDateError,taskContributors,workflowPhaseContributors} from '../src/lib/workflowCalendar.ts';
 
 test('calendar inherits Project/Campaign dates and narrows them to phase bounds',()=>{
  const parent={start_date:'2026-11-01',due_date:'2026-12-31'};
@@ -23,4 +23,15 @@ test('task avatars use actual assignee identity and keep distinct people with id
  {assignee_id:'2',assignee:{name:'Staff',avatar_url:'b'}},
  {assignee_id:null,assignee:null}
  ]),[{id:1,name:'Staff',avatar_url:'a'},{id:2,name:'Staff',avatar_url:'b'}]);
+});
+test('phase contributor avatars include explicit Sub-PICs and assigned task staff without duplicates',()=>{
+ const people=[{id:7,name:'Bach Bao',avatar_url:'staff.png'},{id:9,name:'Thao',avatar_url:'thao.png'}];
+ assert.deepEqual(workflowPhaseContributors(
+  [{...people[0],role:'sub_pic'}],
+  [{assignee_id:7},{assignee_id:'9',assignee:null}],
+  people,
+ ),[
+  {...people[0],role:'sub_pic'},
+  people[1],
+ ]);
 });
