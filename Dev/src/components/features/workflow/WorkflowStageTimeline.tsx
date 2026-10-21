@@ -8,7 +8,7 @@ import {WorkflowPhaseDates} from '../../features/projects/WorkflowPhaseDates';
 import {taskProgress} from '../../../lib/workflowHub';
 
 export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
-  const {isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
   if (!currentEntity) return null;
   return (<>
 <div className="relative group/timeline pt-2 pb-2">
@@ -174,7 +174,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     </span>
 
                     <WorkflowPhaseDates start={p.start_date || currentEntity.start_date} due={p.due_date || currentEntity.due_date} status={p.status} en={isEn} inherited={(!p.start_date && !!currentEntity.start_date) || (!p.due_date && !!currentEntity.due_date)}/>
-                    <WorkflowPeopleRows pics={p.members.filter(member => member.role === 'pic')} contributors={workflowPhaseContributors(p.members, allTasks.filter(task => task.workflow_phase_id === p.id), model.hub.people)} en={isEn} isCampaign={isCampaign}/>
+                    <WorkflowPeopleRows pics={p.members.filter(member => member.role === 'pic')} contributors={workflowPhaseContributors(p.members, allTasks.filter(task => task.workflow_phase_id === p.id), hub.people)} en={isEn} isCampaign={isCampaign}/>
 
                     {/* Visualized Task Progress Bar (Mức xanh chạy lên trực quan theo % hoàn thành) */}
                     {(() => {

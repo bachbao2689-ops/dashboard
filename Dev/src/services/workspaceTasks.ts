@@ -28,6 +28,19 @@ export async function updateTrackedTask(key:string,values:Record<string,unknown>
   if(error)throw error;if(!data)throw new Error('Không có quyền cập nhật công việc này.');
   window.dispatchEvent(new Event('tasks:changed'));
 }
+export async function canCompleteTrackedTask(key:string) {
+ const target=taskTarget(key);
+ const {data,error}=await supabase.rpc('can_complete_tracked_task',{p_kind:target.kind,p_id:target.id});
+ if(error)throw error;
+ return data===true;
+}
+export async function completeTrackedTask(key:string) {
+ const target=taskTarget(key);
+ const {data,error}=await supabase.rpc('complete_tracked_task',{p_kind:target.kind,p_id:target.id});
+ if(error)throw error;
+ if(data!==true)throw new Error('Bạn không có quyền hoàn thành công việc này.');
+ window.dispatchEvent(new Event('tasks:changed'));
+}
 export const activeWorkspaceTasks=(tasks:Task[])=>tasks.filter(taskActive);
 
 export async function completeTrackedTasks(keys:string[]){

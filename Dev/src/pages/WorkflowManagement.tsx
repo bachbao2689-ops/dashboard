@@ -8,6 +8,7 @@ import {WorkflowCharts} from '../components/features/workflow/WorkflowCharts';
 import {WorkflowModals} from '../components/features/workflow/WorkflowModals';
 import {TaskDetailPanel} from '../components/features/tasks/TaskDetailPanel';
 import {SubtaskDetailPanel} from '../components/features/projects/SubtaskDetailPanel';
+import type {Task} from '../hooks/useTasks';
 export {WORKFLOW_STATUS_CONFIG,MARKETING_STATUS_GUIDES,STATUS_MARKETING_SUBTITLE,WorkflowHexagonIcon} from '../components/features/tasks/WorkflowStatusPicker';
 export type {WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 export function WorkflowManagement() {
@@ -89,7 +90,7 @@ export function WorkflowManagement() {
  <WorkflowHeader model={model}/>
  <WorkflowTimeline model={model}/>
  <WorkflowCharts model={model}/>
- {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-') ? <SubtaskDetailPanel commentsFocusToken={commentsFocusToken} subtask={{...selectedTask,id:selectedTask.id.slice(3),assignee_id:Number(selectedTask.assignee_id)}} profile={hub.profile} people={hub.people} parentName={currentEntity.name} entityType={selectedTask.id.startsWith('ps-')?'project_subtask':'campaign_subtask'} onClose={()=>setSelectedTask(null)} onUpdated={()=>{void hub.refresh();}}/> : <TaskDetailPanel commentsFocusToken={commentsFocusToken} task={hub.tasks.find(t=>t.id===selectedTask.id) || selectedTask} isOpen onClose={()=>setSelectedTask(null)} onTaskUpdated={()=>{void hub.refresh();}}/>)}
+ {selectedTask && (selectedTask.id.startsWith('ps-') || selectedTask.id.startsWith('cs-') ? <SubtaskDetailPanel commentsFocusToken={commentsFocusToken} subtask={{...selectedTask,id:selectedTask.id.slice(3),assignee_id:Number(selectedTask.assignee_id)}} profile={hub.profile} people={hub.people} assignablePeople={model.taskPeople} parentName={currentEntity.name} entityType={selectedTask.id.startsWith('ps-')?'project_subtask':'campaign_subtask'} onClose={()=>setSelectedTask(null)} onUpdated={updated=>{if(updated)setSelectedTask(current=>current?({...current,...updated,id:current.id,status:updated.status||current.status,due_date:updated.due_date||'',assignee_id:updated.assignee_id==null?undefined:String(updated.assignee_id),assignee:updated.assignee?{id:String(updated.assignee_id||''),name:updated.assignee.name||'',avatar_url:updated.assignee.avatar_url||''}:null} as Task):current);void hub.refresh();}}/> : <TaskDetailPanel commentsFocusToken={commentsFocusToken} task={hub.tasks.find(t=>t.id===selectedTask.id) || selectedTask} assignablePeople={model.taskPeople} isOpen onClose={()=>setSelectedTask(null)} onTaskUpdated={updated=>{if(updated)setSelectedTask(current=>current?{...current,...updated}:current);void hub.refresh();}}/>)}
  <WorkflowModals model={model}/>
  </div>;
 }

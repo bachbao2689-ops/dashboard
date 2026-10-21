@@ -24,6 +24,7 @@ import {CampaignDetailDrawer} from '../components/features/projects/CampaignDeta
 import {EntityPinButton} from '../components/features/projects/EntityPinButton';
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
+import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
@@ -253,8 +254,8 @@ export const Projects:React.FC=()=>{
               <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selected?.priority || 'medium'} {t('common.priority').toLowerCase()}</span><StatusBadge status={selected.status}/></div>
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>
-      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'all' || (statusFilter === 'completed' ? isTaskDone(s.status) : (!isTaskDone(s.status) || s.id === recentlyCompletedSubtaskId))).map(s=>(
-  <div key={s.id} onClick={() => setSelectedSubtask(s)} className={`p-3 rounded-xl border text-sm group relative transition-all ${(s.status || '').toLowerCase() === 'completed' ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20 hover:bg-emerald-100/60' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:bg-violet-50/50 hover:border-violet-200/80 dark:hover:bg-slate-700/50 dark:hover:border-slate-600'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer' : ''}`}>
+      <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true).map(s=>(
+  <div key={s.id} onClick={() => setSelectedSubtask(s)} className={`p-3 rounded-xl border text-sm group relative transition-all ${isTaskDone(s.status) ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20 hover:bg-emerald-100/60' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:bg-violet-50/50 hover:border-violet-200/80 dark:hover:bg-slate-700/50 dark:hover:border-slate-600'} ${recentlyCompletedSubtaskId === s.id ? 'subtask-complete-pulse' : ''} ${(Number(s.assignee_id) === Number(profile?.id) || canCreate) ? 'cursor-pointer' : ''}`}>
     {editingSubtaskId === s.id ? (
       <div className="space-y-2" onClick={event => event.stopPropagation()}>
          <input value={editSubtaskTitle} onChange={e=>setEditSubtaskTitle(e.target.value)} className="w-full p-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none rounded-lg" />
@@ -271,7 +272,7 @@ export const Projects:React.FC=()=>{
       <div className="flex justify-between items-center w-full">
   <div className="flex items-center gap-3 flex-1">
     <div className="flex-1">
-      <div className="flex items-center gap-2"><b className={`text-gray-900 dark:text-white block ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>{subtaskCommentCounts[s.id] > 0 && <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-flex items-center gap-1 text-xs text-primary"><span className="relative inline-flex"><MessageSquare size={13}/>{Number(s.assignee_id) === Number(profile?.id) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}</span>{subtaskCommentCounts[s.id]}</span>}</div>
+      <div className="flex items-center gap-2"><b className={`text-gray-900 dark:text-white block ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>{subtaskCommentCounts[s.id] > 0 && <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-flex items-center gap-1 text-xs text-primary"><span className="relative inline-flex"><MessageSquare size={13}/>{Number(s.assignee_id) === Number(profile?.id) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}</span>{subtaskCommentCounts[s.id]}</span>}</div>
       <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-500">
          <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 font-medium">
            {s.assignee ? (
@@ -290,7 +291,7 @@ export const Projects:React.FC=()=>{
   </div>
   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0" onClick={event => event.stopPropagation()}>
           <TaskPinButton taskId={taskKey('project_subtask', s.id)} size={14} className="!p-1.5" />
-          {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && !['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) && <ActionButton icon={<CheckCircle2 size={14}/>} onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}></ActionButton>}
+          {(selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id)) && !isTaskDone(s.status) && <ActionButton icon={<CheckCircle2 size={14}/>} onClick={()=>void completeSubtask(s)} className="rounded-lg p-1.5 text-emerald-700 bg-emerald-100 hover:bg-emerald-200" title={t('common.complete')}></ActionButton>}
           {(selectedRoot || Number(s.assignee_id) === Number(profile?.id)) && <button onClick={()=>{ setEditingSubtaskId(s.id); setEditSubtaskTitle(s.title); setEditSubtaskOwner(String(s.assignee_id || '')); setEditSubtaskDue(s.due_date ? dateValue(s.due_date) : ''); }} className="text-gray-400 hover:text-primary"><Edit3 size={14}/></button>}
           {selectedRoot && <button onClick={()=>removeSubtask(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>}
         </div>
@@ -374,7 +375,9 @@ export const Projects:React.FC=()=>{
         onClose={() => setSelectedSubtask(null)}
         onUpdated={(updatedSubtask) => {
           if (updatedSubtask) {
-            setSubtasks(current => current.map(item => item.id === updatedSubtask.id ? { ...item, ...updatedSubtask } : item));
+            const updateItems = (current: any[]) => current.map(item => String(item.id) === String(updatedSubtask.id) ? { ...item, ...updatedSubtask } : item);
+            if (selectedCampaign) state.setCampaignSubtasks(updateItems);
+            else setSubtasks(updateItems);
             setSelectedSubtask(updatedSubtask);
             if ((updatedSubtask.status || '').toLowerCase() === 'completed') {
               setRecentlyCompletedSubtaskId(updatedSubtask.id);
