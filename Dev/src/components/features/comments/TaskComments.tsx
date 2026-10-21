@@ -118,7 +118,7 @@ export function TaskComments({ target, people, collaboratorIds, focusRequest, on
             const person=people.find(p=>String(p.id)===String(comment.author_id));
             return <CommentMessage key={comment.id} id={comment.id} authorId={comment.author_id}
               actorId={profile?.id} authorName={comment.author?.name || 'Staff'} avatarUrl={comment.author?.avatar_url}
-              body={comment.body} createdAt={comment.created_at} readOnly={readOnly} variant="task"
+              body={comment.body} createdAt={comment.created_at} editedAt={comment.edited_at} readOnly={readOnly} variant="task"
               onReply={person ? ()=>replyToPerson(person) : undefined}
               onEdit={thread.edit} onDelete={async id=>{
                 if(!(await thread.remove(id))) return false;

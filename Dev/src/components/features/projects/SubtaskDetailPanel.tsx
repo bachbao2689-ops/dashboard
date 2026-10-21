@@ -15,6 +15,7 @@ import { TaskPinButton } from '../tasks/TaskPinButton';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
 import { TaskDescriptionEditor } from '../tasks/TaskDescriptionEditor';
 import { useTranslation } from '../../../i18n/translations';
+import { TaskActivityTimeline } from '../tasks/TaskActivityTimeline';
 
 type Person = { id: number; name: string };
 type Subtask = {
@@ -27,6 +28,8 @@ type Subtask = {
   project_id?: string | number | null;
   campaign_id?: string | number | null;
   priority?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 type ParentDetails = { name: string; priority?: string | null; departmentName?: string | null };
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
@@ -244,6 +247,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           <div><p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}</p>{entityType === 'campaign_subtask' ? <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.campaign')}</span> : <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.project')}</span>}</div>
           <div><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className={`text-sm ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.departmentName || t('common.unassigned')}</b></div>
         </section>
+
+        <TaskActivityTimeline kind={entityType} entityId={String(subtask.id)} actorId={profile?.id} createdAt={subtask.created_at} updatedAt={subtask.updated_at} />
 
         <section>
           <div className="flex justify-between items-center mb-2">

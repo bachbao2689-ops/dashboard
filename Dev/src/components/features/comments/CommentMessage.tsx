@@ -17,6 +17,7 @@ export interface CommentMessageProps {
   actorId?: number | string;
   body: string;
   createdAt?: string;
+  editedAt?: string | null;
   readOnly?: boolean;
   variant?: 'project' | 'task';
   onEdit: (id: string, body: string) => Promise<boolean>;
@@ -25,7 +26,7 @@ export interface CommentMessageProps {
 }
 
 /** One comment UX for Task, Subtask, Project, Campaign and Workflow panels. */
-export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,createdAt,
+export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,createdAt,editedAt,
   readOnly=false,variant='project',onEdit,onDelete,onReply}: CommentMessageProps) {
   const { t, lang } = useTranslation();
   const en = lang === 'en';
@@ -40,6 +41,7 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
   const canManage = mine && !viewOnly;
   const save = async () => {
     if (!canManage || !draft.trim() || lock.current) return;
+    if (draft.trim() === body.trim()) { setEditing(false); return; }
     lock.current=true; setBusy(true);
     try {
       if (await onEdit(id,draft)) {
@@ -72,6 +74,9 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
             <span className={`text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{authorName}</span>
             {createdAt && <time dateTime={createdAt} className={`text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
               {new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+            </time>}
+            {editedAt && <time dateTime={editedAt} title={new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN')} className={`text-[9px] italic ${mine ? 'text-blue-200/80' : 'text-gray-400'}`}>
+              {en ? `Edited ${new Date(editedAt).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}` : `Đã chỉnh sửa ${new Date(editedAt).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`}
             </time>}
           </div>
           {canManage && editing ? <form onSubmit={event => {event.preventDefault();void save();}}>
