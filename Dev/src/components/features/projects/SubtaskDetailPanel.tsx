@@ -15,7 +15,6 @@ import { TaskPinButton } from '../tasks/TaskPinButton';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
 import { TaskDescriptionEditor } from '../tasks/TaskDescriptionEditor';
 import { useTranslation } from '../../../i18n/translations';
-import { TaskActivityTimeline } from '../tasks/TaskActivityTimeline';
 
 type Person = { id: number; name: string };
 type Subtask = {
@@ -49,7 +48,7 @@ interface SubtaskDetailPanelProps {
 }
 
 export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask, profile, people, onClose, onUpdated, entityType = 'project_subtask', parentName, embedded = false, commentsFocusToken = 0 }) => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   useTaskDetailVisibility(Boolean(subtask));
   useReadEntityNotifications(entityType,subtask?.id,Boolean(subtask));
   const readOnly=useMobileReadOnly();
@@ -248,7 +247,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           <div><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className={`text-sm ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.departmentName || t('common.unassigned')}</b></div>
         </section>
 
-        <TaskActivityTimeline kind={entityType} entityId={String(subtask.id)} actorId={profile?.id} createdAt={subtask.created_at} updatedAt={subtask.updated_at} />
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{subtask.created_at ? new Date(subtask.created_at).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</span>
+          {subtask.created_at && subtask.updated_at && new Date(subtask.updated_at).getTime() > new Date(subtask.created_at).getTime() + 1000 && <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>}
+        </p>
 
         <section>
           <div className="flex justify-between items-center mb-2">

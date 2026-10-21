@@ -12,7 +12,7 @@ import {TaskDescriptionViewer} from '../components/features/tasks/TaskDescriptio
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
 import {CommentMessage} from '../components/features/comments/CommentMessage';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Eye,EyeOff} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Clock3,Eye,EyeOff} from 'lucide-react';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
 import {CampaignPanel} from '../components/features/projects/CampaignPanel';
@@ -28,6 +28,7 @@ export const Projects:React.FC=()=>{
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
  const {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
+ const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : '';
  const projectCollaboratorIds = React.useMemo(() => {
    if (!selected) return [];
    const ids = new Set<string>();
@@ -281,6 +282,7 @@ export const Projects:React.FC=()=>{
            ) : t('common.unassigned')}
          </span>
          {s.due_date && <span className="flex items-center gap-1 font-bold text-red-600 dark:text-red-400"><Calendar size={12}/> {dateValue(s.due_date)}</span>}
+         {s.created_at && <span className="inline-flex items-center gap-1"><Clock3 size={12}/>{formatCreatedAt(s.created_at)}{s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>}</span>}
       </div>
     </div>
   </div>
