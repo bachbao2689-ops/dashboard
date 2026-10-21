@@ -51,7 +51,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const { t, lang } = useTranslation();
   useTaskDetailVisibility(Boolean(subtask));
   useReadEntityNotifications(entityType,subtask?.id,Boolean(subtask));
-  const readOnly=useMobileReadOnly();
+  const readOnly=useMobileReadOnly(false);
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
   const [parentLoading, setParentLoading] = useState(false);
   const [commentFocus, setCommentFocus] = useState(0);
@@ -295,14 +295,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           )}
         </section>
 
-        <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} collaboratorIds={subtaskCollaborators} focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }} onDeleted={() => { onUpdated(); }}/>
+        <TaskComments key={`${profile?.id}:${entityType}:${subtask.id}`} target={{kind:entityType,id:subtask.id}} people={people} collaboratorIds={subtaskCollaborators} allowMobileEditing focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (body,mentions) => { onUpdated(); await notifyMentionedPeople(body,mentions); }} onDeleted={() => { onUpdated(); }}/>
 
       </div>
 
-      {readOnly?<div className="push-mobile-readonly">Xem tiến độ trên điện thoại · Cập nhật công việc trên máy tính</div>:(<div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
         <button disabled={completed || saving || !canEdit} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
-      </div>)}
+      </div>
     </aside>
   </>
   );

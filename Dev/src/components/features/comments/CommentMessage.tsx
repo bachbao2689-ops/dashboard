@@ -19,6 +19,7 @@ export interface CommentMessageProps {
   createdAt?: string;
   editedAt?: string | null;
   readOnly?: boolean;
+  allowMobileEditing?: boolean;
   variant?: 'project' | 'task';
   onEdit: (id: string, body: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
@@ -27,7 +28,7 @@ export interface CommentMessageProps {
 
 /** One comment UX for Task, Subtask, Project, Campaign and Workflow panels. */
 export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,createdAt,editedAt,
-  readOnly=false,variant='project',onEdit,onDelete,onReply}: CommentMessageProps) {
+  readOnly=false,allowMobileEditing=false,variant='project',onEdit,onDelete,onReply}: CommentMessageProps) {
   const { t, lang } = useTranslation();
   const en = lang === 'en';
   const mine = ownsComment(actorId,authorId);
@@ -36,7 +37,7 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
   const [busy,setBusy] = useState(false);
   const [confirmDelete,setConfirmDelete] = useState(false);
   const lock = useRef(false);
-  const mobileReadOnly=useMobileReadOnly();
+  const mobileReadOnly=useMobileReadOnly(!allowMobileEditing);
   const viewOnly=readOnly||mobileReadOnly;
   const canManage = mine && !viewOnly;
   const save = async () => {
