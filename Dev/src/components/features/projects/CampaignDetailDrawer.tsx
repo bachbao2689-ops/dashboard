@@ -14,7 +14,7 @@ import {taskKey,isTaskDone} from '../../../lib/taskTracking';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
  const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit}=state;
- const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+ const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
  const campaignCollaboratorIds = React.useMemo(() => {
    if (!selectedCampaign) return [];
    const ids = new Set<string>();
@@ -54,7 +54,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
         <div className="flex items-center gap-3 flex-1">
           <div className="flex-1">
             <div className="flex items-center gap-2"><b className={`text-gray-900 dark:text-white block ${['done', 'complete', 'completed'].includes((s.status || '').toLowerCase()) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b></div>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
+            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-500">
                <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 font-medium">
                  {s.assignee ? (
                    <>
@@ -63,8 +63,10 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                    </>
                  ) : t('common.unassigned')}
                </span>
-               {s.due_date && <span className="flex items-center gap-1 font-bold text-red-600 dark:text-red-400"><Calendar size={12}/> {dateValue(s.due_date)}</span>}
-               {s.created_at && <span className="inline-flex items-center gap-1"><Clock3 size={12}/>{formatCreatedAt(s.created_at)}{s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>}</span>}
+               {(s.due_date || s.created_at) && <span className="flex flex-col items-start gap-1 min-w-0">
+                 {s.due_date && <span className="flex items-center gap-1 font-bold text-red-600 dark:text-red-400"><Calendar size={12}/> {dateValue(s.due_date)}</span>}
+                 {s.created_at && <span className="inline-flex flex-wrap items-center gap-x-1 text-[11px] font-normal text-gray-500 dark:text-gray-400"><Clock3 size={12}/>{formatCreatedAt(s.created_at)}{s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>}</span>}
+               </span>}
             </div>
           </div>
         </div>
