@@ -26,7 +26,7 @@ export function useProjectsController(){
   const loadRequest = useRef(0);
   const profile = useAuthStore(s => s.profile);
   const canCreate = canViewTeamManagement(profile) && (isGlobalManager(profile) || Boolean(profile?.department_id));
-  const canManageProject = (project: Project) => Boolean(profile && (project.created_by === profile.id || workflow.tracks.some(track => track.entity_type === 'project' && track.entity_id === project.id && track.root)));
+  const canManageProject = (project: Project) => Boolean(profile && (isGlobalManager(profile) || project.created_by === profile.id || workflow.tracks.some(track => track.entity_type === 'project' && track.entity_id === project.id && track.root)));
   const [projects, setProjects] = useState<Project[]>([]);   const directory=useWorkspaceDirectory();
   const people=useMemo(()=>(directory.data?.users||[]).map(user=>({...user,id:Number(user.id),departments:user.department})),[directory.data]);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);

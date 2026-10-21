@@ -10,7 +10,7 @@ const sources = ['projects', 'campaigns', 'project_subtasks', 'campaign_subtasks
 
 export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: string) {
   const profile = useAuthStore(s => s.profile);
-  const key = `${profile?.id}:${profile?.role}:${profile?.department_id}:${kind}:${id}`;
+  const key = `${profile?.id}:${profile?.role}:${profile?.employment_level}:${profile?.department_id}:${kind}:${id}`;
   const current = useRef(key);
   const request = useRef(0), lock = useRef(false);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
