@@ -115,7 +115,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('open');
 
   const completeSubtask = async (sub: any) => {
-    if (readOnly || isTaskDone(sub.status)) return;
+    if (readOnly || !profile?.id || Number(sub.assignee_id) !== Number(profile.id) || isTaskDone(sub.status)) return;
     if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({ status: 'completed' }).eq('id', sub.id).select('id').single(), 'Đã hoàn thành subtask')) {
       window.dispatchEvent(new Event('tasks:changed'));
       onUpdated?.();
@@ -191,7 +191,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
                 ) : visibleSubtasks.map(sub => (
-                  <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm flex justify-between items-start">
+                  <div key={sub.id} className={`p-3 rounded-xl border text-sm flex justify-between items-start ${isTaskDone(sub.status) ? 'border-emerald-500 bg-emerald-50/70 dark:border-emerald-500/50 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'}`}>
                     <div>
                       <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className={`text-left font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{sub.title}</button>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">

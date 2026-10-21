@@ -243,7 +243,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
 
   const complete = async () => {
-    if (readOnly||!canEdit||!subtask || saving || isDone(subtask.status)) return;
+    if (readOnly || !subtask || Number(subtask.assignee_id) !== Number(profile?.id) || saving || isDone(subtask.status)) return;
     setSaving(true);
     try {
       await updateTrackedTask(taskKey(entityType, subtask.id), { status: 'completed' });
@@ -265,6 +265,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
+  const canComplete = Boolean(profile?.id && Number(subtask.assignee_id) === Number(profile.id));
   const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
 
   return (
@@ -300,7 +301,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             </label>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Status' : 'Trạng thái'}
               <select value={editStatus} onChange={event => setEditStatus(event.target.value as WorkflowTaskStatus)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                <option value="backlog">{lang === 'en' ? 'Backlog' : 'Chờ xử lý'}</option><option value="planned">{lang === 'en' ? 'Planned' : 'Đã lên kế hoạch'}</option><option value="scoping">{lang === 'en' ? 'Scoping' : 'Làm rõ phạm vi'}</option><option value="in_progress">{lang === 'en' ? 'In progress' : 'Đang triển khai'}</option><option value="in_qa">{lang === 'en' ? 'In review' : 'Rà soát & duyệt'}</option><option value="completed">{t('common.completed')}</option><option value="canceled">{lang === 'en' ? 'Canceled' : 'Đã hủy'}</option>
+                <option value="backlog">{lang === 'en' ? 'Backlog' : 'Chờ xử lý'}</option><option value="planned">{lang === 'en' ? 'Planned' : 'Đã lên kế hoạch'}</option><option value="scoping">{lang === 'en' ? 'Scoping' : 'Làm rõ phạm vi'}</option><option value="in_progress">{lang === 'en' ? 'In progress' : 'Đang triển khai'}</option><option value="in_qa">{lang === 'en' ? 'In review' : 'Rà soát & duyệt'}</option><option value="completed" disabled={!canComplete && !completed}>{t('common.completed')}</option><option value="canceled">{lang === 'en' ? 'Canceled' : 'Đã hủy'}</option>
               </select>
             </label>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Start date' : 'Ngày bắt đầu'}<input type="date" value={editStartDate} onChange={event => setEditStartDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></label>
@@ -368,7 +369,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
       <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
-        <button disabled={completed || saving || !canEdit} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
+        <button disabled={completed || saving || !canComplete} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
       </div>
     </aside>
   </>
