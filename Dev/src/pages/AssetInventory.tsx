@@ -101,9 +101,9 @@ export const AssetInventory: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const filteredAssets = assets.filter(a => 
-    a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    a.asset_code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAssets = (assets || []).filter(a => 
+    (a.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+    (a.asset_code || '').toLowerCase().includes((searchTerm || '').toLowerCase())
   );
 
   return (

@@ -139,7 +139,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
     if (!user) {
       toast('Vui lòng đăng nhập để đăng ký mượn thiết bị', { icon: '🔐' });
       navigate('/login', {
-        state: { from: `/assets?code=${encodeURIComponent(asset.asset_code)}&borrow=1` }
+        state: { from: `/assets?code=${encodeURIComponent(asset?.asset_code || '')}&borrow=1` }
       });
       return;
     }
