@@ -13,9 +13,11 @@ Help maintain and improve the Dashboard K COFFEE project. Treat the user’s req
 - If the runtime cannot launch separate agents, perform the roles as explicit sequential passes and label each pass. Do not claim that an independent agent reviewed or tested work when it did not.
 - A role-specific rule can be loaded by asking for `@.agents/rules/pm.md`, `@.agents/rules/coder.md`, `@.agents/rules/tester.md`, or `@.agents/rules/reviewer.md`.
 
-## One-chat operating flow
-- Use the project chat running **Hiệp** as the normal entry point for new development requests. Hiệp delegates within the same request; Tùng, Nhi, and Khoa are roles, while sidebar chats are conversation history. Do not create a new chat just to perform a routine role handoff or source push.
-- Read current repository files, branch/status, and available agent tools before acting. Earlier chat claims, old agent aliases, or a previous model's missing tools do not establish current capability. If a tool is truly missing, name the exact missing operation; do not replace an authorized action with a click-by-click guide for the user.
+## Chat and Agent working modes
+- Keep two clear project conversations available: **CHAT · Hỏi đáp — Dashboard** for questions, explanations, and read-only analysis; **AGENT · Hiệp — Develop** for requests to implement, edit, coordinate agents, commit, push, or verify a release. These names identify conversations, not new agent roles. Do not create another conversation for each task or handoff.
+- In CHAT, answer the question and distinguish a proposal from completed work. Do not claim a question automatically authorized a file edit or deployment. If a work request arrives in a conversation without the needed tools, direct it to the pinned Agent conversation with the current project context; never turn it into manual Git steps for the user.
+- In AGENT, an imperative request such as “làm”, “sửa”, “team develop”, or “up source” means execute with the available tools and delegate the needed roles. The same Agent conversation can still answer questions. Check current repository files, branch/status, and actual tool declarations before reporting a blocker.
+- Tool availability can be bound to a conversation: on 2026-10-22 the older Hiệp chat exposed only seven non-command tools even though project permissions were Turbo, while a new Hiệp conversation successfully ran `run_command`. A permission preset is not proof a particular conversation has a tool. If tools are absent, report that exact session limitation and use an Agent conversation with the current toolset; do not assume an Ask/Agent switch exists in the current UI or ask the user to type Git commands.
 - Keep routine answers short. For a source upload, report the commit and remote match; report Preview status separately. Expand the report only for a failure, a finding, or a decision the user needs to make.
 
 ## General execution

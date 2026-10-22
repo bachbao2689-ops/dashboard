@@ -40,7 +40,8 @@ Hệ thống Agent vận hành dựa trên 3 tầng bộ nhớ có ranh giới r
 
 ## 3. Bằng chứng vận hành và điều phối
 
-- Chat trong sidebar là lịch sử hội thoại, không phải một chức năng riêng. Dùng chat Hiệp làm đầu mối develop; Hiệp gọi các vai cần thiết trong cùng yêu cầu. Không tạo chat mới cho mỗi lần kiểm tra hoặc up source.
+- Có hai cuộc hội thoại được ghim: `CHAT · Hỏi đáp — Dashboard` cho hỏi đáp/chỉ đọc và `AGENT · Hiệp — Develop` cho lệnh làm việc. Đây là cách tổ chức cuộc hội thoại, không phải hai agent mới hay một nút chế độ phải bật. Hiệp gọi các vai cần thiết trong cùng yêu cầu; không tạo chat mới cho mỗi lần kiểm tra hoặc up source.
 - Sau khi đổi model hoặc phiên, kiểm tra tool hiện có và trạng thái file/nhánh trực tiếp. Không lấy kết luận thiếu tool từ chat cũ làm sự thật hiện tại.
+- Quyền project và danh sách tool của một phiên là hai việc khác nhau. Nếu tool không có trong schema của chat cũ, báo đúng giới hạn đó và chuyển công việc sang phiên Agent đã xác minh có tool; không hướng dẫn bro mở Terminal hoặc giả định UI có một setting chưa thấy.
 - Phân biệt `source đã lên develop` (SHA local/remote khớp) với `Preview đã sẵn sàng` (deployment đúng SHA ở trạng thái Ready). Không suy ra kết quả kiểm thử từ build thành công hoặc URL trả HTTP 200.
 - Chỉ ghi Nhi/Khoa đã PASS khi có phản hồi độc lập thật. Nếu một agent tự kiểm tra tuần tự, ghi đúng là self-check và nêu giới hạn.
