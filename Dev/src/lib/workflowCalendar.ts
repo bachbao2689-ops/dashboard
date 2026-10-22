@@ -24,7 +24,7 @@ export function taskContributors(tasks: { assignee_id?: string | number | null; 
   return [...people.values()];
 }
 
-/** People shown on a phase card: explicit phase Sub-PICs plus actual task assignees. */
+/** Phase cards show explicit Sub-PICs as well as people assigned to phase tasks. */
 export function workflowPhaseContributors(
   members: WorkflowPerson[],
   tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null }[],
