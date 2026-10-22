@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive, Clock, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive, Clock, Building2, Activity, MapPin } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
 import { isGlobalManager, isAssetApprover } from '../../../lib/roleScope';
 import { useAuthStore } from '../../../store/authStore';
@@ -19,12 +21,24 @@ interface AssetDetailPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenQR?: () => void;
+  isScanMode?: boolean;
+  onBorrowNow?: (asset: any) => void;
 }
 
-export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpen, onClose, onOpenQR }) => {
+export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
+  asset,
+  isOpen,
+  onClose,
+  onOpenQR,
+  isScanMode = false,
+  onBorrowNow,
+}) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const canViewHistory = isGlobalManager(profile) || isAssetApprover(profile);
+  const showHistoryTab = canViewHistory && !isScanMode;
 
   const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
   const [history, setHistory] = useState<any[]>([]);
@@ -116,10 +130,21 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
   }, [isOpen, asset?.id, canViewHistory, fetchBorrowHistory]);
 
   useEffect(() => {
-    if (!canViewHistory) {
+    if (!showHistoryTab) {
       setActiveTab('info');
     }
-  }, [canViewHistory, asset?.id]);
+  }, [showHistoryTab, asset?.id]);
+
+  const handleBorrowClick = () => {
+    if (!user) {
+      toast('Vui lòng đăng nhập để đăng ký mượn thiết bị', { icon: '🔐' });
+      navigate('/login', {
+        state: { from: `/assets?code=${encodeURIComponent(asset.asset_code)}&borrow=1` }
+      });
+      return;
+    }
+    onBorrowNow?.(asset);
+  };
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return '—';
@@ -226,8 +251,8 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                 </div>
               </div>
 
-              {/* Security-scoped Tab Switcher: Only visible for Manager / Asset Approver */}
-              {canViewHistory && (
+              {/* Security-scoped Tab Switcher: Only visible for Manager / Asset Approver when not in scan mode */}
+              {showHistoryTab && (
                 <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100/80 dark:bg-slate-900/60 rounded-xl border border-gray-200/60 dark:border-slate-700/60">
                   <button
                     type="button"
@@ -282,6 +307,14 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                       </div>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] items-center">
+                      <div className="text-gray-500 grid grid-flow-col auto-cols-max items-center gap-1.5"><Activity className="w-4 h-4" /> {t('assets.col.condition') || 'Tình trạng'}</div>
+                      <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.condition || 'Bình thường'}</div>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center">
+                      <div className="text-gray-500 grid grid-flow-col auto-cols-max items-center gap-1.5"><MapPin className="w-4 h-4" /> {t('assets.col.location') || 'Vị trí'}</div>
+                      <div className="text-gray-900 dark:text-gray-100 font-medium">{asset.location || 'Kho tổng'}</div>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center">
                       <div className="text-gray-500 grid grid-flow-col auto-cols-max items-center gap-1.5"><Hash className="w-4 h-4" /> {t('assets.serial')}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-mono text-xs">{asset.serial_number || 'N/A'}</div>
                     </div>
@@ -298,6 +331,63 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, isOpe
                     <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
                       {asset.notes || t('assets.noNotes')}
                     </div>
+                  </div>
+
+                  {/* Action Section: Mượn ngay / Trạng thái thiết bị */}
+                  <div className="pt-2">
+                    {asset.status === 'available' && asset.is_available !== false ? (
+                      <button
+                        type="button"
+                        onClick={handleBorrowClick}
+                        className="w-full min-h-[48px] px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Box className="w-5 h-5" />
+                        <span>Mượn ngay</span>
+                      </button>
+                    ) : asset.status === 'borrowed' ? (
+                      <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-blue-800 dark:text-blue-300">
+                        <Clock className="w-5 h-5 shrink-0 text-blue-500" />
+                        <div className="text-xs">
+                          <p className="font-semibold text-sm">Thiết bị hiện đang được mượn</p>
+                          {asset.due_date && (
+                            <p className="text-blue-600 dark:text-blue-400 mt-0.5">
+                              Dự kiến trả: {formatDate(asset.due_date)}
+                            </p>
+                          )}
+                          {asset.current_borrower?.name && (
+                            <p className="text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                              Người mượn: {asset.current_borrower.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : asset.status === 'maintenance' || asset.status === 'broken' ? (
+                      <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-rose-800 dark:text-rose-300">
+                        <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
+                        <div className="text-xs">
+                          <p className="font-semibold text-sm">Thiết bị đang bảo trì / tạm ngưng</p>
+                          <p className="text-rose-600 dark:text-rose-400 mt-0.5">
+                            Hiện chưa thể đăng ký mượn thiết bị này.
+                          </p>
+                        </div>
+                      </div>
+                    ) : asset.status === 'reserved' ? (
+                      <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-amber-800 dark:text-amber-300">
+                        <Clock className="w-5 h-5 shrink-0 text-amber-500" />
+                        <div className="text-xs">
+                          <p className="font-semibold text-sm">Thiết bị đã có người đặt mượn</p>
+                          {asset.pending_requester?.name && (
+                            <p className="text-amber-600 dark:text-amber-400 mt-0.5">
+                              Người yêu cầu: {asset.pending_requester.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-center text-xs text-gray-500 dark:text-gray-400">
+                        Thiết bị hiện không khả dụng
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

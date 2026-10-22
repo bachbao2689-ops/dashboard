@@ -5,7 +5,7 @@ import { isAdmin, canViewTeamManagement } from '../../lib/roleScope';
 
 const AuthLoading: React.FC<{ message: string }> = ({ message }) => (
   <div role="status" className="grid min-h-screen place-items-center bg-slate-50 text-sm text-gray-500 dark:bg-[#0b1120] dark:text-gray-400">
-    <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />{message}</span>
+    <span className="grid grid-flow-col auto-cols-max items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />{message}</span>
   </div>
 );
 
@@ -19,7 +19,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) return <AuthLoading message="Đang khởi tạo hệ thống…" />;
 
-  if (!user) {
+  const searchParams = new URLSearchParams(location.search);
+  const isAssetScanBypass = location.pathname === '/assets' && (searchParams.has('code') || searchParams.has('asset'));
+
+  if (!user && !isAssetScanBypass) {
     return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
