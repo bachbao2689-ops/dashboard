@@ -1,42 +1,26 @@
 ---
 name: deploy-develop
-description: Deploys reviewed Dashboard K COFFEE changes from develop to the Vercel Develop preview. Use when Hiệp or the user asks Tùng to deploy a completed frontend task to Develop. Never deploys to Production or main.
+description: One-request source push to Dashboard K COFFEE develop; verify Vercel Preview when asked to deploy or when app code changes. Never touches main.
 ---
 
-# Deploy Dashboard K COFFEE to Vercel Develop
+# Tùng — up source lên develop
 
-This skill is the repeatable Develop deployment procedure for Tùng. The user has authorized automatic deployments to the Develop preview after the project gates below pass. Production is handled only by the separate `/deploy-main` skill after explicit user approval.
+Một câu như “Tùng up source lên develop” là đủ quyền để Tùng tự làm trọn lượt bằng công cụ Antigravity. Không hướng dẫn bro bấm Source Control hay gõ Terminal, không hỏi lại quyền commit/push đã được giao. Hiệp chuyển việc cho Tùng và nhận báo cáo cuối. Lệnh do agent chạy bằng `run_command` là hợp lệ. Dùng `/permissioned-github` tại `/Users/admin/.gemini/antigravity/builtin/skills/permissioned-github/SKILL.md` cho thao tác Git; nếu bị chặn quyền, chỉ xin quyền hẹp theo skill đó.
 
-## Ownership and tools
+## Luồng mặc định: đưa source lên develop
 
-When the user says "Tùng up source lên develop", "đưa source lên nhánh develop", or an equivalent instruction, treat it as authorization to complete the Develop release. Tùng owns the commit, push, and verification. Hiệp routes the request to Tùng and follows it through. Do not respond with instructions for the user to click Source Control, open Terminal, stage, commit, push, or report back. The user does not operate Git for this workflow.
+1. Kiểm tra đang ở đúng repo và nhánh `develop`. Dùng cấu hình Vercel đã xác minh cho dự án; nếu mapping nhánh thay đổi hoặc chưa rõ, kiểm tra trước push. Nếu `develop` trỏ tới Production thì dừng. Không tự chuyển nhánh, merge `main`, force-push hoặc đẩy nhánh phụ.
+2. Xem `git status` và diff, chọn đúng file thuộc yêu cầu hiện tại. Không stage tất cả mặc định; bỏ qua thay đổi không liên quan, `.env`, token, secret và file sinh ra. Nếu không có thay đổi, so local HEAD với remote `develop` rồi báo trạng thái; không tạo commit rỗng.
+3. Với thay đổi **chỉ ở tài liệu, `.agents/`, rule, skill hoặc cấu hình không ảnh hưởng app**, đi thẳng tới commit và push. Không bắt build, Nhi/Khoa hay chờ Vercel Ready cho loại thay đổi này.
+4. Với thay đổi **mã ứng dụng hoặc giao diện**, chạy build từ `Dev/`, gọi Nhi kiểm thử phần bị ảnh hưởng và Khoa review diff/acceptance criteria trước push. Agent tự phối hợp trong cùng yêu cầu; không chuyển các bước này cho bro. Chỉ nói “Nhi/Khoa pass” khi có phản hồi thực. Nếu kiểm tra chặn, sửa trong phạm vi task hoặc báo lỗi cụ thể.
+5. Commit đúng các file đã chọn, push `develop` tới `origin/develop`, rồi đối chiếu SHA local với `git ls-remote origin refs/heads/develop`. Không in URL remote vì có thể chứa credential.
 
-Use Antigravity's available agent tools for local files, build, and Git. For GitHub branch operations, load and follow the built-in `/permissioned-github` skill at `/Users/admin/.gemini/antigravity/builtin/skills/permissioned-github/SKILL.md`. It requires `git` for branch pushes. If an authorized operation fails because of permission restrictions, request only the narrow permission described there with `ask_custom_permission`, then retry. Keep `commandExecutionPolicy: sandbox`; never request broad access or a token. Agent-run commands are acceptable; asking the user to type commands is not.
+Khi SHA khớp, **việc up source đã xong**. Trả lời ngắn: `Đã up develop: <SHA>. Remote khớp.` Nếu Vercel chưa kiểm tra, nói rõ `Preview chưa kiểm tra`; không gọi đó là deploy thành công. Không bắt người dùng quay lại báo đã push.
 
-Use the agent's `run_command` tool for Git and build operations. Do not claim to operate the human-facing Source Control panel through a nonexistent agent UI tool. If this agent runtime lacks a write-capable file or command tool, route the task to a capable agent/runtime. If none exists, report the exact missing capability and stop. A how-to answer is not a completed deployment. Never claim that a skill file was edited or a branch was pushed without checking the actual file or remote state.
+## Khi yêu cầu deploy hoặc xác nhận Vercel
 
-## Required gates
+Nếu bro nói “deploy”, “kiểm tra Vercel”, hoặc lượt này có thay đổi app cần xác nhận Preview, sau khi push hãy kiểm tra deployment của đúng nhánh `develop` và SHA mới. Xác nhận `Ready` và URL thực tế trước khi nói Preview đã sẵn sàng. Nếu Vercel còn build, lỗi, hoặc không có công cụ quan sát, báo trạng thái thật; source vẫn được coi là đã up nếu remote SHA khớp.
 
-1. Confirm the task is a completed Dashboard K COFFEE frontend task and the requested destination is Vercel Develop.
-2. Confirm the current Git branch is exactly `develop`. Do not switch branches, push another branch, or rewrite history.
-3. Inspect the Vercel project configuration when available. Confirm that `main` is the Production branch and `develop` is deployed as a Preview/Develop branch. The repository README currently mentions `codex/develop-dashboard`; do not infer the Vercel branch mapping from that note. If Vercel configuration cannot be inspected, continue the explicitly requested GitHub `develop` source push after the other gates pass, but report preview deployment as unverified. If the configuration proves `develop` targets Production, stop before pushing.
-4. Run the project's local build from `Dev/` with `npm run build` using an agent tool. If it fails, stop and report the error; do not push or ask the user to run the build.
-5. Invoke Nhi for the agreed Local QA and Khoa for independent review of the exact diff against Hiệp's acceptance criteria. Record their actual agent responses before calling a gate passed. If `invoke_subagent` is unavailable, say these independent gates are pending; a self-check must never be labeled "Nhi pass" or "Khoa pass". Do not push with a failing build, unresolved blocking Tester finding, or unreviewed/blocked diff.
-6. Inspect `git status` and the exact diff with an agent tool. Stage and commit only the reviewed task files. Never stage all files by default. Never include unrelated user changes, secrets, `.env` files, credentials, generated files, or unrelated agent configuration.
-7. Do not print the raw Git remote URL: this checkout may contain credentials in that URL. Use `git ls-remote origin refs/heads/develop` to verify the remote SHA, and redact any credential-bearing URL from logs or reports.
+## Ranh giới Production
 
-## Develop deployment
-
-After all gates pass, Tùng commits the reviewed files and pushes the existing `develop` branch to its matching remote branch using the agent's Git tool and `/permissioned-github` rules. Do not push `codex/develop-dashboard` unless the live Vercel configuration proves that branch is required. This push is intended only to trigger the connected Vercel Preview/Develop deployment. Do not deploy from `main` or use a Production target.
-
-Verify that remote `develop` contains the exact new commit. At that point, the requested source upload is complete. Then inspect the Vercel deployment for that branch and SHA, wait for `Ready`, and open the actual preview URL. An old reachable URL or an earlier `Ready` deployment is not evidence that the new commit deployed. If the deployment fails or Vercel cannot be inspected, report the exact stage and evidence; leave the branch on `develop` for repair. Distinguish "source pushed" from "preview deployed and verified"; never claim the latter from a Git push alone.
-
-## Production boundary
-
-- Never run `vercel --prod`, `vercel deploy --prod`, or Production promotion from this skill.
-- Never push `develop` directly to `main` with `git push origin develop:main`; never force-push or rewrite either branch.
-- After a successful Develop deploy and QA, report the exact commit SHA and preview URL. Wait for the user's explicit approval, then use `/deploy-main` for any Production release.
-
-## Close-out
-
-Tell Hiệp and the user the local commit SHA, remote `develop` SHA, Vercel deployment status and SHA, actual Develop URL, which checks passed, and any remaining findings. If any gate could not be verified, state the exact missing evidence or capability and whether a commit or push happened. Never hand the Git steps back to the user as the default response.
+Không đụng `main` hay Production trong skill này. Chỉ dùng `/deploy-main` khi bro đã duyệt rõ SHA và Preview theo quy định dự án.
