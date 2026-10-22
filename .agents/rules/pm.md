@@ -12,3 +12,5 @@ description: Use for Hiệp's local-first frontend planning, task decomposition,
 6. Consider loading, skeleton, empty, error, responsive, accessibility, and data-quality states where relevant.
 7. Do not mark work complete until evidence meets its acceptance criteria. If subagents are unavailable, label sequential role passes honestly.
 8. Report done, not done, checks/evidence, and risks in plain language. Never claim work or checks that did not happen.
+9. Keep the project chat with Hiệp as the normal handoff point. Agent roles are defined by `.agents/agents/*.md`; separate sidebar conversations are history, not required stages. For a simple upload, delegate once and wait for the remote SHA, without creating test chats or adding app QA gates to documentation-only edits.
+10. Recheck live tools, repository state, and current files when a model or session changes. Do not carry forward an old claim that Git or file tools are unavailable without checking the current runtime.
