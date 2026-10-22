@@ -1,14 +1,15 @@
 import {SearchInput} from '../components/common/filters';
 import {ActionButton} from '../components/common/ActionButton';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Check, Search, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
+import { Plus, Check, Search, Camera, Laptop, HardDrive, Box, ChevronRight, QrCode } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
 import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel';
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
+import { AssetScannerModal } from '../components/features/assets/AssetScannerModal';
 import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
 import { useAuthStore } from '../store/authStore';
 import {canSubmitAssetRequest} from '../lib/roleScope';
@@ -33,10 +34,32 @@ export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useRememberedState('assets.search', '');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [qrAsset, setQrAsset] = useState<any>(null);
   const { assets, loading, error, refetch } = useAssets();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (!assets || assets.length === 0) return;
+    const codeParam = searchParams.get('code');
+    const assetParam = searchParams.get('asset');
+    if (!codeParam && !assetParam) return;
+
+    if (codeParam) {
+      const target = codeParam.trim().toLowerCase();
+      const found = assets.find(a => a.asset_code?.toLowerCase() === target);
+      if (found) {
+        setSelectedAsset(found);
+      }
+    } else if (assetParam) {
+      const target = assetParam.trim().toLowerCase();
+      const found = assets.find(a => String(a.id).toLowerCase() === target);
+      if (found) {
+        setSelectedAsset(found);
+      }
+    }
+  }, [assets, searchParams]);
 
   const [cart, setCart] = useState<Asset[]>([]);
   const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(searchParams.get('borrow') === '1');
@@ -92,6 +115,15 @@ export const AssetInventory: React.FC = () => {
             />
           </div>
           
+
+          <ActionButton
+            icon={<QrCode size={18} />}
+            onClick={() => setIsScannerOpen(true)}
+            aria-label="Quét QR"
+            className="hover-magnetic-btn shrink-0 h-10 px-3.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm"
+          >
+            <span className="text-xs sm:text-sm">Quét QR</span>
+          </ActionButton>
 
           {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
              <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
@@ -225,6 +257,7 @@ export const AssetInventory: React.FC = () => {
       <AssetDetailPanel asset={selectedAsset} isOpen={!!selectedAsset} onClose={() => setSelectedAsset(null)} onOpenQR={() => setQrAsset(selectedAsset)} />
       <BorrowDrawer isOpen={canBorrowAsset && isBorrowDrawerOpen} onClose={() => setIsBorrowDrawerOpen(false)} cartAssets={cart} setCartAssets={setCart} onSuccess={refetch} />
       <AssetQRCodeModal asset={qrAsset} isOpen={!!qrAsset} onClose={() => setQrAsset(null)} />
+      <AssetScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onSelectAsset={(asset) => setSelectedAsset(asset)} assets={assets} />
 </div>
   );
 };
