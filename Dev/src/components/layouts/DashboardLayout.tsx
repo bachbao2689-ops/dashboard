@@ -2,7 +2,7 @@ import {MobileActionHint} from '../common/MobileActionHint';
 import '../../styles/mobile-actions.css';
 import '../../styles/cockpit-entrance.css';
 import {useMobileChrome} from '../../hooks/useMobileChrome';
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -15,16 +15,13 @@ export const DashboardLayout: React.FC = () => {
   const mobileChromeHidden = useMobileChrome();
   const isSidebarOpen = useUiStore(state => state.isSidebarOpen);
   const introFinished = useUiStore(state => state.introFinished);
-  const [dockingActive, setDockingActive] = useState(() => introFinished);
+  const [dockingActive, setDockingActive] = useState(false);
 
   useEffect(() => {
-    if (introFinished) {
-      setDockingActive(true);
-      const timer = setTimeout(() => {
-        setDockingActive(false);
-      }, 850);
-      return () => clearTimeout(timer);
-    }
+    if (!introFinished) return;
+    setDockingActive(true);
+    const timer = setTimeout(() => setDockingActive(false), 850);
+    return () => clearTimeout(timer);
   }, [introFinished]);
 
   return (

@@ -21,6 +21,8 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
+import {completeTrackedTask} from '../../../services/workspaceTasks';
+import {isGlobalManager} from '../../../lib/roleScope';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -112,14 +114,17 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     }
   };
 
-  const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('open');
+  const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('all');
 
   const completeSubtask = async (sub: any) => {
-    if (readOnly || isTaskDone(sub.status)) return;
-    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({ status: 'completed' }).eq('id', sub.id).select('id').single(), 'Đã hoàn thành subtask')) {
+    if (readOnly || !profile?.id || (!canManage && !isGlobalManager(profile) && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
+    try {
+      await completeTrackedTask(taskKey(`${kind}_subtask`, sub.id));
+      toast.success('Đã hoàn thành subtask');
+      void details.refresh();
       window.dispatchEvent(new Event('tasks:changed'));
       onUpdated?.();
-    }
+    } catch (error: any) { toast.error(error?.message || 'Không thể hoàn thành subtask.'); }
   };
 
   const visibleSubtasks = subtasks.filter(sub => {
@@ -191,7 +196,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
                 ) : visibleSubtasks.map(sub => (
-                  <div key={sub.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-sm flex justify-between items-start">
+                  <div key={sub.id} className={`p-3 rounded-xl border text-sm flex justify-between items-start ${isTaskDone(sub.status) ? 'border-emerald-500 bg-emerald-50/70 dark:border-emerald-500/50 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'}`}>
                     <div>
                       <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className={`text-left font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{sub.title}</button>
                       <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
@@ -200,7 +205,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {Number(sub.assignee_id) === Number(profile?.id) && !isTaskDone(sub.status) && (
+                      {(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id)) && !isTaskDone(sub.status) && (
                         <button aria-label={t('common.complete')} disabled={busy} onClick={() => void completeSubtask(sub)} className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-colors" title={t('common.complete')}>
                           <CheckCircle2 size={15}/>
                         </button>
@@ -228,7 +233,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               {comments.length > 0 && <div className="space-y-3 mb-4">
                 {comments.map(c => <CommentMessage key={c.id} id={c.id} authorId={c.user_id}
                   actorId={profile?.id} authorName={c.author?.name || 'Member'} avatarUrl={c.author?.avatar_url}
-                  body={c.body} readOnly={readOnly}
+                  body={c.body} createdAt={c.created_at} editedAt={kind === 'project' ? c.edited_at : c.new_value?.edited_at} readOnly={readOnly}
                   onEdit={async(id,body)=>{
                     if(readOnly||!profile?.id) return false;
                     await editOwnedComment(supabase,{kind,id:item.id},id,profile.id,body);

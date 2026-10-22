@@ -15,18 +15,20 @@ export async function editOwnedComment(
   }
   let query;
   if (target.kind === 'task') {
-    query = client.from('comments').update({body:text}).eq('id',commentId)
+    query = client.from('comments').update({body:text,is_edited:true,updated_at:new Date().toISOString()}).eq('id',commentId)
       .eq('task_id',target.id).eq('author_id',actorId);
   } else if (target.kind === 'project') {
+    // Official/Develop grant authors UPDATE on body only; the database trigger
+    // owns edited_at so the client must not include that column in the UPDATE.
     query = client.from('project_comments').update({body:text}).eq('id',commentId)
       .eq('project_id',target.id).eq('author_id',actorId);
   } else {
-    const {data:existing,error:readError} = await client.from('activity_log').select('metadata')
+    const {data:existing,error:readError} = await client.from('activity_log').select('metadata,new_value')
       .eq('id',commentId).eq('entity_type',target.kind).eq('entity_id',target.id)
       .eq('action','comment').eq('user_id',actorId).maybeSingle();
     if (readError) throw readError;
     if (!existing) throw new Error('Bạn chỉ được chỉnh sửa bình luận của mình.');
-    query = client.from('activity_log').update({metadata:{...existing.metadata,body:text}})
+    query = client.from('activity_log').update({metadata:{...existing.metadata,body:text},new_value:{...(existing.new_value && typeof existing.new_value==='object' ? existing.new_value : {}),edited_at:new Date().toISOString()}})
       .eq('id',commentId).eq('entity_type',target.kind).eq('entity_id',target.id)
       .eq('action','comment').eq('user_id',actorId);
   }

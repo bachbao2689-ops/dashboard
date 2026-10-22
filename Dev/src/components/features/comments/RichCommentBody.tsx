@@ -226,7 +226,10 @@ const AttachmentInlineChip: React.FC<{
         if (isImg) {
           onOpenImage({ name: cleanName, url });
         } else if (url && !url.startsWith('#')) {
-          window.open(url, '_blank', 'noopener,noreferrer');
+          const safe = sanitizeUrl(url);
+          if (safe !== '#') {
+            window.open(safe, '_blank', 'noopener,noreferrer');
+          }
         }
       }}
       className={`relative inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 mx-0.5 rounded-lg border text-xs cursor-pointer transition-all ${
@@ -277,6 +280,23 @@ const AttachmentInlineChip: React.FC<{
 };
 
 /**
+ * Sanitize URL to prevent Stored XSS via javascript:, data:, vbscript: schemes.
+ */
+function sanitizeUrl(raw: string): string {
+  const trimmed = (raw || '').trim();
+  if (
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('mailto:') ||
+    (trimmed.startsWith('/') && !trimmed.startsWith('//')) ||
+    trimmed.startsWith('#')
+  ) {
+    return trimmed;
+  }
+  return '#';
+}
+
+/**
  * Interactive Link / Project Tag inside a comment
  * - Hovering shows the FULL URL / path
  */
@@ -287,27 +307,32 @@ const InteractiveCommentLink: React.FC<{
 }> = ({ label, href, isMineBubble }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const safeHref = sanitizeUrl(href);
 
   const isInternalProject =
-    href.startsWith('/projects') || href.startsWith('/workflow') || href.startsWith('/tasks');
-  const isCampaign = href.includes('campaign=');
+    safeHref.startsWith('/projects') || safeHref.startsWith('/workflow') || safeHref.startsWith('/tasks');
+  const isCampaign = safeHref.includes('campaign=');
   const cleanLabel = label.replace(/^[📂🎯🔗]\s*/, '').trim();
 
   const handleClick = (e: React.MouseEvent) => {
+    if (safeHref === '#') {
+      e.preventDefault();
+      return;
+    }
     if (
-      href.startsWith('/') &&
-      !href.startsWith('//')
+      safeHref.startsWith('/') &&
+      !safeHref.startsWith('//')
     ) {
       e.preventDefault();
-      navigate(href);
+      navigate(safeHref);
     }
   };
 
   return (
     <a
-      href={href}
-      target={href.startsWith('/') ? undefined : '_blank'}
-      rel={href.startsWith('/') ? undefined : 'noopener noreferrer'}
+      href={safeHref}
+      target={safeHref.startsWith('/') || safeHref === '#' ? undefined : '_blank'}
+      rel={safeHref.startsWith('/') || safeHref === '#' ? undefined : 'noopener noreferrer'}
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

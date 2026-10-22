@@ -182,7 +182,9 @@ export const Overview: React.FC = () => {
           </div>
           <div className="relative grid place-items-center">
             <Ring pct={data.recentRequests.length ? data.borrowedCount/data.recentRequests.length*100 : 0} color="#3789f4" track={ringTrack} />
-            <span className={`absolute text-xs font-bold ${INK}`}>60%</span>
+            <span className={`absolute text-xs font-bold ${INK}`}>
+              {data.recentRequests.length ? `${Math.round((data.borrowedCount / data.recentRequests.length) * 100)}%` : '0%'}
+            </span>
           </div>
         </button>
 

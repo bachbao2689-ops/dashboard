@@ -15,14 +15,15 @@ interface Props {
   target: CommentTarget;
   people: Person[];
   collaboratorIds?: (string | number)[];
+  allowMobileEditing?: boolean;
   focusRequest?: string;
   onSent?: (body: string, mentions: number[]) => void | Promise<void>;
   onDeleted?: (commentId: string) => void | Promise<void>;
 }
 
-export function TaskComments({ target, people, collaboratorIds, focusRequest, onSent, onDeleted }: Props) {
+export function TaskComments({ target, people, collaboratorIds, allowMobileEditing = false, focusRequest, onSent, onDeleted }: Props) {
 
-  const readOnly = useMobileReadOnly();
+  const readOnly = useMobileReadOnly(!allowMobileEditing);
   const profile = useAuthStore(state => state.profile);
   const { t, lang } = useTranslation();
   const en = lang === 'en';
@@ -118,7 +119,7 @@ export function TaskComments({ target, people, collaboratorIds, focusRequest, on
             const person=people.find(p=>String(p.id)===String(comment.author_id));
             return <CommentMessage key={comment.id} id={comment.id} authorId={comment.author_id}
               actorId={profile?.id} authorName={comment.author?.name || 'Staff'} avatarUrl={comment.author?.avatar_url}
-              body={comment.body} createdAt={comment.created_at} readOnly={readOnly} variant="task"
+              body={comment.body} createdAt={comment.created_at} editedAt={comment.edited_at} readOnly={readOnly} allowMobileEditing={allowMobileEditing} variant="task"
               onReply={person ? ()=>replyToPerson(person) : undefined}
               onEdit={thread.edit} onDelete={async id=>{
                 if(!(await thread.remove(id))) return false;

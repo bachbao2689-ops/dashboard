@@ -4,7 +4,7 @@ import { editOwnedComment } from '../lib/commentEditing';
 
 export type CommentKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type CommentTarget = { kind: CommentKind; id: string };
-export type ThreadComment = { id: string; author_id: number; body: string; created_at: string; author: { name: string; avatar_url?: string | null } | null };
+export type ThreadComment = { id: string; author_id: number; body: string; created_at: string; edited_at?: string | null; author: { name: string; avatar_url?: string | null } | null };
 export const commentTarget = (id: string): CommentTarget => id.startsWith('ps-') ? { kind: 'project_subtask', id: id.slice(3) } : id.startsWith('cs-') ? { kind: 'campaign_subtask', id: id.slice(3) } : { kind: 'task', id };
 export const commentKey = ({kind,id}: CommentTarget) => `${kind}:${id}`;
 
@@ -12,13 +12,13 @@ export async function readTaskComments(target: CommentTarget): Promise<ThreadCom
   const rows: ThreadComment[] = [];
   for (let offset = 0; ; offset += 500) {
     const query = target.kind === 'task'
-      ? supabase.from('comments').select('id,author_id,body,created_at,author:author_id(name,avatar_url)').eq('task_id',target.id)
-      : supabase.from('activity_log').select('id,user_id,metadata,created_at,author:user_id(name,avatar_url)').eq('entity_type',target.kind).eq('entity_id',target.id).eq('action','comment');
+      ? supabase.from('comments').select('id,author_id,body,created_at,is_edited,updated_at,author:author_id(name,avatar_url)').eq('task_id',target.id)
+      : supabase.from('activity_log').select('id,user_id,metadata,new_value,created_at,author:user_id(name,avatar_url)').eq('entity_type',target.kind).eq('entity_id',target.id).eq('action','comment');
     const {data,error} = await query.order('created_at').order('id').range(offset,offset + 499);
     if (error) throw error;
     for (const row of data || []) {
-      const value = row as unknown as ThreadComment & { user_id: number; metadata?: {body?: string} };
-      rows.push({...value,author_id: target.kind === 'task' ? value.author_id : value.user_id,body: target.kind === 'task' ? value.body : value.metadata?.body || ''});
+      const value = row as unknown as ThreadComment & { user_id: number; is_edited?: boolean; updated_at?: string | null; metadata?: {body?: string}; new_value?: {edited_at?: string} | null };
+      rows.push({...value,author_id: target.kind === 'task' ? value.author_id : value.user_id,body: target.kind === 'task' ? value.body : value.metadata?.body || '',edited_at:target.kind==='task'?(value.is_edited?value.updated_at:null):value.new_value?.edited_at||null});
     }
     if (!data || data.length < 500) return rows;
   }
