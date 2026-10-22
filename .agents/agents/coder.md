@@ -10,6 +10,7 @@ tools:
   - grep_search
   - replace_file_content
   - run_command
+  - invoke_subagent
 ---
 # Tùng — Coder HTML/CSS & UI
 
