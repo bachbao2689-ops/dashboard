@@ -83,7 +83,7 @@ button:disabled { cursor: not-allowed; }
 .dark .bg-primary { background-color: #185ba5; }
 .dark .bg-primary.text-white { color: #fff; }
 /* ========================================================
-   Sidebar Left — Liquid Glass Navigation (per GUIDELINE/UI Button.md)
+   Sidebar Left — Liquid Glass Navigation (per GUIDELINE/style.md)
    NOTE: STRICTLY APPLIED ONLY TO LIGHT MODE (html:not(.dark)).
    Dark mode rules are untouched below.
    ======================================================== */

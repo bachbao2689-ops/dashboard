@@ -2,7 +2,7 @@
 
 ## Preview deployments
 
-Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. All Preview branches and Local use the isolated Supabase Dev project via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; Production retains Supabase Official. Copy `.env.example` to the ignored `.env` and fill in the Dev publishable key. Optional `VITE_OFFICIAL_VIEW_URL`/`VITE_OFFICIAL_VIEW_KEY` enable `/main-view`, a separate, authenticated, RLS-scoped read-only view of Official Project/Campaign/Task data. Never use a service-role key in Vite variables. See `../GUIDELINE/ENVIRONMENT_SPLIT_AND_OFFICIAL_RESET.md` for environment boundaries.
+Push feature work to `codex/develop-dashboard` to create a Vercel Preview Deployment. The `main` branch is reserved for Production. Local and Develop use the isolated Supabase Dev project; Production uses Supabase Official. Copy `.env.example` to the ignored `.env` and fill in the Dev publishable key. Optional `VITE_OFFICIAL_VIEW_URL`/`VITE_OFFICIAL_VIEW_KEY` enable `/main-view`, a separate authenticated read-only view of Official Project/Campaign/Task data. Never use a service-role key in Vite variables. See [`../GUIDELINE/rules.md`](../GUIDELINE/rules.md) for environment boundaries.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
