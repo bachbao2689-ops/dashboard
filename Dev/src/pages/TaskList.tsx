@@ -53,7 +53,8 @@ export const TaskList: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useRememberedState<string[]>('tasks.collapsedGroups', []);
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
-  const {users:people}=useWorkspaceData();
+  const {users:people, departments = []}=useWorkspaceData();
+  const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('tasks.departmentFilter', searchParams.get('department_id') || '');
 
   // Merge people with any task assignees not yet in people
   const allPeople = useMemo<FilterPerson[]>(() => {
@@ -130,6 +131,7 @@ export const TaskList: React.FC = () => {
     searchTerm.trim() ||
     statusFilter !== 'open' ||
     assigneeFilter !== 'all' ||
+    Boolean(departmentFilter) ||
     calendarFilter !== 'all' ||
     customStartDate ||
     customEndDate ||
@@ -141,6 +143,7 @@ export const TaskList: React.FC = () => {
     setSearchTerm('');
     setStatusFilter('open');
     setAssigneeFilter('all');
+    setDepartmentFilter('');
     setCalendarFilter('all');
     setCustomStartDate('');
     setCustomEndDate('');
@@ -166,6 +169,8 @@ export const TaskList: React.FC = () => {
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
     // 1. Status Filter
+    const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
+    if(departmentFilter && String(taskDept) !== String(departmentFilter)) return false;
     if(statusFilter==='open'){if(!taskOpen(t))return false;}
     else if(statusFilter==='done'||statusFilter==='completed'){if(!taskDone(t))return false;}
     else if(statusFilter==='overdue'){if(!taskOverdue(t,calendarDay(today.toISOString())!))return false;}
@@ -248,7 +253,8 @@ export const TaskList: React.FC = () => {
     const groups: Record<string, typeof filteredTasks> = {};
     filteredTasks.forEach(t => {
       let key = 'Other';
-      if (groupBy === 'project') key = t.project?.name || t.campaign?.name || 'No Project';
+      if (groupBy === 'department') key = t.department?.name || t.project?.department?.name || t.campaign?.department?.name || 'Chưa phân phòng ban';
+      else if (groupBy === 'project') key = t.project?.name || t.campaign?.name || 'No Project';
       if (groupBy === 'assignee') key = t.assignee?.name || 'Unassigned';
       if (groupBy === 'status') key = mapStatus(t.status).toUpperCase();
       if (!groups[key]) groups[key] = [];
@@ -269,6 +275,9 @@ export const TaskList: React.FC = () => {
             onStatusChange={setStatusFilter}
             assigneeFilter={assigneeFilter}
             onAssigneeChange={setAssigneeFilter}
+            departmentFilter={departmentFilter}
+            onDepartmentChange={setDepartmentFilter}
+            departments={departments}
             calendarFilter={calendarFilter}
             customStartDate={customStartDate}
             customEndDate={customEndDate}

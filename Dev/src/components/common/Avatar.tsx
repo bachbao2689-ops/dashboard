@@ -13,7 +13,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, className }) => {
       {src ? (
         <img src={src} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span>{name.charAt(0).toUpperCase()}</span>
+        <span>{(name || "?").charAt(0).toUpperCase()}</span>
       )}
     </div>
   );

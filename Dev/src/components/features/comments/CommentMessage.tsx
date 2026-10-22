@@ -84,7 +84,7 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
             <textarea autoFocus aria-label={en ? 'Edit comment' : 'Chỉnh sửa bình luận'} value={draft}
               onChange={event => setDraft(event.target.value)} disabled={busy} rows={2}
               onKeyDown={event => {if(event.key==='Escape'&&!busy){event.preventDefault();setEditing(false);}}}
-              className="w-full min-w-0 sm:min-w-56 rounded-lg border border-blue-200 bg-white p-2 text-gray-900 outline-none" />
+              className="w-full min-w-0 sm:min-w-56 rounded-lg border border-blue-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-2 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-colors" />
             <div className="mt-1 flex justify-end gap-2">
               <button type="button" disabled={busy} onClick={()=>setEditing(false)} className="text-xs">{t('common.cancel')}</button>
               <button type="submit" disabled={busy || !draft.trim()} className="text-xs font-bold disabled:opacity-50">{busy ? <Loader2 size={13} className="animate-spin" /> : t('common.save')}</button>

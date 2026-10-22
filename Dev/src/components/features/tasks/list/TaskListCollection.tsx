@@ -112,7 +112,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
                         <td className="p-4">
                           <div className="task-list-row-title" title={task.title}>{task.title}</div>
-                          {task.department && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.department.name}</div>}
+                          {(task.department?.name || task.project?.department?.name) && <div className="mt-1 flex items-center gap-1"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50">{task.department?.name || task.project?.department?.name}</span></div>}
                         </td>
                         <td className="p-4 text-sm hidden lg:table-cell">
                           {task.project?.name ? (

@@ -20,7 +20,7 @@ export const dict = {
     'nav.myBorrow': 'My Borrow Requests',
     'nav.team': 'Team Workload',
     'nav.members': 'Members',
-    'nav.reports': 'Weekly Report',
+    'nav.reports': 'Reports & Analytics',
 
     // Header
     'header.search': 'Search...',
@@ -427,22 +427,6 @@ export const dict = {
     'profile.belongsTo': 'Part of',
     'profile.noDeadline': 'None',
 
-    // Reports (Team Profile)
-    'reports.title': 'Team Weekly Report',
-    'reports.subtitle': 'Overview of progress on the left; select PIC to view details and evidence on the right.',
-    'reports.summaryTitle': 'Team Report Summary',
-    'reports.summarySubtitle': 'Select a member to check their weekly report and remind updates.',
-    'reports.thisWeek': 'This Week',
-    'reports.lastWeek': 'Last Week',
-    'reports.seeAll': 'See All',
-    'reports.search': 'Search members...',
-    'reports.reportedTasks': 'Tasks reported',
-    'reports.needsUpdate': 'Needs update',
-    'reports.allReports': 'All Team Reports',
-    'reports.allReportsSubtitle': 'Tasks and images aggregated by PIC.',
-    'reports.noImage': 'No image this week.',
-    'reports.remind': 'Remind',
-
     // Classic Overview
     'overview.welcome': 'Welcome,',
     'overview.subtitle': "Here's your unified task and asset overview for today.",
@@ -557,7 +541,7 @@ export const dict = {
     'nav.myBorrow': 'Phiếu mượn của tôi',
     'nav.team': 'Năng suất Team',
     'nav.members': 'Thành viên',
-    'nav.reports': 'Báo cáo Tuần',
+    'nav.reports': 'Báo cáo & phân tích',
 
     // Header
     'header.search': 'Tìm kiếm...',
@@ -963,22 +947,6 @@ export const dict = {
     'profile.notSynced': 'Chưa đồng bộ',
     'profile.belongsTo': 'Thuộc',
     'profile.noDeadline': 'Chưa có',
-
-    // Reports (Team Profile)
-    'reports.title': 'Weekly Report của Team',
-    'reports.subtitle': 'Tổng quan tiến độ bên trái; chọn PIC để xem chi tiết nội dung và hình minh chứng bên phải.',
-    'reports.summaryTitle': 'Tổng report team',
-    'reports.summarySubtitle': 'Chọn thành viên để kiểm tra weekly report và nhắc cập nhật.',
-    'reports.thisWeek': 'Tuần này',
-    'reports.lastWeek': 'Tuần trước',
-    'reports.seeAll': 'Tất cả',
-    'reports.search': 'Tìm thành viên...',
-    'reports.reportedTasks': 'Task đã report',
-    'reports.needsUpdate': 'Cần cập nhật',
-    'reports.allReports': 'Tất cả report của team',
-    'reports.allReportsSubtitle': 'Task và hình ảnh được tổng hợp theo từng PIC.',
-    'reports.noImage': 'Không có hình trong tuần.',
-    'reports.remind': 'Nhắc nhở',
 
     // Classic Overview
     'overview.welcome': 'Chào,',

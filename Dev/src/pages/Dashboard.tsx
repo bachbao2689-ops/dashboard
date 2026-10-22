@@ -45,6 +45,10 @@ export const Dashboard: React.FC = () => {
   const ownDepartment=isDepartmentLeader(profile)?profile?.department_id:null;
   const restrictDepartment=isDepartmentLeader(profile);
   const tasks=useMemo(()=>allTasks.filter(task=>taskActive(task)&&(!restrictDepartment||Boolean(ownDepartment&&taskOwningDepartment(task)===ownDepartment))),[allTasks,ownDepartment,restrictDepartment]);
+  const scopedUsers=useMemo(()=>{
+    if (!restrictDepartment || !ownDepartment) return users;
+    return users.filter(user => user.department_id === ownDepartment);
+  },[users, restrictDepartment, ownDepartment]);
   const navigate = useNavigate();
 
   const [activeId, setActiveId] = useRememberedState('dashboard.activeScope', 's1');
@@ -68,7 +72,7 @@ export const Dashboard: React.FC = () => {
     return () => document.removeEventListener('mousedown', clickOut);
   }, []);
 
-  const {s,pct,rangeStart,rangeEnd,selectedTasks,chartData,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,users,activeId,range,customStart,customEnd,search);
+  const {s,pct,rangeStart,rangeEnd,selectedTasks,chartData,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,scopedUsers,activeId,range,customStart,customEnd,search);
   const trackRing=isDark?'#334155':'#edf3f8';const trackOrbit=isDark?'#334155':'#e8eff8';
   const openFilteredTasks=(statusParam?: string)=>{
     if(!s)return;const query=new URLSearchParams({start:rangeStart,end:rangeEnd});
@@ -340,7 +344,7 @@ export const Dashboard: React.FC = () => {
         <section className={`${PANEL} px-[14px] py-[16px]`}>
             <div className="flex items-center justify-between mb-[6px]">
               <h2 className={`text-sm font-bold ${INK}`}>{t('dashboard.team')}</h2>
-              <Eyebrow className="!text-xs !tracking-[.5px]">{users.length} PIC</Eyebrow>
+              <Eyebrow className="!text-xs !tracking-[.5px]">{scopedUsers.length} PIC</Eyebrow>
             </div>
             <div>
               {teams.map(d => {
