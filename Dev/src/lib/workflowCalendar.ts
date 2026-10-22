@@ -23,3 +23,29 @@ export function taskContributors(tasks: { assignee_id?: string | number | null; 
   }
   return [...people.values()];
 }
+
+/** People shown on a phase card: explicit phase Sub-PICs plus actual task assignees. */
+export function workflowPhaseContributors(
+  members: WorkflowPerson[],
+  tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null }[],
+  directory: WorkflowPerson[] = [],
+): WorkflowPerson[] {
+  const knownPeople = new Map(directory.map(person => [String(person.id), person]));
+  const contributors = new Map<string, WorkflowPerson>();
+
+  for (const member of members) {
+    if (member.role === 'sub_pic') contributors.set(String(member.id), member);
+  }
+
+  for (const task of tasks) {
+    const id = task.assignee?.id ?? task.assignee_id;
+    if (id == null) continue;
+    const key = String(id);
+    const person = task.assignee?.name
+      ? { id: Number(id), name: task.assignee.name, avatar_url: task.assignee.avatar_url || undefined }
+      : knownPeople.get(key);
+    if (person && !contributors.has(key)) contributors.set(key, person);
+  }
+
+  return [...contributors.values()];
+}

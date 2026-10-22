@@ -1,55 +1,28 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
-import { LoginCarouselControls } from '../../components/auth/LoginCarouselControls';
 import '../../styles/login-carousel.css';
 
 interface LoginConcept {
-  id: string;
-  name: string;
   bgUrl: string;
   themeClass: string;
   btnClass: string;
-  hasTagline?: boolean;
 }
 
-const LOGIN_CONCEPTS: LoginConcept[] = [
-  {
-    id: 'concept-1',
-    name: 'Cascara Sơn La',
-    bgUrl: '/login/concept-1.png',
-    themeClass: 'concept-theme-1',
-    btnClass: 'concept-btn-1',
-  },
-  {
-    id: 'concept-2',
-    name: 'Mùa Đơm Trái',
-    bgUrl: '/login/concept-2.png',
-    themeClass: 'concept-theme-2',
-    btnClass: 'concept-btn-2',
-    hasTagline: true,
-  },
-  {
-    id: 'concept-3',
-    name: 'Starry Night',
-    bgUrl: '/login/concept-3.png',
-    themeClass: 'concept-theme-3',
-    btnClass: 'concept-btn-3',
-  },
-];
-
-const AUTO_SLIDE_INTERVAL = 10000; // 10s timer rule per user request
+const LOGIN_CONCEPT: LoginConcept = {
+  bgUrl: '/login/concept-2.png',
+  themeClass: 'concept-theme-2',
+  btnClass: 'concept-btn-2',
+};
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,83 +35,24 @@ export const Login: React.FC = () => {
       ? location.state.from
       : '/';
 
-  const touchStartX = useRef<number | null>(null);
-
-  // Preload all concept images on mount
-  useEffect(() => {
-    LOGIN_CONCEPTS.forEach(concept => {
-      const img = new Image();
-      img.src = concept.bgUrl;
-    });
-    const taglineImg = new Image();
-    taglineImg.src = '/login/concept-2-tagline.png';
-  }, []);
-
   useEffect(() => {
     if (user) {
       navigate(from, { replace: true });
     }
   }, [user, navigate, from]);
 
-  const goToConcept = useCallback((index: number) => {
-    setCurrentIndex(index);
-  }, []);
-
-  const goToNext = useCallback(() => {
-    setCurrentIndex(prev => (prev + 1) % LOGIN_CONCEPTS.length);
-  }, []);
-
-  const goToPrev = useCallback(() => {
-    setCurrentIndex(prev => (prev - 1 + LOGIN_CONCEPTS.length) % LOGIN_CONCEPTS.length);
-  }, []);
-
-  // 5-second automatic sliding timer rule
-  useEffect(() => {
-    if (isPaused) return;
-
-    const timer = setInterval(() => {
-      goToNext();
-    }, AUTO_SLIDE_INTERVAL);
-
-    return () => clearInterval(timer);
-  }, [isPaused, goToNext, currentIndex]);
-
-  // Keyboard navigation support
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeTag = (document.activeElement as HTMLElement)?.tagName;
-      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
-      if (e.key === 'ArrowRight') goToNext();
-      if (e.key === 'ArrowLeft') goToPrev();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNext, goToPrev]);
-
-  // Touch swipe support for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(deltaX) > 45) {
-      if (deltaX < 0) {
-        goToNext();
-      } else {
-        goToPrev();
-      }
-    }
-    touchStartX.current = null;
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (email === 'admin' && password === 'admin') {
+      // Offline local dev mode: only allowed in local development on localhost/127.0.0.1
+      if (
+        import.meta.env.DEV &&
+        (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) &&
+        email === 'admin' &&
+        password === 'admin'
+      ) {
         useAuthStore.getState().devLogin(rememberMe);
         toast.success('Logged in via Offline Mode (Local Admin)');
         return;
@@ -157,23 +71,13 @@ export const Login: React.FC = () => {
     }
   };
 
-  const currentConcept = LOGIN_CONCEPTS[currentIndex];
-
   return (
-    <div
-      className="login-carousel-page"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* 3 Concept Background Layers with Smooth Crossfade */}
-      {LOGIN_CONCEPTS.map((concept, idx) => (
-        <div
-          key={concept.id}
-          className={`login-bg-layer ${idx === currentIndex ? 'is-active' : ''}`}
-          style={{ backgroundImage: `url('${concept.bgUrl}')` }}
-          aria-hidden={idx !== currentIndex}
-        />
-      ))}
+    <div className="login-carousel-page">
+      <div
+        className="login-bg-layer is-active"
+        style={{ backgroundImage: `url('${LOGIN_CONCEPT.bgUrl}')` }}
+        aria-hidden="true"
+      />
 
       {/* Brand Marks */}
       <img
@@ -187,14 +91,10 @@ export const Login: React.FC = () => {
         className="login-brand-badge"
       />
 
-      {/* Right Composition: Card -> Carousel Dots -> Tagline */}
-      <div
-        className="login-composition"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      {/* Single retained login screen: Mùa Đơm Trái */}
+      <div className="login-composition">
         {/* Glassmorphic Login Card */}
-        <div className={`login-card ${currentConcept.themeClass}`}>
+        <div className={`login-card ${LOGIN_CONCEPT.themeClass}`}>
           <div className="text-center mb-7">
             <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg">
               Welcome Back
@@ -222,8 +122,6 @@ export const Login: React.FC = () => {
                   autoComplete="username"
                   required
                   value={email}
-                  onFocus={() => setIsPaused(true)}
-                  onBlur={() => setIsPaused(false)}
                   onChange={e => setEmail(e.target.value)}
                   className="login-input-field"
                   placeholder="admin@kcoffee.com"
@@ -248,8 +146,6 @@ export const Login: React.FC = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onFocus={() => setIsPaused(true)}
-                  onBlur={() => setIsPaused(false)}
                   onChange={e => setPassword(e.target.value)}
                   className="login-input-field"
                   placeholder="••••••••"
@@ -282,7 +178,7 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`login-submit-btn ${currentConcept.btnClass}`}
+              className={`login-submit-btn ${LOGIN_CONCEPT.btnClass}`}
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -318,23 +214,6 @@ export const Login: React.FC = () => {
           </form>
         </div>
 
-        {/* Carousel 3 Dots indicator directly below login card */}
-        <LoginCarouselControls
-          total={LOGIN_CONCEPTS.length}
-          current={currentIndex}
-          onSelect={goToConcept}
-        />
-
-        {/* Tagline Image (Specific to Concept 2) */}
-        <div
-          className={`login-tagline-wrap ${currentIndex === 1 ? 'is-visible' : 'is-hidden'}`}
-        >
-          <img
-            src="/login/concept-2-tagline.png"
-            alt="Mùa qua mùa, bông đơm trái — Giữ một hướng, trọn vị hái"
-            className="login-tagline-img"
-          />
-        </div>
       </div>
     </div>
   );

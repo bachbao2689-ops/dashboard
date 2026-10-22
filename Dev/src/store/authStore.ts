@@ -148,7 +148,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
     initialize: async () => {
       if(initializing)return;initializing=true;
       try {
-        const devSession = localStorage.getItem('kcoffee_dev_session');
+        const isLocalDev = Boolean(import.meta.env.DEV && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+        if (!isLocalDev && typeof window !== 'undefined') {
+          localStorage.removeItem('kcoffee_dev_session');
+        }
+        const devSession = isLocalDev ? localStorage.getItem('kcoffee_dev_session') : null;
         const isRememberMe = localStorage.getItem('kcoffee_auth_remember') === 'true';
         if (devSession) {
           if (!isRememberMe && !sessionStorage.getItem('kcoffee_session_active')) localStorage.removeItem('kcoffee_dev_session');
@@ -184,6 +188,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     devLogin: (rememberMe = true) => {
+      const isAllowed = Boolean(import.meta.env.DEV && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+      if (!isAllowed) {
+        console.warn('devLogin is restricted to local development environment.');
+        return;
+      }
       localStorage.setItem('kcoffee_dev_session', 'true');
       localStorage.setItem('kcoffee_auth_remember', rememberMe ? 'true' : 'false');
       sessionStorage.setItem('kcoffee_session_active', 'true');

@@ -31,9 +31,7 @@ function RootRedirect() {
   const loading = useAuthStore(state => state.loading);
   const location = useLocation();
 
-  if (loading) {
-    return <LoadingSplashScreen message="Đang khởi tạo hệ thống..." />;
-  }
+  if (loading) return null;
 
   // Preserve query params if coming with project/campaign links
   if (location.search && (location.search.includes('project=') || location.search.includes('campaign='))) {
@@ -54,7 +52,6 @@ function App() {
   const profileId = useAuthStore(state => state.profile?.id);
   const authLoading = useAuthStore(state => state.loading);
 
-  // App Startup Intro State (Plays ~3.5s cinematic logo animation before entering app)
   const [introStarted] = useState(() => Date.now());
   const [introCompleted, setIntroCompleted] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -64,37 +61,17 @@ function App() {
   }, [initialize]);
 
   const handleFinishIntro = useCallback(() => {
+    if (introCompleted || isFadingOut) return;
     setIsFadingOut(true);
     useUiStore.getState().setIntroFinished(true);
-    const fadeTimer = setTimeout(() => {
-      setIntroCompleted(true);
-    }, 450);
-    return () => clearTimeout(fadeTimer);
-  }, []);
+    window.setTimeout(() => setIntroCompleted(true), 450);
+  }, [introCompleted, isFadingOut]);
 
-  // Ensure minimum 3500ms for intro animation
-  useEffect(() => {
-    if (introCompleted) return;
-
-    const elapsed = Date.now() - introStarted;
-    const remainingTime = Math.max(0, 3500 - elapsed);
-
-    const timer = setTimeout(() => {
-      if (!useAuthStore.getState().loading) {
-        handleFinishIntro();
-      }
-    }, remainingTime);
-
-    return () => clearTimeout(timer);
-  }, [introCompleted, introStarted, handleFinishIntro]);
-
-  // If auth was still loading at 3500ms, complete immediately once auth finishes
   useEffect(() => {
     if (introCompleted || authLoading) return;
     const elapsed = Date.now() - introStarted;
-    if (elapsed >= 3500) {
-      handleFinishIntro();
-    }
+    const timer = window.setTimeout(handleFinishIntro, Math.max(0, 3500 - elapsed));
+    return () => window.clearTimeout(timer);
   }, [authLoading, introCompleted, introStarted, handleFinishIntro]);
 
   useEffect(() => {
@@ -121,7 +98,7 @@ function App() {
     <>
       <Toaster position="top-right" />
       <BrowserRouter>
-        <Suspense fallback={<LoadingSplashScreen message="Đang tải dữ liệu..." />}><Routes>
+        <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center text-sm text-gray-500 dark:text-gray-400"><span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />Đang tải…</span></div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={
@@ -154,14 +131,14 @@ function App() {
         </Routes></Suspense>
       </BrowserRouter>
 
-      {/* Startup Intro Splash Overlay (Plays ~3.5s cinematic logo story before entering app) */}
       {!introCompleted && (
         <LoadingSplashScreen
-          isIntro={true}
+          isIntro
           isExiting={isFadingOut}
           onSkip={handleFinishIntro}
         />
       )}
+
     </>
   );
 }

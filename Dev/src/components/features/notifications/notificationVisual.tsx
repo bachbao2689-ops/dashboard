@@ -16,6 +16,10 @@ export const toneOf=(n:Pick<NotificationItem,'entity_type'>):Tone=>{
  return 'other';
 };
 export const toneStyle=(n:Pick<NotificationItem,'entity_type'>):CSSProperties=>({['--tone' as string]:TONES[toneOf(n)].rgb});
+export const formatNotificationTimestamp=(value:string,lang:'vi'|'en'='vi')=>{
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?'':date.toLocaleString(lang==='en'?'en-US':'vi-VN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+};
 
 // PIC = leading person name of "<Name> đã/giao/nhắc …". "đã" is non-ASCII so \b cannot be used.
 const PIC=/^(.+?)(?=\s(?:đã|giao|nhắc)(?:\s|$))/;

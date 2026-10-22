@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import { completeTrackedTask } from '../services/workspaceTasks';
 import toast from 'react-hot-toast';
 
 export interface Task {
@@ -84,11 +85,7 @@ export function useMyTasks() {
 
   const markComplete = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: 'done' })
-        .eq('id', taskId);
-      if (error) throw error;
+      await completeTrackedTask(taskId);
       toast.success('Task marked as complete');
     } catch (err: any) {
       toast.error(err.message || 'Failed to mark task as complete');

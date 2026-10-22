@@ -9,7 +9,7 @@ import { useNotificationCenter } from '../../../hooks/useNotificationCenter';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
 import { workspaceScope } from '../../../services/workspaceResources';
 import { entityLink } from '../../../lib/taskTracking';
-import { NotificationIcon, TONES, toneOf, toneStyle, PicText } from '../notifications/notificationVisual';
+import { NotificationIcon, TONES, toneOf, toneStyle, PicText, formatNotificationTimestamp } from '../notifications/notificationVisual';
 import { useTranslation } from '../../../i18n/translations';
 
 type NotificationEntry = {
@@ -26,6 +26,7 @@ type NotificationEntry = {
 };
 
 const defaultTitles: Record<string, string> = {
+  task_created: 'Task mới được tạo',
   task_completed: 'Task completed',
   task_comment: 'Bình luận mới',
   weekly_report: 'Weekly Report mới',
@@ -270,6 +271,9 @@ export const NotificationLog: React.FC<{
                   <span className="notif-msg mt-0.5 block text-xs leading-4">
                     <PicText message={entry.message} metadata={entry.metadata} />
                   </span>
+                  <time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={entry.created_at}>
+                    {formatNotificationTimestamp(entry.created_at, lang)}
+                  </time>
                 </span>
                 {!entry.is_read && entry.user_id === profile?.id && (
                   <button

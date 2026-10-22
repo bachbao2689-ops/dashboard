@@ -31,12 +31,10 @@ DASHBOARD/
 │   ├── tailwind.config.js   # Cấu hình Tailwind CSS
 │   └── vercel.json          # Cấu hình SPA routing & cache cho Vercel
 │
+├── GUIDELINE/               # Hai tài liệu đang áp dụng
+│   ├── style.md             # Style desktop/mobile, Light/Dark, UX/UI
+│   └── rules.md             # Môi trường, quyền, tracking, dữ liệu, phát hành
 ├── UX_UI_DESIGN_SYSTEM/     # 💎 Hệ thống Thiết kế & Source code tái sử dụng
-│   ├── GUIDELINE/           # Bộ tài liệu quy chuẩn thiết kế, nút bấm, deployment
-│   │   ├── GUIDELINE.md     # Cẩm nang Master UX/UI Cyber-Organic Liquid Glass
-│   │   ├── UI Button.md     # Quy chuẩn nút điều hướng Liquid Glass
-│   │   ├── UX_UI_GUIDELINES.md # Quy chuẩn chung giao diện Dashboard
-│   │   └── DEPLOYMENT_RULES.md # Quy định luồng phát triển và deploy
 │   └── source_code/         # Mã nguồn độc lập tái sử dụng cho các Website khác
 │       ├── components/      # CardHub, MagneticCard, LiquidButton, Popover, Stepper...
 │       ├── hooks/           # useMagneticHover, useClickOutside
@@ -79,14 +77,14 @@ npm run build
 ## 🎨 4. Tái sử dụng UX/UI cho Website khác
 
 Để mang giao diện Liquid Glass sang một website hoặc ứng dụng khác, vui lòng đọc tài liệu hướng dẫn chi tiết tại:
-👉 [UX_UI_DESIGN_SYSTEM/GUIDELINE/GUIDELINE.md](./UX_UI_DESIGN_SYSTEM/GUIDELINE/GUIDELINE.md)
+👉 [GUIDELINE/style.md](./GUIDELINE/style.md)
 
 ---
 *Bản quyền phát triển: K COFFEE Digital Team & BART.*
 ## Đồng bộ UX bình luận và phát hành
 
-Áp dụng [quy chuẩn đồng bộ chỉnh sửa và xóa bình luận](GUIDELINE/COMMENT_UI_DEPLOYMENT_CONSISTENCY.md) trên Local, Develop và Main. Mọi panel comment dùng chung component `CommentMessage`; bản phát hành phải xác nhận đủ tính năng và cùng SHA giữa hai nhánh chuẩn.
+Áp dụng [quy tắc bình luận, tracking và phát hành](GUIDELINE/rules.md) trên Local, Develop và Main.
 
 ## Phạm vi Team Workload
 
-Xem [quy tắc hiển thị Team Workload](GUIDELINE/TEAM_WORKLOAD_VISIBILITY.md) để đối chiếu quyền xem theo phòng ban trên Local, Develop và Main.
+Xem [phạm vi quyền trong rules.md](GUIDELINE/rules.md) để đối chiếu Team Workload theo phòng ban.

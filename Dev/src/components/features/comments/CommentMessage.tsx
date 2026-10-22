@@ -17,7 +17,9 @@ export interface CommentMessageProps {
   actorId?: number | string;
   body: string;
   createdAt?: string;
+  editedAt?: string | null;
   readOnly?: boolean;
+  allowMobileEditing?: boolean;
   variant?: 'project' | 'task';
   onEdit: (id: string, body: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
@@ -25,8 +27,8 @@ export interface CommentMessageProps {
 }
 
 /** One comment UX for Task, Subtask, Project, Campaign and Workflow panels. */
-export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,createdAt,
-  readOnly=false,variant='project',onEdit,onDelete,onReply}: CommentMessageProps) {
+export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,createdAt,editedAt,
+  readOnly=false,allowMobileEditing=false,variant='project',onEdit,onDelete,onReply}: CommentMessageProps) {
   const { t, lang } = useTranslation();
   const en = lang === 'en';
   const mine = ownsComment(actorId,authorId);
@@ -35,11 +37,12 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
   const [busy,setBusy] = useState(false);
   const [confirmDelete,setConfirmDelete] = useState(false);
   const lock = useRef(false);
-  const mobileReadOnly=useMobileReadOnly();
+  const mobileReadOnly=useMobileReadOnly(!allowMobileEditing);
   const viewOnly=readOnly||mobileReadOnly;
   const canManage = mine && !viewOnly;
   const save = async () => {
     if (!canManage || !draft.trim() || lock.current) return;
+    if (draft.trim() === body.trim()) { setEditing(false); return; }
     lock.current=true; setBusy(true);
     try {
       if (await onEdit(id,draft)) {
@@ -70,9 +73,12 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
         <div className={bubble}>
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className={`text-[11px] font-extrabold tracking-tight ${mine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{authorName}</span>
-            {createdAt && <time dateTime={createdAt} className={`text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
-              {new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
-            </time>}
+            {createdAt && <span className={`inline-flex items-center gap-1 text-[9px] ${mine ? 'text-blue-200' : 'text-gray-400'}`}>
+              <time dateTime={createdAt}>{new Date(createdAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</time>
+              {editedAt && <span title={`${en ? 'Edited' : 'Đã chỉnh sửa'} · ${new Date(editedAt).toLocaleString(en ? 'en-GB' : 'vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`} aria-label={en ? 'Edited' : 'Đã chỉnh sửa'} className="inline-flex items-center gap-0.5">
+                <Edit3 size={10} /><span>{en ? 'Edited' : 'Đã chỉnh sửa'}</span>
+              </span>}
+            </span>}
           </div>
           {canManage && editing ? <form onSubmit={event => {event.preventDefault();void save();}}>
             <textarea autoFocus aria-label={en ? 'Edit comment' : 'Chỉnh sửa bình luận'} value={draft}
