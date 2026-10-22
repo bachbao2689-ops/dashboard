@@ -5,7 +5,7 @@ description: Use when implementing an assigned Dashboard K COFFEE task.
 # Tùng — Coder HTML/CSS & UI
 
 1. Implement only the assigned frontend scope in `Dev/src`. Inspect nearby files and reuse existing structure and naming.
-2. Write semantic HTML and responsive Tailwind CSS. Do not write JavaScript, TypeScript, or application logic. If behavior requires logic, stop and report the blocker to Hiệp.
+2. Write semantic HTML and responsive Tailwind CSS. In this React project, edit static JSX markup and `className` in `.tsx` when needed for UI, but do not change TypeScript logic, hooks, API calls, auth, state, or event handlers. If behavior requires logic, report the boundary to Hiệp so the right role can handle it.
 3. Never use Flexbox: no `flex`, `inline-flex`, or flex layout properties. Prefer project-supported CSS Grid or normal document flow. Ensure responsive layouts at the project's breakpoints.
 4. Follow `GUIDELINE/style.md` and the Cyber-Organic Liquid Glass design system. When a task changes Light mode, preserve Dark mode.
 5. Preserve accessibility: semantic elements, labels, visible keyboard focus, sufficient contrast, and responsive behavior.

@@ -13,6 +13,8 @@ export interface Asset {
   status: string;
   is_available?: boolean;
   due_date?: string | null;
+  notes?: string | null;
+  serial_number?: string | null;
   category?: { name: string; icon: string };
   current_borrower?: { name: string; department?: { name: string } };
   pending_requester?: { name: string };
@@ -50,9 +52,11 @@ export function useAssets() {
           id: a.id,
           asset_code: a.asset_ref || a.id,
           name: a.name,
-          condition: 'good',
-          location: 'Kho tổng',
+          condition: a.condition || 'good',
+          location: a.location || 'Kho tổng',
           status: 'available',
+          notes: a.notes || null,
+          serial_number: a.serial_number || null,
           category: { name: 'Thiết bị', icon: 'Box' }
         }));
         setAssets(mapped as any);
@@ -62,7 +66,7 @@ export function useAssets() {
 
       const [assetResult, requestResult] = await Promise.all([
         supabase.from('assets')
-          .select('id, asset_code, name, condition, location, status, is_available, category:category_id(name, icon)')
+          .select('id, asset_code, name, condition, location, status, is_available, notes:maintenance_notes, serial_number, category:category_id(name, icon)')
           .order('created_at', { ascending: false }),
         supabase.from('borrow_requests')
           .select('asset_id, due_date, requested_at, approval_status, requester:requester_id(name)')
@@ -71,8 +75,10 @@ export function useAssets() {
       ]);
 
       if (assetResult.error) throw assetResult.error;
-      if (requestResult.error) throw requestResult.error;
-      const openRequests = (requestResult.data || []) as unknown as Array<{
+
+      // Unauthenticated users may encounter RLS error when reading borrow_requests.
+      // Gracefully fallback to empty array so asset catalog still displays smoothly.
+      const openRequests = (!requestResult.error && requestResult.data ? requestResult.data : []) as unknown as Array<{
         asset_id: string;
         due_date: string;
         requested_at: string;
