@@ -38,6 +38,7 @@ export const GroupByDropdown: React.FC<GroupByDropdownProps> = ({
 
   const options = [
     { key: 'none', label: t('common.none') },
+    { key: 'department', label: t('common.department') },
     { key: 'project', label: t('common.project') },
     { key: 'assignee', label: t('common.assignee') },
     { key: 'status', label: t('common.status') }

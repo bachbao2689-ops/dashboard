@@ -5,7 +5,7 @@ import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
-import { canViewTeamManagement, isGlobalManager } from '../../../lib/roleScope';
+import { canViewTeamManagement, isGlobalManager, isDepartmentLeader } from '../../../lib/roleScope';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
 
 interface TaskModalProps {
@@ -18,7 +18,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
   const directory = useWorkspaceDirectory(isOpen);
-  const canChooseDepartment = isGlobalManager(profile) && !profile?.department_id;
+  const canChooseDepartment = isGlobalManager(profile) || isDepartmentLeader(profile);
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -157,7 +157,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const users = directory.data?.users || [];
   const departmentName = departments.find(department => String(department.id) === String(departmentId))?.name || profile?.department_name || t('tasks.selectDepartment');
   const visibleUsers = departmentId
-    ? users.filter(user => String(user.department_id) === String(departmentId) && (canViewTeamManagement(profile) || String(user.id) === String(profile?.id)))
+    ? users.filter(user => String(user.department_id) === String(departmentId) && (canViewTeamManagement(profile) || isDepartmentLeader(profile) || String(user.id) === String(profile?.id)))
     : [];
   const visibleProjects = projects;
 

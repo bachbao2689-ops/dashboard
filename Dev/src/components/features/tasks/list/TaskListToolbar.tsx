@@ -10,6 +10,7 @@ import {
   DateFilterDropdown,
   PriorityFilterDropdown,
   GroupByDropdown,
+  DepartmentFilterDropdown,
   type FilterPerson
 } from '../../../common/filters';
 
@@ -20,6 +21,9 @@ interface TaskListToolbarProps {
   onStatusChange: (value: string) => void;
   assigneeFilter: string;
   onAssigneeChange: (value: string) => void;
+  departmentFilter: string;
+  onDepartmentChange: (deptId: string) => void;
+  departments: Array<{ id: string | number; name: string }>;
   calendarFilter: string;
   customStartDate: string;
   customEndDate: string;
@@ -49,6 +53,9 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   onStatusChange,
   assigneeFilter,
   onAssigneeChange,
+  departmentFilter,
+  onDepartmentChange,
+  departments,
   calendarFilter,
   customStartDate,
   customEndDate,
@@ -107,6 +114,16 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
           allKey="open"
           isOpen={activeDropdown === 'status'}
           onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+          onClose={() => setActiveDropdown(null)}
+        />
+
+                {/* Department Filter */}
+        <DepartmentFilterDropdown
+          value={departmentFilter}
+          onChange={onDepartmentChange}
+          departments={departments}
+          isOpen={activeDropdown === 'department'}
+          onToggle={() => setActiveDropdown(activeDropdown === 'department' ? null : 'department')}
           onClose={() => setActiveDropdown(null)}
         />
 
