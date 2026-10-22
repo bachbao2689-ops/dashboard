@@ -46,7 +46,13 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      if (email === 'admin' && password === 'admin') {
+      // Offline local dev mode: only allowed in local development on localhost/127.0.0.1
+      if (
+        import.meta.env.DEV &&
+        (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) &&
+        email === 'admin' &&
+        password === 'admin'
+      ) {
         useAuthStore.getState().devLogin(rememberMe);
         toast.success('Logged in via Offline Mode (Local Admin)');
         return;

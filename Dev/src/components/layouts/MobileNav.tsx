@@ -107,7 +107,7 @@ export const MobileNav: React.FC<{scrollHidden?:boolean}> = ({scrollHidden=false
               <div className="relative">
                 {item.icon}
                 {Boolean((item as any).badgeCount > 0) && (
-                  item.path.includes('borrow-requests') ? (
+                  item.path.includes('borrow-requests') || item.path.includes('assets') ? (
                     <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white border border-white dark:border-slate-800">
                       {(item as any).badgeCount > 99 ? '99+' : (item as any).badgeCount}
                     </span>
