@@ -50,3 +50,6 @@ For development tasks, report: (a) outcome, (b) files changed, (c) checks and fi
 - Before changing app code, read `GUIDELINE/rules.md` and the relevant sections of `GUIDELINE/style.md`; for UI changes also follow `.agents/rules/ui-modifications.md`. The README is an index, not a replacement for these rules.
 - When written guidance conflicts with source code, migrations, or RLS, inspect and report the conflict before changing behavior. Never use docs alone to infer current permissions or production state.
 - Keep user-defined role boundaries: Coder, Tester, and Reviewer follow their respective rules in `.agents/rules/`. If a task requires changes beyond assigned boundaries, report the exact blocker for PM/user decision instead of silently expanding the role.
+
+## Team nghiệm thu vận hành (UAT)
+Khi bro yêu cầu nghiệm thu như bàn giao cho nhân viên, Hiệp dùng `.agents/uat/README.md`: gọi `uat-admin-manager`, `uat-leader`, `uat-staff`; Nhi phụ trách kế hoạch, kịch bản liên vai và tổng hợp; Khoa phản biện bằng chứng. Dùng cùng chat Hiệp, các worker dùng fixture/phiên riêng. Các case và báo cáo là Markdown trong `.agents/uat/`. Thiếu môi trường, tài khoản test hoặc browser thì báo BLOCKED; không gọi static review là kiểm thử UI đã PASS. Đây là nghiệm thu hành vi toàn hệ thống, không chỉ review diff UI.

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
@@ -28,9 +28,19 @@ export function TaskComments({ target, people, collaboratorIds, allowMobileEditi
   const { t, lang } = useTranslation();
   const en = lang === 'en';
   const thread = useTaskComments(target, profile?.id);
-  const [text, setText] = useState('');
+  const draftKey = target?.kind && target?.id ? `kcoffee_comment_draft_${target.kind}_${target.id}` : null;
+  const [text, setText] = useState(() => (draftKey && typeof window !== 'undefined' ? sessionStorage.getItem(draftKey) || '' : ''));
   const draftRef = useRef(text);
   draftRef.current = text;
+
+  useEffect(() => {
+    if (!draftKey || typeof window === 'undefined') return;
+    if (text.trim()) {
+      sessionStorage.setItem(draftKey, text);
+    } else {
+      sessionStorage.removeItem(draftKey);
+    }
+  }, [text, draftKey]);
   const [mentions, setMentions] = useState<Person[]>([]);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -73,6 +83,7 @@ export function TaskComments({ target, people, collaboratorIds, allowMobileEditi
       if (draftRef.current === draft) {
         setText('');
         setMentions([]);
+        if (draftKey && typeof window !== 'undefined') sessionStorage.removeItem(draftKey);
       }
       toast.success(en ? 'Comment sent' : 'Đã gửi bình luận');
       // A notification failure must never make a saved comment look unsent.

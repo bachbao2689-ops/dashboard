@@ -91,17 +91,17 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
             </div>
           </form> : <RichCommentBody body={body} isMineBubble={mine} />}
         </div>
-        {!viewOnly && <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pb-2">
+        {!viewOnly && <div className="flex shrink-0 items-center opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 group-focus-within:opacity-100 pb-2">
           {onReply && <button type="button" onClick={onReply} disabled={busy}
             title={en ? 'Reply' : 'Trả lời'} aria-label={en ? 'Reply' : 'Trả lời'}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-slate-700"><Reply size={14}/></button>}
+            className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-slate-700"><Reply size={14}/></button>}
           {canManage && <>
             <button type="button" disabled={busy || editing} onClick={()=>{setDraft(body);setEditing(true);}}
               title={en ? 'Edit comment' : 'Chỉnh sửa bình luận'} aria-label={en ? 'Edit comment' : 'Chỉnh sửa bình luận'}
-              className="rounded-lg p-1.5 text-gray-400 hover:text-primary disabled:opacity-50"><Edit3 size={14}/></button>
+              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-50"><Edit3 size={14}/></button>
             <button type="button" disabled={busy} onClick={()=>setConfirmDelete(true)}
               title={en ? 'Delete comment' : 'Xóa bình luận'} aria-label={en ? 'Delete comment' : 'Xóa bình luận'}
-              className="rounded-lg p-1.5 text-gray-400 hover:text-red-500 disabled:opacity-50"><Trash2 size={14}/></button>
+              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:text-red-500 disabled:opacity-50"><Trash2 size={14}/></button>
           </>}
         </div>}
       </div>

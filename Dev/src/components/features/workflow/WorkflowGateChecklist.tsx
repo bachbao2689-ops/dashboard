@@ -1,9 +1,25 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import {ArrowRight, ShieldCheck, Plus} from 'lucide-react';
+import {useAuthStore} from '../../../store/authStore';
+import {isAdmin, isGlobalManager} from '../../../lib/roleScope';
 
 export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
   const {hub, isEn, currentEntity, activePhase, phases, activePhaseIndex, criteria, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, readyToApprove, readinessLabel, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, toggleCriterion, handleAddCriteria, handleAdvancePhase, pct} = model;
+  const profile = useAuthStore(state => state.profile);
   if (!currentEntity || !activePhase) return null;
+
+  const actorId = profile?.id != null ? String(profile.id) : null;
+  const isPhasePic = Boolean(activePhase.members?.some(m => String(m.id) === actorId && m.role === 'pic'));
+  const isParentCreator = Boolean(currentEntity.creator && String(currentEntity.creator.id) === actorId);
+  const isParentPic = Boolean(currentEntity.pics?.some(p => String(p.id) === actorId));
+  const canApprove = Boolean(
+    isAdmin(profile) ||
+    isGlobalManager(profile) ||
+    currentEntity.root ||
+    isPhasePic ||
+    isParentCreator ||
+    isParentPic
+  );
   return (<>
               {/* Left Column: Tiêu chí Gatekeeper & Duyệt Chuyển Phase */}
               <div className="w-full h-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4 flex flex-col justify-between">
@@ -15,7 +31,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                       <span>{isEn ? 'Task progress' : 'Tiến độ công việc'}</span>
                       <span className="font-bold text-primary">{pct(phaseProgressPct)}</span>
                     </div>
-                    <div className="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden relative">
                       <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${phaseProgressPct ?? 0}%` }} />
                     </div>
                     <span className="text-[10px] text-gray-400 mt-1 block">
@@ -37,6 +53,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                         }`}
                         style={{ width: `${gatePassChancePct ?? 0}%` }}
                       />
+                      <div className="absolute top-0 bottom-0 left-[80%] w-0.5 bg-slate-900/40 dark:bg-white/50 z-10" title="Mốc duyệt 80%" />
                     </div>
                     <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border mt-1 inline-block ${
                       readyToApprove ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
@@ -119,7 +136,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                     {readyToApprove ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
                   </p>
 
-                  {currentEntity.root && !['completed','cancelled'].includes(activePhase.status) && (
+                  {canApprove && !['completed','cancelled'].includes(activePhase.status) && (
                     <button
                       type="button"
                       disabled={hub.busy || !readyToApprove}

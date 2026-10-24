@@ -95,7 +95,7 @@ export async function submitBorrowRequests(input: {
 }
 
 export async function transitionBorrowRequest(id: string, action: BorrowAction, profile: StaffProfile | null) {
-  assert(profile?.id && isAssetApprover(profile), 'Chỉ Leader Design hoặc Admin được duyệt và xác nhận trả thiết bị.');
+  assert(profile?.id && isAssetApprover(profile), 'Chỉ Manager, Leader Design hoặc Admin được duyệt và xác nhận trả thiết bị.');
   const { data: request, error: readError } = await supabase.from('borrow_requests')
     .select('id, asset_id, approval_status, returned_at').eq('id', id).single();
   if (readError) throw readError;
