@@ -2,18 +2,18 @@
 
 Mục tiêu: đánh giá hệ thống như khi bàn giao cho nhân viên làm việc thật (UAT). Phạm vi gồm tính đúng đắn, khả năng hoàn thành công việc, phân quyền, tính nhất quán dữ liệu và khả năng phục hồi khi thao tác thất bại.
 
-## Đội hình
+## Đội hình tinh gọn (4 Agent cốt lõi)
 
-| Agent | Trách nhiệm |
+Hệ thống UAT được tích hợp trọn vẹn vào đội hình 4 Agent chính thức của Dashboard K COFFEE, tuyệt đối không tạo thêm subagent rời rạc gây phân mảnh chat:
+
+| Agent | Trách nhiệm trong UAT |
 | --- | --- |
-| Hiệp (`hiep`) | Điều phối trong chat hiện tại, xác nhận môi trường/SHA, chia fixture và gọi các agent UAT |
-| Nhi (`nhi`) | Phụ trách kế hoạch kiểm thử, tổng hợp bằng chứng và chạy kịch bản liên vai |
-| `uat-admin-manager` | Đóng vai Admin và Manager, chạy hai phiên độc lập; không dùng kết quả Admin thay Manager |
-| `uat-leader` | Đóng vai Leader, soát phạm vi phòng ban và quyền creator/PIC |
-| `uat-staff` | Đóng vai nhân viên có phòng ban và chưa có phòng ban, kiểm tra công việc hằng ngày |
-| Khoa (`khoa`) | Phản biện bằng chứng, kiểm tra độ bao phủ và kết luận nghiệm thu |
+| **Hiệp (`hiep`)** — Lead / PM | Điều phối toàn bộ luồng trong một cuộc hội thoại, xác nhận môi trường/SHA, phân bổ fixture và nhận báo cáo |
+| **Tùng (`tung`)** — Coder | Khắc phục các lỗi phát hiện trong đợt UAT trên nhánh `develop`, tối ưu UI/UX theo phản hồi |
+| **Nhi (`nhi`)** — QA & UAT Lead | Trực tiếp đảm nhiệm toàn bộ việc lập kế hoạch, kiểm thử độc lập cho cả 4 persona (Admin & Manager, Leader, Staff) và kịch bản liên vai Journeys; tổng hợp `SUMMARY.md` |
+| **Khoa (`khoa`)** — Independent Reviewer | Thẩm định độc lập bằng chứng, đối chiếu độ bao phủ ca kiểm thử, kiểm tra ranh giới bảo mật/OCC/zero-flexbox và đưa ra kết luận nghiệm thu |
 
-Các agent UAT tạo báo cáo Markdown, không sửa mã ứng dụng. Hiệp giao lỗi đã tái hiện cho vai phù hợp ở lượt sửa riêng. Đây là cấu hình team, không phải bằng chứng các agent đã chạy.
+Nhi và Khoa tạo báo cáo Markdown trong `.agents/uat/runs/<run-id>/`, không sửa mã ứng dụng. Hiệp giao lỗi đã tái hiện cho Tùng ở lượt sửa riêng.
 
 ## Chuẩn bị một đợt chạy
 
@@ -27,9 +27,9 @@ Các agent UAT tạo báo cáo Markdown, không sửa mã ứng dụng. Hiệp g
 
 ## Cách gọi trong chat Hiệp
 
-> Hiệp, chạy team UAT theo `.agents/uat/README.md` trên môi trường Develop đã xác minh. Gọi `uat-admin-manager`, `uat-leader`, `uat-staff` bằng ID; giao Nhi tổng hợp và chạy JOURNEYS.md, Khoa phản biện kết quả. Dùng tài khoản test và fixture riêng; ghi bằng chứng thật, báo BLOCKED khi thiếu điều kiện. Trả báo cáo Markdown và kết luận sẵn sàng/chưa sẵn sàng bàn giao cho nhân viên.
+> Hiệp, chạy team UAT theo `.agents/uat/README.md` trên môi trường Develop đã xác minh. Giao Nhi kiểm thử toàn bộ các persona và chạy JOURNEYS.md, Khoa phản biện kết quả. Dùng tài khoản test và fixture riêng; ghi bằng chứng thật, báo BLOCKED khi thiếu điều kiện. Trả báo cáo Markdown và kết luận sẵn sàng/chưa sẵn sàng bàn giao cho nhân viên.
 
-Hiệp gửi mỗi agent: run-id, URL/SHA, alias tài khoản/fixture hợp lệ, case ID được giao, đường dẫn báo cáo và tiêu chí. Không chuyển bí mật trong prompt. Nếu runtime không gọi được subagent, ghi rõ thực hiện tuần tự, không giả danh phản hồi độc lập.
+Hiệp giao việc cho Nhi và Khoa bằng `send_message` trong cùng một phiên subagent; tuyệt đối không gọi `invoke_subagent` tạo thêm subagent persona mới làm rối chat.
 
 ## Kết quả và quyết định
 

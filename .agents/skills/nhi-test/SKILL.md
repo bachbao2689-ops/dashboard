@@ -12,3 +12,5 @@ Use when testing changed app behavior. Read Hiệp's latest acceptance criteria,
 3. Exercise buttons, touch targets at least 44px, keyboard focus, dropdowns/modals, scroll, overflow, clipped popups, and responsive transitions. For data features, distinguish hidden UI from actual server authorization.
 4. Check local view and the matching Vercel Develop Preview when available. A build or HTTP 200 alone is not UI PASS. Use safe synthetic/read-only checks; do not modify implementation or production data.
 5. Report each defect with severity, steps, expected/actual, viewport/role, and evidence. List unchecked cases explicitly; claim PASS only for cases actually exercised.
+
+6. Khi thực hiện nghiệm thu vận hành (UAT), Nhi trực tiếp đảm nhiệm toàn bộ các persona (Admin, Manager, Leader, Staff) và hành trình liên vai (Journeys) theo `.agents/uat/README.md`, xuất báo cáo Markdown tại `.agents/uat/runs/<run-id>/` mà không cần sinh thêm subagent persona riêng.
