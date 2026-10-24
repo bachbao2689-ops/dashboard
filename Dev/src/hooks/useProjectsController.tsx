@@ -63,6 +63,11 @@ export function useProjectsController(){
   const [subtasks, setSubtasks] = useState<any[]>([]); const [comments, setComments] = useState<any[]>([]);
   const [selectedSubtask, setSelectedSubtask] = useState<any | null>(null);
   const [subtaskCommentCounts, setSubtaskCommentCounts] = useState<Record<string, number>>({});
+  const [subtaskChecklistCounts, setSubtaskChecklistCounts] = useState<Record<string, { total: number; done: number }>>({});
+  const [campaignSubtaskCommentCounts, setCampaignSubtaskCommentCounts] = useState<Record<string, number>>({});
+  const [campaignSubtaskChecklistCounts, setCampaignSubtaskChecklistCounts] = useState<Record<string, { total: number; done: number }>>({});
+  const [hasCampaignComments, setHasCampaignComments] = useState<Record<string, boolean>>({});
+  const [hasMentionOrUnread, setHasMentionOrUnread] = useState<Record<string, boolean>>({});
   const [recentlyCompletedSubtaskId, setRecentlyCompletedSubtaskId] = useState<string | null>(null);
   const [refreshDetailTrigger, setRefreshDetailTrigger] = useState(0);
 
@@ -297,13 +302,17 @@ export function useProjectsController(){
   const load = async () => {
     const token = ++loadRequest.current;
     if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
-    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes] = await Promise.all([
+    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('project_members').select('project_id,user_id,workflow_role'),
       supabase.from('project_comments').select('project_id'),
       supabase.from('project_subtasks').select('project_id,assignee_id').not('status','in','(deleted,archived)'),
       supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url),creator:created_by(name,avatar_url)').neq('status','archived').neq('status','deleted').order('name'),
-      supabase.from('activity_log').select('entity_id,metadata').eq('entity_type','project').eq('action','creation_details')
+      supabase.from('activity_log').select('entity_id,metadata').eq('entity_type','project').eq('action','creation_details'),
+      supabase.from('activity_log').select('entity_id').eq('entity_type', 'campaign').eq('action', 'comment'),
+      profile?.id
+        ? supabase.from('notifications').select('entity_type, entity_id').eq('user_id', profile.id).eq('is_read', false).in('entity_type', ['project', 'campaign'])
+        : Promise.resolve({ data: [] } as any)
     ]);
     if (token !== loadRequest.current) return;
     if (projectRes.error) return toast.error('Không thể tải Project');
@@ -315,6 +324,16 @@ export function useProjectsController(){
     const commentsMap: Record<string, boolean> = {};
     (commentRes.data || []).forEach(c => commentsMap[c.project_id] = true);
     setHasComments(commentsMap);
+
+    const campCommentsMap: Record<string, boolean> = {};
+    (campaignCommentsRes.data || []).forEach((c: any) => campCommentsMap[c.entity_id] = true);
+    setHasCampaignComments(campCommentsMap);
+
+    const unreadMap: Record<string, boolean> = {};
+    ((notificationsRes as any)?.data || []).forEach((n: any) => {
+      if (n.entity_id) unreadMap[n.entity_id] = true;
+    });
+    setHasMentionOrUnread(unreadMap);
     if(campaignRes.error||creationRes.error)return toast.error('Chưa đồng bộ đầy đủ Project/Campaign.');
     const campaignData=campaignRes.data||[];
     setCampaigns(campaignData);
@@ -366,11 +385,33 @@ export function useProjectsController(){
       const nextSubtasks = (s.data || []).filter(item => !['deleted', 'archived'].includes(item.status));
       setSubtasks(nextSubtasks);
       setComments(c.data || []);
-      if (!nextSubtasks.length) return setSubtaskCommentCounts({});
-      const { data: subtaskActivities } = await supabase.from('activity_log').select('entity_id').eq('entity_type', 'project_subtask').eq('action', 'comment').in('entity_id', nextSubtasks.map(item => item.id));
+      if (!nextSubtasks.length) {
+        setSubtaskCommentCounts({});
+        setSubtaskChecklistCounts({});
+        return;
+      }
+      const [commentsRes, detailsRes] = await Promise.all([
+        supabase.from('activity_log').select('entity_id').eq('entity_type', 'project_subtask').eq('action', 'comment').in('entity_id', nextSubtasks.map(item => item.id)),
+        supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'project_subtask').eq('action', 'details_updated').in('entity_id', nextSubtasks.map(item => item.id)).order('created_at', { ascending: false })
+      ]);
       if (!active) return;
-      const counts = (subtaskActivities || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
+      const counts = (commentsRes.data || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
       setSubtaskCommentCounts(counts);
+
+      const checklistCounts: Record<string, { total: number; done: number }> = {};
+      const seen = new Set<string>();
+      (detailsRes.data || []).forEach((row: any) => {
+        if (seen.has(row.entity_id)) return;
+        seen.add(row.entity_id);
+        const items = Array.isArray(row.metadata?.checklist_items) ? row.metadata.checklist_items : [];
+        if (items.length > 0) {
+          checklistCounts[row.entity_id] = {
+            total: items.length,
+            done: items.filter((i: any) => i.completed).length,
+          };
+        }
+      });
+      setSubtaskChecklistCounts(checklistCounts);
     })();
     return () => { active = false; };
   }, [selected?.id, refreshDetailTrigger, profile?.id]);
@@ -384,8 +425,36 @@ export function useProjectsController(){
       ]);
       if (!active) return;
       if (subtaskRes.error || commentRes.error) return toast.error(subtaskRes.error?.message || commentRes.error?.message || 'Không thể tải chi tiết Campaign');
-      setCampaignSubtasks((subtaskRes.data || []).filter(task => !['deleted', 'archived'].includes(task.status)));
+      const nextCampSubtasks = (subtaskRes.data || []).filter(task => !['deleted', 'archived'].includes(task.status));
+      setCampaignSubtasks(nextCampSubtasks);
       setCampaignComments(commentRes.data || []);
+      if (!nextCampSubtasks.length) {
+        setCampaignSubtaskCommentCounts({});
+        setCampaignSubtaskChecklistCounts({});
+        return;
+      }
+      const [stCommentsRes, stDetailsRes] = await Promise.all([
+        supabase.from('activity_log').select('entity_id').eq('entity_type', 'campaign_subtask').eq('action', 'comment').in('entity_id', nextCampSubtasks.map(item => item.id)),
+        supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'campaign_subtask').eq('action', 'details_updated').in('entity_id', nextCampSubtasks.map(item => item.id)).order('created_at', { ascending: false })
+      ]);
+      if (!active) return;
+      const stCounts = (stCommentsRes.data || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
+      setCampaignSubtaskCommentCounts(stCounts);
+
+      const stChecklistCounts: Record<string, { total: number; done: number }> = {};
+      const seenCamp = new Set<string>();
+      (stDetailsRes.data || []).forEach((row: any) => {
+        if (seenCamp.has(row.entity_id)) return;
+        seenCamp.add(row.entity_id);
+        const items = Array.isArray(row.metadata?.checklist_items) ? row.metadata.checklist_items : [];
+        if (items.length > 0) {
+          stChecklistCounts[row.entity_id] = {
+            total: items.length,
+            done: items.filter((i: any) => i.completed).length,
+          };
+        }
+      });
+      setCampaignSubtaskChecklistCounts(stChecklistCounts);
     })();
     return () => { active = false; };
   }, [selectedCampaign?.id, refreshDetailTrigger, profile?.id]);
@@ -695,6 +764,17 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     const body = raw.trim();
     const { error } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'comment', entity_type: 'campaign', entity_id: selectedCampaign.id, metadata: { body } });
     if (error) return toast.error('Không thể gửi bình luận');
+    const mentionedNames = (body.match(/@([a-zA-Z0-9_À-ỹ]+)/g) || []).map(m => m.slice(1).toLowerCase());
+    const mentionedUsers = people.filter(p => mentionedNames.includes(p.name.replace(/\s+/g, '').toLowerCase()));
+    if (!hasCanonicalNotifications() && mentionedUsers.length) {
+      await supabase.from('notifications').insert(mentionedUsers.map(person => ({
+        user_id: person.id,
+        type: 'system',
+        message: `${profile?.name || 'Một thành viên'} đã nhắc bạn trong chiến dịch: ${selectedCampaign.name}`,
+        entity_type: 'campaign',
+        entity_id: selectedCampaign.id
+      })));
+    }
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã bình luận trong chiến dịch: ' + selectedCampaign.name);
     setCampaignComment('');
     setRefreshDetailTrigger(v=>v+1);
@@ -705,5 +785,5 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim() || !selectedRoot) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), status: editStatus, objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaigns(items => items.map(item => item.id === data.id ? data : item)); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
 
- return {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
+ return {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,hasCampaignComments,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
 }

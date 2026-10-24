@@ -12,7 +12,7 @@ export const strictFormatVN = (dateStr?: string | null) => {
 
 export const dateValue = strictFormatVN;
 
-export const priorityClass = (value: string) => value === 'high' || value === 'urgent' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
+export const priorityClass = (value: string) => value === 'urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' : value === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' : value === 'low' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300';
 
 export const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
   if (!endDateStr) return 'border-transparent';

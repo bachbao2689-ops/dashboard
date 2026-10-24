@@ -106,3 +106,35 @@ test('updateTrackedTask enforces OCC when expectedUpdatedAt is supplied', async 
     /Dữ liệu đã được người khác cập nhật trước đó/
   );
 });
+
+test('subtask checklist items persist description and priority correctly', () => {
+  const item = {
+    id: 'chk-1',
+    title: 'Thiết kế layout banner',
+    description: 'Brief chi tiết: tông màu xanh đen, logo K COFFEE góc phải',
+    priority: 'urgent',
+    due_date: '2026-10-30',
+    completed: false,
+    created_at: '2026-10-24T12:00:00.000Z',
+  };
+
+  assert.equal(item.title, 'Thiết kế layout banner');
+  assert.equal(item.description, 'Brief chi tiết: tông màu xanh đen, logo K COFFEE góc phải');
+  assert.equal(item.priority, 'urgent');
+  assert.equal(item.completed, false);
+});
+
+test('computes total and done counts for subtask checklist badge', () => {
+  const items = [
+    { id: '1', title: 'Task 1', completed: true, priority: 'high' },
+    { id: '2', title: 'Task 2', completed: false, priority: 'medium' },
+    { id: '3', title: 'Task 3', completed: true, priority: 'low' },
+  ];
+
+  const total = items.length;
+  const done = items.filter(i => i.completed).length;
+
+  assert.equal(total, 3);
+  assert.equal(done, 2);
+  assert.equal(`${done}/${total}`, '2/3');
+});

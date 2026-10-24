@@ -2,7 +2,7 @@ import { StatusBadge } from '../../common/StatusBadge';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
 import { Avatar } from '../../common/Avatar';
-import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, MessageSquare } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../../common/ConfirmHideModal';
 import toast from 'react-hot-toast';
@@ -162,17 +162,21 @@ export const CampaignPanel: React.FC<{
   const [campaignToHide, setCampaignToHide] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [subtaskMap, setSubtaskMap] = useState<Record<string, any[]>>({});
+  const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
+  const [hasUnread, setHasUnread] = useState<Record<string, boolean>>({});
   const request = useRef(0);
 
   const load = async () => {
     const token = ++request.current;
     if (!profile) { setCampaigns([]); setSubtaskMap({}); return; }
     let query = supabase.from('campaigns').select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false });
-    const [{ data, error }, { data: allSubtasks }, { data: canonicalTasks }, { data: members }] = await Promise.all([
+    const [{ data, error }, { data: allSubtasks }, { data: canonicalTasks }, { data: members }, { data: commentsData }, { data: unreadData }] = await Promise.all([
       query,
       supabase.from('campaign_subtasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').neq('status', 'deleted').neq('status', 'archived'),
       supabase.from('tasks').select('campaign_id, assignee:assignee_id(id,name,avatar_url)').not('campaign_id', 'is', null).is('project_id', null).neq('status', 'deleted').neq('status', 'archived'),
-      supabase.from('campaign_members').select('campaign_id, assignee:user_id(id,name,avatar_url)')
+      supabase.from('campaign_members').select('campaign_id, assignee:user_id(id,name,avatar_url)'),
+      supabase.from('activity_log').select('entity_id').eq('entity_type', 'campaign').eq('action', 'comment'),
+      profile?.id ? supabase.from('notifications').select('entity_id').eq('user_id', profile.id).eq('entity_type', 'campaign').is('read_at', null) : Promise.resolve({ data: [] } as any)
     ]);
     if (token !== request.current) return;
     if (error) { toast.error('Không thể tải Campaign'); return; }
@@ -183,6 +187,14 @@ export const CampaignPanel: React.FC<{
       if (!stMap[st.campaign_id].find(x => x.id === (st.assignee as any).id)) stMap[st.campaign_id].push(st.assignee);
     });
     setSubtaskMap(stMap);
+
+    const commentMap: Record<string, boolean> = {};
+    (commentsData || []).forEach((c: any) => { if (c.entity_id) commentMap[c.entity_id] = true; });
+    setHasComments(commentMap);
+
+    const unreadMap: Record<string, boolean> = {};
+    (unreadData || []).forEach((n: any) => { if (n.entity_id) unreadMap[n.entity_id] = true; });
+    setHasUnread(unreadMap);
     
     // Do not re-filter by department: RLS already scopes explicit cross-team invites.
     setCampaigns(data || []);
@@ -192,7 +204,7 @@ export const CampaignPanel: React.FC<{
     void load();
     return () => { request.current++; };
   }, [profile?.id, profile?.department_id]);
-  useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members'], load, profile?.id);
+  useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members', 'activity_log', 'notifications'], load, profile?.id);
 
   
   
@@ -327,7 +339,7 @@ export const CampaignPanel: React.FC<{
       <div className="space-y-3 p-3 xl:hidden">
         {visibleCampaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
           <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
-            <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span><ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
+            <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span>{hasComments[c.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}<ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
             <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
           </button>
           <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
@@ -349,7 +361,20 @@ export const CampaignPanel: React.FC<{
             <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />
           </tr></thead>
           <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign transition-all duration-200 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-            <td className="p-4"><b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b><p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p></td>
+            <td className="p-4">
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+                <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b>
+                {hasComments[c.id] && (
+                  <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
+                    <MessageSquare size={14} className="text-blue-500" />
+                    {(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id]) && (
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>
+                    )}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p>
+            </td>
             <td>
   <div className="flex items-center gap-2">
     <div className="flex -space-x-2"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>

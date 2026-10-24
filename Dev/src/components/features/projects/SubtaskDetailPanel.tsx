@@ -22,11 +22,14 @@ import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
 import { inputDate } from '../../../lib/workflowHub';
 import { ListTodo, Plus, Trash2 } from 'lucide-react';
+import { priorityClass } from './projectPresentation';
 
 type Person = { id: number; name: string; avatar_url?: string | null };
 export interface SubtaskChecklistItem {
   id: string;
   title: string;
+  description?: string | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   completed: boolean;
   due_date?: string | null;
   created_by?: number | null;
@@ -102,6 +105,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemPriority, setNewItemPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [newItemDueDate, setNewItemDueDate] = useState('');
   const [addingItem, setAddingItem] = useState(false);
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | null | undefined>(subtask?.updated_at);
@@ -265,10 +270,12 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       const newItem: SubtaskChecklistItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         title: newItemTitle.trim(),
+        description: newItemDescription.trim() || null,
+        priority: newItemPriority,
         completed: false,
         due_date: itemDue || null,
         created_by: profile.id,
-        created_by_name: profile.name || 'Thành viên',
+        created_by_name: profile.name || (lang === 'en' ? 'Member' : 'Thành viên'),
         created_at: new Date().toISOString(),
       };
 
@@ -309,8 +316,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         entityType,
         entityId: subtask.id,
         metadata: {
-          title: `${profile.name || 'Thành viên'} đã thêm đầu việc: ${newItemTitle.trim()}`,
+          title: `${profile.name || (lang === 'en' ? 'Member' : 'Thành viên')} ${lang === 'en' ? 'added checklist item' : 'đã thêm đầu việc'}: ${newItemTitle.trim()}`,
           item_title: newItemTitle.trim(),
+          description: newItemDescription.trim() || null,
+          priority: newItemPriority,
           due_date: itemDue || null,
           actor_name: profile.name,
         },
@@ -333,9 +342,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
       setChecklistItems(nextItems);
       setNewItemTitle('');
+      setNewItemDescription('');
+      setNewItemPriority('medium');
       setNewItemDueDate('');
       setShowAddItemForm(false);
-      toast.success(extendsDeadline ? 'Đã thêm đầu việc và kéo dài hạn chót subtask' : 'Đã thêm đầu việc');
+      if (!extendsDeadline) {
+        onUpdated?.();
+      }
+      toast.success(extendsDeadline ? (lang === 'en' ? 'Added checklist item and extended subtask due date' : 'Đã thêm đầu việc và kéo dài hạn chót subtask') : (lang === 'en' ? 'Added checklist item' : 'Đã thêm đầu việc'));
     } catch (err: any) {
       toast.error(err?.message || 'Không thể thêm đầu việc');
     } finally {
@@ -379,6 +393,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           actor_name: profile.name,
         },
       });
+      onUpdated?.();
     } catch (err) {
       console.warn('Failed to update checklist item state', err);
     }
@@ -418,6 +433,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           actor_name: profile.name,
         },
       });
+      onUpdated?.();
     } catch (err) {
       console.warn('Failed to delete checklist item', err);
     }
@@ -686,7 +702,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             <div className="grid grid-flow-col auto-cols-max items-center gap-2">
               <ListTodo className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                Đầu việc {checklistItems.length > 0 && `(${checklistItems.filter(i => i.completed).length}/${checklistItems.length})`}
+                {lang === 'en' ? 'Checklist' : 'Đầu việc'} {checklistItems.length > 0 && `(${checklistItems.filter(i => i.completed).length}/${checklistItems.length})`}
               </h3>
             </div>
             {canAddSubtaskItem && !readOnly && !showAddItemForm && (
@@ -696,7 +712,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 cursor-pointer min-h-[36px]"
               >
                 <Plus size={14} />
-                <span>Thêm đầu việc</span>
+                <span>{lang === 'en' ? 'Add item' : 'Thêm đầu việc'}</span>
               </button>
             )}
           </div>
@@ -707,37 +723,49 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               {checklistItems.map(item => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/40 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-colors"
+                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/40 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-colors space-y-1.5"
                 >
-                  <label className="grid grid-cols-[auto_1fr] items-center gap-2.5 cursor-pointer min-h-[36px] select-none">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      disabled={readOnly || !canEdit}
-                      onChange={() => void handleToggleChecklistItem(item.id)}
-                      className="w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-                    />
-                    <div className="min-w-0">
-                      <span className={`text-xs block ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100 font-medium'}`}>
-                        {item.title}
-                      </span>
-                      {item.due_date && (
-                        <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400 mt-0.5">
-                          <Calendar size={11} /> {displayDate(item.due_date)}
+                  <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                    <label className="grid grid-cols-[auto_1fr] items-start gap-2.5 cursor-pointer min-h-[32px] select-none">
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        disabled={readOnly || !canEdit}
+                        onChange={() => void handleToggleChecklistItem(item.id)}
+                        className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <div className="min-w-0">
+                        <span className={`text-xs block font-medium ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
+                          {item.title}
                         </span>
-                      )}
-                    </div>
-                  </label>
-                  {canAddSubtaskItem && !readOnly && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteChecklistItem(item.id)}
-                      title="Xóa đầu việc"
-                      aria-label="Xóa đầu việc"
-                      className="min-h-[36px] min-w-[36px] grid place-items-center rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${priorityClass(item.priority || 'medium')}`}>
+                            {t(`common.${item.priority || 'medium'}`)}
+                          </span>
+                          {item.due_date && (
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                              <Calendar size={11} /> {displayDate(item.due_date)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                    {canAddSubtaskItem && !readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteChecklistItem(item.id)}
+                        title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
+                        aria-label={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
+                        className="min-h-[32px] min-w-[32px] grid place-items-center rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                  {item.description && (
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words">
+                      {item.description}
+                    </p>
                   )}
                 </div>
               ))}
@@ -745,7 +773,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           ) : (
             !showAddItemForm && (
               <div className="rounded-xl border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
-                Chưa có đầu việc nào. {canAddSubtaskItem ? 'Bấm "Thêm đầu việc" để giao thêm việc.' : ''}
+                {lang === 'en'
+                  ? `No checklist items yet. ${canAddSubtaskItem ? 'Click "Add item" to assign work.' : ''}`
+                  : `Chưa có đầu việc nào. ${canAddSubtaskItem ? 'Bấm "Thêm đầu việc" để giao thêm việc.' : ''}`}
               </div>
             )
           )}
@@ -754,45 +784,74 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           {showAddItemForm && (
             <div className="rounded-2xl border border-primary/25 bg-primary/5 dark:bg-slate-800/70 p-3.5 space-y-3 animate-in fade-in duration-150">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                Tên đầu việc <span className="text-red-500">*</span>
+                {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
                 <input
                   type="text"
                   value={newItemTitle}
                   onChange={(e) => setNewItemTitle(e.target.value)}
-                  placeholder="Nhập tên đầu việc cần giao..."
+                  placeholder={lang === 'en' ? 'Enter item title...' : 'Nhập tên đầu việc cần giao...'}
                   maxLength={500}
                   className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
                   autoFocus
                 />
               </label>
 
-              <div className="tw-calendar-picker relative">
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Hạn chót đầu việc
-                </label>
-                <input
-                  type="text"
-                  id={`subtask-new-item-due-${subtask.id}`}
-                  readOnly
-                  onClick={(e) => {
-                    if ((window as any).openCalendar) {
-                      (window as any).openCalendar({
-                        displayId: `subtask-new-item-due-${subtask.id}`,
-                        mode: 'single',
-                        maxDate: (parentDetails?.due_date || parentDetails?.end_date) ? (parentDetails.due_date || parentDetails.end_date)!.slice(0, 10) : undefined,
-                      }, e);
-                    }
-                  }}
-                  value={newItemDueDate ? displayDate(newItemDueDate).replace('—', '') : ''}
-                  onChange={(e) => setNewItemDueDate(inputDate(e.target.value) || '')}
-                  placeholder="dd/mm/yyyy"
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                {lang === 'en' ? 'Description / Brief' : 'Mô tả / Brief nội dung'}
+                <textarea
+                  value={newItemDescription}
+                  onChange={(e) => setNewItemDescription(e.target.value)}
+                  placeholder={lang === 'en' ? 'Brief description or requirements...' : 'Mô tả tóm tắt nội dung yêu cầu...'}
+                  rows={2}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
                 />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {t('common.priority')}
+                  <select
+                    value={newItemPriority}
+                    onChange={(e) => setNewItemPriority(e.target.value as any)}
+                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary capitalize cursor-pointer"
+                  >
+                    <option value="low">{t('common.low')}</option>
+                    <option value="medium">{t('common.medium')}</option>
+                    <option value="high">{t('common.high')}</option>
+                    <option value="urgent">{t('common.urgent')}</option>
+                  </select>
+                </label>
+
+                <div className="tw-calendar-picker relative">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    {lang === 'en' ? 'Due Date' : 'Hạn chót đầu việc'}
+                  </label>
+                  <input
+                    type="text"
+                    id={`subtask-new-item-due-${subtask.id}`}
+                    readOnly
+                    onClick={(e) => {
+                      if ((window as any).openCalendar) {
+                        (window as any).openCalendar({
+                          displayId: `subtask-new-item-due-${subtask.id}`,
+                          mode: 'single',
+                          maxDate: (parentDetails?.due_date || parentDetails?.end_date) ? (parentDetails.due_date || parentDetails.end_date)!.slice(0, 10) : undefined,
+                        }, e);
+                      }
+                    }}
+                    value={newItemDueDate ? displayDate(newItemDueDate).replace('—', '') : ''}
+                    onChange={(e) => setNewItemDueDate(inputDate(e.target.value) || '')}
+                    placeholder="dd/mm/yyyy"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
               </div>
 
               {Boolean(newItemDueDate && (!subtask.due_date || newItemDueDate > subtask.due_date.slice(0, 10))) && (
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium leading-relaxed">
-                  ⚡ Hạn chót này dài hơn hạn chót subtask ({displayDate(subtask.due_date)}). Hạn chót của subtask sẽ tự động được kéo dài đến {displayDate(newItemDueDate)} khi lưu.
+                  ⚡ {lang === 'en'
+                    ? `This deadline extends beyond subtask deadline (${displayDate(subtask.due_date)}). Subtask deadline will be automatically extended to ${displayDate(newItemDueDate)}.`
+                    : `Hạn chót này dài hơn hạn chót subtask (${displayDate(subtask.due_date)}). Hạn chót của subtask sẽ tự động được kéo dài đến ${displayDate(newItemDueDate)} khi lưu.`}
                 </p>
               )}
 
@@ -802,6 +861,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onClick={() => {
                     setShowAddItemForm(false);
                     setNewItemTitle('');
+                    setNewItemDescription('');
+                    setNewItemPriority('medium');
                     setNewItemDueDate('');
                   }}
                   className="px-3 py-1.5 text-xs rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
@@ -814,7 +875,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onClick={() => void handleAddChecklistItem()}
                   className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {addingItem ? 'Đang thêm…' : 'Thêm'}
+                  {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add item' : 'Thêm đầu việc')}
                 </button>
               </div>
             </div>
