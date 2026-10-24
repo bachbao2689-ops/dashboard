@@ -52,8 +52,16 @@ function App() {
   const profileId = useAuthStore(state => state.profile?.id);
   const authLoading = useAuthStore(state => state.loading);
 
+  const isScanFlow = typeof window !== 'undefined' && (window.location.search.includes('code=') || window.location.search.includes('asset='));
+
   const [introStarted] = useState(() => Date.now());
-  const [introCompleted, setIntroCompleted] = useState(false);
+  const [introCompleted, setIntroCompleted] = useState(() => {
+    if (isScanFlow) {
+      useUiStore.getState().setIntroFinished(true);
+      return true;
+    }
+    return false;
+  });
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
@@ -66,6 +74,13 @@ function App() {
     useUiStore.getState().setIntroFinished(true);
     window.setTimeout(() => setIntroCompleted(true), 450);
   }, [introCompleted, isFadingOut]);
+
+  useEffect(() => {
+    if (isScanFlow) {
+      setIntroCompleted(true);
+      useUiStore.getState().setIntroFinished(true);
+    }
+  }, [isScanFlow]);
 
   useEffect(() => {
     if (introCompleted || authLoading) return;
