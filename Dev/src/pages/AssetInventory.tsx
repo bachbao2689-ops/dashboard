@@ -11,6 +11,7 @@ import { AssetDetailPanel } from '../components/features/assets/AssetDetailPanel
 import { AssetQRCodeModal } from '../components/features/assets/AssetQRCodeModal';
 import { BorrowDrawer } from '../components/features/assets/BorrowDrawer';
 import { useAuthStore } from '../store/authStore';
+import { useUiStore } from '../store/uiStore';
 import {canSubmitAssetRequest} from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
 
@@ -44,10 +45,23 @@ export const AssetInventory: React.FC = () => {
   const [bounce, setBounce] = useState(false);
 
   useEffect(() => {
+    return () => {
+      useUiStore.getState().setIsScanMode(false);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!assets || assets.length === 0) return;
     const codeParam = searchParams.get('code');
     const assetParam = searchParams.get('asset');
-    if (!codeParam && !assetParam) return;
+    if (!codeParam && !assetParam) {
+      if (isScanMode) {
+        setSelectedAsset(null);
+        setIsScanMode(false);
+        useUiStore.getState().setIsScanMode(false);
+      }
+      return;
+    }
 
     let found: Asset | undefined;
     if (codeParam) {
@@ -61,6 +75,7 @@ export const AssetInventory: React.FC = () => {
     if (found) {
       setSelectedAsset(found);
       setIsScanMode(true);
+      useUiStore.getState().setIsScanMode(true);
       if (searchParams.get('borrow') === '1' && canBorrowAsset) {
         setCart(current => {
           if (current.some(a => a.id === found!.id)) return current;
@@ -74,6 +89,7 @@ export const AssetInventory: React.FC = () => {
   const handleCloseDetail = () => {
     setSelectedAsset(null);
     setIsScanMode(false);
+    useUiStore.getState().setIsScanMode(false);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.delete('code');

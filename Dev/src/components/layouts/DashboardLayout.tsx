@@ -15,6 +15,7 @@ export const DashboardLayout: React.FC = () => {
   const mobileChromeHidden = useMobileChrome();
   const isSidebarOpen = useUiStore(state => state.isSidebarOpen);
   const introFinished = useUiStore(state => state.introFinished);
+  const isScanMode = useUiStore(state => state.isScanMode);
   const [dockingActive, setDockingActive] = useState(false);
 
   useEffect(() => {
@@ -44,14 +45,18 @@ export const DashboardLayout: React.FC = () => {
         <div className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
           {/* Top Sidebar (Header): Glides down from top like spacecraft HUD console */}
           <Header
-            mobileHidden={mobileChromeHidden}
+            mobileHidden={mobileChromeHidden || isScanMode}
             entranceClass={!introFinished ? 'cockpit-dock-waiting' : dockingActive ? 'cockpit-dock-top' : ''}
           />
           <NotificationPopupStack />
           <MobileActionHint />
           <main
             id="main-scroll-container"
-            className={`dashboard-scroll-surface h-full w-full min-h-0 overflow-y-auto overflow-x-auto px-3 sm:px-4 pt-[calc(60px+env(safe-area-inset-top,0px))] xl:pt-[76px] pb-[calc(112px+env(safe-area-inset-bottom,0px))] xl:pb-8 relative z-0 ${!introFinished ? 'cockpit-dock-waiting' : dockingActive ? 'cockpit-dock-main' : ''}`}
+            className={`dashboard-scroll-surface h-full w-full min-h-0 overflow-y-auto overflow-x-auto ${
+              isScanMode
+                ? 'px-0 pt-0 pb-0 xl:px-4 xl:pt-[76px] xl:pb-8'
+                : 'px-3 sm:px-4 pt-[calc(60px+env(safe-area-inset-top,0px))] xl:pt-[76px] pb-[calc(112px+env(safe-area-inset-bottom,0px))] xl:pb-8'
+            } relative z-0 ${!introFinished ? 'cockpit-dock-waiting' : dockingActive ? 'cockpit-dock-main' : ''}`}
           >
             <PageErrorBoundary>
               <Suspense fallback={<div className="p-8 animate-pulse text-gray-500" role="status">Đang tải…</div>}>
@@ -60,7 +65,7 @@ export const DashboardLayout: React.FC = () => {
             </PageErrorBoundary>
           </main>
         </div>
-        <MobileNav scrollHidden={mobileChromeHidden} />
+        <MobileNav scrollHidden={mobileChromeHidden || isScanMode} />
       </div>
     </>
   );

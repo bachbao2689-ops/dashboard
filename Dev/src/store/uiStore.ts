@@ -7,7 +7,9 @@ interface UiState {
   lang: 'en' | 'vi';
   isSidebarOpen: boolean;
   introFinished: boolean;
+  isScanMode: boolean;
   setIntroFinished: (finished: boolean) => void;
+  setIsScanMode: (scan: boolean) => void;
   toggleTheme: () => void;
   setLang: (lang: 'en' | 'vi') => void;
   toggleSidebar: () => void;
@@ -19,7 +21,9 @@ export const useUiStore = create<UiState>((set) => ({
   lang: 'vi',
   isSidebarOpen: true,
   introFinished: false,
+  isScanMode: false,
   setIntroFinished: (introFinished) => set({ introFinished }),
+  setIsScanMode: (isScanMode) => set({ isScanMode }),
   toggleTheme: () => {
     const profileId = useAuthStore.getState().profile?.id;
     set((state) => {

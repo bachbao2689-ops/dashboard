@@ -168,12 +168,12 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             <img
               src="/logo-phuc-sinh.svg"
               alt="Phúc Sinh Consumers"
-              className="h-16 w-auto object-contain mx-auto"
+              className="h-24 max-h-24 w-auto object-contain mx-auto"
             />
           </div>
 
-          {/* 2. Khung chứa mã QR bo góc màu xanh nhạt - QR luôn giữ nền trắng theo yêu cầu */}
-          <div className="bg-[#f2f7fc] dark:bg-white p-4 rounded-[28px] border border-blue-100/70 dark:border-slate-300 shadow-xs grid place-items-center mb-4">
+          {/* 2. Khung chứa mã QR bo góc - QR luôn giữ nền trắng tinh cả ở Light mode và Dark mode theo yêu cầu */}
+          <div className="bg-white p-4 rounded-[28px] border border-slate-200 dark:border-slate-300 shadow-xs grid place-items-center mb-4">
             <QRCodeSVG
               id="asset-qr-code-svg"
               value={qrData}
@@ -182,7 +182,6 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
               fgColor="#000000"
               level="Q"
               includeMargin={false}
-              className="rounded-xl"
             />
           </div>
 
@@ -254,7 +253,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
           />
 
           {/* Logo Phúc Sinh Consumers vector */}
-          <g transform="translate(150, 66) scale(0.24) translate(-276.5, -280)">
+          <g transform="translate(150, 66) scale(0.36) translate(-276.5, -280)">
             <PhucSinhLogoVector />
           </g>
 
@@ -265,7 +264,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             width="200"
             height="200"
             rx="20"
-            fill="#f2f7fc"
+            fill="#ffffff"
             stroke="#e1edfa"
             strokeWidth="1.5"
           />

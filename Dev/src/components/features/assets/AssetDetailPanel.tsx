@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive, Clock, Building2, Activity, MapPin } from 'lucide-react';
+import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive, Clock, Building2, Activity, MapPin, ArrowLeft } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
 import { isGlobalManager, isAssetApprover } from '../../../lib/roleScope';
 import { useAuthStore } from '../../../store/authStore';
@@ -204,7 +204,11 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
       )}
       <div 
         style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${isOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[70] ${!isResizing ? 'transition-[width,opacity] duration-300 ease-in-out' : ''}`}
+        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${
+          isOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'
+        } ${
+          isScanMode ? '!top-0 !h-[100dvh] !max-h-[100dvh] rounded-none sm:rounded-l-2xl' : ''
+        } z-[70] ${!isResizing ? 'transition-[width,opacity] duration-300 ease-in-out' : ''}`}
       >
         {isOpen && (
           <div 
@@ -215,14 +219,26 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-[auto_auto] justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+        <div className={`grid grid-cols-[auto_auto] justify-between items-center px-4 sm:px-6 ${isScanMode ? "py-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]" : "py-4"} border-b border-gray-200 dark:border-slate-700 shrink-0`}>
           <div className="grid grid-flow-col auto-cols-max items-center gap-1">
-            <button onClick={onClose} className="p-1.5 min-h-[44px] min-w-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-medium" title="Close side peek">
-              <ChevronsRight className="w-4 h-4" />
-            </button>
-            <button className="p-1.5 min-h-[44px] min-w-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors grid place-items-center" title="Open as page">
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
+            {isScanMode ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="xl:hidden px-3 py-2 min-h-[44px] rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-semibold grid grid-flow-col auto-cols-max items-center gap-1.5 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Về Dashboard</span>
+              </button>
+            ) : null}
+            <div className={`grid grid-flow-col auto-cols-max items-center gap-1 ${isScanMode ? 'hidden xl:grid' : ''}`}>
+              <button onClick={onClose} className="p-1.5 min-h-[44px] min-w-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors grid place-items-center text-xs font-medium" title="Close side peek">
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+              <button className="p-1.5 min-h-[44px] min-w-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors grid place-items-center" title="Open as page">
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           <button onClick={onClose} aria-label="Đóng" className="p-2 min-h-[44px] min-w-[44px] rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors grid place-items-center">
             <X className="w-5 h-5" />
@@ -231,7 +247,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
 
         {asset && (
           <div className="h-[calc(100%-65px)] overflow-y-auto custom-scrollbar">
-            <div className="p-6 md:px-8 pb-24 md:pb-12 space-y-6">
+            <div className={`p-6 md:px-8 space-y-6 ${isScanMode ? 'pb-[calc(32px+env(safe-area-inset-bottom,0px))]' : 'pb-24 md:pb-12'}`}>
               
               {/* Asset header card */}
               <div>
