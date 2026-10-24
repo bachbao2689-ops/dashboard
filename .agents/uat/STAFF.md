@@ -1,6 +1,6 @@
 # Ca nghiệm thu Staff
 
-Owner: `uat-staff`. Chạy Staff A/B, Staff chưa có phòng ban, assignee, creator/PIC và mention-only theo fixture. Tên Staff là persona nghiệp vụ; xác minh role thực tế (source có thể dùng member), không tự tạo role mới. Mặc định NOT RUN.
+Owner: Nhi (Persona: Staff). Chạy Staff A/B, Staff chưa có phòng ban, assignee, creator/PIC và mention-only theo fixture. Tên Staff là persona nghiệp vụ; xác minh role thực tế (source có thể dùng member), không tự tạo role mới. Mặc định NOT RUN.
 
 | ID | Thao tác | Kết quả cần đối chiếu |
 | --- | --- | --- |

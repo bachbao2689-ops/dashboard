@@ -1,6 +1,6 @@
 # Ca nghiệm thu Leader
 
-Owner: `uat-leader`. Có Leader A, Leader B và trường hợp `role=manager` nhưng cấp bậc Leader. Mặc định NOT RUN. Creator/PIC và liên kết được cấp quyền có thể mở phạm vi cụ thể; phân biệt với rò rỉ dữ liệu phòng ban không liên quan.
+Owner: Nhi (Persona: Leader). Có Leader A, Leader B và trường hợp `role=manager` nhưng cấp bậc Leader. Mặc định NOT RUN. Creator/PIC và liên kết được cấp quyền có thể mở phạm vi cụ thể; phân biệt với rò rỉ dữ liệu phòng ban không liên quan.
 
 | ID | Thao tác | Kết quả cần đối chiếu |
 | --- | --- | --- |

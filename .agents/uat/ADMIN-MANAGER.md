@@ -1,6 +1,6 @@
 # Ca nghiệm thu Admin và Manager
 
-Owner: `uat-admin-manager`. Chạy riêng từng case với Admin và Manager; dùng hậu tố `-ADMIN`/`-MANAGER` cho kết quả. Mọi case mặc định NOT RUN. Quyền quản trị nhân sự và duyệt tài sản phải đối chiếu source/backend, không mặc định Manager có mọi quyền Admin.
+Owner: Nhi (Persona: Admin & Manager). Chạy riêng từng case với Admin và Manager; dùng hậu tố `-ADMIN`/`-MANAGER` cho kết quả. Mọi case mặc định NOT RUN. Quyền quản trị nhân sự và duyệt tài sản phải đối chiếu source/backend, không mặc định Manager có mọi quyền Admin.
 
 | ID | Thao tác như người dùng | Kết quả cần đối chiếu |
 | --- | --- | --- |
