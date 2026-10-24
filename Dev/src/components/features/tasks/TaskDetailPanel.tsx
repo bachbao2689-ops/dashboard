@@ -11,6 +11,9 @@ import { useTranslation } from '../../../i18n/translations';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { TaskPinButton } from './TaskPinButton';
+import { TaskActivityLogPopover } from './TaskActivityLogPopover';
+import { logTaskActivity } from '../../../services/taskActivityLogger';
+import { displayDate, inputDate } from '../../../lib/workflowHub';
 import { WorkflowStatusPicker, canonicalWorkflowStatus, type WorkflowTaskStatus } from './WorkflowStatusPicker';
 import { TaskDescriptionViewer } from './TaskDescriptionViewer';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
@@ -147,9 +150,107 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       due_date: editDueDate || null,
       updated_at: new Date().toISOString(),
     };
-    const { data, error } = await supabase.from('tasks').update(values).eq('id', task.id).select('id').maybeSingle();
+    let query = supabase.from('tasks').update(values).eq('id', task.id);
+    if (task.updated_at) {
+      query = query.eq('updated_at', task.updated_at);
+    }
+    const { data, error } = await query.select('id').maybeSingle();
     setSaving(false);
-    if (error || !data) return toast.error(lang === 'en' ? 'Could not save task changes. Check task permissions.' : 'Không thể lưu task. Kiểm tra lại quyền chỉnh sửa.');
+    if (error || !data) {
+      if (!data && task.updated_at) {
+        return toast.error(lang === 'en' ? 'Task was modified by another user. Please refresh to view the latest version.' : 'Task đã được người khác chỉnh sửa. Vui lòng làm mới trang để xem phiên bản mới nhất.');
+      }
+      return toast.error(lang === 'en' ? 'Could not save task changes. Check task permissions.' : 'Không thể lưu task. Kiểm tra lại quyền chỉnh sửa.');
+    }
+    const actorName = profile?.name || 'Thành viên';
+    if (editTitle.trim() !== (task.title || '').trim()) {
+      void logTaskActivity({
+        workspaceId: task.workspace_id,
+        userId: profileId,
+        action: 'task_updated',
+        entityType: 'task',
+        entityId: task.id,
+        oldValue: { title: task.title },
+        newValue: { title: editTitle.trim() },
+        metadata: {
+          field: 'title',
+          title: `${actorName} đã đổi tiêu đề: "${task.title}" → "${editTitle.trim()}"`,
+          actor_name: actorName,
+        },
+      });
+    }
+    const oldDue = (task.due_date || '').slice(0, 10);
+    const newDue = (editDueDate || '').slice(0, 10);
+    if (newDue !== oldDue) {
+      void logTaskActivity({
+        workspaceId: task.workspace_id,
+        userId: profileId,
+        action: 'task_updated',
+        entityType: 'task',
+        entityId: task.id,
+        oldValue: { due_date: task.due_date },
+        newValue: { due_date: editDueDate || null },
+        metadata: {
+          field: 'due_date',
+          title: `${actorName} đã đổi hạn chót: ${displayDate(oldDue)} → ${displayDate(newDue)}`,
+          actor_name: actorName,
+        },
+      });
+    }
+    const oldStart = (task.start_date || '').slice(0, 10);
+    const newStart = (editStartDate || '').slice(0, 10);
+    if (newStart !== oldStart) {
+      void logTaskActivity({
+        workspaceId: task.workspace_id,
+        userId: profileId,
+        action: 'task_updated',
+        entityType: 'task',
+        entityId: task.id,
+        oldValue: { start_date: task.start_date },
+        newValue: { start_date: editStartDate || null },
+        metadata: {
+          field: 'start_date',
+          title: `${actorName} đã đổi ngày bắt đầu: ${displayDate(oldStart)} → ${displayDate(newStart)}`,
+          actor_name: actorName,
+        },
+      });
+    }
+    const oldAssigneeId = task.assignee_id == null ? '' : String(task.assignee_id);
+    if (editAssigneeId !== oldAssigneeId) {
+      const oldName = task.assignee?.name || 'Chưa gán';
+      const newPerson = (assignablePeople || mentionPeople).find(item => String(item.id) === editAssigneeId);
+      const newName = newPerson?.name || (editAssigneeId ? 'Thành viên' : 'Chưa gán');
+      void logTaskActivity({
+        workspaceId: task.workspace_id,
+        userId: profileId,
+        action: 'task_updated',
+        entityType: 'task',
+        entityId: task.id,
+        oldValue: { assignee_id: task.assignee_id },
+        newValue: { assignee_id: editAssigneeId ? Number(editAssigneeId) : null },
+        metadata: {
+          field: 'assignee',
+          title: `${actorName} đã đổi người thực hiện: ${oldName} → ${newName}`,
+          actor_name: actorName,
+        },
+      });
+    }
+    if (editPriority !== (task.priority || 'medium')) {
+      void logTaskActivity({
+        workspaceId: task.workspace_id,
+        userId: profileId,
+        action: 'task_updated',
+        entityType: 'task',
+        entityId: task.id,
+        oldValue: { priority: task.priority },
+        newValue: { priority: editPriority },
+        metadata: {
+          field: 'priority',
+          title: `${actorName} đã đổi độ ưu tiên: ${task.priority || 'medium'} → ${editPriority}`,
+          actor_name: actorName,
+        },
+      });
+    }
     const person = (assignablePeople || mentionPeople).find(item => String(item.id) === editAssigneeId);
     const updatedTask = { ...values, assignee: person ? { id: person.id, name: person.name, avatar_url: person.avatar_url } : null };
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_updated');
@@ -199,7 +300,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         {isOpen && !embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
           <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
-          <div className="flex items-center gap-1"><TaskPinButton taskId={task?.id} /><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
+          <div className="flex items-center gap-1"><TaskActivityLogPopover entityType="task" entityId={task?.id} workspaceId={task?.workspace_id} /><TaskPinButton taskId={task?.id} /><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
         </div>
         {task && <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
           <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{task.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? t('common.completed') : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span></div>{task.workflow_phase_id && <div className="mt-4"><WorkflowStatusPicker status={task.status} stage={task.workflow_status} disabled={!canEdit||readOnly} onChange={changePhaseTaskStatus}/></div>}</section>
@@ -221,12 +322,52 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     <option value="low">{t('common.low')}</option><option value="medium">{t('common.medium')}</option><option value="high">{t('common.high')}</option><option value="urgent">{t('common.urgent')}</option>
                   </select>
                 </label>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Start date' : 'Ngày bắt đầu'}
-                  <input type="date" value={editStartDate} onChange={event => setEditStartDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
-                </label>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.dueDate')}
-                  <input type="date" value={editDueDate} onChange={event => setEditDueDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
-                </label>
+                <div className="tw-calendar-picker relative">
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">
+                    {lang === 'en' ? 'Start date' : 'Ngày bắt đầu'}
+                  </label>
+                  <input
+                    type="text"
+                    id={`task-edit-start-${task.id}`}
+                    readOnly
+                    onClick={(e) => {
+                      if ((window as any).openCalendar) {
+                        (window as any).openCalendar({
+                          displayId: `task-edit-start-${task.id}`,
+                          mode: 'single',
+                          maxDate: editDueDate || undefined,
+                        }, e);
+                      }
+                    }}
+                    value={editStartDate ? displayDate(editStartDate).replace('—', '') : ''}
+                    onChange={(e) => setEditStartDate(inputDate(e.target.value) || '')}
+                    placeholder="dd/mm/yyyy"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div className="tw-calendar-picker relative">
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">
+                    {t('common.dueDate')}
+                  </label>
+                  <input
+                    type="text"
+                    id={`task-edit-due-${task.id}`}
+                    readOnly
+                    onClick={(e) => {
+                      if ((window as any).openCalendar) {
+                        (window as any).openCalendar({
+                          displayId: `task-edit-due-${task.id}`,
+                          mode: 'single',
+                          minDate: editStartDate || undefined,
+                        }, e);
+                      }
+                    }}
+                    value={editDueDate ? displayDate(editDueDate).replace('—', '') : ''}
+                    onChange={(e) => setEditDueDate(inputDate(e.target.value) || '')}
+                    placeholder="dd/mm/yyyy"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
               </div>
               <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
             </section>

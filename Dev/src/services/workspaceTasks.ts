@@ -22,10 +22,20 @@ export async function readWorkspaceTasks():Promise<Task[]> {
   // Cancelled work stays in lists/history; metrics exclude it with taskActive().
   return mapWorkspaceTasks(real,projects,campaigns,details);
 }
-export async function updateTrackedTask(key:string,values:Record<string,unknown>) {
+export async function updateTrackedTask(key:string,values:Record<string,unknown>, expectedUpdatedAt?: string | null) {
   const target=taskTarget(key);
-  const {data,error}=await supabase.from(target.table).update(values).eq('id',target.id).select('id').maybeSingle();
-  if(error)throw error;if(!data)throw new Error('Không có quyền cập nhật công việc này.');
+  let query = supabase.from(target.table).update(values).eq('id',target.id);
+  if (expectedUpdatedAt) {
+    query = query.eq('updated_at', expectedUpdatedAt);
+  }
+  const {data,error}=await query.select('id').maybeSingle();
+  if(error)throw error;
+  if(!data) {
+    if (expectedUpdatedAt) {
+      throw new Error('Dữ liệu đã được người khác cập nhật trước đó. Vui lòng làm mới trang để xem phiên bản mới nhất.');
+    }
+    throw new Error('Không có quyền cập nhật công việc này.');
+  }
   window.dispatchEvent(new Event('tasks:changed'));
 }
 export async function canCompleteTrackedTask(key:string) {
