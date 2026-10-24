@@ -109,6 +109,12 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [newItemPriority, setNewItemPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [newItemDueDate, setNewItemDueDate] = useState('');
   const [addingItem, setAddingItem] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editItemTitle, setEditItemTitle] = useState('');
+  const [editItemDescription, setEditItemDescription] = useState('');
+  const [editItemPriority, setEditItemPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [editItemDueDate, setEditItemDueDate] = useState('');
+  const [savingItem, setSavingItem] = useState(false);
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | null | undefined>(subtask?.updated_at);
 
   useEffect(() => {
@@ -215,6 +221,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setEditStartDate(subtask?.start_date?.slice(0, 10) || '');
     setEditDueDate(subtask?.due_date?.slice(0, 10) || '');
     setEditStatus(workflowStage(subtask?.status, subtask?.workflow_status));
+    setEditingItemId(null);
+    setEditItemTitle('');
+    setEditItemDescription('');
+    setEditItemPriority('medium');
+    setEditItemDueDate('');
     setCurrentUpdatedAt(subtask?.updated_at);
     void reload();
   }, [reload, subtask?.id, subtask?.title, subtask?.assignee_id, subtask?.start_date, subtask?.due_date, subtask?.status, subtask?.workflow_status]);
@@ -439,6 +450,116 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     }
   };
 
+  const handleStartEditChecklistItem = (item: SubtaskChecklistItem) => {
+    setEditingItemId(item.id);
+    setEditItemTitle(item.title);
+    setEditItemDescription(item.description || '');
+    setEditItemPriority((item.priority as any) || 'medium');
+    setEditItemDueDate((item.due_date || '').slice(0, 10));
+  };
+
+  const handleCancelEditChecklistItem = () => {
+    setEditingItemId(null);
+    setEditItemTitle('');
+    setEditItemDescription('');
+    setEditItemPriority('medium');
+    setEditItemDueDate('');
+  };
+
+  const handleSaveEditChecklistItem = async (itemId: string) => {
+    if (!editItemTitle.trim() || !subtask || !profile?.id) return;
+    setSavingItem(true);
+    try {
+      const currentDue = (subtask.due_date || '').slice(0, 10);
+      const itemDue = (editItemDueDate || '').slice(0, 10);
+      const parentDue = (parentDetails?.due_date || parentDetails?.end_date) ? (parentDetails.due_date || parentDetails.end_date)!.slice(0, 10) : '';
+      if (itemDue && parentDue && itemDue > parentDue) {
+        toast.error(lang === 'en' ? 'Checklist item deadline cannot exceed project deadline.' : 'Hạn chót đầu việc không được vượt quá hạn chót của Project/Campaign cha.');
+        return;
+      }
+      const extendsDeadline = Boolean(itemDue && (!currentDue || itemDue > currentDue));
+
+      if (extendsDeadline) {
+        const nowIso = new Date().toISOString();
+        await updateTrackedTask(
+          taskKey(entityType, subtask.id),
+          { due_date: itemDue, updated_at: nowIso },
+          currentUpdatedAt || subtask.updated_at
+        );
+        setCurrentUpdatedAt(nowIso);
+        setEditDueDate(itemDue);
+        onUpdated({ ...subtask, due_date: itemDue, updated_at: nowIso });
+
+        void logTaskActivity({
+          workspaceId,
+          userId: profile.id,
+          action: 'deadline_extended',
+          entityType,
+          entityId: subtask.id,
+          oldValue: { due_date: subtask.due_date },
+          newValue: { due_date: itemDue },
+          metadata: {
+            title: `${profile.name || 'Thành viên'} đã kéo dài hạn chót đến ${displayDate(itemDue)} (do cập nhật đầu việc)`,
+            reason: `Cập nhật đầu việc "${editItemTitle.trim()}" có hạn chót dài hơn`,
+            old_due_date: subtask.due_date,
+            new_due_date: itemDue,
+            item_title: editItemTitle.trim(),
+            actor_name: profile.name,
+          },
+        });
+      }
+
+      const nextItems = checklistItems.map(i => i.id === itemId ? {
+        ...i,
+        title: editItemTitle.trim(),
+        description: editItemDescription.trim() || null,
+        priority: editItemPriority,
+        due_date: itemDue || null,
+      } : i);
+
+      await supabase.from('activity_log').insert({
+        workspace_id: workspaceId,
+        user_id: profile.id,
+        action: 'details_updated',
+        entity_type: entityType,
+        entity_id: subtask.id,
+        metadata: {
+          description,
+          image_url: imageUrl || null,
+          checklist_items: nextItems,
+          is_internal_detail_sync: true,
+        },
+      });
+
+      void logTaskActivity({
+        workspaceId,
+        userId: profile.id,
+        action: 'subtask_item_updated',
+        entityType,
+        entityId: subtask.id,
+        metadata: {
+          title: `${profile.name || (lang === 'en' ? 'Member' : 'Thành viên')} ${lang === 'en' ? 'updated checklist item' : 'đã cập nhật đầu việc'}: ${editItemTitle.trim()}`,
+          item_title: editItemTitle.trim(),
+          description: editItemDescription.trim() || null,
+          priority: editItemPriority,
+          due_date: itemDue || null,
+          actor_name: profile.name,
+        },
+      });
+
+      setChecklistItems(nextItems);
+      handleCancelEditChecklistItem();
+      if (!extendsDeadline) {
+        onUpdated?.();
+      }
+      toast.success(extendsDeadline ? (lang === 'en' ? 'Updated item and extended subtask deadline' : 'Đã cập nhật đầu việc và kéo dài hạn chót subtask') : (lang === 'en' ? 'Updated checklist item' : 'Đã cập nhật đầu việc'));
+    } catch (err: any) {
+      toast.error(err?.message || 'Không thể cập nhật đầu việc');
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
   const saveTaskFields = async () => {
     if (readOnly || !canEdit || !subtask || !editTitle.trim()) return;
     const bounds = {
@@ -598,7 +719,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   if (!subtask) return null;
   const completed = isDone(subtask.status);
   const canComplete = canCompleteTask;
-  const priority = subtask.priority || parentDetails?.priority || 'Chưa đặt';
+  const priority = subtask.priority || parentDetails?.priority || 'medium';
 
   return (
     <>
@@ -613,11 +734,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-        <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">SUBTASK</span><span className="ml-2 text-xs capitalize text-gray-500">{priority} {t('common.priority').toLowerCase()}</span></div>
+        <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">SUBTASK</span>
+          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(priority)}`}>
+            {t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}
+          </span>
+        </div>
         <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? t('common.completed') : subtask.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{priority}</span></div></section>
+        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? t('common.completed') : subtask.status || 'To do'}</span><span className={`px-2.5 py-1 rounded-md text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 ${priorityClass(priority)}`}><Clock className="w-3.5 h-3.5 inline mr-1 text-amber-500" />{t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}</span></div></section>
         
         {editingTask ? <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
           <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
@@ -698,23 +824,32 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
         {/* CHECKLIST / ĐẦU VIỆC */}
         <section className="space-y-3">
-          <div className="grid grid-cols-[1fr_auto] items-center justify-between">
-            <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-              <ListTodo className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                {lang === 'en' ? 'Checklist' : 'Đầu việc'} {checklistItems.length > 0 && `(${checklistItems.filter(i => i.completed).length}/${checklistItems.length})`}
-              </h3>
-            </div>
-            {canAddSubtaskItem && !readOnly && !showAddItemForm && (
-              <button
-                type="button"
-                onClick={() => setShowAddItemForm(true)}
-                className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 cursor-pointer min-h-[36px]"
-              >
-                <Plus size={14} />
-                <span>{lang === 'en' ? 'Add item' : 'Thêm đầu việc'}</span>
-              </button>
-            )}
+          <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+            {(() => {
+              const done = checklistItems.filter(i => i.completed).length;
+              const total = checklistItems.length;
+              const isAllDone = done === total && total > 0;
+              return (
+                <>
+                  <ListTodo className={`w-4 h-4 ${isAllDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`} />
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                    {lang === 'en' ? 'Checklist' : 'Đầu việc'}
+                  </h3>
+                  {total > 0 && (
+                    <span
+                      title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                      className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md border ${
+                        isAllDone
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                          : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+                      }`}
+                    >
+                      <span>{done}/{total}</span>
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Checklist Items List */}
@@ -723,49 +858,150 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               {checklistItems.map(item => (
                 <div
                   key={item.id}
-                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/40 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-colors space-y-1.5"
+                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm"
                 >
-                  <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-                    <label className="grid grid-cols-[auto_1fr] items-start gap-2.5 cursor-pointer min-h-[32px] select-none">
-                      <input
-                        type="checkbox"
-                        checked={item.completed}
-                        disabled={readOnly || !canEdit}
-                        onChange={() => void handleToggleChecklistItem(item.id)}
-                        className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-                      />
-                      <div className="min-w-0">
-                        <span className={`text-xs block font-medium ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
-                          {item.title}
-                        </span>
-                        <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${priorityClass(item.priority || 'medium')}`}>
-                            {t(`common.${item.priority || 'medium'}`)}
-                          </span>
-                          {item.due_date && (
-                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                              <Calendar size={11} /> {displayDate(item.due_date)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </label>
-                    {canAddSubtaskItem && !readOnly && (
+                  {/* Hover action buttons in top-right */}
+                  {canAddSubtaskItem && !readOnly && editingItemId !== item.id && (
+                    <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditChecklistItem(item)}
+                        title={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
+                        aria-label={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
+                        className="p-1 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => void handleDeleteChecklistItem(item.id)}
-                        title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
-                        aria-label={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
-                        className="min-h-[32px] min-w-[32px] grid place-items-center rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                        title={lang === 'en' ? 'Delete item' : 'Xóa'}
+                        aria-label={lang === 'en' ? 'Delete item' : 'Xóa'}
+                        className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                       >
                         <Trash2 size={13} />
                       </button>
-                    )}
-                  </div>
-                  {item.description && (
-                    <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words">
-                      {item.description}
-                    </p>
+                    </div>
+                  )}
+
+                  {/* Inline edit form if active */}
+                  {editingItemId === item.id ? (
+                    <div className="space-y-3 pt-1">
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
+                        <input
+                          type="text"
+                          value={editItemTitle}
+                          onChange={(e) => setEditItemTitle(e.target.value)}
+                          maxLength={500}
+                          className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                          autoFocus
+                        />
+                      </label>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {lang === 'en' ? 'Description / Brief' : 'Mô tả / Brief nội dung'}
+                        <textarea
+                          value={editItemDescription}
+                          onChange={(e) => setEditItemDescription(e.target.value)}
+                          rows={2}
+                          className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
+                        />
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {t('common.priority')}
+                          <select
+                            value={editItemPriority}
+                            onChange={(e) => setEditItemPriority(e.target.value as any)}
+                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
+                          >
+                            <option value="low">{t('common.low').toLowerCase()}</option>
+                            <option value="medium">{t('common.medium').toLowerCase()}</option>
+                            <option value="high">{t('common.high').toLowerCase()}</option>
+                            <option value="urgent">{t('common.urgent').toLowerCase()}</option>
+                          </select>
+                        </label>
+                        <div className="tw-calendar-picker relative">
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            {lang === 'en' ? 'Due date' : 'Hạn chót'}
+                          </label>
+                          <input
+                            type="text"
+                            id={`subtask-edit-item-due-${item.id}`}
+                            readOnly
+                            onClick={(e) => {
+                              if ((window as any).openCalendar) {
+                                (window as any).openCalendar({
+                                  displayId: `subtask-edit-item-due-${item.id}`,
+                                  mode: 'single',
+                                  maxDate: (parentDetails?.due_date || parentDetails?.end_date) ? (parentDetails.due_date || parentDetails.end_date)!.slice(0, 10) : undefined,
+                                }, e);
+                              }
+                            }}
+                            value={editItemDueDate ? displayDate(editItemDueDate).replace('—', '') : ''}
+                            onChange={(e) => setEditItemDueDate(inputDate(e.target.value) || '')}
+                            placeholder="dd/mm/yyyy"
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                      </div>
+                      {Boolean(editItemDueDate && (!subtask.due_date || editItemDueDate > subtask.due_date.slice(0, 10))) && (
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium leading-relaxed">
+                          ⚡ {lang === 'en'
+                            ? `This deadline extends beyond subtask deadline (${displayDate(subtask.due_date)}). Subtask deadline will be automatically extended to ${displayDate(editItemDueDate)}.`
+                            : `Hạn chót này dài hơn hạn chót subtask (${displayDate(subtask.due_date)}). Hạn chót của subtask sẽ tự động được kéo dài đến ${displayDate(editItemDueDate)} khi lưu.`}
+                        </p>
+                      )}
+                      <div className="grid grid-flow-col auto-cols-max justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleCancelEditChecklistItem}
+                          className="px-3 py-1.5 text-xs rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
+                        >
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={savingItem || !editItemTitle.trim()}
+                          onClick={() => void handleSaveEditChecklistItem(item.id)}
+                          className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
+                        >
+                          {savingItem ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save' : 'Lưu')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <label className="grid grid-cols-[auto_1fr] items-start gap-2.5 cursor-pointer min-h-[32px] select-none pr-14">
+                        <input
+                          type="checkbox"
+                          checked={item.completed}
+                          disabled={readOnly || !canEdit}
+                          onChange={() => void handleToggleChecklistItem(item.id)}
+                          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <div className="min-w-0">
+                          <span className={`text-xs block font-medium ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
+                            {item.title}
+                          </span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
+                              {t(`common.${item.priority || 'medium'}`).toLowerCase()}
+                            </span>
+                            {item.due_date && (
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                                <Calendar size={11} /> {displayDate(item.due_date)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                      {item.description && (
+                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words">
+                          {item.description}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -780,9 +1016,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             )
           )}
 
+          {/* Trigger button: full-width dashed button matching Projects.tsx */}
+          {canAddSubtaskItem && !readOnly && !showAddItemForm && (
+            <button
+              type="button"
+              onClick={() => setShowAddItemForm(true)}
+              className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
+            >
+              <Plus size={16} className="inline mr-1" />
+              <span>{lang === 'en' ? 'Add item' : 'Thêm đầu việc'}</span>
+            </button>
+          )}
+
           {/* Form thêm đầu việc */}
           {showAddItemForm && (
-            <div className="rounded-2xl border border-primary/25 bg-primary/5 dark:bg-slate-800/70 p-3.5 space-y-3 animate-in fade-in duration-150">
+            <div className="mt-3 p-3.5 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                 {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
                 <input
@@ -813,18 +1061,18 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   <select
                     value={newItemPriority}
                     onChange={(e) => setNewItemPriority(e.target.value as any)}
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary capitalize cursor-pointer"
+                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
                   >
-                    <option value="low">{t('common.low')}</option>
-                    <option value="medium">{t('common.medium')}</option>
-                    <option value="high">{t('common.high')}</option>
-                    <option value="urgent">{t('common.urgent')}</option>
+                    <option value="low">{t('common.low').toLowerCase()}</option>
+                    <option value="medium">{t('common.medium').toLowerCase()}</option>
+                    <option value="high">{t('common.high').toLowerCase()}</option>
+                    <option value="urgent">{t('common.urgent').toLowerCase()}</option>
                   </select>
                 </label>
 
                 <div className="tw-calendar-picker relative">
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    {lang === 'en' ? 'Due Date' : 'Hạn chót đầu việc'}
+                    {lang === 'en' ? 'Due date' : 'Hạn chót'}
                   </label>
                   <input
                     type="text"
@@ -873,7 +1121,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   type="button"
                   disabled={addingItem || !newItemTitle.trim()}
                   onClick={() => void handleAddChecklistItem()}
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 cursor-pointer shadow-sm"
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add item' : 'Thêm đầu việc')}
                 </button>

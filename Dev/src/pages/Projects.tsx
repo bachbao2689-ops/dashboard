@@ -253,7 +253,7 @@ export const Projects:React.FC=()=>{
               </div>
             ) : (
 <div className="space-y-7 animate-in fade-in duration-200">
-              <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{selected?.priority || 'medium'} {t('common.priority').toLowerCase()}</span><StatusBadge status={selected.status}/></div>
+              <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">{t('common.priority')}: {t(`common.${selected?.priority || 'medium'}` as any).toLowerCase()}</span><StatusBadge status={selected.status}/></div>
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true).map(s=>(
@@ -263,18 +263,26 @@ export const Projects:React.FC=()=>{
     <div className="flex-1">
       <div className="grid grid-flow-col auto-cols-max items-center gap-2">
         <b className={`text-gray-900 dark:text-white block ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${priorityClass(s.priority || selected?.priority || 'medium')}`}>
-          {t(`common.${s.priority || selected?.priority || 'medium'}` as any)}
+        <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || selected?.priority || 'medium')}`}>
+          {t(`common.${s.priority || selected?.priority || 'medium'}` as any).toLowerCase()}
         </span>
-        {subtaskChecklistCounts[s.id]?.total > 0 && (
-          <span
-            title={lang === 'en' ? `Checklist: ${subtaskChecklistCounts[s.id].done}/${subtaskChecklistCounts[s.id].total} completed` : `Đầu việc: ${subtaskChecklistCounts[s.id].done}/${subtaskChecklistCounts[s.id].total} hoàn thành`}
-            className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60"
-          >
-            <ListTodo size={12} />
-            <span>{subtaskChecklistCounts[s.id].done}/{subtaskChecklistCounts[s.id].total}</span>
-          </span>
-        )}
+        {subtaskChecklistCounts[s.id]?.total > 0 && (() => {
+          const { done, total } = subtaskChecklistCounts[s.id];
+          const isAllDone = done === total && total > 0;
+          return (
+            <span
+              title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+              className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-md border ${
+                isAllDone
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                  : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+              }`}
+            >
+              <ListTodo size={12} />
+              <span>{done}/{total}</span>
+            </span>
+          );
+        })()}
         {subtaskCommentCounts[s.id] > 0 && (
           <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs text-primary">
             <span className="relative inline-grid place-items-center">

@@ -45,18 +45,26 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
           <div className="flex-1">
             <div className="grid grid-flow-col auto-cols-max items-center gap-2">
               <b className={`text-gray-900 dark:text-white block ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>{s.title}</b>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
-                {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any)}
+              <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
+                {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any).toLowerCase()}
               </span>
-              {campaignSubtaskChecklistCounts[s.id]?.total > 0 && (
-                <span
-                  title={lang === 'en' ? `Checklist: ${campaignSubtaskChecklistCounts[s.id].done}/${campaignSubtaskChecklistCounts[s.id].total} completed` : `Đầu việc: ${campaignSubtaskChecklistCounts[s.id].done}/${campaignSubtaskChecklistCounts[s.id].total} hoàn thành`}
-                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60"
-                >
-                  <ListTodo size={12} />
-                  <span>{campaignSubtaskChecklistCounts[s.id].done}/{campaignSubtaskChecklistCounts[s.id].total}</span>
-                </span>
-              )}
+              {campaignSubtaskChecklistCounts[s.id]?.total > 0 && (() => {
+                const { done, total } = campaignSubtaskChecklistCounts[s.id];
+                const isAllDone = done === total && total > 0;
+                return (
+                  <span
+                    title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                    className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-md border ${
+                      isAllDone
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                        : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+                    }`}
+                  >
+                    <ListTodo size={12} />
+                    <span>{done}/{total}</span>
+                  </span>
+                );
+              })()}
               {campaignSubtaskCommentCounts[s.id] > 0 && (
                 <span title={`${campaignSubtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs text-primary">
                   <span className="relative inline-grid place-items-center">
