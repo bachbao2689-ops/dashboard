@@ -102,6 +102,9 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
     <>
       {/* CSS dành riêng cho In nhãn Sticker 3x4 nét chuẩn */}
       <style>{`
+        #asset-qr-container-box {
+          background-color: #ffffff !important;
+        }
         @media print {
           @page {
             size: 75mm 100mm;
@@ -173,7 +176,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
           </div>
 
           {/* 2. Khung chứa mã QR bo góc - QR luôn giữ nền trắng tinh cả ở Light mode và Dark mode theo yêu cầu */}
-          <div className="bg-white p-4 rounded-[28px] border border-slate-200 dark:border-slate-300 shadow-xs grid place-items-center mb-4">
+          <div id="asset-qr-container-box" style={{ backgroundColor: "#ffffff" }} className="!bg-white p-4 sm:p-5 rounded-[28px] border border-slate-200/80 shadow-md grid place-items-center mb-4">
             <QRCodeSVG
               id="asset-qr-code-svg"
               value={qrData}
