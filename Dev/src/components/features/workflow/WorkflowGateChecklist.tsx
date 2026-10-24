@@ -53,7 +53,6 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                         }`}
                         style={{ width: `${gatePassChancePct ?? 0}%` }}
                       />
-                      <div className="absolute top-0 bottom-0 left-[80%] w-0.5 bg-slate-900/40 dark:bg-white/50 z-10" title="Mốc duyệt 80%" />
                     </div>
                     <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border mt-1 inline-block ${
                       readyToApprove ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
