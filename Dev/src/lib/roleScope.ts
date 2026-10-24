@@ -24,7 +24,7 @@ export function isDepartmentLeader(profile: RoleProfile): boolean {
 }
 
 export function isAssetApprover(profile: RoleProfile): boolean {
-  return isAdmin(profile) || (isDepartmentLeader(profile) && normalized(profile?.department_name) === 'design');
+  return isAdmin(profile) || isGlobalManager(profile) || (isDepartmentLeader(profile) && normalized(profile?.department_name) === 'design');
 }
 
 export function canSubmitAssetRequest(profile: RoleProfile): boolean {

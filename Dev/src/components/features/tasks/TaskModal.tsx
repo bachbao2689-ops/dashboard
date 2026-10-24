@@ -18,7 +18,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const { t } = useTranslation();
   const profile = useAuthStore(state => state.profile);
   const directory = useWorkspaceDirectory(isOpen);
-  const canChooseDepartment = isGlobalManager(profile) || isDepartmentLeader(profile);
+  const canChooseDepartment = isGlobalManager(profile);
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');

@@ -110,7 +110,7 @@ export function useMembers() {
       const { data, error } = await supabase.from('users').insert({
         name, email, role: memberData.role, department_id: memberData.department_id,
         job_title: memberData.job_title.trim() || null,
-        employment_level: memberData.role === 'member' ? 'Nhân viên' : memberData.role === 'admin' ? 'ADMIN' : 'Leader',
+        employment_level: memberData.role === 'member' ? 'Nhân viên' : memberData.role === 'admin' ? 'ADMIN' : memberData.role === 'manager' ? 'Manager' : 'Leader',
         initials: initialsFromName(name), is_active: true,
       }).select('id').single();
       if (error) throw error;
