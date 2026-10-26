@@ -14,7 +14,9 @@ LOGO
 scripts
 tests
 migrations
-supabase
+supabase/migrations
+supabase/config.toml
+supabase/functions/dashboard-push
 node_modules
 dist
 coverage

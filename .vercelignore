@@ -22,7 +22,9 @@ Dev/LOGO
 Dev/scripts
 Dev/tests
 Dev/migrations
-Dev/supabase
+Dev/supabase/migrations
+Dev/supabase/config.toml
+Dev/supabase/functions/dashboard-push
 **/node_modules
 **/dist
 **/coverage
