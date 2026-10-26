@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "allowedRoots": ["Dev", "backend", "scripts", ".github", ".githooks"],
+  "allowedRootFiles": [".gitignore", ".gitattributes", ".vercelignore", "source-policy.json", "LICENSE", "NOTICE"],
+  "allowedExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".css", ".scss", ".html", ".json", ".sql", ".toml", ".yaml", ".yml", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".ico", ".woff", ".woff2", ".ttf", ".eot", ".webmanifest"],
+  "allowedSpecialFiles": ["Dev/.gitignore", "Dev/.vercelignore", "Dev/.env.example", "backend/.env.example", ".githooks/pre-commit", ".githooks/pre-push"],
+  "localOnlyPrefixes": [".agents/", ".codex/", ".claude/", ".gemini/", "Brief/", "GUIDELINE/", "UX_UI_DESIGN_SYSTEM/", "Dev/Login/", "Dev/LOGO/"],
+  "localOnlyFiles": ["Dev/src/data/assets.csv", "Dev/src/data/tasks.csv", "Dev/src/data/tasks.json", "Dev/src/data/inventory.json", "Dev/src/data/borrow_requests.json", "Dev/public/version.json", "backend/.import-source.json"],
+  "forbiddenExtensions": [".md", ".mdx", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".pem", ".p12", ".pfx", ".csv", ".zip", ".tar", ".gz", ".dump", ".bak", ".log", ".map"],
+  "forbiddenDirectories": [".agents", ".codex", ".claude", ".gemini", ".vercel", "node_modules", "dist", "build", "coverage", "test-results", "playwright-report", "__pycache__"]
+}
