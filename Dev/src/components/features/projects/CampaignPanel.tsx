@@ -10,6 +10,8 @@ import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {isTaskDone} from '../../../lib/taskTracking';
+import { EntityInfoPopover } from './EntityInfoPopover';
+import type { HubTrack } from '../../../lib/workflowHub';
 
 export interface CampaignFilters {
   searchTerm: string;
@@ -152,7 +154,9 @@ export const CampaignPanel: React.FC<{
   onSelect?: (campaign: any) => void;
   filters?: CampaignFilters;
   rootCampaignIds?: ReadonlySet<string>;
-}> = ({ onSelect, filters, rootCampaignIds }) => {
+  workflowTracks?: HubTrack[];
+  starredCriteriaMap?: Record<string, boolean>;
+}> = ({ onSelect, filters, rootCampaignIds, workflowTracks, starredCriteriaMap }) => {
   const { t, lang } = useTranslation();
   const profile = useAuthStore(s => s.profile);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
@@ -338,10 +342,31 @@ export const CampaignPanel: React.FC<{
       {expanded && <>
       <div className="space-y-3 p-3 xl:hidden">
         {visibleCampaigns.map(c => <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-          <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
-            <span className="flex min-w-0 items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white"><span className="min-w-0 flex-1 truncate">{c.name}</span>{hasComments[c.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}<ChevronRight size={15} className="shrink-0 text-gray-400" /></span>
-            <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
-          </button>
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1.5">
+            <EntityInfoPopover
+              entityType="campaign"
+              entity={c}
+              track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
+              starredCriteriaMap={starredCriteriaMap}
+              leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
+              subPersons={subtaskMap[c.id]}
+            />
+            <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
+              <span className="grid grid-cols-[1fr_auto] items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white">
+                <span className="min-w-0 truncate">{c.name}</span>
+                {hasComments[c.id] && (
+                  <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
+                    <MessageSquare size={14} className="text-blue-500" />
+                    {(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id]) && (
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>
+                    )}
+                  </span>
+                )}
+              </span>
+              <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
+            </button>
+            <ChevronRight size={15} className="shrink-0 text-gray-400" />
+          </div>
           <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <StatusBadge status={c.status || 'planning'} />
             <span className="min-w-0 truncate">{c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}</span>
@@ -363,6 +388,14 @@ export const CampaignPanel: React.FC<{
           <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign transition-all duration-200 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
             <td className="p-4">
               <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+                <EntityInfoPopover
+                  entityType="campaign"
+                  entity={c}
+                  track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
+                  starredCriteriaMap={starredCriteriaMap}
+                  leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
+                  subPersons={subtaskMap[c.id]}
+                />
                 <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b>
                 {hasComments[c.id] && (
                   <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">

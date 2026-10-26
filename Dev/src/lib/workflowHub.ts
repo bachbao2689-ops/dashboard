@@ -5,7 +5,37 @@ export interface HubPhase {
   can_edit_tasks: boolean; members: WorkflowPerson[];
   description?: string; gate_criteria?: GateCriterion[];
 }
-export interface GateCriterion { id: string; label: string; weight: number; checked: boolean }
+export interface GateCriterion { id: string; label: string; weight: number; checked: boolean; starred?: boolean }
+export interface KeyGateCriterion extends GateCriterion { phaseId: string; phaseTitle: string; phasePosition: number }
+export function extractKeyGateCriteria(track?: Pick<HubTrack, 'phases'> | null, starredMap?: Record<string, boolean>): KeyGateCriterion[] {
+  if (!track?.phases?.length) return [];
+  const result: KeyGateCriterion[] = [];
+  for (const phase of track.phases) {
+    for (const c of phase.gate_criteria || []) {
+      const isStarred = starredMap && c.id in starredMap ? starredMap[c.id] : Boolean(c.starred);
+      if (isStarred) {
+        result.push({ ...c, starred: true, phaseId: phase.id, phaseTitle: phase.title, phasePosition: phase.position });
+      }
+    }
+  }
+  return result;
+}
+export function formatEntityDuration(startDate?: string | null, endDate?: string | null, isEn = false): string {
+  const s = startDate ? Date.parse(startDate.slice(0, 10)) : NaN;
+  const e = endDate ? Date.parse(endDate.slice(0, 10)) : NaN;
+  if (Number.isFinite(s) && Number.isFinite(e) && e >= s) {
+    const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+    return isEn ? `Completes in ${days} days` : `Hoàn thành trong ${days} ngày`;
+  }
+  if (endDate) {
+    const rem = daysUntil(endDate);
+    if (rem != null) {
+      if (rem >= 0) return isEn ? `Completes in ${Math.max(1, rem)} days` : `Hoàn thành trong ${Math.max(1, rem)} ngày`;
+      return isEn ? `${Math.abs(rem)}d overdue` : `Trễ ${Math.abs(rem)} ngày`;
+    }
+  }
+  return isEn ? 'No duration set' : 'Chưa định thời gian';
+}
 export interface HubTrack {
   id: string; entity_type: 'project' | 'campaign'; entity_id: string; name: string; status: string;
   start_date: string | null; due_date: string | null; root: boolean; asset: string | null;
