@@ -3,6 +3,13 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+// Import records are private local inputs and must not be committed.
+for (const filename of ['inventory.json', 'tasks.json']) {
+  if (!fs.existsSync(path.join(__dirname, '../Dev/src/data', filename))) {
+    throw new Error('Seed data is local-only. Restore the input files before running this Dev maintenance script.');
+  }
+}
+
 const connectionString = require('./devDbGuard')(process.env.DATABASE_URL);
 if (!connectionString) {
   throw new Error('DATABASE_URL is required. Add it to backend/.env.');
