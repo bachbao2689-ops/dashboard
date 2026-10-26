@@ -1,0 +1,23 @@
+name: Dashboard source policy
+
+on:
+  push:
+    branches: [main, develop, codex/develop-dashboard]
+  pull_request:
+    branches: [main, develop, codex/develop-dashboard]
+
+permissions:
+  contents: read
+
+jobs:
+  source-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check committed files and detected credentials
+        run: node scripts/check-source.mjs --ref HEAD
+      - name: Check source policy behavior
+        run: node --test scripts/check-source.test.mjs
