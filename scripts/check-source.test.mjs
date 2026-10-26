@@ -15,7 +15,7 @@ test('keeps runtime assets, migrations, tests and empty env templates', () => {
 });
 
 test('blocks documents, agents, datasets, generated files and credentials', () => {
-  for (const name of ['AGENTS.md', 'README.MD', '.agents/config.json', 'GUIDELINE/style.md', 'Brief/notes.docx', 'Dev/.env.production', 'Dev/dist/index.html', 'Dev/public/debug.map', 'Dev/src/data/tasks.json', 'Dev/public/version.json', 'unrelated/file.js']) {
+  for (const name of ['AGENTS.md', 'README.MD', '.agents/config.json', 'GUIDELINE/style.md', 'Brief/notes.docx', 'Dev/.env.production', 'Dev/dist/index.html', 'Dev/public/debug.map', 'Dev/src/data/tasks.json', 'Dev/public/version.json', 'backend/.import-source.json', 'unrelated/file.js']) {
     assert.ok(fileIssues(name, '100644', policy).length, name);
   }
   assert.ok(fileIssues('Dev/src/link.ts', '120000', policy).length);
