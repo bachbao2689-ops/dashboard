@@ -108,7 +108,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       {/* Top Bar for Standalone Visualize Mode */}
       {standalone && (
         <header className="sticky top-0 z-30 w-full border-b border-slate-200/70 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/85 backdrop-blur-xl px-4 lg:px-8 py-3.5 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-4 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-4 max-w-[1600px] mx-auto">
             <button
               type="button"
               onClick={handleBack}
@@ -158,7 +158,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       )}
 
       {/* Main Content Container */}
-      <div className={`${standalone ? 'max-w-7xl mx-auto px-4 lg:px-8 py-6' : ''} space-y-6`}>
+      <div className={`${standalone ? 'max-w-[1600px] mx-auto px-4 lg:px-8 py-6' : ''} space-y-6`}>
         {/* Header Toolbar & Global Filters */}
         <div className="glass-panel p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-start lg:items-center gap-4">
@@ -260,12 +260,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-colors">
             {/* Hàng 1: Header */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
-              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
                     Tổng việc & Hoàn thành
                   </h3>
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Trong kỳ {periodLabelVi}</p>
@@ -273,7 +273,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
 
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40 whitespace-nowrap">
-                Hoàn thành {teamCards.completionRate}%
+                {teamCards.completionRate}%
               </span>
             </div>
 
@@ -329,12 +329,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-amber-400/50 dark:hover:border-amber-500/50 transition-colors">
             {/* Hàng 1: Header */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
-              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
                     Các Task Tồn Đọng
                   </h3>
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Báo cáo từ Tab Profile</p>
@@ -419,12 +419,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-cyan-400/50 dark:hover:border-cyan-500/50 transition-colors">
             {/* Hàng 1: Header */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
-              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 grid place-items-center">
                   <Layers className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
                     Project & Campaign
                   </h3>
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Đang tham gia triển khai</p>
@@ -432,7 +432,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
 
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/40 whitespace-nowrap">
-                {teamCards.totalTracks} chương trình
+                {teamCards.totalTracks} tracks
               </span>
             </div>
 
@@ -508,12 +508,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-colors">
             {/* Hàng 1: Header */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
-              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center">
                   <Clock className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
                     Tiếp Tục Đang Làm
                   </h3>
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Đang làm & Cần xử lý</p>
@@ -521,7 +521,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
 
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
-                {teamCards.activeOpenTotal} việc đang mở
+                {teamCards.activeOpenTotal} việc mở
               </span>
             </div>
 
