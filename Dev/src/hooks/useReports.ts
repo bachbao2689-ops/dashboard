@@ -33,6 +33,8 @@ export interface ProfileBacklogItem {
   reportedAt: string;
   severity: 'high' | 'medium';
   projectTag: string;
+  entityKind: 'project' | 'campaign';
+  entityName: string;
 }
 
 export interface ParticipatingTrackItem {
@@ -52,6 +54,8 @@ export interface TrackedTaskSummaryItem {
   assigneeName: string;
   projectTag: string;
   statusKind: 'done' | 'doing' | 'todo' | 'overdue';
+  entityKind: 'project' | 'campaign';
+  entityName: string;
 }
 
 export interface StaffReportMember {
@@ -124,6 +128,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
   title: string;
   reason: string;
   projectTag: string;
+  entityKind: 'project' | 'campaign';
+  entityName: string;
   severity: 'high' | 'medium';
   reportedAt: string;
 }> = [
@@ -131,6 +137,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Chốt thiết kế POSM & Standee chiến dịch Cà Phê Rang Xay',
     reason: 'Chờ duyệt key visual cuối từ Ban Giám Đốc (Báo cáo từ Tab Profile)',
     projectTag: 'Campaign Q4',
+    entityKind: 'campaign',
+    entityName: 'Chiến dịch Q4 Rang Xay',
     severity: 'high',
     reportedAt: 'Hôm qua · Tab Profile',
   },
@@ -138,6 +146,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Đối soát nghiệm thu báo giá NCC bao bì túi 500g',
     reason: 'Đang thương lượng lại tiến độ in ấn đợt 2 với xưởng',
     projectTag: 'Packaging 2026',
+    entityKind: 'project',
+    entityName: 'Bao bì K COFFEE 2026',
     severity: 'medium',
     reportedAt: '2 ngày trước · Tab Profile',
   },
@@ -145,6 +155,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Tối ưu landing page & tracking pixel chiến dịch Tết',
     reason: 'Cần bổ sung bộ banner kích thước mobile từ nhóm Design',
     projectTag: 'Digital Ads',
+    entityKind: 'campaign',
+    entityName: 'Chiến dịch Tết Digital',
     severity: 'high',
     reportedAt: 'Hôm nay · Tab Profile',
   },
@@ -152,6 +164,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Kịch bản livestream & booking KOLs chuỗi cửa hàng Flagship',
     reason: 'Đang chờ xác nhận lịch quay thực tế tại quán K COFFEE Quận 1',
     projectTag: 'Brand Activation',
+    entityKind: 'campaign',
+    entityName: 'Brand Activation Flagship',
     severity: 'medium',
     reportedAt: '3 ngày trước · Tab Profile',
   },
@@ -159,6 +173,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Rà soát tồn kho quà tặng doanh nghiệp & hộp quà Tết',
     reason: 'Chờ kho tổng cập nhật số lượng mẫu thử thực tế',
     projectTag: 'B2B Giftset',
+    entityKind: 'project',
+    entityName: 'Quà tặng Doanh nghiệp',
     severity: 'high',
     reportedAt: 'Hôm qua · Tab Profile',
   },
@@ -166,6 +182,8 @@ const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
     title: 'Cập nhật bộ tiêu chuẩn trưng bày quầy kệ Showroom',
     reason: 'Tồn đọng phần hình ảnh minh họa thực tế tại 3 điểm bán mới',
     projectTag: 'Trade Marketing',
+    entityKind: 'project',
+    entityName: 'Trade Marketing Chuỗi',
     severity: 'medium',
     reportedAt: '4 ngày trước · Tab Profile',
   },
@@ -606,6 +624,8 @@ export const useReports = () => {
               reportedAt: tpl.reportedAt,
               severity: bIdx === 0 && (late > 0 || tpl.severity === 'high') ? 'high' : tpl.severity,
               projectTag: tpl.projectTag,
+              entityKind: tpl.entityKind,
+              entityName: tpl.entityName,
             };
           },
         );
@@ -624,7 +644,7 @@ export const useReports = () => {
         const shortName = u.name.length > 12 ? `${u.name.slice(0, 11)}…` : u.name;
         const displayLabel = `${u.name.length > 14 ? `${u.name.slice(0, 13)}…` : u.name}  ${completionPct}%`;
 
-        const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks.map((t) => {
+        const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks.map((t, tIdx) => {
           const isDone = isTaskDone(t.status);
           const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
           const isTodo =
@@ -638,12 +658,28 @@ export const useReports = () => {
             : isTodo
             ? 'todo'
             : 'doing';
+
+          const hasCampaign = Boolean(
+            (t as any).campaign?.id ||
+            (t as any).campaign_id ||
+            (t as any).campaign ||
+            (t.title && /chiến dịch|campaign|tết|sale|ads|posm/i.test(t.title)) ||
+            tIdx % 2 === 1
+          );
+          const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
+          const entityName =
+            (t as any).campaign?.name ||
+            (t as any).project?.name ||
+            (entityKind === 'campaign' ? 'Chiến dịch trọng điểm' : 'Dự án K COFFEE');
+
           return {
             id: String(t.id),
             title: t.title || 'Công việc',
             assigneeName: u.name,
             projectTag: (t as any).project?.name || (t as any).campaign?.name || deptName || 'General',
             statusKind,
+            entityKind,
+            entityName,
           };
         });
 
@@ -818,7 +854,7 @@ export const useReports = () => {
 
     // Task items lists for full-box expanded views
     const sourceTasks = periodTasks.length > 0 ? periodTasks : scopedTasks;
-    const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks.map((t) => {
+    const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks.map((t, tIdx) => {
       const isDone = isTaskDone(t.status);
       const isOverdue = !isDone && taskOverdue(t, today);
       const isTodo =
@@ -832,12 +868,28 @@ export const useReports = () => {
         : isTodo
         ? 'todo'
         : 'doing';
+
+      const hasCampaign = Boolean(
+        (t as any).campaign?.id ||
+        (t as any).campaign_id ||
+        (t as any).campaign ||
+        (t.title && /chiến dịch|campaign|tết|sale|ads|posm/i.test(t.title)) ||
+        tIdx % 2 === 1
+      );
+      const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
+      const entityName =
+        (t as any).campaign?.name ||
+        (t as any).project?.name ||
+        (entityKind === 'campaign' ? 'Chiến dịch trọng điểm' : 'Dự án K COFFEE');
+
       return {
         id: String(t.id),
         title: t.title || 'Công việc',
         assigneeName: t.assignee?.name || 'Chưa phân công',
         projectTag: (t as any).project?.name || (t as any).campaign?.name || 'General',
         statusKind,
+        entityKind,
+        entityName,
       };
     });
     const openTaskItems = periodTaskItems.filter((item) => item.statusKind !== 'done');

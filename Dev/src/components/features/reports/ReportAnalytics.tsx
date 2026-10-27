@@ -550,47 +550,43 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
           <div
             data-expandable-box="card1"
-            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            className={`min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
+              activeExpandedId === 'card1' ? 'z-40' : 'z-10'
+            }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            {/* Header Row: Top-Right Chevron Dropdown */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className={`rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center transition-all duration-300 ${
-                  activeExpandedId === 'card1' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
-                }`}>
-                  <CheckCircle2 className={activeExpandedId === 'card1' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+                <div className="w-7 h-7 rounded-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center">
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
                   <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
                     {t('reports.viz.card1Title')}
                   </h3>
-                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                    activeExpandedId === 'card1' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card1Sub', { period: periodLabelVi })}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right */}
+              {/* Chevron Button placed at top-right with state border */}
               <button
                 type="button"
                 onClick={(e) => toggleExpanded('card1', e)}
                 aria-label={activeExpandedId === 'card1' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card1'
-                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
-                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/90 dark:bg-emerald-950/60'
+                    : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card1' ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Default view - transitions out when expanded) */}
-            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
-              activeExpandedId === 'card1' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
-            }`}>
+            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -618,97 +614,107 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
             </div>
 
-            {/* Full-Box Scrollable Tasks (Expanded view - fills dedicated height) */}
-            <div className={`transition-all duration-300 ease-out ${
-              activeExpandedId === 'card1'
-                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
-                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-            }`}>
-              {teamCards.periodTaskItems && teamCards.periodTaskItems.length > 0 ? (
-                teamCards.periodTaskItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-700/50 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
-                  >
-                    <div className="grid grid-cols-1 min-w-0">
-                      <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={item.title}>
-                        {item.title}
-                      </span>
-                      <span className="text-[10px] text-slate-400 truncate">
-                        {item.assigneeName} {item.projectTag ? `· ${item.projectTag}` : ''}
-                      </span>
+            {/* Floating Glass Dropdown Popup (Red markup) */}
+            {activeExpandedId === 'card1' && (
+              <div
+                role="region"
+                aria-label={t('reports.viz.card1Title')}
+                className="absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] p-2.5 bg-white/85 dark:bg-slate-900/88 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-emerald-400/85 dark:border-emerald-500/70 transition-all duration-200"
+                style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              >
+                <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+                  {teamCards.periodTaskItems && teamCards.periodTaskItems.length > 0 ? (
+                    teamCards.periodTaskItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      >
+                        <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                          <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
+                            {item.title}
+                          </span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                            <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                              item.entityKind === 'campaign'
+                                ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                            }`}>
+                              {item.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 truncate">
+                              {item.assigneeName} {item.entityName ? `· ${item.entityName}` : (item.projectTag ? `· ${item.projectTag}` : '')}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold whitespace-nowrap border ${
+                          item.statusKind === 'done'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+                            : item.statusKind === 'doing'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                            : item.statusKind === 'overdue'
+                            ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                        }`}>
+                          {item.statusKind === 'done'
+                            ? t('reports.viz.colCompleted')
+                            : item.statusKind === 'doing'
+                            ? t('reports.viz.colInProgress')
+                            : item.statusKind === 'overdue'
+                            ? t('reports.viz.colOverdue')
+                            : t('reports.viz.statusTodo')}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
+                      {t('reports.viz.noTasksInPeriod')}
                     </div>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
-                      item.statusKind === 'done'
-                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                        : item.statusKind === 'doing'
-                        ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                        : item.statusKind === 'overdue'
-                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {item.statusKind === 'done'
-                        ? t('reports.viz.colCompleted')
-                        : item.statusKind === 'doing'
-                        ? t('reports.viz.colInProgress')
-                        : item.statusKind === 'overdue'
-                        ? t('reports.viz.colOverdue')
-                        : t('reports.viz.statusTodo')}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[11px]">
-                  {t('reports.viz.noTasksInPeriod')}
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Card 2: Task tồn đọng (reported from Tab Profile) */}
           <div
             data-expandable-box="card2"
-            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            className={`min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
+              activeExpandedId === 'card2' ? 'z-40' : 'z-10'
+            }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            {/* Header Row: Top-Right Chevron Dropdown */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className={`rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center transition-all duration-300 ${
-                  activeExpandedId === 'card2' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
-                }`}>
-                  <AlertTriangle className={activeExpandedId === 'card2' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+                <div className="w-7 h-7 rounded-[8px] bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center">
+                  <AlertTriangle className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
                   <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
                     {t('reports.viz.card2Title')}
                   </h3>
-                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                    activeExpandedId === 'card2' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card2Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right */}
+              {/* Chevron Button placed at top-right with state border */}
               <button
                 type="button"
                 onClick={(e) => toggleExpanded('card2', e)}
                 aria-label={activeExpandedId === 'card2' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card2'
-                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
-                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50/90 dark:bg-amber-950/60'
+                    : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card2' ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Default view) */}
-            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
-              activeExpandedId === 'card2' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
-            }`}>
+            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-cols-1 items-baseline">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
@@ -746,79 +752,94 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
             </div>
 
-            {/* Full-Box Scrollable Backlog List (Expanded view - untruncated) */}
-            <div className={`transition-all duration-300 ease-out ${
-              activeExpandedId === 'card2'
-                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
-                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-            }`}>
-              {teamCards.backlogItems && teamCards.backlogItems.length > 0 ? (
-                teamCards.backlogItems.map((item) => (
-                  <div
-                    key={item.id}
-                    title={`${item.title} — ${item.reason}`}
-                    className="px-2 py-1 rounded-lg bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
-                  >
-                    <span className="truncate font-medium text-slate-800 dark:text-slate-200">
-                      {item.title}
-                    </span>
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold whitespace-nowrap">
-                      {item.projectTag}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-emerald-600 dark:text-emerald-400 font-medium text-center text-[11px]">
-                  {t('reports.viz.noBacklog')}
+            {/* Floating Glass Dropdown Popup (Red markup) */}
+            {activeExpandedId === 'card2' && (
+              <div
+                role="region"
+                aria-label={t('reports.viz.card2Title')}
+                className="absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] p-2.5 bg-white/85 dark:bg-slate-900/88 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/85 dark:border-amber-500/70 transition-all duration-200"
+                style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              >
+                <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+                  {teamCards.backlogItems && teamCards.backlogItems.length > 0 ? (
+                    teamCards.backlogItems.map((item) => (
+                      <div
+                        key={item.id}
+                        title={`${item.title} — ${item.reason}`}
+                        className="px-2 py-1.5 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      >
+                        <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                          <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
+                            {item.title}
+                          </span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                            <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                              item.entityKind === 'campaign'
+                                ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                            }`}>
+                              {item.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 truncate">
+                              {item.staffName} · {item.entityName || item.projectTag}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border border-amber-200 dark:border-amber-800/50 font-bold whitespace-nowrap">
+                          {item.projectTag}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-emerald-600 dark:text-emerald-400 font-medium text-center text-[11px]">
+                      {t('reports.viz.noBacklog')}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Card 3: Project & Campaign Team tham gia */}
           <div
             data-expandable-box="card3"
-            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            className={`min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
+              activeExpandedId === 'card3' ? 'z-40' : 'z-10'
+            }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            {/* Header Row: Top-Right Chevron Dropdown */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className={`rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 grid place-items-center transition-all duration-300 ${
-                  activeExpandedId === 'card3' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
-                }`}>
-                  <Layers className={activeExpandedId === 'card3' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+                <div className="w-7 h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center">
+                  <Layers className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
                   <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
                     {t('reports.viz.card3Title')}
                   </h3>
-                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                    activeExpandedId === 'card3' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card3Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right */}
+              {/* Chevron Button placed at top-right with state border */}
               <button
                 type="button"
                 onClick={(e) => toggleExpanded('card3', e)}
                 aria-label={activeExpandedId === 'card3' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card3'
-                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
-                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50/90 dark:bg-violet-950/60'
+                    : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card3' ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Default view) */}
-            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
-              activeExpandedId === 'card3' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
-            }`}>
+            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -852,85 +873,87 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
             </div>
 
-            {/* Full-Box Scrollable Tracks (Expanded view - untruncated) */}
-            <div className={`transition-all duration-300 ease-out ${
-              activeExpandedId === 'card3'
-                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
-                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-            }`}>
-              {teamCards.tracks && teamCards.tracks.length > 0 ? (
-                teamCards.tracks.map((tr) => (
-                  <div
-                    key={tr.id}
-                    className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]"
-                  >
-                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                      tr.kind === 'project'
-                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                        : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
-                    }`}>
-                      {tr.kind === 'project' ? t('reports.viz.projectBadge') : t('reports.viz.campaignBadge')}
-                    </span>
-                    <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={tr.name}>
-                      {tr.name}
-                    </span>
-                    <span className="font-bold text-[#093570] dark:text-blue-400">
-                      {tr.progress}%
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-gray-400 text-center text-[11px]">
-                  {t('reports.viz.noTracks')}
+            {/* Floating Glass Dropdown Popup (Red markup) */}
+            {activeExpandedId === 'card3' && (
+              <div
+                role="region"
+                aria-label={t('reports.viz.card3Title')}
+                className="absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] p-2.5 bg-white/85 dark:bg-slate-900/88 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/85 dark:border-violet-500/70 transition-all duration-200"
+                style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              >
+                <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+                  {teamCards.tracks && teamCards.tracks.length > 0 ? (
+                    teamCards.tracks.map((tr) => (
+                      <div
+                        key={tr.id}
+                        className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      >
+                        {/* Standard Dashboard colors: Project = Violet, Campaign = Orange */}
+                        <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold border whitespace-nowrap ${
+                          tr.kind === 'project'
+                            ? 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                            : 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                        }`}>
+                          {tr.kind === 'project' ? t('reports.viz.projectBadge') : t('reports.viz.campaignBadge')}
+                        </span>
+                        <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={tr.name}>
+                          {tr.name}
+                        </span>
+                        <span className="font-bold text-[#093570] dark:text-blue-400 text-xs">
+                          {tr.progress}%
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-gray-400 text-center text-[11px]">
+                      {t('reports.viz.noTracks')}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Card 4: Tiếp tục đang làm (In Progress & Active) */}
           <div
             data-expandable-box="card4"
-            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            className={`min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
+              activeExpandedId === 'card4' ? 'z-40' : 'z-10'
+            }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            {/* Header Row: Top-Right Chevron Dropdown */}
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className={`rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center transition-all duration-300 ${
-                  activeExpandedId === 'card4' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
-                }`}>
-                  <Clock className={activeExpandedId === 'card4' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+                <div className="w-7 h-7 rounded-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center">
+                  <Clock className="w-4 h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
                   <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
                     {t('reports.viz.card4Title')}
                   </h3>
-                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                    activeExpandedId === 'card4' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card4Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right */}
+              {/* Chevron Button placed at top-right with state border */}
               <button
                 type="button"
                 onClick={(e) => toggleExpanded('card4', e)}
                 aria-label={activeExpandedId === 'card4' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card4'
-                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
-                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/90 dark:bg-blue-950/60'
+                    : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card4' ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Default view) */}
-            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
-              activeExpandedId === 'card4' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
-            }`}>
+            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-[#2a78d6] dark:text-blue-400">
@@ -970,64 +993,78 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
             </div>
 
-            {/* Full-Box Scrollable Content: 3 compact status pills + all open tasks */}
-            <div className={`transition-all duration-300 ease-out ${
-              activeExpandedId === 'card4'
-                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
-                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-            }`}>
-              {/* 3 Compact Status Pills Row */}
-              <div className="grid grid-cols-3 gap-1 mb-1">
-                <div className="px-1.5 py-0.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
-                  <span className="text-blue-600 dark:text-blue-400 font-medium truncate">{t('reports.viz.statusDoing')}</span>
-                  <b className="font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
+            {/* Floating Glass Dropdown Popup (Red markup) */}
+            {activeExpandedId === 'card4' && (
+              <div
+                role="region"
+                aria-label={t('reports.viz.card4Title')}
+                className="absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] p-2.5 bg-white/85 dark:bg-slate-900/88 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/85 dark:border-blue-500/70 transition-all duration-200"
+                style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              >
+                {/* 3 Compact Status Pills Row */}
+                <div className="grid grid-cols-3 gap-1 mb-1.5">
+                  <div className="px-1.5 py-0.5 rounded-[6px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                    <span className="text-blue-600 dark:text-blue-400 font-medium truncate">{t('reports.viz.statusDoing')}</span>
+                    <b className="font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
+                  </div>
+                  <div className="px-1.5 py-0.5 rounded-[6px] bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{t('reports.viz.statusTodo')}</span>
+                    <b className="font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
+                  </div>
+                  <div className="px-1.5 py-0.5 rounded-[6px] bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                    <span className="text-rose-600 dark:text-rose-400 font-medium truncate">{t('reports.viz.statusOverdue')}</span>
+                    <b className="font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
+                  </div>
                 </div>
-                <div className="px-1.5 py-0.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{t('reports.viz.statusTodo')}</span>
-                  <b className="font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
-                </div>
-                <div className="px-1.5 py-0.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
-                  <span className="text-rose-600 dark:text-rose-400 font-medium truncate">{t('reports.viz.statusOverdue')}</span>
-                  <b className="font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
+
+                {/* Scrollable list of open tasks */}
+                <div className="max-h-[140px] overflow-y-auto pr-0.5 space-y-1.5">
+                  {teamCards.openTaskItems && teamCards.openTaskItems.length > 0 ? (
+                    teamCards.openTaskItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      >
+                        <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                          <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
+                            {item.title}
+                          </span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                            <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                              item.entityKind === 'campaign'
+                                ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                            }`}>
+                              {item.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 truncate">
+                              {item.assigneeName} {item.entityName ? `· ${item.entityName}` : (item.projectTag ? `· ${item.projectTag}` : '')}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold whitespace-nowrap border ${
+                          item.statusKind === 'doing'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                            : item.statusKind === 'overdue'
+                            ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                        }`}>
+                          {item.statusKind === 'doing'
+                            ? t('reports.viz.colInProgress')
+                            : item.statusKind === 'overdue'
+                            ? t('reports.viz.colOverdue')
+                            : t('reports.viz.statusTodo')}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
+                      {t('reports.viz.noTasksInPeriod')}
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Scrollable list of open tasks */}
-              {teamCards.openTaskItems && teamCards.openTaskItems.length > 0 ? (
-                teamCards.openTaskItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-700/50 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
-                  >
-                    <div className="grid grid-cols-1 min-w-0">
-                      <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={item.title}>
-                        {item.title}
-                      </span>
-                      <span className="text-[10px] text-slate-400 truncate">
-                        {item.assigneeName} {item.projectTag ? `· ${item.projectTag}` : ''}
-                      </span>
-                    </div>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
-                      item.statusKind === 'doing'
-                        ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                        : item.statusKind === 'overdue'
-                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {item.statusKind === 'doing'
-                        ? t('reports.viz.colInProgress')
-                        : item.statusKind === 'overdue'
-                        ? t('reports.viz.colOverdue')
-                        : t('reports.viz.statusTodo')}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[11px]">
-                  {t('reports.viz.noTasksInPeriod')}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </section>
 
@@ -1225,7 +1262,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             </div>
           )}
 
-          {/* VIEW 'CARDS': Grid of Staff Cards (Full-box expand, top-right chevron, zero flexbox, removed workload capacity) */}
+          {/* VIEW 'CARDS': Grid of Staff Cards (Floating Glass Popup, enlarged stats, zero flexbox, rounded-[8px]) */}
           {staffView === 'cards' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {staffMembers.map((m) => {
@@ -1236,18 +1273,18 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   <div
                     key={m.id}
                     data-expandable-box={`staff-${m.id}`}
-                    className={`h-[168px] overflow-hidden relative rounded-2xl p-3.5 border transition-all cursor-pointer ${
+                    className={`min-h-[168px] relative rounded-2xl p-3.5 border transition-all cursor-pointer ${
+                      isExpanded ? 'z-40' : 'z-10'
+                    } ${
                       isSelected
                         ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/20 dark:bg-blue-950/30 shadow-md'
                         : 'border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
                     }`}
                     onClick={() => setSelectedStaffId(isSelected ? null : m.id)}
                   >
-                    {/* Header: Avatar, Name, Completion %, Top-Right Chevron button (Red markup) */}
+                    {/* Header: Avatar, Name, Completion %, Top-Right Chevron button */}
                     <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 mb-2">
-                      <div className={`rounded-full bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold shadow-sm transition-all duration-300 ${
-                        isExpanded ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'
-                      }`}>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold text-xs shadow-sm">
                         {m.initial}
                       </div>
 
@@ -1255,147 +1292,170 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">
                           {m.name}
                         </h4>
-                        <p className={`text-[10px] text-slate-400 truncate transition-all duration-300 ${
-                          isExpanded ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-3.5 opacity-100'
-                        }`}>
+                        <p className="text-[10px] text-slate-400 truncate">
                           {m.role}
                         </p>
                       </div>
 
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 whitespace-nowrap">
                         {m.completionPct}%
                       </span>
 
-                      {/* Chevron Dropdown button placed at top-right */}
+                      {/* Chevron Dropdown button placed at top-right with state border */}
                       <button
                         type="button"
                         onClick={(e) => toggleExpanded(`staff-${m.id}`, e)}
                         aria-label={isExpanded ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                        className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                        className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
                           isExpanded
-                            ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                            ? 'border border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/90 dark:bg-blue-950/60'
+                            : 'border border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                         }`}
                       >
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                       </button>
                     </div>
 
-                    {/* Performance Stats UI (Default view - 4 mini cols + backlog alert box) */}
-                    <div className={`transition-all duration-300 grid grid-cols-1 gap-1.5 ${
-                      isExpanded ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[115px] opacity-100'
-                    }`}>
-                      {/* 4 Mini Stat Badges */}
-                      <div className="grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-xl py-1 px-1">
+                    {/* Performance Stats UI (Stays on background) */}
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {/* 4 Mini Stat Badges: ENLARGED NUMBERS (Red circle feedback) */}
+                      <div className="grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-[8px] py-1.5 px-1">
                         <div>
-                          <span className="block text-slate-800 dark:text-slate-100 font-bold text-xs">{m.total}</span>
-                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colTotalTasks')}</span>
+                          <span className="block text-slate-800 dark:text-slate-100 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.total}</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colTotalTasks')}</span>
                         </div>
                         <div>
-                          <span className="block text-emerald-600 dark:text-emerald-400 font-bold text-xs">{m.done}</span>
-                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colCompleted')}</span>
+                          <span className="block text-emerald-600 dark:text-emerald-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.done}</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colCompleted')}</span>
                         </div>
                         <div>
-                          <span className="block text-blue-600 dark:text-blue-400 font-bold text-xs">{m.doing}</span>
-                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colInProgress')}</span>
+                          <span className="block text-blue-600 dark:text-blue-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.doing}</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colInProgress')}</span>
                         </div>
                         <div>
-                          <span className="block text-rose-600 dark:text-rose-400 font-bold text-xs">{m.late}</span>
-                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colOverdue')}</span>
+                          <span className="block text-rose-600 dark:text-rose-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.late}</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colOverdue')}</span>
                         </div>
                       </div>
 
-                      {/* Backlog Alert or Clean state button */}
+                      {/* Backlog Alert or Clean state button (rounded-[8px]) */}
                       {m.profileBacklogCount > 0 ? (
                         <div
                           onClick={(e) => toggleExpanded(`staff-${m.id}`, e)}
-                          className="rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 px-2 py-1 text-[10px] text-amber-800 dark:text-amber-300 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 font-semibold cursor-pointer hover:bg-amber-100/70 dark:hover:bg-amber-900/50 transition-colors"
+                          className="rounded-[8px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 px-2.5 py-1.5 text-[11px] text-amber-800 dark:text-amber-300 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 font-semibold cursor-pointer hover:bg-amber-100/70 dark:hover:bg-amber-900/50 transition-colors"
                         >
-                          <AlertTriangle className="w-3 h-3 text-amber-500" />
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                           <span className="truncate">{t('reports.viz.profileBacklogBtn', { count: m.profileBacklogCount })}</span>
-                          <ChevronDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <ChevronDown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         </div>
                       ) : (
-                        <div className="py-1 px-2 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-[10px] text-slate-400 text-center">
+                        <div className="py-1.5 px-2 rounded-[8px] bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center">
                           {t('reports.viz.noProfileBacklog')}
                         </div>
                       )}
                     </div>
 
-                    {/* Full-Box Scrollable Tasks: Profile Backlog + Period Tasks (Expanded view) */}
-                    <div className={`transition-all duration-300 ease-out ${
-                      isExpanded
-                        ? 'max-h-[108px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-slate-100 dark:border-slate-800 pt-1.5'
-                        : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-                    }`}>
-                      {/* Profile Backlog Items */}
-                      {m.profileBacklogItems && m.profileBacklogItems.length > 0 && (
-                        m.profileBacklogItems.map((item) => (
-                          <div
-                            key={`backlog-${item.id}`}
-                            title={`${item.title} — ${item.reason}`}
-                            className="px-2 py-1 rounded-lg bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-[10px]"
-                          >
-                            <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 whitespace-nowrap">
-                              Profile
-                            </span>
-                            <span className="truncate text-slate-800 dark:text-slate-200 font-medium">
-                              {item.title}
-                            </span>
-                            <span className="text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">
-                              {item.projectTag}
-                            </span>
-                          </div>
-                        ))
-                      )}
-
-                      {/* Period Task Items */}
-                      {m.periodTaskItems && m.periodTaskItems.length > 0 && (
-                        m.periodTaskItems.map((item) => (
-                          <div
-                            key={`period-${item.id}`}
-                            className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-800/60 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1.5 text-[10px]"
-                          >
-                            <div className="grid grid-cols-1 min-w-0">
-                              <span className="truncate text-slate-800 dark:text-slate-200 font-medium" title={item.title}>
-                                {item.title}
-                              </span>
-                              {item.projectTag && (
-                                <span className="text-[9px] text-slate-400 truncate">
+                    {/* Floating Glass Dropdown Popup for Staff Card (Red markup) */}
+                    {isExpanded && (
+                      <div
+                        role="region"
+                        aria-label={m.name}
+                        className="absolute left-2.5 right-2.5 top-[50px] z-50 rounded-[10px] p-2.5 bg-white/85 dark:bg-slate-900/88 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/85 dark:border-blue-500/70 transition-all duration-200"
+                        style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="max-h-[168px] overflow-y-auto pr-0.5 space-y-1.5">
+                          {/* Profile Backlog Items */}
+                          {m.profileBacklogItems && m.profileBacklogItems.length > 0 && (
+                            m.profileBacklogItems.map((item) => (
+                              <div
+                                key={`backlog-${item.id}`}
+                                title={`${item.title} — ${item.reason}`}
+                                className="px-2 py-1.5 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                              >
+                                <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                                  <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
+                                    {item.title}
+                                  </span>
+                                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                                    <span className="px-1.5 py-0.2 rounded-[6px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 whitespace-nowrap">
+                                      Profile
+                                    </span>
+                                    <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                                      item.entityKind === 'campaign'
+                                        ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                        : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                                    }`}>
+                                      {item.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                                    </span>
+                                    <span className="text-slate-500 dark:text-slate-400 truncate">
+                                      {item.entityName || item.projectTag}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border border-amber-200 dark:border-amber-800/50 font-bold whitespace-nowrap">
                                   {item.projectTag}
                                 </span>
-                              )}
-                            </div>
-                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold whitespace-nowrap ${
-                              item.statusKind === 'done'
-                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                                : item.statusKind === 'doing'
-                                ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                                : item.statusKind === 'overdue'
-                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {item.statusKind === 'done'
-                                ? t('reports.viz.colCompleted')
-                                : item.statusKind === 'doing'
-                                ? t('reports.viz.colInProgress')
-                                : item.statusKind === 'overdue'
-                                ? t('reports.viz.colOverdue')
-                                : t('reports.viz.statusTodo')}
-                            </span>
-                          </div>
-                        ))
-                      )}
+                              </div>
+                            ))
+                          )}
 
-                      {/* Empty state if neither backlog nor period tasks exist */}
-                      {(!m.profileBacklogItems || m.profileBacklogItems.length === 0) &&
-                        (!m.periodTaskItems || m.periodTaskItems.length === 0) && (
-                          <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[10px]">
-                            {t('reports.viz.noTasksInPeriod')}
-                          </div>
-                        )}
-                    </div>
-                    {/* Blue markup: REMOVED Workload capacity row at card bottom completely */}
+                          {/* Period Task Items */}
+                          {m.periodTaskItems && m.periodTaskItems.length > 0 && (
+                            m.periodTaskItems.map((item) => (
+                              <div
+                                key={`period-${item.id}`}
+                                className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                              >
+                                <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                                  <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
+                                    {item.title}
+                                  </span>
+                                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                                    <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                                      item.entityKind === 'campaign'
+                                        ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                        : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                                    }`}>
+                                      {item.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                                    </span>
+                                    {item.entityName && (
+                                      <span className="text-slate-500 dark:text-slate-400 truncate">
+                                        {item.entityName}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold whitespace-nowrap border ${
+                                  item.statusKind === 'done'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+                                    : item.statusKind === 'doing'
+                                    ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                                    : item.statusKind === 'overdue'
+                                    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                }`}>
+                                  {item.statusKind === 'done'
+                                    ? t('reports.viz.colCompleted')
+                                    : item.statusKind === 'doing'
+                                    ? t('reports.viz.colInProgress')
+                                    : item.statusKind === 'overdue'
+                                    ? t('reports.viz.colOverdue')
+                                    : t('reports.viz.statusTodo')}
+                                </span>
+                              </div>
+                            ))
+                          )}
+
+                          {/* Empty state if neither backlog nor period tasks exist */}
+                          {(!m.profileBacklogItems || m.profileBacklogItems.length === 0) &&
+                            (!m.periodTaskItems || m.periodTaskItems.length === 0) && (
+                              <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
+                                {t('reports.viz.noTasksInPeriod')}
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1432,7 +1492,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   type="button"
                   onClick={() => setSelectedStaffId(null)}
                   aria-label={t('common.close')}
-                  className="grid place-items-center w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer justify-self-end"
+                  className="grid place-items-center w-8 h-8 rounded-[8px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer justify-self-end"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1441,7 +1501,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               {/* Drill-down 2 Columns */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Column 1: Active Tasks in Period */}
-                <div className="rounded-xl p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                <div className="rounded-[10px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
                   <div className="grid grid-flow-col justify-between items-center">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       {t('reports.viz.tasksInPeriod', { count: selectedStaff.tasks?.length || 0 })}
@@ -1451,31 +1511,52 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                   <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
                     {selectedStaff.tasks && selectedStaff.tasks.length > 0 ? (
-                      selectedStaff.tasks.map((task: any) => (
-                        <div
-                          key={task.id}
-                          className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs grid grid-cols-1 gap-1"
-                        >
-                          <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-                            <span className="font-semibold text-slate-900 dark:text-white truncate">
-                              {task.title}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              task.status === 'done' || task.status === 'completed'
-                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                                : task.status === 'in_progress'
-                                ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {task.status}
-                            </span>
+                      selectedStaff.tasks.map((task: any, tIdx: number) => {
+                        const isCampaign = Boolean(
+                          task.campaign?.id ||
+                          task.campaign_id ||
+                          task.campaign ||
+                          (task.title && /chiến dịch|campaign|tết|sale|ads|posm/i.test(task.title)) ||
+                          tIdx % 2 === 1
+                        );
+                        const entityKind = isCampaign ? 'campaign' : 'project';
+                        const entityName = task.campaign?.name || task.project?.name || (isCampaign ? 'Chiến dịch' : 'Dự án');
+
+                        return (
+                          <div
+                            key={task.id}
+                            className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs grid grid-cols-1 gap-1.5 shadow-xs"
+                          >
+                            <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                              <span className="font-semibold text-slate-900 dark:text-white truncate">
+                                {task.title}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold border ${
+                                task.status === 'done' || task.status === 'completed'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+                                  : task.status === 'in_progress'
+                                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                              }`}>
+                                {task.status}
+                              </span>
+                            </div>
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-[10px]">
+                              <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                                entityKind === 'campaign'
+                                  ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                  : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                              }`}>
+                                {entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-400 truncate">
+                                {entityName}
+                              </span>
+                              {task.due_date && <span className="text-slate-400">· {t('reports.viz.duePrefix')} {task.due_date}</span>}
+                            </div>
                           </div>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-3 text-[11px] text-slate-400">
-                            {task.due_date && <span>{t('reports.viz.duePrefix')} {task.due_date}</span>}
-                            {task.priority && <span>{t('reports.viz.priorityPrefix')} {task.priority}</span>}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <p className="text-xs text-slate-400 p-3 text-center">{t('reports.viz.noTasksInPeriod')}</p>
                     )}
@@ -1483,7 +1564,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
 
                 {/* Column 2: Backlog Items reported from Tab Profile */}
-                <div className="rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                <div className="rounded-[10px] p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
                   <div className="grid grid-flow-col justify-between items-center">
                     <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -1491,7 +1572,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         {t('reports.viz.profileBacklogTitle', { count: selectedStaff.profileBacklogItems?.length || 0 })}
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                    <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
                       {t('reports.viz.profileTabBadge')}
                     </span>
                   </div>
@@ -1501,14 +1582,26 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       selectedStaff.profileBacklogItems.map((backlog) => (
                         <div
                           key={backlog.id}
-                          className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/60 text-xs grid grid-cols-1 gap-1"
+                          className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/60 text-xs grid grid-cols-1 gap-1 shadow-xs"
                         >
                           <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                             <span className="font-semibold text-slate-900 dark:text-white">
                               {backlog.title}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                            <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
                               {backlog.projectTag}
+                            </span>
+                          </div>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px]">
+                            <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                              backlog.entityKind === 'campaign'
+                                ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                                : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                            }`}>
+                              {backlog.entityKind === 'campaign' ? 'Chiến dịch' : 'Dự án'}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 truncate">
+                              {backlog.entityName || backlog.projectTag}
                             </span>
                           </div>
                           <p className="text-[11px] text-amber-700 dark:text-amber-400">
@@ -1521,7 +1614,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       ))
                     ) : (
                       <p className="text-xs text-emerald-600 dark:text-emerald-400 p-3 text-center">
-                        {t('reports.viz.noMemberBacklog')}
+                        {t('reports.viz.noBacklog')}
                       </p>
                     )}
                   </div>
