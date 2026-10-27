@@ -10,6 +10,12 @@ export interface Task {
   workflow_status?: string | null;
   project?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; campaign?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; assignee_id?: string;
   assignee?: { id?: string; name: string; avatar_url: string }; department?: { id?: string; name: string }; column?: { name: string };
+  quantity?: number | null;
+  checklist_quantity?: number;
+  deliverable_quantity?: number;
+  target_department_id?: string | null;
+  target_department_name?: string | null;
+  checklist_items?: Array<{ id: string; title: string; quantity?: number | null; completed?: boolean; [key: string]: any }>;
 }
 const emptyTasks:Task[]=[];
 export function useTasks(){

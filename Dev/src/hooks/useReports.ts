@@ -115,6 +115,41 @@ export interface TeamReportCardsData {
   inProgressPct: number;
   inProgressSub: string;
   openTaskItems: TrackedTaskSummaryItem[];
+
+  // Card 5: Sản lượng hình ảnh / file (Deliverables Output)
+  totalDeliverables: number;
+  completedDeliverables: number;
+  doingDeliverables: number;
+  deliverableCompletionRate: number;
+  deliverablesByDepartment: DeliverableDepartmentItem[];
+  deliverablesByTrack: DeliverableTrackItem[];
+  deliverableItems: DeliverableTaskSummaryItem[];
+}
+
+export interface DeliverableDepartmentItem {
+  departmentName: string;
+  total: number;
+  completed: number;
+  percentage: number;
+}
+
+export interface DeliverableTrackItem {
+  id: string;
+  name: string;
+  kind: 'project' | 'campaign';
+  total: number;
+  completed: number;
+  percentage: number;
+}
+
+export interface DeliverableTaskSummaryItem {
+  id: string;
+  title: string;
+  quantity: number;
+  targetDepartmentName: string;
+  entityKind: 'project' | 'campaign';
+  entityName: string;
+  statusKind: 'done' | 'doing' | 'todo' | 'overdue';
 }
 
 const getInitial = (name: string) => {
@@ -664,10 +699,31 @@ export const useReports = () => {
           profileBacklogCount,
           profileBacklogItems,
           periodTaskItems,
-          tasks: openList,
+          tasks: memberAllTasks,
         };
       })
-      .sort((a, b) => b.total - a.total || b.capacityPercentage - a.capacityPercentage);
+      .sort((a, b) => {
+        const getRank = (m: { name: string; role?: string }): number => {
+          const normName = (m.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (normName.includes('thai dang') || (normName.includes('thai') && normName.includes('dang'))) return 0;
+          const normRole = (m.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (
+            normRole.includes('lead') ||
+            normRole.includes('truong') ||
+            normRole.includes('quan ly') ||
+            normRole.includes('manager') ||
+            normRole.includes('director') ||
+            normRole.includes('giam doc')
+          ) {
+            return 1;
+          }
+          return 2;
+        };
+        const rankA = getRank(a);
+        const rankB = getRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        return b.total - a.total || b.capacityPercentage - a.capacityPercentage || a.name.localeCompare(b.name, 'vi');
+      });
   }, [scopedUsers, periodTasks, periodMeta.today, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
 
   // Build 4 Team Performance Cards (100% consistent with staffMembers & periodTasks)
@@ -872,6 +928,82 @@ export const useReports = () => {
       });
     const openTaskItems = periodTaskItems.filter((item) => item.statusKind !== 'done');
 
+    // Card 5: Deliverables Output (Sản lượng hình ảnh / file)
+    let totalDeliverables = 0;
+    let completedDeliverables = 0;
+    let doingDeliverables = 0;
+
+    const deptDeliverableMap = new Map<string, { total: number; completed: number }>();
+    const trackDeliverableMap = new Map<string, { id: string; name: string; kind: 'project' | 'campaign'; total: number; completed: number }>();
+    const deliverableItems: DeliverableTaskSummaryItem[] = [];
+
+    periodTasks.forEach((t) => {
+      const isDone = isTaskDone(t.status);
+      const isOverdue = !isDone && taskOverdue(t, today);
+      const isTodo = !isDone && !isOverdue && ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+      const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone ? 'done' : isOverdue ? 'overdue' : isTodo ? 'todo' : 'doing';
+
+      const rawQ = Number((t as any).deliverable_quantity ?? (t as any).quantity ?? 0);
+      const checklistQ = Array.isArray((t as any).checklist_items)
+        ? (t as any).checklist_items.reduce((s: number, ci: any) => s + (Number(ci.quantity) || 0), 0)
+        : 0;
+      const q = Math.max(rawQ, checklistQ) || 1;
+
+      totalDeliverables += q;
+      if (isDone) {
+        completedDeliverables += q;
+      } else {
+        doingDeliverables += q;
+      }
+
+      const targetDept = ((t as any).target_department_name || (t as any).target_department?.name || t.department?.name || 'Nội bộ').trim();
+      const currentDept = deptDeliverableMap.get(targetDept) || { total: 0, completed: 0 };
+      currentDept.total += q;
+      if (isDone) currentDept.completed += q;
+      deptDeliverableMap.set(targetDept, currentDept);
+
+      const hasCamp = Boolean((t as any).campaign?.id || (t as any).campaign_id || (t as any).campaign);
+      const trackKind: 'project' | 'campaign' = hasCamp ? 'campaign' : 'project';
+      const trackId = String((t as any).campaign?.id || (t as any).campaign_id || (t as any).project?.id || (t as any).project_id || 'unlinked');
+      const trackName = (t as any).campaign?.name || (t as any).project?.name || (trackKind === 'campaign' ? (lang === 'en' ? 'Campaign' : 'Chiến dịch') : (lang === 'en' ? 'Project' : 'Dự án'));
+      const trackKey = `${trackKind}-${trackId}`;
+
+      const currentTrack = trackDeliverableMap.get(trackKey) || { id: trackId, name: trackName, kind: trackKind, total: 0, completed: 0 };
+      currentTrack.total += q;
+      if (isDone) currentTrack.completed += q;
+      trackDeliverableMap.set(trackKey, currentTrack);
+
+      deliverableItems.push({
+        id: String(t.id),
+        title: t.title || (lang === 'en' ? 'Task' : 'Công việc'),
+        quantity: q,
+        targetDepartmentName: targetDept,
+        entityKind: trackKind,
+        entityName: trackName,
+        statusKind,
+      });
+    });
+
+    const deliverableCompletionRate = totalDeliverables > 0
+      ? Math.round((completedDeliverables / totalDeliverables) * 100)
+      : 0;
+
+    const deliverablesByDepartment: DeliverableDepartmentItem[] = [...deptDeliverableMap.entries()]
+      .map(([departmentName, stats]) => ({
+        departmentName,
+        total: stats.total,
+        completed: stats.completed,
+        percentage: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    const deliverablesByTrack: DeliverableTrackItem[] = [...trackDeliverableMap.values()]
+      .map((stats) => ({
+        ...stats,
+        percentage: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
     return {
       totalTasks,
       completedTasks,
@@ -898,6 +1030,13 @@ export const useReports = () => {
       inProgressPct,
       inProgressSub,
       openTaskItems,
+      totalDeliverables,
+      completedDeliverables,
+      doingDeliverables,
+      deliverableCompletionRate,
+      deliverablesByDepartment,
+      deliverablesByTrack,
+      deliverableItems,
     };
   }, [
     periodMeta.today,

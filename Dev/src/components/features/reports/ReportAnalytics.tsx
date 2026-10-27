@@ -33,6 +33,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
+  Info,
 } from 'lucide-react';
 
 interface ReportAnalyticsProps {
@@ -68,6 +70,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
   const [staffView, setStaffView] = useState<'list' | 'cards'>('list');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
+  const [showBurndownInfo, setShowBurndownInfo] = useState(false);
+  const [showCapacityInfo, setShowCapacityInfo] = useState(false);
 
   // Expandable Box state with auto-closing on outside click
   const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
@@ -77,19 +82,25 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   };
 
   useEffect(() => {
-    if (!activeExpandedId) return;
+    if (!activeExpandedId && !showBurndownInfo && !showCapacityInfo) return;
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (!target.closest(`[data-expandable-box="${activeExpandedId}"]`)) {
+      if (activeExpandedId && !target.closest(`[data-expandable-box="${activeExpandedId}"]`)) {
         setActiveExpandedId(null);
+      }
+      if (showBurndownInfo && !target.closest('[data-info-popover="burndown"]')) {
+        setShowBurndownInfo(false);
+      }
+      if (showCapacityInfo && !target.closest('[data-info-popover="capacity"]')) {
+        setShowCapacityInfo(false);
       }
     };
     document.addEventListener('pointerdown', handlePointerDown);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [activeExpandedId]);
+  }, [activeExpandedId, showBurndownInfo, showCapacityInfo]);
 
   // Green markup: Calendar Date Range Popover
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -214,6 +225,53 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     if (!selectedStaffId) return null;
     return staffMembers.find((m) => m.id === selectedStaffId) || null;
   }, [staffMembers, selectedStaffId]);
+
+  const filteredStaffTasks = useMemo(() => {
+    if (!selectedStaff?.tasks) return [];
+    if (staffStatusFilter === 'all') return selectedStaff.tasks;
+    return selectedStaff.tasks.filter((task: any) => {
+      const st = String(task.status || '').toLowerCase();
+      const isDone = st === 'done' || st === 'completed';
+      const isDoing = st === 'in_progress' || st === 'doing';
+      const isLate = Boolean(
+        task.is_overdue ||
+        (task.due_date && new Date(task.due_date).getTime() < Date.now() && !isDone)
+      );
+      if (staffStatusFilter === 'done') return isDone;
+      if (staffStatusFilter === 'doing') return isDoing && !isLate;
+      if (staffStatusFilter === 'late') return isLate;
+      if (staffStatusFilter === 'todo') return !isDone && !isDoing && !isLate;
+      return true;
+    });
+  }, [selectedStaff, staffStatusFilter]);
+
+  const staffTaskCounts = useMemo(() => {
+    if (!selectedStaff?.tasks) return { all: 0, done: 0, doing: 0, todo: 0, late: 0 };
+    let done = 0;
+    let doing = 0;
+    let todo = 0;
+    let late = 0;
+    selectedStaff.tasks.forEach((task: any) => {
+      const st = String(task.status || '').toLowerCase();
+      const isDone = st === 'done' || st === 'completed';
+      const isDoing = st === 'in_progress' || st === 'doing';
+      const isLate = Boolean(
+        task.is_overdue ||
+        (task.due_date && new Date(task.due_date).getTime() < Date.now() && !isDone)
+      );
+      if (isDone) done++;
+      else if (isLate) late++;
+      else if (isDoing) doing++;
+      else todo++;
+    });
+    return {
+      all: selectedStaff.tasks.length,
+      done,
+      doing,
+      todo,
+      late,
+    };
+  }, [selectedStaff]);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -549,8 +607,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           </div>
         </div>
 
-        {/* TẦNG 1: 4 Team Performance Cards */}
-        <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+        {/* TẦNG 1: 5 Team Performance Cards (Slide 3) */}
+        <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
           <div
             data-expandable-box="card1"
@@ -624,12 +682,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               aria-label={t('reports.viz.card1Title')}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-emerald-400/80 dark:border-emerald-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card1'
-                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[220px] p-2.5 pointer-events-auto visible'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
               }`}
               style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
-              <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-1.5">
                 {teamCards.periodTaskItems && teamCards.periodTaskItems.length > 0 ? (
                   teamCards.periodTaskItems.map((item) => (
                     <div
@@ -640,8 +698,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
                           {item.title}
                         </span>
-                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[10px] min-w-0">
-                          <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
+                          <span className={`px-1.5 py-0.2 rounded-[4px] font-bold border whitespace-nowrap ${
                             item.entityKind === 'campaign'
                               ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
                               : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
@@ -653,7 +711,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           </span>
                         </div>
                       </div>
-                      <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold whitespace-nowrap border ${
+                      <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold whitespace-nowrap border ${
                         item.statusKind === 'done'
                           ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
                           : item.statusKind === 'doing'
@@ -764,12 +822,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               aria-label={t('reports.viz.card2Title')}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card2'
-                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[220px] p-2.5 pointer-events-auto visible'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
               }`}
               style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
-              <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-1.5">
                 {teamCards.backlogItems && teamCards.backlogItems.length > 0 ? (
                   teamCards.backlogItems.map((item) => (
                     <div
@@ -781,8 +839,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
                           {item.title}
                         </span>
-                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[10px] min-w-0">
-                          <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
+                          <span className={`px-1.5 py-0.2 rounded-[4px] font-bold border whitespace-nowrap ${
                             item.entityKind === 'campaign'
                               ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
                               : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
@@ -794,8 +852,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           </span>
                         </div>
                       </div>
-                      <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border border-amber-200 dark:border-amber-800/50 font-bold whitespace-nowrap">
-                        {item.projectTag}
+                      <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold whitespace-nowrap border ${
+                        item.severity === 'high'
+                          ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
+                      }`}>
+                        {item.severity === 'high' ? 'High' : 'Medium'}
                       </span>
                     </div>
                   ))
@@ -887,12 +949,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               aria-label={t('reports.viz.card3Title')}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card3'
-                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[220px] p-2.5 pointer-events-auto visible'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
               }`}
               style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
-              <div className="max-h-[160px] overflow-y-auto pr-0.5 space-y-1.5">
+              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-1.5">
                 {teamCards.tracks && teamCards.tracks.length > 0 ? (
                   teamCards.tracks.map((tr) => (
                     <div
@@ -900,7 +962,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-[11px] shadow-xs"
                     >
                       {/* Standard Dashboard colors: Project = Violet, Campaign = Orange */}
-                      <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold border whitespace-nowrap ${
+                      <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold border whitespace-nowrap ${
                         tr.kind === 'project'
                           ? 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
                           : 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
@@ -1009,29 +1071,29 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               aria-label={t('reports.viz.card4Title')}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/80 dark:border-blue-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card4'
-                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[220px] p-2.5 pointer-events-auto visible'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
               }`}
               style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
               {/* 3 Compact Status Pills Row */}
               <div className="grid grid-cols-3 gap-1 mb-1.5">
-                <div className="px-1.5 py-0.5 rounded-[6px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                <div className="px-1.5 py-0.5 rounded-[4px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[9.5px]">
                   <span className="text-blue-600 dark:text-blue-400 font-medium truncate">{t('reports.viz.statusDoing')}</span>
                   <b className="font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
                 </div>
-                <div className="px-1.5 py-0.5 rounded-[6px] bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                <div className="px-1.5 py-0.5 rounded-[4px] bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[9.5px]">
                   <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{t('reports.viz.statusTodo')}</span>
                   <b className="font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
                 </div>
-                <div className="px-1.5 py-0.5 rounded-[6px] bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                <div className="px-1.5 py-0.5 rounded-[4px] bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[9.5px]">
                   <span className="text-rose-600 dark:text-rose-400 font-medium truncate">{t('reports.viz.statusOverdue')}</span>
                   <b className="font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
                 </div>
               </div>
 
               {/* Scrollable list of open tasks */}
-              <div className="max-h-[140px] overflow-y-auto pr-0.5 space-y-1.5">
+              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-1.5">
                 {teamCards.openTaskItems && teamCards.openTaskItems.length > 0 ? (
                   teamCards.openTaskItems.map((item) => (
                     <div
@@ -1042,8 +1104,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
                           {item.title}
                         </span>
-                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[10px] min-w-0">
-                          <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
+                          <span className={`px-1.5 py-0.2 rounded-[4px] font-bold border whitespace-nowrap ${
                             item.entityKind === 'campaign'
                               ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
                               : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
@@ -1055,7 +1117,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           </span>
                         </div>
                       </div>
-                      <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold whitespace-nowrap border ${
+                      <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold whitespace-nowrap border ${
                         item.statusKind === 'doing'
                           ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
                           : item.statusKind === 'overdue'
@@ -1075,6 +1137,178 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     {t('reports.viz.noTasksInPeriod')}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Sản lượng hình ảnh / file (Deliverables Output - Slide 3) */}
+          <div
+            data-expandable-box="card5"
+            className={`min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
+              activeExpandedId === 'card5' ? 'z-40' : 'z-10'
+            }`}
+          >
+            {/* Header Row: Top-Right Chevron Dropdown */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center">
+                  <ImagePlus className="w-4 h-4" />
+                </div>
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                    {t('reports.viz.card5Title')}
+                  </h3>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                    {t('reports.viz.card5Sub')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Chevron Button placed at top-right with state border */}
+              <button
+                type="button"
+                onClick={(e) => toggleExpanded('card5', e)}
+                aria-label={activeExpandedId === 'card5' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                  activeExpandedId === 'card5'
+                    ? 'border border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50/90 dark:bg-violet-950/60'
+                    : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card5' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Performance KPI & Visualize Bar */}
+            <div className="grid grid-cols-1 gap-1">
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-violet-600 dark:text-violet-400">
+                    {teamCards.totalDeliverables}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {lang === 'en' ? 'items' : 'hình/file'}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
+                  {teamCards.deliverableCompletionRate}%
+                </span>
+              </div>
+
+              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, teamCards.deliverableCompletionRate)}%` }}
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{t('reports.viz.doneCount', { count: teamCards.completedDeliverables })}</span>
+                <span>{t('reports.viz.statusDoing')}: {teamCards.doingDeliverables}</span>
+              </div>
+            </div>
+
+            {/* Floating Glass Dropdown Popup for Card 5 */}
+            <div
+              role="region"
+              aria-label={t('reports.viz.card5Title')}
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                activeExpandedId === 'card5'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
+                  : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
+              }`}
+              style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-2">
+                {/* Section A: Phân bổ theo Phòng ban thụ hưởng */}
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                    {t('reports.viz.byDepartment')}
+                  </div>
+                  {teamCards.deliverablesByDepartment && teamCards.deliverablesByDepartment.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-1">
+                      {teamCards.deliverablesByDepartment.map((d, dIdx) => (
+                        <div key={dIdx} className="px-2 py-1 rounded-[6px] bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center text-[11px]">
+                          <span className="truncate font-medium text-slate-800 dark:text-slate-200">{d.departmentName}</span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[9.5px]">
+                            <span className="font-bold text-violet-600 dark:text-violet-400">{d.total} SL</span>
+                            <span className="text-slate-400">({d.percentage}%)</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 italic">Chưa có số liệu phòng ban</p>
+                  )}
+                </div>
+
+                {/* Section B: Phân bổ theo Dự án / Chiến dịch */}
+                <div className="space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                    {t('reports.viz.byTrack')}
+                  </div>
+                  {teamCards.deliverablesByTrack && teamCards.deliverablesByTrack.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-1">
+                      {teamCards.deliverablesByTrack.map((tr) => (
+                        <div key={tr.id} className="px-2 py-1 rounded-[6px] bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-[11px]">
+                          <span className={`px-1.5 py-0.2 rounded-[4px] text-[9.5px] font-bold border whitespace-nowrap ${
+                            tr.kind === 'campaign'
+                              ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
+                              : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
+                          }`}>
+                            {tr.kind === 'campaign' ? t('reports.viz.campaignBadge') : t('reports.viz.projectBadge')}
+                          </span>
+                          <span className="truncate font-medium text-slate-800 dark:text-slate-200">{tr.name}</span>
+                          <span className="font-bold text-violet-600 dark:text-violet-400 text-[10px]">{tr.total} SL</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 italic">Chưa có số liệu theo dự án</p>
+                  )}
+                </div>
+
+                {/* Section C: Danh sách đầu việc & Số lượng */}
+                <div className="space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    {lang === 'en' ? 'Recent Deliverable Items' : 'Danh sách sản phẩm trong kỳ'}
+                  </div>
+                  {teamCards.deliverableItems && teamCards.deliverableItems.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-1">
+                      {teamCards.deliverableItems.slice(0, 10).map((item) => (
+                        <div key={item.id} className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]">
+                          <div className="grid grid-cols-1 min-w-0 gap-0.5">
+                            <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
+                              {item.title}
+                            </span>
+                            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
+                              <span className="px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/50 whitespace-nowrap">
+                                → {item.targetDepartmentName}
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-400 truncate block min-w-0">
+                                {item.entityName}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
+                              SL: {item.quantity}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold border ${
+                              item.statusKind === 'done'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
+                                : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                            }`}>
+                              {item.statusKind === 'done' ? t('reports.viz.colCompleted') : t('reports.viz.colInProgress')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 italic">Chưa có đầu việc phát sinh sản lượng</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1099,24 +1333,68 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             </div>
 
             <div className="grid grid-flow-col auto-cols-max items-center gap-4">
-              {/* Legend */}
-              <div className="hidden sm:grid grid-flow-col auto-cols-max items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+              {/* Interactive Status Filter / Legend (Slide 5c) */}
+              <div className="hidden sm:grid grid-flow-col auto-cols-max items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <button
+                  type="button"
+                  onClick={() => setStaffStatusFilter('all')}
+                  className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1 rounded-[6px] transition-all cursor-pointer ${
+                    staffStatusFilter === 'all'
+                      ? 'bg-slate-200 dark:bg-slate-700 font-bold text-slate-900 dark:text-white'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                  <span>{t('reports.viz.filterAll')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffStatusFilter('done')}
+                  className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1 rounded-[6px] transition-all cursor-pointer ${
+                    staffStatusFilter === 'done'
+                      ? 'bg-emerald-100 dark:bg-emerald-950/60 font-bold text-emerald-700 dark:text-emerald-300'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
                   <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
                   <span>{t('reports.viz.legendDone')}</span>
-                </div>
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffStatusFilter('doing')}
+                  className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1 rounded-[6px] transition-all cursor-pointer ${
+                    staffStatusFilter === 'doing'
+                      ? 'bg-blue-100 dark:bg-blue-950/60 font-bold text-blue-700 dark:text-blue-300'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
                   <span className="w-2.5 h-2.5 rounded-full bg-[#2a78d6]" />
                   <span>{t('reports.viz.legendDoing')}</span>
-                </div>
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffStatusFilter('todo')}
+                  className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1 rounded-[6px] transition-all cursor-pointer ${
+                    staffStatusFilter === 'todo'
+                      ? 'bg-slate-200 dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-200'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
                   <span className="w-2.5 h-2.5 rounded-full bg-[#64748b]" />
                   <span>{t('reports.viz.legendTodo')}</span>
-                </div>
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffStatusFilter('late')}
+                  className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1 rounded-[6px] transition-all cursor-pointer ${
+                    staffStatusFilter === 'late'
+                      ? 'bg-rose-100 dark:bg-rose-950/60 font-bold text-rose-700 dark:text-rose-300'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
                   <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
                   <span>{t('reports.viz.legendLate')}</span>
-                </div>
+                </button>
               </div>
 
               {/* View Switcher Buttons */}
@@ -1328,24 +1606,72 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                     {/* Performance Stats UI (Stays on background) */}
                     <div className="grid grid-cols-1 gap-1.5">
-                      {/* 4 Mini Stat Badges: ENLARGED NUMBERS */}
-                      <div className="grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-[8px] py-1.5 px-1">
-                        <div>
+                      {/* 4 Mini Stat Badges: INTERACTIVE FUNCTION BUTTONS (Slide 5c) */}
+                      <div className="grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-[8px] py-1 px-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStaffId(m.id);
+                            setStaffStatusFilter('all');
+                          }}
+                          className={`rounded-[6px] p-1 transition-all cursor-pointer ${
+                            isSelected && staffStatusFilter === 'all'
+                              ? 'bg-slate-200 dark:bg-slate-700 ring-1 ring-slate-400'
+                              : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
+                          }`}
+                        >
                           <span className="block text-slate-800 dark:text-slate-100 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.total}</span>
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colTotalTasks')}</span>
-                        </div>
-                        <div>
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colTotalTasks')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStaffId(m.id);
+                            setStaffStatusFilter('done');
+                          }}
+                          className={`rounded-[6px] p-1 transition-all cursor-pointer ${
+                            isSelected && staffStatusFilter === 'done'
+                              ? 'bg-emerald-100/80 dark:bg-emerald-950/80 ring-1 ring-emerald-500'
+                              : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                          }`}
+                        >
                           <span className="block text-emerald-600 dark:text-emerald-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.done}</span>
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colCompleted')}</span>
-                        </div>
-                        <div>
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colCompleted')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStaffId(m.id);
+                            setStaffStatusFilter('doing');
+                          }}
+                          className={`rounded-[6px] p-1 transition-all cursor-pointer ${
+                            isSelected && staffStatusFilter === 'doing'
+                              ? 'bg-blue-100/80 dark:bg-blue-950/80 ring-1 ring-blue-500'
+                              : 'hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                          }`}
+                        >
                           <span className="block text-blue-600 dark:text-blue-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.doing}</span>
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colInProgress')}</span>
-                        </div>
-                        <div>
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colInProgress')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStaffId(m.id);
+                            setStaffStatusFilter('late');
+                          }}
+                          className={`rounded-[6px] p-1 transition-all cursor-pointer ${
+                            isSelected && staffStatusFilter === 'late'
+                              ? 'bg-rose-100/80 dark:bg-rose-950/80 ring-1 ring-rose-500'
+                              : 'hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                          }`}
+                        >
                           <span className="block text-rose-600 dark:text-rose-400 text-lg sm:text-xl font-extrabold tracking-tight leading-tight">{m.late}</span>
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colOverdue')}</span>
-                        </div>
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block truncate mt-0.5">{t('reports.viz.colOverdue')}</span>
+                        </button>
                       </div>
 
                       {/* Backlog Alert or Clean state button (rounded-[8px]) - Single trigger for dropdown */}
@@ -1371,12 +1697,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       aria-label={m.name}
                       className={`absolute left-2.5 right-2.5 top-[50px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                         isExpanded
-                          ? 'opacity-100 scale-y-100 translate-y-0 max-h-[220px] p-2.5 pointer-events-auto visible'
+                          ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                           : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
                       }`}
                       style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="max-h-[168px] overflow-y-auto pr-0.5 space-y-1.5">
+                      <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-1.5">
                         {m.profileBacklogItems && m.profileBacklogItems.length > 0 ? (
                           m.profileBacklogItems.map((item) => (
                             <div
@@ -1388,11 +1714,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
                                   {item.title}
                                 </span>
-                                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[10px] min-w-0">
-                                  <span className="px-1.5 py-0.2 rounded-[6px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 whitespace-nowrap">
+                                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
+                                  <span className="px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 whitespace-nowrap">
                                     Profile
                                   </span>
-                                  <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                                  <span className={`px-1.5 py-0.2 rounded-[4px] font-bold border whitespace-nowrap ${
                                     item.entityKind === 'campaign'
                                       ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
                                       : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
@@ -1404,8 +1730,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                   </span>
                                 </div>
                               </div>
-                              <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 border border-amber-200 dark:border-amber-800/50 font-bold whitespace-nowrap">
-                                {item.projectTag}
+                              <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold whitespace-nowrap border ${
+                                item.severity === 'high'
+                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50'
+                                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
+                              }`}>
+                                {item.severity === 'high' ? 'High' : 'Medium'}
                               </span>
                             </div>
                           ))
@@ -1468,18 +1798,88 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
               {/* Drill-down 2 Columns */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Column 1: Active Tasks in Period */}
+                {/* Column 1: Active Tasks in Period (with Slide 5c interactive filters) */}
                 <div className="rounded-[10px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
-                  <div className="grid grid-flow-col justify-between items-center">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      {t('reports.viz.tasksInPeriod', { count: selectedStaff.tasks?.length || 0 })}
-                    </h4>
-                    <span className="text-[11px] text-slate-400">{t('reports.viz.realtimeUpdate')}</span>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-flow-col justify-between items-center">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        {t('reports.viz.tasksInPeriod', { count: filteredStaffTasks.length })}
+                      </h4>
+                      <span className="text-[11px] text-slate-400">{t('reports.viz.realtimeUpdate')}</span>
+                    </div>
+
+                    {/* Interactive Status Filter Buttons (Slide 5c) */}
+                    <div className="grid grid-flow-col auto-cols-max gap-1.5 overflow-x-auto pb-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setStaffStatusFilter('all')}
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                          staffStatusFilter === 'all'
+                            ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 border-transparent shadow-xs'
+                            : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{t('reports.viz.filterAll')}</span>
+                        <span className="text-[10px] opacity-75 font-bold">({staffTaskCounts.all})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffStatusFilter('done')}
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                          staffStatusFilter === 'done'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                        }`}
+                      >
+                        <span>{t('reports.viz.legendDone')}</span>
+                        <span className="text-[10px] opacity-80 font-bold">({staffTaskCounts.done})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffStatusFilter('doing')}
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                          staffStatusFilter === 'doing'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                        }`}
+                      >
+                        <span>{t('reports.viz.legendDoing')}</span>
+                        <span className="text-[10px] opacity-80 font-bold">({staffTaskCounts.doing})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffStatusFilter('todo')}
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                          staffStatusFilter === 'todo'
+                            ? 'bg-slate-600 text-white border-slate-600 shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{t('reports.viz.legendTodo')}</span>
+                        <span className="text-[10px] opacity-80 font-bold">({staffTaskCounts.todo})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffStatusFilter('late')}
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                          staffStatusFilter === 'late'
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+                        }`}
+                      >
+                        <span>{t('reports.viz.legendLate')}</span>
+                        <span className="text-[10px] opacity-80 font-bold">({staffTaskCounts.late})</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
-                    {selectedStaff.tasks && selectedStaff.tasks.length > 0 ? (
-                      selectedStaff.tasks.map((task: any, tIdx: number) => {
+                    {filteredStaffTasks && filteredStaffTasks.length > 0 ? (
+                      filteredStaffTasks.map((task: any, tIdx: number) => {
                         const isCampaign = Boolean(
                           task.campaign?.id ||
                           task.campaign_id ||
@@ -1499,7 +1899,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               <span className="font-semibold text-slate-900 dark:text-white truncate">
                                 {task.title}
                               </span>
-                              <span className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold border ${
+                              <span className={`px-2 py-0.5 rounded-[4px] text-[9.5px] font-bold border ${
                                 task.status === 'done' || task.status === 'completed'
                                   ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
                                   : task.status === 'in_progress'
@@ -1509,8 +1909,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 {task.status}
                               </span>
                             </div>
-                            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-[10px] min-w-0">
-                              <span className={`px-1.5 py-0.2 rounded-[6px] font-bold border whitespace-nowrap ${
+                            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-[9.5px] min-w-0">
+                              <span className={`px-1.5 py-0.2 rounded-[4px] font-bold border whitespace-nowrap ${
                                 entityKind === 'campaign'
                                   ? 'bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-800/50'
                                   : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800/50'
@@ -1594,13 +1994,50 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         {/* TẦNG 3: 2 Bottom Charts */}
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Chart 1: BURNDOWN: TASK CÒN LẠI (Burndown / Burnup trend) */}
+          {/* Chart 1: BURNDOWN: TASK CÒN LẠI (Burndown / Burnup trend - Slide 4a) */}
           <div className="glass-panel p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
               <div className="grid grid-cols-1 gap-0.5">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  {lang === 'en' ? 'BURNDOWN: REMAINING TASKS' : 'BURNDOWN: TASK CÒN LẠI'}
-                </h3>
+                <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {lang === 'en' ? 'BURNDOWN: REMAINING TASKS' : 'BURNDOWN: TASK CÒN LẠI'}
+                  </h3>
+                  <div data-info-popover="burndown" className="relative inline-grid place-items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowBurndownInfo(!showBurndownInfo)}
+                      aria-label={t('reports.viz.infoBurndownTitle')}
+                      className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer ${
+                        showBurndownInfo
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                    {showBurndownInfo && (
+                      <div
+                        className="absolute left-0 top-7 z-30 w-72 sm:w-80 p-3 rounded-xl bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-blue-400/70 dark:border-blue-500/70 shadow-xl text-xs space-y-1.5"
+                        style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoBurndownTitle')}</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowBurndownInfo(false)}
+                            aria-label={t('common.close')}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {t('reports.viz.infoBurndownDesc')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {lang === 'en' ? 'Actual progress vs planned trend' : 'Đường hoàn thành thực tế (Actual) so với kế hoạch dự kiến (Plan)'}
                 </p>
@@ -1673,13 +2110,50 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             </div>
           </div>
 
-          {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix) */}
+          {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix - Slide 4b) */}
           <div className="glass-panel p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
               <div className="grid grid-cols-1 gap-0.5">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  {lang === 'en' ? 'WORKLOAD CAPACITY (% CAPACITY)' : 'MỨC TẢI CÔNG VIỆC (% CÔNG SUẤT)'}
-                </h3>
+                <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {lang === 'en' ? 'WORKLOAD CAPACITY (% CAPACITY)' : 'MỨC TẢI CÔNG VIỆC (% CÔNG SUẤT)'}
+                  </h3>
+                  <div data-info-popover="capacity" className="relative inline-grid place-items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowCapacityInfo(!showCapacityInfo)}
+                      aria-label={t('reports.viz.infoCapacityTitle')}
+                      className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer ${
+                        showCapacityInfo
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                    {showCapacityInfo && (
+                      <div
+                        className="absolute left-0 top-7 z-30 w-72 sm:w-80 p-3 rounded-xl bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-blue-400/70 dark:border-blue-500/70 shadow-xl text-xs space-y-1.5"
+                        style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoCapacityTitle')}</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowCapacityInfo(false)}
+                            aria-label={t('common.close')}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {t('reports.viz.infoCapacityDesc')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {lang === 'en' ? 'Capacity distribution across 4 time milestones in period' : 'Mức độ phân bổ tải theo 4 mốc thời gian trong kỳ'}
                 </p>

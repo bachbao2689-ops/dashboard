@@ -23,6 +23,7 @@ import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import {completeTrackedTask} from '../../../services/workspaceTasks';
 import {isGlobalManager} from '../../../lib/roleScope';
+import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -67,6 +68,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [newSubtaskOwner, setNewSubtaskOwner] = useState('');
   const [newSubtaskDue, setNewSubtaskDue] = useState('');
+  const [newSubtaskQuantity, setNewSubtaskQuantity] = useState('');
 
   useEffect(() => {
     if (!resizing) return;
@@ -109,8 +111,21 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     if (workflowDateError(startDate, dueDate, bounds)) return toast.error('Lịch subtask phải nằm trong lịch Project/Campaign.');
     const payload = {title:newSubtaskTitle.trim(), start_date:startDate || null, due_date:dueDate || null, status:'todo',
       assignee_id:newSubtaskOwner ? Number(newSubtaskOwner) : null, [`${kind}_id`]:item.id};
-    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).insert(payload).select('id').single(), 'Đã thêm subtask')) {
-      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setShowSubtaskForm(false); onUpdated?.();
+    const numQ = Number(newSubtaskQuantity);
+    if (await details.mutate(async () => {
+      const res = await supabase.from(`${kind}_subtasks`).insert(payload).select('id').single();
+      if (res.data?.id && (newSubtaskQuantity || profile?.id)) {
+        await saveTaskDeliverables(
+          kind === 'project' ? 'project_subtask' : 'campaign_subtask',
+          res.data.id,
+          { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+          profile?.id,
+          data.workspace_id,
+        );
+      }
+      return res;
+    }, 'Đã thêm subtask')) {
+      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setNewSubtaskQuantity(''); setShowSubtaskForm(false); onUpdated?.();
     }
   };
 
@@ -219,8 +234,9 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               {canManage && showSubtaskForm && (
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
                   <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    <input type="number" min="0" step="1" value={newSubtaskQuantity} onChange={e=>setNewSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
                     <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm w-full cursor-pointer"/></div>
                   </div>
                   <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">{t('common.cancel')}</button><button disabled={busy} onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">{t('common.add')}</button></div>
