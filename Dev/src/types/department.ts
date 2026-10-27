@@ -58,8 +58,9 @@ export interface WeeklyTrendItem {
 }
 
 export interface HeatmapRow {
-  id: DepartmentId;
+  id: DepartmentId | string;
   name: string;
+  avatar_url?: string | null;
   weeks: [number, number, number, number];
 }
 

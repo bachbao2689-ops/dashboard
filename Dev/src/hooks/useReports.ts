@@ -124,78 +124,6 @@ const getInitial = (name: string) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const MOCK_PROFILE_BACKLOG_TEMPLATES: Array<{
-  title: string;
-  reason: string;
-  projectTag: string;
-  entityKind: 'project' | 'campaign';
-  entityName: string;
-  severity: 'high' | 'medium';
-  reportedAt: string;
-}> = [
-  {
-    title: 'Chốt thiết kế POSM & Standee chiến dịch Cà Phê Rang Xay',
-    reason: 'Chờ duyệt key visual cuối từ Ban Giám Đốc (Báo cáo từ Tab Profile)',
-    projectTag: 'Campaign Q4',
-    entityKind: 'campaign',
-    entityName: 'Chiến dịch Q4 Rang Xay',
-    severity: 'high',
-    reportedAt: 'Hôm qua · Tab Profile',
-  },
-  {
-    title: 'Đối soát nghiệm thu báo giá NCC bao bì túi 500g',
-    reason: 'Đang thương lượng lại tiến độ in ấn đợt 2 với xưởng',
-    projectTag: 'Packaging 2026',
-    entityKind: 'project',
-    entityName: 'Bao bì K COFFEE 2026',
-    severity: 'medium',
-    reportedAt: '2 ngày trước · Tab Profile',
-  },
-  {
-    title: 'Tối ưu landing page & tracking pixel chiến dịch Tết',
-    reason: 'Cần bổ sung bộ banner kích thước mobile từ nhóm Design',
-    projectTag: 'Digital Ads',
-    entityKind: 'campaign',
-    entityName: 'Chiến dịch Tết Digital',
-    severity: 'high',
-    reportedAt: 'Hôm nay · Tab Profile',
-  },
-  {
-    title: 'Kịch bản livestream & booking KOLs chuỗi cửa hàng Flagship',
-    reason: 'Đang chờ xác nhận lịch quay thực tế tại quán K COFFEE Quận 1',
-    projectTag: 'Brand Activation',
-    entityKind: 'campaign',
-    entityName: 'Brand Activation Flagship',
-    severity: 'medium',
-    reportedAt: '3 ngày trước · Tab Profile',
-  },
-  {
-    title: 'Rà soát tồn kho quà tặng doanh nghiệp & hộp quà Tết',
-    reason: 'Chờ kho tổng cập nhật số lượng mẫu thử thực tế',
-    projectTag: 'B2B Giftset',
-    entityKind: 'project',
-    entityName: 'Quà tặng Doanh nghiệp',
-    severity: 'high',
-    reportedAt: 'Hôm qua · Tab Profile',
-  },
-  {
-    title: 'Cập nhật bộ tiêu chuẩn trưng bày quầy kệ Showroom',
-    reason: 'Tồn đọng phần hình ảnh minh họa thực tế tại 3 điểm bán mới',
-    projectTag: 'Trade Marketing',
-    entityKind: 'project',
-    entityName: 'Trade Marketing Chuỗi',
-    severity: 'medium',
-    reportedAt: '4 ngày trước · Tab Profile',
-  },
-];
-
-function hashCode(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
 
 function formatShortDate(iso: string): string {
   if (!iso || iso.length < 10) return iso;
@@ -314,7 +242,7 @@ function computePeriodHeatmap(
     const memberTasks = scopedTasks.filter(
       (t) => String(t.assignee_id) === String(member.id) && taskActive(t),
     );
-    const weeks = [3, 2, 1, 0].map((stepsAgo, colIdx) => {
+    const weeks = [3, 2, 1, 0].map((stepsAgo) => {
       const pointEnd = new Date(endMs - stepsAgo * stepDays * 86400000).toISOString().slice(0, 10);
       const openAtPoint = memberTasks.filter((t) => {
         const createdDay = taskDay(t.created_at) || taskDay(t.start_date);
@@ -324,15 +252,13 @@ function computePeriodHeatmap(
         return Boolean(doneDay && doneDay > pointEnd);
       }).length;
       const basePct = openAtPoint * 20;
-      if (basePct > 0) return basePct;
-      // Fallback visual capacity when historical timestamps are sparse
-      const seed = (hashCode(`${member.id}-${range}-${colIdx}`) % 5) * 20;
-      return Math.max(20, Math.min(140, member.capacityPercentage || seed));
+      return Math.min(140, basePct);
     }) as [number, number, number, number];
 
     return {
       id: member.id,
       name: member.name,
+      avatar_url: member.avatar_url,
       weeks,
     };
   });
@@ -555,11 +481,9 @@ export const useReports = () => {
   // Build Staff Performance list (shared 1:1 between List Mode and Staff Cards Mode)
   const staffMembers = useMemo<StaffReportMember[]>(() => {
     const today = periodMeta.today;
-    const periodScale =
-      timeRange === 'week' ? 1 : timeRange === 'month' ? 2 : timeRange === 'quarter' ? 3 : 4;
 
     return scopedUsers
-      .map((u, idx) => {
+      .map((u) => {
         const memberAllTasks = periodTasks.filter(
           (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
         );
@@ -596,39 +520,72 @@ export const useReports = () => {
           ? Math.max(70, 100 - late * 8)
           : 85;
 
-        // Deterministic mock Profile-reported backlog items per staff member
-        const seed = hashCode(`${u.id}-${u.name}`);
-        const baseBacklogCount = (seed % 2) + (late > 0 ? 1 : 0);
-        const profileBacklogCount = Math.min(
-          4,
-          Math.max(1, Math.round((baseBacklogCount + (periodScale - 1) * 0.6))),
-        );
+        const staffAvatarUrl =
+          u.avatar_url ||
+          (String(u.id) === String(profile?.id) ? profile?.avatar_url : null) ||
+          workspaceTasks.find((t) => String(t.assignee_id) === String(u.id) && t.assignee?.avatar_url)?.assignee?.avatar_url ||
+          null;
+
         const deptName = u.department?.name || selectedDepartmentName;
         const initial = getInitial(u.name);
 
-        const profileBacklogItems: ProfileBacklogItem[] = Array.from(
-          { length: profileBacklogCount },
-          (_, bIdx) => {
-            const tpl =
-              MOCK_PROFILE_BACKLOG_TEMPLATES[
-                (seed + bIdx + idx) % MOCK_PROFILE_BACKLOG_TEMPLATES.length
-              ];
-            return {
-              id: `prof-backlog-${u.id}-${timeRange}-${bIdx}`,
-              title: tpl.title,
-              staffId: String(u.id),
-              staffName: u.name,
-              staffInitial: initial,
-              departmentName: deptName,
-              reason: tpl.reason,
-              reportedAt: tpl.reportedAt,
-              severity: bIdx === 0 && (late > 0 || tpl.severity === 'high') ? 'high' : tpl.severity,
-              projectTag: tpl.projectTag,
-              entityKind: tpl.entityKind,
-              entityName: tpl.entityName,
-            };
-          },
+        const realBacklogTasks = memberAllTasks.filter(
+          (t) => taskOpen(t) && (taskOverdue(t, today) || (t.status || '').toLowerCase() === 'backlog'),
         );
+
+        const profileBacklogItems: ProfileBacklogItem[] = realBacklogTasks.map((t, bIdx) => {
+          const isOverdue = taskOverdue(t, today);
+          const reason = t.due_date
+            ? isOverdue
+              ? lang === 'en'
+                ? `Overdue since ${formatShortDate(t.due_date)}`
+                : `Quá hạn từ ${formatShortDate(t.due_date)}`
+              : lang === 'en'
+              ? `Due ${formatShortDate(t.due_date)}`
+              : `Hạn chót ${formatShortDate(t.due_date)}`
+            : lang === 'en'
+            ? 'Backlog item'
+            : 'Công việc tồn đọng';
+
+          const reportedAt = t.updated_at
+            ? formatShortDate(taskDay(t.updated_at))
+            : t.created_at
+            ? formatShortDate(taskDay(t.created_at))
+            : lang === 'en'
+            ? 'Recent'
+            : 'Gần đây';
+
+          const hasCampaign = Boolean(
+            (t as any).campaign?.id || (t as any).campaign_id || (t as any).campaign,
+          );
+          const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
+          const entityName =
+            (t as any).campaign?.name ||
+            (t as any).project?.name ||
+            deptName ||
+            '';
+          const projectTag =
+            (t as any).project?.name ||
+            (t as any).campaign?.name ||
+            deptName ||
+            '';
+
+          return {
+            id: `prof-backlog-${u.id}-${t.id || bIdx}`,
+            title: t.title || (lang === 'en' ? 'Task' : 'Công việc'),
+            staffId: String(u.id),
+            staffName: u.name,
+            staffInitial: initial,
+            departmentName: deptName,
+            reason,
+            reportedAt,
+            severity: isOverdue ? 'high' : 'medium',
+            projectTag,
+            entityKind,
+            entityName,
+          };
+        });
+        const profileBacklogCount = profileBacklogItems.length;
 
         const roleLabel = u.job_title
           ? u.job_title
@@ -644,51 +601,54 @@ export const useReports = () => {
         const shortName = u.name.length > 12 ? `${u.name.slice(0, 11)}…` : u.name;
         const displayLabel = `${u.name.length > 14 ? `${u.name.slice(0, 13)}…` : u.name}  ${completionPct}%`;
 
-        const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks.map((t, tIdx) => {
-          const isDone = isTaskDone(t.status);
-          const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
-          const isTodo =
-            !isDone &&
-            !isOverdue &&
-            ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
-          const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
-            ? 'done'
-            : isOverdue
-            ? 'overdue'
-            : isTodo
-            ? 'todo'
-            : 'doing';
+        const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks
+          .map((t) => {
+            const isDone = isTaskDone(t.status);
+            const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
+            const isTodo =
+              !isDone &&
+              !isOverdue &&
+              ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+            const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
+              ? 'done'
+              : isOverdue
+              ? 'overdue'
+              : isTodo
+              ? 'todo'
+              : 'doing';
 
-          const hasCampaign = Boolean(
-            (t as any).campaign?.id ||
-            (t as any).campaign_id ||
-            (t as any).campaign ||
-            (t.title && /chiến dịch|campaign|tết|sale|ads|posm/i.test(t.title)) ||
-            tIdx % 2 === 1
-          );
-          const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
-          const entityName =
-            (t as any).campaign?.name ||
-            (t as any).project?.name ||
-            (entityKind === 'campaign' ? 'Chiến dịch trọng điểm' : 'Dự án K COFFEE');
+            const hasCampaign = Boolean(
+              (t as any).campaign?.id || (t as any).campaign_id || (t as any).campaign,
+            );
+            const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
+            const entityName =
+              (t as any).campaign?.name ||
+              (t as any).project?.name ||
+              deptName ||
+              '';
 
-          return {
-            id: String(t.id),
-            title: t.title || 'Công việc',
-            assigneeName: u.name,
-            projectTag: (t as any).project?.name || (t as any).campaign?.name || deptName || 'General',
-            statusKind,
-            entityKind,
-            entityName,
-          };
-        });
+            return {
+              id: String(t.id),
+              title: t.title || (lang === 'en' ? 'Task' : 'Công việc'),
+              assigneeName: u.name,
+              projectTag: (t as any).project?.name || (t as any).campaign?.name || deptName || 'General',
+              statusKind,
+              entityKind,
+              entityName,
+            };
+          })
+          .sort((a, b) => {
+            if (a.statusKind === 'done' && b.statusKind !== 'done') return -1;
+            if (a.statusKind !== 'done' && b.statusKind === 'done') return 1;
+            return 0;
+          });
 
         return {
           id: String(u.id),
           name: u.name,
           initial,
           role: roleLabel,
-          avatar_url: u.avatar_url,
+          avatar_url: staffAvatarUrl,
           department_id: u.department_id,
           department_name: deptName,
           displayLabel,
@@ -708,7 +668,7 @@ export const useReports = () => {
         };
       })
       .sort((a, b) => b.total - a.total || b.capacityPercentage - a.capacityPercentage);
-  }, [scopedUsers, periodTasks, periodMeta.today, timeRange, selectedDepartmentName]);
+  }, [scopedUsers, periodTasks, periodMeta.today, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
 
   // Build 4 Team Performance Cards (100% consistent with staffMembers & periodTasks)
   const teamCards = useMemo<TeamReportCardsData>(() => {
@@ -742,7 +702,14 @@ export const useReports = () => {
     const backlogCount = allBacklogItems.length;
     const staffWithBacklogCount = staffMembers.filter((m) => m.profileBacklogCount > 0).length;
     const highSeverityBacklogCount = allBacklogItems.filter((item) => item.severity === 'high').length;
-    const backlogDelta = `${staffWithBacklogCount} nhân sự báo cáo từ Tab Profile`;
+    const backlogDelta =
+      staffWithBacklogCount > 0
+        ? lang === 'en'
+          ? `${staffWithBacklogCount} staff reported from Profile Tab`
+          : `${staffWithBacklogCount} nhân sự báo cáo từ Tab Profile`
+        : lang === 'en'
+        ? 'No backlog reported'
+        : 'Không có tồn đọng';
 
     // Card 3: Participating Projects & Campaigns in period
     const trackMap = new Map<
@@ -823,14 +790,14 @@ export const useReports = () => {
       const tTotal = Math.max(1, entry.tasks.length);
       const tDone = entry.tasks.filter((t) => isTaskDone(t.status)).length;
       const tLate = entry.tasks.filter((t) => taskOverdue(t, today)).length;
-      const progress = entry.tasks.length > 0 ? Math.round((tDone / tTotal) * 100) : 65;
+      const progress = entry.tasks.length > 0 ? Math.round((tDone / tTotal) * 100) : 0;
       const status: AlertLevel = tLate > 1 ? 'late' : tLate === 1 ? 'risk' : 'ok';
       return {
         id: entry.id,
         name: entry.name,
         kind: entry.kind,
         completedTasks: tDone,
-        totalTasks: entry.tasks.length || 4,
+        totalTasks: entry.tasks.length,
         progress,
         status,
         deadline: entry.deadline,
@@ -850,48 +817,59 @@ export const useReports = () => {
     const activeOpenTotal = openList.length;
     const inProgressPct =
       activeOpenTotal > 0 ? Math.round((inProgressTasks / activeOpenTotal) * 100) : 0;
-    const inProgressSub = `+${todoTasks} chờ thực hiện · ${overdueTasks} quá hạn`;
+    const inProgressSub =
+      lang === 'en'
+        ? `+${todoTasks} pending · ${overdueTasks} overdue`
+        : `+${todoTasks} chờ thực hiện · ${overdueTasks} quá hạn`;
 
     // Task items lists for full-box expanded views
     const sourceTasks = periodTasks.length > 0 ? periodTasks : scopedTasks;
-    const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks.map((t, tIdx) => {
-      const isDone = isTaskDone(t.status);
-      const isOverdue = !isDone && taskOverdue(t, today);
-      const isTodo =
-        !isDone &&
-        !isOverdue &&
-        ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
-      const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
-        ? 'done'
-        : isOverdue
-        ? 'overdue'
-        : isTodo
-        ? 'todo'
-        : 'doing';
+    const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks
+      .map((t) => {
+        const isDone = isTaskDone(t.status);
+        const isOverdue = !isDone && taskOverdue(t, today);
+        const isTodo =
+          !isDone &&
+          !isOverdue &&
+          ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+        const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
+          ? 'done'
+          : isOverdue
+          ? 'overdue'
+          : isTodo
+          ? 'todo'
+          : 'doing';
 
-      const hasCampaign = Boolean(
-        (t as any).campaign?.id ||
-        (t as any).campaign_id ||
-        (t as any).campaign ||
-        (t.title && /chiến dịch|campaign|tết|sale|ads|posm/i.test(t.title)) ||
-        tIdx % 2 === 1
-      );
-      const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
-      const entityName =
-        (t as any).campaign?.name ||
-        (t as any).project?.name ||
-        (entityKind === 'campaign' ? 'Chiến dịch trọng điểm' : 'Dự án K COFFEE');
+        const hasCampaign = Boolean(
+          (t as any).campaign?.id || (t as any).campaign_id || (t as any).campaign,
+        );
+        const entityKind: 'project' | 'campaign' = hasCampaign ? 'campaign' : 'project';
+        const entityName =
+          (t as any).campaign?.name ||
+          (t as any).project?.name ||
+          (entityKind === 'campaign'
+            ? lang === 'en'
+              ? 'Campaign'
+              : 'Chiến dịch'
+            : lang === 'en'
+            ? 'Project'
+            : 'Dự án');
 
-      return {
-        id: String(t.id),
-        title: t.title || 'Công việc',
-        assigneeName: t.assignee?.name || 'Chưa phân công',
-        projectTag: (t as any).project?.name || (t as any).campaign?.name || 'General',
-        statusKind,
-        entityKind,
-        entityName,
-      };
-    });
+        return {
+          id: String(t.id),
+          title: t.title || (lang === 'en' ? 'Task' : 'Công việc'),
+          assigneeName: t.assignee?.name || (lang === 'en' ? 'Unassigned' : 'Chưa phân công'),
+          projectTag: (t as any).project?.name || (t as any).campaign?.name || 'General',
+          statusKind,
+          entityKind,
+          entityName,
+        };
+      })
+      .sort((a, b) => {
+        if (a.statusKind === 'done' && b.statusKind !== 'done') return -1;
+        if (a.statusKind !== 'done' && b.statusKind === 'done') return 1;
+        return 0;
+      });
     const openTaskItems = periodTaskItems.filter((item) => item.statusKind !== 'done');
 
     return {
@@ -929,6 +907,9 @@ export const useReports = () => {
     workspaceProjects,
     workspaceCampaigns,
     effectiveDepartmentFilter,
+    scopedTasks,
+    lang,
+    t,
   ]);
 
   const burndown = useMemo(
