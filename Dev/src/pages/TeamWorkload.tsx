@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTeamWorkload } from '../hooks/useTeamWorkload';
 import { useTranslation } from '../i18n/translations';
-import { Users, AlertTriangle, Activity, Calendar, Building2 } from 'lucide-react';
+import { Users, AlertTriangle, Activity, Calendar, Building2, BarChart3 } from 'lucide-react';
 import { TeamWorkloadVisuals } from '../components/common/TeamWorkloadVisuals';
 import { useRememberedState } from '../hooks/useRememberedState';
 
@@ -79,6 +79,19 @@ export const TeamWorkload: React.FC = () => {
               {t('workload.weekOf')} {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const url = `/reports/visualize?period=month${effectiveDepartmentFilter !== 'all' ? `&dept=${effectiveDepartmentFilter}` : ''}`;
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }}
+            title="Mở Báo cáo Visualize (View Report)"
+            className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#002e6d] to-[#094191] hover:from-[#002150] hover:to-[#002e6d] shadow-sm hover:shadow transition-all cursor-pointer"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>View Report</span>
+          </button>
         </div>
       </div>
 

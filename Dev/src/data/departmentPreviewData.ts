@@ -438,5 +438,21 @@ export function getAdjustedOverallData(period: PeriodFilter): OverallDashboardDa
       warningBanner: 'Toàn bộ 6 phòng ban đang chuẩn bị chốt số Quý 4. Cần ưu tiên các mục tiêu doanh thu trọng điểm.',
     };
   }
+  if (period === 'year') {
+    return {
+      ...INITIAL_OVERALL_DATA,
+      kpis: {
+        ...INITIAL_OVERALL_DATA.kpis,
+        completionRate: 81,
+        completionDelta: '▲ 11% so với năm trước',
+        overdueTasks: 19,
+        overdueDelta: '▼ 4 so với năm trước',
+        inProgressTasks: 94,
+        onTimeRate: 88,
+        projectsAtRiskOrCount: 5,
+      },
+      warningBanner: 'Tổng kết hiệu suất năm: Tỷ lệ hoàn thành toàn hệ thống đạt 81%, cần xử lý dứt điểm các task tồn đọng trước kỳ đánh giá.',
+    };
+  }
   return INITIAL_OVERALL_DATA;
 }
