@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
@@ -20,7 +20,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import type { AlertLevel, BurndownItem, HeatmapRow } from '../types/department';
 
-export type TimeRange = 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
+export type TimeRange = 'today' | 'three' | 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
 
 export interface ProfileBacklogItem {
   id: string;
@@ -186,36 +186,84 @@ function getPeriodBounds(
     const labelVi = start === today ? formatShortDate(start) : `${formatShortDate(start)} – ${formatShortDate(today)}`;
     return { start, today, periodDays, labelVi };
   }
-  const today = rawToday;
-  const end = new Date(`${today}T12:00:00Z`);
-  const startDate = new Date(end);
-  if (range === 'week') {
-    startDate.setUTCDate(startDate.getUTCDate() - ((startDate.getUTCDay() + 6) % 7));
-  } else if (range === 'month') {
-    startDate.setUTCDate(1);
-  } else if (range === 'quarter') {
-    startDate.setUTCMonth(Math.floor(startDate.getUTCMonth() / 3) * 3, 1);
-  } else {
-    startDate.setUTCMonth(0, 1);
+
+  if (range === 'today') {
+    const start = rawToday;
+    const today = rawToday;
+    const periodDays = 1;
+    const currentRealDay = taskDay(new Date().toISOString());
+    const labelVi =
+      rawToday === currentRealDay
+        ? lang === 'en'
+          ? 'Today'
+          : 'Hôm nay'
+        : formatShortDate(rawToday);
+    return { start, today, periodDays, labelVi };
   }
-  const start = taskDay(startDate.toISOString());
-  const periodDays = Math.max(1, Math.round((end.getTime() - new Date(`${start}T12:00:00Z`).getTime()) / 86400000) + 1);
-  const labelVi =
-    lang === 'en'
-      ? range === 'week'
-        ? 'This Week'
-        : range === 'month'
-        ? 'This Month'
-        : range === 'quarter'
-        ? 'This Quarter'
-        : 'This Year'
-      : range === 'week'
-      ? 'Tuần này'
-      : range === 'month'
-      ? 'Tháng này'
-      : range === 'quarter'
-      ? 'Quý này'
-      : 'Năm nay';
+
+  if (range === 'three') {
+    const start = rawToday;
+    const endDate = new Date(`${rawToday}T12:00:00Z`);
+    endDate.setUTCDate(endDate.getUTCDate() + 2);
+    const today = taskDay(endDate.toISOString());
+    const periodDays = 3;
+    const labelVi = lang === 'en' ? '3 Days' : '3 ngày';
+    return { start, today, periodDays, labelVi };
+  }
+
+  if (range === 'week') {
+    const cur = new Date(`${rawToday}T12:00:00Z`);
+    const dayIndex = (cur.getUTCDay() + 6) % 7;
+    const monday = new Date(cur);
+    monday.setUTCDate(cur.getUTCDate() - dayIndex);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    const start = taskDay(monday.toISOString());
+    const today = taskDay(sunday.toISOString());
+    const periodDays = 7;
+    const labelVi = lang === 'en' ? '1 Week' : '1 tuần';
+    return { start, today, periodDays, labelVi };
+  }
+
+  if (range === 'month') {
+    const cur = new Date(`${rawToday}T12:00:00Z`);
+    const firstDay = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth(), 1, 12));
+    const lastDay = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 0, 12));
+    const start = taskDay(firstDay.toISOString());
+    const today = taskDay(lastDay.toISOString());
+    const periodDays = lastDay.getUTCDate();
+    const labelVi = lang === 'en' ? '1 Month' : '1 tháng';
+    return { start, today, periodDays, labelVi };
+  }
+
+  if (range === 'quarter') {
+    const cur = new Date(`${rawToday}T12:00:00Z`);
+    const qStartMonth = Math.floor(cur.getUTCMonth() / 3) * 3;
+    const firstDay = new Date(Date.UTC(cur.getUTCFullYear(), qStartMonth, 1, 12));
+    const lastDay = new Date(Date.UTC(cur.getUTCFullYear(), qStartMonth + 3, 0, 12));
+    const start = taskDay(firstDay.toISOString());
+    const today = taskDay(lastDay.toISOString());
+    const periodDays = Math.max(1, Math.round((lastDay.getTime() - firstDay.getTime()) / 86400000) + 1);
+    const labelVi = lang === 'en' ? '1 Quarter' : '1 quý';
+    return { start, today, periodDays, labelVi };
+  }
+
+  if (range === 'all') {
+    const start = '2020-01-01';
+    const today = '2099-12-31';
+    const periodDays = 36500;
+    const labelVi = lang === 'en' ? 'All' : 'Tất cả';
+    return { start, today, periodDays, labelVi };
+  }
+
+  // range === 'year'
+  const cur = new Date(`${rawToday}T12:00:00Z`);
+  const firstDay = new Date(Date.UTC(cur.getUTCFullYear(), 0, 1, 12));
+  const lastDay = new Date(Date.UTC(cur.getUTCFullYear(), 11, 31, 12));
+  const start = taskDay(firstDay.toISOString());
+  const today = taskDay(lastDay.toISOString());
+  const periodDays = Math.max(1, Math.round((lastDay.getTime() - firstDay.getTime()) / 86400000) + 1);
+  const labelVi = lang === 'en' ? '1 Year' : '1 năm';
   return { start, today, periodDays, labelVi };
 }
 
@@ -310,13 +358,14 @@ export const useReports = () => {
   const defaultMonthStart = `${defaultToday.slice(0, 8)}01`;
   const [rememberedCustomStart, setRememberedCustomStart] = useRememberedState<string>('reports.customStart', defaultMonthStart);
   const [rememberedCustomEnd, setRememberedCustomEnd] = useRememberedState<string>('reports.customEnd', defaultToday);
+  const [cursorDate, setCursorDate] = useState<string>(defaultToday);
 
   const urlPeriod = searchParams.get('period') as TimeRange | null;
   const urlDept = searchParams.get('dept');
   const urlFrom = searchParams.get('from');
   const urlTo = searchParams.get('to');
 
-  const validPeriods: TimeRange[] = ['week', 'month', 'quarter', 'year', 'custom'];
+  const validPeriods: TimeRange[] = ['today', 'three', 'week', 'month', 'quarter', 'year', 'custom', 'all'];
   const normalizedRemembered: TimeRange = validPeriods.includes(rememberedRange) ? rememberedRange : 'month';
   const timeRange: TimeRange = urlPeriod && validPeriods.includes(urlPeriod) ? urlPeriod : normalizedRemembered;
   const customStart = urlFrom || rememberedCustomStart || defaultMonthStart;
@@ -327,6 +376,7 @@ export const useReports = () => {
     (nextRange: TimeRange) => {
       const normalized: TimeRange = validPeriods.includes(nextRange) ? nextRange : 'month';
       setRememberedRange(normalized);
+      setCursorDate(defaultToday);
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -340,7 +390,7 @@ export const useReports = () => {
         { replace: true },
       );
     },
-    [setRememberedRange, setSearchParams],
+    [defaultToday, setRememberedRange, setSearchParams],
   );
 
   const setCustomDateRange = useCallback(
@@ -362,6 +412,42 @@ export const useReports = () => {
       );
     },
     [setRememberedCustomStart, setRememberedCustomEnd, setRememberedRange, setSearchParams],
+  );
+
+  const shiftPeriod = useCallback(
+    (direction: -1 | 1) => {
+      const cur = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
+      if (timeRange === 'today') {
+        cur.setUTCDate(cur.getUTCDate() + direction * 1);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'three') {
+        cur.setUTCDate(cur.getUTCDate() + direction * 3);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'week') {
+        cur.setUTCDate(cur.getUTCDate() + direction * 7);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'month') {
+        cur.setUTCMonth(cur.getUTCMonth() + direction, 1);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'quarter') {
+        cur.setUTCMonth(cur.getUTCMonth() + direction * 3, 1);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'year') {
+        cur.setUTCFullYear(cur.getUTCFullYear() + direction, 0, 1);
+        setCursorDate(taskDay(cur.toISOString()));
+      } else if (timeRange === 'custom' && customStart && customEnd) {
+        const s = new Date(`${customStart}T12:00:00Z`);
+        const e = new Date(`${customEnd}T12:00:00Z`);
+        const diffDays = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
+        s.setUTCDate(s.getUTCDate() + direction * diffDays);
+        e.setUTCDate(e.getUTCDate() + direction * diffDays);
+        const nextS = taskDay(s.toISOString());
+        const nextE = taskDay(e.toISOString());
+        setCustomDateRange(nextS, nextE);
+        setCursorDate(nextS);
+      }
+    },
+    [cursorDate, defaultToday, timeRange, customStart, customEnd, setCustomDateRange],
   );
 
   const setDepartmentFilter = useCallback(
@@ -484,8 +570,15 @@ export const useReports = () => {
   }, [effectiveDepartmentFilter, departments, profile, t]);
 
   const periodMeta = useMemo(
-    () => getPeriodBounds(timeRange, new Date(), customStart, customEnd, lang),
-    [timeRange, customStart, customEnd, lang],
+    () =>
+      getPeriodBounds(
+        timeRange,
+        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+        customStart,
+        customEnd,
+        lang,
+      ),
+    [timeRange, cursorDate, defaultToday, customStart, customEnd, lang],
   );
 
   // Filter tasks relevant to the chosen period (week / month / quarter / year)
@@ -496,7 +589,7 @@ export const useReports = () => {
       if (taskOpen(t)) {
         const due = taskDay(t.due_date);
         const created = taskDay(t.created_at) || taskDay(t.start_date);
-        if (timeRange === 'custom') {
+        if (timeRange === 'custom' || timeRange === 'today' || timeRange === 'three') {
           return (due && due >= start && due <= today) || (created && created >= start && created <= today) || (!due && !created);
         }
         if (timeRange === 'week') {
@@ -505,13 +598,27 @@ export const useReports = () => {
         return true;
       }
       const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at) || taskDay(t.due_date);
-      if (!doneDay) return timeRange === 'year' || timeRange === 'quarter';
+      if (!doneDay) return timeRange === 'year' || timeRange === 'quarter' || timeRange === 'all';
       return doneDay >= start && doneDay <= today;
     });
     return filtered.length > 0 ? filtered : active;
   }, [scopedTasks, periodMeta, timeRange]);
 
-  const data = useMemo(() => reportAnalytics(scopedTasks, timeRange === 'custom' ? 'month' : timeRange), [scopedTasks, timeRange]);
+  const analyticRange =
+    timeRange === 'today' || timeRange === 'three'
+      ? 'week'
+      : timeRange === 'custom'
+      ? 'month'
+      : timeRange;
+  const data = useMemo(
+    () =>
+      reportAnalytics(
+        scopedTasks,
+        analyticRange as any,
+        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+      ),
+    [scopedTasks, analyticRange, cursorDate, defaultToday],
+  );
 
   // Build Staff Performance list (shared 1:1 between List Mode and Staff Cards Mode)
   const staffMembers = useMemo<StaffReportMember[]>(() => {
@@ -1052,13 +1159,27 @@ export const useReports = () => {
   ]);
 
   const burndown = useMemo(
-    () => computePeriodBurndown(scopedTasks, timeRange, new Date(), customStart, customEnd),
-    [scopedTasks, timeRange, customStart, customEnd],
+    () =>
+      computePeriodBurndown(
+        scopedTasks,
+        timeRange,
+        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+        customStart,
+        customEnd,
+      ),
+    [scopedTasks, timeRange, cursorDate, defaultToday, customStart, customEnd],
   );
 
   const heatmapData = useMemo(
-    () => computePeriodHeatmap(staffMembers, scopedTasks, timeRange, new Date(), lang),
-    [staffMembers, scopedTasks, timeRange, lang],
+    () =>
+      computePeriodHeatmap(
+        staffMembers,
+        scopedTasks,
+        timeRange,
+        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+        lang,
+      ),
+    [staffMembers, scopedTasks, timeRange, cursorDate, defaultToday, lang],
   );
 
   const exportCSV = useCallback(() => {
@@ -1112,6 +1233,9 @@ export const useReports = () => {
     error,
     timeRange,
     setTimeRange,
+    cursorDate,
+    setCursorDate,
+    shiftPeriod,
     customStart,
     customEnd,
     setCustomDateRange,
@@ -1120,6 +1244,7 @@ export const useReports = () => {
     departments: scope.departments,
     canViewAllDepartments,
     selectedDepartmentName,
+    periodMeta,
     periodLabelVi: periodMeta.labelVi,
     teamCards,
     staffMembers,

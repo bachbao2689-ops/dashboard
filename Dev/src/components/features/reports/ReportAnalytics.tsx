@@ -4,6 +4,7 @@ import { useReports } from '../../../hooks/useReports';
 import type { TimeRange, StaffReportMember } from '../../../hooks/useReports';
 import { useTranslation } from '../../../i18n/translations';
 import { FilterPopover } from '../../common/filters/FilterPopover';
+import { taskDay } from '../../../lib/taskTracking';
 import {
   LineChart,
   Line,
@@ -26,6 +27,7 @@ import {
   Layers,
   BarChart3,
   LayoutGrid,
+  List,
   X,
   Building2,
   ShieldAlert,
@@ -50,6 +52,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     refetch,
     timeRange,
     setTimeRange,
+    cursorDate,
+    setCursorDate,
+    shiftPeriod,
     customStart,
     customEnd,
     setCustomDateRange,
@@ -58,6 +63,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     departments,
     canViewAllDepartments,
     selectedDepartmentName,
+    periodMeta,
     periodLabelVi,
     teamCards,
     staffMembers,
@@ -74,6 +80,16 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
   const [showCapacityInfo, setShowCapacityInfo] = useState(false);
 
+  // Profile-style Calendar Popover State
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const [dragStart, setDragStart] = useState<Date | null>(null);
+  const [dragHover, setDragHover] = useState<Date | null>(null);
+  const defaultToday = useMemo(() => taskDay(new Date().toISOString()), []);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
+  const rangeMenuRef = useRef<HTMLDivElement>(null);
+  const rangePanelRef = useRef<HTMLDivElement>(null);
+
   // Expandable Box state with auto-closing on outside click
   const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
   const toggleExpanded = (id: string, e?: React.MouseEvent) => {
@@ -82,7 +98,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   };
 
   useEffect(() => {
-    if (!activeExpandedId && !showBurndownInfo && !showCapacityInfo) return;
+    if (!activeExpandedId && !showBurndownInfo && !showCapacityInfo && !rangeOpen) return;
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -95,131 +111,57 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       if (showCapacityInfo && !target.closest('[data-info-popover="capacity"]')) {
         setShowCapacityInfo(false);
       }
+      if (rangeOpen && !rangeMenuRef.current?.contains(target) && !rangePanelRef.current?.contains(target)) {
+        setRangeOpen(false);
+        setDragStart(null);
+        setDragHover(null);
+      }
     };
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-    };
-  }, [activeExpandedId, showBurndownInfo, showCapacityInfo]);
-
-  // Green markup: Calendar Date Range Popover
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const calendarContainerRef = useRef<HTMLDivElement>(null);
-  const calendarPanelRef = useRef<HTMLDivElement>(null);
-  const today = useMemo(() => new Date(), []);
-  const [viewYear, setViewYear] = useState<number>(() => {
-    if (customStart) {
-      const d = new Date(customStart);
-      if (!isNaN(d.getTime())) return d.getFullYear();
-    }
-    return today.getFullYear();
-  });
-  const [viewMonth, setViewMonth] = useState<number>(() => {
-    if (customStart) {
-      const d = new Date(customStart);
-      if (!isNaN(d.getTime())) return d.getMonth();
-    }
-    return today.getMonth();
-  });
-  const [tempStart, setTempStart] = useState<string>(customStart || '');
-  const [tempEnd, setTempEnd] = useState<string>(customEnd || '');
-  const [isPickingEnd, setIsPickingEnd] = useState(false);
-
-  useEffect(() => {
-    if (calendarOpen) {
-      setTempStart(customStart || '');
-      setTempEnd(customEnd || '');
-      setIsPickingEnd(false);
-      if (customStart) {
-        const d = new Date(customStart);
-        if (!isNaN(d.getTime())) {
-          setViewYear(d.getFullYear());
-          setViewMonth(d.getMonth());
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (rangeOpen) {
+          setRangeOpen(false);
+          setDragStart(null);
+          setDragHover(null);
         }
       }
-    }
-  }, [calendarOpen, customStart, customEnd]);
-
-  const daysInMonth = useMemo(() => {
-    return new Date(viewYear, viewMonth + 1, 0).getDate();
-  }, [viewYear, viewMonth]);
-
-  const startOffset = useMemo(() => {
-    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-    return (firstDay + 6) % 7;
-  }, [viewYear, viewMonth]);
-
-  const handlePrevMonth = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  };
-
-  const handleSelectDate = (day: number) => {
-    const m = String(viewMonth + 1).padStart(2, '0');
-    const d = String(day).padStart(2, '0');
-    const dateStr = `${viewYear}-${m}-${d}`;
-
-    if (!tempStart || (!isPickingEnd && tempEnd)) {
-      setTempStart(dateStr);
-      setTempEnd('');
-      setIsPickingEnd(true);
-    } else if (isPickingEnd) {
-      if (dateStr < tempStart) {
-        setTempStart(dateStr);
-        setTempEnd('');
-        setIsPickingEnd(true);
-      } else {
-        setTempEnd(dateStr);
-        setIsPickingEnd(false);
-      }
-    }
-  };
-
-  const handleApplyCustomRange = () => {
-    if (tempStart) {
-      const finalEnd = tempEnd || tempStart;
-      setCustomDateRange(tempStart, finalEnd);
-      setTimeRange('custom');
-      setCalendarOpen(false);
-    }
-  };
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeExpandedId, showBurndownInfo, showCapacityInfo, rangeOpen]);
 
   const formatDateDisplay = (dateStr?: string) => {
     if (!dateStr) return '—';
-    const parts = dateStr.split('-');
+    const parts = dateStr.slice(0, 10).split('-');
     if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return dateStr;
   };
 
-  const monthYearTitle = useMemo(() => {
-    if (lang === 'en') {
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-      ];
-      return `${monthNames[viewMonth]} ${viewYear}`;
-    }
-    return `Tháng ${viewMonth + 1}, ${viewYear}`;
-  }, [viewMonth, viewYear, lang]);
+  const presetRanges: Array<{ id: TimeRange; label: string }> = useMemo(
+    () => [
+      { id: 'today', label: lang === 'en' ? 'Today' : 'Hôm nay' },
+      { id: 'three', label: lang === 'en' ? '3 Days' : '3 ngày' },
+      { id: 'week', label: lang === 'en' ? '1 Week' : '1 tuần' },
+      { id: 'month', label: lang === 'en' ? '1 Month' : '1 tháng' },
+      { id: 'quarter', label: lang === 'en' ? '1 Quarter' : '1 quý' },
+      { id: 'year', label: lang === 'en' ? '1 Year' : '1 năm' },
+    ],
+    [lang],
+  );
 
-  const weekDays = lang === 'en'
-    ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-    : ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const selectedRangeLabel = useMemo(() => {
+    if (timeRange === 'custom' && customStart && customEnd) {
+      return `${formatDateDisplay(customStart).slice(0, 5)} - ${formatDateDisplay(customEnd).slice(0, 5)}`;
+    }
+    if (timeRange === 'today' && cursorDate !== defaultToday) {
+      return formatDateDisplay(cursorDate);
+    }
+    return presetRanges.find((p) => p.id === timeRange)?.label || periodLabelVi;
+  }, [timeRange, customStart, customEnd, cursorDate, defaultToday, presetRanges, periodLabelVi]);
 
   const selectedStaff: StaffReportMember | null = useMemo(() => {
     if (!selectedStaffId) return null;
@@ -415,161 +357,285 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
               )}
 
-              {/* Time Range Pills + Calendar Custom Range Button (Green markup) */}
-              <div className="grid grid-flow-col auto-cols-max gap-1 p-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80">
-                {(
-                  [
-                    ['week', lang === 'en' ? 'Week' : 'Tuần'],
-                    ['month', lang === 'en' ? 'Month' : 'Tháng'],
-                    ['quarter', lang === 'en' ? 'Quarter' : 'Quý'],
-                    ['year', lang === 'en' ? 'Year' : 'Năm'],
-                  ] as Array<[TimeRange, string]>
-                ).map(([range, label]) => (
-                  <button
-                    key={range}
-                    type="button"
-                    onClick={() => setTimeRange(range)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                      timeRange === range
-                        ? 'bg-[#002e6d] text-white shadow-sm'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              {/* View Switcher Pill: LayoutGrid (cards) / List (list) */}
+              <div className="inline-grid grid-flow-col auto-cols-max rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200/80 dark:border-slate-700/80">
+                <button
+                  type="button"
+                  aria-label={lang === 'vi' ? 'Xem dạng lưới' : 'Grid view'}
+                  aria-pressed={staffView === 'cards'}
+                  onClick={() => setStaffView('cards')}
+                  className={`rounded-lg p-1.5 transition-colors cursor-pointer ${
+                    staffView === 'cards'
+                      ? 'bg-white shadow-sm text-slate-900 dark:bg-slate-700 dark:!text-white'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={lang === 'vi' ? 'Xem danh sách' : 'List view'}
+                  aria-pressed={staffView === 'list'}
+                  onClick={() => setStaffView('list')}
+                  className={`rounded-lg p-1.5 transition-colors cursor-pointer ${
+                    staffView === 'list'
+                      ? 'bg-white shadow-sm text-slate-900 dark:bg-slate-700 dark:!text-white'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-                {/* Calendar Button (Item 5 - Green markup) */}
-                <div ref={calendarContainerRef} className="relative inline-grid">
+              {/* Calendar Navigation Group: [ < | 📅 label ⌄ | > ] */}
+              <div className="inline-grid grid-flow-col auto-cols-max rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+                <button
+                  type="button"
+                  aria-label="Khoảng trước"
+                  onClick={() => shiftPeriod(-1)}
+                  className="grid place-items-center rounded-l-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
                   <button
                     type="button"
-                    onClick={() => setCalendarOpen((prev) => !prev)}
-                    aria-label={t('reports.viz.customRange')}
-                    title={t('reports.viz.customRange')}
-                    className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                      timeRange === 'custom'
-                        ? 'bg-[#002e6d] text-white shadow-sm'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                    onClick={() => {
+                      const cur = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
+                      setPickerMonth(cur.getMonth());
+                      setPickerYear(cur.getFullYear());
+                      setRangeOpen((prev) => !prev);
+                    }}
+                    aria-expanded={rangeOpen}
+                    className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-w-[108px]"
                   >
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    {timeRange === 'custom' && (
-                      <span className="text-[11px] font-bold">
-                        {customStart && customEnd
-                          ? `${formatDateDisplay(customStart).slice(0, 5)} - ${formatDateDisplay(customEnd).slice(0, 5)}`
-                          : lang === 'en'
-                          ? 'Custom'
-                          : 'Tùy chọn'}
-                      </span>
-                    )}
+                    <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{selectedRangeLabel}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {calendarOpen && (
+                  {/* 2-Column Calendar Popover */}
+                  {rangeOpen && (
                     <FilterPopover
-                      onClose={() => setCalendarOpen(false)}
-                      anchorRef={calendarContainerRef}
-                      panelRef={calendarPanelRef}
+                      anchorRef={rangeMenuRef}
+                      panelRef={rangePanelRef}
                       align="right"
-                      className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-3.5 text-xs text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-150"
+                      onClose={() => {
+                        setRangeOpen(false);
+                        setDragStart(null);
+                        setDragHover(null);
+                      }}
+                      className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
                     >
-                      <div className="grid grid-cols-1 gap-3">
-                        {/* Month navigation header */}
-                        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                      {/* Left: Calendar Month Grid with Drag Range */}
+                      <div className="p-3">
+                        <div className="mb-2 grid grid-cols-[auto_1fr_auto] items-center gap-2">
                           <button
                             type="button"
-                            onClick={handlePrevMonth}
-                            className="grid place-items-center w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
-                            aria-label="Previous Month"
+                            onClick={() => {
+                              let m = pickerMonth - 1;
+                              let y = pickerYear;
+                              if (m < 0) {
+                                m = 11;
+                                y--;
+                              }
+                              setPickerMonth(m);
+                              setPickerYear(y);
+                            }}
+                            className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                            aria-label="Tháng trước"
                           >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
-                          <span className="font-bold text-center text-sm text-slate-900 dark:text-white">
-                            {monthYearTitle}
+                          <span className="text-xs font-bold text-center text-gray-900 dark:!text-white">
+                            {lang === 'vi'
+                              ? `Tháng ${pickerMonth + 1}, ${pickerYear}`
+                              : `${new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long' })}, ${pickerYear}`}
                           </span>
                           <button
                             type="button"
-                            onClick={handleNextMonth}
-                            className="grid place-items-center w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
-                            aria-label="Next Month"
+                            onClick={() => {
+                              let m = pickerMonth + 1;
+                              let y = pickerYear;
+                              if (m > 11) {
+                                m = 0;
+                                y++;
+                              }
+                              setPickerMonth(m);
+                              setPickerYear(y);
+                            }}
+                            className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                            aria-label="Tháng sau"
                           >
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-3.5 h-3.5" />
                           </button>
-                        </div>
-
-                        {/* Display Start / End Date */}
-                        <div className="grid grid-cols-2 gap-2 text-center text-[11px]">
-                          <div className={`p-2 rounded-xl border ${tempStart && !tempEnd ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
-                            <span className="block text-[10px] text-slate-400 font-semibold">{t('reports.viz.startDate')}</span>
-                            <strong className="text-slate-800 dark:text-slate-100">{formatDateDisplay(tempStart)}</strong>
-                          </div>
-                          <div className={`p-2 rounded-xl border ${tempEnd ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60'}`}>
-                            <span className="block text-[10px] text-slate-400 font-semibold">{t('reports.viz.endDate')}</span>
-                            <strong className="text-slate-800 dark:text-slate-100">{formatDateDisplay(tempEnd)}</strong>
-                          </div>
                         </div>
 
                         {/* Weekday headers */}
-                        <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-400">
-                          {weekDays.map((wd, i) => (
-                            <div key={i} className="py-1">
-                              {wd}
+                        <div className="grid grid-cols-7 gap-1 text-center">
+                          {(lang === 'vi'
+                            ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+                            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                          ).map((d) => (
+                            <div key={d} className="text-[10px] font-semibold text-gray-400 py-1">
+                              {d}
                             </div>
                           ))}
-                        </div>
-
-                        {/* Calendar Days Matrix */}
-                        <div className="grid grid-cols-7 gap-1 text-center">
-                          {Array.from({ length: startOffset }).map((_, i) => (
-                            <div key={`offset-${i}`} className="h-7 w-7" />
-                          ))}
-
-                          {Array.from({ length: daysInMonth }).map((_, i) => {
-                            const day = i + 1;
-                            const m = String(viewMonth + 1).padStart(2, '0');
-                            const d = String(day).padStart(2, '0');
-                            const dateStr = `${viewYear}-${m}-${d}`;
-                            const isStart = tempStart === dateStr;
-                            const isEnd = tempEnd === dateStr;
-                            const inRange = Boolean(tempStart && tempEnd && dateStr > tempStart && dateStr < tempEnd);
-
-                            let btnClass = 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700';
-                            if (isStart || isEnd) {
-                              btnClass = 'bg-[#002e6d] text-white font-bold shadow-sm';
-                            } else if (inRange) {
-                              btnClass = 'bg-blue-100/70 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 font-medium';
+                          {(() => {
+                            const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                            const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+                            const offset = (firstDay + 6) % 7;
+                            const days = [];
+                            for (let i = 0; i < offset; i++) {
+                              days.push(<div key={`e-${i}`} />);
                             }
 
-                            return (
-                              <button
-                                key={day}
-                                type="button"
-                                onClick={() => handleSelectDate(day)}
-                                className={`grid place-items-center h-7 w-7 mx-auto rounded-lg text-xs transition-colors cursor-pointer ${btnClass}`}
-                              >
-                                {day}
-                              </button>
-                            );
-                          })}
-                        </div>
+                            const curDateObj = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
+                            const activeStart =
+                              dragStart ||
+                              (timeRange === 'custom' && customStart
+                                ? new Date(`${customStart}T12:00:00Z`)
+                                : curDateObj);
+                            const activeEnd = dragStart
+                              ? dragHover
+                              : timeRange === 'custom' && customEnd
+                              ? new Date(`${customEnd}T12:00:00Z`)
+                              : null;
+                            const s =
+                              activeStart && activeEnd
+                                ? activeStart < activeEnd
+                                  ? activeStart
+                                  : activeEnd
+                                : activeStart;
+                            const e =
+                              activeStart && activeEnd
+                                ? activeStart > activeEnd
+                                  ? activeStart
+                                  : activeEnd
+                                : activeEnd;
+                            const sStr = s ? taskDay(s.toISOString()) : null;
+                            const eStr = e ? taskDay(e.toISOString()) : null;
 
-                        {/* Calendar Actions */}
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            for (let i = 1; i <= daysInMonth; i++) {
+                              const date = new Date(pickerYear, pickerMonth, i, 12);
+                              const dateStr = taskDay(date.toISOString());
+
+                              let isSelected = false;
+                              let isRange = false;
+
+                              if (timeRange === 'custom' || dragStart) {
+                                if (sStr === dateStr || eStr === dateStr) isSelected = true;
+                                if (sStr && eStr && dateStr > sStr && dateStr < eStr) isRange = true;
+                              } else if (timeRange === 'today') {
+                                isSelected =
+                                  curDateObj.getDate() === i &&
+                                  curDateObj.getMonth() === pickerMonth &&
+                                  curDateObj.getFullYear() === pickerYear;
+                              } else {
+                                const { start, today: periodEnd } = periodMeta;
+                                if (dateStr === start || dateStr === periodEnd) isSelected = true;
+                                if (start && periodEnd && dateStr > start && dateStr < periodEnd) isRange = true;
+                              }
+
+                              days.push(
+                                <div
+                                  key={i}
+                                  className={`relative ${isRange ? 'bg-[#002e6d]/10 dark:bg-[#002e6d]/30' : ''} ${
+                                    isSelected && eStr && dateStr === sStr && sStr !== eStr
+                                      ? 'rounded-l-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
+                                      : ''
+                                  } ${
+                                    isSelected && sStr && dateStr === eStr && sStr !== eStr
+                                      ? 'rounded-r-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
+                                      : ''
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => {
+                                      if (dragStart) setDragHover(date);
+                                    }}
+                                    onClick={() => {
+                                      if (!dragStart) {
+                                        setDragStart(date);
+                                        setDragHover(date);
+                                        setTimeRange('custom');
+                                      } else {
+                                        let start = dragStart;
+                                        let end = date;
+                                        if (end < start) {
+                                          start = date;
+                                          end = dragStart;
+                                        }
+                                        const startIso = taskDay(start.toISOString());
+                                        const endIso = taskDay(end.toISOString());
+                                        setCustomDateRange(startIso, endIso);
+                                        setCursorDate(startIso);
+                                        setDragStart(null);
+                                        setDragHover(null);
+                                      }
+                                    }}
+                                    className={`relative z-10 h-7 w-full rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-[#002e6d] text-white shadow-md font-bold'
+                                        : 'text-gray-700 hover:bg-[#002e6d]/10 dark:text-gray-200 dark:hover:bg-slate-700'
+                                    }`}
+                                  >
+                                    {i}
+                                  </button>
+                                </div>
+                              );
+                            }
+                            return days;
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Right: Presets */}
+                      <div className="grid grid-rows-[1fr_auto] border-t sm:border-t-0 sm:border-l border-gray-100 bg-gray-50/70 dark:border-slate-700 dark:bg-slate-900/70">
+                        <div className="p-2 grid grid-cols-1 gap-1 overflow-y-auto content-start">
+                          {presetRanges.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => {
+                                setTimeRange(option.id);
+                                setCursorDate(defaultToday);
+                                setDragStart(null);
+                                setDragHover(null);
+                              }}
+                              className={`grid grid-flow-col justify-start items-center w-full rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
+                                timeRange === option.id
+                                  ? 'bg-white text-[#002e6d] shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                                  : 'text-gray-600 hover:bg-gray-200/70 dark:text-gray-400 dark:hover:bg-slate-700/60'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="p-2 border-t border-gray-200 dark:border-slate-700">
                           <button
                             type="button"
-                            onClick={() => setCalendarOpen(false)}
-                            className="py-1.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                          >
-                            {t('common.cancel')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleApplyCustomRange}
-                            disabled={!tempStart}
-                            className={`py-1.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer ${
-                              tempStart
-                                ? 'bg-[#002e6d] hover:bg-[#002250] text-white'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                            }`}
+                            onClick={() => {
+                              if (dragStart && dragHover) {
+                                let start = dragStart;
+                                let end = dragHover;
+                                if (end < start) {
+                                  start = dragHover;
+                                  end = dragStart;
+                                }
+                                const startIso = taskDay(start.toISOString());
+                                const endIso = taskDay(end.toISOString());
+                                setCustomDateRange(startIso, endIso);
+                                setCursorDate(startIso);
+                                setDragStart(null);
+                                setDragHover(null);
+                              }
+                              setRangeOpen(false);
+                            }}
+                            className="w-full rounded-lg bg-[#002e6d] hover:bg-[#002250] py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
                           >
                             {t('profile.apply')}
                           </button>
@@ -578,7 +644,28 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </FilterPopover>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  aria-label="Khoảng sau"
+                  onClick={() => shiftPeriod(1)}
+                  className="grid place-items-center rounded-r-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
+
+              {/* Refresh button right next to the calendar navigation group */}
+              <button
+                type="button"
+                aria-label="Đồng bộ báo cáo"
+                title="Đồng bộ báo cáo"
+                disabled={isLoading}
+                onClick={() => refetch()}
+                className="grid place-items-center rounded-xl p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
 
               {/* Visualize Button (shown when embedded in /reports) */}
               {!standalone && (
