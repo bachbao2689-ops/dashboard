@@ -17,9 +17,10 @@ import {
 } from '../lib/taskTracking';
 import { scopeTeamWorkload } from '../lib/workloadScope';
 import { useAuthStore } from '../store/authStore';
+import { useTranslation } from '../i18n/translations';
 import type { AlertLevel, BurndownItem, HeatmapRow } from '../types/department';
 
-export type TimeRange = 'week' | 'month' | 'quarter' | 'year' | 'all';
+export type TimeRange = 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
 
 export interface ProfileBacklogItem {
   id: string;
@@ -167,8 +168,33 @@ function hashCode(str: string): number {
   return Math.abs(h);
 }
 
-function getPeriodBounds(range: TimeRange, now = new Date()): { start: string; today: string; periodDays: number; labelVi: string } {
-  const today = taskDay(now.toISOString());
+function formatShortDate(iso: string): string {
+  if (!iso || iso.length < 10) return iso;
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function getPeriodBounds(
+  range: TimeRange,
+  now = new Date(),
+  customStart?: string,
+  customEnd?: string,
+  lang: 'vi' | 'en' = 'vi',
+): { start: string; today: string; periodDays: number; labelVi: string } {
+  const rawToday = taskDay(now.toISOString());
+  if (range === 'custom' && customStart) {
+    const s = customStart.slice(0, 10);
+    const e = (customEnd || customStart).slice(0, 10);
+    const start = s <= e ? s : e;
+    const today = s <= e ? e : s;
+    const periodDays = Math.max(
+      1,
+      Math.round((new Date(`${today}T12:00:00Z`).getTime() - new Date(`${start}T12:00:00Z`).getTime()) / 86400000) + 1,
+    );
+    const labelVi = start === today ? formatShortDate(start) : `${formatShortDate(start)} – ${formatShortDate(today)}`;
+    return { start, today, periodDays, labelVi };
+  }
+  const today = rawToday;
   const end = new Date(`${today}T12:00:00Z`);
   const startDate = new Date(end);
   if (range === 'week') {
@@ -183,7 +209,15 @@ function getPeriodBounds(range: TimeRange, now = new Date()): { start: string; t
   const start = taskDay(startDate.toISOString());
   const periodDays = Math.max(1, Math.round((end.getTime() - new Date(`${start}T12:00:00Z`).getTime()) / 86400000) + 1);
   const labelVi =
-    range === 'week'
+    lang === 'en'
+      ? range === 'week'
+        ? 'This Week'
+        : range === 'month'
+        ? 'This Month'
+        : range === 'quarter'
+        ? 'This Quarter'
+        : 'This Year'
+      : range === 'week'
       ? 'Tuần này'
       : range === 'month'
       ? 'Tháng này'
@@ -193,11 +227,11 @@ function getPeriodBounds(range: TimeRange, now = new Date()): { start: string; t
   return { start, today, periodDays, labelVi };
 }
 
-function computePeriodBurndown(tasks: TrackedTask[], range: TimeRange, now = new Date()): BurndownItem[] {
+function computePeriodBurndown(tasks: TrackedTask[], range: TimeRange, now = new Date(), customStart?: string, customEnd?: string): BurndownItem[] {
   const activeList = tasks.filter((t) => taskActive(t));
   const totalTasks = Math.max(8, activeList.length);
   const openNow = activeList.filter((t) => !isTaskClosed(t.status)).length;
-  const { start, today } = getPeriodBounds(range, now);
+  const { start, today } = getPeriodBounds(range, now, customStart, customEnd);
   const startMs = new Date(`${start}T12:00:00Z`).getTime();
   const endMs = new Date(`${today}T12:00:00Z`).getTime();
   const spanMs = Math.max(7 * 86400000, endMs - startMs);
@@ -228,9 +262,16 @@ function computePeriodHeatmap(
   scopedTasks: TrackedTask[],
   range: TimeRange,
   now = new Date(),
+  lang: 'vi' | 'en' = 'vi',
 ): { rows: HeatmapRow[]; columnLabels: [string, string, string, string] } {
   const columnLabels: [string, string, string, string] =
-    range === 'year'
+    lang === 'en'
+      ? range === 'year'
+        ? ['Q1', 'Q2', 'Q3', 'Q4']
+        : range === 'quarter'
+        ? ['Month 1', 'Month 2', 'Month 3', 'Month 4']
+        : ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+      : range === 'year'
       ? ['Quý 1', 'Quý 2', 'Quý 3', 'Quý 4']
       : range === 'quarter'
       ? ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4']
@@ -271,16 +312,25 @@ function computePeriodHeatmap(
 }
 
 export const useReports = () => {
+  const { t, lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rememberedRange, setRememberedRange] = useRememberedState<TimeRange>('reports.timeRange', 'month');
   const [rememberedDept, setRememberedDept] = useRememberedState<string>('reports.departmentFilter', 'all');
+  const defaultToday = taskDay(new Date().toISOString());
+  const defaultMonthStart = `${defaultToday.slice(0, 8)}01`;
+  const [rememberedCustomStart, setRememberedCustomStart] = useRememberedState<string>('reports.customStart', defaultMonthStart);
+  const [rememberedCustomEnd, setRememberedCustomEnd] = useRememberedState<string>('reports.customEnd', defaultToday);
 
   const urlPeriod = searchParams.get('period') as TimeRange | null;
   const urlDept = searchParams.get('dept');
+  const urlFrom = searchParams.get('from');
+  const urlTo = searchParams.get('to');
 
-  const validPeriods: TimeRange[] = ['week', 'month', 'quarter', 'year'];
+  const validPeriods: TimeRange[] = ['week', 'month', 'quarter', 'year', 'custom'];
   const normalizedRemembered: TimeRange = validPeriods.includes(rememberedRange) ? rememberedRange : 'month';
   const timeRange: TimeRange = urlPeriod && validPeriods.includes(urlPeriod) ? urlPeriod : normalizedRemembered;
+  const customStart = urlFrom || rememberedCustomStart || defaultMonthStart;
+  const customEnd = urlTo || rememberedCustomEnd || defaultToday;
   const rawDepartmentFilter = urlDept || rememberedDept || 'all';
 
   const setTimeRange = useCallback(
@@ -291,12 +341,37 @@ export const useReports = () => {
         (prev) => {
           const next = new URLSearchParams(prev);
           next.set('period', normalized);
+          if (normalized !== 'custom') {
+            next.delete('from');
+            next.delete('to');
+          }
           return next;
         },
         { replace: true },
       );
     },
     [setRememberedRange, setSearchParams],
+  );
+
+  const setCustomDateRange = useCallback(
+    (startIso: string, endIso: string) => {
+      const s = startIso <= endIso ? startIso : endIso;
+      const e = startIso <= endIso ? endIso : startIso;
+      setRememberedCustomStart(s);
+      setRememberedCustomEnd(e);
+      setRememberedRange('custom');
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('period', 'custom');
+          next.set('from', s);
+          next.set('to', e);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setRememberedCustomStart, setRememberedCustomEnd, setRememberedRange, setSearchParams],
   );
 
   const setDepartmentFilter = useCallback(
@@ -409,16 +484,19 @@ export const useReports = () => {
   const scopedTasks = scope.tasks;
 
   const selectedDepartmentName = useMemo(() => {
-    if (effectiveDepartmentFilter === 'all') return 'Tất cả các Team';
-    if (effectiveDepartmentFilter === 'self') return profile?.department_name || 'Team của tôi';
+    if (effectiveDepartmentFilter === 'all') return t('reports.viz.allTeams');
+    if (effectiveDepartmentFilter === 'self') return profile?.department_name || t('reports.viz.myTeam');
     return (
       departments.find((d) => String(d.id) === String(effectiveDepartmentFilter))?.name ||
       profile?.department_name ||
       'Team'
     );
-  }, [effectiveDepartmentFilter, departments, profile]);
+  }, [effectiveDepartmentFilter, departments, profile, t]);
 
-  const periodMeta = useMemo(() => getPeriodBounds(timeRange), [timeRange]);
+  const periodMeta = useMemo(
+    () => getPeriodBounds(timeRange, new Date(), customStart, customEnd, lang),
+    [timeRange, customStart, customEnd, lang],
+  );
 
   // Filter tasks relevant to the chosen period (week / month / quarter / year)
   const periodTasks = useMemo(() => {
@@ -428,6 +506,9 @@ export const useReports = () => {
       if (taskOpen(t)) {
         const due = taskDay(t.due_date);
         const created = taskDay(t.created_at) || taskDay(t.start_date);
+        if (timeRange === 'custom') {
+          return (due && due >= start && due <= today) || (created && created >= start && created <= today) || (!due && !created);
+        }
         if (timeRange === 'week') {
           return !due || due <= today || (due >= start && due <= today) || (created && created >= start);
         }
@@ -440,7 +521,7 @@ export const useReports = () => {
     return filtered.length > 0 ? filtered : active;
   }, [scopedTasks, periodMeta, timeRange]);
 
-  const data = useMemo(() => reportAnalytics(scopedTasks, timeRange), [scopedTasks, timeRange]);
+  const data = useMemo(() => reportAnalytics(scopedTasks, timeRange === 'custom' ? 'month' : timeRange), [scopedTasks, timeRange]);
 
   // Build Staff Performance list (shared 1:1 between List Mode and Staff Cards Mode)
   const staffMembers = useMemo<StaffReportMember[]>(() => {
@@ -583,7 +664,7 @@ export const useReports = () => {
         ? Math.round(((completedTasks - prevCompleted) / prevCompleted) * 100)
         : 6;
     const completionIsPositive = deltaPct >= 0;
-    const completionDelta = `${deltaPct >= 0 ? '▲' : '▼'} ${Math.abs(deltaPct)}% so với kỳ trước`;
+    const completionDelta = `${deltaPct >= 0 ? '▲' : '▼'} ${t('reports.viz.vsPrevPeriod', { delta: Math.abs(deltaPct) })}`;
 
     // Card 2: Profile Backlog (aggregated 1:1 from staffMembers)
     const allBacklogItems = staffMembers.flatMap((m) => m.profileBacklogItems);
@@ -736,13 +817,13 @@ export const useReports = () => {
   ]);
 
   const burndown = useMemo(
-    () => computePeriodBurndown(scopedTasks, timeRange),
-    [scopedTasks, timeRange],
+    () => computePeriodBurndown(scopedTasks, timeRange, new Date(), customStart, customEnd),
+    [scopedTasks, timeRange, customStart, customEnd],
   );
 
   const heatmapData = useMemo(
-    () => computePeriodHeatmap(staffMembers, scopedTasks, timeRange),
-    [staffMembers, scopedTasks, timeRange],
+    () => computePeriodHeatmap(staffMembers, scopedTasks, timeRange, new Date(), lang),
+    [staffMembers, scopedTasks, timeRange, lang],
   );
 
   const exportCSV = useCallback(() => {
@@ -775,14 +856,19 @@ export const useReports = () => {
       const targetDept = customDept ?? effectiveDepartmentFilter;
       const targetPeriod = customPeriod ?? timeRange;
       const params = new URLSearchParams();
-      params.set('period', validPeriods.includes(targetPeriod) ? targetPeriod : 'month');
+      const pVal = validPeriods.includes(targetPeriod) ? targetPeriod : 'month';
+      params.set('period', pVal);
+      if (pVal === 'custom') {
+        params.set('from', customStart);
+        params.set('to', customEnd);
+      }
       if (targetDept && targetDept !== 'all') {
         params.set('dept', targetDept);
       }
       const url = `/reports/visualize?${params.toString()}`;
       window.open(url, '_blank', 'noopener,noreferrer');
     },
-    [effectiveDepartmentFilter, timeRange],
+    [effectiveDepartmentFilter, timeRange, customStart, customEnd],
   );
 
   return {
@@ -791,6 +877,9 @@ export const useReports = () => {
     error,
     timeRange,
     setTimeRange,
+    customStart,
+    customEnd,
+    setCustomDateRange,
     departmentFilter: effectiveDepartmentFilter,
     setDepartmentFilter,
     departments: scope.departments,
