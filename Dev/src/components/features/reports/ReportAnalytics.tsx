@@ -21,8 +21,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  TrendingUp,
-  TrendingDown,
   Layers,
   BarChart3,
   LayoutGrid,
@@ -259,125 +257,149 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         {/* TẦNG 1: 4 Team Performance Cards */}
         <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
-          <div className="glass-panel p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-colors shadow-sm">
-            <div className="grid grid-flow-col justify-between items-start mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                <div className="grid place-items-center w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-colors">
+            {/* Hàng 1: Header */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
                     Tổng việc & Hoàn thành
                   </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Trong kỳ {periodLabelVi}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Trong kỳ {periodLabelVi}</p>
                 </div>
               </div>
 
-              {/* Mini SVG Ring Gauge */}
-              <div className="relative grid place-items-center w-11 h-11">
-                <svg className="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="17"
-                    className="stroke-slate-200 dark:stroke-slate-800"
-                    strokeWidth="3.5"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="17"
-                    className="stroke-emerald-500 transition-all duration-500"
-                    strokeWidth="3.5"
-                    strokeDasharray={`${(teamCards.completionRate / 100) * 106.8} 106.8`}
-                    strokeLinecap="round"
-                    fill="transparent"
-                  />
-                </svg>
-                <span className="absolute text-[10px] font-bold text-slate-800 dark:text-slate-100">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40 whitespace-nowrap">
+                Hoàn thành {teamCards.completionRate}%
+              </span>
+            </div>
+
+            {/* Hàng 2: Số lớn + Thanh visualize + Sub-caption */}
+            <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    {teamCards.completedTasks}
+                  </b>
+                  <span className="text-sm font-semibold text-gray-400">
+                    / {teamCards.totalTasks} công việc
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                   {teamCards.completionRate}%
                 </span>
               </div>
+
+              {/* Visualize Bar */}
+              <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden my-1">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, teamCards.completionRate)}%` }}
+                />
+              </div>
+
+              {/* Sub-caption */}
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>Đã hoàn thành {teamCards.completedTasks} việc</span>
+                <span>Còn lại {Math.max(0, teamCards.totalTasks - teamCards.completedTasks)} việc</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-1 mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {teamCards.completedTasks}
-                </span>
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  / {teamCards.totalTasks} việc
+            {/* Hàng 3: Footer detail */}
+            <div className="pt-2.5 border-t border-gray-100 dark:border-slate-700/70 grid content-start gap-1.5">
+              <div className="px-2.5 py-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]">
+                <span className="text-gray-500 dark:text-gray-400">Biến động kỳ lọc</span>
+                <span className={teamCards.completionIsPositive ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                  {teamCards.completionDelta}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Tỷ lệ hoàn thành đạt <strong className="text-emerald-600 dark:text-emerald-400">{teamCards.completionRate}%</strong>
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-flow-col auto-cols-max items-center gap-1.5">
-              <span
-                className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                  teamCards.completionIsPositive
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                }`}
-              >
-                {teamCards.completionIsPositive ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                {teamCards.completionDelta}
-              </span>
-              <span className="text-[11px] text-slate-400">vs kỳ trước</span>
+              <div className="px-2.5 py-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]">
+                <span className="text-gray-500 dark:text-gray-400">Phân bổ hiện tại</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-200">
+                  {teamCards.completedTasks} xong · {teamCards.inProgressTasks} đang làm
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Card 2: Task tồn đọng (reported from Tab Profile) */}
-          <div className="glass-panel p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 hover:border-amber-400/50 dark:hover:border-amber-500/50 transition-colors shadow-sm">
-            <div className="grid grid-flow-col justify-between items-start mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                <div className="grid place-items-center w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-amber-400/50 dark:hover:border-amber-500/50 transition-colors">
+            {/* Hàng 1: Header */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
                     Các Task Tồn Đọng
                   </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Báo cáo từ Tab Profile</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Báo cáo từ Tab Profile</p>
                 </div>
               </div>
 
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300/40">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40 whitespace-nowrap">
                 {teamCards.highSeverityBacklogCount} ưu tiên cao
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-1 mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-baseline gap-2">
-                <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                  {teamCards.backlogCount}
-                </span>
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  việc tồn đọng
+            {/* Hàng 2: Số lớn + Thanh visualize + Sub-caption */}
+            <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                    {teamCards.backlogCount}
+                  </b>
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                    việc tồn đọng
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  {teamCards.staffWithBacklogCount} nhân sự
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Từ <strong className="text-slate-700 dark:text-slate-200">{teamCards.staffWithBacklogCount}</strong> nhân sự ghi nhận
-              </p>
+
+              {/* Visualize Bar: Phân bổ High vs Medium severity */}
+              <div
+                className="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid my-1"
+                style={{
+                  gridTemplateColumns: `${Math.max(teamCards.highSeverityBacklogCount, 0)}fr ${Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount)}fr`,
+                }}
+              >
+                {teamCards.highSeverityBacklogCount > 0 && (
+                  <div
+                    className="h-full w-full bg-amber-500"
+                    title={`Ưu tiên cao: ${teamCards.highSeverityBacklogCount}`}
+                  />
+                )}
+                {teamCards.backlogCount - teamCards.highSeverityBacklogCount > 0 && (
+                  <div
+                    className="h-full w-full bg-amber-300 dark:bg-amber-700"
+                    title={`Trung bình: ${teamCards.backlogCount - teamCards.highSeverityBacklogCount}`}
+                  />
+                )}
+              </div>
+
+              {/* Sub-caption */}
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>Ưu tiên cao: {teamCards.highSeverityBacklogCount} việc</span>
+                <span>Trung bình: {Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount)} việc</span>
+              </div>
             </div>
 
-            {/* Backlog preview items */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-1 gap-1.5">
+            {/* Hàng 3: Footer detail */}
+            <div className="pt-2.5 border-t border-gray-100 dark:border-slate-700/70 grid content-start gap-1.5">
               {teamCards.backlogItems.length > 0 ? (
                 teamCards.backlogItems.slice(0, 2).map((item) => (
                   <div
                     key={item.id}
                     title={`${item.title} — Lý do: ${item.reason}`}
-                    className="p-1.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-[11px] grid grid-cols-[1fr_auto] items-center gap-1.5"
+                    className="px-2.5 py-1.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
                   >
-                    <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+                    <span className="truncate font-medium text-slate-800 dark:text-slate-200">
                       {item.title}
                     </span>
                     <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold whitespace-nowrap">
@@ -386,148 +408,180 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   </div>
                 ))
               ) : (
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  ✓ Không có việc tồn đọng nào được báo cáo
-                </p>
+                <div className="px-2.5 py-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium text-center">
+                  ✓ Không có việc tồn đọng
+                </div>
               )}
             </div>
           </div>
 
           {/* Card 3: Project & Campaign Team tham gia */}
-          <div className="glass-panel p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 hover:border-cyan-400/50 dark:hover:border-cyan-500/50 transition-colors shadow-sm">
-            <div className="grid grid-flow-col justify-between items-start mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                <div className="grid place-items-center w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-cyan-400/50 dark:hover:border-cyan-500/50 transition-colors">
+            {/* Hàng 1: Header */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 grid place-items-center">
                   <Layers className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
                     Project & Campaign
                   </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Đang tham gia triển khai</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Đang tham gia triển khai</p>
                 </div>
               </div>
 
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300">
-                {teamCards.totalTracks} tracks
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/40 whitespace-nowrap">
+                {teamCards.totalTracks} chương trình
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-1 mb-2">
-              <div className="grid grid-flow-col auto-cols-max items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {teamCards.totalTracks}
-                </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  ({teamCards.projectsCount} Dự án · {teamCards.campaignsCount} Chiến dịch)
+            {/* Hàng 2: Số lớn + Thanh visualize + Sub-caption */}
+            <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    {teamCards.totalTracks}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    ({teamCards.projectsCount} Dự án · {teamCards.campaignsCount} Chiến dịch)
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-[#093570] dark:text-blue-400">
+                  {teamCards.avgTrackProgress}%
                 </span>
               </div>
-              <div className="grid grid-flow-col justify-between items-center text-xs text-slate-500 dark:text-slate-400">
-                <span>Tiến độ trung bình</span>
-                <span className="font-bold text-[#002e6d] dark:text-[#38bdf8]">{teamCards.avgTrackProgress}%</span>
+
+              {/* Visualize Bar */}
+              <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden my-1">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#093570] to-[#2a78d6] transition-all duration-500"
+                  style={{ width: `${Math.min(100, teamCards.avgTrackProgress)}%` }}
+                />
+              </div>
+
+              {/* Sub-caption */}
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>Tiến độ triển khai trung bình</span>
+                <span>
+                  {teamCards.tracksAtRiskCount > 0 ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">{teamCards.tracksAtRiskCount} cần chú ý</span>
+                  ) : (
+                    'Đúng tiến độ'
+                  )}
+                </span>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-2.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#002e6d] to-[#38bdf8] transition-all duration-500"
-                style={{ width: `${Math.min(100, teamCards.avgTrackProgress)}%` }}
-              />
-            </div>
-
-            {/* Tracks Preview */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-1 gap-1.5">
+            {/* Hàng 3: Footer detail */}
+            <div className="pt-2.5 border-t border-gray-100 dark:border-slate-700/70 grid content-start gap-1.5">
               {teamCards.tracks.length > 0 ? (
                 teamCards.tracks.slice(0, 2).map((tr) => (
                   <div
                     key={tr.id}
-                    className="grid grid-cols-[1fr_auto] items-center gap-1.5 text-[11px]"
+                    className="px-2.5 py-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]"
                   >
-                    <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      tr.kind === 'project'
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                        : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+                    }`}>
+                      {tr.kind === 'project' ? 'Dự án' : 'Chiến dịch'}
+                    </span>
+                    <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={tr.name}>
                       {tr.name}
                     </span>
-                    <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">
+                    <span className="text-[11px] font-bold text-[#093570] dark:text-blue-400">
                       {tr.progress}%
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="text-[11px] text-slate-400">Chưa có track nào</p>
+                <div className="px-2.5 py-1.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-[11px] text-gray-400 text-center">
+                  Chưa có chương trình nào
+                </div>
               )}
             </div>
           </div>
 
           {/* Card 4: Tiếp tục đang làm (In Progress & Active) */}
-          <div className="glass-panel p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-colors shadow-sm">
-            <div className="grid grid-flow-col justify-between items-start mb-3">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                <div className="grid place-items-center w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[auto_auto_1fr] gap-3 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-colors">
+            {/* Hàng 1: Header */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-h-[36px]">
+              <div className="grid grid-cols-[32px_1fr] items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center">
                   <Clock className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200 truncate">
                     Tiếp Tục Đang Làm
                   </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Đang làm & Cần xử lý</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">Đang làm & Cần xử lý</p>
                 </div>
               </div>
 
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                {teamCards.activeOpenTotal} việc mở
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
+                {teamCards.activeOpenTotal} việc đang mở
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-1 mb-2">
-              <div className="grid grid-flow-col auto-cols-max items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {teamCards.inProgressTasks}
-                </span>
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  đang thực hiện
+            {/* Hàng 2: Số lớn + Thanh visualize + Sub-caption */}
+            <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-[#2a78d6] dark:text-blue-400">
+                    {teamCards.inProgressTasks}
+                  </b>
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                    đang thực hiện
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  {teamCards.inProgressPct}% việc mở
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                {teamCards.inProgressSub}
-              </p>
+
+              {/* Visualize Bar: Phân bổ 3 màu liền mạch dùng gridTemplateColumns */}
+              <div
+                className="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid my-1"
+                style={{
+                  gridTemplateColumns: `${Math.max(teamCards.inProgressTasks, 0)}fr ${Math.max(teamCards.todoTasks, 0)}fr ${Math.max(teamCards.overdueTasks, 0)}fr`,
+                }}
+              >
+                {teamCards.inProgressTasks > 0 && (
+                  <div className="h-full w-full bg-[#2a78d6]" title={`Đang làm: ${teamCards.inProgressTasks}`} />
+                )}
+                {teamCards.todoTasks > 0 && (
+                  <div className="h-full w-full bg-slate-400 dark:bg-slate-500" title={`Cần làm: ${teamCards.todoTasks}`} />
+                )}
+                {teamCards.overdueTasks > 0 && (
+                  <div className="h-full w-full bg-rose-500" title={`Quá hạn: ${teamCards.overdueTasks}`} />
+                )}
+              </div>
+
+              {/* Sub-caption */}
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>+{teamCards.todoTasks} chờ thực hiện</span>
+                <span className={teamCards.overdueTasks > 0 ? 'text-rose-600 dark:text-rose-400 font-semibold' : ''}>
+                  {teamCards.overdueTasks} quá hạn
+                </span>
+              </div>
             </div>
 
-            {/* 3-Color Distribution Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden grid grid-flow-col auto-cols-fr gap-0.5 mb-2.5">
-              <div
-                title={`Đang làm: ${teamCards.inProgressTasks}`}
-                className="h-full bg-[#2a78d6] transition-all"
-                style={{
-                  width: `${teamCards.activeOpenTotal > 0 ? (teamCards.inProgressTasks / teamCards.activeOpenTotal) * 100 : 0}%`,
-                }}
-              />
-              <div
-                title={`Chờ xử lý: ${teamCards.todoTasks}`}
-                className="h-full bg-slate-400 dark:bg-slate-600 transition-all"
-                style={{
-                  width: `${teamCards.activeOpenTotal > 0 ? (teamCards.todoTasks / teamCards.activeOpenTotal) * 100 : 0}%`,
-                }}
-              />
-              <div
-                title={`Quá hạn: ${teamCards.overdueTasks}`}
-                className="h-full bg-rose-500 transition-all"
-                style={{
-                  width: `${teamCards.activeOpenTotal > 0 ? (teamCards.overdueTasks / teamCards.activeOpenTotal) * 100 : 0}%`,
-                }}
-              />
-            </div>
-
-            {/* Sub Status Badges */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-3 gap-1 text-[10px] text-center">
-              <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold truncate">
-                {teamCards.inProgressTasks} Đang làm
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold truncate">
-                {teamCards.todoTasks} Cần làm
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold truncate">
-                {teamCards.overdueTasks} Quá hạn
-              </span>
+            {/* Hàng 3: Footer detail */}
+            <div className="pt-2.5 border-t border-gray-100 dark:border-slate-700/70 grid grid-cols-3 gap-1.5">
+              <div className="py-1.5 px-2 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-center">
+                <b className="block text-xs font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Đang làm</span>
+              </div>
+              <div className="py-1.5 px-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-center">
+                <b className="block text-xs font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Cần làm</span>
+              </div>
+              <div className="py-1.5 px-2 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 text-center">
+                <b className="block text-xs font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
+                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">Quá hạn</span>
+              </div>
             </div>
           </div>
         </section>
@@ -628,13 +682,13 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.15} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis
-                      dataKey="shortName"
+                      dataKey="displayLabel"
                       type="category"
                       stroke="#94a3b8"
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
-                      width={90}
+                      width={140}
                     />
                     <Tooltip
                       cursor={{ fill: 'rgba(56, 189, 248, 0.08)' }}
@@ -678,10 +732,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         );
                       }}
                     />
-                    <Bar dataKey="done" name="Hoàn thành" stackId="staff" fill="#10b981" />
-                    <Bar dataKey="doing" name="Đang làm" stackId="staff" fill="#2a78d6" />
-                    <Bar dataKey="todo" name="Cần làm" stackId="staff" fill="#64748b" />
-                    <Bar dataKey="late" name="Trễ hạn" stackId="staff" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="done" name="Hoàn thành" stackId="staff" fill="#10b981" barSize={18} />
+                    <Bar dataKey="doing" name="Đang làm" stackId="staff" fill="#2a78d6" barSize={18} />
+                    <Bar dataKey="todo" name="Cần làm" stackId="staff" fill="#64748b" barSize={18} />
+                    <Bar dataKey="late" name="Trễ hạn" stackId="staff" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={18} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -787,11 +841,25 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                     {/* Profile Backlog Alert Box if any */}
                     {m.profileBacklogCount > 0 ? (
-                      <div className="p-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-[11px] grid grid-cols-[auto_1fr] items-center gap-1.5 mb-3 text-amber-800 dark:text-amber-300">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="font-semibold">
-                          {m.profileBacklogCount} việc tồn đọng (Tab Profile)
-                        </span>
+                      <div className="p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-[11px] grid gap-1.5 mb-3 text-amber-800 dark:text-amber-300">
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="font-semibold">
+                            {m.profileBacklogCount} việc tồn đọng (Tab Profile)
+                          </span>
+                        </div>
+                        <div className="grid gap-1 pt-1 border-t border-amber-200/50 dark:border-amber-900/30">
+                          {m.profileBacklogItems.slice(0, 2).map((item) => (
+                            <div key={item.id} className="grid grid-cols-[1fr_auto] items-center gap-1.5 text-[10px]">
+                              <span className="truncate text-slate-700 dark:text-slate-300 font-medium" title={item.title}>
+                                • {item.title}
+                              </span>
+                              <span className="text-amber-600 dark:text-amber-400 font-semibold whitespace-nowrap">
+                                {item.projectTag}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <div className="p-2 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center mb-3">

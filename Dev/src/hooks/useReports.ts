@@ -1,6 +1,9 @@
 import { useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWorkspaceData } from './useWorkspaceData';
+import { useSharedResource } from './useSharedResource';
+import { workflowResource, workspaceScope } from '../services/workspaceResources';
+import { isDone as isWorkflowDone } from '../lib/workflowHub';
 import { useRememberedState } from './useRememberedState';
 import {
   isTaskClosed,
@@ -324,26 +327,56 @@ export const useReports = () => {
     error,
     refetch,
   } = useWorkspaceData();
+  const workflowState = useSharedResource(workflowResource, workspaceScope(), Boolean(profile));
+  const hubTracks = workflowState.data || [];
 
   const workspaceProjects = useMemo(() => {
     const map = new Map<string, any>();
+    (hubTracks || []).forEach((tr) => {
+      if (tr.entity_type === 'project' && !isWorkflowDone(tr.status)) {
+        map.set(String(tr.entity_id), {
+          id: tr.entity_id,
+          name: tr.name,
+          department_id: tr.department_id,
+          end_date: tr.due_date,
+          status: tr.status,
+          pics: tr.pics,
+          sub_pics: tr.sub_pics,
+          phases: tr.phases,
+        });
+      }
+    });
     workspaceTasks.forEach((t) => {
-      if (t.project?.id) {
+      if (t.project?.id && !map.has(String(t.project.id))) {
         map.set(String(t.project.id), t.project);
       }
     });
     return [...map.values()];
-  }, [workspaceTasks]);
+  }, [workspaceTasks, hubTracks]);
 
   const workspaceCampaigns = useMemo(() => {
     const map = new Map<string, any>();
+    (hubTracks || []).forEach((tr) => {
+      if (tr.entity_type === 'campaign' && !isWorkflowDone(tr.status)) {
+        map.set(String(tr.entity_id), {
+          id: tr.entity_id,
+          name: tr.name,
+          department_id: tr.department_id,
+          end_date: tr.due_date,
+          status: tr.status,
+          pics: tr.pics,
+          sub_pics: tr.sub_pics,
+          phases: tr.phases,
+        });
+      }
+    });
     workspaceTasks.forEach((t) => {
-      if (t.campaign?.id) {
+      if (t.campaign?.id && !map.has(String(t.campaign.id))) {
         map.set(String(t.campaign.id), t.campaign);
       }
     });
     return [...map.values()];
-  }, [workspaceTasks]);
+  }, [workspaceTasks, hubTracks]);
 
   const departments = useMemo(() => {
     const map = new Map<string, string>();
