@@ -1253,10 +1253,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60'
                         }`}
                       >
-                        <span className={`w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold ${
+                        <span className={`w-5 h-5 rounded-full overflow-hidden grid place-items-center text-[10px] font-bold ${
                           isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                         }`}>
-                          {m.initial}
+                          {m.avatar_url ? (
+                            <img src={m.avatar_url} alt={m.name} className="w-full h-full object-cover rounded-full" />
+                          ) : (
+                            m.initial
+                          )}
                         </span>
                         <span>{m.shortName}</span>
                         {m.profileBacklogCount > 0 && (
@@ -1422,8 +1426,16 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {selectedStaff && (
             <div className="rounded-2xl p-5 border-2 border-[#38bdf8]/40 bg-white/90 dark:bg-slate-900/90 shadow-lg backdrop-blur-xl space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-start sm:items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
-                <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold text-sm shadow-sm">
-                  {selectedStaff.initial}
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold text-sm shadow-sm">
+                  {selectedStaff.avatar_url ? (
+                    <img
+                      src={selectedStaff.avatar_url}
+                      alt={selectedStaff.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    selectedStaff.initial
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1">
