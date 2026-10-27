@@ -69,23 +69,27 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [staffView, setStaffView] = useState<'list' | 'cards'>('list');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
-  // Red markup: Dropdown status for 4 Team Performance Cards (NO SCALE BOX)
-  const [expandedTeamCards, setExpandedTeamCards] = useState<Record<string, boolean>>({
-    card1: false,
-    card2: false,
-    card3: false,
-    card4: false,
-  });
-  const toggleTeamCard = (key: string) => {
-    setExpandedTeamCards((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Expandable Box state with auto-closing on outside click
+  const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
+  const toggleExpanded = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActiveExpandedId((prev) => (prev === id ? null : id));
   };
 
-  // Orange markup: Dropdown backlog for Staff Cards (NO SCALE BOX)
-  const [expandedStaffBacklog, setExpandedStaffBacklog] = useState<Record<string, boolean>>({});
-  const toggleStaffBacklog = (staffId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setExpandedStaffBacklog((prev) => ({ ...prev, [staffId]: !prev[staffId] }));
-  };
+  useEffect(() => {
+    if (!activeExpandedId) return;
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (!target.closest(`[data-expandable-box="${activeExpandedId}"]`)) {
+        setActiveExpandedId(null);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [activeExpandedId]);
 
   // Green markup: Calendar Date Range Popover
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -544,445 +548,486 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         {/* TẦNG 1: 4 Team Performance Cards */}
         <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
-          <div className="h-[176px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[1fr_auto] hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-            {/* Content Area */}
-            <div className="min-h-0 overflow-hidden relative grid grid-cols-1 content-between">
-              {/* Top Info */}
-              <div className="grid grid-cols-1 gap-1">
-                {/* Header Row: Blue markup - REMOVED top-right badge */}
-                <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-                  <div className={`rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center transition-all duration-300 ${
-                    expandedTeamCards.card1 ? 'w-6 h-6 rounded-lg' : 'w-8 h-8'
-                  }`}>
-                    <CheckCircle2 className={expandedTeamCards.card1 ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-                  </div>
-                  <div className="grid grid-cols-1 min-w-0">
-                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
-                      {t('reports.viz.card1Title')}
-                    </h3>
-                    <p className={`text-[11px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                      expandedTeamCards.card1 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                    }`}>
-                      {t('reports.viz.card1Sub', { period: periodLabelVi })}
-                    </p>
-                  </div>
+          <div
+            data-expandable-box="card1"
+            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
+                <div className={`rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center transition-all duration-300 ${
+                  activeExpandedId === 'card1' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
+                }`}>
+                  <CheckCircle2 className={activeExpandedId === 'card1' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                 </div>
-
-                {/* KPI & Visualize Bar */}
-                <div className="grid grid-cols-1 gap-1">
-                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
-                    <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
-                      <b className={`font-bold tracking-tight text-gray-900 dark:text-white transition-all duration-300 ${
-                        expandedTeamCards.card1 ? 'text-base leading-tight' : 'text-2xl'
-                      }`}>
-                        {teamCards.completedTasks}
-                      </b>
-                      <span className="text-xs font-semibold text-gray-400">
-                        / {teamCards.totalTasks} {t('reports.viz.tasksUnit')}
-                      </span>
-                    </div>
-                    {/* Card 1 Right value: KEEP */}
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      {teamCards.completionRate}%
-                    </span>
-                  </div>
-
-                  {/* Visualize Bar */}
-                  <div className={`w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden transition-all duration-300 ${
-                    expandedTeamCards.card1 ? 'h-1.5 my-0.5' : 'h-2 my-1'
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                    {t('reports.viz.card1Title')}
+                  </h3>
+                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
+                    activeExpandedId === 'card1' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
                   }`}>
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${Math.min(100, teamCards.completionRate)}%` }}
-                    />
-                  </div>
-
-                  {/* Sub-caption */}
-                  <div className={`grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400 transition-all duration-300 ${
-                    expandedTeamCards.card1 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
-                    <span>{t('reports.viz.doneCount', { count: teamCards.completedTasks })}</span>
-                    <span>{t('reports.viz.remainingCount', { count: Math.max(0, teamCards.totalTasks - teamCards.completedTasks) })}</span>
-                  </div>
+                    {t('reports.viz.card1Sub', { period: periodLabelVi })}
+                  </p>
                 </div>
               </div>
 
-              {/* Dropdown Status Details (NO SCALE BOX) */}
-              <div className={`transition-all duration-300 ease-out ${
-                expandedTeamCards.card1
-                  ? 'max-h-[66px] opacity-100 overflow-y-auto pt-1.5 border-t border-gray-100 dark:border-slate-700/70'
-                  : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-              }`}>
-                <div className="grid content-start gap-1 text-[11px]">
-                  <div className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2">
-                    <span className="text-gray-500 dark:text-gray-400">{t('reports.viz.periodDeltaLabel')}</span>
-                    <span className={teamCards.completionIsPositive ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
-                      {teamCards.completionDelta}
-                    </span>
-                  </div>
-                  <div className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2">
-                    <span className="text-gray-500 dark:text-gray-400">{t('reports.viz.currentDistLabel')}</span>
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">
-                      {teamCards.completedTasks} {t('reports.viz.colCompleted').toLowerCase()} · {teamCards.inProgressTasks} {t('reports.viz.colInProgress').toLowerCase()}
-                    </span>
-                  </div>
+              {/* Chevron Button placed at top-right */}
+              <button
+                type="button"
+                onClick={(e) => toggleExpanded('card1', e)}
+                aria-label={activeExpandedId === 'card1' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                  activeExpandedId === 'card1'
+                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
+                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card1' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Performance KPI & Visualize Bar (Default view - transitions out when expanded) */}
+            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
+              activeExpandedId === 'card1' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
+            }`}>
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    {teamCards.completedTasks}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-400">
+                    / {teamCards.totalTasks} {t('reports.viz.tasksUnit')}
+                  </span>
                 </div>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  {teamCards.completionRate}%
+                </span>
+              </div>
+
+              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, teamCards.completionRate)}%` }}
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{t('reports.viz.doneCount', { count: teamCards.completedTasks })}</span>
+                <span>{t('reports.viz.remainingCount', { count: Math.max(0, teamCards.totalTasks - teamCards.completedTasks) })}</span>
               </div>
             </div>
 
-            {/* Toggle Button */}
-            <button
-              type="button"
-              onClick={() => toggleTeamCard('card1')}
-              className="w-full pt-1.5 mt-1 border-t border-gray-100 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              <span>{expandedTeamCards.card1 ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedTeamCards.card1 ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Full-Box Scrollable Tasks (Expanded view - fills dedicated height) */}
+            <div className={`transition-all duration-300 ease-out ${
+              activeExpandedId === 'card1'
+                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
+                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+            }`}>
+              {teamCards.periodTaskItems && teamCards.periodTaskItems.length > 0 ? (
+                teamCards.periodTaskItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-700/50 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
+                  >
+                    <div className="grid grid-cols-1 min-w-0">
+                      <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={item.title}>
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate">
+                        {item.assigneeName} {item.projectTag ? `· ${item.projectTag}` : ''}
+                      </span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
+                      item.statusKind === 'done'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                        : item.statusKind === 'doing'
+                        ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                        : item.statusKind === 'overdue'
+                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {item.statusKind === 'done'
+                        ? t('reports.viz.colCompleted')
+                        : item.statusKind === 'doing'
+                        ? t('reports.viz.colInProgress')
+                        : item.statusKind === 'overdue'
+                        ? t('reports.viz.colOverdue')
+                        : t('reports.viz.statusTodo')}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[11px]">
+                  {t('reports.viz.noTasksInPeriod')}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 2: Task tồn đọng (reported from Tab Profile) */}
-          <div className="h-[176px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[1fr_auto] hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-            {/* Content Area */}
-            <div className="min-h-0 overflow-hidden relative grid grid-cols-1 content-between">
-              {/* Top Info */}
-              <div className="grid grid-cols-1 gap-1">
-                {/* Header Row: Blue markup - REMOVED top-right badge */}
-                <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-                  <div className={`rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center transition-all duration-300 ${
-                    expandedTeamCards.card2 ? 'w-6 h-6 rounded-lg' : 'w-8 h-8'
-                  }`}>
-                    <AlertTriangle className={expandedTeamCards.card2 ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-                  </div>
-                  <div className="grid grid-cols-1 min-w-0">
-                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
-                      {t('reports.viz.card2Title')}
-                    </h3>
-                    <p className={`text-[11px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                      expandedTeamCards.card2 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                    }`}>
-                      {t('reports.viz.card2Sub')}
-                    </p>
-                  </div>
+          <div
+            data-expandable-box="card2"
+            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
+                <div className={`rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center transition-all duration-300 ${
+                  activeExpandedId === 'card2' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
+                }`}>
+                  <AlertTriangle className={activeExpandedId === 'card2' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                 </div>
-
-                {/* KPI & Visualize Bar */}
-                <div className="grid grid-cols-1 gap-1">
-                  {/* Blue markup: REMOVED right-side "{teamCards.staffWithBacklogCount} nhân sự" */}
-                  <div className="grid grid-cols-1 items-baseline">
-                    <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
-                      <b className={`font-bold tracking-tight text-amber-600 dark:text-amber-400 transition-all duration-300 ${
-                        expandedTeamCards.card2 ? 'text-base leading-tight' : 'text-2xl'
-                      }`}>
-                        {teamCards.backlogCount}
-                      </b>
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                        {t('reports.viz.backlogUnit')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Visualize Bar */}
-                  <div
-                    className={`w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid transition-all duration-300 ${
-                      expandedTeamCards.card2 ? 'h-1.5 my-0.5' : 'h-2 my-1'
-                    }`}
-                    style={{
-                      gridTemplateColumns: `${Math.max(teamCards.highSeverityBacklogCount, 0)}fr ${Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount)}fr`,
-                    }}
-                  >
-                    {teamCards.highSeverityBacklogCount > 0 && (
-                      <div
-                        className="h-full w-full bg-amber-500"
-                        title={`${t('reports.viz.highPriorityCount', { count: teamCards.highSeverityBacklogCount })}`}
-                      />
-                    )}
-                    {teamCards.backlogCount - teamCards.highSeverityBacklogCount > 0 && (
-                      <div
-                        className="h-full w-full bg-amber-300 dark:bg-amber-700"
-                        title={`${t('reports.viz.mediumPriorityCount', { count: teamCards.backlogCount - teamCards.highSeverityBacklogCount })}`}
-                      />
-                    )}
-                  </div>
-
-                  {/* Sub-caption */}
-                  <div className={`grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400 transition-all duration-300 ${
-                    expandedTeamCards.card2 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                    {t('reports.viz.card2Title')}
+                  </h3>
+                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
+                    activeExpandedId === 'card2' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
                   }`}>
-                    <span>{t('reports.viz.highPriorityCount', { count: teamCards.highSeverityBacklogCount })}</span>
-                    <span>{t('reports.viz.mediumPriorityCount', { count: Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount) })}</span>
-                  </div>
+                    {t('reports.viz.card2Sub')}
+                  </p>
                 </div>
               </div>
 
-              {/* Dropdown Status Details (NO SCALE BOX) */}
-              <div className={`transition-all duration-300 ease-out ${
-                expandedTeamCards.card2
-                  ? 'max-h-[66px] opacity-100 overflow-y-auto pt-1.5 border-t border-gray-100 dark:border-slate-700/70'
-                  : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-              }`}>
-                <div className="grid content-start gap-1 text-[11px]">
-                  {teamCards.backlogItems.length > 0 ? (
-                    teamCards.backlogItems.slice(0, 2).map((item) => (
-                      <div
-                        key={item.id}
-                        title={`${item.title} — ${item.reason}`}
-                        className="px-2 py-1 rounded-lg bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2"
-                      >
-                        <span className="truncate font-medium text-slate-800 dark:text-slate-200">
-                          {item.title}
-                        </span>
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold whitespace-nowrap">
-                          {item.projectTag}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-emerald-600 dark:text-emerald-400 font-medium text-center">
-                      {t('reports.viz.noBacklog')}
-                    </div>
-                  )}
+              {/* Chevron Button placed at top-right */}
+              <button
+                type="button"
+                onClick={(e) => toggleExpanded('card2', e)}
+                aria-label={activeExpandedId === 'card2' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                  activeExpandedId === 'card2'
+                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
+                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card2' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Performance KPI & Visualize Bar (Default view) */}
+            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
+              activeExpandedId === 'card2' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
+            }`}>
+              <div className="grid grid-cols-1 items-baseline">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                    {teamCards.backlogCount}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {t('reports.viz.backlogUnit')}
+                  </span>
                 </div>
+              </div>
+
+              <div
+                className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
+                style={{
+                  gridTemplateColumns: `${Math.max(teamCards.highSeverityBacklogCount, 0)}fr ${Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount)}fr`,
+                }}
+              >
+                {teamCards.highSeverityBacklogCount > 0 && (
+                  <div
+                    className="h-full w-full bg-amber-500"
+                    title={`${t('reports.viz.highPriorityCount', { count: teamCards.highSeverityBacklogCount })}`}
+                  />
+                )}
+                {teamCards.backlogCount - teamCards.highSeverityBacklogCount > 0 && (
+                  <div
+                    className="h-full w-full bg-amber-300 dark:bg-amber-700"
+                    title={`${t('reports.viz.mediumPriorityCount', { count: teamCards.backlogCount - teamCards.highSeverityBacklogCount })}`}
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{t('reports.viz.highPriorityCount', { count: teamCards.highSeverityBacklogCount })}</span>
+                <span>{t('reports.viz.mediumPriorityCount', { count: Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount) })}</span>
               </div>
             </div>
 
-            {/* Toggle Button */}
-            <button
-              type="button"
-              onClick={() => toggleTeamCard('card2')}
-              className="w-full pt-1.5 mt-1 border-t border-gray-100 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              <span>{expandedTeamCards.card2 ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedTeamCards.card2 ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Full-Box Scrollable Backlog List (Expanded view - untruncated) */}
+            <div className={`transition-all duration-300 ease-out ${
+              activeExpandedId === 'card2'
+                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
+                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+            }`}>
+              {teamCards.backlogItems && teamCards.backlogItems.length > 0 ? (
+                teamCards.backlogItems.map((item) => (
+                  <div
+                    key={item.id}
+                    title={`${item.title} — ${item.reason}`}
+                    className="px-2 py-1 rounded-lg bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
+                  >
+                    <span className="truncate font-medium text-slate-800 dark:text-slate-200">
+                      {item.title}
+                    </span>
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold whitespace-nowrap">
+                      {item.projectTag}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-emerald-600 dark:text-emerald-400 font-medium text-center text-[11px]">
+                  {t('reports.viz.noBacklog')}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 3: Project & Campaign Team tham gia */}
-          <div className="h-[176px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[1fr_auto] hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-            {/* Content Area */}
-            <div className="min-h-0 overflow-hidden relative grid grid-cols-1 content-between">
-              {/* Top Info */}
-              <div className="grid grid-cols-1 gap-1">
-                {/* Header Row: Blue markup - REMOVED top-right badge */}
-                <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-                  <div className={`rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 grid place-items-center transition-all duration-300 ${
-                    expandedTeamCards.card3 ? 'w-6 h-6 rounded-lg' : 'w-8 h-8'
-                  }`}>
-                    <Layers className={expandedTeamCards.card3 ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-                  </div>
-                  <div className="grid grid-cols-1 min-w-0">
-                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
-                      {t('reports.viz.card3Title')}
-                    </h3>
-                    <p className={`text-[11px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                      expandedTeamCards.card3 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                    }`}>
-                      {t('reports.viz.card3Sub')}
-                    </p>
-                  </div>
+          <div
+            data-expandable-box="card3"
+            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
+                <div className={`rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 grid place-items-center transition-all duration-300 ${
+                  activeExpandedId === 'card3' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
+                }`}>
+                  <Layers className={activeExpandedId === 'card3' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                 </div>
-
-                {/* KPI & Visualize Bar */}
-                <div className="grid grid-cols-1 gap-1">
-                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
-                    <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
-                      <b className={`font-bold tracking-tight text-gray-900 dark:text-white transition-all duration-300 ${
-                        expandedTeamCards.card3 ? 'text-base leading-tight' : 'text-2xl'
-                      }`}>
-                        {teamCards.totalTracks}
-                      </b>
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                        {t('reports.viz.projCampSplit', { projects: teamCards.projectsCount, campaigns: teamCards.campaignsCount })}
-                      </span>
-                    </div>
-                    {/* Card 3 Right value: KEEP */}
-                    <span className="text-xs font-bold text-[#093570] dark:text-blue-400">
-                      {teamCards.avgTrackProgress}%
-                    </span>
-                  </div>
-
-                  {/* Visualize Bar */}
-                  <div className={`w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden transition-all duration-300 ${
-                    expandedTeamCards.card3 ? 'h-1.5 my-0.5' : 'h-2 my-1'
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                    {t('reports.viz.card3Title')}
+                  </h3>
+                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
+                    activeExpandedId === 'card3' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
                   }`}>
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#093570] to-[#2a78d6] transition-all duration-500"
-                      style={{ width: `${Math.min(100, teamCards.avgTrackProgress)}%` }}
-                    />
-                  </div>
-
-                  {/* Sub-caption */}
-                  <div className={`grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400 transition-all duration-300 ${
-                    expandedTeamCards.card3 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                  }`}>
-                    <span>{t('reports.viz.avgProgress')}</span>
-                    <span>
-                      {teamCards.tracksAtRiskCount > 0 ? (
-                        <span className="text-amber-600 dark:text-amber-400 font-semibold">{t('reports.viz.needsAttention', { count: teamCards.tracksAtRiskCount })}</span>
-                      ) : (
-                        t('reports.viz.onTrack')
-                      )}
-                    </span>
-                  </div>
+                    {t('reports.viz.card3Sub')}
+                  </p>
                 </div>
               </div>
 
-              {/* Dropdown Status Details (NO SCALE BOX) */}
-              <div className={`transition-all duration-300 ease-out ${
-                expandedTeamCards.card3
-                  ? 'max-h-[66px] opacity-100 overflow-y-auto pt-1.5 border-t border-gray-100 dark:border-slate-700/70'
-                  : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-              }`}>
-                <div className="grid content-start gap-1 text-[11px]">
-                  {teamCards.tracks.length > 0 ? (
-                    teamCards.tracks.slice(0, 2).map((tr) => (
-                      <div
-                        key={tr.id}
-                        className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center gap-2"
-                      >
-                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                          tr.kind === 'project'
-                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                            : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
-                        }`}>
-                          {tr.kind === 'project' ? t('reports.viz.projectBadge') : t('reports.viz.campaignBadge')}
-                        </span>
-                        <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={tr.name}>
-                          {tr.name}
-                        </span>
-                        <span className="font-bold text-[#093570] dark:text-blue-400">
-                          {tr.progress}%
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-gray-400 text-center">
-                      {t('reports.viz.noTracks')}
-                    </div>
-                  )}
+              {/* Chevron Button placed at top-right */}
+              <button
+                type="button"
+                onClick={(e) => toggleExpanded('card3', e)}
+                aria-label={activeExpandedId === 'card3' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                  activeExpandedId === 'card3'
+                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
+                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card3' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Performance KPI & Visualize Bar (Default view) */}
+            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
+              activeExpandedId === 'card3' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
+            }`}>
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    {teamCards.totalTracks}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {t('reports.viz.projCampSplit', { projects: teamCards.projectsCount, campaigns: teamCards.campaignsCount })}
+                  </span>
                 </div>
+                <span className="text-xs font-bold text-[#093570] dark:text-blue-400">
+                  {teamCards.avgTrackProgress}%
+                </span>
+              </div>
+
+              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#093570] to-[#2a78d6] transition-all duration-500"
+                  style={{ width: `${Math.min(100, teamCards.avgTrackProgress)}%` }}
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{t('reports.viz.avgProgress')}</span>
+                <span>
+                  {teamCards.tracksAtRiskCount > 0 ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">{t('reports.viz.needsAttention', { count: teamCards.tracksAtRiskCount })}</span>
+                  ) : (
+                    t('reports.viz.onTrack')
+                  )}
+                </span>
               </div>
             </div>
 
-            {/* Toggle Button */}
-            <button
-              type="button"
-              onClick={() => toggleTeamCard('card3')}
-              className="w-full pt-1.5 mt-1 border-t border-gray-100 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              <span>{expandedTeamCards.card3 ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedTeamCards.card3 ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Full-Box Scrollable Tracks (Expanded view - untruncated) */}
+            <div className={`transition-all duration-300 ease-out ${
+              activeExpandedId === 'card3'
+                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
+                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+            }`}>
+              {teamCards.tracks && teamCards.tracks.length > 0 ? (
+                teamCards.tracks.map((tr) => (
+                  <div
+                    key={tr.id}
+                    className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]"
+                  >
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                      tr.kind === 'project'
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                        : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+                    }`}>
+                      {tr.kind === 'project' ? t('reports.viz.projectBadge') : t('reports.viz.campaignBadge')}
+                    </span>
+                    <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={tr.name}>
+                      {tr.name}
+                    </span>
+                    <span className="font-bold text-[#093570] dark:text-blue-400">
+                      {tr.progress}%
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-gray-400 text-center text-[11px]">
+                  {t('reports.viz.noTracks')}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 4: Tiếp tục đang làm (In Progress & Active) */}
-          <div className="h-[176px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm grid grid-rows-[1fr_auto] hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-            {/* Content Area */}
-            <div className="min-h-0 overflow-hidden relative grid grid-cols-1 content-between">
-              {/* Top Info */}
-              <div className="grid grid-cols-1 gap-1">
-                {/* Header Row: Blue markup - REMOVED top-right badge */}
-                <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-                  <div className={`rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center transition-all duration-300 ${
-                    expandedTeamCards.card4 ? 'w-6 h-6 rounded-lg' : 'w-8 h-8'
-                  }`}>
-                    <Clock className={expandedTeamCards.card4 ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-                  </div>
-                  <div className="grid grid-cols-1 min-w-0">
-                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap">
-                      {t('reports.viz.card4Title')}
-                    </h3>
-                    <p className={`text-[11px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
-                      expandedTeamCards.card4 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                    }`}>
-                      {t('reports.viz.card4Sub')}
-                    </p>
-                  </div>
+          <div
+            data-expandable-box="card4"
+            className="h-[164px] overflow-hidden relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            {/* Header Row: Top-Right Chevron Dropdown (Red markup) */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
+                <div className={`rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center transition-all duration-300 ${
+                  activeExpandedId === 'card4' ? 'w-6 h-6 rounded-lg' : 'w-7 h-7'
+                }`}>
+                  <Clock className={activeExpandedId === 'card4' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                 </div>
-
-                {/* KPI & Visualize Bar */}
-                <div className="grid grid-cols-1 gap-1">
-                  <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
-                    <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
-                      <b className={`font-bold tracking-tight text-[#2a78d6] dark:text-blue-400 transition-all duration-300 ${
-                        expandedTeamCards.card4 ? 'text-base leading-tight' : 'text-2xl'
-                      }`}>
-                        {teamCards.inProgressTasks}
-                      </b>
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                        {t('reports.viz.inProgressUnit')}
-                      </span>
-                    </div>
-                    {/* Card 4 Right value: KEEP */}
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      {t('reports.viz.openShare', { pct: teamCards.inProgressPct })}
-                    </span>
-                  </div>
-
-                  {/* Visualize Bar: Phân bổ 3 màu liền mạch dùng gridTemplateColumns */}
-                  <div
-                    className={`w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid transition-all duration-300 ${
-                      expandedTeamCards.card4 ? 'h-1.5 my-0.5' : 'h-2 my-1'
-                    }`}
-                    style={{
-                      gridTemplateColumns: `${Math.max(teamCards.inProgressTasks, 0)}fr ${Math.max(teamCards.todoTasks, 0)}fr ${Math.max(teamCards.overdueTasks, 0)}fr`,
-                    }}
-                  >
-                    {teamCards.inProgressTasks > 0 && (
-                      <div className="h-full w-full bg-[#2a78d6]" title={`${t('reports.viz.statusDoing')}: ${teamCards.inProgressTasks}`} />
-                    )}
-                    {teamCards.todoTasks > 0 && (
-                      <div className="h-full w-full bg-slate-400 dark:bg-slate-500" title={`${t('reports.viz.statusTodo')}: ${teamCards.todoTasks}`} />
-                    )}
-                    {teamCards.overdueTasks > 0 && (
-                      <div className="h-full w-full bg-rose-500" title={`${t('reports.viz.statusOverdue')}: ${teamCards.overdueTasks}`} />
-                    )}
-                  </div>
-
-                  {/* Sub-caption */}
-                  <div className={`grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400 transition-all duration-300 ${
-                    expandedTeamCards.card4 ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
+                <div className="grid grid-cols-1 min-w-0">
+                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                    {t('reports.viz.card4Title')}
+                  </h3>
+                  <p className={`text-[10px] text-gray-400 dark:text-gray-500 truncate transition-all duration-300 ${
+                    activeExpandedId === 'card4' ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
                   }`}>
-                    <span>{t('reports.viz.todoWaiting', { count: teamCards.todoTasks })}</span>
-                    <span className={teamCards.overdueTasks > 0 ? 'text-rose-600 dark:text-rose-400 font-semibold' : ''}>
-                      {t('reports.viz.overdueCount', { count: teamCards.overdueTasks })}
-                    </span>
-                  </div>
+                    {t('reports.viz.card4Sub')}
+                  </p>
                 </div>
               </div>
 
-              {/* Dropdown Status Details (Item 4: Green markup tight pill spacing - Label left, Bold right) */}
-              <div className={`transition-all duration-300 ease-out ${
-                expandedTeamCards.card4
-                  ? 'max-h-[66px] opacity-100 overflow-y-auto pt-1.5 border-t border-gray-100 dark:border-slate-700/70'
-                  : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-              }`}>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <div className="px-2 py-1 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[11px]">
-                    <span className="text-blue-600 dark:text-blue-400 font-medium truncate">{t('reports.viz.statusDoing')}</span>
-                    <b className="font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
-                  </div>
-                  <div className="px-2 py-1 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[11px]">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{t('reports.viz.statusTodo')}</span>
-                    <b className="font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
-                  </div>
-                  <div className="px-2 py-1 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[11px]">
-                    <span className="text-rose-600 dark:text-rose-400 font-medium truncate">{t('reports.viz.statusOverdue')}</span>
-                    <b className="font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
-                  </div>
+              {/* Chevron Button placed at top-right */}
+              <button
+                type="button"
+                onClick={(e) => toggleExpanded('card4', e)}
+                aria-label={activeExpandedId === 'card4' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                  activeExpandedId === 'card4'
+                    ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
+                    : 'bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${activeExpandedId === 'card4' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Performance KPI & Visualize Bar (Default view) */}
+            <div className={`transition-all duration-300 grid grid-cols-1 gap-1 ${
+              activeExpandedId === 'card4' ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[100px] opacity-100'
+            }`}>
+              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
+                  <b className="text-2xl font-bold tracking-tight text-[#2a78d6] dark:text-blue-400">
+                    {teamCards.inProgressTasks}
+                  </b>
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {t('reports.viz.inProgressUnit')}
+                  </span>
                 </div>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  {t('reports.viz.openShare', { pct: teamCards.inProgressPct })}
+                </span>
+              </div>
+
+              <div
+                className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
+                style={{
+                  gridTemplateColumns: `${Math.max(teamCards.inProgressTasks, 0)}fr ${Math.max(teamCards.todoTasks, 0)}fr ${Math.max(teamCards.overdueTasks, 0)}fr`,
+                }}
+              >
+                {teamCards.inProgressTasks > 0 && (
+                  <div className="h-full w-full bg-[#2a78d6]" title={`${t('reports.viz.statusDoing')}: ${teamCards.inProgressTasks}`} />
+                )}
+                {teamCards.todoTasks > 0 && (
+                  <div className="h-full w-full bg-slate-400 dark:bg-slate-500" title={`${t('reports.viz.statusTodo')}: ${teamCards.todoTasks}`} />
+                )}
+                {teamCards.overdueTasks > 0 && (
+                  <div className="h-full w-full bg-rose-500" title={`${t('reports.viz.statusOverdue')}: ${teamCards.overdueTasks}`} />
+                )}
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{t('reports.viz.todoWaiting', { count: teamCards.todoTasks })}</span>
+                <span className={teamCards.overdueTasks > 0 ? 'text-rose-600 dark:text-rose-400 font-semibold' : ''}>
+                  {t('reports.viz.overdueCount', { count: teamCards.overdueTasks })}
+                </span>
               </div>
             </div>
 
-            {/* Toggle Button */}
-            <button
-              type="button"
-              onClick={() => toggleTeamCard('card4')}
-              className="w-full pt-1.5 mt-1 border-t border-gray-100 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            >
-              <span>{expandedTeamCards.card4 ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedTeamCards.card4 ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Full-Box Scrollable Content: 3 compact status pills + all open tasks */}
+            <div className={`transition-all duration-300 ease-out ${
+              activeExpandedId === 'card4'
+                ? 'max-h-[106px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-gray-100 dark:border-slate-700/70 pt-1.5'
+                : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+            }`}>
+              {/* 3 Compact Status Pills Row */}
+              <div className="grid grid-cols-3 gap-1 mb-1">
+                <div className="px-1.5 py-0.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                  <span className="text-blue-600 dark:text-blue-400 font-medium truncate">{t('reports.viz.statusDoing')}</span>
+                  <b className="font-bold text-blue-700 dark:text-blue-300">{teamCards.inProgressTasks}</b>
+                </div>
+                <div className="px-1.5 py-0.5 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{t('reports.viz.statusTodo')}</span>
+                  <b className="font-bold text-slate-700 dark:text-slate-300">{teamCards.todoTasks}</b>
+                </div>
+                <div className="px-1.5 py-0.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 grid grid-cols-[1fr_auto] items-center gap-1 text-[10px]">
+                  <span className="text-rose-600 dark:text-rose-400 font-medium truncate">{t('reports.viz.statusOverdue')}</span>
+                  <b className="font-bold text-rose-700 dark:text-rose-300">{teamCards.overdueTasks}</b>
+                </div>
+              </div>
+
+              {/* Scrollable list of open tasks */}
+              {teamCards.openTaskItems && teamCards.openTaskItems.length > 0 ? (
+                teamCards.openTaskItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-700/50 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]"
+                  >
+                    <div className="grid grid-cols-1 min-w-0">
+                      <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={item.title}>
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate">
+                        {item.assigneeName} {item.projectTag ? `· ${item.projectTag}` : ''}
+                      </span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
+                      item.statusKind === 'doing'
+                        ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                        : item.statusKind === 'overdue'
+                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {item.statusKind === 'doing'
+                        ? t('reports.viz.colInProgress')
+                        : item.statusKind === 'overdue'
+                        ? t('reports.viz.colOverdue')
+                        : t('reports.viz.statusTodo')}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[11px]">
+                  {t('reports.viz.noTasksInPeriod')}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
@@ -1180,122 +1225,177 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             </div>
           )}
 
-          {/* VIEW 'CARDS': Grid of Staff Cards (Item 3 - Orange: Reordered stats & collapsible backlog NO SCALE BOX) */}
+          {/* VIEW 'CARDS': Grid of Staff Cards (Full-box expand, top-right chevron, zero flexbox, removed workload capacity) */}
           {staffView === 'cards' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {staffMembers.map((m) => {
                 const isSelected = selectedStaffId === m.id;
-                const isBacklogExpanded = Boolean(expandedStaffBacklog[m.id]);
-                const capacityColor =
-                  m.capacityPercentage > 100
-                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40'
-                    : m.capacityPercentage >= 80
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40'
-                    : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800';
+                const isExpanded = activeExpandedId === `staff-${m.id}`;
 
                 return (
                   <div
                     key={m.id}
-                    className={`h-[214px] overflow-hidden relative grid grid-rows-[1fr_auto] rounded-2xl p-4 border transition-all cursor-pointer ${
+                    data-expandable-box={`staff-${m.id}`}
+                    className={`h-[168px] overflow-hidden relative rounded-2xl p-3.5 border transition-all cursor-pointer ${
                       isSelected
                         ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/20 dark:bg-blue-950/30 shadow-md'
                         : 'border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
                     }`}
                     onClick={() => setSelectedStaffId(isSelected ? null : m.id)}
                   >
-                    {/* Top + Middle Container */}
-                    <div className="min-h-0 overflow-hidden grid grid-cols-1 content-between">
-                      {/* User Header */}
-                      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 mb-2">
-                        <div className={`rounded-full bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold shadow-sm transition-all duration-300 ${
-                          isBacklogExpanded ? 'w-7 h-7 text-[10px]' : 'w-10 h-10 text-xs'
-                        }`}>
-                          {m.initial}
-                        </div>
-
-                        <div className="grid grid-cols-1 min-w-0">
-                          <h4 className={`font-bold text-slate-900 dark:text-white truncate transition-all duration-300 ${
-                            isBacklogExpanded ? 'text-xs' : 'text-sm'
-                          }`}>
-                            {m.name}
-                          </h4>
-                          <p className={`text-[11px] text-slate-500 truncate transition-all duration-300 ${
-                            isBacklogExpanded ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-4 opacity-100'
-                          }`}>
-                            {m.role}
-                          </p>
-                        </div>
-
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                          {m.completionPct}%
-                        </span>
-                      </div>
-
-                      {/* 4 Mini Stat Badges: Reordered to Total, Completed, InProgress, Overdue */}
-                      <div className={`grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-xl mb-2 transition-all duration-300 ${
-                        isBacklogExpanded ? 'py-1 px-1 text-[10px]' : 'py-1.5 px-1 text-[11px]'
+                    {/* Header: Avatar, Name, Completion %, Top-Right Chevron button (Red markup) */}
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 mb-2">
+                      <div className={`rounded-full bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold shadow-sm transition-all duration-300 ${
+                        isExpanded ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'
                       }`}>
+                        {m.initial}
+                      </div>
+
+                      <div className="grid grid-cols-1 min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                          {m.name}
+                        </h4>
+                        <p className={`text-[10px] text-slate-400 truncate transition-all duration-300 ${
+                          isExpanded ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-3.5 opacity-100'
+                        }`}>
+                          {m.role}
+                        </p>
+                      </div>
+
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 whitespace-nowrap">
+                        {m.completionPct}%
+                      </span>
+
+                      {/* Chevron Dropdown button placed at top-right */}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleExpanded(`staff-${m.id}`, e)}
+                        aria-label={isExpanded ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
+                        className={`w-6 h-6 rounded-lg grid place-items-center transition-all cursor-pointer ${
+                          isExpanded
+                            ? 'bg-[#002e6d]/10 dark:bg-[#38bdf8]/15 text-[#002e6d] dark:text-[#38bdf8]'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+
+                    {/* Performance Stats UI (Default view - 4 mini cols + backlog alert box) */}
+                    <div className={`transition-all duration-300 grid grid-cols-1 gap-1.5 ${
+                      isExpanded ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none -translate-y-1' : 'max-h-[115px] opacity-100'
+                    }`}>
+                      {/* 4 Mini Stat Badges */}
+                      <div className="grid grid-cols-4 gap-1 text-center bg-slate-50/80 dark:bg-slate-800/50 rounded-xl py-1 px-1">
                         <div>
-                          <span className="block text-slate-800 dark:text-slate-100 font-bold">{m.total}</span>
-                          <span className="text-[10px] text-slate-400">{t('reports.viz.colTotalTasks')}</span>
+                          <span className="block text-slate-800 dark:text-slate-100 font-bold text-xs">{m.total}</span>
+                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colTotalTasks')}</span>
                         </div>
                         <div>
-                          <span className="block text-emerald-600 dark:text-emerald-400 font-bold">{m.done}</span>
-                          <span className="text-[10px] text-slate-400">{t('reports.viz.colCompleted')}</span>
+                          <span className="block text-emerald-600 dark:text-emerald-400 font-bold text-xs">{m.done}</span>
+                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colCompleted')}</span>
                         </div>
                         <div>
-                          <span className="block text-blue-600 dark:text-blue-400 font-bold">{m.doing}</span>
-                          <span className="text-[10px] text-slate-400">{t('reports.viz.colInProgress')}</span>
+                          <span className="block text-blue-600 dark:text-blue-400 font-bold text-xs">{m.doing}</span>
+                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colInProgress')}</span>
                         </div>
                         <div>
-                          <span className="block text-rose-600 dark:text-rose-400 font-bold">{m.late}</span>
-                          <span className="text-[10px] text-slate-400">{t('reports.viz.colOverdue')}</span>
+                          <span className="block text-rose-600 dark:text-rose-400 font-bold text-xs">{m.late}</span>
+                          <span className="text-[9px] text-slate-400 block truncate">{t('reports.viz.colOverdue')}</span>
                         </div>
                       </div>
 
-                      {/* Profile Backlog Box (NO SCALE BOX) */}
+                      {/* Backlog Alert or Clean state button */}
                       {m.profileBacklogCount > 0 ? (
-                        <div className="rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 p-2 text-[11px] text-amber-800 dark:text-amber-300">
-                          <button
-                            type="button"
-                            onClick={(e) => toggleStaffBacklog(m.id, e)}
-                            className="w-full grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-left font-semibold cursor-pointer"
-                          >
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                            <span className="truncate">{t('reports.viz.profileBacklogBtn', { count: m.profileBacklogCount })}</span>
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isBacklogExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {/* Items slide open into freed space */}
-                          <div className={`transition-all duration-300 ease-out ${
-                            isBacklogExpanded ? 'max-h-[58px] opacity-100 overflow-y-auto pt-1.5 space-y-1' : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
-                          }`}>
-                            {m.profileBacklogItems.slice(0, 3).map((item) => (
-                              <div key={item.id} className="p-1 rounded bg-amber-100/60 dark:bg-amber-900/30 grid grid-cols-[1fr_auto] items-center gap-1.5 text-[10px]">
-                                <span className="truncate text-slate-800 dark:text-slate-200 font-medium" title={item.title}>
-                                  • {item.title}
-                                </span>
-                                <span className="text-amber-700 dark:text-amber-300 font-semibold whitespace-nowrap">
-                                  {item.projectTag}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                        <div
+                          onClick={(e) => toggleExpanded(`staff-${m.id}`, e)}
+                          className="rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 px-2 py-1 text-[10px] text-amber-800 dark:text-amber-300 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 font-semibold cursor-pointer hover:bg-amber-100/70 dark:hover:bg-amber-900/50 transition-colors"
+                        >
+                          <AlertTriangle className="w-3 h-3 text-amber-500" />
+                          <span className="truncate">{t('reports.viz.profileBacklogBtn', { count: m.profileBacklogCount })}</span>
+                          <ChevronDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                         </div>
                       ) : (
-                        <div className="p-2 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center">
+                        <div className="py-1 px-2 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-[10px] text-slate-400 text-center">
                           {t('reports.viz.noProfileBacklog')}
                         </div>
                       )}
                     </div>
 
-                    {/* Capacity Indicator fixed at card bottom */}
-                    <div className="grid grid-cols-[1fr_auto] items-center pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                      <span className="text-slate-500 text-[11px]">{t('reports.viz.capacityLabel')}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${capacityColor}`}>
-                        {m.capacityPercentage}%
-                      </span>
+                    {/* Full-Box Scrollable Tasks: Profile Backlog + Period Tasks (Expanded view) */}
+                    <div className={`transition-all duration-300 ease-out ${
+                      isExpanded
+                        ? 'max-h-[108px] opacity-100 overflow-y-auto pr-0.5 space-y-1 border-t border-slate-100 dark:border-slate-800 pt-1.5'
+                        : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+                    }`}>
+                      {/* Profile Backlog Items */}
+                      {m.profileBacklogItems && m.profileBacklogItems.length > 0 && (
+                        m.profileBacklogItems.map((item) => (
+                          <div
+                            key={`backlog-${item.id}`}
+                            title={`${item.title} — ${item.reason}`}
+                            className="px-2 py-1 rounded-lg bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-[10px]"
+                          >
+                            <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 whitespace-nowrap">
+                              Profile
+                            </span>
+                            <span className="truncate text-slate-800 dark:text-slate-200 font-medium">
+                              {item.title}
+                            </span>
+                            <span className="text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">
+                              {item.projectTag}
+                            </span>
+                          </div>
+                        ))
+                      )}
+
+                      {/* Period Task Items */}
+                      {m.periodTaskItems && m.periodTaskItems.length > 0 && (
+                        m.periodTaskItems.map((item) => (
+                          <div
+                            key={`period-${item.id}`}
+                            className="px-2 py-1 rounded-lg bg-gray-50/90 dark:bg-slate-800/60 border border-gray-200/60 dark:border-slate-700/60 grid grid-cols-[1fr_auto] items-center gap-1.5 text-[10px]"
+                          >
+                            <div className="grid grid-cols-1 min-w-0">
+                              <span className="truncate text-slate-800 dark:text-slate-200 font-medium" title={item.title}>
+                                {item.title}
+                              </span>
+                              {item.projectTag && (
+                                <span className="text-[9px] text-slate-400 truncate">
+                                  {item.projectTag}
+                                </span>
+                              )}
+                            </div>
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold whitespace-nowrap ${
+                              item.statusKind === 'done'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                                : item.statusKind === 'doing'
+                                ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                                : item.statusKind === 'overdue'
+                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}>
+                              {item.statusKind === 'done'
+                                ? t('reports.viz.colCompleted')
+                                : item.statusKind === 'doing'
+                                ? t('reports.viz.colInProgress')
+                                : item.statusKind === 'overdue'
+                                ? t('reports.viz.colOverdue')
+                                : t('reports.viz.statusTodo')}
+                            </span>
+                          </div>
+                        ))
+                      )}
+
+                      {/* Empty state if neither backlog nor period tasks exist */}
+                      {(!m.profileBacklogItems || m.profileBacklogItems.length === 0) &&
+                        (!m.periodTaskItems || m.periodTaskItems.length === 0) && (
+                          <div className="px-2 py-2 rounded-lg bg-gray-50/80 dark:bg-slate-700/40 border border-gray-200/60 dark:border-slate-700/60 text-slate-400 text-center text-[10px]">
+                            {t('reports.viz.noTasksInPeriod')}
+                          </div>
+                        )}
                     </div>
+                    {/* Blue markup: REMOVED Workload capacity row at card bottom completely */}
                   </div>
                 );
               })}

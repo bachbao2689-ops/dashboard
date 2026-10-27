@@ -46,6 +46,14 @@ export interface ParticipatingTrackItem {
   deadline: string;
 }
 
+export interface TrackedTaskSummaryItem {
+  id: string;
+  title: string;
+  assigneeName: string;
+  projectTag: string;
+  statusKind: 'done' | 'doing' | 'todo' | 'overdue';
+}
+
 export interface StaffReportMember {
   id: string;
   name: string;
@@ -66,6 +74,7 @@ export interface StaffReportMember {
   onTimePct: number;
   profileBacklogCount: number;
   profileBacklogItems: ProfileBacklogItem[];
+  periodTaskItems: TrackedTaskSummaryItem[];
   tasks: any[];
 }
 
@@ -77,6 +86,7 @@ export interface TeamReportCardsData {
   fractionLabel: string;
   completionDelta: string;
   completionIsPositive: boolean;
+  periodTaskItems: TrackedTaskSummaryItem[];
 
   // Card 2: Các Task tồn đọng (reported from Tab Profile - mock visual data)
   backlogCount: number;
@@ -100,6 +110,7 @@ export interface TeamReportCardsData {
   activeOpenTotal: number;
   inProgressPct: number;
   inProgressSub: string;
+  openTaskItems: TrackedTaskSummaryItem[];
 }
 
 const getInitial = (name: string) => {
@@ -613,6 +624,29 @@ export const useReports = () => {
         const shortName = u.name.length > 12 ? `${u.name.slice(0, 11)}…` : u.name;
         const displayLabel = `${u.name.length > 14 ? `${u.name.slice(0, 13)}…` : u.name}  ${completionPct}%`;
 
+        const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks.map((t) => {
+          const isDone = isTaskDone(t.status);
+          const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
+          const isTodo =
+            !isDone &&
+            !isOverdue &&
+            ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+          const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
+            ? 'done'
+            : isOverdue
+            ? 'overdue'
+            : isTodo
+            ? 'todo'
+            : 'doing';
+          return {
+            id: String(t.id),
+            title: t.title || 'Công việc',
+            assigneeName: u.name,
+            projectTag: (t as any).project?.name || (t as any).campaign?.name || deptName || 'General',
+            statusKind,
+          };
+        });
+
         return {
           id: String(u.id),
           name: u.name,
@@ -633,6 +667,7 @@ export const useReports = () => {
           onTimePct,
           profileBacklogCount,
           profileBacklogItems,
+          periodTaskItems,
           tasks: openList,
         };
       })
@@ -781,6 +816,32 @@ export const useReports = () => {
       activeOpenTotal > 0 ? Math.round((inProgressTasks / activeOpenTotal) * 100) : 0;
     const inProgressSub = `+${todoTasks} chờ thực hiện · ${overdueTasks} quá hạn`;
 
+    // Task items lists for full-box expanded views
+    const sourceTasks = periodTasks.length > 0 ? periodTasks : scopedTasks;
+    const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks.map((t) => {
+      const isDone = isTaskDone(t.status);
+      const isOverdue = !isDone && taskOverdue(t, today);
+      const isTodo =
+        !isDone &&
+        !isOverdue &&
+        ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+      const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
+        ? 'done'
+        : isOverdue
+        ? 'overdue'
+        : isTodo
+        ? 'todo'
+        : 'doing';
+      return {
+        id: String(t.id),
+        title: t.title || 'Công việc',
+        assigneeName: t.assignee?.name || 'Chưa phân công',
+        projectTag: (t as any).project?.name || (t as any).campaign?.name || 'General',
+        statusKind,
+      };
+    });
+    const openTaskItems = periodTaskItems.filter((item) => item.statusKind !== 'done');
+
     return {
       totalTasks,
       completedTasks,
@@ -788,6 +849,7 @@ export const useReports = () => {
       fractionLabel: `${completedTasks} / ${totalTasks}`,
       completionDelta,
       completionIsPositive,
+      periodTaskItems,
       backlogCount,
       staffWithBacklogCount,
       highSeverityBacklogCount,
@@ -805,6 +867,7 @@ export const useReports = () => {
       activeOpenTotal,
       inProgressPct,
       inProgressSub,
+      openTaskItems,
     };
   }, [
     periodMeta.today,
