@@ -1227,17 +1227,17 @@ export const Sidebar: React.FC = () => {
 
         <NavLink
           to="/"
-          className="sb-logo-card mb-3 flex items-center justify-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 py-3 px-4 min-h-[56px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
+          className="sb-logo-card mb-3 grid place-items-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 py-2.5 px-3 min-h-[80px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
         >
           <img
             src="/logo-light.svg"
-            alt="K COFFEE Logo"
-            className="h-10 sm:h-10.5 w-auto object-contain filter drop-shadow-xs block dark:hidden"
+            alt="Phúc Sinh Logo"
+            className="h-16 sm:h-[72px] w-auto max-w-full object-contain filter drop-shadow-xs block dark:hidden"
           />
           <img
             src="/logo-dark.svg"
-            alt="K COFFEE Logo"
-            className="h-10 sm:h-10.5 w-auto object-contain filter drop-shadow-xs hidden dark:block"
+            alt="Phúc Sinh Logo"
+            className="h-16 sm:h-[72px] w-auto max-w-full object-contain filter drop-shadow-xs hidden dark:block"
           />
         </NavLink>
 

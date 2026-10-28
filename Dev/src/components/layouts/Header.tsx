@@ -151,9 +151,9 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
         </div>
 
         {/* CENTER AREA (Mobile Logo) */}
-        <div className="xl:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
-          <img src="/logo-light.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md block dark:hidden" />
-          <img src="/logo-dark.svg" alt="K COFFEE" className="h-7 sm:h-8 w-auto drop-shadow-md hidden dark:block" />
+        <div className="xl:hidden absolute left-1/2 -translate-x-1/2 grid place-items-center pointer-events-none">
+          <img src="/logo-light.svg" alt="Phúc Sinh Logo" className="h-8 sm:h-8.5 w-auto drop-shadow-md block dark:hidden" />
+          <img src="/logo-dark.svg" alt="Phúc Sinh Logo" className="h-8 sm:h-8.5 w-auto drop-shadow-md hidden dark:block" />
         </div>
 
         {/* RIGHT AREA */}
