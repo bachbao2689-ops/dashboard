@@ -84,6 +84,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   // Dropdown Action Menu State (Slide 1 & Slide 4)
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const actionMenuRef = useRef<HTMLDivElement>(null);
+  const actionPanelRef = useRef<HTMLDivElement>(null);
 
   // Export PDF (Print Mode)
   const exportReportPdf = useCallback(() => {
@@ -348,7 +349,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         setDragStart(null);
         setDragHover(null);
       }
-      if (actionMenuOpen && !actionMenuRef.current?.contains(target)) {
+      if (actionMenuOpen && !actionMenuRef.current?.contains(target) && !actionPanelRef.current?.contains(target)) {
         setActionMenuOpen(false);
       }
     };
@@ -905,9 +906,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </button>
 
                 {actionMenuOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
+                  <FilterPopover
+                    anchorRef={actionMenuRef}
+                    panelRef={actionPanelRef}
+                    align="right"
+                    onClose={() => setActionMenuOpen(false)}
+                    className="z-50 w-56 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <button
                       type="button"
@@ -960,7 +964,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <ImagePlus className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span>{t('reports.viz.exportImg')}</span>
                     </button>
-                  </div>
+                  </FilterPopover>
                 )}
               </div>
             </div>
