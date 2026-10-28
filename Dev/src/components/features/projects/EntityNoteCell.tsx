@@ -341,6 +341,7 @@ interface EntityNoteCellProps {
   workspaceId?: string | null;
   canEdit?: boolean;
   className?: string;
+  alignCenter?: boolean;
 }
 
 export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
@@ -349,6 +350,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
   workspaceId,
   canEdit = true,
   className = '',
+  alignCenter = true,
 }) => {
   const { t } = useTranslation();
   const profile = useAuthStore((s) => s.profile);
@@ -568,7 +570,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
     return (
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full h-full min-w-0 grid items-center ${className}`}
+        className={`relative w-full h-full min-w-0 grid items-center ${alignCenter ? 'text-center' : ''} ${className}`}
       >
         <input
           ref={inputRef}
@@ -618,7 +620,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
             void handleSave();
           }}
           placeholder={t('projects.notePlaceholder')}
-          className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-primary bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none ring-1 ring-primary/40 shadow-xs"
+          className={`bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none p-0 m-0 w-full text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 placeholder:italic ${alignCenter ? 'text-center' : ''}`}
         />
 
         {/* Floating Bubble Toolbar Portal (rendered on document.body to avoid table overflow-hidden clipping) */}
@@ -780,16 +782,16 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
           handleStartEdit(e);
         }
       }}
-      className={`group/note relative w-full h-full min-w-0 py-1.5 px-2 rounded-lg transition-colors cursor-pointer hover:bg-gray-100/70 dark:hover:bg-slate-800/60 ${className}`}
+      className={`group/note relative w-full h-full min-w-0 py-1.5 px-2 rounded-lg transition-colors cursor-pointer hover:bg-gray-100/70 dark:hover:bg-slate-800/60 ${alignCenter ? 'text-center' : ''} ${className}`}
       title={rawNote ? undefined : canEdit ? t('projects.notePlaceholder') : undefined}
     >
       {rawNote ? (
-        <span className="block truncate text-xs text-gray-700 dark:text-gray-300 font-normal leading-relaxed">
+        <span className={`block truncate text-xs text-gray-700 dark:text-gray-300 font-normal leading-relaxed ${alignCenter ? 'text-center mx-auto' : ''}`}>
           {renderMarkdownTokens(rawNote)}
         </span>
       ) : (
         canEdit && (
-          <span className="opacity-0 group-hover/note:opacity-100 block truncate text-xs text-gray-400 dark:text-gray-500 italic transition-opacity">
+          <span className={`opacity-0 group-hover/note:opacity-100 block truncate text-xs text-gray-400 dark:text-gray-500 italic transition-opacity ${alignCenter ? 'text-center mx-auto' : ''}`}>
             {t('projects.notePlaceholder')}
           </span>
         )

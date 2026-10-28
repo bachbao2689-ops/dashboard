@@ -4,7 +4,8 @@ export const statusMeta = (value: string) => {
   if (['done', 'complete', 'completed', 'hoàn-thành'].includes(key)) return { label: 'Hoàn thành', tone: 'success', color: '#4eb648' };
   if (['approved', 'đã-duyệt'].includes(key)) return { label: 'Đã duyệt', tone: 'success', color: '#4eb648' };
   if (['active', 'doing', 'in-progress', 'đang-làm', 'đang-thực-hiện'].includes(key)) return { label: 'Đang thực hiện', tone: 'info', color: '#38bdf8' };
-  if (['review', 'in-review', 'pending', 'planning', 'chờ-duyệt'].includes(key)) return { label: key === 'planning' ? 'Lên kế hoạch' : key === 'pending' ? 'Đang chờ' : 'Chờ duyệt', tone: 'warning', color: '#fbbf24' };
+  if (['draft', 'bản-nháp', 'review', 'in-review', 'pending', 'planning', 'chờ-duyệt'].includes(key)) return { label: (key === 'draft' || key === 'bản-nháp') ? 'Bản nháp' : key === 'planning' ? 'Lên kế hoạch' : key === 'pending' ? 'Đang chờ' : 'Chờ duyệt', tone: 'warning', color: '#fbbf24' };
+  if (['on-hold', 'on_hold', 'tạm-dừng', 'paused'].includes(key)) return { label: 'Tạm dừng', tone: 'neutral', color: '#94a3b8' };
   if (['overdue', 'quá-hạn'].includes(key)) return { label: 'Quá hạn', tone: 'danger', color: '#fb7185' };
   if (['rejected', 'từ-chối'].includes(key)) return { label: 'Từ chối', tone: 'danger', color: '#fb7185' };
   if (['cancelled', 'canceled'].includes(key)) return { label: 'Đã hủy', tone: 'neutral', color: '#94a3b8' };

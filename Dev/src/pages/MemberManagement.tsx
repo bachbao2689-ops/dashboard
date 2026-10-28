@@ -14,8 +14,8 @@ export function MemberManagement() {
   const { t } = useTranslation();
   const { tableRef: memberTableRef, widths: memberColWidths, startResize: startMemberColResize, totalTableWidth: memberTableWidth } = useResizableColumns({
     tableKey: 'members_table',
-    initialWidths: [240, 200, 150, 150, 100, 120, 110, 110, 80],
-    minWidth: 50,
+    initialWidths: [240, 200, 160, 160, 110, 130, 120, 120, 95],
+    minWidth: 80,
   });
   const { members, departments, loading, addMember, setMemberRemoved } = useMembers();
   const profile = useAuthStore(state => state.profile);

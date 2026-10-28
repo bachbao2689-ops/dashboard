@@ -82,6 +82,8 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     'Đang thực hiện': 'In Progress',
     'Chờ duyệt': 'In Review',
     'Lên kế hoạch': 'Planning',
+    'Bản nháp': 'Draft',
+    'Tạm dừng': 'On Hold',
     'Đang chờ': 'Pending',
     'Quá hạn': 'Overdue',
     'Từ chối': 'Rejected',

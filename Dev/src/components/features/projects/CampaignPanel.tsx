@@ -13,6 +13,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
+import { getCampaignPriority } from './projectPresentation';
 import type { HubTrack } from '../../../lib/workflowHub';
 
 export interface CampaignFilters {
@@ -103,7 +104,7 @@ const strictFormatVN = (dateStr?: string | null) => {
 };
 const formatDate = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
-const campaignPriority = (campaign: any) => campaign.priority || (Number(campaign.budget) >= 50000000 ? 'high' : Number(campaign.budget) >= 30000000 ? 'medium' : 'low');
+const campaignPriority = getCampaignPriority;
 
 
 const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
@@ -162,8 +163,8 @@ export const CampaignPanel: React.FC<{
   const { t, lang } = useTranslation();
   const { tableRef: campaignTableRef, widths: campaignColWidths, startResize: startCampaignColResize, totalTableWidth: campaignTableWidth } = useResizableColumns({
     tableKey: 'campaigns_table',
-    initialWidths: [320, 200, 220, 100, 120, 130, 220],
-    minWidth: 50,
+    initialWidths: [300, 170, 250, 120, 160, 150, 220],
+    minWidth: 95,
   });
   const profile = useAuthStore(s => s.profile);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
@@ -213,7 +214,14 @@ export const CampaignPanel: React.FC<{
 
   useEffect(() => {
     void load();
-    return () => { request.current++; };
+    const handleChanged = () => { void load(); };
+    window.addEventListener('campaigns:changed', handleChanged);
+    window.addEventListener('tasks:changed', handleChanged);
+    return () => {
+      request.current++;
+      window.removeEventListener('campaigns:changed', handleChanged);
+      window.removeEventListener('tasks:changed', handleChanged);
+    };
   }, [profile?.id, profile?.department_id]);
   useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members', 'activity_log', 'notifications'], load, profile?.id);
 
@@ -399,32 +407,32 @@ export const CampaignPanel: React.FC<{
           </colgroup>
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
             <tr>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.campaign')}</span>
+              <th className="p-4 relative text-left">
+                <span className="truncate block text-left">{t('projects.col.campaign')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.owner')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.owner')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.dates')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.dates')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.priority')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.priority')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.budget')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.budget')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.status')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.status')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
-              <th className="p-4 relative">
-                <span className="truncate block">{t('projects.col.notes')}</span>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.notes')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
             </tr>
@@ -475,32 +483,65 @@ export const CampaignPanel: React.FC<{
                 </div>
               )}
             </td>
-            <td className="p-4 overflow-hidden">
-  <div className="flex items-center gap-2 overflow-hidden">
-    <div className="flex -space-x-2 shrink-0"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
-    {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
-      <>
-        <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
-        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
-          <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
-          <div className="flex -space-x-2">
-            {subtaskMap[c.id].slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-</td>
-            <td className="p-4 overflow-hidden text-sm text-gray-600 dark:text-gray-300"><div className="grid grid-flow-col auto-cols-max items-center gap-2 truncate"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date, c.status, lang === 'en')}</div>}</div></td>
-            <td className="p-4 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></div></td>
-            <td className="p-4 overflow-hidden text-sm font-bold text-gray-900 dark:text-white truncate">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
-            <td className="p-4 overflow-hidden"><div className="truncate"><StatusBadge status={c.status || 'planning'} /></div></td>
-            <td className="p-4 overflow-hidden">
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+                  <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
+                    <Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" />
+                  </div>
+                  {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
+                    <>
+                      <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
+                        <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
+                        <div className="grid grid-flow-col auto-cols-max -space-x-2">
+                          {subtaskMap[c.id].slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center text-sm text-gray-600 dark:text-gray-300">
+              <div className="grid place-content-center">
+                <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 truncate mx-auto">
+                  <span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>
+                  {c.end_date && (
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
+                      <div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />
+                      {getDueStatusLabel(c.end_date, c.status, lang === 'en')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="truncate">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>
+                    {campaignPriority(c)}
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-sm font-bold text-gray-900 dark:text-white truncate text-center">
+              {c.budget ? `${new Intl.NumberFormat('vi-VN').format(Number(c.budget))} VND` : '—'}
+            </td>
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="truncate">
+                  <StatusBadge status={c.status || 'planning'} />
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center">
               <EntityNoteCell
                 entityId={c.id}
                 entityType="campaign"
                 workspaceId={c.workspace_id}
                 canEdit={canManage(c)}
+                alignCenter={true}
               />
             </td>
           </tr>)}</tbody>

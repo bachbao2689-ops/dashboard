@@ -9,9 +9,9 @@ export interface UseResizableColumnsOptions {
 export function useResizableColumns({
   tableKey,
   initialWidths,
-  minWidth = 50,
+  minWidth = 95,
 }: UseResizableColumnsOptions) {
-  const storageKey = `table_col_widths_${tableKey}`;
+  const storageKey = `table_col_widths_v3_${tableKey}`;
   const tableRef = useRef<HTMLTableElement | null>(null);
 
   const [widths, setWidths] = useState<number[]>(() => {
@@ -40,32 +40,73 @@ export function useResizableColumns({
   const widthsRef = useRef(widths);
   widthsRef.current = widths;
 
-  // On first mount without saved widths, if initial total < container width, scale once to fill container
-  useEffect(() => {
+  const resetWidths = useCallback(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
-      if (!saved && tableRef.current?.parentElement) {
-        const containerWidth = tableRef.current.parentElement.clientWidth;
-        const currentTotal = widthsRef.current.reduce((a, b) => a + b, 0);
-        if (containerWidth > currentTotal && currentTotal > 0) {
-          const ratio = containerWidth / currentTotal;
-          const scaled = widthsRef.current.map((w, idx) => {
-            if (idx === widthsRef.current.length - 1) {
-              const sumOthers = widthsRef.current
-                .slice(0, -1)
-                .reduce((acc, curr) => acc + Math.round(curr * ratio), 0);
-              return Math.max(minWidth, containerWidth - sumOthers);
-            }
-            return Math.max(minWidth, Math.round(w * ratio));
-          });
-          setWidths(scaled);
-          widthsRef.current = scaled;
-        }
-      }
+      localStorage.removeItem(storageKey);
     } catch {
       // ignore
     }
-  }, [storageKey, minWidth]);
+    const parent = tableRef.current?.parentElement;
+    if (parent) {
+      const containerWidth = parent.clientWidth;
+      const initialTotal = initialWidths.reduce((a, b) => a + b, 0);
+      if (containerWidth > initialTotal && initialTotal > 0) {
+        const ratio = containerWidth / initialTotal;
+        const scaled = initialWidths.map((w, idx) => {
+          if (idx === initialWidths.length - 1) {
+            const sumOthers = initialWidths.slice(0, -1).reduce((acc, curr) => acc + Math.round(curr * ratio), 0);
+            return Math.max(w, containerWidth - sumOthers);
+          }
+          return Math.max(w, Math.round(w * ratio));
+        });
+        setWidths(scaled);
+        widthsRef.current = scaled;
+        return;
+      }
+    }
+    setWidths(initialWidths);
+    widthsRef.current = initialWidths;
+  }, [storageKey, initialWidths]);
+
+  // If no custom widths are saved, scale smoothly with container (e.g. on drawer open/close or mount)
+  useEffect(() => {
+    const parent = tableRef.current?.parentElement;
+    if (!parent) return;
+
+    const adaptToContainer = () => {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) return; // User has custom dragged, respect their saved column widths!
+        const containerWidth = parent.clientWidth;
+        const initialTotal = initialWidths.reduce((a, b) => a + b, 0);
+        if (containerWidth > initialTotal && initialTotal > 0) {
+          const ratio = containerWidth / initialTotal;
+          const scaled = initialWidths.map((w, idx) => {
+            if (idx === initialWidths.length - 1) {
+              const sumOthers = initialWidths.slice(0, -1).reduce((acc, curr) => acc + Math.round(curr * ratio), 0);
+              return Math.max(w, containerWidth - sumOthers);
+            }
+            return Math.max(w, Math.round(w * ratio));
+          });
+          setWidths(scaled);
+          widthsRef.current = scaled;
+        } else {
+          setWidths(initialWidths);
+          widthsRef.current = initialWidths;
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    adaptToContainer();
+
+    const ro = new ResizeObserver(() => {
+      adaptToContainer();
+    });
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [storageKey, initialWidths]);
 
   const startResize = useCallback(
     (colIndex: number, e: React.MouseEvent) => {
@@ -131,6 +172,15 @@ export function useResizableColumns({
     [minWidth, storageKey],
   );
 
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      resetWidths();
+    },
+    [resetWidths],
+  );
+
   useEffect(() => {
     return () => {
       document.body.style.userSelect = '';
@@ -144,6 +194,8 @@ export function useResizableColumns({
     tableRef,
     widths,
     startResize,
+    resetWidths,
+    handleDoubleClick,
     totalTableWidth,
   };
 }

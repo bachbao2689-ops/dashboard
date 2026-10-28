@@ -10,7 +10,7 @@ import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {CommentMessage} from '../comments/CommentMessage';
 import {MultiSelect} from '../../common/MultiSelect';
 import {MessageSquare,Plus,Users,X,Trash2,CheckCircle2,Calendar,Clock3,ListTodo} from 'lucide-react';
-import {dateValue,priorityClass} from './projectPresentation';
+import {dateValue,priorityClass,getCampaignPriority,setCachedCampaignPriority} from './projectPresentation';
 import {EntityPinButton} from './EntityPinButton';
 import {TaskActivityLogPopover} from '../tasks/TaskActivityLogPopover';
 import {TaskPinButton} from '../tasks/TaskPinButton';
@@ -42,18 +42,30 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             <div className="flex items-center gap-1 shrink-0"><TaskActivityLogPopover entityType="campaign" entityId={selectedCampaign.id} /><EntityPinButton kind="campaign" id={selectedCampaign.id} name={selectedCampaign.name} /><button onClick={() => { setSelectedCampaign(null); setParams({}, { replace: true }); }} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button></div>
           </div>
           <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="edit-camp-start-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-start-input', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="edit-camp-due-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-due-input', mode: 'single' }, e)} value={due} onChange={e=>setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={visiblePeople.map(person=>({value:String(person.id),label:person.name+(person.departments?.name?` · ${person.departments.name}`:'')}))} value={primaryOwnerId?[primaryOwnerId]:[]} maxSelected={1} onChange={(ids:string[])=>setPrimaryOwnerId(ids[0]||'')} placeholder={t('common.selectPic')} /></div><EntityStatusField value={editStatus} onChange={setEditStatus} /><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm" /></div><div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><EntityActionBadges
-              priority={selectedCampaign.priority || 'medium'}
+            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="edit-camp-start-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-start-input', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="edit-camp-due-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-due-input', mode: 'single' }, e)} value={due} onChange={e=>setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={visiblePeople.map(person=>({value:String(person.id),label:person.name+(person.departments?.name?` · ${person.departments.name}`:'')}))} value={primaryOwnerId?[primaryOwnerId]:[]} maxSelected={1} onChange={(ids:string[])=>setPrimaryOwnerId(ids[0]||'')} placeholder={t('common.selectPic')} /></div><EntityStatusField value={editStatus} onChange={setEditStatus} /><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><div className="relative mt-1"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 pr-14 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm font-semibold" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div className="grid grid-flow-col auto-cols-max gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><EntityActionBadges
+              priority={getCampaignPriority(selectedCampaign)}
               status={selectedCampaign.status || 'planning'}
               onPriorityChange={async (newPriority) => {
                 if (!selectedCampaign || !selectedRoot) return;
-                const { error } = await supabase.from('campaigns').update({ priority: newPriority }).eq('id', selectedCampaign.id);
-                if (error) return toast.error('Lỗi cập nhật mức ưu tiên');
+                setCachedCampaignPriority(selectedCampaign.id, newPriority);
                 const updated = { ...selectedCampaign, priority: newPriority };
                 setSelectedCampaign(updated);
+                if ((state as any).setCampaigns) {
+                  (state as any).setCampaigns((items: any[]) => items.map((item: any) => item.id === selectedCampaign.id ? { ...item, priority: newPriority } : item));
+                }
                 window.dispatchEvent(new Event('campaigns:changed'));
                 void workflow.refresh();
                 toast.success('Đã cập nhật mức ưu tiên');
+                try {
+                  await supabase.from('activity_log').insert({
+                    workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+                    user_id: profile?.id || null,
+                    action: 'priority_updated',
+                    entity_type: 'campaign',
+                    entity_id: selectedCampaign.id,
+                    metadata: { priority: newPriority },
+                  });
+                } catch {}
               }}
               onStatusChange={async (newStatus) => {
                 if (!selectedCampaign || !selectedRoot) return;
@@ -61,6 +73,9 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 if (error) return toast.error('Lỗi cập nhật trạng thái');
                 const updated = { ...selectedCampaign, status: newStatus };
                 setSelectedCampaign(updated);
+                if ((state as any).setCampaigns) {
+                  (state as any).setCampaigns((items: any[]) => items.map((item: any) => item.id === selectedCampaign.id ? { ...item, status: newStatus } : item));
+                }
                 window.dispatchEvent(new Event('campaigns:changed'));
                 void workflow.refresh();
                 toast.success('Đã cập nhật trạng thái');

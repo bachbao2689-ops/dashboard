@@ -29,8 +29,8 @@ export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
   const { widths: assetColWidths, startResize: startAssetColResize, totalTableWidth: assetTableWidth, tableRef: assetTableRef } = useResizableColumns({
     tableKey: 'assets_table',
-    initialWidths: [110, 280, 120, 140, 120, 140, 110, 100],
-    minWidth: 50,
+    initialWidths: [120, 280, 130, 150, 130, 150, 120, 110],
+    minWidth: 80,
   });
   const profile = useAuthStore(state => state.profile);
   const canBorrowAsset=canSubmitAssetRequest(profile);

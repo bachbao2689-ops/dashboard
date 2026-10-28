@@ -13,7 +13,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
  const {t} = useTranslation();
  const { widths: taskColWidths, startResize: startTaskColResize, totalTableWidth: taskTableWidth, tableRef: taskTableRef } = useResizableColumns({
    tableKey: 'tasks_table',
-   initialWidths: [48, 80, 320, 180, 160, 120, 100, 110, 52],
+   initialWidths: [48, 95, 340, 200, 170, 130, 110, 120, 52],
    minWidth: 40,
  });
  return (<div className="space-y-6 pb-12 pr-1">

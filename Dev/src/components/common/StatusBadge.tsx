@@ -12,6 +12,8 @@ export const StatusBadge: React.FC<{ status: string; className?: string }> = ({ 
     'Đang thực hiện': 'In Progress',
     'Chờ duyệt': 'In Review',
     'Lên kế hoạch': 'Planning',
+    'Bản nháp': 'Draft',
+    'Tạm dừng': 'On Hold',
     'Đang chờ': 'Pending',
     'Quá hạn': 'Overdue',
     'Từ chối': 'Rejected',
