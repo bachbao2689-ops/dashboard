@@ -38,6 +38,12 @@ function RootRedirect() {
     return <Navigate to={`/workflow${location.search}`} replace />;
   }
 
+  // Mobile flow: default to Projects/Campaigns tab on mobile screens
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1280;
+  if (isMobileViewport) {
+    return <Navigate to="/projects" replace />;
+  }
+
   if (canViewTeamManagement(profile)) {
     return <Navigate to="/ui-dashboard" replace />;
   }
