@@ -649,7 +649,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setDragStart(null);
                         setDragHover(null);
                       }}
-                      className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
+                      className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-[8px] border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
                     >
                       {/* Left: Calendar Month Grid with Drag Range */}
                       <div className="p-3">
@@ -828,7 +828,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 setDragStart(null);
                                 setDragHover(null);
                               }}
-                              className={`grid grid-flow-col justify-start items-center w-full rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
+                              className={`grid grid-flow-col justify-start items-center w-full rounded-[6px] px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
                                 timeRange === option.id
                                   ? 'bg-white text-[#002e6d] shadow-sm dark:bg-slate-800 dark:text-blue-400'
                                   : 'text-gray-600 hover:bg-gray-200/70 dark:text-gray-400 dark:hover:bg-slate-700/60'
@@ -858,7 +858,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               }
                               setRangeOpen(false);
                             }}
-                            className="w-full rounded-lg bg-[#002e6d] hover:bg-[#002250] py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
+                            className="w-full rounded-[6px] bg-[#002e6d] hover:bg-[#002250] py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
                           >
                             {t('profile.apply')}
                           </button>
@@ -911,7 +911,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     panelRef={actionPanelRef}
                     align="right"
                     onClose={() => setActionMenuOpen(false)}
-                    className="z-50 w-56 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
+                    className="z-50 w-56 rounded-[8px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <button
                       type="button"
@@ -920,7 +920,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setActionMenuOpen(false);
                         openVisualizeReport();
                       }}
-                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
                     >
                       <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>{t('reports.viz.viewReportWeb')}</span>
@@ -933,7 +933,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setActionMenuOpen(false);
                         exportCSV();
                       }}
-                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
                     >
                       <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>{t('reports.viz.exportCsv')}</span>
@@ -946,7 +946,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setActionMenuOpen(false);
                         exportReportPdf();
                       }}
-                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
                     >
                       <Printer className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                       <span>{t('reports.viz.exportPdf')}</span>
@@ -959,7 +959,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setActionMenuOpen(false);
                         exportReportImage();
                       }}
-                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
                     >
                       <ImagePlus className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span>{t('reports.viz.exportImg')}</span>
@@ -1044,7 +1044,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card1Title')}
-              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-emerald-400/80 dark:border-emerald-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-emerald-400/80 dark:border-emerald-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card1'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -1056,7 +1056,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   teamCards.periodTaskItems.map((item) => (
                     <div
                       key={item.id}
-                      className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
                     >
                       <div className="grid grid-cols-1 min-w-0 gap-0.5">
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
@@ -1095,7 +1095,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   ))
                 ) : (
-                  <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
+                  <div className="px-2 py-2 rounded-[6px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
                     {t('reports.viz.noTasksInPeriod')}
                   </div>
                 )}
@@ -1184,7 +1184,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card2Title')}
-              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card2'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -1197,7 +1197,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <div
                       key={item.id}
                       title={`${item.title} — ${item.reason}`}
-                      className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
                     >
                       <div className="grid grid-cols-1 min-w-0 gap-0.5">
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
@@ -1226,7 +1226,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   ))
                 ) : (
-                  <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-emerald-600 dark:text-emerald-400 font-medium text-center text-[11px]">
+                  <div className="px-2 py-2 rounded-[6px] bg-slate-50 dark:bg-slate-800/50 text-emerald-600 dark:text-emerald-400 font-medium text-center text-[11px]">
                     {t('reports.viz.noBacklog')}
                   </div>
                 )}
@@ -1311,7 +1311,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card3Title')}
-              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card3'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -1323,7 +1323,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   teamCards.tracks.map((tr) => (
                     <div
                       key={tr.id}
-                      className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-[11px] shadow-xs"
+                      className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-[11px] shadow-xs"
                     >
                       {/* Standard Dashboard colors: Project = Violet, Campaign = Orange */}
                       <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold border whitespace-nowrap ${
@@ -1342,7 +1342,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   ))
                 ) : (
-                  <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-gray-400 text-center text-[11px]">
+                  <div className="px-2 py-2 rounded-[6px] bg-slate-50 dark:bg-slate-800/50 text-gray-400 text-center text-[11px]">
                     {t('reports.viz.noTracks')}
                   </div>
                 )}
@@ -1433,7 +1433,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card4Title')}
-              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/80 dark:border-blue-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/80 dark:border-blue-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card4'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -1462,7 +1462,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   teamCards.openTaskItems.map((item) => (
                     <div
                       key={item.id}
-                      className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                      className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
                     >
                       <div className="grid grid-cols-1 min-w-0 gap-0.5">
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
@@ -1497,7 +1497,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   ))
                 ) : (
-                  <div className="px-2 py-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
+                  <div className="px-2 py-2 rounded-[6px] bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-center text-[11px]">
                     {t('reports.viz.noTasksInPeriod')}
                   </div>
                 )}
@@ -1576,7 +1576,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card5Title')}
-              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card5'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -1790,7 +1790,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         if (!active || !payload || !payload.length) return null;
                         const d = payload[0].payload as StaffReportMember;
                         return (
-                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-3.5 shadow-xl backdrop-blur-md text-xs min-w-[200px]">
+                          <div className="rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-3.5 shadow-xl backdrop-blur-md text-xs min-w-[200px]">
                             <p className="font-bold text-slate-900 dark:text-white">{d.name}</p>
                             <p className="text-[11px] text-slate-500 mb-2">{d.role}</p>
                             <div className="grid grid-cols-1 gap-1 text-[11px]">
@@ -2012,7 +2012,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       ) : (
-                        <div className="py-1.5 px-2 rounded-[8px] bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center">
+                        <div className="py-1.5 px-2 rounded-[6px] bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center">
                           {t('reports.viz.noProfileBacklog')}
                         </div>
                       )}
@@ -2022,7 +2022,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <div
                       role="region"
                       aria-label={m.name}
-                      className={`absolute left-2.5 right-2.5 top-[50px] z-50 rounded-[10px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      className={`absolute left-2.5 right-2.5 top-[50px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                         isExpanded
                           ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
                           : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
@@ -2035,7 +2035,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             <div
                               key={`backlog-${item.id}`}
                               title={`${item.title} — ${item.reason}`}
-                              className="px-2 py-1.5 rounded-[8px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
+                              className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] shadow-xs"
                             >
                               <div className="grid grid-cols-1 min-w-0 gap-0.5">
                                 <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
@@ -2126,7 +2126,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               {/* Drill-down 2 Columns */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Column 1: Active Tasks in Period (with Slide 5c interactive filters) */}
-                <div className="rounded-[10px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                <div className="rounded-[8px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
                   <div className="grid grid-cols-1 gap-2">
                     <div className="grid grid-flow-col justify-between items-center">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -2220,7 +2220,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         return (
                           <div
                             key={task.id}
-                            className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs grid grid-cols-1 gap-1.5 shadow-xs"
+                            className="p-2.5 rounded-[6px] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs grid grid-cols-1 gap-1.5 shadow-xs"
                           >
                             <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                               <span className="font-semibold text-slate-900 dark:text-white truncate">
@@ -2259,7 +2259,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
 
                 {/* Column 2: Backlog Items reported from Tab Profile */}
-                <div className="rounded-[10px] p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                <div className="rounded-[8px] p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
                   <div className="grid grid-flow-col justify-between items-center">
                     <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -2277,7 +2277,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       selectedStaff.profileBacklogItems.map((backlog) => (
                         <div
                           key={backlog.id}
-                          className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/60 text-xs grid grid-cols-1 gap-1 shadow-xs"
+                          className="p-2.5 rounded-[6px] bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/60 text-xs grid grid-cols-1 gap-1 shadow-xs"
                         >
                           <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                             <span className="font-semibold text-slate-900 dark:text-white">
@@ -2344,7 +2344,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </button>
                     {showBurndownInfo && (
                       <div
-                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-2xl bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
+                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
                         style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
@@ -2356,13 +2356,13 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             type="button"
                             onClick={() => setShowBurndownInfo(false)}
                             aria-label={t('common.close')}
-                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            className="p-1 rounded-[6px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
 
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-[6px] border border-blue-100 dark:border-blue-900/50">
                           {t('reports.viz.infoBurndownSummary')}
                         </p>
 
@@ -2393,11 +2393,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                           <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
                             <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoBurndownGuide')}</span>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 p-1.5 rounded-lg border border-emerald-200/50 dark:border-emerald-800/40">
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 p-1.5 rounded-[6px] border border-emerald-200/50 dark:border-emerald-800/40">
                               <span className="text-blue-500 font-bold">🔵</span>
                               <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line UNDER dashed line:' : 'Đường xanh nằm DƯỚI đường nét đứt:'}</b> {lang === 'en' ? 'Team is completing tasks faster than planned.' : 'Team đang hoàn thành nhanh hơn kế hoạch.'}</span>
                             </div>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-amber-50/70 dark:bg-amber-950/30 p-1.5 rounded-lg border border-amber-200/50 dark:border-amber-800/40">
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-amber-50/70 dark:bg-amber-950/30 p-1.5 rounded-[6px] border border-amber-200/50 dark:border-amber-800/40">
                               <span className="text-amber-500 font-bold">⚠️</span>
                               <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line ABOVE dashed line:' : 'Đường xanh nằm TRÊN đường nét đứt:'}</b> {lang === 'en' ? 'Team is falling behind schedule / tasks are backlogged.' : 'Team đang chậm tiến độ / tồn đọng task so với kế hoạch.'}</span>
                             </div>
@@ -2439,7 +2439,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     content={({ active, payload, label }) => {
                       if (!active || !payload || !payload.length) return null;
                       return (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-3 shadow-xl backdrop-blur-md text-xs">
+                        <div className="rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-3 shadow-xl backdrop-blur-md text-xs">
                           <p className="font-semibold text-slate-800 dark:text-slate-100 mb-1.5">{label}</p>
                           <div className="grid grid-cols-1 gap-1">
                             {payload.map((entry: any, index: number) => (
@@ -2502,7 +2502,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </button>
                     {showCapacityInfo && (
                       <div
-                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-2xl bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
+                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
                         style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
@@ -2514,13 +2514,13 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             type="button"
                             onClick={() => setShowCapacityInfo(false)}
                             aria-label={t('common.close')}
-                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            className="p-1 rounded-[6px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
 
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-[6px] border border-blue-100 dark:border-blue-900/50">
                           {t('reports.viz.infoCapacitySummary')}
                         </p>
 
@@ -2543,15 +2543,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                           <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
                             <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoCapacityThresholds')}</span>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 p-1.5 rounded-lg border border-rose-200/50 dark:border-rose-800/40">
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 p-1.5 rounded-[6px] border border-rose-200/50 dark:border-rose-800/40">
                               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mt-0.5 inline-block shrink-0"></span>
                               <span><b className="text-rose-700 dark:text-rose-400">{lang === 'en' ? '> 100% (Red — Overload):' : '> 100% (Đỏ — Quá tải):'}</b> {lang === 'en' ? 'Holding 6+ tasks (120% – 140%) → Needs task sharing or rebalancing.' : 'Đang ôm từ 6 task trở lên (120% – 140%) → Cần san sẻ bớt việc.'}</span>
                             </div>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-blue-50/70 dark:bg-blue-950/30 p-1.5 rounded-lg border border-blue-200/50 dark:border-blue-800/40">
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-blue-50/70 dark:bg-blue-950/30 p-1.5 rounded-[6px] border border-blue-200/50 dark:border-blue-800/40">
                               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-0.5 inline-block shrink-0"></span>
                               <span><b className="text-blue-700 dark:text-blue-400">{lang === 'en' ? '80% – 100% (Blue — Optimal):' : '80% – 100% (Xanh dương — Chuẩn):'}</b> {lang === 'en' ? 'Handling 4 – 5 tasks → Optimal healthy workload.' : 'Đang xử lý 4 – 5 task → Đúng tải tối ưu.'}</span>
                             </div>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-slate-100/70 dark:bg-slate-800/50 p-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-slate-100/70 dark:bg-slate-800/50 p-1.5 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60">
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-400 mt-0.5 inline-block shrink-0"></span>
                               <span><b className="text-slate-700 dark:text-slate-300">{lang === 'en' ? '< 80% (Gray — Available):' : '< 80% (Xám — Trống tải):'}</b> {lang === 'en' ? 'Holding 0 – 3 tasks (0% – 60%) → Has bandwidth to take on more work.' : 'Đang có 0 – 3 task (0% – 60%) → Còn dư công suất để nhận thêm việc.'}</span>
                             </div>
@@ -2621,7 +2621,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         }
                         return (
                           <td key={cIdx} className="py-2 px-2 text-center">
-                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs border ${cellClass}`}>
+                            <span className={`inline-block px-2.5 py-1 rounded-[8px] text-xs border ${cellClass}`}>
                               {val}%
                             </span>
                           </td>
