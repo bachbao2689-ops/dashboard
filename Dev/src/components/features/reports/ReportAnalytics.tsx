@@ -2344,23 +2344,65 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </button>
                     {showBurndownInfo && (
                       <div
-                        className="absolute left-0 top-7 z-30 w-72 sm:w-80 p-3 rounded-xl bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-blue-400/70 dark:border-blue-500/70 shadow-xl text-xs space-y-1.5"
+                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-2xl bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
                         style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
-                        <div className="grid grid-cols-[1fr_auto] items-center gap-2">
-                          <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoBurndownTitle')}</h4>
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoBurndownTitle')}</h4>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setShowBurndownInfo(false)}
                             aria-label={t('common.close')}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {t('reports.viz.infoBurndownDesc')}
+
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                          {t('reports.viz.infoBurndownSummary')}
                         </p>
+
+                        <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">1.</span>
+                            <div>
+                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Horizontal Axis (Timeline):' : 'Trục ngang (Mốc thời gian):'}</b>{' '}
+                              {lang === 'en' ? 'Auto-divided based on filter (1 Month: 8 milestones 01 → end; 1 Week: Mon → Sun; 1 Quarter: early & mid month; 1 Year: M1 → M12).' : 'Tự động chia mốc theo bộ lọc lịch (1 Tháng: 8 mốc ngày 01 → cuối tháng; 1 Tuần: T2 → CN; 1 Quý: đầu & giữa mỗi tháng; 1 Năm: T1 → T12).'}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">2.</span>
+                            <div>
+                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Plan Line (Dashed gray):' : 'Đường Kế hoạch (Nét đứt xám — Plan):'}</b>{' '}
+                              {lang === 'en' ? 'Ideal linear burndown trend from total initial tasks to zero.' : 'Đường giảm tuyến tính lý tưởng từ tổng số task đầu kỳ về cuối kỳ.'}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">3.</span>
+                            <div>
+                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Actual Line (Solid blue):' : 'Đường Thực tế (Nét liền xanh — Actual):'}</b>{' '}
+                              {lang === 'en' ? 'At each checkpoint = Total active tasks minus tasks completed by that date.' : 'Tại mỗi mốc = Tổng task active trừ đi Số task đã hoàn thành tính đến mốc đó.'}
+                            </div>
+                          </div>
+
+                          <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoBurndownGuide')}</span>
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 p-1.5 rounded-lg border border-emerald-200/50 dark:border-emerald-800/40">
+                              <span className="text-blue-500 font-bold">🔵</span>
+                              <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line UNDER dashed line:' : 'Đường xanh nằm DƯỚI đường nét đứt:'}</b> {lang === 'en' ? 'Team is completing tasks faster than planned.' : 'Team đang hoàn thành nhanh hơn kế hoạch.'}</span>
+                            </div>
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-amber-50/70 dark:bg-amber-950/30 p-1.5 rounded-lg border border-amber-200/50 dark:border-amber-800/40">
+                              <span className="text-amber-500 font-bold">⚠️</span>
+                              <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line ABOVE dashed line:' : 'Đường xanh nằm TRÊN đường nét đứt:'}</b> {lang === 'en' ? 'Team is falling behind schedule / tasks are backlogged.' : 'Team đang chậm tiến độ / tồn đọng task so với kế hoạch.'}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2460,23 +2502,61 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </button>
                     {showCapacityInfo && (
                       <div
-                        className="absolute left-0 top-7 z-30 w-72 sm:w-80 p-3 rounded-xl bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-blue-400/70 dark:border-blue-500/70 shadow-xl text-xs space-y-1.5"
+                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-2xl bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
                         style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
-                        <div className="grid grid-cols-[1fr_auto] items-center gap-2">
-                          <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoCapacityTitle')}</h4>
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoCapacityTitle')}</h4>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setShowCapacityInfo(false)}
                             aria-label={t('common.close')}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {t('reports.viz.infoCapacityDesc')}
+
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                          {t('reports.viz.infoCapacitySummary')}
                         </p>
+
+                        <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">1.</span>
+                            <div>
+                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Open Tasks per Milestone:' : 'Cách tính số Task đang ôm tại mỗi mốc:'}</b>{' '}
+                              {lang === 'en' ? 'Counts tasks assigned on or before milestone end (created_at <= checkpoint) that remain incomplete at that moment.' : 'Đếm số task đã giao tính đến cuối mốc đó (created_at <= cuối mốc) nhưng chưa hoàn thành tại thời điểm đó.'}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">2.</span>
+                            <div>
+                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Capacity % Formula:' : 'Công thức quy đổi % Công suất:'}</b>{' '}
+                              {lang === 'en' ? 'Standard benchmark: 100% capacity = 5 open tasks concurrently (1 task = 20% load, capped at 140%).' : 'Định mức chuẩn: 100% công suất = 5 task đang mở cùng lúc (1 task = 20% tải, hiển thị tối đa 140%).'}
+                            </div>
+                          </div>
+
+                          <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoCapacityThresholds')}</span>
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 p-1.5 rounded-lg border border-rose-200/50 dark:border-rose-800/40">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mt-0.5 inline-block shrink-0"></span>
+                              <span><b className="text-rose-700 dark:text-rose-400">{lang === 'en' ? '> 100% (Red — Overload):' : '> 100% (Đỏ — Quá tải):'}</b> {lang === 'en' ? 'Holding 6+ tasks (120% – 140%) → Needs task sharing or rebalancing.' : 'Đang ôm từ 6 task trở lên (120% – 140%) → Cần san sẻ bớt việc.'}</span>
+                            </div>
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-blue-50/70 dark:bg-blue-950/30 p-1.5 rounded-lg border border-blue-200/50 dark:border-blue-800/40">
+                              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-0.5 inline-block shrink-0"></span>
+                              <span><b className="text-blue-700 dark:text-blue-400">{lang === 'en' ? '80% – 100% (Blue — Optimal):' : '80% – 100% (Xanh dương — Chuẩn):'}</b> {lang === 'en' ? 'Handling 4 – 5 tasks → Optimal healthy workload.' : 'Đang xử lý 4 – 5 task → Đúng tải tối ưu.'}</span>
+                            </div>
+                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-slate-100/70 dark:bg-slate-800/50 p-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-400 mt-0.5 inline-block shrink-0"></span>
+                              <span><b className="text-slate-700 dark:text-slate-300">{lang === 'en' ? '< 80% (Gray — Available):' : '< 80% (Xám — Trống tải):'}</b> {lang === 'en' ? 'Holding 0 – 3 tasks (0% – 60%) → Has bandwidth to take on more work.' : 'Đang có 0 – 3 task (0% – 60%) → Còn dư công suất để nhận thêm việc.'}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
