@@ -76,6 +76,8 @@ export interface StaffReportMember {
   completionPct: number;
   capacityPercentage: number;
   onTimePct: number;
+  deliverableCount: number;
+  completedDeliverables: number;
   profileBacklogCount: number;
   profileBacklogItems: ProfileBacklogItem[];
   periodTaskItems: TrackedTaskSummaryItem[];
@@ -267,29 +269,140 @@ function getPeriodBounds(
   return { start, today, periodDays, labelVi };
 }
 
-function computePeriodBurndown(tasks: TrackedTask[], range: TimeRange, now = new Date(), customStart?: string, customEnd?: string): BurndownItem[] {
+function computeTaskDeliverableQty(t: any): number {
+  const rawQ = Number(t?.deliverable_quantity ?? t?.quantity ?? 0);
+  const checklistQ = Array.isArray(t?.checklist_items)
+    ? t.checklist_items.reduce((sum: number, ci: any) => sum + (Number(ci?.quantity) || 0), 0)
+    : 0;
+  return Math.max(rawQ, checklistQ) || 1;
+}
+
+function formatDayMonth(iso: string): string {
+  if (!iso || iso.length < 10) return iso;
+  const [, m, d] = iso.slice(0, 10).split("-");
+  return `${d}/${m}`;
+}
+
+function computePeriodBurndown(
+  tasks: TrackedTask[],
+  range: TimeRange,
+  now = new Date(),
+  customStart?: string,
+  customEnd?: string,
+  lang: "vi" | "en" = "vi",
+): BurndownItem[] {
   const activeList = tasks.filter((t) => taskActive(t));
   const totalTasks = Math.max(8, activeList.length);
   const openNow = activeList.filter((t) => !isTaskClosed(t.status)).length;
-  const { start, today } = getPeriodBounds(range, now, customStart, customEnd);
+  const { start, today } = getPeriodBounds(range, now, customStart, customEnd, lang);
   const startMs = new Date(`${start}T12:00:00Z`).getTime();
   const endMs = new Date(`${today}T12:00:00Z`).getTime();
-  const spanMs = Math.max(7 * 86400000, endMs - startMs);
 
-  return Array.from({ length: 8 }, (_, idx) => {
-    const pointMs = startMs + Math.round((spanMs * idx) / 7);
-    const cutoffDate = new Date(pointMs).toISOString().slice(0, 10);
+  let pointsMeta: Array<{ label: string; cutoffDate: string }> = [];
+
+  if (range === "week") {
+    const weekdayLabels =
+      lang === "en"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    pointsMeta = weekdayLabels.map((lbl, idx) => {
+      const d = new Date(startMs + idx * 86400000);
+      return {
+        label: lbl,
+        cutoffDate: d.toISOString().slice(0, 10),
+      };
+    });
+  } else if (range === "three") {
+    pointsMeta = Array.from({ length: 3 }, (_, idx) => {
+      const d = new Date(startMs + idx * 86400000);
+      const iso = d.toISOString().slice(0, 10);
+      return {
+        label: formatDayMonth(iso),
+        cutoffDate: iso,
+      };
+    });
+  } else if (range === "today") {
+    const hours = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"];
+    pointsMeta = hours.map((h) => ({
+      label: h,
+      cutoffDate: today,
+    }));
+  } else if (range === "month") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const m = cur.getUTCMonth();
+    const lastDay = new Date(Date.UTC(y, m + 1, 0, 12)).getUTCDate();
+    const mm = String(m + 1).padStart(2, "0");
+    const dayMilestones = [1, 5, 9, 13, 17, 21, 25, lastDay];
+    pointsMeta = dayMilestones.map((dayNum) => {
+      const dd = String(dayNum).padStart(2, "0");
+      return {
+        label: `${dd}/${mm}`,
+        cutoffDate: `${y}-${mm}-${dd}`,
+      };
+    });
+  } else if (range === "quarter") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const qStartMonth = Math.floor(cur.getUTCMonth() / 3) * 3;
+    for (let mIdx = 0; mIdx < 3; mIdx++) {
+      const mNum = qStartMonth + mIdx + 1;
+      const mm = String(mNum).padStart(2, "0");
+      const lastDay = new Date(Date.UTC(y, qStartMonth + mIdx + 1, 0, 12)).getUTCDate();
+      pointsMeta.push({
+        label: `01/${mm}`,
+        cutoffDate: `${y}-${mm}-01`,
+      });
+      pointsMeta.push({
+        label: `15/${mm}`,
+        cutoffDate: `${y}-${mm}-15`,
+      });
+      if (mIdx === 2) {
+        pointsMeta.push({
+          label: `${String(lastDay).padStart(2, "0")}/${mm}`,
+          cutoffDate: `${y}-${mm}-${String(lastDay).padStart(2, "0")}`,
+        });
+      }
+    }
+  } else if (range === "year") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const monthNamesEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    pointsMeta = Array.from({ length: 12 }, (_, mIdx) => {
+      const mm = String(mIdx + 1).padStart(2, "0");
+      const lastDay = new Date(Date.UTC(y, mIdx + 1, 0, 12)).getUTCDate();
+      return {
+        label: lang === "en" ? monthNamesEn[mIdx] : `T${mIdx + 1}`,
+        cutoffDate: `${y}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      };
+    });
+  } else {
+    // custom or all
+    const totalDays = Math.max(1, Math.round((endMs - startMs) / 86400000) + 1);
+    const steps = Math.min(8, Math.max(2, totalDays));
+    pointsMeta = Array.from({ length: steps }, (_, idx) => {
+      const pointMs = steps === 1 ? startMs : startMs + Math.round(((endMs - startMs) * idx) / (steps - 1));
+      const iso = new Date(pointMs).toISOString().slice(0, 10);
+      return {
+        label: formatDayMonth(iso),
+        cutoffDate: iso,
+      };
+    });
+  }
+
+  const lastIdx = Math.max(1, pointsMeta.length - 1);
+  return pointsMeta.map((pt, idx) => {
     const completedByCutoff = activeList.filter((t) => {
       if (!isTaskDone(t.status)) return false;
       const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at) || taskDay(t.due_date);
-      return doneDay ? doneDay <= cutoffDate : idx === 7;
+      return doneDay ? doneDay <= pt.cutoffDate : idx === lastIdx;
     }).length;
 
-    const actual = idx === 7 ? openNow : Math.max(openNow, totalTasks - completedByCutoff);
-    const planned = Math.max(0, Math.round(totalTasks * (1 - (idx * 0.82) / 7)));
+    const actual = idx === lastIdx ? openNow : Math.max(openNow, totalTasks - completedByCutoff);
+    const planned = Math.max(0, Math.round(totalTasks * (1 - (idx * 0.82) / lastIdx)));
     return {
-      week: `T${idx + 1}`,
-      label: `T${idx + 1}`,
+      week: pt.label,
+      label: pt.label,
       actual,
       planned,
       plan: planned,
@@ -302,41 +415,113 @@ function computePeriodHeatmap(
   scopedTasks: TrackedTask[],
   range: TimeRange,
   now = new Date(),
-  lang: 'vi' | 'en' = 'vi',
-): { rows: HeatmapRow[]; columnLabels: [string, string, string, string] } {
-  const columnLabels: [string, string, string, string] =
-    lang === 'en'
-      ? range === 'year'
-        ? ['Q1', 'Q2', 'Q3', 'Q4']
-        : range === 'quarter'
-        ? ['Month 1', 'Month 2', 'Month 3', 'Month 4']
-        : ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-      : range === 'year'
-      ? ['Quý 1', 'Quý 2', 'Quý 3', 'Quý 4']
-      : range === 'quarter'
-      ? ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4']
-      : ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
+  lang: "vi" | "en" = "vi",
+  customStart?: string,
+  customEnd?: string,
+): { rows: HeatmapRow[]; columnLabels: string[] } {
+  const { start, today } = getPeriodBounds(range, now, customStart, customEnd, lang);
+  const startMs = new Date(`${start}T12:00:00Z`).getTime();
+  const endMs = new Date(`${today}T12:00:00Z`).getTime();
 
-  const stepDays = range === 'year' ? 60 : range === 'quarter' ? 21 : range === 'week' ? 2 : 7;
-  const todayStr = taskDay(now.toISOString());
-  const endMs = new Date(`${todayStr || new Date().toISOString().slice(0, 10)}T12:00:00Z`).getTime();
+  let checkpoints: Array<{ label: string; pointEnd: string }> = [];
+
+  if (range === "week") {
+    const weekdayLabels =
+      lang === "en"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    checkpoints = weekdayLabels.map((lbl, idx) => {
+      const d = new Date(startMs + idx * 86400000);
+      return {
+        label: lbl,
+        pointEnd: d.toISOString().slice(0, 10),
+      };
+    });
+  } else if (range === "three") {
+    checkpoints = Array.from({ length: 3 }, (_, idx) => {
+      const d = new Date(startMs + idx * 86400000);
+      const iso = d.toISOString().slice(0, 10);
+      return {
+        label: formatDayMonth(iso),
+        pointEnd: iso,
+      };
+    });
+  } else if (range === "today") {
+    checkpoints = [
+      { label: lang === "en" ? "Today" : `Hôm nay (${formatDayMonth(today)})`, pointEnd: today },
+    ];
+  } else if (range === "month") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const m = cur.getUTCMonth();
+    const mm = String(m + 1).padStart(2, "0");
+    const lastDay = new Date(Date.UTC(y, m + 1, 0, 12)).getUTCDate();
+    const endDays = [7, 14, 21, lastDay];
+    const startDays = [1, 8, 15, 22];
+    checkpoints = endDays.map((eDay, idx) => {
+      const sDayStr = String(startDays[idx]).padStart(2, "0");
+      const eDayStr = String(eDay).padStart(2, "0");
+      return {
+        label:
+          lang === "en"
+            ? `W${idx + 1} (${sDayStr}-${eDayStr}/${mm})`
+            : `Tuần ${idx + 1} (${sDayStr}-${eDayStr}/${mm})`,
+        pointEnd: `${y}-${mm}-${eDayStr}`,
+      };
+    });
+  } else if (range === "quarter") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const qStartMonth = Math.floor(cur.getUTCMonth() / 3) * 3;
+    checkpoints = [0, 1, 2].map((mOffset) => {
+      const mIndex = qStartMonth + mOffset;
+      const mNum = mIndex + 1;
+      const lastDay = new Date(Date.UTC(y, mIndex + 1, 0, 12)).getUTCDate();
+      const mm = String(mNum).padStart(2, "0");
+      return {
+        label: lang === "en" ? `Month ${mNum}` : `Tháng ${mNum}`,
+        pointEnd: `${y}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      };
+    });
+  } else if (range === "year") {
+    const cur = new Date(`${start}T12:00:00Z`);
+    const y = cur.getUTCFullYear();
+    const qEndMonths = [2, 5, 8, 11];
+    checkpoints = qEndMonths.map((mIndex, idx) => {
+      const lastDay = new Date(Date.UTC(y, mIndex + 1, 0, 12)).getUTCDate();
+      const mm = String(mIndex + 1).padStart(2, "0");
+      return {
+        label: lang === "en" ? `Q${idx + 1}` : `Quý ${idx + 1}`,
+        pointEnd: `${y}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      };
+    });
+  } else {
+    const spanMs = Math.max(86400000, endMs - startMs);
+    checkpoints = [0, 1, 2, 3].map((idx) => {
+      const ptMs = startMs + Math.round((spanMs * idx) / 3);
+      const iso = new Date(ptMs).toISOString().slice(0, 10);
+      return {
+        label: formatDayMonth(iso),
+        pointEnd: iso,
+      };
+    });
+  }
 
   const rows: HeatmapRow[] = members.slice(0, 8).map((member) => {
     const memberTasks = scopedTasks.filter(
       (t) => String(t.assignee_id) === String(member.id) && taskActive(t),
     );
-    const weeks = [3, 2, 1, 0].map((stepsAgo) => {
-      const pointEnd = new Date(endMs - stepsAgo * stepDays * 86400000).toISOString().slice(0, 10);
+    const weeks = checkpoints.map((cp) => {
       const openAtPoint = memberTasks.filter((t) => {
         const createdDay = taskDay(t.created_at) || taskDay(t.start_date);
-        if (createdDay && createdDay > pointEnd) return false;
+        if (createdDay && createdDay > cp.pointEnd) return false;
         if (!isTaskDone(t.status)) return true;
         const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at);
-        return Boolean(doneDay && doneDay > pointEnd);
+        return Boolean(doneDay && doneDay > cp.pointEnd);
       }).length;
       const basePct = openAtPoint * 20;
       return Math.min(140, basePct);
-    }) as [number, number, number, number];
+    });
 
     return {
       id: member.id,
@@ -346,10 +531,32 @@ function computePeriodHeatmap(
     };
   });
 
-  return { rows, columnLabels };
+  return {
+    rows,
+    columnLabels: checkpoints.map((cp) => cp.label),
+  };
 }
 
-export const useReports = () => {
+export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v1";
+
+export interface ReportSnapshotPayload {
+  savedAt: string;
+  timeRange: TimeRange;
+  cursorDate: string;
+  customStart: string;
+  customEnd: string;
+  departmentFilter: string;
+  selectedDepartmentName: string;
+  periodMeta: { start: string; today: string; periodDays: number; labelVi: string };
+  teamCards: TeamReportCardsData;
+  staffMembers: StaffReportMember[];
+  burndown: BurndownItem[];
+  heatmap: HeatmapRow[];
+  heatmapColumnLabels: string[];
+}
+
+export const useReports = (options?: { standalone?: boolean }) => {
+  const isStandalone = Boolean(options?.standalone);
   const { t, lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rememberedRange, setRememberedRange] = useRememberedState<TimeRange>('reports.timeRange', 'month');
@@ -358,7 +565,7 @@ export const useReports = () => {
   const defaultMonthStart = `${defaultToday.slice(0, 8)}01`;
   const [rememberedCustomStart, setRememberedCustomStart] = useRememberedState<string>('reports.customStart', defaultMonthStart);
   const [rememberedCustomEnd, setRememberedCustomEnd] = useRememberedState<string>('reports.customEnd', defaultToday);
-  const [cursorDate, setCursorDate] = useState<string>(defaultToday);
+  const [cursorDate, setCursorDate] = useState<string>(() => searchParams.get('at') || defaultToday);
 
   const urlPeriod = searchParams.get('period') as TimeRange | null;
   const urlDept = searchParams.get('dept');
@@ -549,9 +756,19 @@ export const useReports = () => {
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   }, [workspaceDepartments, users, workspaceTasks]);
 
+  const effectiveProfile = useMemo(
+    () =>
+      isStandalone
+        ? profile
+          ? { ...profile, role: "admin" as const }
+          : { id: "public-viewer", role: "admin" as const, department_id: null, department_name: null }
+        : profile,
+    [isStandalone, profile],
+  );
+
   const scope = useMemo(
-    () => scopeTeamWorkload(profile, rawDepartmentFilter, users, departments, workspaceTasks),
-    [profile, rawDepartmentFilter, users, departments, workspaceTasks],
+    () => scopeTeamWorkload(effectiveProfile, rawDepartmentFilter, users, departments, workspaceTasks),
+    [effectiveProfile, rawDepartmentFilter, users, departments, workspaceTasks],
   );
 
   const effectiveDepartmentFilter = scope.effectiveDepartmentFilter;
@@ -650,6 +867,8 @@ export const useReports = () => {
         const total = done + doing + todo + late;
         const completionPct = total > 0 ? Math.round((done / total) * 100) : 0;
         const capacityPercentage = openList.length * 20;
+        const deliverableCount = memberAllTasks.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
+        const completedDeliverables = doneList.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
 
         const datedDone = doneList.filter((t) => t.due_date && t.completed_at);
         const onTimePct = datedDone.length
@@ -803,6 +1022,8 @@ export const useReports = () => {
           completionPct,
           capacityPercentage,
           onTimePct,
+          deliverableCount,
+          completedDeliverables,
           profileBacklogCount,
           profileBacklogItems,
           periodTaskItems,
@@ -1166,8 +1387,9 @@ export const useReports = () => {
         new Date(`${cursorDate || defaultToday}T12:00:00Z`),
         customStart,
         customEnd,
+        lang,
       ),
-    [scopedTasks, timeRange, cursorDate, defaultToday, customStart, customEnd],
+    [scopedTasks, timeRange, cursorDate, defaultToday, customStart, customEnd, lang],
   );
 
   const heatmapData = useMemo(
@@ -1178,8 +1400,10 @@ export const useReports = () => {
         timeRange,
         new Date(`${cursorDate || defaultToday}T12:00:00Z`),
         lang,
+        customStart,
+        customEnd,
       ),
-    [staffMembers, scopedTasks, timeRange, cursorDate, defaultToday, lang],
+    [staffMembers, scopedTasks, timeRange, cursorDate, defaultToday, lang, customStart, customEnd],
   );
 
   const exportCSV = useCallback(() => {
@@ -1207,24 +1431,101 @@ export const useReports = () => {
     URL.revokeObjectURL(url);
   }, [periodTasks, selectedDepartmentName, effectiveDepartmentFilter, timeRange]);
 
+  const storedSnapshot = useMemo<ReportSnapshotPayload | null>(() => {
+    if (!isStandalone || typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(REPORT_SNAPSHOT_STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as ReportSnapshotPayload;
+    } catch {
+      return null;
+    }
+  }, [isStandalone]);
+
+  const useSnapshotFallback = Boolean(
+    isStandalone &&
+      storedSnapshot &&
+      workspaceTasks.length === 0 &&
+      users.length === 0,
+  );
+
+  const finalSelectedDepartmentName = useSnapshotFallback && storedSnapshot?.selectedDepartmentName
+    ? storedSnapshot.selectedDepartmentName
+    : selectedDepartmentName;
+  const finalPeriodMeta = useSnapshotFallback && storedSnapshot?.periodMeta
+    ? storedSnapshot.periodMeta
+    : periodMeta;
+  const finalTeamCards = useSnapshotFallback && storedSnapshot?.teamCards
+    ? storedSnapshot.teamCards
+    : teamCards;
+  const finalStaffMembers = useSnapshotFallback && storedSnapshot?.staffMembers
+    ? storedSnapshot.staffMembers
+    : staffMembers;
+  const finalBurndown = useSnapshotFallback && storedSnapshot?.burndown
+    ? storedSnapshot.burndown
+    : burndown;
+  const finalHeatmap = useSnapshotFallback && storedSnapshot?.heatmap
+    ? storedSnapshot.heatmap
+    : heatmapData.rows;
+  const finalHeatmapLabels = useSnapshotFallback && storedSnapshot?.heatmapColumnLabels
+    ? storedSnapshot.heatmapColumnLabels
+    : heatmapData.columnLabels;
+
   const openVisualizeReport = useCallback(
     (customDept?: string, customPeriod?: TimeRange) => {
       const targetDept = customDept ?? effectiveDepartmentFilter;
       const targetPeriod = customPeriod ?? timeRange;
       const params = new URLSearchParams();
-      const pVal = validPeriods.includes(targetPeriod) ? targetPeriod : 'month';
-      params.set('period', pVal);
-      if (pVal === 'custom') {
-        params.set('from', customStart);
-        params.set('to', customEnd);
+      const pVal = validPeriods.includes(targetPeriod) ? targetPeriod : "month";
+      params.set("period", pVal);
+      if (cursorDate) {
+        params.set("at", cursorDate);
       }
-      if (targetDept && targetDept !== 'all') {
-        params.set('dept', targetDept);
+      if (pVal === "custom") {
+        params.set("from", customStart);
+        params.set("to", customEnd);
+      }
+      if (targetDept && targetDept !== "all") {
+        params.set("dept", targetDept);
+      }
+      if (typeof window !== "undefined") {
+        try {
+          const payload: ReportSnapshotPayload = {
+            savedAt: new Date().toISOString(),
+            timeRange: pVal,
+            cursorDate,
+            customStart,
+            customEnd,
+            departmentFilter: targetDept,
+            selectedDepartmentName,
+            periodMeta,
+            teamCards,
+            staffMembers,
+            burndown,
+            heatmap: heatmapData.rows,
+            heatmapColumnLabels: heatmapData.columnLabels,
+          };
+          window.localStorage.setItem(REPORT_SNAPSHOT_STORAGE_KEY, JSON.stringify(payload));
+        } catch {
+          // ignore storage quota errors
+        }
       }
       const url = `/reports/visualize?${params.toString()}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(url, "_blank", "noopener,noreferrer");
     },
-    [effectiveDepartmentFilter, timeRange, customStart, customEnd],
+    [
+      effectiveDepartmentFilter,
+      timeRange,
+      cursorDate,
+      customStart,
+      customEnd,
+      selectedDepartmentName,
+      periodMeta,
+      teamCards,
+      staffMembers,
+      burndown,
+      heatmapData,
+    ],
   );
 
   return {
@@ -1243,14 +1544,14 @@ export const useReports = () => {
     setDepartmentFilter,
     departments: scope.departments,
     canViewAllDepartments,
-    selectedDepartmentName,
-    periodMeta,
-    periodLabelVi: periodMeta.labelVi,
-    teamCards,
-    staffMembers,
-    burndown,
-    heatmap: heatmapData.rows,
-    heatmapColumnLabels: heatmapData.columnLabels,
+    selectedDepartmentName: finalSelectedDepartmentName,
+    periodMeta: finalPeriodMeta,
+    periodLabelVi: finalPeriodMeta.labelVi,
+    teamCards: finalTeamCards,
+    staffMembers: finalStaffMembers,
+    burndown: finalBurndown,
+    heatmap: finalHeatmap,
+    heatmapColumnLabels: finalHeatmapLabels,
     exportCSV,
     openVisualizeReport,
     refetch,
