@@ -1,6 +1,8 @@
 import { StatusBadge } from '../../common/StatusBadge';
+import { EntityNoteCell } from './EntityNoteCell';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
+import { useResizableColumns } from '../../../hooks/useResizableColumns';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, MessageSquare } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
@@ -11,6 +13,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
+import { getCampaignPriority } from './projectPresentation';
 import type { HubTrack } from '../../../lib/workflowHub';
 
 export interface CampaignFilters {
@@ -101,7 +104,7 @@ const strictFormatVN = (dateStr?: string | null) => {
 };
 const formatDate = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
-const campaignPriority = (campaign: any) => campaign.priority || (Number(campaign.budget) >= 50000000 ? 'high' : Number(campaign.budget) >= 30000000 ? 'medium' : 'low');
+const campaignPriority = getCampaignPriority;
 
 
 const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
@@ -158,6 +161,11 @@ export const CampaignPanel: React.FC<{
   starredCriteriaMap?: Record<string, boolean>;
 }> = ({ onSelect, filters, rootCampaignIds, workflowTracks, starredCriteriaMap }) => {
   const { t, lang } = useTranslation();
+  const { tableRef: campaignTableRef, widths: campaignColWidths, startResize: startCampaignColResize } = useResizableColumns({
+    tableKey: 'campaigns_table',
+    initialWidths: [300, 170, 250, 120, 160, 150, 220],
+    minWidth: 95,
+  });
   const profile = useAuthStore(s => s.profile);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
   const [expanded, setExpanded] = useState(true);
@@ -206,7 +214,14 @@ export const CampaignPanel: React.FC<{
 
   useEffect(() => {
     void load();
-    return () => { request.current++; };
+    const handleChanged = () => { void load(); };
+    window.addEventListener('campaigns:changed', handleChanged);
+    window.addEventListener('tasks:changed', handleChanged);
+    return () => {
+      request.current++;
+      window.removeEventListener('campaigns:changed', handleChanged);
+      window.removeEventListener('tasks:changed', handleChanged);
+    };
   }, [profile?.id, profile?.department_id]);
   useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members', 'activity_log', 'notifications'], load, profile?.id);
 
@@ -373,6 +388,9 @@ export const CampaignPanel: React.FC<{
             {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
             {canManage(c) && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
+          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <EntityNoteCell entityId={c.id} entityType="campaign" workspaceId={c.workspace_id} canEdit={canManage(c)} />
+          </div>
         </article>)}
         {!visibleCampaigns.length && (
           <p className="p-6 text-center text-sm text-gray-500">
@@ -381,13 +399,46 @@ export const CampaignPanel: React.FC<{
         )}
       </div>
       <div className="hidden overflow-x-auto xl:block">
-        <table className="w-full min-w-max text-left">
-          <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
-            <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />
-          </tr></thead>
+        <table ref={campaignTableRef} className="w-full table-fixed text-left border-collapse">
+          <colgroup>
+            {campaignColWidths.map((w, idx) => (
+              <col key={idx} style={{ width: `${w}px` }} />
+            ))}
+          </colgroup>
+          <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th className="p-4 relative text-left">
+                <span className="truncate block text-left">{t('projects.col.campaign')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.owner')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.dates')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.priority')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.budget')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.status')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+              </th>
+              <th className="p-4 relative text-center">
+                <span className="truncate block text-center">{t('projects.col.notes')}</span>
+              </th>
+            </tr>
+          </thead>
           <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign transition-all duration-200 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-            <td className="p-4">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+            <td className="p-4 relative overflow-hidden">
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                 <EntityInfoPopover
                   entityType="campaign"
                   entity={c}
@@ -396,7 +447,7 @@ export const CampaignPanel: React.FC<{
                   leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
                   subPersons={subtaskMap[c.id]}
                 />
-                <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b>
+                <b className="block truncate text-gray-900 dark:text-white">{c.name}</b>
                 {hasComments[c.id] && (
                   <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
                     <MessageSquare size={14} className="text-blue-500" />
@@ -406,29 +457,92 @@ export const CampaignPanel: React.FC<{
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p>
+              <p className="text-xs text-gray-500 truncate mt-1">{c.objective || t('tasks.noDescription')}</p>
+              {canManage(c) && (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                >
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); void archive(c); }} 
+                    className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+                    title={t('common.hide')}
+                  >
+                    <EyeOff size={14}/>
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); void remove(c); }} 
+                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+                    title={t('common.delete')}
+                  >
+                    <Trash2 size={14}/>
+                  </button>
+                </div>
+              )}
             </td>
-            <td>
-  <div className="flex items-center gap-2">
-    <div className="flex -space-x-2"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
-    {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
-      <>
-        <span className="text-gray-300 dark:text-gray-600 px-1">|</span>
-        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800">
-          <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
-          <div className="flex -space-x-2">
-            {subtaskMap[c.id].slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-</td>
-            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date, c.status, lang === 'en')}</div>}</div></td>
-            <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
-            <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
-            <td><StatusBadge status={c.status || 'planning'} /></td>
-            <td className="w-16 pr-4">{canManage(c) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+                  <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
+                    <Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" />
+                  </div>
+                  {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
+                    <>
+                      <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
+                        <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
+                        <div className="grid grid-flow-col auto-cols-max -space-x-2">
+                          {subtaskMap[c.id].slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center text-sm text-gray-600 dark:text-gray-300">
+              <div className="grid place-content-center">
+                <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 truncate mx-auto">
+                  <span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>
+                  {c.end_date && (
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
+                      <div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />
+                      {getDueStatusLabel(c.end_date, c.status, lang === 'en')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="truncate">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>
+                    {campaignPriority(c)}
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-sm font-bold text-gray-900 dark:text-white truncate text-center">
+              {c.budget ? `${new Intl.NumberFormat('vi-VN').format(Number(c.budget))} VND` : '—'}
+            </td>
+            <td className="p-4 overflow-hidden text-center">
+              <div className="grid place-content-center">
+                <div className="truncate">
+                  <StatusBadge status={c.status || 'planning'} />
+                </div>
+              </div>
+            </td>
+            <td className="p-4 overflow-hidden text-center">
+              <EntityNoteCell
+                entityId={c.id}
+                entityType="campaign"
+                workspaceId={c.workspace_id}
+                canEdit={canManage(c)}
+                alignCenter={true}
+              />
+            </td>
           </tr>)}</tbody>
         </table>
         {!visibleCampaigns.length && (

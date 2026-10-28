@@ -59,3 +59,38 @@ export const getDueStatusLabel = (endDateStr?: string | null, status?: string | 
 
   return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
+
+const CAMPAIGN_PRIORITIES_STORAGE_KEY = 'kcoffee.campaign_priorities.v1';
+
+export const getCachedCampaignPriorities = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(CAMPAIGN_PRIORITIES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const setCachedCampaignPriority = (campaignId: string, priority: string) => {
+  try {
+    const current = getCachedCampaignPriorities();
+    current[campaignId] = priority;
+    localStorage.setItem(CAMPAIGN_PRIORITIES_STORAGE_KEY, JSON.stringify(current));
+  } catch {}
+};
+
+export const getCampaignPriority = (campaign?: { id?: string; priority?: string | null; budget?: number | string | null } | null): string => {
+  if (!campaign) return 'low';
+  if (campaign.priority) return campaign.priority.toLowerCase();
+  if (campaign.id) {
+    const cached = getCachedCampaignPriorities()[campaign.id];
+    if (cached) return cached.toLowerCase();
+  }
+  const budgetNum = Number(campaign.budget);
+  if (Number.isFinite(budgetNum) && budgetNum > 0) {
+    if (budgetNum >= 50000000) return 'high';
+    if (budgetNum >= 30000000) return 'medium';
+    return 'low';
+  }
+  return 'low';
+};

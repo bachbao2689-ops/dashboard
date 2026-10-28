@@ -61,7 +61,7 @@ export interface HeatmapRow {
   id: DepartmentId | string;
   name: string;
   avatar_url?: string | null;
-  weeks: [number, number, number, number];
+  weeks: number[];
 }
 
 export interface OverallProjectItem {

@@ -1,4 +1,5 @@
 import {EntityStatusField} from './EntityStatusField';
+import {EntityActionBadges} from './EntityActionBadges';
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +10,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
-import { X, Edit3, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
+import { X, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { SmartCommentInput } from '../comments/SmartCommentInput';
 import { CommentMessage } from '../comments/CommentMessage';
@@ -90,11 +91,6 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     }
   };
 
-  const completeItem = async () => {
-    if (!canManage) return;
-    if (await details.mutate(() => supabase.from(`${kind}s`).update({status:'completed'}).eq('id', item.id).select('id').single(), 'Đã hoàn thành')) onUpdated?.();
-  };
-
   const addComment = async (overrideBody?: string) => {
     const raw = typeof overrideBody === 'string' ? overrideBody : commentText;
     const body = raw.trim();
@@ -171,7 +167,10 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       >
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-        <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
+        <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span>
+        </div>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>
       </div>
       
@@ -190,7 +189,31 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
           </div>
         ) : (
           <div className="space-y-7">
-            <div className="flex gap-2"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 capitalize">{data.status || 'planning'}</span></div>
+            <EntityActionBadges
+              priority={data.priority || 'medium'}
+              status={data.status || (kind === 'project' ? 'active' : 'planning')}
+              onPriorityChange={async (newPriority) => {
+                if (!canManage) return;
+                if (await details.mutate(() => supabase.from(`${kind}s`).update({ priority: newPriority }).eq('id', item.id).select('id').single(), 'Đã cập nhật mức ưu tiên')) {
+                  onUpdated?.();
+                }
+              }}
+              onStatusChange={async (newStatus) => {
+                if (!canManage) return;
+                if (await details.mutate(() => supabase.from(`${kind}s`).update({ status: newStatus }).eq('id', item.id).select('id').single(), 'Đã cập nhật trạng thái')) {
+                  onUpdated?.();
+                }
+              }}
+              onEdit={() => {
+                setTitle(data.name);
+                setEditStatus(data.status || (kind === 'project' ? 'active' : 'planning'));
+                setDesc(data.description || data.objective || '');
+                setStart(data.start_date || '');
+                setDue(data.due_date || data.end_date || '');
+                setEditMode(true);
+              }}
+              canManage={canManage && !readOnly}
+            />
             <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm">
               <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.lead?.name || data.creator?.name || '---'} src={data.lead?.avatar_url || data.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.lead?.name || data.creator?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
@@ -278,12 +301,6 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
           </div>
         )}
       </div>
-      {details.data && !editMode && canManage && (
-        <div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-          <button onClick={() => { setTitle(data.name); setEditStatus(data.status || (kind === 'project' ? 'active' : 'planning')); setDesc(data.description || data.objective || ''); setStart(data.start_date || ''); setDue(data.due_date || data.end_date || ''); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"><Edit3 className="w-4 h-4" /> {t('common.edit')}</button>
-          <button disabled={busy || data.status === 'completed'} onClick={completeItem} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#001f4d] transition-colors"><CheckCircle2 className="w-4 h-4" /> {t('common.complete')}</button>
-        </div>
-      )}
     </aside>
   </>
   );

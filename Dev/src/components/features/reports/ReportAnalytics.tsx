@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useReports } from '../../../hooks/useReports';
 import type { TimeRange, StaffReportMember } from '../../../hooks/useReports';
 import { useTranslation } from '../../../i18n/translations';
@@ -27,7 +28,6 @@ import {
   Layers,
   BarChart3,
   LayoutGrid,
-  List,
   X,
   Building2,
   ShieldAlert,
@@ -37,6 +37,7 @@ import {
   ChevronRight,
   ImagePlus,
   Info,
+  Printer,
 } from 'lucide-react';
 
 interface ReportAnalyticsProps {
@@ -72,13 +73,245 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     heatmapColumnLabels,
     exportCSV,
     openVisualizeReport,
-  } = useReports();
+  } = useReports({ standalone });
 
   const [staffView, setStaffView] = useState<'list' | 'cards'>('list');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
   const [showCapacityInfo, setShowCapacityInfo] = useState(false);
+
+  // Dropdown Action Menu State (Slide 1 & Slide 4)
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+  const actionPanelRef = useRef<HTMLDivElement>(null);
+
+  // Export PDF (Print Mode)
+  const exportReportPdf = useCallback(() => {
+    window.print();
+  }, []);
+
+  // Export Image (High-res 2x Canvas Snapshot)
+  const exportReportImage = useCallback(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const scale = 2;
+      const width = 1200;
+      const height = 1500;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      ctx.scale(scale, scale);
+
+      const isDark = document.documentElement.classList.contains('dark');
+      ctx.fillStyle = isDark ? '#0b1120' : '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+
+      const cardBg = isDark ? '#1e293b' : '#ffffff';
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const subTextColor = isDark ? '#94a3b8' : '#64748b';
+      const borderColor = isDark ? '#334155' : '#e2e8f0';
+
+      // Header Banner
+      const grad = ctx.createLinearGradient(40, 40, width - 40, 140);
+      grad.addColorStop(0, '#002e6d');
+      grad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(40, 40, width - 80, 110, 16);
+      ctx.fill();
+
+      // Header Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+      ctx.fillText(`K COFFEE · ${t('reports.viz.titlePrefix')} · ${selectedDepartmentName}`, 64, 85);
+      ctx.font = '14px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillText(`${t('reports.viz.periodPrefix')} ${periodLabelVi} · Xuất ngày ${new Date().toLocaleDateString('vi-VN')}`, 64, 118);
+
+      // 5 KPI Cards Section
+      const kpis = [
+        { title: t('reports.viz.card1Title'), val: `${teamCards.completedTasks}/${teamCards.totalTasks}`, sub: `${teamCards.completionRate}%`, color: '#10b981' },
+        { title: t('reports.viz.card2Title'), val: `${teamCards.backlogCount}`, sub: `${teamCards.staffWithBacklogCount} nhân sự`, color: '#f59e0b' },
+        { title: t('reports.viz.card3Title'), val: `${teamCards.totalTracks}`, sub: `${teamCards.projectsCount} dự án, ${teamCards.campaignsCount} chiến dịch`, color: '#6366f1' },
+        { title: t('reports.viz.card4Title'), val: `${teamCards.inProgressTasks}`, sub: `${teamCards.inProgressPct}% đang làm`, color: '#0ea5e9' },
+        { title: t('reports.viz.card5Title'), val: `${teamCards.totalDeliverables}`, sub: `${teamCards.deliverableCompletionRate}% hoàn thành`, color: '#8b5cf6' },
+      ];
+
+      const kpiCardW = (width - 80 - 4 * 16) / 5;
+      kpis.forEach((kpi, idx) => {
+        const x = 40 + idx * (kpiCardW + 16);
+        const y = 175;
+        ctx.fillStyle = cardBg;
+        ctx.beginPath();
+        ctx.roundRect(x, y, kpiCardW, 110, 12);
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = subTextColor;
+        ctx.font = 'bold 10px Inter, system-ui, sans-serif';
+        ctx.fillText(kpi.title.toUpperCase(), x + 14, y + 26);
+
+        ctx.fillStyle = kpi.color;
+        ctx.font = 'bold 22px Inter, system-ui, sans-serif';
+        ctx.fillText(kpi.val, x + 14, y + 62);
+
+        ctx.fillStyle = subTextColor;
+        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.fillText(kpi.sub, x + 14, y + 88);
+      });
+
+      // Staff Performance Table Summary
+      ctx.fillStyle = cardBg;
+      ctx.beginPath();
+      ctx.roundRect(40, 310, width - 80, 520, 16);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 16px Inter, system-ui, sans-serif';
+      ctx.fillText(t('reports.viz.staffSectionTitle'), 60, 345);
+      ctx.fillStyle = subTextColor;
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.fillText(t('reports.viz.staffSectionSub'), 60, 368);
+
+      const tableY = 390;
+      ctx.fillStyle = isDark ? '#334155' : '#f1f5f9';
+      ctx.beginPath();
+      ctx.roundRect(60, tableY, width - 120, 32, 8);
+      ctx.fill();
+
+      ctx.fillStyle = subTextColor;
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.fillText('NHÂN SỰ', 76, tableY + 20);
+      ctx.fillText('TỔNG TASK', 360, tableY + 20);
+      ctx.fillText('HOÀN THÀNH', 480, tableY + 20);
+      ctx.fillText('ĐANG LÀM', 600, tableY + 20);
+      ctx.fillText('TRỄ HẠN', 720, tableY + 20);
+      ctx.fillText('HÌNH/FILE', 840, tableY + 20);
+      ctx.fillText('TỶ LỆ', 980, tableY + 20);
+
+      staffMembers.slice(0, 8).forEach((m, rowIdx) => {
+        const ry = tableY + 44 + rowIdx * 42;
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+        ctx.fillText(m.name, 76, ry + 16);
+        ctx.font = '10px Inter, system-ui, sans-serif';
+        ctx.fillStyle = subTextColor;
+        ctx.fillText(m.role || '', 76, ry + 30);
+
+        ctx.fillStyle = textColor;
+        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.fillText(String(m.total), 370, ry + 22);
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(String(m.done), 490, ry + 22);
+        ctx.fillStyle = '#0ea5e9';
+        ctx.fillText(String(m.doing), 610, ry + 22);
+        ctx.fillStyle = m.late > 0 ? '#ef4444' : subTextColor;
+        ctx.fillText(String(m.late), 730, ry + 22);
+
+        ctx.fillStyle = '#8b5cf6';
+        ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+        ctx.fillText(`${m.deliverableCount || 0} SL`, 850, ry + 22);
+
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(`${m.completionPct}%`, 990, ry + 22);
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(60, ry + 38);
+        ctx.lineTo(width - 60, ry + 38);
+        ctx.stroke();
+      });
+
+      // Bottom Summary Block: Burndown & Capacity Overview
+      ctx.fillStyle = cardBg;
+      ctx.beginPath();
+      ctx.roundRect(40, 850, width - 80, 560, 16);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 16px Inter, system-ui, sans-serif';
+      ctx.fillText('TIẾN ĐỘ BURNDOWN & MỨC TẢI CÔNG VIỆC', 60, 885);
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = subTextColor;
+      ctx.fillText('Tổng quan mức độ đáp ứng tiến độ và phân bổ công suất nhân sự trong kỳ', 60, 908);
+
+      ctx.fillStyle = isDark ? '#1e293b' : '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(60, 930, (width - 140) / 2, 440, 12);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+      ctx.fillText('Cột mốc Burndown Task', 76, 960);
+      burndown.slice(0, 8).forEach((b, bIdx) => {
+        const by = 985 + bIdx * 42;
+        ctx.fillStyle = subTextColor;
+        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.fillText(b.week, 76, by + 16);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+        ctx.fillText(`${b.actual} tasks`, 76 + 180, by + 16);
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(76, by + 28);
+        ctx.lineTo(76 + 320, by + 28);
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = isDark ? '#1e293b' : '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(60 + (width - 140) / 2 + 20, 930, (width - 140) / 2, 440, 12);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+      ctx.fillText('Mức tải công việc (% công suất)', 86 + (width - 140) / 2, 960);
+      staffMembers.slice(0, 8).forEach((m, cIdx) => {
+        const cy = 985 + cIdx * 42;
+        ctx.fillStyle = subTextColor;
+        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.fillText(m.name, 86 + (width - 140) / 2, cy + 16);
+        ctx.fillStyle = m.capacityPercentage > 100 ? '#ef4444' : m.capacityPercentage > 80 ? '#f59e0b' : '#10b981';
+        ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+        ctx.fillText(`${m.capacityPercentage}%`, 86 + (width - 140) / 2 + 240, cy + 16);
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(86 + (width - 140) / 2, cy + 28);
+        ctx.lineTo(86 + (width - 140) / 2 + 320, cy + 28);
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = subTextColor;
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      ctx.fillText('K COFFEE Work Tracking & Performance System · Báo cáo chuẩn Cyber-Organic Liquid Glass', 40, height - 20);
+
+      const link = document.createElement('a');
+      link.download = `BaoCao_${selectedDepartmentName}_${periodMeta?.labelVi || 'KCOFFEE'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success(lang === 'en' ? 'Report image exported successfully!' : 'Đã xuất hình ảnh báo cáo thành công!');
+    } catch (err) {
+      console.error('Export report image error:', err);
+      toast.error(lang === 'en' ? 'Unable to export report image' : 'Không thể xuất hình ảnh báo cáo');
+    }
+  }, [t, lang, selectedDepartmentName, periodLabelVi, periodMeta, teamCards, staffMembers, burndown]);
 
   // Profile-style Calendar Popover State
   const [rangeOpen, setRangeOpen] = useState(false);
@@ -98,7 +331,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   };
 
   useEffect(() => {
-    if (!activeExpandedId && !showBurndownInfo && !showCapacityInfo && !rangeOpen) return;
+    if (!activeExpandedId && !showBurndownInfo && !showCapacityInfo && !rangeOpen && !actionMenuOpen) return;
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -116,6 +349,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         setDragStart(null);
         setDragHover(null);
       }
+      if (actionMenuOpen && !actionMenuRef.current?.contains(target) && !actionPanelRef.current?.contains(target)) {
+        setActionMenuOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -123,6 +359,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           setRangeOpen(false);
           setDragStart(null);
           setDragHover(null);
+        }
+        if (actionMenuOpen) {
+          setActionMenuOpen(false);
         }
       }
     };
@@ -132,7 +371,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeExpandedId, showBurndownInfo, showCapacityInfo, rangeOpen]);
+  }, [activeExpandedId, showBurndownInfo, showCapacityInfo, rangeOpen, actionMenuOpen]);
 
   const formatDateDisplay = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -162,6 +401,17 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     }
     return presetRanges.find((p) => p.id === timeRange)?.label || periodLabelVi;
   }, [timeRange, customStart, customEnd, cursorDate, defaultToday, presetRanges, periodLabelVi]);
+
+  const chartStaffMembers = useMemo(() => {
+    if (staffStatusFilter === 'all') return staffMembers;
+    return staffMembers.map((m) => ({
+      ...m,
+      done: staffStatusFilter === 'done' ? m.done : 0,
+      doing: staffStatusFilter === 'doing' ? m.doing : 0,
+      todo: staffStatusFilter === 'todo' ? m.todo : 0,
+      late: staffStatusFilter === 'late' ? m.late : 0,
+    }));
+  }, [staffMembers, staffStatusFilter]);
 
   const selectedStaff: StaffReportMember | null = useMemo(() => {
     if (!selectedStaffId) return null;
@@ -259,7 +509,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   }
 
   return (
-    <div className={`w-full ${standalone ? 'min-h-screen bg-slate-50/50 dark:bg-[#0b1120]' : 'p-4 lg:p-6'} space-y-6`}>
+    <div className={`w-full ${standalone ? 'min-h-screen bg-slate-50/50 dark:bg-[#0b1120] overflow-y-auto' : 'p-4 lg:p-6'} space-y-6`}>
       {/* Top Bar for Standalone Visualize Mode */}
       {standalone && (
         <header className="sticky top-0 z-30 w-full border-b border-slate-200/70 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 lg:px-8 py-3.5 shadow-sm">
@@ -322,9 +572,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white">
                   {t('reports.viz.titlePrefix')} · {selectedDepartmentName}
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                  Live
-                </span>
               </div>
               <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
                 {t('reports.viz.periodPrefix')} <strong className="text-slate-700 dark:text-slate-200">{periodLabelVi}</strong> · {t('reports.viz.headerDesc')}
@@ -334,13 +581,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div className="grid grid-cols-1 sm:grid-flow-col sm:auto-cols-max items-center gap-3">
               {/* Department Selector */}
               {canViewAllDepartments ? (
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm">
+                <div className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm ${standalone ? 'opacity-80 pointer-events-none' : ''}`}>
                   <Building2 className="w-3.5 h-3.5 text-slate-400" />
                   <select
                     value={departmentFilter}
+                    disabled={standalone}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
                     aria-label="Lọc theo phòng ban"
-                    className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1"
+                    className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1 disabled:cursor-not-allowed"
                   >
                     <option value="all">{t('reports.viz.allCompany')}</option>
                     {departments.map((d) => (
@@ -357,43 +605,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
               )}
 
-              {/* View Switcher Pill: LayoutGrid (cards) / List (list) */}
-              <div className="inline-grid grid-flow-col auto-cols-max rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200/80 dark:border-slate-700/80">
-                <button
-                  type="button"
-                  aria-label={lang === 'vi' ? 'Xem dạng lưới' : 'Grid view'}
-                  aria-pressed={staffView === 'cards'}
-                  onClick={() => setStaffView('cards')}
-                  className={`rounded-lg p-1.5 transition-colors cursor-pointer ${
-                    staffView === 'cards'
-                      ? 'bg-white shadow-sm text-slate-900 dark:bg-slate-700 dark:!text-white'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={lang === 'vi' ? 'Xem danh sách' : 'List view'}
-                  aria-pressed={staffView === 'list'}
-                  onClick={() => setStaffView('list')}
-                  className={`rounded-lg p-1.5 transition-colors cursor-pointer ${
-                    staffView === 'list'
-                      ? 'bg-white shadow-sm text-slate-900 dark:bg-slate-700 dark:!text-white'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                  }`}
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
               {/* Calendar Navigation Group: [ < | 📅 label ⌄ | > ] */}
-              <div className="inline-grid grid-flow-col auto-cols-max rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+              <div className={`inline-grid grid-flow-col auto-cols-max rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm ${standalone ? 'opacity-80 pointer-events-none' : ''}`}>
                 <button
                   type="button"
+                  disabled={standalone}
                   aria-label="Khoảng trước"
                   onClick={() => shiftPeriod(-1)}
-                  className="grid place-items-center rounded-l-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  className="grid place-items-center rounded-l-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -401,18 +620,22 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 <div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
                   <button
                     type="button"
+                    disabled={standalone}
                     onClick={() => {
+                      if (standalone) return;
                       const cur = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
                       setPickerMonth(cur.getMonth());
                       setPickerYear(cur.getFullYear());
                       setRangeOpen((prev) => !prev);
                     }}
                     aria-expanded={rangeOpen}
-                    className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-w-[108px]"
+                    className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-w-[108px] disabled:cursor-not-allowed"
                   >
                     <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
                     <span>{selectedRangeLabel}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
+                    {!standalone && (
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
+                    )}
                   </button>
 
                   {/* 2-Column Calendar Popover */}
@@ -647,9 +870,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
                 <button
                   type="button"
+                  disabled={standalone}
                   aria-label="Khoảng sau"
                   onClick={() => shiftPeriod(1)}
-                  className="grid place-items-center rounded-r-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  className="grid place-items-center rounded-r-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -660,36 +884,89 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 type="button"
                 aria-label="Đồng bộ báo cáo"
                 title="Đồng bộ báo cáo"
-                disabled={isLoading}
+                disabled={isLoading || standalone}
                 onClick={() => refetch()}
-                className="grid place-items-center rounded-xl p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                className={`grid place-items-center rounded-xl p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm disabled:opacity-50 ${standalone ? 'pointer-events-none opacity-80' : ''}`}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
 
-              {/* Visualize Button (shown when embedded in /reports) */}
-              {!standalone && (
+              {/* Combined Report Actions Dropdown Menu (Slide 1 & Slide 4) */}
+              <div ref={actionMenuRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => openVisualizeReport()}
-                  className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#002e6d] to-[#0047a5] hover:from-[#002250] hover:to-[#003882] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                  onClick={() => setActionMenuOpen((prev) => !prev)}
+                  aria-expanded={actionMenuOpen}
+                  aria-haspopup="true"
+                  className="grid grid-flow-col auto-cols-max items-center gap-2 px-3.5 py-2 rounded-xl bg-[#002e6d] hover:bg-[#002250] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer min-h-[44px]"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>{t('reports.viz.viewReport')}</span>
+                  <Download className="w-4 h-4" />
+                  <span>{t('reports.viz.reportActions')}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${actionMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-              )}
 
-              {/* Export CSV button */}
-              {!standalone && (
-                <button
-                  type="button"
-                  onClick={exportCSV}
-                  className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('reports.viz.exportCsv')}</span>
-                </button>
-              )}
+                {actionMenuOpen && (
+                  <FilterPopover
+                    anchorRef={actionMenuRef}
+                    panelRef={actionPanelRef}
+                    align="right"
+                    onClose={() => setActionMenuOpen(false)}
+                    className="z-50 w-56 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActionMenuOpen(false);
+                        openVisualizeReport();
+                      }}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                    >
+                      <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>{t('reports.viz.viewReportWeb')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActionMenuOpen(false);
+                        exportCSV();
+                      }}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                    >
+                      <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>{t('reports.viz.exportCsv')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActionMenuOpen(false);
+                        exportReportPdf();
+                      }}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                    >
+                      <Printer className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <span>{t('reports.viz.exportPdf')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActionMenuOpen(false);
+                        exportReportImage();
+                      }}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                    >
+                      <ImagePlus className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>{t('reports.viz.exportImg')}</span>
+                    </button>
+                  </FilterPopover>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1354,48 +1631,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <p className="text-[10px] text-slate-400 italic">Chưa có số liệu theo dự án</p>
                   )}
                 </div>
-
-                {/* Section C: Danh sách đầu việc & Số lượng */}
-                <div className="space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                    {lang === 'en' ? 'Recent Deliverable Items' : 'Danh sách sản phẩm trong kỳ'}
-                  </div>
-                  {teamCards.deliverableItems && teamCards.deliverableItems.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-1">
-                      {teamCards.deliverableItems.slice(0, 10).map((item) => (
-                        <div key={item.id} className="px-2 py-1.5 rounded-[6px] bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]">
-                          <div className="grid grid-cols-1 min-w-0 gap-0.5">
-                            <span className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>
-                              {item.title}
-                            </span>
-                            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 text-[9.5px] min-w-0">
-                              <span className="px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/50 whitespace-nowrap">
-                                → {item.targetDepartmentName}
-                              </span>
-                              <span className="text-slate-500 dark:text-slate-400 truncate block min-w-0">
-                                {item.entityName}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                            <span className="px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
-                              SL: {item.quantity}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold border ${
-                              item.statusKind === 'done'
-                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50'
-                                : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
-                            }`}>
-                              {item.statusKind === 'done' ? t('reports.viz.colCompleted') : t('reports.viz.colInProgress')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-slate-400 italic">Chưa có đầu việc phát sinh sản lượng</p>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -1528,7 +1763,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={staffMembers}
+                    data={chartStaffMembers}
                     layout="vertical"
                     margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
                     onClick={(e: any) => {
@@ -1686,9 +1921,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         </p>
                       </div>
 
-                      <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 whitespace-nowrap">
-                        {m.completionPct}%
-                      </span>
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                        <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/50 whitespace-nowrap">
+                          {t('reports.viz.staffDeliverables', { count: m.deliverableCount ?? 0 })}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50 whitespace-nowrap">
+                          {m.completionPct}%
+                        </span>
+                      </div>
                     </div>
 
                     {/* Performance Stats UI (Stays on background) */}

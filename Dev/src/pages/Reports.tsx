@@ -12,7 +12,7 @@ const ReportAnalytics = lazy(() =>
 export function Reports({ standalone = false }: { standalone?: boolean }) {
   const profile = useAuthStore((state) => state.profile);
   const { t } = useTranslation();
-  if (!canViewTeamManagement(profile)) return null;
+  if (!standalone && !canViewTeamManagement(profile)) return null;
   return (
     <Suspense
       fallback={

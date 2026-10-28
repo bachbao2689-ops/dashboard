@@ -1,7 +1,7 @@
 /* Shared action treatment in both themes; content cards and menu options stay readable. */
 .mobile-icon-action-glyph, .mobile-icon-action-label { display: contents; }
 .mobile-action-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 99px; background: rgba(128,160,190,.2); font-size: 10px; font-weight: 700; }
-.mobile-search-trigger, .mobile-only-glyph { display: none; }
+.mobile-only-glyph { display: none; }
 .mobile-action-hint {
   position: fixed; z-index: 2147483647; width: max-content; max-width: 224px;
   transform: translateX(-50%); pointer-events: none; padding: 8px 12px;
@@ -11,7 +11,6 @@
   font-size: 12px; font-weight: 600; line-height: 1.4; text-align: center;
 }
 .dark .mobile-action-hint { background: rgba(18,38,60,.96); color: #e2f3ff; border-color: rgba(140,195,230,.3); }
-.mobile-search-panel { display: none; }
 @media (max-width: 1279px) {
   .mobile-icon-action {
     display: inline-flex !important; position: relative; align-items: center; justify-content: center;
@@ -27,13 +26,6 @@
   .mobile-actions-row > .mobile-icon-action { flex-shrink: 1; }
   .mobile-actions-row > .mobile-filter-control > .mobile-icon-action { width: 100% !important; min-width: 32px !important; }
   .mobile-actions-row > .mobile-filter-control { width: 40px; }
-  .mobile-search { width: 40px !important; flex-shrink: 1; }
-  .mobile-search-trigger { display: inline-flex; width: 100%; }
-  .mobile-search-desktop { display: none; }
-  .mobile-search-panel { display: flex; position: fixed; left: 12px; right: 12px; z-index: 10020; padding: 10px; gap: 8px; border-radius: 16px; border: 1px solid #c9d9e8; background: #f5faff; box-shadow: 0 12px 32px #071b3630; }
-  .dark .mobile-search-panel { background: #132237; border-color: #3b536d; }
-  .mobile-search-panel input { width: 100%; min-width: 0; padding: 8px; border-radius: 8px; outline-offset: 2px; background: transparent; color: #123653; }
-  .dark .mobile-search-panel input { color: #e2f3ff; }
   .dashboard-top-chrome { transition: transform .32s cubic-bezier(.22,1,.36,1), opacity .25s; }
   .dashboard-top-chrome.mobile-header-hidden { transform: translateY(calc(-100% - env(safe-area-inset-top, 0px))); opacity: 0; }
   .dashboard-top-chrome.mobile-header-hidden header { pointer-events: none; }

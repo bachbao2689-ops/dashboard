@@ -12,7 +12,7 @@ import {TaskDescriptionViewer} from '../components/features/tasks/TaskDescriptio
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
 import {CommentMessage} from '../components/features/comments/CommentMessage';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Edit3,Trash2,CheckCircle2,Calendar,Clock3,Eye,EyeOff,ListTodo} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,CheckCircle2,Calendar,Clock3,Eye,EyeOff,ListTodo} from 'lucide-react';
 import {TaskActivityLogPopover} from '../components/features/tasks/TaskActivityLogPopover';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
@@ -21,6 +21,11 @@ import {SubtaskDetailPanel} from '../components/features/projects/SubtaskDetailP
 import {SearchInput,StatusFilterDropdown,PicFilterDropdown,DateFilterDropdown,PriorityFilterDropdown} from '../components/common/filters';
 import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../components/features/projects/projectPresentation';
 import {useProjectsController} from '../hooks/useProjectsController';
+import {useResizableColumns} from '../hooks/useResizableColumns';
+import {EntityActionBadges} from '../components/features/projects/EntityActionBadges';
+import {EntityNoteCell} from '../components/features/projects/EntityNoteCell';
+import {supabase} from '../services/supabase';
+import toast from 'react-hot-toast';
 import {CampaignDetailDrawer} from '../components/features/projects/CampaignDetailDrawer';
 import {EntityInfoPopover} from '../components/features/projects/EntityInfoPopover';
 import {EntityPinButton} from '../components/features/projects/EntityPinButton';
@@ -28,9 +33,14 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
+ const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
+   tableKey: 'projects_table',
+   initialWidths: [340, 190, 250, 130, 160, 250],
+   minWidth: 95,
+ });
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
- const {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,starredCriteriaMap,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
+ const {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,starredCriteriaMap,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
  const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
  const projectCollaboratorIds = React.useMemo(() => {
    if (!selected) return [];
@@ -207,10 +217,47 @@ export const Projects:React.FC=()=>{
       {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
       {canManageProject(project) && <div className="ml-auto flex shrink-0 items-center gap-1"><ActionButton icon={<EyeOff size={15} />} type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}></ActionButton><ActionButton icon={<Trash2 size={15} />} type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}></ActionButton></div>}
     </div>
+    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+      <EntityNoteCell entityId={project.id} entityType="project" workspaceId={(project as any).workspace_id} canEdit={canManageProject(project)} />
+    </div>
   </article>;
-})}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block"><table className="w-full min-w-max text-left"><thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr><th className="p-4">{t('projects.col.project')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.status')}</th><th className="w-12"/></tr></thead><tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
-<td className="p-4">
-  <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+})}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block">
+  <table ref={projectTableRef} className="w-full table-fixed text-left border-collapse">
+    <colgroup>
+      {projectColWidths.map((w, idx) => (
+        <col key={idx} style={{ width: `${w}px` }} />
+      ))}
+    </colgroup>
+    <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
+      <tr>
+        <th className="p-4 relative text-left">
+          <span className="truncate block text-left">{t('projects.col.project')}</span>
+          <div onMouseDown={(e) => startProjectColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+        </th>
+        <th className="p-4 relative text-center">
+          <span className="truncate block text-center">{t('projects.col.owner')}</span>
+          <div onMouseDown={(e) => startProjectColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+        </th>
+        <th className="p-4 relative text-center">
+          <span className="truncate block text-center">{t('projects.col.dates')}</span>
+          <div onMouseDown={(e) => startProjectColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+        </th>
+        <th className="p-4 relative text-center">
+          <span className="truncate block text-center">{t('projects.col.priority')}</span>
+          <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+        </th>
+        <th className="p-4 relative text-center">
+          <span className="truncate block text-center">{t('projects.col.status')}</span>
+          <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+        </th>
+        <th className="p-4 relative text-center">
+          <span className="truncate block text-center">{t('projects.col.notes')}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
+<td className="p-4 relative overflow-hidden">
+  <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
     <EntityInfoPopover
       entityType="project"
       entity={project}
@@ -226,33 +273,62 @@ export const Projects:React.FC=()=>{
         return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
       })}
     />
-    <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{project.name}</b>
+    <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
     {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
   </div>
-  <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{project.description || t('tasks.noDescription')}</p>
-</td>
-<td>
-  <div className="flex items-center gap-2">
-    <div className="flex -space-x-2">
-      {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
+  <p className="text-xs text-gray-500 truncate mt-1">{project.description || t('tasks.noDescription')}</p>
+  {canManageProject(project) && (
+    <div 
+      onClick={(e) => e.stopPropagation()}
+      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+    >
+      <ActionButton 
+        icon={<EyeOff size={14}/>} 
+        onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} 
+        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+        title={t('common.hide')}
+      />
+      <ActionButton 
+        icon={<Trash2 size={14}/>} 
+        onClick={(e) => { e.stopPropagation(); void removeProject(project); }} 
+        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+        title={t('common.delete')}
+      />
     </div>
-    {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
-      <>
-        <span className="text-gray-300 dark:text-gray-600 px-1">|</span>
-        <div className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800">
-          <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
-          <div className="flex -space-x-2">
-            {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
+  )}
+</td>
+<td className="p-4 overflow-hidden text-center">
+  <div className="grid place-content-center">
+    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+      <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
+        {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
+      </div>
+      {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
+        <>
+          <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800 shrink-0">
+            <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
+            <div className="grid grid-flow-col auto-cols-max -space-x-2">
+              {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
+            </div>
           </div>
-        </div>
-      </>
-    )}
+        </>
+      )}
+    </div>
   </div>
 </td>
-<td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="flex items-center gap-1.5"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
-<td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></td>
-<td><StatusBadge status={project.status || 'active'} /></td>
-<td className="w-16 pr-4">{canManageProject(project) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><ActionButton icon={<EyeOff size={16}/>} onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}></ActionButton><ActionButton icon={<Trash2 size={16}/>} onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}></ActionButton></div>}</td>
+<td className="p-4 overflow-hidden text-sm text-gray-600 dark:text-gray-300 text-center"><div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 truncate mx-auto"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
+<td className="p-4 overflow-hidden text-center"><div className="grid place-items-center"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></div></td>
+<td className="p-4 overflow-hidden text-center"><div className="grid place-items-center"><StatusBadge status={project.status || 'active'} /></div></td>
+<td className="p-4 overflow-hidden text-center">
+  <EntityNoteCell
+    entityId={project.id}
+    entityType="project"
+    workspaceId={(project as any).workspace_id}
+    canEdit={canManageProject(project)}
+    alignCenter={true}
+  />
+</td>
 </tr>)}</tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
   
   
@@ -266,7 +342,10 @@ export const Projects:React.FC=()=>{
       {selected && (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
           <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-            <div className="flex items-center gap-1 min-w-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3></div>
+            <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
+              <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span>
+            </div>
             <div className="flex items-center gap-1 shrink-0">
               <TaskActivityLogPopover entityType="project" entityId={selected.id} />
               <EntityPinButton kind="project" id={selected.id} name={selected.name} />
@@ -297,7 +376,45 @@ export const Projects:React.FC=()=>{
               </div>
             ) : (
 <div className="space-y-7 animate-in fade-in duration-200">
-              <div className="flex gap-2"><span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span><span className="px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">{t('common.priority')}: {t(`common.${selected?.priority || 'medium'}` as any).toLowerCase()}</span><StatusBadge status={selected.status}/></div>
+              <EntityActionBadges
+                priority={selected.priority || 'medium'}
+                status={selected.status || 'active'}
+                onPriorityChange={async (newPriority) => {
+                  if (!selected || !selectedRoot) return;
+                  const { error } = await supabase.from('projects').update({ priority: newPriority }).eq('id', selected.id);
+                  if (error) return toast.error('Lỗi cập nhật mức ưu tiên');
+                  const updated = { ...selected, priority: newPriority };
+                  setSelected(updated);
+                  setPriority(newPriority);
+                  setProjects(items => items.map(p => p.id === selected.id ? { ...p, priority: newPriority } : p));
+                  window.dispatchEvent(new Event('projects:changed'));
+                  void workflow.refresh();
+                  toast.success('Đã cập nhật mức ưu tiên');
+                }}
+                onStatusChange={async (newStatus) => {
+                  if (!selected || !selectedRoot) return;
+                  const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', selected.id);
+                  if (error) return toast.error('Lỗi cập nhật trạng thái');
+                  const updated = { ...selected, status: newStatus };
+                  setSelected(updated);
+                  setEditStatus(newStatus);
+                  setProjects(items => items.map(p => p.id === selected.id ? { ...p, status: newStatus } : p));
+                  window.dispatchEvent(new Event('projects:changed'));
+                  void workflow.refresh();
+                  toast.success('Đã cập nhật trạng thái');
+                }}
+                onEdit={() => {
+                  setTitle(selected.name);
+                  setDescription(selected.description || '');
+                  setStart(selected.start_date || '');
+                  setDue(selected.due_date || '');
+                  setPriority(selected.priority || 'medium');
+                  setEditStatus(selected.status || 'active');
+                  setOwnerIds(picMembers[selected.id] || []);
+                  setEditMode(true);
+                }}
+                canManage={selectedRoot}
+              />
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true).map(s=>(
@@ -370,7 +487,6 @@ export const Projects:React.FC=()=>{
             </div>
             )}
           </div>
-          {!editMode && selectedRoot && (<div className="p-4 md:p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}><ActionButton icon={<Edit3 className="w-4 h-4" />} onClick={() => { setTitle(selected.name); setDescription(selected.description || ''); setStart(selected.start_date || ''); setDue(selected.due_date || ''); setPriority(selected.priority || 'medium'); setEditStatus(selected.status || 'active'); setOwnerIds(picMembers[selected.id] || []); setEditMode(true); }} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"> {t('common.edit')}</ActionButton><ActionButton icon={<CheckCircle2 className="w-4 h-4" />} onClick={completeProject} className="flex-1 px-4 py-2.5 bg-[#002e6d] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors"> {t('common.complete')}</ActionButton></div>)}
         </div>
       )}
       <CampaignDetailDrawer state={state} />
@@ -420,7 +536,7 @@ export const Projects:React.FC=()=>{
           <div><label className="block text-sm font-semibold mb-1">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="high">{t('common.high')}</option><option value="medium">{t('common.medium')}</option><option value="low">{t('common.low')}</option></select></div>
           <div><label className="block text-sm font-semibold mb-1">{t('projects.executingMembers')}</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder={t('projects.tagMembers')} /></div>
           <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
-        </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" placeholder={t('projects.budgetPlaceholder')} /></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-800 px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
+        </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><div className="relative"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 pr-14 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" placeholder={t('projects.budgetPlaceholder')} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="grid grid-flow-col auto-cols-max items-center gap-2 rounded-lg bg-white dark:bg-slate-800 px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
 
         </fieldset>
       </div>

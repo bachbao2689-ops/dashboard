@@ -4,12 +4,18 @@ import { TableSkeleton } from '../../../common/Skeleton';
 import { StatusBadge } from '../../../common/StatusBadge';
 import { Avatar } from '../../../common/Avatar';
 import type { Task } from '../../../../hooks/useTasks';
+import { useResizableColumns } from '../../../../hooks/useResizableColumns';
 import { mapPriority } from './taskListPresentation';
 import { useTranslation } from '../../../../i18n/translations';
 
 type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
 export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds}: Props) {
  const {t} = useTranslation();
+ const { widths: taskColWidths, startResize: startTaskColResize, tableRef: taskTableRef } = useResizableColumns({
+   tableKey: 'tasks_table',
+   initialWidths: [48, 95, 340, 200, 170, 130, 110, 120, 52],
+   minWidth: 40,
+ });
  return (<div className="space-y-6 pb-12 pr-1">
       
 
@@ -66,10 +72,15 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   ))}
                 </div>
                 <div className="task-list-table-scroll hidden xl:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
-                <table className="task-list-table">
+                <table ref={taskTableRef} className="w-full task-list-table table-fixed text-left border-collapse">
+                  <colgroup>
+                    {taskColWidths.map((w, idx) => (
+                      <col key={idx} style={{ width: `${w}px` }} />
+                    ))}
+                  </colgroup>
                   <thead>
                     <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-                      <th className="p-4 w-12">
+                      <th className="p-4 relative">
                         <input 
                           type="checkbox"
                           aria-label={`Chọn nhóm ${groupName}`}
@@ -86,21 +97,43 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           }}
                           className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
+                        <div onMouseDown={(e) => startTaskColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.ref')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.title')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">{t('tasks.col.projectCampaign')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.assignee')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.status')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('tasks.col.priority')}</th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">{t('tasks.col.dueDate')}</th>
-                      <th className="p-4"></th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.ref')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.title')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.projectCampaign')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.assignee')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.status')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.priority')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.dueDate')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 relative text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
                       <tr key={task.id} onClick={() => onOpenTask(task)} className={`task-list-row hover-row-effect group ${task.campaign?.name ? 'hover-row-campaign' : task.project?.name ? 'hover-row-project' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`} data-selected={selectedTasks.includes(task.id)} data-completed={['done', 'complete', 'completed'].includes((task.status || '').toLowerCase())}>
-                        <td className="p-4">
+                        <td className="p-4 overflow-hidden">
                           <input 
                             type="checkbox"
                             aria-label={`Chọn ${task.title}`}
@@ -109,42 +142,44 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             className="rounded border-gray-300 text-primary focus:ring-primary"
                           />
                         </td>
-                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium">#{task.task_ref || task.id.split('-')[0]}</td>
-                        <td className="p-4">
-                          <div className="task-list-row-title" title={task.title}>{task.title}</div>
-                          {(task.department?.name || task.project?.department?.name) && <div className="mt-1 flex items-center gap-1"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50">{task.department?.name || task.project?.department?.name}</span></div>}
+                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium overflow-hidden"><span className="truncate block">#{task.task_ref || task.id.split('-')[0]}</span></td>
+                        <td className="p-4 overflow-hidden">
+                          <div className="task-list-row-title truncate" title={task.title}>{task.title}</div>
+                          {(task.department?.name || task.project?.department?.name) && <div className="mt-1 flex items-center gap-1 overflow-hidden"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate">{task.department?.name || task.project?.department?.name}</span></div>}
                         </td>
-                        <td className="p-4 text-sm hidden lg:table-cell">
+                        <td className="p-4 text-sm overflow-hidden">
                           {task.project?.name ? (
-                            <span className="task-list-project-badge"><span className="truncate">{task.project.name}</span></span>
+                            <span className="task-list-project-badge truncate block"><span className="truncate">{task.project.name}</span></span>
                           ) : task.campaign?.name ? (
-                            <span className="task-list-campaign-badge"><span className="truncate">{task.campaign.name}</span></span>
+                            <span className="task-list-campaign-badge truncate block"><span className="truncate">{task.campaign.name}</span></span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500">---</span>
+                            <span className="text-gray-400 dark:text-gray-500 truncate block">---</span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 overflow-hidden">
                           {task.assignee ? (
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 overflow-hidden">
                               <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
-                              <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{task.assignee.name}</span>
+                              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{task.assignee.name}</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md">Unassigned</span>
+                            <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md truncate inline-block">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
-                          <StatusBadge status={task.status} />
+                        <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
+                          <div className="truncate"><StatusBadge status={task.status} /></div>
                         </td>
-                        <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
-                          <span className="task-list-priority" data-priority={mapPriority(task.priority)==='Urgent'?'high':mapPriority(task.priority).toLowerCase()}>
-                            {mapPriority(task.priority)}
-                          </span>
+                        <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
+                          <div className="truncate">
+                            <span className="task-list-priority truncate inline-block" data-priority={mapPriority(task.priority)==='Urgent'?'high':mapPriority(task.priority).toLowerCase()}>
+                              {mapPriority(task.priority)}
+                            </span>
+                          </div>
                         </td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
+                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
+                          <span className="truncate block">{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}</span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 text-right overflow-hidden">
                           <button aria-label={`Xem ${task.title}`} className="task-list-row-menu">
                             <MoreHorizontal className="w-5 h-5" />
                           </button>
