@@ -17,13 +17,14 @@ export function weeklyActivity<T extends TrackedTask>(tasks: T[], start: string,
     doing: tasks.filter(t => !isTaskClosed(t.status) && (!taskDay(t.created_at) || taskDay(t.created_at) <= end)).length,
   };
 }
-export function reportAnalytics(tasks: TrackedTask[], range: 'week'|'month'|'quarter'|'all', now = new Date()) {
+export function reportAnalytics(tasks: TrackedTask[], range: 'week'|'month'|'quarter'|'year'|'all', now = new Date()) {
   const today = taskDay(now.toISOString());
   const end = new Date(`${today}T12:00:00Z`);
   const startDate = new Date(end);
   if (range === 'week') startDate.setUTCDate(startDate.getUTCDate() - ((startDate.getUTCDay()+6)%7));
   if (range === 'month') startDate.setUTCDate(1);
   if (range === 'quarter') { startDate.setUTCMonth(Math.floor(startDate.getUTCMonth()/3)*3,1); }
+  if (range === 'year') { startDate.setUTCMonth(0, 1); }
   const start = range === 'all' ? tasks.map(t=>taskDay(t.created_at)).filter(Boolean).sort()[0] || today : taskDay(startDate.toISOString());
   const periodDays = Math.max(1, Math.round((end.getTime()-new Date(`${start}T12:00:00Z`).getTime())/86400000)+1);
   const previousEnd = new Date(`${start}T12:00:00Z`); previousEnd.setUTCDate(previousEnd.getUTCDate()-1);
@@ -31,6 +32,7 @@ export function reportAnalytics(tasks: TrackedTask[], range: 'week'|'month'|'qua
   if(range==='week')previousStart.setUTCDate(previousStart.getUTCDate()-7);
   else if(range==='month')previousStart.setUTCMonth(previousStart.getUTCMonth()-1,1);
   else if(range==='quarter')previousStart.setUTCMonth(previousStart.getUTCMonth()-3,1);
+  else if(range==='year')previousStart.setUTCFullYear(previousStart.getUTCFullYear()-1,0,1);
   const elapsedEnd=new Date(previousStart);elapsedEnd.setUTCDate(elapsedEnd.getUTCDate()+periodDays-1);
   if(elapsedEnd<previousEnd)previousEnd.setTime(elapsedEnd.getTime());
   const inRange = (date: string, a=start,b=today) => !!date && date>=a && date<=b;

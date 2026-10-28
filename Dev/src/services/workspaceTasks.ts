@@ -12,15 +12,47 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     readAll(supabase.from('project_subtasks').select('*,projects:project_id(id,name,status,priority,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),
     readAll(supabase.from('campaign_subtasks').select('*,campaigns:campaign_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id'))
   ]);
-  const details=new Map<string,{description?:string}>();
-  const ids=[...new Set([...projects,...campaigns].map(row=>row.id))];
-  for(let i=0;i<ids.length;i+=200){
-    const rows=await readAll(supabase.from('activity_log').select('entity_type,entity_id,metadata,created_at').eq('action','details_updated').in('entity_type',['project_subtask','campaign_subtask']).in('entity_id',ids.slice(i,i+200)).order('created_at',{ascending:false}).order('id',{ascending:false}));
-    rows.forEach(row=>{const key=taskKey(row.entity_type,row.entity_id);if(!details.has(key))details.set(key,row.metadata||{});});
+  const details = new Map<string, any>();
+  const subtaskIds = [...new Set([...projects, ...campaigns].map((row) => row.id))];
+  const realIds = [...new Set(real.map((row) => row.id))];
+
+  for (let i = 0; i < subtaskIds.length; i += 200) {
+    const rows = await readAll(
+      supabase
+        .from('activity_log')
+        .select('entity_type,entity_id,metadata,created_at')
+        .eq('action', 'details_updated')
+        .in('entity_type', ['project_subtask', 'campaign_subtask'])
+        .in('entity_id', subtaskIds.slice(i, i + 200))
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false }),
+    );
+    rows.forEach((row) => {
+      const key = taskKey(row.entity_type, row.entity_id);
+      if (!details.has(key)) details.set(key, row.metadata || {});
+    });
   }
+
+  for (let i = 0; i < realIds.length; i += 200) {
+    const rows = await readAll(
+      supabase
+        .from('activity_log')
+        .select('entity_type,entity_id,metadata,created_at')
+        .eq('action', 'details_updated')
+        .eq('entity_type', 'task')
+        .in('entity_id', realIds.slice(i, i + 200))
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false }),
+    );
+    rows.forEach((row) => {
+      const key = String(row.entity_id);
+      if (!details.has(key)) details.set(key, row.metadata || {});
+    });
+  }
+
   // Archived/deleted parents disappear consistently across the lists and analytics.
   // Cancelled work stays in lists/history; metrics exclude it with taskActive().
-  return mapWorkspaceTasks(real,projects,campaigns,details);
+  return mapWorkspaceTasks(real, projects, campaigns, details);
 }
 export async function updateTrackedTask(key:string,values:Record<string,unknown>, expectedUpdatedAt?: string | null) {
   const target=taskTarget(key);

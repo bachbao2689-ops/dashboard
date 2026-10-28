@@ -7,6 +7,7 @@ import { useTranslation } from '../../../i18n/translations';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import { canViewTeamManagement, isGlobalManager, isDepartmentLeader } from '../../../lib/roleScope';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
+import { saveTaskDeliverables } from '../../../lib/taskDeliverables';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
   const canChooseDepartment = isGlobalManager(profile);
   const [title, setTitle] = useState('');
   const [departmentId, setDepartmentId] = useState('');
+  const [targetDepartmentId, setTargetDepartmentId] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [priority, setPriority] = useState('medium');
   const [projectId, setProjectId] = useState('');
@@ -106,7 +109,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       const columnData = await supabase.from('columns').select('id').eq('workspace_id', wsData.id).eq('name', 'Yet to Start').single();
       const colId = columnData.data?.id || null;
 
-      const { error: insertError } = await supabase.from('tasks').insert([{
+      const { data: insertedTask, error: insertError } = await supabase.from('tasks').insert([{
          title: title.trim(),
          description: description.trim(),
          priority,
@@ -120,9 +123,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
          column_id: colId,
          workspace_id: wsData.id,
          created_by: profile.id
-      }]);
+      }]).select('id').single();
 
       if (insertError) throw insertError;
+
+      if (insertedTask?.id) {
+        const numQuantity = Number(quantity);
+        const targetDept = departments.find((d) => String(d.id) === String(targetDepartmentId));
+        await saveTaskDeliverables(
+          'task',
+          insertedTask.id,
+          {
+            quantity: Number.isFinite(numQuantity) && numQuantity > 0 ? numQuantity : null,
+            target_department_id: targetDepartmentId || null,
+            target_department_name: targetDept ? targetDept.name : null,
+            description: description.trim(),
+          },
+          profile.id,
+          wsData.id,
+        );
+      }
       
       onSuccess();
       window.dispatchEvent(new Event('tasks:changed'));
@@ -137,6 +157,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
       setAssigneeId('');
       setProjectId('');
       setDepartmentId(profile.department_id || '');
+      setTargetDepartmentId('');
+      setQuantity('');
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || 'Failed to create task');
@@ -308,6 +330,38 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                         onChange={(e) => setDueDate(e.target.value)}
                         placeholder="dd/mm/yyyy"
                         className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 cursor-pointer shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        {t('tasks.forDepartment')}
+                      </label>
+                      <select 
+                        value={targetDepartmentId}
+                        onChange={e => setTargetDepartmentId(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
+                      >
+                        <option value="">{t('tasks.selectDepartment')}</option>
+                        {departments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        {t('tasks.quantity')}
+                      </label>
+                      <input 
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={quantity}
+                        onChange={e => setQuantity(e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
                       />
                     </div>
                   </div>

@@ -1,5 +1,5 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {ArrowRight, ShieldCheck, Plus} from 'lucide-react';
+import {ArrowRight, ShieldCheck, Plus, Star} from 'lucide-react';
 import {useAuthStore} from '../../../store/authStore';
 import {isAdmin, isGlobalManager} from '../../../lib/roleScope';
 
@@ -107,7 +107,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                     {criteria.map(c => (
                       <label
                         key={c.id}
-                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                        className={`grid grid-cols-[auto_1fr] items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer group/gate-item ${
                           c.checked
                             ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-gray-900 dark:text-white'
                             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-gray-600 dark:text-gray-400 hover:border-gray-300'
@@ -120,8 +120,27 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                           onChange={() => toggleCriterion(c.id)}
                           className="mt-0.5 rounded text-emerald-600 focus:ring-0 cursor-pointer"
                         />
-                        <div className="flex-1 text-xs">
-                          <span className={c.checked ? 'font-semibold' : ''}>{c.label}</span>
+                        <div className="min-w-0 text-xs">
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                            <span className={c.checked ? 'font-semibold' : ''}>{c.label}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                model.toggleStarCriterion(c.id);
+                              }}
+                              aria-label={c.starred ? (isEn ? 'Unmark key criterion' : 'Bỏ đánh dấu tiêu chí chính') : (isEn ? 'Mark as key criterion' : 'Đánh dấu tiêu chí chính')}
+                              title={c.starred ? (isEn ? 'Key criterion (starred)' : 'Tiêu chí chính (đã gắn sao)') : (isEn ? 'Mark as key criterion' : 'Đánh dấu tiêu chí chính')}
+                              className={`p-0.5 rounded transition-all cursor-pointer ${
+                                c.starred
+                                  ? 'fill-amber-400 text-amber-400 opacity-100'
+                                  : 'opacity-60 sm:opacity-0 sm:group-hover/gate-item:opacity-100 focus-visible:opacity-100 text-gray-400 hover:text-amber-400'
+                              }`}
+                            >
+                              <Star size={13} className={c.starred ? 'fill-amber-400 text-amber-400' : ''} />
+                            </button>
+                          </div>
                           <span className="text-[10px] text-gray-400 block mt-0.5">{isEn ? `Weight: ${c.weight}%` : `Trọng số: ${c.weight}%`}</span>
                         </div>
                       </label>

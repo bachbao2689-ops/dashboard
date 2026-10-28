@@ -4,7 +4,7 @@ export type DepartmentId = string;
 
 export type AlertLevel = 'ok' | 'risk' | 'late';
 
-export type PeriodFilter = 'week' | 'month' | 'quarter';
+export type PeriodFilter = 'week' | 'month' | 'quarter' | 'year';
 
 export type TaskStatusFilter = 'all' | 'late' | 'doing' | 'todo';
 
@@ -58,8 +58,9 @@ export interface WeeklyTrendItem {
 }
 
 export interface HeatmapRow {
-  id: DepartmentId;
+  id: DepartmentId | string;
   name: string;
+  avatar_url?: string | null;
   weeks: [number, number, number, number];
 }
 

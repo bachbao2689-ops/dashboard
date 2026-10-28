@@ -6,7 +6,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, User, X, Clock, Save } from 'lucide-react';
+import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
@@ -21,7 +21,7 @@ import { canonicalWorkflowStatus, workflowStage, type WorkflowTaskStatus } from 
 import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
 import { inputDate } from '../../../lib/workflowHub';
-import { ListTodo, Plus, Trash2 } from 'lucide-react';
+import { saveTaskDeliverables, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
 
 type Person = { id: number; name: string; avatar_url?: string | null };
@@ -30,6 +30,7 @@ export interface SubtaskChecklistItem {
   title: string;
   description?: string | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
+  quantity?: number | null;
   completed: boolean;
   due_date?: string | null;
   created_by?: number | null;
@@ -96,6 +97,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canCompleteTask, setCanCompleteTask] = useState(false);
+  const [subtaskQuantity, setSubtaskQuantity] = useState<string>('');
+  const [editSubtaskQuantity, setEditSubtaskQuantity] = useState<string>('');
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -107,12 +110,14 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemPriority, setNewItemPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [newItemQuantity, setNewItemQuantity] = useState<string>('');
   const [newItemDueDate, setNewItemDueDate] = useState('');
   const [addingItem, setAddingItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editItemTitle, setEditItemTitle] = useState('');
   const [editItemDescription, setEditItemDescription] = useState('');
   const [editItemPriority, setEditItemPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [editItemQuantity, setEditItemQuantity] = useState<string>('');
   const [editItemDueDate, setEditItemDueDate] = useState('');
   const [savingItem, setSavingItem] = useState(false);
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | null | undefined>(subtask?.updated_at);
@@ -205,11 +210,23 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
     if (!subtaskId) return;
+    const meta = await fetchTaskDeliverableMeta(entityType, subtaskId);
+    if (meta?.quantity != null) {
+      setSubtaskQuantity(String(meta.quantity));
+      setEditSubtaskQuantity(String(meta.quantity));
+    } else {
+      setSubtaskQuantity('');
+      setEditSubtaskQuantity('');
+    }
     const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
     const details = detailsResult.data?.[0]?.metadata || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
-    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items : []);
+    if (details.quantity != null && meta?.quantity == null) {
+      setSubtaskQuantity(String(details.quantity));
+      setEditSubtaskQuantity(String(details.quantity));
+    }
+    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []));
   }, [subtaskId, entityType]);
 
   useEffect(() => {
@@ -225,7 +242,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setEditItemTitle('');
     setEditItemDescription('');
     setEditItemPriority('medium');
+    setEditItemQuantity('');
     setEditItemDueDate('');
+    setNewItemQuantity('');
     setCurrentUpdatedAt(subtask?.updated_at);
     void reload();
   }, [reload, subtask?.id, subtask?.title, subtask?.assignee_id, subtask?.start_date, subtask?.due_date, subtask?.status, subtask?.workflow_status]);
@@ -278,11 +297,13 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       }
       const extendsDeadline = Boolean(itemDue && (!currentDue || itemDue > currentDue));
 
+      const numItemQ = Number(newItemQuantity);
       const newItem: SubtaskChecklistItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         title: newItemTitle.trim(),
         description: newItemDescription.trim() || null,
         priority: newItemPriority,
+        quantity: Number.isFinite(numItemQ) && numItemQ > 0 ? numItemQ : null,
         completed: false,
         due_date: itemDue || null,
         created_by: profile.id,
@@ -355,6 +376,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       setNewItemTitle('');
       setNewItemDescription('');
       setNewItemPriority('medium');
+      setNewItemQuantity('');
       setNewItemDueDate('');
       setShowAddItemForm(false);
       if (!extendsDeadline) {
@@ -455,6 +477,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setEditItemTitle(item.title);
     setEditItemDescription(item.description || '');
     setEditItemPriority((item.priority as any) || 'medium');
+    setEditItemQuantity(item.quantity != null ? String(item.quantity) : '');
     setEditItemDueDate((item.due_date || '').slice(0, 10));
   };
 
@@ -463,6 +486,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setEditItemTitle('');
     setEditItemDescription('');
     setEditItemPriority('medium');
+    setEditItemQuantity('');
     setEditItemDueDate('');
   };
 
@@ -509,11 +533,13 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         });
       }
 
+      const numItemQ = Number(editItemQuantity);
       const nextItems = checklistItems.map(i => i.id === itemId ? {
         ...i,
         title: editItemTitle.trim(),
         description: editItemDescription.trim() || null,
         priority: editItemPriority,
+        quantity: Number.isFinite(numItemQ) && numItemQ > 0 ? numItemQ : null,
         due_date: itemDue || null,
       } : i);
 
@@ -683,6 +709,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         });
       }
 
+      const numQ = Number(editSubtaskQuantity);
+      await saveTaskDeliverables(
+        entityType,
+        subtask.id,
+        { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+        profile?.id,
+        workspaceId,
+      );
+      setSubtaskQuantity(Number.isFinite(numQ) && numQ > 0 ? String(numQ) : '');
+
       setEditingTask(false);
       onUpdated({ ...subtask, ...values, assignee: assignee ? { name: assignee.name, avatar_url: assignee.avatar_url } : null });
       toast.success(lang === 'en' ? 'Task updated' : 'Đã cập nhật task');
@@ -743,7 +779,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? t('common.completed') : subtask.status || 'To do'}</span><span className={`px-2.5 py-1 rounded-md text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 ${priorityClass(priority)}`}><Clock className="w-3.5 h-3.5 inline mr-1 text-amber-500" />{t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}</span></div></section>
+        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? t('common.completed') : subtask.status || 'To do'}</span><span className={`px-2.5 py-1 rounded-md text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 ${priorityClass(priority)}`}><Clock className="w-3.5 h-3.5 inline mr-1 text-amber-500" />{t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}</span>{Boolean(subtaskQuantity) && <span className="px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">SL: {subtaskQuantity}</span>}</div></section>
         
         {editingTask ? <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
           <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
@@ -808,6 +844,18 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 sm:col-span-2">
+              {t('tasks.quantity')}
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={editSubtaskQuantity}
+                onChange={event => setEditSubtaskQuantity(event.target.value)}
+                placeholder="0"
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </label>
           </div>
           <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
         </section> : <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
@@ -907,7 +955,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                           className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
                         />
                       </label>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                           {t('common.priority')}
                           <select
@@ -920,6 +968,18 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                             <option value="high">{t('common.high').toLowerCase()}</option>
                             <option value="urgent">{t('common.urgent').toLowerCase()}</option>
                           </select>
+                        </label>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {t('tasks.quantity')}
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editItemQuantity}
+                            onChange={(e) => setEditItemQuantity(e.target.value)}
+                            placeholder="0"
+                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                          />
                         </label>
                         <div className="tw-calendar-picker relative">
                           <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -988,6 +1048,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                             <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
                               {t(`common.${item.priority || 'medium'}`).toLowerCase()}
                             </span>
+                            {Boolean(item.quantity) && (
+                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                                SL: {item.quantity}
+                              </span>
+                            )}
                             {item.due_date && (
                               <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
                                 <Calendar size={11} /> {displayDate(item.due_date)}
@@ -1055,7 +1120,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                   {t('common.priority')}
                   <select
@@ -1068,6 +1133,19 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                     <option value="high">{t('common.high').toLowerCase()}</option>
                     <option value="urgent">{t('common.urgent').toLowerCase()}</option>
                   </select>
+                </label>
+
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {t('tasks.quantity')}
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={newItemQuantity}
+                    onChange={(e) => setNewItemQuantity(e.target.value)}
+                    placeholder="0"
+                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                  />
                 </label>
 
                 <div className="tw-calendar-picker relative">

@@ -107,6 +107,11 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                   </div>
 
                   <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">
+                      {!model.isSearchingEntities
+                        ? (isEn ? 'Recent • Active' : 'Gần đây • Đang hoạt động')
+                        : (isEn ? 'Search results (including completed)' : 'Kết quả tìm kiếm (gồm cả mục đã xong)')}
+                    </div>
                     {filteredEntities.length === 0 ? (
                       <div className="p-3 text-center text-xs text-gray-400">
                         {isEn ? 'No matching projects found' : 'Không tìm thấy dự án phù hợp'}
@@ -114,12 +119,13 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                     ) : (
                       filteredEntities.map(e => {
                         const isSelected = e.id === selectedEntityId;
+                        const isCompleted = Boolean((e as any).isCompletedEntity);
                         return (
                           <button
                             key={e.id}
                             type="button"
                             onClick={() => handleSelectEntity(e.id)}
-                            className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            className={`w-full text-left p-2.5 rounded-xl text-xs grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
                               isSelected
                                 ? e.type === 'campaign'
                                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
@@ -127,7 +133,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                                 : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200'
                             }`}
                           >
-                            <div className="flex items-center gap-2 truncate">
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
                               {e.type === 'campaign' ? (
                                 <Megaphone size={14} className="shrink-0 text-amber-500" />
                               ) : (
@@ -135,11 +141,18 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                               )}
                               <span className="truncate">{e.name}</span>
                             </div>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${
-                              e.type === 'campaign' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-violet-500/15 text-violet-600 dark:text-violet-300'
-                            }`}>
-                              {e.type === 'campaign' ? 'Campaign' : 'Project'}
-                            </span>
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
+                              {isCompleted && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  {isEn ? 'Done' : 'Hoàn thành'}
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                e.type === 'campaign' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-violet-500/15 text-violet-600 dark:text-violet-300'
+                              }`}>
+                                {e.type === 'campaign' ? 'Campaign' : 'Project'}
+                              </span>
+                            </div>
                           </button>
                         );
                       })
