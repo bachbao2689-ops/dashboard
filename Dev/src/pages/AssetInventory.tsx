@@ -14,6 +14,7 @@ import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 import {canSubmitAssetRequest} from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -26,6 +27,11 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
+  const { widths: assetColWidths, startResize: startAssetColResize, totalTableWidth: assetTableWidth } = useResizableColumns({
+    tableKey: 'assets_table',
+    initialWidths: [110, 280, 120, 140, 120, 140, 110, 100],
+    minWidth: 50,
+  });
   const profile = useAuthStore(state => state.profile);
   const canBorrowAsset=canSubmitAssetRequest(profile);
   const roleStr = (profile?.role || '').toLowerCase();
@@ -168,17 +174,45 @@ export const AssetInventory: React.FC = () => {
           })}
         </div>
         <div className="hidden h-full overflow-x-auto xl:block">
-          <table className="w-full min-w-max text-left">
+          <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${assetTableWidth}px` }}>
+            <colgroup>
+              {assetColWidths.map((w, idx) => (
+                <col key={idx} style={{ width: `${w}px` }} />
+              ))}
+            </colgroup>
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.code')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.asset')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.condition')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.location')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.status')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.borrower')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.dueDate')}</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('assets.col.actions')}</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.code')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.asset')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.condition')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.location')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.status')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.borrower')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                  <span className="truncate block">{t('assets.col.dueDate')}</span>
+                  <div onMouseDown={(e) => startAssetColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                </th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative text-right">
+                  <span className="truncate block">{t('assets.col.actions')}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
@@ -189,67 +223,69 @@ export const AssetInventory: React.FC = () => {
               ) : (
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => { setSelectedAsset(asset); setIsScanMode(false); }} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
-                    <td className="p-4">
-                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600">{asset.asset_code}</span>
+                    <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600 truncate block">{asset.asset_code}</span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">
+                    <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                      <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 shrink-0">
                           {getIcon(asset.category?.name)}
                         </div>
-                        <div>
-                          <p className="max-w-[340px] truncate font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
-                          <p className="mt-0.5 max-w-[340px] truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || t('common.unassigned')}</p>
+                        <div className="overflow-hidden min-w-0">
+                          <p className="truncate font-medium text-gray-800 dark:text-gray-200">{asset.name}</p>
+                          <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{asset.category?.name || t('common.unassigned')}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.condition || 'N/A'}</td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{asset.location || 'N/A'}</td>
-                    <td className="p-4 text-sm">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {asset.status === 'available' && asset.is_available !== false ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
-                      </span>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{asset.condition || 'N/A'}</span></td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{asset.location || 'N/A'}</span></td>
+                    <td className="p-4 text-sm border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                      <div className="truncate">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold truncate inline-block ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                          {asset.status === 'available' && asset.is_available !== false ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
+                        </span>
+                      </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
-                      {asset.current_borrower?.name ? <span className="font-semibold text-primary">{asset.current_borrower.name}</span> : <span className="text-gray-400">---</span>}
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                      {asset.current_borrower?.name ? <span className="font-semibold text-primary truncate block">{asset.current_borrower.name}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
-                      {asset.due_date ? <span className="font-medium">{new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400">---</span>}
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                      {asset.due_date ? <span className="font-medium truncate block">{new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-right overflow-hidden">
                       {(() => {
                         const inCart = cart.find(a => a.id === asset.id);
                         if (canBorrowAsset && inCart) {
                           return (
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 truncate">
                               {t('assets.inSlip')}
                             </button>
                           );
                         }
                         if (asset.status === 'reserved') {
-                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{t('assets.pendingApproval')}</span>;
+                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 truncate inline-block">{t('assets.pendingApproval')}</span>;
                         }
                         if (asset.status === 'borrowed') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-black shadow-sm opacity-90">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-black shadow-sm opacity-90 truncate">
                               {t('assets.statusBorrowed')}
                             </button>
                           );
                         }
                         if (asset.status === 'maintenance' || asset.status === 'broken') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white shadow-sm opacity-90">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white shadow-sm opacity-90 truncate">
                               {t('assets.maintenance')}
                             </button>
                           );
                         }
                         if (asset.status !== 'available' || asset.is_available === false) {
-                          return <span className="text-xs text-gray-500">{t('assets.statusUnavailable')}</span>;
+                          return <span className="text-xs text-gray-500 truncate inline-block">{t('assets.statusUnavailable')}</span>;
                         }
-                        if (!canBorrowAsset) return <span className="text-xs text-gray-500">{t('assets.statusAvailable')}</span>;
+                        if (!canBorrowAsset) return <span className="text-xs text-gray-500 truncate inline-block">{t('assets.statusAvailable')}</span>;
                         return (
-                          <div className="flex items-center gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all truncate">
                               {t('assets.addToSlip')}
                             </button>
                           </div>

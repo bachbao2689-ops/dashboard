@@ -1,6 +1,7 @@
 import { StatusBadge } from '../../common/StatusBadge';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
+import { useResizableColumns } from '../../../hooks/useResizableColumns';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, MessageSquare } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
@@ -158,6 +159,11 @@ export const CampaignPanel: React.FC<{
   starredCriteriaMap?: Record<string, boolean>;
 }> = ({ onSelect, filters, rootCampaignIds, workflowTracks, starredCriteriaMap }) => {
   const { t, lang } = useTranslation();
+  const { widths: campaignColWidths, startResize: startCampaignColResize, totalTableWidth: campaignTableWidth } = useResizableColumns({
+    tableKey: 'campaigns_table',
+    initialWidths: [320, 200, 220, 100, 120, 130, 60],
+    minWidth: 50,
+  });
   const profile = useAuthStore(s => s.profile);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
   const [expanded, setExpanded] = useState(true);
@@ -381,13 +387,44 @@ export const CampaignPanel: React.FC<{
         )}
       </div>
       <div className="hidden overflow-x-auto xl:block">
-        <table className="w-full min-w-max text-left">
-          <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500"><tr>
-            <th className="p-4">{t('projects.col.campaign')}</th><th>{t('projects.col.owner')}</th><th>{t('projects.col.dates')}</th><th>{t('projects.col.priority')}</th><th>{t('projects.col.budget')}</th><th>{t('projects.col.status')}</th><th className="w-12" />
-          </tr></thead>
+        <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${campaignTableWidth}px` }}>
+          <colgroup>
+            {campaignColWidths.map((w, idx) => (
+              <col key={idx} style={{ width: `${w}px` }} />
+            ))}
+          </colgroup>
+          <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.campaign')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.owner')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.dates')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.priority')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.budget')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <span className="truncate block">{t('projects.col.status')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
+              <th className="w-16 p-4 relative text-right" />
+            </tr>
+          </thead>
           <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign transition-all duration-200 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-            <td className="p-4">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                 <EntityInfoPopover
                   entityType="campaign"
                   entity={c}
@@ -396,7 +433,7 @@ export const CampaignPanel: React.FC<{
                   leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
                   subPersons={subtaskMap[c.id]}
                 />
-                <b className="block max-w-[400px] truncate text-gray-900 dark:text-white">{c.name}</b>
+                <b className="block truncate text-gray-900 dark:text-white">{c.name}</b>
                 {hasComments[c.id] && (
                   <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
                     <MessageSquare size={14} className="text-blue-500" />
@@ -406,15 +443,15 @@ export const CampaignPanel: React.FC<{
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 truncate max-w-[250px] md:max-w-[400px] lg:max-w-[500px] mt-1">{c.objective || t('tasks.noDescription')}</p>
+              <p className="text-xs text-gray-500 truncate mt-1">{c.objective || t('tasks.noDescription')}</p>
             </td>
-            <td>
-  <div className="flex items-center gap-2">
-    <div className="flex -space-x-2"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+  <div className="flex items-center gap-2 overflow-hidden">
+    <div className="flex -space-x-2 shrink-0"><Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /></div>
     {subtaskMap[c.id] && subtaskMap[c.id].length > 0 && (
       <>
-        <span className="text-gray-300 dark:text-gray-600 px-1">|</span>
-        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800">
+        <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
           <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
           <div className="flex -space-x-2">
             {subtaskMap[c.id].slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
@@ -424,11 +461,11 @@ export const CampaignPanel: React.FC<{
     )}
   </div>
 </td>
-            <td className="text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date, c.status, lang === 'en')}</div>}</div></td>
-            <td><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></td>
-            <td className="text-sm font-bold text-gray-900 dark:text-white">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
-            <td><StatusBadge status={c.status || 'planning'} /></td>
-            <td className="w-16 pr-4">{canManage(c) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2 truncate"><span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>{c.end_date && <div className="flex items-center gap-1.5 shrink-0"><div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />{getDueStatusLabel(c.end_date, c.status, lang === 'en')}</div>}</div></td>
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></div></td>
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden text-sm font-bold text-gray-900 dark:text-white truncate">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
+            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><StatusBadge status={c.status || 'planning'} /></div></td>
+            <td className="w-16 p-4 pr-4 overflow-hidden text-right">{canManage(c) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
           </tr>)}</tbody>
         </table>
         {!visibleCampaigns.length && (
