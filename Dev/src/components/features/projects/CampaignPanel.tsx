@@ -161,7 +161,7 @@ export const CampaignPanel: React.FC<{
   starredCriteriaMap?: Record<string, boolean>;
 }> = ({ onSelect, filters, rootCampaignIds, workflowTracks, starredCriteriaMap }) => {
   const { t, lang } = useTranslation();
-  const { tableRef: campaignTableRef, widths: campaignColWidths, startResize: startCampaignColResize, totalTableWidth: campaignTableWidth } = useResizableColumns({
+  const { tableRef: campaignTableRef, widths: campaignColWidths, startResize: startCampaignColResize } = useResizableColumns({
     tableKey: 'campaigns_table',
     initialWidths: [300, 170, 250, 120, 160, 150, 220],
     minWidth: 95,
@@ -399,7 +399,7 @@ export const CampaignPanel: React.FC<{
         )}
       </div>
       <div className="hidden overflow-x-auto xl:block">
-        <table ref={campaignTableRef} className="table-fixed text-left border-collapse" style={{ width: `${campaignTableWidth}px` }}>
+        <table ref={campaignTableRef} className="w-full table-fixed text-left border-collapse">
           <colgroup>
             {campaignColWidths.map((w, idx) => (
               <col key={idx} style={{ width: `${w}px` }} />
@@ -433,7 +433,6 @@ export const CampaignPanel: React.FC<{
               </th>
               <th className="p-4 relative text-center">
                 <span className="truncate block text-center">{t('projects.col.notes')}</span>
-                <div onMouseDown={(e) => startCampaignColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
               </th>
             </tr>
           </thead>

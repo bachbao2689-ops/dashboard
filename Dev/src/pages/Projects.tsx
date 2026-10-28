@@ -33,7 +33,7 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
- const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize, totalTableWidth: projectTableWidth } = useResizableColumns({
+ const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
    tableKey: 'projects_table',
    initialWidths: [340, 190, 250, 130, 160, 250],
    minWidth: 95,
@@ -222,7 +222,7 @@ export const Projects:React.FC=()=>{
     </div>
   </article>;
 })}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block">
-  <table ref={projectTableRef} className="table-fixed text-left border-collapse" style={{ width: `${projectTableWidth}px` }}>
+  <table ref={projectTableRef} className="w-full table-fixed text-left border-collapse">
     <colgroup>
       {projectColWidths.map((w, idx) => (
         <col key={idx} style={{ width: `${w}px` }} />
@@ -252,7 +252,6 @@ export const Projects:React.FC=()=>{
         </th>
         <th className="p-4 relative text-center">
           <span className="truncate block text-center">{t('projects.col.notes')}</span>
-          <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
       </tr>
     </thead>

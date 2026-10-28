@@ -11,7 +11,7 @@ import { useTranslation } from '../../../../i18n/translations';
 type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
 export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds}: Props) {
  const {t} = useTranslation();
- const { widths: taskColWidths, startResize: startTaskColResize, totalTableWidth: taskTableWidth, tableRef: taskTableRef } = useResizableColumns({
+ const { widths: taskColWidths, startResize: startTaskColResize, tableRef: taskTableRef } = useResizableColumns({
    tableKey: 'tasks_table',
    initialWidths: [48, 95, 340, 200, 170, 130, 110, 120, 52],
    minWidth: 40,
@@ -72,7 +72,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   ))}
                 </div>
                 <div className="task-list-table-scroll hidden xl:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
-                <table ref={taskTableRef} className="task-list-table table-fixed text-left border-collapse" style={{ width: `${taskTableWidth}px` }}>
+                <table ref={taskTableRef} className="w-full task-list-table table-fixed text-left border-collapse">
                   <colgroup>
                     {taskColWidths.map((w, idx) => (
                       <col key={idx} style={{ width: `${w}px` }} />

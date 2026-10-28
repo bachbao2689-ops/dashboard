@@ -27,7 +27,7 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
-  const { widths: assetColWidths, startResize: startAssetColResize, totalTableWidth: assetTableWidth, tableRef: assetTableRef } = useResizableColumns({
+  const { widths: assetColWidths, startResize: startAssetColResize, tableRef: assetTableRef } = useResizableColumns({
     tableKey: 'assets_table',
     initialWidths: [120, 280, 130, 150, 130, 150, 120, 110],
     minWidth: 80,
@@ -174,7 +174,7 @@ export const AssetInventory: React.FC = () => {
           })}
         </div>
         <div className="hidden h-full overflow-x-auto xl:block">
-          <table ref={assetTableRef} className="table-fixed text-left border-collapse" style={{ width: `${assetTableWidth}px` }}>
+          <table ref={assetTableRef} className="w-full table-fixed text-left border-collapse">
             <colgroup>
               {assetColWidths.map((w, idx) => (
                 <col key={idx} style={{ width: `${w}px` }} />

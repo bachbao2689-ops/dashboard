@@ -12,7 +12,7 @@ import { SearchInput, StatusFilterDropdown } from '../components/common/filters'
 
 export function MemberManagement() {
   const { t } = useTranslation();
-  const { tableRef: memberTableRef, widths: memberColWidths, startResize: startMemberColResize, totalTableWidth: memberTableWidth } = useResizableColumns({
+  const { tableRef: memberTableRef, widths: memberColWidths, startResize: startMemberColResize } = useResizableColumns({
     tableKey: 'members_table',
     initialWidths: [240, 200, 160, 160, 110, 130, 120, 120, 95],
     minWidth: 80,
@@ -158,7 +158,7 @@ export function MemberManagement() {
 
       <div className="glass-panel rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table ref={memberTableRef} className="table-fixed text-left border-collapse" style={{ width: `${memberTableWidth}px` }}>
+          <table ref={memberTableRef} className="w-full table-fixed text-left border-collapse">
             <colgroup>
               {memberColWidths.map((w, idx) => (
                 <col key={idx} style={{ width: `${w}px` }} />
