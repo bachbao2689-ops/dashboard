@@ -1,4 +1,5 @@
 import { StatusBadge } from '../../common/StatusBadge';
+import { EntityNoteCell } from './EntityNoteCell';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
 import { useResizableColumns } from '../../../hooks/useResizableColumns';
@@ -161,7 +162,7 @@ export const CampaignPanel: React.FC<{
   const { t, lang } = useTranslation();
   const { widths: campaignColWidths, startResize: startCampaignColResize, totalTableWidth: campaignTableWidth } = useResizableColumns({
     tableKey: 'campaigns_table',
-    initialWidths: [320, 200, 220, 100, 120, 130, 60],
+    initialWidths: [320, 200, 220, 100, 120, 130, 220],
     minWidth: 50,
   });
   const profile = useAuthStore(s => s.profile);
@@ -379,6 +380,9 @@ export const CampaignPanel: React.FC<{
             {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
             {canManage(c) && <div className="ml-auto flex shrink-0 items-center gap-1"><button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button><button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button></div>}
           </div>
+          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <EntityNoteCell entityId={c.id} entityType="campaign" workspaceId={c.workspace_id} canEdit={canManage(c)} />
+          </div>
         </article>)}
         {!visibleCampaigns.length && (
           <p className="p-6 text-center text-sm text-gray-500">
@@ -419,11 +423,14 @@ export const CampaignPanel: React.FC<{
                 <span className="truncate block">{t('projects.col.status')}</span>
                 <div onMouseDown={(e) => startCampaignColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
               </th>
-              <th className="w-16 p-4 relative text-right" />
+              <th className="p-4 relative">
+                <span className="truncate block">{t('projects.col.notes')}</span>
+                <div onMouseDown={(e) => startCampaignColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+              </th>
             </tr>
           </thead>
           <tbody>{visibleCampaigns.map(c => <tr key={c.id} onClick={() => onSelect?.(c)} className={`group border-t border-gray-100 dark:border-slate-800 hover-row-effect hover-row-campaign transition-all duration-200 ${onSelect ? 'cursor-pointer' : ''} ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
-            <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+            <td className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
               <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                 <EntityInfoPopover
                   entityType="campaign"
@@ -444,6 +451,29 @@ export const CampaignPanel: React.FC<{
                 )}
               </div>
               <p className="text-xs text-gray-500 truncate mt-1">{c.objective || t('tasks.noDescription')}</p>
+              {canManage(c) && (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                >
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); void archive(c); }} 
+                    className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+                    title={t('common.hide')}
+                  >
+                    <EyeOff size={14}/>
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); void remove(c); }} 
+                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+                    title={t('common.delete')}
+                  >
+                    <Trash2 size={14}/>
+                  </button>
+                </div>
+              )}
             </td>
             <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
   <div className="flex items-center gap-2 overflow-hidden">
@@ -465,7 +495,14 @@ export const CampaignPanel: React.FC<{
             <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>{campaignPriority(c)}</span></div></td>
             <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden text-sm font-bold text-gray-900 dark:text-white truncate">{c.budget ? new Intl.NumberFormat('vi-VN').format(c.budget) : '—'}</td>
             <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><StatusBadge status={c.status || 'planning'} /></div></td>
-            <td className="w-16 p-4 pr-4 overflow-hidden text-right">{canManage(c) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); void archive(c); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}><EyeOff size={16}/></button><button onClick={(e) => { e.stopPropagation(); void remove(c); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}><Trash2 size={16}/></button></div>}</td>
+            <td className="p-4 overflow-hidden">
+              <EntityNoteCell
+                entityId={c.id}
+                entityType="campaign"
+                workspaceId={c.workspace_id}
+                canEdit={canManage(c)}
+              />
+            </td>
           </tr>)}</tbody>
         </table>
         {!visibleCampaigns.length && (

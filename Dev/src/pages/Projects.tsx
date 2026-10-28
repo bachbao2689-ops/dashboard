@@ -23,6 +23,7 @@ import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../co
 import {useProjectsController} from '../hooks/useProjectsController';
 import {useResizableColumns} from '../hooks/useResizableColumns';
 import {EntityActionBadges} from '../components/features/projects/EntityActionBadges';
+import {EntityNoteCell} from '../components/features/projects/EntityNoteCell';
 import {supabase} from '../services/supabase';
 import toast from 'react-hot-toast';
 import {CampaignDetailDrawer} from '../components/features/projects/CampaignDetailDrawer';
@@ -34,7 +35,7 @@ import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
  const { widths: projectColWidths, startResize: startProjectColResize, totalTableWidth: projectTableWidth } = useResizableColumns({
    tableKey: 'projects_table',
-   initialWidths: [340, 200, 220, 110, 130, 60],
+   initialWidths: [340, 200, 220, 110, 130, 220],
    minWidth: 50,
  });
  const state=useProjectsController();
@@ -216,6 +217,9 @@ export const Projects:React.FC=()=>{
       {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
       {canManageProject(project) && <div className="ml-auto flex shrink-0 items-center gap-1"><ActionButton icon={<EyeOff size={15} />} type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}></ActionButton><ActionButton icon={<Trash2 size={15} />} type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}></ActionButton></div>}
     </div>
+    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+      <EntityNoteCell entityId={project.id} entityType="project" workspaceId={(project as any).workspace_id} canEdit={canManageProject(project)} />
+    </div>
   </article>;
 })}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block">
   <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${projectTableWidth}px` }}>
@@ -246,11 +250,14 @@ export const Projects:React.FC=()=>{
           <span className="truncate block">{t('projects.col.status')}</span>
           <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
         </th>
-        <th className="w-16 p-4 relative text-right" />
+        <th className="p-4 relative">
+          <span className="truncate block">{t('projects.col.notes')}</span>
+          <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+        </th>
       </tr>
     </thead>
     <tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
-<td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+<td className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
   <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
     <EntityInfoPopover
       entityType="project"
@@ -271,6 +278,25 @@ export const Projects:React.FC=()=>{
     {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
   </div>
   <p className="text-xs text-gray-500 truncate mt-1">{project.description || t('tasks.noDescription')}</p>
+  {canManageProject(project) && (
+    <div 
+      onClick={(e) => e.stopPropagation()}
+      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+    >
+      <ActionButton 
+        icon={<EyeOff size={14}/>} 
+        onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} 
+        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+        title={t('common.hide')}
+      />
+      <ActionButton 
+        icon={<Trash2 size={14}/>} 
+        onClick={(e) => { e.stopPropagation(); void removeProject(project); }} 
+        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+        title={t('common.delete')}
+      />
+    </div>
+  )}
 </td>
 <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
   <div className="flex items-center gap-2 overflow-hidden">
@@ -293,7 +319,14 @@ export const Projects:React.FC=()=>{
 <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2 truncate"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="flex items-center gap-1.5 shrink-0"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
 <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></div></td>
 <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><StatusBadge status={project.status || 'active'} /></div></td>
-<td className="w-16 p-4 pr-4 overflow-hidden text-right">{canManageProject(project) && <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><ActionButton icon={<EyeOff size={16}/>} onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title={t('common.hide')}></ActionButton><ActionButton icon={<Trash2 size={16}/>} onClick={(e) => { e.stopPropagation(); void removeProject(project); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title={t('common.delete')}></ActionButton></div>}</td>
+<td className="p-4 overflow-hidden">
+  <EntityNoteCell
+    entityId={project.id}
+    entityType="project"
+    workspaceId={(project as any).workspace_id}
+    canEdit={canManageProject(project)}
+  />
+</td>
 </tr>)}</tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
   
   
