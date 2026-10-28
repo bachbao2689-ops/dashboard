@@ -3,7 +3,7 @@ import {ActionButton} from '../components/common/ActionButton';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Check, Search, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
+import { Plus, Check, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
@@ -32,7 +32,6 @@ export const AssetInventory: React.FC = () => {
   const levelStr = (profile?.employment_level || '').toLowerCase();
   const canAddAsset = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
   const [searchTerm, setSearchTerm] = useRememberedState('assets.search', '');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [isScanMode, setIsScanMode] = useState(false);
@@ -135,19 +134,7 @@ export const AssetInventory: React.FC = () => {
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('assets.title')}</h2>
         
         <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <SearchInput className="xl:hidden" value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
-          <div className={`hidden xl:flex items-center transition-all duration-300 ${isSearchExpanded ? 'w-48 sm:w-64' : 'w-10'} bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm h-10`}>
-            <button onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary transition-colors flex-shrink-0">
-              <Search className="w-5 h-5" />
-            </button>
-            <input
-              type="text"
-              placeholder={t("assets.search")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 pr-3 transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            />
-          </div>
+          <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
 
           {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
              <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>

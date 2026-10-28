@@ -22,8 +22,14 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
   const navigate = useNavigate();
   const [showNotifs, setShowNotifs] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const notifRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -46,8 +52,63 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
     };
   }, [showNotifs]);
 
+  // Click outside and Escape handler for Header search
+  useEffect(() => {
+    if (!isSearchExpanded) return;
+
+    const handleClickOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !desktopSearchRef.current?.contains(target) &&
+        !mobileSearchRef.current?.contains(target)
+      ) {
+        setIsSearchExpanded(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSearchExpanded(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSearchExpanded]);
+
+  // Global ⌘K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchExpanded((prev) => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-focus when search is expanded
+  useEffect(() => {
+    if (isSearchExpanded) {
+      setTimeout(() => {
+        if (window.innerWidth >= 1280) {
+          desktopSearchInputRef.current?.focus();
+        } else {
+          mobileSearchInputRef.current?.focus();
+        }
+      }, 50);
+    }
+  }, [isSearchExpanded]);
+
   useEffect(() => {
     setShowNotifs(false);
+    setIsSearchExpanded(false);
   }, [location.pathname]);
   const {items:notifications,unread} = useNotificationCenter();
   const latestUnread = notifications.find(item => !item.is_read);
@@ -158,19 +219,74 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
 
         {/* RIGHT AREA */}
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative group hidden xl:block" >
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 group-focus-within:text-primary dark:group-focus-within:text-[#85df7d] transition-colors" />
-            <input
-              type="text"
-              placeholder={t('header.search')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
-                }
-              }}
-              className="pl-9 pr-14 py-1.5 bg-[#FAFAFA] dark:bg-slate-800/80 border border-[#E4E4E7] dark:border-slate-700 rounded-lg text-xs w-32 md:w-52 focus:w-60 transition-all text-gray-800 dark:text-gray-100 outline-none focus:border-primary dark:focus:border-[#85df7d]"
-            />
-            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-0.5 text-[10px] text-gray-400 bg-white dark:bg-slate-700/80 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-600 font-mono pointer-events-none">⌘K</kbd>
+          {/* DESKTOP SEARCH: Default compact icon button, expands on click/⌘K, collapses on click outside */}
+          <div ref={desktopSearchRef} className="relative hidden xl:block">
+            <div
+              className={`relative h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs transition-all duration-300 overflow-hidden ${
+                isSearchExpanded
+                  ? 'w-60 xl:w-68 ring-2 ring-primary/20 border-primary dark:border-[#85df7d]/70'
+                  : 'w-9 hover:border-gray-300 dark:hover:border-slate-600'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSearchExpanded) {
+                    setIsSearchExpanded(true);
+                  }
+                }}
+                aria-label={t('header.search')}
+                aria-expanded={isSearchExpanded}
+                title={`${t('header.search')} (⌘K)`}
+                className={`absolute left-0 top-0 h-full w-9 grid place-items-center text-gray-500 hover:text-primary dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer z-10 ${
+                  isSearchExpanded ? 'pointer-events-none text-gray-400 dark:text-slate-400' : ''
+                }`}
+              >
+                <Search size={16} />
+              </button>
+
+              <input
+                ref={desktopSearchInputRef}
+                type="text"
+                value={headerSearchQuery}
+                onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                placeholder={t('header.search')}
+                aria-label={t('header.search')}
+                tabIndex={isSearchExpanded ? 0 : -1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && headerSearchQuery.trim()) {
+                    navigate(`/tasks?search=${encodeURIComponent(headerSearchQuery.trim())}`);
+                    setIsSearchExpanded(false);
+                  }
+                }}
+                className={`w-full h-full pl-9 pr-11 text-xs bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 outline-none border-none transition-opacity duration-200 ${
+                  isSearchExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                }`}
+              />
+
+              {isSearchExpanded && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+                  {headerSearchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeaderSearchQuery('');
+                        desktopSearchInputRef.current?.focus();
+                      }}
+                      aria-label="Xóa từ khóa"
+                      title="Xóa từ khóa"
+                      className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded cursor-pointer grid place-items-center"
+                    >
+                      <X size={13} />
+                    </button>
+                  ) : (
+                    <kbd className="hidden xl:inline-grid place-items-center text-[10px] text-gray-400 bg-gray-50 dark:bg-slate-700/80 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-600 font-mono pointer-events-none">
+                      ⌘K
+                    </kbd>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-1 md:gap-2 text-gray-600 dark:text-gray-300">
@@ -191,23 +307,54 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
             </button>
 
             
-            <div className={`flex xl:hidden items-center transition-all duration-300 ${isSearchExpanded ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg' : 'relative border-transparent w-9'} border rounded-xl overflow-hidden h-9`}>
-              <button aria-label={t('header.search')} onClick={() => setIsSearchExpanded(!isSearchExpanded)} className="w-9 h-9 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0">
+            {/* MOBILE SEARCH: Default compact icon button, expands on click, collapses on click outside */}
+            <div
+              ref={mobileSearchRef}
+              className={`xl:hidden transition-all duration-300 ${
+                isSearchExpanded
+                  ? 'absolute right-12 left-4 z-[110] bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg'
+                  : 'relative border-transparent w-9'
+              } border rounded-xl overflow-hidden h-9`}
+            >
+              <button
+                type="button"
+                aria-label={t('header.search')}
+                aria-expanded={isSearchExpanded}
+                onClick={() => setIsSearchExpanded((prev) => !prev)}
+                className="w-9 h-9 grid place-items-center text-gray-600 dark:text-gray-300 hover:text-primary transition-colors flex-shrink-0 cursor-pointer"
+              >
                 <Search size={18} />
               </button>
+
               <input
+                ref={mobileSearchInputRef}
                 type="text"
-                placeholder={t("header.search")}
-                autoFocus={isSearchExpanded}
-                onBlur={() => setIsSearchExpanded(false)}
+                placeholder={t('header.search')}
+                aria-label={t('header.search')}
+                value={headerSearchQuery}
+                onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                tabIndex={isSearchExpanded ? 0 : -1}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    navigate(`/tasks?search=${encodeURIComponent(e.currentTarget.value.trim())}`);
+                  if (e.key === 'Enter' && headerSearchQuery.trim()) {
+                    navigate(`/tasks?search=${encodeURIComponent(headerSearchQuery.trim())}`);
                     setIsSearchExpanded(false);
                   }
                 }}
-                className={`bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 ${isSearchExpanded ? 'w-full opacity-100 pr-3' : 'w-0 opacity-0 pointer-events-none pr-0'}`}
+                className={`bg-transparent border-none outline-none text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 absolute left-9 right-8 top-0 h-full ${
+                  isSearchExpanded ? 'opacity-100 pointer-events-auto pr-2' : 'opacity-0 pointer-events-none pr-0'
+                }`}
               />
+
+              {isSearchExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setIsSearchExpanded(false)}
+                  aria-label="Đóng tìm kiếm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer grid place-items-center"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
             
             <div className={cn("relative", showNotifs && "z-[9999]")} ref={notifRef}>

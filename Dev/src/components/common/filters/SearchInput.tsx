@@ -1,53 +1,122 @@
-import {useEffect, useRef, useState} from 'react';
-import {createPortal} from 'react-dom';
-import {Search, X} from 'lucide-react';
-import {ActionButton} from '../ActionButton';
+import { useEffect, useRef, useState, useId } from 'react';
+import { Search, X } from 'lucide-react';
 
-interface SearchInputProps {
+export interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
-export function SearchInput({value, onChange, placeholder = 'Search...', className = ''}: SearchInputProps) {
-  const [top, setTop] = useState<number | null>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const panel = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = 'Search...',
+  className = '',
+}: SearchInputProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+
   useEffect(() => {
-    if (top === null) return;
-    input.current?.focus();
-    const outside = (event: PointerEvent) => {
-      if (!trigger.current?.contains(event.target as Node) && !panel.current?.contains(event.target as Node)) setTop(null);
+    if (isExpanded) {
+      inputRef.current?.focus();
+    }
+  }, [isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsExpanded(false);
+      }
     };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {setTop(null); trigger.current?.focus();}
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsExpanded(false);
+      }
     };
-    const reposition = () => {
-      if (!window.matchMedia('(max-width: 1279px)').matches) setTop(null);
-      else if (trigger.current) setTop(Math.max(8, Math.min(window.innerHeight - 80, trigger.current.getBoundingClientRect().bottom + 8)));
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-    document.addEventListener('pointerdown', outside);
-    document.addEventListener('keydown', escape);
-    window.addEventListener('resize', reposition);
-    return () => {document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); window.removeEventListener('resize', reposition);};
-  }, [top]);
-  return <div className={`mobile-search relative flex items-center ${className}`}>
-    <div className="mobile-search-trigger">
-      <ActionButton ref={trigger} icon={<Search size={16}/>} label={placeholder} aria-expanded={top !== null}
-        badge={value ? '•' : undefined}
-        onClick={() => setTop(top === null ? Math.max(8, Math.min(window.innerHeight - 80, (trigger.current?.getBoundingClientRect().bottom || 60) + 8)) : null)}
-        className="rounded-xl border border-gray-200 bg-white text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300" />
+  }, [isExpanded]);
+
+  const hasValue = Boolean(value && value.trim().length > 0);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative inline-block shrink-0 transition-all duration-300 ${
+        isExpanded ? 'z-20 w-48 sm:w-64 max-w-[calc(100vw-3rem)]' : 'w-9 sm:w-10'
+      } ${className}`}
+    >
+      <div
+        className={`relative h-9 sm:h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs transition-all duration-300 overflow-hidden ${
+          isExpanded
+            ? 'w-full ring-2 ring-primary/20 border-primary dark:border-[#85df7d]/70'
+            : 'w-9 sm:w-10 hover:border-gray-300 dark:hover:border-slate-600'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            if (!isExpanded) {
+              setIsExpanded(true);
+            }
+          }}
+          aria-label={placeholder}
+          aria-expanded={isExpanded}
+          title={placeholder}
+          className={`absolute left-0 top-0 h-full w-9 sm:w-10 grid place-items-center text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors cursor-pointer z-10 ${
+            isExpanded ? 'pointer-events-none text-gray-400 dark:text-slate-400' : ''
+          }`}
+        >
+          <Search size={16} />
+          {!isExpanded && hasValue && (
+            <span
+              className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-slate-800 pointer-events-none"
+              aria-hidden="true"
+            />
+          )}
+        </button>
+
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          tabIndex={isExpanded ? 0 : -1}
+          className={`w-full h-full pl-9 pr-8 text-xs sm:text-sm bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 outline-none border-none transition-opacity duration-200 ${
+            isExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        />
+
+        {isExpanded && hasValue && (
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              inputRef.current?.focus();
+            }}
+            aria-label="Xóa từ khóa"
+            title="Xóa từ khóa"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded cursor-pointer grid place-items-center transition-colors z-10"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
     </div>
-    <div className="mobile-search-desktop relative flex items-center">
-      <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
-      <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder}
-        className="h-9 pl-8 pr-7 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all w-36 sm:w-48 focus:w-60 shadow-2xs" />
-      {value && <button type="button" onClick={() => onChange('')} className="absolute right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded cursor-pointer" aria-label="Clear search"><X size={12}/></button>}
-    </div>
-    {top !== null && createPortal(<div ref={panel} className="mobile-search-panel" style={{top}} role="search">
-      <input ref={input} type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder}/>
-      <ActionButton icon={<X size={18}/>} label="Đóng tìm kiếm" onClick={() => {setTop(null); trigger.current?.focus();}} className="rounded-xl text-gray-500 dark:text-gray-300" />
-    </div>, document.body)}
-  </div>;
+  );
 }
