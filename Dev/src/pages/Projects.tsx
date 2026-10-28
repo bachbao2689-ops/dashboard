@@ -33,7 +33,7 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
- const { widths: projectColWidths, startResize: startProjectColResize, totalTableWidth: projectTableWidth } = useResizableColumns({
+ const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize, totalTableWidth: projectTableWidth } = useResizableColumns({
    tableKey: 'projects_table',
    initialWidths: [340, 200, 220, 110, 130, 220],
    minWidth: 50,
@@ -222,7 +222,7 @@ export const Projects:React.FC=()=>{
     </div>
   </article>;
 })}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block">
-  <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${projectTableWidth}px` }}>
+  <table ref={projectTableRef} className="table-fixed text-left border-collapse" style={{ width: `${projectTableWidth}px` }}>
     <colgroup>
       {projectColWidths.map((w, idx) => (
         <col key={idx} style={{ width: `${w}px` }} />
@@ -230,34 +230,34 @@ export const Projects:React.FC=()=>{
     </colgroup>
     <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
       <tr>
-        <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+        <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.project')}</span>
-          <div onMouseDown={(e) => startProjectColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
-        <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+        <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.owner')}</span>
-          <div onMouseDown={(e) => startProjectColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
-        <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+        <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.dates')}</span>
-          <div onMouseDown={(e) => startProjectColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
-        <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+        <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.priority')}</span>
-          <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
-        <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+        <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.status')}</span>
-          <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
         <th className="p-4 relative">
           <span className="truncate block">{t('projects.col.notes')}</span>
-          <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+          <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
         </th>
       </tr>
     </thead>
     <tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
-<td className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+<td className="p-4 relative overflow-hidden">
   <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
     <EntityInfoPopover
       entityType="project"
@@ -298,7 +298,7 @@ export const Projects:React.FC=()=>{
     </div>
   )}
 </td>
-<td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+<td className="p-4 overflow-hidden">
   <div className="flex items-center gap-2 overflow-hidden">
     <div className="flex -space-x-2 shrink-0">
       {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
@@ -316,9 +316,9 @@ export const Projects:React.FC=()=>{
     )}
   </div>
 </td>
-<td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden text-sm text-gray-600 dark:text-gray-300"><div className="flex items-center gap-2 truncate"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="flex items-center gap-1.5 shrink-0"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
-<td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></div></td>
-<td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><div className="truncate"><StatusBadge status={project.status || 'active'} /></div></td>
+<td className="p-4 overflow-hidden text-sm text-gray-600 dark:text-gray-300"><div className="grid grid-flow-col auto-cols-max items-center gap-2 truncate"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
+<td className="p-4 overflow-hidden"><div className="truncate"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></div></td>
+<td className="p-4 overflow-hidden"><div className="truncate"><StatusBadge status={project.status || 'active'} /></div></td>
 <td className="p-4 overflow-hidden">
   <EntityNoteCell
     entityId={project.id}

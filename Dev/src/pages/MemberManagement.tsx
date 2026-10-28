@@ -12,7 +12,7 @@ import { SearchInput, StatusFilterDropdown } from '../components/common/filters'
 
 export function MemberManagement() {
   const { t } = useTranslation();
-  const { widths: memberColWidths, startResize: startMemberColResize, totalTableWidth: memberTableWidth } = useResizableColumns({
+  const { tableRef: memberTableRef, widths: memberColWidths, startResize: startMemberColResize, totalTableWidth: memberTableWidth } = useResizableColumns({
     tableKey: 'members_table',
     initialWidths: [240, 200, 150, 150, 100, 120, 110, 110, 80],
     minWidth: 50,
@@ -158,7 +158,7 @@ export function MemberManagement() {
 
       <div className="glass-panel rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${memberTableWidth}px` }}>
+          <table ref={memberTableRef} className="table-fixed text-left border-collapse" style={{ width: `${memberTableWidth}px` }}>
             <colgroup>
               {memberColWidths.map((w, idx) => (
                 <col key={idx} style={{ width: `${w}px` }} />
@@ -166,37 +166,37 @@ export function MemberManagement() {
             </colgroup>
             <thead className="bg-black/5 dark:bg-white/5 border-b border-white/10">
               <tr>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.member')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.contact')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.team')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.title')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.level')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.role')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.status')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 relative">
                   <span className="truncate block">{t('members.col.joined')}</span>
-                  <div onMouseDown={(e) => startMemberColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startMemberColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">{t('members.col.actions')}</th>
               </tr>
@@ -215,7 +215,7 @@ export function MemberManagement() {
                   ...([<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={9} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>]),
                   ...(collapsedDepartments.includes(departmentName) ? [] : departmentMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="px-6 py-4 overflow-hidden">
                       <div className="flex items-center gap-3 overflow-hidden min-w-0">
                         <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {member.avatar_url ? (
@@ -227,25 +227,25 @@ export function MemberManagement() {
                         <span className="font-medium text-gray-900 dark:text-white truncate">{member.name || t('common.unassigned')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{member.email}</span></td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{member.department?.name || '—'}</span></td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{member.job_title || '—'}</span></td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{member.employment_level || '—'}</span></td>
-                    <td className="px-6 py-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{member.email}</span></td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{member.department?.name || '—'}</span></td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white overflow-hidden"><span className="truncate block">{member.job_title || '—'}</span></td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{member.employment_level || '—'}</span></td>
+                    <td className="px-6 py-4 overflow-hidden">
                       <div className="truncate">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium truncate inline-block ${getRoleColor(member.role)}`}>
                           {member.role?.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="px-6 py-4 overflow-hidden">
                       <div className="truncate">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium truncate inline-block ${getStatusColor(member.status || 'pending')}`}>
                           {member.status === 'active' ? t('members.active').toUpperCase() : t('members.removed').toUpperCase()}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden">
                       <span className="truncate block">{member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}</span>
                     </td>
                     <td className="px-6 py-4 text-right overflow-hidden">

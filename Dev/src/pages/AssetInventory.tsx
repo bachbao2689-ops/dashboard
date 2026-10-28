@@ -27,7 +27,7 @@ const getIcon = (cat: string | undefined) => {
 
 export const AssetInventory: React.FC = () => {
   const { t } = useTranslation();
-  const { widths: assetColWidths, startResize: startAssetColResize, totalTableWidth: assetTableWidth } = useResizableColumns({
+  const { widths: assetColWidths, startResize: startAssetColResize, totalTableWidth: assetTableWidth, tableRef: assetTableRef } = useResizableColumns({
     tableKey: 'assets_table',
     initialWidths: [110, 280, 120, 140, 120, 140, 110, 100],
     minWidth: 50,
@@ -174,7 +174,7 @@ export const AssetInventory: React.FC = () => {
           })}
         </div>
         <div className="hidden h-full overflow-x-auto xl:block">
-          <table className="w-full table-fixed text-left border-collapse" style={{ minWidth: `${assetTableWidth}px` }}>
+          <table ref={assetTableRef} className="table-fixed text-left border-collapse" style={{ width: `${assetTableWidth}px` }}>
             <colgroup>
               {assetColWidths.map((w, idx) => (
                 <col key={idx} style={{ width: `${w}px` }} />
@@ -182,33 +182,33 @@ export const AssetInventory: React.FC = () => {
             </colgroup>
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-700">
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.code')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.asset')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.condition')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.location')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.status')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.borrower')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative border-r border-gray-200/80 dark:border-slate-700/80">
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative">
                   <span className="truncate block">{t('assets.col.dueDate')}</span>
-                  <div onMouseDown={(e) => startAssetColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                  <div onMouseDown={(e) => startAssetColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative text-right">
                   <span className="truncate block">{t('assets.col.actions')}</span>
@@ -223,10 +223,10 @@ export const AssetInventory: React.FC = () => {
               ) : (
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => { setSelectedAsset(asset); setIsScanMode(false); }} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
-                    <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="p-4 overflow-hidden">
                       <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600 truncate block">{asset.asset_code}</span>
                     </td>
-                    <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="p-4 overflow-hidden">
                       <div className="flex items-center gap-3 overflow-hidden min-w-0">
                         <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 shrink-0">
                           {getIcon(asset.category?.name)}
@@ -237,19 +237,19 @@ export const AssetInventory: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{asset.condition || 'N/A'}</span></td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">{asset.location || 'N/A'}</span></td>
-                    <td className="p-4 text-sm border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{asset.condition || 'N/A'}</span></td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{asset.location || 'N/A'}</span></td>
+                    <td className="p-4 text-sm overflow-hidden">
                       <div className="truncate">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold truncate inline-block ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                           {asset.status === 'available' && asset.is_available !== false ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
                         </span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
                       {asset.current_borrower?.name ? <span className="font-semibold text-primary truncate block">{asset.current_borrower.name}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
                       {asset.due_date ? <span className="font-medium truncate block">{new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
                     <td className="p-4 text-right overflow-hidden">

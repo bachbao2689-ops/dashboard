@@ -11,7 +11,7 @@ import { useTranslation } from '../../../../i18n/translations';
 type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
 export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds}: Props) {
  const {t} = useTranslation();
- const { widths: taskColWidths, startResize: startTaskColResize, totalTableWidth: taskTableWidth } = useResizableColumns({
+ const { widths: taskColWidths, startResize: startTaskColResize, totalTableWidth: taskTableWidth, tableRef: taskTableRef } = useResizableColumns({
    tableKey: 'tasks_table',
    initialWidths: [48, 80, 320, 180, 160, 120, 100, 110, 52],
    minWidth: 40,
@@ -72,7 +72,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   ))}
                 </div>
                 <div className="task-list-table-scroll hidden xl:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
-                <table className="task-list-table table-fixed w-full text-left border-collapse" style={{ minWidth: `${taskTableWidth}px` }}>
+                <table ref={taskTableRef} className="task-list-table table-fixed text-left border-collapse" style={{ width: `${taskTableWidth}px` }}>
                   <colgroup>
                     {taskColWidths.map((w, idx) => (
                       <col key={idx} style={{ width: `${w}px` }} />
@@ -80,7 +80,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   </colgroup>
                   <thead>
                     <tr className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-                      <th className="p-4 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 relative">
                         <input 
                           type="checkbox"
                           aria-label={`Chọn nhóm ${groupName}`}
@@ -97,35 +97,35 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           }}
                           className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
-                        <div onMouseDown={(e) => startTaskColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.ref')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.title')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.projectCampaign')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.assignee')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.status')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.priority')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
-                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative border-r border-gray-200/80 dark:border-slate-700/80">
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
                         <span className="truncate block">{t('tasks.col.dueDate')}</span>
-                        <div onMouseDown={(e) => startTaskColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2.5 translate-x-1/2 cursor-col-resize z-20 group/handle hover:bg-primary/30 transition-colors" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-full mx-auto group-hover/handle:bg-primary transition-colors" /></div>
+                        <div onMouseDown={(e) => startTaskColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 relative text-right"></th>
                     </tr>
@@ -133,7 +133,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {groupTasks.map((task) => (
                       <tr key={task.id} onClick={() => onOpenTask(task)} className={`task-list-row hover-row-effect group ${task.campaign?.name ? 'hover-row-campaign' : task.project?.name ? 'hover-row-project' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`} data-selected={selectedTasks.includes(task.id)} data-completed={['done', 'complete', 'completed'].includes((task.status || '').toLowerCase())}>
-                        <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                        <td className="p-4 overflow-hidden">
                           <input 
                             type="checkbox"
                             aria-label={`Chọn ${task.title}`}
@@ -142,12 +142,12 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             className="rounded border-gray-300 text-primary focus:ring-primary"
                           />
                         </td>
-                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden"><span className="truncate block">#{task.task_ref || task.id.split('-')[0]}</span></td>
-                        <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium overflow-hidden"><span className="truncate block">#{task.task_ref || task.id.split('-')[0]}</span></td>
+                        <td className="p-4 overflow-hidden">
                           <div className="task-list-row-title truncate" title={task.title}>{task.title}</div>
                           {(task.department?.name || task.project?.department?.name) && <div className="mt-1 flex items-center gap-1 overflow-hidden"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate">{task.department?.name || task.project?.department?.name}</span></div>}
                         </td>
-                        <td className="p-4 text-sm border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                        <td className="p-4 text-sm overflow-hidden">
                           {task.project?.name ? (
                             <span className="task-list-project-badge truncate block"><span className="truncate">{task.project.name}</span></span>
                           ) : task.campaign?.name ? (
@@ -156,7 +156,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             <span className="text-gray-400 dark:text-gray-500 truncate block">---</span>
                           )}
                         </td>
-                        <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                        <td className="p-4 overflow-hidden">
                           {task.assignee ? (
                             <div className="flex items-center space-x-2 overflow-hidden">
                               <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
@@ -166,17 +166,17 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md truncate inline-block">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
+                        <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
                           <div className="truncate"><StatusBadge status={task.status} /></div>
                         </td>
-                        <td className="p-4 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
+                        <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
                           <div className="truncate">
                             <span className="task-list-priority truncate inline-block" data-priority={mapPriority(task.priority)==='Urgent'?'high':mapPriority(task.priority).toLowerCase()}>
                               {mapPriority(task.priority)}
                             </span>
                           </div>
                         </td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 border-r border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+                        <td className="p-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
                           <span className="truncate block">{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}</span>
                         </td>
                         <td className="p-4 text-right overflow-hidden">
