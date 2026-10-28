@@ -13,8 +13,7 @@ export async function saveWeeklyReports(items:{id:string;metadata:WeeklyMetadata
  const {data,error}=await supabase.rpc('save_task_weekly_reports',{p_items:items.map(item=>{const {kind,id}=taskTarget(item.id);return {...item,id,kind};}),p_week_start:start,p_week_end:end});
  if(error?.code==='PGRST202'){
    if(items.some(item=>item.complete))throw new Error('Chưa thể hoàn thành qua Report. Hãy dùng phần chi tiết công việc.');
-   const {data:auth,error:authError}=await supabase.auth.getUser();if(authError)throw authError;
-   const {data:actor,error:actorError}=await supabase.from('users').select('id').eq('auth_id',auth.user?.id).single();if(actorError)throw actorError;
+   const {data:actor,error:actorError}=await supabase.rpc('account_get_current_profile',{p_mark_signed_in:false});if(actorError)throw actorError;if(!actor?.id)throw new Error('Không tìm thấy hồ sơ nhân sự đang hoạt động.');
    for(const item of items){
     const target=taskTarget(item.id);
     const {data:task,error:taskError}=await supabase.from(target.table).select('*').eq('id',target.id).single();if(taskError)throw taskError;
@@ -29,9 +28,8 @@ export async function saveWeeklyReports(items:{id:string;metadata:WeeklyMetadata
  window.dispatchEvent(new Event('workspace:changed'));return items.length;
 }
 export async function weeklyUserActivity(userId:number,action:'weekly_summary_image'|'weekly_report_submitted',start:string,end:string,metadata:Record<string,unknown>){
- const {data:user,error:failure}=await supabase.from('users').select('auth_id,department_id').eq('id',userId).single();if(failure)throw failure;
- const {data:spaces,error}=await supabase.from('workspaces').select('id').order('id').limit(1);if(error)throw error;
- if(!user.auth_id||!spaces?.length)throw new Error('Chưa xác định được tài khoản báo cáo.');
- const {error:saveError}=await supabase.from('activity_log').insert({workspace_id:spaces[0].id,user_id:userId,entity_type:'user',entity_id:user.auth_id,action,metadata:{...metadata,owner_id:userId,week_start:start,week_end:end}});if(saveError)throw saveError;
+ const {error:saveError}=await supabase.rpc('account_weekly_user_activity',{
+  p_user_id:userId,p_action:action,p_start:start,p_end:end,p_metadata:metadata,
+ });if(saveError)throw saveError;
  window.dispatchEvent(new Event('workspace:changed'));
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { completeTrackedTask } from '../services/workspaceTasks';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export interface Task {
@@ -14,6 +15,7 @@ export interface Task {
 }
 
 export function useMyTasks() {
+  const profile = useAuthStore(state => state.profile);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -22,25 +24,16 @@ export function useMyTasks() {
     const fetchUserAndTasks = async () => {
       try {
         setLoading(true);
-        // Simulate getting current user (first user in DB)
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .limit(1)
-          .single();
-
-        let currentUserId = null;
-        if (!userError && userData) {
-          currentUserId = userData.id;
-          setUserId(currentUserId);
-        } else {
-          console.warn("Could not fetch user, fetching tasks anyway");
+        const currentUserId = profile?.id;
+        if (!currentUserId) {
+          setUserId(null);
+          setTasks([]);
+          return;
         }
+        setUserId(String(currentUserId));
 
         let query = supabase.from('tasks').select('*');
-        if (currentUserId) {
-          query = query.eq('assignee_id', currentUserId);
-        }
+        query = query.eq('assignee_id', currentUserId);
 
         const { data: tasksData, error: tasksError } = await query;
         if (tasksError) throw tasksError;
@@ -64,10 +57,13 @@ export function useMyTasks() {
         (payload) => {
           setTasks(current => {
              if (payload.eventType === 'INSERT') {
-                return [...current, payload.new as Task];
+                return String(payload.new.assignee_id) === String(profile?.id) ? [...current, payload.new as Task] : current;
              }
              if (payload.eventType === 'UPDATE') {
-                return current.map(t => t.id === payload.new.id ? payload.new as Task : t);
+                if (String(payload.new.assignee_id) !== String(profile?.id)) return current.filter(t => t.id !== payload.new.id);
+                return current.some(t => t.id === payload.new.id)
+                  ? current.map(t => t.id === payload.new.id ? payload.new as Task : t)
+                  : [...current, payload.new as Task];
              }
              if (payload.eventType === 'DELETE') {
                 return current.filter(t => t.id !== payload.old.id);
@@ -81,7 +77,7 @@ export function useMyTasks() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.id]);
 
   const markComplete = async (taskId: string) => {
     try {

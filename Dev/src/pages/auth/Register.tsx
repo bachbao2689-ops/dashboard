@@ -32,18 +32,10 @@ export const Register: React.FC = () => {
         throw error;
       }
 
-      // Also update the public.users table with the new name if needed
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({ name: fullName })
-          .eq('auth_id', user.id);
-          
-        if (updateError) {
-          console.error('Failed to update user profile:', updateError);
-        }
-      }
+      const { error: updateError } = await supabase.rpc('account_update_my_profile', {
+        p_name: fullName.trim(), p_avatar_url: null, p_update_avatar: false,
+      });
+      if (updateError) throw updateError;
 
       toast.success('Account setup complete!');
       navigate('/');

@@ -32,8 +32,6 @@ export interface NewMember {
   job_title: string;
 }
 
-const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-
 export function useMembers() {
   const profile = useAuthStore(state => state.profile);
   const [members, setMembers] = useState<Member[]>([]);
@@ -48,14 +46,10 @@ export function useMembers() {
     try {
       if (!profile) { setMembers([]); setDepartments([]); setLoadedProfileId(null); return; }
       const globalScope = isGlobalManager(profile);
-      let usersQuery = supabase.from('users').select('id,name,email,role,is_active,created_at,avatar_url,employment_level,job_title,department_id').order('created_at', { ascending: false });
       let departmentsQuery = supabase.from('departments').select('id,name').order('name');
-      if (!globalScope) {
-        usersQuery = profile.department_id ? usersQuery.eq('department_id', profile.department_id) : usersQuery.eq('id', profile.id);
-        if (profile.department_id) departmentsQuery = departmentsQuery.eq('id', profile.department_id);
-      }
+      if (!globalScope && profile.department_id) departmentsQuery = departmentsQuery.eq('id', profile.department_id);
       const [usersResult, departmentsResult] = await Promise.all([
-        usersQuery,
+        supabase.rpc('account_list_members'),
         departmentsQuery,
       ]);
       if (usersResult.error) throw usersResult.error;
@@ -65,7 +59,7 @@ export function useMembers() {
       const departmentOptions = (departmentsResult.data || []) as DepartmentOption[];
       const names = new Map(departmentOptions.map(department => [department.id, department.name]));
       setDepartments(departmentOptions);
-      setMembers((usersResult.data || []).map(user => ({
+      setMembers(((usersResult.data || []) as Array<Record<string, any>>).map(user => ({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -103,16 +97,10 @@ export function useMembers() {
       if (!departments.some(department => department.id === memberData.department_id)) throw new Error('Phòng ban không hợp lệ');
       if (memberData.role === 'admin' && profile.role !== 'admin') throw new Error('Chỉ Admin được thêm Admin');
 
-      const { data: existing, error: lookupError } = await supabase.from('users').select('id,is_active').ilike('email', email).maybeSingle();
-      if (lookupError) throw lookupError;
-      if (existing) throw new Error(existing.is_active ? 'Email này đã có trong danh sách thành viên' : 'Email này đã bị xóa. Hãy khôi phục thành viên trong bộ lọc Đã xóa.');
-
-      const { data, error } = await supabase.from('users').insert({
-        name, email, role: memberData.role, department_id: memberData.department_id,
-        job_title: memberData.job_title.trim() || null,
-        employment_level: memberData.role === 'member' ? 'Nhân viên' : memberData.role === 'admin' ? 'ADMIN' : memberData.role === 'manager' ? 'Manager' : 'Leader',
-        initials: initialsFromName(name), is_active: true,
-      }).select('id').single();
+      const { data, error } = await supabase.rpc('account_add_member', {
+        p_email: email, p_name: name, p_role: memberData.role,
+        p_department_id: memberData.department_id, p_job_title: memberData.job_title.trim() || null,
+      });
       if (error) throw error;
       if (!data) throw new Error('Không xác nhận được hồ sơ đã tạo');
       await fetchMembers();
@@ -132,8 +120,9 @@ export function useMembers() {
       if (removed && member.role === 'admin' && members.filter(item => item.role === 'admin' && item.status === 'active').length <= 1) {
         throw new Error('Không thể xóa Admin cuối cùng');
       }
-      const { data, error } = await supabase.from('users').update({ is_active: !removed })
-        .eq('id', member.id).eq('is_active', removed).select('id').maybeSingle();
+      const { data, error } = await supabase.rpc('account_set_member_active', {
+        p_member_id: member.id, p_active: !removed,
+      });
       if (error) throw error;
       if (!data) throw new Error('Trạng thái thành viên đã thay đổi. Hãy tải lại trang.');
       await fetchMembers();
