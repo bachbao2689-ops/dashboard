@@ -1,5 +1,3 @@
-import { supabase } from '../services/supabase';
-
 export interface DeliverableChecklistItem {
   id: string;
   title: string;
@@ -91,6 +89,7 @@ export async function saveTaskDeliverables(
   setCachedDeliverable(cacheKey, merged);
 
   try {
+    const { supabase } = await import('../services/supabase.ts');
     await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
       user_id: profileId ? Number(profileId) || null : null,
@@ -115,6 +114,7 @@ export async function fetchTaskDeliverableMeta(
   const cached = getCachedDeliverable(cacheKey);
   if (cached) return cached;
   try {
+    const { supabase } = await import('../services/supabase.ts');
     const { data } = await supabase
       .from('activity_log')
       .select('metadata')

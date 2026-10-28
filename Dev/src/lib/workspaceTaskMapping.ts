@@ -1,6 +1,6 @@
 import type {Task} from '../hooks/useTasks';
 import {taskKey} from './taskTracking.ts';
-import {computeDeliverableQuantity, getCachedDeliverable, type TaskDeliverableMeta} from './taskDeliverables';
+import {computeDeliverableQuantity, getCachedDeliverable, type TaskDeliverableMeta} from './taskDeliverables.ts';
 
 const visibleParent=(parent:any)=>!parent||!['deleted','archived'].includes(parent.status||'');
 
