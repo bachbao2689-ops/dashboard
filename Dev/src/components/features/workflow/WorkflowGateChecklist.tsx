@@ -125,6 +125,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                             <span className={c.checked ? 'font-semibold' : ''}>{c.label}</span>
                             <button
                               type="button"
+                              disabled={!activePhase.can_edit_tasks || hub.busy}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();

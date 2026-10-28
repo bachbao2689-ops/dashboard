@@ -7,12 +7,12 @@ export interface HubPhase {
 }
 export interface GateCriterion { id: string; label: string; weight: number; checked: boolean; starred?: boolean }
 export interface KeyGateCriterion extends GateCriterion { phaseId: string; phaseTitle: string; phasePosition: number }
-export function extractKeyGateCriteria(track?: Pick<HubTrack, 'phases'> | null, starredMap?: Record<string, boolean>): KeyGateCriterion[] {
+export function extractKeyGateCriteria(track?: Pick<HubTrack, 'phases'> | null): KeyGateCriterion[] {
   if (!track?.phases?.length) return [];
   const result: KeyGateCriterion[] = [];
   for (const phase of track.phases) {
     for (const c of phase.gate_criteria || []) {
-      const isStarred = starredMap && c.id in starredMap ? starredMap[c.id] : Boolean(c.starred);
+      const isStarred = Boolean(c.starred);
       if (isStarred) {
         result.push({ ...c, starred: true, phaseId: phase.id, phaseTitle: phase.title, phasePosition: phase.position });
       }
