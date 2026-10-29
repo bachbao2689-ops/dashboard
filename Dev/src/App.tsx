@@ -118,7 +118,7 @@ function App() {
   return (
     <>
       <Toaster position="top-right" />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center text-sm text-gray-500 dark:text-gray-400"><span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />Đang tải…</span></div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
