@@ -4,7 +4,7 @@ const calDays=['T2','T3','T4','T5','T6','T7','CN'];
 let _calState=null;
 
 function openCalendar(opts, event){
-  const {displayId, startId, endId, mode='range', minDate}=opts;
+  const {displayId, startId, endId, mode='range', minDate, maxDate}=opts;
   const inputEl=document.getElementById(displayId);
   if(!inputEl)return;
   const startEl=startId?document.getElementById(startId):null;
@@ -26,7 +26,7 @@ function openCalendar(opts, event){
   const eDate=validDate(endEl?.value||(mode==='range'?displayDates[1]:displayDates[0]));
   const initDate=sDate||new Date();
   
-  _calState={month:initDate.getMonth(),year:initDate.getFullYear(),start:sDate,end:eDate,preset:null,displayId,startId,endId,mode,minDate:validDate(minDate),hover:null,compact:!!inputEl.closest('.tw-create-body')};
+  _calState={month:initDate.getMonth(),year:initDate.getFullYear(),start:sDate,end:eDate,preset:null,displayId,startId,endId,mode,minDate:validDate(minDate),maxDate:validDate(maxDate),hover:null,compact:!!inputEl.closest('.tw-create-body')};
   
   let dropdown=document.getElementById('cal-dropdown');
   if(!dropdown){
@@ -95,6 +95,8 @@ function calPreset(key){
   else if(key==='3days')e.setDate(e.getDate()+2);
   else if(key==='1week')e.setDate(e.getDate()+6);
   else if(key==='2weeks')e.setDate(e.getDate()+13);
+  if(_calState.minDate){if(s<_calState.minDate)s=new Date(_calState.minDate);if(e<_calState.minDate)e=new Date(_calState.minDate);}
+  if(_calState.maxDate){if(s>_calState.maxDate)s=new Date(_calState.maxDate);if(e>_calState.maxDate)e=new Date(_calState.maxDate);}
   _calState.start=s;_calState.end=e;
   if(_calState.month !== s.getMonth() || _calState.year !== s.getFullYear()) {
     _calState.month=s.getMonth();_calState.year=s.getFullYear();
@@ -180,7 +182,8 @@ function calRender(){
     let html = '';
     for(let i=0;i<startDay;i++)html+=`<span class="cal-day cal-empty"></span>`;
     for(let d=1;d<=daysInMonth;d++) {
-       const disabled=_calState.minDate&&new Date(year,month,d)<_calState.minDate;
+       const candidate=new Date(year,month,d);
+       const disabled=(_calState.minDate&&candidate<_calState.minDate)||(_calState.maxDate&&candidate>_calState.maxDate);
        html+=`<button type="button" id="cal-day-btn-${d}" class="cal-day" onclick="calSelect(${year},${month},${d})" onmouseenter="calHover(${year},${month},${d})" ${disabled?'disabled':''}>${d}</button>`;
     }
     grid.innerHTML = html;
@@ -234,7 +237,7 @@ document.addEventListener('scroll',e=>{if(_calState&&!document.getElementById('c
 function calSelect(y,m,d){
   if(!_calState)return;
   const clicked = new Date(y,m,d);
-  if(_calState.minDate&&clicked<_calState.minDate)return;
+  if((_calState.minDate&&clicked<_calState.minDate)||(_calState.maxDate&&clicked>_calState.maxDate))return;
   let shouldClose = false;
   if(_calState.mode==='range') {
     if(!_calState.start || (_calState.start && _calState.end)) {
