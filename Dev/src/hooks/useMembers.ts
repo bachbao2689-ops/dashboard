@@ -127,6 +127,7 @@ export function useMembers() {
   const setMemberRemoved = async (member: Member, removed: boolean) => {
     try {
       const profile = requireManager();
+      if (removed && profile.role !== 'admin') throw new Error('Chỉ Admin có quyền xóa thành viên');
       if (member.id === profile.id) throw new Error('Bạn không thể xóa tài khoản của mình');
       if (member.role === 'admin' && profile.role !== 'admin') throw new Error('Chỉ Admin được quản lý Admin');
       if (removed && member.role === 'admin' && members.filter(item => item.role === 'admin' && item.status === 'active').length <= 1) {

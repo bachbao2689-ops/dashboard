@@ -72,9 +72,13 @@
 }
 
 @media (max-width: 767px) {
+  .login-brand-logo {
+    top: 1.25rem;
+    width: 7.5rem;
+  }
   .login-carousel-page {
     overflow-y: auto;
-    padding: 110px 18px 100px;
+    padding: 125px 18px 90px;
   }
   .login-composition {
     position: relative;

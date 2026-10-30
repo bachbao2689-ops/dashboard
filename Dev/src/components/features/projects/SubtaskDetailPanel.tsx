@@ -6,7 +6,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, MessageSquare, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
+import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
@@ -79,6 +79,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(null);
   const [parentLoading, setParentLoading] = useState(false);
   const [commentFocus, setCommentFocus] = useState(0);
+
+
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
@@ -106,6 +108,19 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editDueDate, setEditDueDate] = useState('');
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
+  const totalChecklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) + (Number(subtaskQuantity) || 0);
+
+  const formatStatusLabel = (st?: string | null) => {
+    const s = (st || '').toLowerCase().trim();
+    if (completed || s === 'completed' || s === 'done') return t('common.completed');
+    if (s === 'in_progress' || s === 'doing') return lang === 'en' ? 'In progress' : 'Đang thực hiện';
+    if (s === 'backlog') return lang === 'en' ? 'Backlog' : 'Chờ xử lý';
+    if (s === 'planned') return lang === 'en' ? 'Planned' : 'Đã lên kế hoạch';
+    if (s === 'scoping') return lang === 'en' ? 'Scoping' : 'Làm rõ phạm vi';
+    if (s === 'in_qa' || s === 'review') return lang === 'en' ? 'In review' : 'Rà soát & duyệt';
+    if (s === 'canceled' || s === 'cancelled') return lang === 'en' ? 'Canceled' : 'Đã hủy';
+    return st || (lang === 'en' ? 'To do' : 'Chưa bắt đầu');
+  };
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
@@ -779,7 +794,26 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{completed ? t('common.completed') : subtask.status || 'To do'}</span><span className={`px-2.5 py-1 rounded-md text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 ${priorityClass(priority)}`}><Clock className="w-3.5 h-3.5 inline mr-1 text-amber-500" />{t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}</span>{Boolean(subtaskQuantity) && <span className="px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">SL: {subtaskQuantity}</span>}</div></section>
+        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4">
+              <button
+                type="button"
+                onClick={!completed && canComplete ? complete : undefined}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-2xs ${!completed && canComplete ? 'cursor-pointer hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400' : ''}`}
+                title={!completed && canComplete ? (lang === 'en' ? 'Click to complete' : 'Bấm để hoàn thành') : undefined}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <span>{formatStatusLabel(subtask.status)}</span>
+              </button>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 shadow-2xs ${priorityClass(priority)}`}>
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                {t("common.priority")}: {t(`common.${priority}` as any).toLowerCase()}
+              </span>
+              {totalChecklistQuantity > 0 && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                  {lang === "en" ? "Total Qty" : "Tổng số lượng"}: {totalChecklistQuantity}
+                </span>
+              )}
+            </div></section>
         
         {editingTask ? <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
           <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
@@ -1255,10 +1289,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
       </div>
 
-      <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-        <button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 px-3 py-2 text-sm font-bold transition-colors"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button>
-        <button disabled={completed || saving || !canComplete} onClick={complete} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 className="mr-2 inline h-4 w-4" />{completed ? t('common.completed') : t('common.complete')}</button>
-      </div>
+
     </aside>
   </>
   );

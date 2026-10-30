@@ -33,14 +33,15 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
+ const initialProjectColWidths = React.useMemo(() => [340, 190, 250, 130, 160, 250], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
    tableKey: 'projects_table',
-   initialWidths: [340, 190, 250, 130, 160, 250],
+   initialWidths: initialProjectColWidths,
    minWidth: 95,
  });
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
- const {editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,starredCriteriaMap,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
+ const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,starredCriteriaMap,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment}=state;
  const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
  const projectCollaboratorIds = React.useMemo(() => {
    if (!selected) return [];
@@ -526,6 +527,22 @@ export const Projects:React.FC=()=>{
           <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name + (p.departments?.name ? ` · ${p.departments.name}` : '')}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} />
           <p className="text-xs text-gray-500">PIC ở đây được xem toàn bộ lộ trình. Người chỉ tham gia một phase cần được tag trong Workflow của phase đó.</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('projects.primaryOwnerNote')}</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+            {t('common.department') || 'Phòng ban'}
+          </label>
+          <select
+            value={departmentId}
+            onChange={e => setDepartmentId(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
+          >
+            <option value="">{lang === 'en' ? 'Select department...' : 'Chọn phòng ban...'}</option>
+            {departments.map((d: any) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
         </div>
 
         {creationType === 'campaign' ? <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder={t('projects.objectives')} /></div> : <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.description')}</label><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder={t('tasks.descPlaceholder')} /></div>}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
@@ -24,7 +24,6 @@ const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
 import { useUiStore } from './store/uiStore';
-import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 
 function RootRedirect() {
   const profile = useAuthStore(state => state.profile);
@@ -56,44 +55,12 @@ function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session = useAuthStore(state => state.session);
   const profileId = useAuthStore(state => state.profile?.id);
-  const authLoading = useAuthStore(state => state.loading);
 
-  const isScanFlow = typeof window !== 'undefined' && (window.location.search.includes('code=') || window.location.search.includes('asset=') || window.location.pathname.startsWith('/reports/visualize'));
-
-  const [introStarted] = useState(() => Date.now());
-  const [introCompleted, setIntroCompleted] = useState(() => {
-    if (isScanFlow) {
-      useUiStore.getState().setIntroFinished(true);
-      return true;
-    }
-    return false;
-  });
-  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
+    useUiStore.getState().setIntroFinished(true);
     initialize();
   }, [initialize]);
-
-  const handleFinishIntro = useCallback(() => {
-    if (introCompleted || isFadingOut) return;
-    setIsFadingOut(true);
-    useUiStore.getState().setIntroFinished(true);
-    window.setTimeout(() => setIntroCompleted(true), 450);
-  }, [introCompleted, isFadingOut]);
-
-  useEffect(() => {
-    if (isScanFlow) {
-      setIntroCompleted(true);
-      useUiStore.getState().setIntroFinished(true);
-    }
-  }, [isScanFlow]);
-
-  useEffect(() => {
-    if (introCompleted || authLoading) return;
-    const elapsed = Date.now() - introStarted;
-    const timer = window.setTimeout(handleFinishIntro, Math.max(0, 3500 - elapsed));
-    return () => window.clearTimeout(timer);
-  }, [authLoading, introCompleted, introStarted, handleFinishIntro]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -153,13 +120,7 @@ function App() {
         </Routes></Suspense>
       </BrowserRouter>
 
-      {!introCompleted && (
-        <LoadingSplashScreen
-          isIntro
-          isExiting={isFadingOut}
-          onSkip={handleFinishIntro}
-        />
-      )}
+
 
     </>
   );
