@@ -1656,9 +1656,13 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 />
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
-                <span>{t('reports.viz.deliverablesDone', { count: teamCards.completedDeliverables })}</span>
-                <span>{t('reports.viz.deliverablesRemaining', { count: teamCards.doingDeliverables })}</span>
+              <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
+                <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-emerald-700 dark:text-emerald-300">
+                  {t('reports.viz.deliverablesDone', { count: teamCards.completedDeliverables })}
+                </span>
+                <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 px-1.5 py-1 text-amber-700 dark:text-amber-300 text-right">
+                  {t('reports.viz.deliverablesRemaining', { count: teamCards.doingDeliverables })}
+                </span>
               </div>
             </div>
 
@@ -1719,6 +1723,35 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   ) : (
                     <p className="text-[10px] text-slate-400 italic">Chưa có số liệu theo dự án</p>
+                  )}
+                </div>
+
+                {/* Section C: Task-level completion labels */}
+                <div className="space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                    {t('reports.viz.deliverableTaskList')}
+                  </div>
+                  {teamCards.deliverableItems.length > 0 ? (
+                    <div className="space-y-1">
+                      {[...teamCards.deliverableItems]
+                        .sort((a, b) => Number(b.statusKind === 'done') - Number(a.statusKind === 'done'))
+                        .map((item) => {
+                          const isDone = item.statusKind === 'done';
+                          return (
+                            <div key={item.id} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 px-2 py-1.5 text-[10px]">
+                              <div className="min-w-0">
+                                <div className="truncate font-semibold text-slate-800 dark:text-slate-100" title={item.title}>{item.title}</div>
+                                <div className="truncate text-slate-500 dark:text-slate-400">{item.entityName} · {item.quantity} {lang === 'en' ? 'items' : 'hình/file'}</div>
+                              </div>
+                              <span className={`shrink-0 rounded-full border px-1.5 py-0.5 font-bold ${isDone ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/50 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/50 dark:text-amber-300'}`}>
+                                {isDone ? t('reports.viz.deliverableTaskDone') : t('reports.viz.deliverableTaskOpen')}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 italic">{t('reports.viz.noDeliverableTasks')}</p>
                   )}
                 </div>
               </div>
@@ -2016,6 +2049,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             </svg>
                           </h3>
                           <p>{selectedStaff.role}</p>
+                          <div className="grid grid-cols-2 gap-1 text-[9px] font-semibold">
+                            <span className="truncate rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-emerald-700 dark:text-emerald-300" title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}>
+                              {t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
+                            </span>
+                            <span className="truncate rounded-md bg-amber-50 dark:bg-amber-950/40 px-1.5 py-1 text-amber-700 dark:text-amber-300" title={t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}>
+                              {t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
+                            </span>
+                          </div>
 
                           {/* 4 nút trạng thái tương tác */}
                           <div className="report-profile-stats">
@@ -2368,6 +2409,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               <span>{label}</span>
                             </button>
                           ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1 px-3 pt-1 text-[9px] font-semibold">
+                          <span className="truncate rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-emerald-700 dark:text-emerald-300" title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}>
+                            {t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
+                          </span>
+                          <span className="truncate rounded-md bg-amber-50 dark:bg-amber-950/40 px-1.5 py-1 text-amber-700 dark:text-amber-300" title={t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}>
+                            {t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
+                          </span>
                         </div>
 
                         {/* Footer: 3 vòng tròn track & Nút xem chi tiết */}

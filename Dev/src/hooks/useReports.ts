@@ -79,6 +79,7 @@ export interface StaffReportMember {
   onTimePct: number;
   deliverableCount: number;
   completedDeliverables: number;
+  remainingDeliverables: number;
   profileBacklogCount: number;
   profileBacklogItems: ProfileBacklogItem[];
   periodTaskItems: TrackedTaskSummaryItem[];
@@ -848,6 +849,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
         const capacityPercentage = openList.length * 20;
         const deliverableCount = memberAllTasks.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
         const completedDeliverables = doneList.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
+        const remainingDeliverables = Math.max(0, deliverableCount - completedDeliverables);
 
         const datedDone = doneList.filter((t) => t.due_date && t.completed_at);
         const onTimePct = datedDone.length
@@ -1003,6 +1005,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
           onTimePct,
           deliverableCount,
           completedDeliverables,
+          remainingDeliverables,
           profileBacklogCount,
           profileBacklogItems,
           periodTaskItems,
