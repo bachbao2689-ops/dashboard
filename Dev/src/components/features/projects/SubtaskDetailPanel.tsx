@@ -225,7 +225,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
     if (!subtaskId) return;
-    const meta = await fetchTaskDeliverableMeta(entityType, subtaskId);
+    let meta;
+    try { meta = await fetchTaskDeliverableMeta(entityType, subtaskId); }
+    catch (error: any) { toast.error(error?.message || 'Không tải được sản lượng đã lưu'); return; }
     if (meta?.quantity != null) {
       setSubtaskQuantity(String(meta.quantity));
       setEditSubtaskQuantity(String(meta.quantity));
@@ -233,15 +235,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       setSubtaskQuantity('');
       setEditSubtaskQuantity('');
     }
-    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
-    const details = detailsResult.data?.[0]?.metadata || {};
+    const details = meta || {};
     setDescription(details.description || '');
     setImageUrl(details.image_url || '');
-    if (details.quantity != null && meta?.quantity == null) {
-      setSubtaskQuantity(String(details.quantity));
-      setEditSubtaskQuantity(String(details.quantity));
-    }
-    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []));
+    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items.map(item => ({...item, created_at: item.created_at || ''})) : []);
   }, [subtaskId, entityType]);
 
   useEffect(() => {

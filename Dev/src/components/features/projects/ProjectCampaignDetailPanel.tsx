@@ -118,7 +118,9 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
           { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
           profile?.id,
           data.workspace_id,
-        );
+        ).catch((error: any) => {
+          toast.error('Đã tạo subtask nhưng chưa lưu được sản lượng: ' + (error?.message || 'Lỗi kết nối'));
+        });
       }
       return res;
     }, 'Đã thêm subtask')) {

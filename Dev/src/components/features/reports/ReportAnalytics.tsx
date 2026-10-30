@@ -1657,8 +1657,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
 
               <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
-                <span>{t('reports.viz.doneCount', { count: teamCards.completedDeliverables })}</span>
-                <span>{t('reports.viz.statusDoing')}: {teamCards.doingDeliverables}</span>
+                <span>{t('reports.viz.deliverablesDone', { count: teamCards.completedDeliverables })}</span>
+                <span>{t('reports.viz.deliverablesRemaining', { count: teamCards.doingDeliverables })}</span>
               </div>
             </div>
 

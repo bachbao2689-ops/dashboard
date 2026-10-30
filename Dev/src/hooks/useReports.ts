@@ -4,13 +4,14 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
 import { workflowResource, workspaceScope } from '../services/workspaceResources';
 import { isDone as isWorkflowDone } from '../lib/workflowHub';
+import {reportDeliverableQuantity, reportPeriodTasks, reportTaskTotals} from '../lib/reportTaskTracking';
 import { useRememberedState } from './useRememberedState';
 import {
   isTaskClosed,
-  isTaskDone,
   reportAnalytics,
   taskActive,
   taskDay,
+  taskDone,
   taskOpen,
   taskOverdue,
   type TrackedTask,
@@ -269,13 +270,7 @@ function getPeriodBounds(
   return { start, today, periodDays, labelVi };
 }
 
-function computeTaskDeliverableQty(t: any): number {
-  const rawQ = Number(t?.deliverable_quantity ?? t?.quantity ?? 0);
-  const checklistQ = Array.isArray(t?.checklist_items)
-    ? t.checklist_items.reduce((sum: number, ci: any) => sum + (Number(ci?.quantity) || 0), 0)
-    : 0;
-  return Math.max(rawQ, checklistQ) || 1;
-}
+const computeTaskDeliverableQty = reportDeliverableQuantity;
 
 function formatDayMonth(iso: string): string {
   if (!iso || iso.length < 10) return iso;
@@ -393,7 +388,7 @@ function computePeriodBurndown(
   const lastIdx = Math.max(1, pointsMeta.length - 1);
   return pointsMeta.map((pt, idx) => {
     const completedByCutoff = activeList.filter((t) => {
-      if (!isTaskDone(t.status)) return false;
+      if (!taskDone(t)) return false;
       const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at) || taskDay(t.due_date);
       return doneDay ? doneDay <= pt.cutoffDate : idx === lastIdx;
     }).length;
@@ -515,7 +510,7 @@ function computePeriodHeatmap(
       const openAtPoint = memberTasks.filter((t) => {
         const createdDay = taskDay(t.created_at) || taskDay(t.start_date);
         if (createdDay && createdDay > cp.pointEnd) return false;
-        if (!isTaskDone(t.status)) return true;
+        if (!taskDone(t)) return true;
         const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at);
         return Boolean(doneDay && doneDay > cp.pointEnd);
       }).length;
@@ -537,9 +532,10 @@ function computePeriodHeatmap(
   };
 }
 
-export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v1";
+export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v2";
 
 export interface ReportSnapshotPayload {
+  scopeKey: string;
   savedAt: string;
   timeRange: TimeRange;
   cursorDate: string;
@@ -801,24 +797,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
   // Filter tasks relevant to the chosen period (week / month / quarter / year)
   const periodTasks = useMemo(() => {
     const { start, today } = periodMeta;
-    const active = scopedTasks.filter((t) => taskActive(t));
-    const filtered = active.filter((t) => {
-      if (taskOpen(t)) {
-        const due = taskDay(t.due_date);
-        const created = taskDay(t.created_at) || taskDay(t.start_date);
-        if (timeRange === 'custom' || timeRange === 'today' || timeRange === 'three') {
-          return (due && due >= start && due <= today) || (created && created >= start && created <= today) || (!due && !created);
-        }
-        if (timeRange === 'week') {
-          return !due || due <= today || (due >= start && due <= today) || (created && created >= start);
-        }
-        return true;
-      }
-      const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at) || taskDay(t.due_date);
-      if (!doneDay) return timeRange === 'year' || timeRange === 'quarter' || timeRange === 'all';
-      return doneDay >= start && doneDay <= today;
-    });
-    return filtered.length > 0 ? filtered : active;
+    return reportPeriodTasks(scopedTasks, start, today, timeRange === 'all');
   }, [scopedTasks, periodMeta, timeRange]);
 
   const analyticRange =
@@ -847,7 +826,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
           (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
         );
         const openList = memberAllTasks.filter((t) => taskOpen(t));
-        const doneList = memberAllTasks.filter((t) => isTaskDone(t.status));
+        const doneList = memberAllTasks.filter((t) => taskDone(t));
         const overdueList = openList.filter((t) => taskOverdue(t, today));
         const todoList = openList.filter(
           (t) =>
@@ -964,7 +943,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
 
         const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks
           .map((t) => {
-            const isDone = isTaskDone(t.status);
+            const isDone = taskDone(t);
             const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
             const isTodo =
               !isDone &&
@@ -1057,7 +1036,8 @@ export const useReports = (options?: { standalone?: boolean }) => {
   // Build 4 Team Performance Cards (100% consistent with staffMembers & periodTasks)
   const teamCards = useMemo<TeamReportCardsData>(() => {
     const today = periodMeta.today;
-    const completedTasks = periodTasks.filter((t) => isTaskDone(t.status)).length;
+    const totals = reportTaskTotals(periodTasks);
+    const completedTasks = totals.completedTasks;
     const openList = periodTasks.filter((t) => taskOpen(t));
     const overdueTasks = openList.filter((t) => taskOverdue(t, today)).length;
     const todoTasks = openList.filter(
@@ -1070,7 +1050,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
         !taskOverdue(t, today) &&
         !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
     ).length;
-    const totalTasks = periodTasks.length;
+    const totalTasks = totals.totalTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     const prevCompleted = data.kpis.tasksCompletedPrev;
@@ -1172,7 +1152,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
 
     const tracks: ParticipatingTrackItem[] = [...trackMap.values()].map((entry) => {
       const tTotal = Math.max(1, entry.tasks.length);
-      const tDone = entry.tasks.filter((t) => isTaskDone(t.status)).length;
+      const tDone = entry.tasks.filter((t) => taskDone(t)).length;
       const tLate = entry.tasks.filter((t) => taskOverdue(t, today)).length;
       const progress = entry.tasks.length > 0 ? Math.round((tDone / tTotal) * 100) : 0;
       const status: AlertLevel = tLate > 1 ? 'late' : tLate === 1 ? 'risk' : 'ok';
@@ -1207,10 +1187,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
         : `+${todoTasks} chờ thực hiện · ${overdueTasks} quá hạn`;
 
     // Task items lists for full-box expanded views
-    const sourceTasks = periodTasks.length > 0 ? periodTasks : scopedTasks;
+    const sourceTasks = periodTasks;
     const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks
       .map((t) => {
-        const isDone = isTaskDone(t.status);
+        const isDone = taskDone(t);
         const isOverdue = !isDone && taskOverdue(t, today);
         const isTodo =
           !isDone &&
@@ -1257,32 +1237,19 @@ export const useReports = (options?: { standalone?: boolean }) => {
     const openTaskItems = periodTaskItems.filter((item) => item.statusKind !== 'done');
 
     // Card 5: Deliverables Output (Sản lượng hình ảnh / file)
-    let totalDeliverables = 0;
-    let completedDeliverables = 0;
-    let doingDeliverables = 0;
+    const {totalDeliverables, completedDeliverables, remainingDeliverables: doingDeliverables} = totals;
 
     const deptDeliverableMap = new Map<string, { total: number; completed: number }>();
     const trackDeliverableMap = new Map<string, { id: string; name: string; kind: 'project' | 'campaign'; total: number; completed: number }>();
     const deliverableItems: DeliverableTaskSummaryItem[] = [];
 
     periodTasks.forEach((t) => {
-      const isDone = isTaskDone(t.status);
+      const isDone = taskDone(t);
       const isOverdue = !isDone && taskOverdue(t, today);
       const isTodo = !isDone && !isOverdue && ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
       const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone ? 'done' : isOverdue ? 'overdue' : isTodo ? 'todo' : 'doing';
 
-      const rawQ = Number((t as any).deliverable_quantity ?? (t as any).quantity ?? 0);
-      const checklistQ = Array.isArray((t as any).checklist_items)
-        ? (t as any).checklist_items.reduce((s: number, ci: any) => s + (Number(ci.quantity) || 0), 0)
-        : 0;
-      const q = Math.max(rawQ, checklistQ) || 1;
-
-      totalDeliverables += q;
-      if (isDone) {
-        completedDeliverables += q;
-      } else {
-        doingDeliverables += q;
-      }
+      const q = computeTaskDeliverableQty(t);
 
       const targetDept = ((t as any).target_department_name || (t as any).target_department?.name || t.department?.name || 'Nội bộ').trim();
       const currentDept = deptDeliverableMap.get(targetDept) || { total: 0, completed: 0 };
@@ -1436,11 +1403,16 @@ export const useReports = (options?: { standalone?: boolean }) => {
     try {
       const raw = window.localStorage.getItem(REPORT_SNAPSHOT_STORAGE_KEY);
       if (!raw) return null;
-      return JSON.parse(raw) as ReportSnapshotPayload;
+      const snapshot = JSON.parse(raw) as ReportSnapshotPayload;
+      return profile && snapshot.scopeKey === workspaceScope()
+        && snapshot.departmentFilter === effectiveDepartmentFilter
+        && snapshot.timeRange === timeRange && snapshot.cursorDate === cursorDate
+        && snapshot.customStart === customStart && snapshot.customEnd === customEnd
+        ? snapshot : null;
     } catch {
       return null;
     }
-  }, [isStandalone]);
+  }, [isStandalone, profile, effectiveDepartmentFilter, timeRange, cursorDate, customStart, customEnd]);
 
   const useSnapshotFallback = Boolean(
     isStandalone &&
@@ -1491,6 +1463,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       if (typeof window !== "undefined") {
         try {
           const payload: ReportSnapshotPayload = {
+            scopeKey: workspaceScope(),
             savedAt: new Date().toISOString(),
             timeRange: pVal,
             cursorDate,

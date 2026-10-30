@@ -29,7 +29,7 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     );
     rows.forEach((row) => {
       const key = taskKey(row.entity_type, row.entity_id);
-      if (!details.has(key)) details.set(key, row.metadata || {});
+      details.set(key, {...(row.metadata || {}), ...(details.get(key) || {})});
     });
   }
 
@@ -46,7 +46,7 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     );
     rows.forEach((row) => {
       const key = String(row.entity_id);
-      if (!details.has(key)) details.set(key, row.metadata || {});
+      details.set(key, {...(row.metadata || {}), ...(details.get(key) || {})});
     });
   }
 

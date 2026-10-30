@@ -786,7 +786,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
         profile?.id,
         (selected as any).workspace_id,
-      );
+      ).catch((error: any) => {
+        toast.error('Đã tạo subtask nhưng chưa lưu được sản lượng: ' + (error?.message || 'Lỗi kết nối'));
+      });
     }
     setNewSubtask(''); setSubtaskOwner(''); setSubtaskDue(''); setSubtaskQuantity(''); setRefreshDetailTrigger(v=>v+1);
     window.dispatchEvent(new Event('projects:changed'));
@@ -871,7 +873,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
         { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
         profile?.id,
         selectedCampaign.workspace_id,
-      );
+      ).catch((error: any) => {
+        toast.error('Đã tạo subtask nhưng chưa lưu được sản lượng: ' + (error?.message || 'Lỗi kết nối'));
+      });
     }
     setCampaignNewSubtask(''); setCampaignSubtaskOwner(''); setCampaignSubtaskDue(''); setCampaignSubtaskQuantity(''); setShowCampaignSubtaskForm(false); setRefreshDetailTrigger(v=>v+1);
     supabase.from('campaign_subtasks').select('*, assignee:assignee_id(name,avatar_url)').eq('campaign_id', selectedCampaign.id).order('created_at').then(res => setCampaignSubtasks(res.data || []));

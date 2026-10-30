@@ -54,6 +54,11 @@ export function setCachedDeliverable(key: string, meta: TaskDeliverableMeta) {
   setStorageCache(cache);
 }
 
+/** Detail events may be patches. Newer fields win, including explicit null/empty resets. */
+export function mergeDeliverableMetadata(newestFirst: readonly (TaskDeliverableMeta | null | undefined)[]): TaskDeliverableMeta {
+  return newestFirst.reduceRight<TaskDeliverableMeta>((meta, patch) => ({...meta, ...(patch || {})}), {});
+}
+
 export function computeDeliverableQuantity(taskOrMeta?: {
   quantity?: number | null;
   checklist_items?: Array<{ quantity?: number | null; completed?: boolean }>;
@@ -84,26 +89,21 @@ export async function saveTaskDeliverables(
 ) {
   if (!entityId) return;
   const cacheKey = `${entityType}:${entityId}`;
-  const existing = getCachedDeliverable(cacheKey) || {};
-  const merged: TaskDeliverableMeta = { ...existing, ...updates };
-  setCachedDeliverable(cacheKey, merged);
-
-  try {
-    const { supabase } = await import('../services/supabase.ts');
-    await supabase.from('activity_log').insert({
+  const { supabase } = await import('../services/supabase.ts');
+  const {error} = await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
       user_id: profileId ? Number(profileId) || null : null,
       action: 'details_updated',
       entity_type: entityType,
       entity_id: String(entityId),
       metadata: {
-        ...merged,
+        ...updates,
         is_internal_detail_sync: true,
       },
-    });
-  } catch (err) {
-    console.warn('Failed to sync deliverable metadata to activity_log:', err);
-  }
+  });
+  if (error) throw error;
+  setCachedDeliverable(cacheKey, updates);
+  window.dispatchEvent(new Event('tasks:changed'));
 }
 
 export async function fetchTaskDeliverableMeta(
@@ -111,24 +111,25 @@ export async function fetchTaskDeliverableMeta(
   entityId: string | number,
 ): Promise<TaskDeliverableMeta | undefined> {
   const cacheKey = `${entityType}:${entityId}`;
-  const cached = getCachedDeliverable(cacheKey);
-  if (cached) return cached;
-  try {
-    const { supabase } = await import('../services/supabase.ts');
-    const { data } = await supabase
+  const { supabase } = await import('../services/supabase.ts');
+  const patches: TaskDeliverableMeta[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase
       .from('activity_log')
       .select('metadata')
       .eq('entity_type', entityType)
       .eq('entity_id', String(entityId))
       .eq('action', 'details_updated')
       .order('created_at', { ascending: false })
-      .limit(1);
-    if (data && data[0]?.metadata) {
-      setCachedDeliverable(cacheKey, data[0].metadata);
-      return data[0].metadata;
-    }
-  } catch {
-    // Ignore fetch error
+      .order('id', { ascending: false })
+      .range(offset, offset + 499);
+    if (error) throw error;
+    patches.push(...(data || []).map(row => row.metadata || {}));
+    if (!data || data.length < 500) break;
   }
-  return undefined;
+  if (!patches.length) return undefined;
+  const meta = mergeDeliverableMetadata(patches);
+  // Replace stale cache fields; persisted business data is authoritative.
+  const cache = getStorageCache(); cache[cacheKey] = meta; setStorageCache(cache);
+  return meta;
 }
