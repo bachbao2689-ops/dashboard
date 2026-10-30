@@ -151,6 +151,17 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({status:'deleted'}).eq('id', id).select('id').single(), 'Đã xóa subtask')) onUpdated?.();
   };
 
+  const toggleSubtask = async (sub: any) => {
+    const canToggle = canManage || Number(sub.assignee_id) === Number(profile?.id);
+    if (!canToggle) return;
+    const nextStatus = isTaskDone(sub.status) ? 'in_progress' : 'completed';
+    if (await details.mutate(() => supabase.from(`${kind}_subtasks`).update({status: nextStatus}).eq('id', sub.id).select('id').single(), nextStatus === 'completed' ? (lang === 'en' ? 'Subtask completed' : 'Đã hoàn thành subtask') : (lang === 'en' ? 'Subtask reopened' : 'Đã mở lại subtask'))) {
+      onUpdated?.();
+      window.dispatchEvent(new Event('tasks:changed'));
+      window.dispatchEvent(new Event(`${kind}s:changed`));
+    }
+  };
+
   const shadowClass = kind === 'project' ? 'shadow-drawer-project border-violet-500/20' : 'shadow-drawer-campaign border-amber-500/20';
 
   if (!data) return null;
@@ -235,11 +246,12 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
                 ) : visibleSubtasks.map(sub => {
+                  const canToggle = canManage || Number(sub.assignee_id) === Number(profile?.id);
                   return (
                     <div
                       key={sub.id}
                       onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))}
-                      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer ${
+                      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${
                         isTaskDone(sub.status)
                           ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
                           : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
@@ -262,48 +274,58 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                         </button>
                       </div>
 
-                      {/* Main content: 2 rows */}
-                      <div className="pr-14 select-none">
-                        {/* Row 1: Title (font-bold) + priority badge + quantity SL */}
-                        <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-x-auto scrollbar-none">
-                          <span className={`text-sm font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+                      {/* Main content layout: Checkbox + Column 2 */}
+                      <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-h-[32px] pr-14 min-w-0 select-none">
+                        <input
+                          type="checkbox"
+                          checked={isTaskDone(sub.status)}
+                          disabled={!canToggle}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => void toggleSubtask(sub)}
+                          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <div className="min-w-0 grid grid-cols-1 gap-1.5">
+                          {/* Row 1: Title */}
+                          <span className={`text-sm font-semibold block break-words line-clamp-2 ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
                             {sub.title}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
-                            {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
-                          </span>
-                          {Boolean(sub.quantity) && (
-                            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                              SL: {sub.quantity}
-                            </span>
-                          )}
-                        </div>
 
-                        {/* Row 2: Assignee + Due date + Timestamp */}
-                        <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 mt-1.5 overflow-x-auto scrollbar-none text-xs">
-                          <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
-                            {sub.assignee ? (
-                              <>
-                                <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
-                                <span className="line-clamp-1">{sub.assignee.name}</span>
-                              </>
-                            ) : (
-                              <span>{t('common.unassigned')}</span>
+                          {/* Row 2: Badges */}
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
+                              {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
+                            </span>
+                            {Boolean(sub.quantity) && (
+                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                                SL: {sub.quantity}
+                              </span>
                             )}
-                          </span>
-                          {sub.due_date && (
-                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                              <Calendar size={11} /> {dateValue(sub.due_date)}
-                            </span>
-                          )}
-                          {sub.created_at && (
-                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
-                              <Clock3 size={11} />
-                              <span>{formatCreatedAt(sub.created_at)}</span>
-                              {sub.updated_at && new Date(sub.updated_at).getTime() > new Date(sub.created_at).getTime() + 1000 && (
-                                <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
+                            {sub.due_date && (
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                                <Calendar size={11} /> {dateValue(sub.due_date)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Row 3: Meta */}
+                          {(sub.assignee || sub.created_at) && (
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-xs text-gray-500 dark:text-gray-400 overflow-x-auto scrollbar-none">
+                              {sub.assignee && (
+                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                                  <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                                  <span className="line-clamp-1">{sub.assignee.name}</span>
+                                </span>
                               )}
-                            </span>
+                              {sub.created_at && (
+                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
+                                  <Clock3 size={11} />
+                                  <span>{formatCreatedAt(sub.created_at)}</span>
+                                  {sub.updated_at && new Date(sub.updated_at).getTime() > new Date(sub.created_at).getTime() + 1000 && (
+                                    <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>

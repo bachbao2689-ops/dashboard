@@ -15,9 +15,10 @@ import {EntityPinButton} from './EntityPinButton';
 import {TaskActivityLogPopover} from '../tasks/TaskActivityLogPopover';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
+import {isGlobalManager} from '../../../lib/roleScope';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
- const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
+ const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,toggleCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
   const formatCreatedAt = (value?: string | null) => {
     if (!value) return '';
     const d = new Date(value);
@@ -100,11 +101,12 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               canManage={selectedRoot}
             /><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-2">{(workflow.tracks.find(track => track.entity_type === "campaign" && track.entity_id === selectedCampaign.id)?.pics || []).map(person => <span key={person.id} className="flex items-center gap-1.5 text-xs font-semibold"><Avatar name={person.name} src={person.avatar_url} className="w-5 h-5 text-[10px]"/>{person.name}</span>)}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
 <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted' && (statusFilter === 'completed' ? isTaskDone(subtask.status) : true)).map(s => {
+  const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
   return (
     <div
       key={s.id}
       onClick={() => setSelectedSubtask(s)}
-      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${
+      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${
         isTaskDone(s.status)
           ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
           : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
@@ -129,74 +131,84 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
         )}
       </div>
 
-      {/* Main content: 2 rows */}
-      <div className="pr-14 select-none">
-        {/* Row 1: Title (font-bold) + priority badge + quantity SL + checklist + comments */}
-        <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-x-auto scrollbar-none">
-          <span className={`text-sm font-bold ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+      {/* Main content layout: Checkbox + Column 2 */}
+      <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-w-0 pr-14 select-none">
+        <input
+          type="checkbox"
+          checked={isTaskDone(s.status)}
+          disabled={!canToggle}
+          onClick={(e) => e.stopPropagation()}
+          onChange={() => void toggleCampaignSubtask(s)}
+          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+        />
+        <div className="min-w-0 grid grid-cols-1 gap-1.5">
+          {/* Row 1: Title */}
+          <span className={`text-sm font-semibold block break-words line-clamp-2 ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
             {s.title}
           </span>
-          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
-            {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any).toLowerCase()}
-          </span>
-          {Boolean(campaignSubtaskQuantities?.[s.id] || s.quantity) && (
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-              SL: {campaignSubtaskQuantities?.[s.id] || s.quantity}
-            </span>
-          )}
-          {campaignSubtaskChecklistCounts[s.id]?.total > 0 && (() => {
-            const { done, total } = campaignSubtaskChecklistCounts[s.id];
-            const isAllDone = done === total && total > 0;
-            return (
-              <span
-                title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
-                className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
-                  isAllDone
-                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
-                    : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
-                }`}
-              >
-                <ListTodo size={11} />
-                <span>{done}/{total}</span>
-              </span>
-            );
-          })()}
-          {campaignSubtaskCommentCounts[s.id] > 0 && (
-            <span title={`${campaignSubtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
-              <span className="relative inline-grid place-items-center">
-                <MessageSquare size={12}/>
-                {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
-              </span>
-              <span>{campaignSubtaskCommentCounts[s.id]}</span>
-            </span>
-          )}
-        </div>
 
-        {/* Row 2: Assignee + Due date + Timestamp */}
-        <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 mt-1.5 overflow-x-auto scrollbar-none text-xs">
-          <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
-            {s.assignee ? (
-              <>
-                <Avatar name={s.assignee.name} src={s.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
-                <span className="line-clamp-1">{s.assignee.name}</span>
-              </>
-            ) : (
-              <span>{t('common.unassigned')}</span>
+          {/* Row 2: Badges */}
+          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
+              {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any).toLowerCase()}
+            </span>
+            {Boolean(campaignSubtaskQuantities?.[s.id] || s.quantity) && (
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                SL: {campaignSubtaskQuantities?.[s.id] || s.quantity}
+              </span>
             )}
-          </span>
-          {s.due_date && (
-            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-              <Calendar size={11} /> {dateValue(s.due_date)}
-            </span>
-          )}
-          {s.created_at && (
-            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
-              <Clock3 size={11} />
-              <span>{formatCreatedAt(s.created_at)}</span>
-              {s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && (
-                <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
+            {s.due_date && (
+              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                <Calendar size={11} /> {dateValue(s.due_date)}
+              </span>
+            )}
+            {campaignSubtaskChecklistCounts[s.id]?.total > 0 && (() => {
+              const { done, total } = campaignSubtaskChecklistCounts[s.id];
+              const isAllDone = done === total && total > 0;
+              return (
+                <span
+                  title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
+                    isAllDone
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                      : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+                  }`}
+                >
+                  <ListTodo size={11} />
+                  <span>{done}/{total}</span>
+                </span>
+              );
+            })()}
+            {campaignSubtaskCommentCounts[s.id] > 0 && (
+              <span title={`${campaignSubtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
+                <span className="relative inline-grid place-items-center">
+                  <MessageSquare size={12}/>
+                  {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
+                </span>
+                <span>{campaignSubtaskCommentCounts[s.id]}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Row 3: Meta */}
+          {(s.assignee || s.created_at) && (
+            <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-xs text-gray-500 dark:text-gray-400 overflow-x-auto scrollbar-none">
+              {s.assignee && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                  <Avatar name={s.assignee.name} src={s.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                  <span className="line-clamp-1">{s.assignee.name}</span>
+                </span>
               )}
-            </span>
+              {s.created_at && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
+                  <Clock3 size={11} />
+                  <span>{formatCreatedAt(s.created_at)}</span>
+                  {s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && (
+                    <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
+                  )}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

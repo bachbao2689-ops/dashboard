@@ -1107,7 +1107,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               {checklistItems.map(item => (
                 <div
                   key={item.id}
-                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm"
+                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm min-w-0 overflow-hidden"
                 >
                   {/* Hover action buttons in top-right */}
                   {canAddSubtaskItem && !readOnly && editingItemId !== item.id && (
@@ -1242,10 +1242,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                           className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
                         />
                         <div className="min-w-0">
-                          <span className={`text-xs block font-medium ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
+                          <span className={`text-xs block font-medium break-words line-clamp-2 ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
                             {item.title}
                           </span>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1">
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1 overflow-x-auto scrollbar-none">
                             <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
                               {t(`common.${item.priority || 'medium'}`).toLowerCase()}
                             </span>
@@ -1263,7 +1263,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                         </div>
                       </label>
                       {item.description && (
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words">
+                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0">
                           {item.description}
                         </p>
                       )}

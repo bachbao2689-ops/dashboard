@@ -106,7 +106,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`grid grid-flow-col auto-cols-max items-center gap-2 relative ${
+      className={`grid grid-flow-col auto-cols-max items-center gap-2 relative max-w-full overflow-x-auto scrollbar-none ${
         canManage && onEdit ? 'w-full' : ''
       }`}
     >
