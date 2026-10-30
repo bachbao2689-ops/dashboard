@@ -222,7 +222,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         { title: t('reports.viz.card2Title'), val: `${teamCards.backlogCount}`, sub: `${teamCards.staffWithBacklogCount} nhân sự`, color: '#f59e0b' },
         { title: t('reports.viz.card3Title'), val: `${teamCards.totalTracks}`, sub: `${teamCards.projectsCount} dự án, ${teamCards.campaignsCount} chiến dịch`, color: '#6366f1' },
         { title: t('reports.viz.card4Title'), val: `${teamCards.inProgressTasks}`, sub: `${teamCards.inProgressPct}% đang làm`, color: '#0ea5e9' },
-        { title: t('reports.viz.card5Title'), val: `${teamCards.totalDeliverables}`, sub: `${teamCards.deliverableCompletionRate}% hoàn thành`, color: '#8b5cf6' },
+        { title: t('reports.viz.card5Title'), val: `${teamCards.completedDeliverables}/${teamCards.totalDeliverables}`, sub: `${teamCards.deliverableCompletionRate}% hoàn thành`, color: '#8b5cf6' },
       ];
 
       const kpiCardW = (width - 80 - 4 * 16) / 5;
@@ -1638,10 +1638,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-violet-600 dark:text-violet-400">
-                    {teamCards.totalDeliverables}
+                    {teamCards.completedDeliverables}/{teamCards.totalDeliverables}
                   </b>
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    {lang === 'en' ? 'items' : 'hình/file'}
+                    {lang === 'en' ? 'items · done / total' : 'hình/file · đã xong / tổng'}
                   </span>
                 </div>
                 <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
@@ -1672,12 +1672,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               aria-label={t('reports.viz.card5Title')}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card5'
-                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
+                  ? 'opacity-100 scale-y-100 translate-y-0 max-h-[80vh] p-2.5 pointer-events-auto visible'
                   : 'opacity-0 scale-y-95 -translate-y-1.5 max-h-0 p-0 border-transparent pointer-events-none invisible overflow-hidden'
               }`}
               style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
-              <div className="max-h-[360px] overflow-y-auto pr-0.5 space-y-2">
+              <div className="max-h-[calc(80vh-24px)] overflow-y-auto pr-0.5 space-y-2">
                 {/* Section A: Phân bổ theo Phòng ban thụ hưởng */}
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
