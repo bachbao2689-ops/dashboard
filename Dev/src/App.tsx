@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
@@ -24,7 +24,6 @@ const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 import { useLocation } from 'react-router-dom';
 import { useUiStore } from './store/uiStore';
-import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 
 function RootRedirect() {
   const profile = useAuthStore(state => state.profile);
@@ -36,6 +35,12 @@ function RootRedirect() {
   // Preserve query params if coming with project/campaign links
   if (location.search && (location.search.includes('project=') || location.search.includes('campaign='))) {
     return <Navigate to={`/workflow${location.search}`} replace />;
+  }
+
+  // Mobile flow: default to Projects/Campaigns tab on mobile screens
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1280;
+  if (isMobileViewport) {
+    return <Navigate to="/projects" replace />;
   }
 
   if (canViewTeamManagement(profile)) {
@@ -50,44 +55,12 @@ function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session = useAuthStore(state => state.session);
   const profileId = useAuthStore(state => state.profile?.id);
-  const authLoading = useAuthStore(state => state.loading);
 
-  const isScanFlow = typeof window !== 'undefined' && (window.location.search.includes('code=') || window.location.search.includes('asset=') || window.location.pathname.startsWith('/reports/visualize'));
-
-  const [introStarted] = useState(() => Date.now());
-  const [introCompleted, setIntroCompleted] = useState(() => {
-    if (isScanFlow) {
-      useUiStore.getState().setIntroFinished(true);
-      return true;
-    }
-    return false;
-  });
-  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
+    useUiStore.getState().setIntroFinished(true);
     initialize();
   }, [initialize]);
-
-  const handleFinishIntro = useCallback(() => {
-    if (introCompleted || isFadingOut) return;
-    setIsFadingOut(true);
-    useUiStore.getState().setIntroFinished(true);
-    window.setTimeout(() => setIntroCompleted(true), 450);
-  }, [introCompleted, isFadingOut]);
-
-  useEffect(() => {
-    if (isScanFlow) {
-      setIntroCompleted(true);
-      useUiStore.getState().setIntroFinished(true);
-    }
-  }, [isScanFlow]);
-
-  useEffect(() => {
-    if (introCompleted || authLoading) return;
-    const elapsed = Date.now() - introStarted;
-    const timer = window.setTimeout(handleFinishIntro, Math.max(0, 3500 - elapsed));
-    return () => window.clearTimeout(timer);
-  }, [authLoading, introCompleted, introStarted, handleFinishIntro]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -112,7 +85,7 @@ function App() {
   return (
     <>
       <Toaster position="top-right" />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center text-sm text-gray-500 dark:text-gray-400"><span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />Đang tải…</span></div>}><Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -147,13 +120,7 @@ function App() {
         </Routes></Suspense>
       </BrowserRouter>
 
-      {!introCompleted && (
-        <LoadingSplashScreen
-          isIntro
-          isExiting={isFadingOut}
-          onSkip={handleFinishIntro}
-        />
-      )}
+
 
     </>
   );

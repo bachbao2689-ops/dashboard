@@ -141,7 +141,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
           },
           profile.id,
           wsData.id,
-        );
+        ).catch((error: any) => {
+          toast.error('Đã tạo task nhưng chưa lưu được sản lượng: ' + (error?.message || 'Lỗi kết nối'));
+        });
       }
       
       onSuccess();

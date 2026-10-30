@@ -6,15 +6,16 @@ import { useAuthStore } from '../store/authStore';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
 import { useTranslation } from '../i18n/translations';
-import {canViewPersonInTeam,isGlobalManager} from '../lib/roleScope';
+import {canViewPersonInTeam,isGlobalManager,isAdmin} from '../lib/roleScope';
 import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
 import { SearchInput, StatusFilterDropdown } from '../components/common/filters';
 
 export function MemberManagement() {
   const { t } = useTranslation();
+  const initialMemberColWidths = useMemo(() => [240, 200, 160, 160, 110, 130, 120, 120], []);
   const { tableRef: memberTableRef, widths: memberColWidths, startResize: startMemberColResize } = useResizableColumns({
     tableKey: 'members_table',
-    initialWidths: [240, 200, 160, 160, 110, 130, 120, 120, 95],
+    initialWidths: initialMemberColWidths,
     minWidth: 80,
   });
   const { members, departments, loading, addMember, setMemberRemoved } = useMembers();
@@ -28,6 +29,7 @@ export function MemberManagement() {
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [savingMember, setSavingMember] = useState(false);
   const canManageAll = isGlobalManager(profile);
+  const canDeleteMember = isAdmin(profile);
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
@@ -198,23 +200,23 @@ export function MemberManagement() {
                   <span className="truncate block">{t('members.col.joined')}</span>
                   <div onMouseDown={(e) => startMemberColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                 </th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">{t('members.col.actions')}</th>
+                
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5 dark:divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">{t('common.loading')}</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">{t('common.loading')}</td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">{t('members.noMembers')}</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">{t('members.noMembers')}</td>
                 </tr>
               ) : (
                 memberGroups.flatMap(([departmentName, departmentMembers]) => [
-                  ...([<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={9} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>]),
+                  ...([<tr key={`department-${departmentName}`} className="bg-gray-50 dark:bg-slate-800/70"><td colSpan={8} className="px-6 py-3"><button type="button" onClick={() => setCollapsedDepartments(current => current.includes(departmentName) ? current.filter(name => name !== departmentName) : [...current, departmentName])} className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100"><span>{collapsedDepartments.includes(departmentName) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>{departmentName}<span className="text-xs font-normal text-gray-500">({departmentMembers.length})</span></button></td></tr>]),
                   ...(collapsedDepartments.includes(departmentName) ? [] : departmentMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  <tr key={member.id} className="group relative hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 overflow-hidden">
                       <div className="flex items-center gap-3 overflow-hidden min-w-0">
                         <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -245,14 +247,36 @@ export function MemberManagement() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden">
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden relative">
                       <span className="truncate block">{member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}</span>
+                      {canDeleteMember && member.id !== profile?.id && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity flex items-center z-10">
+                          {member.status === 'active' ? (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setMemberToRemove(member); }}
+                              title={t('common.delete')}
+                              className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/70 dark:text-red-300 dark:hover:bg-red-900/70 border border-red-200/80 dark:border-red-800/60 shadow-2xs cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                              <span>{t('common.delete')}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={savingMember}
+                              onClick={async (e) => { e.stopPropagation(); setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }}
+                              title={t('members.restore')}
+                              className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs cursor-pointer"
+                            >
+                              <RotateCcw size={13} />
+                              <span>{t('members.restore')}</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-right overflow-hidden">
-                      {canManageAll && member.id !== profile?.id && (member.status === 'active' ?
-                        <ActionButton icon={<Trash2 size={14} />} type="button" onClick={() => setMemberToRemove(member)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"> {t('common.delete')}</ActionButton>
-                        : <ActionButton icon={<RotateCcw size={14} />} type="button" disabled={savingMember} onClick={async () => { setSavingMember(true); await setMemberRemoved(member, false); setSavingMember(false); }} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"> {t('members.restore')}</ActionButton>)}
-                    </td>
+
                   </tr>
                   )))
                 ])

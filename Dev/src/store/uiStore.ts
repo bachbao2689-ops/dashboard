@@ -20,7 +20,7 @@ export const useUiStore = create<UiState>((set) => ({
   theme: 'light',
   lang: 'vi',
   isSidebarOpen: true,
-  introFinished: false,
+  introFinished: true,
   isScanMode: false,
   setIntroFinished: (introFinished) => set({ introFinished }),
   setIsScanMode: (isScanMode) => set({ isScanMode }),

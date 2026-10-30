@@ -46,6 +46,13 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#main-scroll-container,
+.dashboard-scroll-surface {
+  -webkit-overflow-scrolling: touch;
 }
 
 * {

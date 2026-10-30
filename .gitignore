@@ -83,3 +83,10 @@ coverage/
 playwright-report/
 .env*
 !.env.example
+
+# Local untracked design assets
+BAO/
+LOGO PS/
+Logo/
+
+KCOFFEE-Report-Profile-local-*/

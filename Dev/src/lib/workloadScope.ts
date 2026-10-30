@@ -34,8 +34,16 @@ export function scopeTeamWorkload<Member extends WorkloadMember, Task extends Wo
       : 'all'
     : ownDepartment || 'self';
 
-  const visibleMembers = members.filter((member) => {
+  const adminIds = new Set(
+    members
+      .filter((m: any) => m.role === 'admin' || m.email === 'admin@kcoffee.com')
+      .map((m) => String(m.id))
+  );
+
+  const visibleMembers = members.filter((member: any) => {
     if (!profile) return false;
+    // Slide 1: remove track data của Admin
+    if (member.role === 'admin' || member.email === 'admin@kcoffee.com') return false;
     if (canViewAllDepartments) {
       return effectiveDepartmentFilter === 'all' || String(member.department_id) === effectiveDepartmentFilter;
     }
@@ -46,6 +54,8 @@ export function scopeTeamWorkload<Member extends WorkloadMember, Task extends Wo
   const memberIds = new Set(visibleMembers.map((member) => String(member.id)));
   const visibleTasks = tasks.filter((task) => {
     if (!profile) return false;
+    // Slide 1: remove track data của Admin
+    if (task.assignee_id != null && adminIds.has(String(task.assignee_id))) return false;
     if (canViewAllDepartments && effectiveDepartmentFilter === 'all') return true;
     if (task.assignee_id != null && String(task.assignee_id).trim() !== '') {
       return memberIds.has(String(task.assignee_id));

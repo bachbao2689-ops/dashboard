@@ -1,6 +1,6 @@
 import type {Task} from '../hooks/useTasks';
 import {taskKey} from './taskTracking.ts';
-import {computeDeliverableQuantity, getCachedDeliverable, type TaskDeliverableMeta} from './taskDeliverables.ts';
+import {computeDeliverableQuantity, type TaskDeliverableMeta} from './taskDeliverables.ts';
 
 const visibleParent=(parent:any)=>!parent||!['deleted','archived'].includes(parent.status||'');
 
@@ -31,8 +31,7 @@ export function mapWorkspaceTasks(
     .filter(row=>!['deleted','archived'].includes(row.status||''))
     .map(row=>{
       const key = String(row.id);
-      const cached = getCachedDeliverable(key) || (row.raw_id ? getCachedDeliverable(`${row.project ? 'project_subtask' : 'campaign_subtask'}:${row.raw_id}`) : undefined) || getCachedDeliverable(`task:${row.id}`);
-      const meta = { ...(details.get(key) || {}), ...(cached || {}) };
+      const meta = details.get(key) || {};
       const { baseQuantity, checklistQuantity, totalQuantity } = computeDeliverableQuantity(meta);
 
       return {

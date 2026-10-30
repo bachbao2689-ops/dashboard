@@ -25,7 +25,6 @@ export interface EntityInfoPopoverProps {
     creator?: { id?: number; name?: string; avatar_url?: string | null } | null;
   };
   track?: HubTrack | null;
-  starredCriteriaMap?: Record<string, boolean>;
   leadPerson?: { name: string; avatar_url?: string | null } | null;
   subPersons?: Array<{ id: string | number; name: string; avatar_url?: string | null }>;
 }
@@ -34,7 +33,6 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
   entityType,
   entity,
   track,
-  starredCriteriaMap,
   leadPerson,
   subPersons = [],
 }) => {
@@ -162,8 +160,8 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
 
   // 4. Key Gate Criteria
   const keyCriteria = useMemo(() => {
-    return extractKeyGateCriteria(track, starredCriteriaMap);
-  }, [track, starredCriteriaMap]);
+    return extractKeyGateCriteria(track);
+  }, [track]);
 
   // 5. Budget
   const budgetNum = Number(entity.budget ?? track?.budget ?? 0);

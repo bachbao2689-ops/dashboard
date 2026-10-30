@@ -92,8 +92,11 @@ export function useResizableColumns({
           accumulated += nw;
           return nw;
         });
-        setWidths(scaled);
-        widthsRef.current = scaled;
+        const hasChanged = scaled.some((val, i) => Math.abs(val - (widthsRef.current[i] ?? 0)) > 1);
+        if (hasChanged) {
+          setWidths(scaled);
+          widthsRef.current = scaled;
+        }
       }
     };
 
@@ -104,7 +107,7 @@ export function useResizableColumns({
     });
     ro.observe(parent);
     return () => ro.disconnect();
-  }, [minWidth, initialWidths]);
+  }, [minWidth, initialWidths.join(',')]);
 
   const startResize = useCallback(
     (colIndex: number, e: React.MouseEvent) => {

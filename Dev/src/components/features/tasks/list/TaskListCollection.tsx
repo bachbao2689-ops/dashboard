@@ -13,7 +13,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
  const {t} = useTranslation();
  const { widths: taskColWidths, startResize: startTaskColResize, tableRef: taskTableRef } = useResizableColumns({
    tableKey: 'tasks_table',
-   initialWidths: [48, 95, 340, 200, 170, 130, 110, 120, 52],
+   initialWidths: [48, 95, 280, 160, 180, 160, 130, 110, 120, 52],
    minWidth: 40,
  });
  return (<div className="space-y-6 pb-12 pr-1">
@@ -108,24 +108,28 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                         <div onMouseDown={(e) => startTaskColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
-                        <span className="truncate block">{t('tasks.col.projectCampaign')}</span>
+                        <span className="truncate block">{t('common.department') || 'Phòng ban'}</span>
                         <div onMouseDown={(e) => startTaskColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
-                        <span className="truncate block">{t('tasks.col.assignee')}</span>
+                        <span className="truncate block">{t('tasks.col.projectCampaign')}</span>
                         <div onMouseDown={(e) => startTaskColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
-                        <span className="truncate block">{t('tasks.col.status')}</span>
+                        <span className="truncate block">{t('tasks.col.assignee')}</span>
                         <div onMouseDown={(e) => startTaskColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
-                        <span className="truncate block">{t('tasks.col.priority')}</span>
+                        <span className="truncate block">{t('tasks.col.status')}</span>
                         <div onMouseDown={(e) => startTaskColResize(6, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
-                        <span className="truncate block">{t('tasks.col.dueDate')}</span>
+                        <span className="truncate block">{t('tasks.col.priority')}</span>
                         <div onMouseDown={(e) => startTaskColResize(7, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+                      </th>
+                      <th className="p-4 text-sm font-medium text-gray-500 dark:text-gray-400 relative">
+                        <span className="truncate block">{t('tasks.col.dueDate')}</span>
+                        <div onMouseDown={(e) => startTaskColResize(8, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
                       </th>
                       <th className="p-4 relative text-right"></th>
                     </tr>
@@ -144,8 +148,16 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                         </td>
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium overflow-hidden"><span className="truncate block">#{task.task_ref || task.id.split('-')[0]}</span></td>
                         <td className="p-4 overflow-hidden">
-                          <div className="task-list-row-title truncate" title={task.title}>{task.title}</div>
-                          {(task.department?.name || task.project?.department?.name) && <div className="mt-1 flex items-center gap-1 overflow-hidden"><span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate">{task.department?.name || task.project?.department?.name}</span></div>}
+                          <div className="task-list-row-title truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>{task.title}</div>
+                        </td>
+                        <td className="p-4 text-sm overflow-hidden">
+                          {(task.department?.name || task.project?.department?.name || task.campaign?.department?.name) ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate max-w-full">
+                              {task.department?.name || task.project?.department?.name || task.campaign?.department?.name}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500 truncate block">---</span>
+                          )}
                         </td>
                         <td className="p-4 text-sm overflow-hidden">
                           {task.project?.name ? (
