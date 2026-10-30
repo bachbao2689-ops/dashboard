@@ -158,8 +158,7 @@ export const CampaignPanel: React.FC<{
   filters?: CampaignFilters;
   rootCampaignIds?: ReadonlySet<string>;
   workflowTracks?: HubTrack[];
-  starredCriteriaMap?: Record<string, boolean>;
-}> = ({ onSelect, filters, rootCampaignIds, workflowTracks, starredCriteriaMap }) => {
+}> = ({ onSelect, filters, rootCampaignIds, workflowTracks }) => {
   const { t, lang } = useTranslation();
   const { tableRef: campaignTableRef, widths: campaignColWidths, startResize: startCampaignColResize } = useResizableColumns({
     tableKey: 'campaigns_table',
@@ -362,7 +361,6 @@ export const CampaignPanel: React.FC<{
               entityType="campaign"
               entity={c}
               track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
-              starredCriteriaMap={starredCriteriaMap}
               leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
               subPersons={subtaskMap[c.id]}
             />
@@ -443,7 +441,6 @@ export const CampaignPanel: React.FC<{
                   entityType="campaign"
                   entity={c}
                   track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
-                  starredCriteriaMap={starredCriteriaMap}
                   leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
                   subPersons={subtaskMap[c.id]}
                 />
