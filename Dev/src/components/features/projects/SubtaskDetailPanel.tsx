@@ -21,7 +21,7 @@ import { canonicalWorkflowStatus, workflowStage, type WorkflowTaskStatus } from 
 import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
 import { inputDate } from '../../../lib/workflowHub';
-import { saveTaskDeliverables, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
+import { saveTaskDeliverables, fetchTaskDeliverableMeta, setCachedDeliverable } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
 import { EntityActionBadges } from './EntityActionBadges';
 
@@ -102,6 +102,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [canCompleteTask, setCanCompleteTask] = useState(false);
   const [subtaskQuantity, setSubtaskQuantity] = useState<string>('');
   const [editSubtaskQuantity, setEditSubtaskQuantity] = useState<string>('');
+  const [targetDepartmentId, setTargetDepartmentId] = useState<string | null>(null);
+  const [targetDepartmentName, setTargetDepartmentName] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -109,7 +111,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editDueDate, setEditDueDate] = useState('');
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
-  const totalChecklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) + (Number(subtaskQuantity) || 0);
+  const checklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+  const totalChecklistQuantity = checklistQuantity > 0 ? checklistQuantity : (Number(subtaskQuantity) || 0);
 
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
@@ -216,23 +219,31 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const reload = useCallback(async () => {
     if (!subtaskId) return;
     const meta = await fetchTaskDeliverableMeta(entityType, subtaskId);
-    if (meta?.quantity != null) {
-      setSubtaskQuantity(String(meta.quantity));
-      setEditSubtaskQuantity(String(meta.quantity));
-    } else {
-      setSubtaskQuantity('');
-      setEditSubtaskQuantity('');
-    }
     const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
     const details = detailsResult.data?.[0]?.metadata || {};
-    setDescription(details.description || '');
-    setImageUrl(details.image_url || '');
-    if (details.quantity != null && meta?.quantity == null) {
-      setSubtaskQuantity(String(details.quantity));
-      setEditSubtaskQuantity(String(details.quantity));
+    const loadedChecklist = Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []);
+    const chkQty = loadedChecklist.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
+
+    let rawBase: string = '';
+    if ((subtask as any)?.quantity != null && (subtask as any)?.quantity !== '') {
+      rawBase = String((subtask as any).quantity);
+    } else if (meta?.base_quantity != null) {
+      rawBase = String(meta.base_quantity);
+    } else if (details.base_quantity != null) {
+      rawBase = String(details.base_quantity);
+    } else if (chkQty === 0) {
+      if (meta?.quantity != null) rawBase = String(meta.quantity);
+      else if (details.quantity != null) rawBase = String(details.quantity);
     }
-    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []));
-  }, [subtaskId, entityType]);
+    setSubtaskQuantity(rawBase);
+    setEditSubtaskQuantity(rawBase);
+
+    setDescription(details.description || meta?.description || '');
+    setImageUrl(details.image_url || meta?.image_url || '');
+    setTargetDepartmentId(meta?.target_department_id || details.target_department_id || null);
+    setTargetDepartmentName(meta?.target_department_name || details.target_department_name || null);
+    setChecklistItems(loadedChecklist);
+  }, [subtaskId, entityType, (subtask as any)?.quantity]);
 
   useEffect(() => {
     setCommentFocus(0);
@@ -363,6 +374,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       });
 
       const nextItems = [...checklistItems, newItem];
+      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const baseQuantityValue = Number(subtaskQuantity) || null;
+      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
         user_id: profile.id,
@@ -373,8 +388,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       setChecklistItems(nextItems);
@@ -401,6 +429,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     if (!targetItem) return;
     const nextCompleted = !targetItem.completed;
     const nextItems = checklistItems.map(i => i.id === itemId ? { ...i, completed: nextCompleted } : i);
+    const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    const baseQuantityValue = Number(subtaskQuantity) || null;
+    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
     setChecklistItems(nextItems);
     try {
@@ -414,8 +445,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -442,6 +486,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const targetItem = checklistItems.find(i => i.id === itemId);
     if (!targetItem) return;
     const nextItems = checklistItems.filter(i => i.id !== itemId);
+    const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    const baseQuantityValue = Number(subtaskQuantity) || null;
+    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
     setChecklistItems(nextItems);
     try {
@@ -455,8 +502,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -547,6 +607,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         quantity: Number.isFinite(numItemQ) && numItemQ > 0 ? numItemQ : null,
         due_date: itemDue || null,
       } : i);
+      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const baseQuantityValue = Number(subtaskQuantity) || null;
+      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
@@ -558,8 +621,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -715,14 +791,28 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       }
 
       const numQ = Number(editSubtaskQuantity);
+      const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
+      const effectiveQuantity = checklistQuantity > 0
+        ? checklistQuantity
+        : baseQuantityValue;
+
       await saveTaskDeliverables(
         entityType,
         subtask.id,
-        { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+        {
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          checklist_items: checklistItems,
+          description,
+          image_url: imageUrl || null,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
+        },
         profile?.id,
         workspaceId,
       );
-      setSubtaskQuantity(Number.isFinite(numQ) && numQ > 0 ? String(numQ) : '');
+      setSubtaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
+      setEditSubtaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
 
       setEditingTask(false);
       onUpdated({ ...subtask, ...values, assignee: assignee ? { name: assignee.name, avatar_url: assignee.avatar_url } : null });
@@ -960,10 +1050,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 type="number"
                 min="0"
                 step="1"
-                value={editSubtaskQuantity}
+                value={checklistQuantity > 0 ? checklistQuantity : editSubtaskQuantity}
                 onChange={event => setEditSubtaskQuantity(event.target.value)}
+                disabled={checklistQuantity > 0}
                 placeholder="0"
-                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
               />
             </label>
           </div>

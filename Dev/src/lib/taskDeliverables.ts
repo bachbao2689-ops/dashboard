@@ -66,11 +66,12 @@ export function computeDeliverableQuantity(taskOrMeta?: {
     return sum + (Number.isFinite(q) && q > 0 ? q : 0);
   }, 0);
 
-  // If user entered quantity for task/subtask or checklist items, take their sum.
-  // Otherwise fallback to 1 unit of deliverable.
-  const totalQuantity = (baseQuantity > 0 || checklistQuantity > 0)
-    ? (baseQuantity + checklistQuantity)
-    : 1;
+  // Khi có checklist items với số lượng (checklistQuantity > 0), thì totalQuantity = checklistQuantity
+  // (tránh double count baseQuantity + checklistQuantity).
+  // Nếu không có checklist quantity, dùng baseQuantity (nếu > 0) hoặc fallback về 1.
+  const totalQuantity = checklistQuantity > 0
+    ? checklistQuantity
+    : (baseQuantity > 0 ? baseQuantity : 1);
 
   return { baseQuantity, checklistQuantity, totalQuantity };
 }
@@ -84,8 +85,14 @@ export async function saveTaskDeliverables(
 ) {
   if (!entityId) return;
   const cacheKey = `${entityType}:${entityId}`;
-  const existing = getCachedDeliverable(cacheKey) || {};
-  const merged: TaskDeliverableMeta = { ...existing, ...updates };
+  let existing = getCachedDeliverable(cacheKey);
+  if (!existing || existing.checklist_items === undefined || existing.quantity === undefined) {
+    const remote = await fetchTaskDeliverableMeta(entityType, entityId);
+    if (remote) {
+      existing = { ...remote, ...(existing || {}) };
+    }
+  }
+  const merged: TaskDeliverableMeta = { ...(existing || {}), ...updates };
   setCachedDeliverable(cacheKey, merged);
 
   try {
@@ -109,10 +116,13 @@ export async function saveTaskDeliverables(
 export async function fetchTaskDeliverableMeta(
   entityType: 'task' | 'project_subtask' | 'campaign_subtask',
   entityId: string | number,
+  forceRefresh = false,
 ): Promise<TaskDeliverableMeta | undefined> {
   const cacheKey = `${entityType}:${entityId}`;
-  const cached = getCachedDeliverable(cacheKey);
-  if (cached) return cached;
+  if (!forceRefresh) {
+    const cached = getCachedDeliverable(cacheKey);
+    if (cached && (cached.checklist_items !== undefined || cached.quantity !== undefined)) return cached;
+  }
   try {
     const { supabase } = await import('../services/supabase.ts');
     const { data } = await supabase
@@ -122,13 +132,22 @@ export async function fetchTaskDeliverableMeta(
       .eq('entity_id', String(entityId))
       .eq('action', 'details_updated')
       .order('created_at', { ascending: false })
-      .limit(1);
-    if (data && data[0]?.metadata) {
-      setCachedDeliverable(cacheKey, data[0].metadata);
-      return data[0].metadata;
+      .limit(10);
+    if (data && data.length > 0) {
+      // Merge across rows from oldest to newest so newest fields override older ones
+      // without dropping fields recorded in an earlier details_updated row.
+      const merged: TaskDeliverableMeta = {};
+      for (let i = data.length - 1; i >= 0; i--) {
+        const rowMeta = data[i]?.metadata;
+        if (rowMeta && typeof rowMeta === 'object') {
+          Object.assign(merged, rowMeta);
+        }
+      }
+      setCachedDeliverable(cacheKey, merged);
+      return merged;
     }
   } catch {
     // Ignore fetch error
   }
-  return undefined;
+  return getCachedDeliverable(cacheKey);
 }

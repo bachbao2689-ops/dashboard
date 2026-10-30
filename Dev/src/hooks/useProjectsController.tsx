@@ -420,24 +420,34 @@ export function useProjectsController(){
 
       const checklistCounts: Record<string, { total: number; done: number }> = {};
       const quantities: Record<string, number> = {};
-      const seen = new Set<string>();
+      const mergedMeta: Record<string, { checklist_items?: any[]; quantity?: number }> = {};
       (detailsRes.data || []).forEach((row: any) => {
-        if (seen.has(row.entity_id)) return;
-        seen.add(row.entity_id);
-        const items = Array.isArray(row.metadata?.checklist_items) ? row.metadata.checklist_items : [];
+        if (!mergedMeta[row.entity_id]) {
+          mergedMeta[row.entity_id] = {};
+        }
+        if (row.metadata && 'checklist_items' in row.metadata && mergedMeta[row.entity_id].checklist_items === undefined) {
+          mergedMeta[row.entity_id].checklist_items = Array.isArray(row.metadata.checklist_items) ? row.metadata.checklist_items : [];
+        }
+        if (row.metadata && 'quantity' in row.metadata && mergedMeta[row.entity_id].quantity === undefined) {
+          mergedMeta[row.entity_id].quantity = row.metadata.quantity;
+        }
+      });
+
+      Object.entries(mergedMeta).forEach(([entityId, meta]) => {
+        const items = Array.isArray(meta.checklist_items) ? meta.checklist_items : [];
         if (items.length > 0) {
-          checklistCounts[row.entity_id] = {
+          checklistCounts[entityId] = {
             total: items.length,
             done: items.filter((i: any) => i.completed).length,
           };
         }
         const checklistQty = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-        const rowQty = Number(row.metadata?.quantity) || 0;
-        const subtaskRow = nextSubtasks.find(item => item.id === row.entity_id);
+        const rowQty = Number(meta.quantity) || 0;
+        const subtaskRow = nextSubtasks.find(item => item.id === entityId);
         const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = baseQty + checklistQty;
+        const total = checklistQty > 0 ? checklistQty : baseQty;
         if (total > 0) {
-          quantities[row.entity_id] = total;
+          quantities[entityId] = total;
         }
       });
       nextSubtasks.forEach(s => {
@@ -479,24 +489,34 @@ export function useProjectsController(){
 
       const stChecklistCounts: Record<string, { total: number; done: number }> = {};
       const campQuantities: Record<string, number> = {};
-      const seenCamp = new Set<string>();
+      const mergedCampMeta: Record<string, { checklist_items?: any[]; quantity?: number }> = {};
       (stDetailsRes.data || []).forEach((row: any) => {
-        if (seenCamp.has(row.entity_id)) return;
-        seenCamp.add(row.entity_id);
-        const items = Array.isArray(row.metadata?.checklist_items) ? row.metadata.checklist_items : [];
+        if (!mergedCampMeta[row.entity_id]) {
+          mergedCampMeta[row.entity_id] = {};
+        }
+        if (row.metadata && 'checklist_items' in row.metadata && mergedCampMeta[row.entity_id].checklist_items === undefined) {
+          mergedCampMeta[row.entity_id].checklist_items = Array.isArray(row.metadata.checklist_items) ? row.metadata.checklist_items : [];
+        }
+        if (row.metadata && 'quantity' in row.metadata && mergedCampMeta[row.entity_id].quantity === undefined) {
+          mergedCampMeta[row.entity_id].quantity = row.metadata.quantity;
+        }
+      });
+
+      Object.entries(mergedCampMeta).forEach(([entityId, meta]) => {
+        const items = Array.isArray(meta.checklist_items) ? meta.checklist_items : [];
         if (items.length > 0) {
-          stChecklistCounts[row.entity_id] = {
+          stChecklistCounts[entityId] = {
             total: items.length,
             done: items.filter((i: any) => i.completed).length,
           };
         }
         const checklistQty = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-        const rowQty = Number(row.metadata?.quantity) || 0;
-        const subtaskRow = nextCampSubtasks.find(item => item.id === row.entity_id);
+        const rowQty = Number(meta.quantity) || 0;
+        const subtaskRow = nextCampSubtasks.find(item => item.id === entityId);
         const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = baseQty + checklistQty;
+        const total = checklistQty > 0 ? checklistQty : baseQty;
         if (total > 0) {
-          campQuantities[row.entity_id] = total;
+          campQuantities[entityId] = total;
         }
       });
       nextCampSubtasks.forEach(s => {

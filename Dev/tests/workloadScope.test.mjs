@@ -57,10 +57,10 @@ test('global Manager can see all teams or one selected team', () => {
 });
 
 test('own department stays visible when directory names are temporarily missing', () => {
-  const profile = { id: 1, role: 'leader', department_id: 'design', department_name: 'Design' };
+  const profile = { id: 3, role: 'leader', department_id: 'marketing', department_name: 'Marketing' };
   const scope = scopeTeamWorkload(profile, 'marketing', users, [], tasks);
-  assert.deepEqual(scope.departments, [{ id: 'design', name: 'Design' }]);
-  assert.deepEqual(ids(scope.tasks), ['cross-assigned-to-own-team', 'own', 'unassigned-own']);
+  assert.deepEqual(scope.departments, [{ id: 'marketing', name: 'Marketing' }]);
+  assert.deepEqual(ids(scope.tasks), ['other', 'other-member-in-own-project', 'unassigned-other']);
 });
 
 test('missing profile exposes no Workload data', () => {
