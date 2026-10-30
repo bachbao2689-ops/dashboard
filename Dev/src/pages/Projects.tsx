@@ -31,7 +31,6 @@ import {EntityInfoPopover} from '../components/features/projects/EntityInfoPopov
 import {EntityPinButton} from '../components/features/projects/EntityPinButton';
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
-import {isGlobalManager} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
  const initialProjectColWidths = React.useMemo(() => [340, 190, 250, 130, 160, 250], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
@@ -41,8 +40,16 @@ export const Projects:React.FC=()=>{
  });
  const state=useProjectsController();
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
-  const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,toggleSubtask,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
- const formatCreatedAt = (value?: string | null) => value ? new Date(value).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+   const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
+  const formatCreatedAt = (value?: string | null) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const date = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+    return `${time} ${date}`;
+  };
  const projectCollaboratorIds = React.useMemo(() => {
    if (!selected) return [];
    const ids = new Set<string>();
@@ -416,7 +423,6 @@ export const Projects:React.FC=()=>{
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true).map(s => {
-        const canToggle = Boolean(selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id));
         return (
           <div
             key={s.id}
@@ -446,80 +452,75 @@ export const Projects:React.FC=()=>{
               )}
             </div>
 
-            {/* Main content grid: Checkbox + info */}
-            <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-h-[32px] pr-14 select-none">
-              <input
-                type="checkbox"
-                checked={isTaskDone(s.status)}
-                disabled={!canToggle}
-                onClick={(e) => e.stopPropagation()}
-                onChange={() => void toggleSubtask(s)}
-                className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-              />
-              <div className="min-w-0">
-                <span className={`text-sm block font-medium ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+            {/* Main content: 2 rows */}
+            <div className="pr-14 select-none">
+              {/* Row 1: Title (font-bold) + priority badge + quantity SL + checklist + comments */}
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-x-auto scrollbar-none">
+                <span className={`text-sm font-bold ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
                   {s.title}
                 </span>
-                <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1.5 overflow-x-auto scrollbar-none">
-                  <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || selected?.priority || 'medium')}`}>
-                    {t(`common.${s.priority || selected?.priority || 'medium'}` as any).toLowerCase()}
+                <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || selected?.priority || 'medium')}`}>
+                  {t(`common.${s.priority || selected?.priority || 'medium'}` as any).toLowerCase()}
+                </span>
+                {Boolean(subtaskQuantities?.[s.id] || s.quantity) && (
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                    SL: {subtaskQuantities?.[s.id] || s.quantity}
                   </span>
-                  {Boolean(subtaskQuantities?.[s.id] || s.quantity) && (
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                      SL: {subtaskQuantities?.[s.id] || s.quantity}
+                )}
+                {subtaskChecklistCounts[s.id]?.total > 0 && (() => {
+                  const { done, total } = subtaskChecklistCounts[s.id];
+                  const isAllDone = done === total && total > 0;
+                  return (
+                    <span
+                      title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                      className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
+                        isAllDone
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                          : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+                      }`}
+                    >
+                      <ListTodo size={11} />
+                      <span>{done}/{total}</span>
                     </span>
-                  )}
-                  {s.due_date && (
-                    <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                      <Calendar size={11} /> {dateValue(s.due_date)}
+                  );
+                })()}
+                {subtaskCommentCounts[s.id] > 0 && (
+                  <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
+                    <span className="relative inline-grid place-items-center">
+                      <MessageSquare size={12}/>
+                      {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
                     </span>
+                    <span>{subtaskCommentCounts[s.id]}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Row 2: Assignee + Due date + Timestamp */}
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 mt-1.5 overflow-x-auto scrollbar-none text-xs">
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                  {s.assignee ? (
+                    <>
+                      <Avatar name={s.assignee.name} src={s.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                      <span className="line-clamp-1">{s.assignee.name}</span>
+                    </>
+                  ) : (
+                    <span>{t('common.unassigned')}</span>
                   )}
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
-                    {s.assignee ? (
-                      <>
-                        <Avatar name={s.assignee.name} src={s.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
-                        <span className="line-clamp-1">{s.assignee.name}</span>
-                      </>
-                    ) : (
-                      <span>{t('common.unassigned')}</span>
+                </span>
+                {s.due_date && (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                    <Calendar size={11} /> {dateValue(s.due_date)}
+                  </span>
+                )}
+                {s.created_at && (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
+                    <Clock3 size={11} />
+                    <span>{formatCreatedAt(s.created_at)}</span>
+                    {s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && (
+                      <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
                     )}
                   </span>
-                  {subtaskChecklistCounts[s.id]?.total > 0 && (() => {
-                    const { done, total } = subtaskChecklistCounts[s.id];
-                    const isAllDone = done === total && total > 0;
-                    return (
-                      <span
-                        title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
-                        className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
-                          isAllDone
-                            ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
-                            : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
-                        }`}
-                      >
-                        <ListTodo size={11} />
-                        <span>{done}/{total}</span>
-                      </span>
-                    );
-                  })()}
-                  {subtaskCommentCounts[s.id] > 0 && (
-                    <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
-                      <span className="relative inline-grid place-items-center">
-                        <MessageSquare size={12}/>
-                        {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
-                      </span>
-                      <span>{subtaskCommentCounts[s.id]}</span>
-                    </span>
-                  )}
-                  {s.created_at && (
-                    <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
-                      <Clock3 size={11} />
-                      <span>{formatCreatedAt(s.created_at)}</span>
-                      {s.updated_at && new Date(s.updated_at).getTime() > new Date(s.created_at).getTime() + 1000 && (
-                        <span>· {lang === 'en' ? 'Edited' : 'Đã sửa'}</span>
-                      )}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>

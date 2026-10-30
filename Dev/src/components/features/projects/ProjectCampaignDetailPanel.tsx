@@ -10,7 +10,8 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
-import { X, Trash2, Plus, Users, Calendar } from 'lucide-react';
+import { X, Trash2, Plus, Users, Calendar, Clock3 } from 'lucide-react';
+import { TaskPinButton } from '../tasks/TaskPinButton';
 import { priorityClass } from './projectPresentation';
 import { Avatar } from '../../common/Avatar';
 import { SmartCommentInput } from '../comments/SmartCommentInput';
@@ -23,11 +24,19 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
-import {completeTrackedTask} from '../../../services/workspaceTasks';
-import {isGlobalManager} from '../../../lib/roleScope';
 import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
+
+const formatCreatedAt = (value?: string | null) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const date = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return `${time} ${date}`;
+};
 
 type PanelProps = {item:any; kind:'project' | 'campaign'; onClose:() => void; onUpdated?:() => void};
 export function ProjectCampaignDetailPanel(props:PanelProps) {
@@ -128,36 +137,6 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
   const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('all');
 
-  const completeSubtask = async (sub: any) => {
-    if (readOnly || !profile?.id || (!canManage && !isGlobalManager(profile) && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
-    try {
-      await completeTrackedTask(taskKey(`${kind}_subtask`, sub.id));
-      toast.success(lang === 'en' ? 'Subtask completed' : 'Đã hoàn thành subtask');
-      void details.refresh();
-      window.dispatchEvent(new Event('tasks:changed'));
-      onUpdated?.();
-    } catch (error: any) { toast.error(error?.message || 'Không thể hoàn thành subtask.'); }
-  };
-
-  const toggleSubtask = async (sub: any) => {
-    const canToggle = !readOnly && Boolean(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id));
-    if (!canToggle) return;
-    if (isTaskDone(sub.status)) {
-      try {
-        const { error } = await supabase.from(`${kind}_subtasks`).update({ status: 'in_progress' }).eq('id', sub.id);
-        if (error) throw error;
-        toast.success(lang === 'en' ? 'Subtask reopened' : 'Đã mở lại subtask');
-        void details.refresh();
-        window.dispatchEvent(new Event('tasks:changed'));
-        onUpdated?.();
-      } catch (error: any) {
-        toast.error(error?.message || 'Không thể cập nhật subtask');
-      }
-    } else {
-      await completeSubtask(sub);
-    }
-  };
-
   const visibleSubtasks = subtasks.filter(sub => {
     if (sub.status === 'deleted' || sub.status === 'archived') return false;
     if (subtaskFilter === 'open') return !isTaskDone(sub.status);
@@ -254,11 +233,11 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
                 ) : visibleSubtasks.map(sub => {
-                  const canToggle = !readOnly && Boolean(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id));
                   return (
                     <div
                       key={sub.id}
-                      className={`p-3 rounded-xl border text-sm group relative transition-all ${
+                      onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))}
+                      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer ${
                         isTaskDone(sub.status)
                           ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
                           : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
@@ -269,6 +248,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                         className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
                         onClick={event => event.stopPropagation()}
                       >
+                        <TaskPinButton taskId={taskKey(`${kind}_subtask`, sub.id)} size={13} className="!p-1" />
                         <button
                           type="button"
                           aria-label={`Xóa ${sub.title}`}
@@ -280,51 +260,49 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                         </button>
                       </div>
 
-                      {/* Main content grid: Checkbox + info */}
-                      <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-h-[32px] pr-8 select-none">
-                        <input
-                          type="checkbox"
-                          checked={isTaskDone(sub.status)}
-                          disabled={!canToggle || busy}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => void toggleSubtask(sub)}
-                          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-                        />
-                        <div className="min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))}
-                            className={`text-sm block font-medium text-left ${
-                              isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'
-                            }`}
-                          >
+                      {/* Main content: 2 rows */}
+                      <div className="pr-14 select-none">
+                        {/* Row 1: Title (font-bold) + priority badge + quantity SL */}
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-x-auto scrollbar-none">
+                          <span className={`text-sm font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
                             {sub.title}
-                          </button>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1.5 overflow-x-auto scrollbar-none">
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
-                              {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
+                            {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
+                          </span>
+                          {Boolean(sub.quantity) && (
+                            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                              SL: {sub.quantity}
                             </span>
-                            {Boolean(sub.quantity) && (
-                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                                SL: {sub.quantity}
-                              </span>
+                          )}
+                        </div>
+
+                        {/* Row 2: Assignee + Due date + Timestamp */}
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 mt-1.5 overflow-x-auto scrollbar-none text-xs">
+                          <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                            {sub.assignee ? (
+                              <>
+                                <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                                <span className="line-clamp-1">{sub.assignee.name}</span>
+                              </>
+                            ) : (
+                              <span>{t('common.unassigned')}</span>
                             )}
-                            {sub.due_date && (
-                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                                <Calendar size={11} /> {dateValue(sub.due_date)}
-                              </span>
-                            )}
-                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
-                              {sub.assignee ? (
-                                <>
-                                  <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
-                                  <span className="line-clamp-1">{sub.assignee.name}</span>
-                                </>
-                              ) : (
-                                <span>{t('common.unassigned')}</span>
+                          </span>
+                          {sub.due_date && (
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                              <Calendar size={11} /> {dateValue(sub.due_date)}
+                            </span>
+                          )}
+                          {sub.created_at && (
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
+                              <Clock3 size={11} />
+                              <span>{formatCreatedAt(sub.created_at)}</span>
+                              {sub.updated_at && new Date(sub.updated_at).getTime() > new Date(sub.created_at).getTime() + 1000 && (
+                                <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>
                               )}
                             </span>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>

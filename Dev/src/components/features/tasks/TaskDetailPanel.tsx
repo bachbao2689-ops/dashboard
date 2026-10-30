@@ -1,7 +1,7 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import React, { useEffect, useState } from 'react';
-import { X, Clock, MessageSquare, CheckCircle2, User, Calendar, AlignLeft, Edit3, Save } from 'lucide-react';
+import { X, Clock, User, Calendar, AlignLeft, Edit3, Save } from 'lucide-react';
 import { TaskComments } from '../comments/TaskComments';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
@@ -18,6 +18,7 @@ import { WorkflowStatusPicker, canonicalWorkflowStatus, type WorkflowTaskStatus 
 import { TaskDescriptionViewer } from './TaskDescriptionViewer';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
 import { canCompleteTrackedTask, completeTrackedTask } from '../../../services/workspaceTasks';
+import { EntityActionBadges } from '../projects/EntityActionBadges';
 
 interface TaskDetailPanelProps {
   task: any | null;
@@ -270,6 +271,51 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     onTaskUpdated?.({ status: 'done',workflow_status:'completed' }); window.dispatchEvent(new Event('tasks:changed'));toast.success('Task đã hoàn thành');
   };
 
+  const handleTaskPriorityChange = async (newPriority: string) => {
+    if (readOnly || !canEdit || !task || saving) return;
+    setSaving(true);
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from('tasks')
+      .update({ priority: newPriority, updated_at: nowIso })
+      .eq('id', task.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message || 'Lỗi cập nhật mức ưu tiên');
+      return;
+    }
+    onTaskUpdated?.({ priority: newPriority });
+    window.dispatchEvent(new Event('tasks:changed'));
+    toast.success(lang === 'en' ? 'Priority updated' : 'Đã cập nhật mức ưu tiên');
+  };
+
+  const handleTaskStatusChange = async (newStatus: string) => {
+    if (readOnly || !canEdit || !task || saving) return;
+    if (newStatus === 'completed') {
+      if (!canComplete) {
+        toast.error(lang === 'en' ? 'Cannot complete task' : 'Không thể hoàn thành task');
+        return;
+      }
+      await completeTask();
+      return;
+    }
+    setSaving(true);
+    const nowIso = new Date().toISOString();
+    const canonicalStatus = newStatus === 'active' ? 'in_progress' : newStatus;
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status: canonicalStatus, updated_at: nowIso })
+      .eq('id', task.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message || 'Lỗi cập nhật trạng thái');
+      return;
+    }
+    onTaskUpdated?.({ status: canonicalStatus });
+    window.dispatchEvent(new Event('tasks:changed'));
+    toast.success(lang === 'en' ? 'Status updated' : 'Đã cập nhật trạng thái');
+  };
+
   const changePhaseTaskStatus = async (stage: WorkflowTaskStatus): Promise<void> => {
     if (readOnly||!canEdit || !task) return;
     setSaving(true);
@@ -281,7 +327,6 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     window.dispatchEvent(new Event('tasks:changed'));
   };
 
-  const isDone = ['done', 'completed', 'complete'].includes((task?.status || '').toLowerCase());
   return (
     <>
       {isOpen && !embedded && (
@@ -303,7 +348,46 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           <div className="flex items-center gap-1"><TaskActivityLogPopover entityType="task" entityId={task?.id} workspaceId={task?.workspace_id} /><TaskPinButton taskId={task?.id} /><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
         </div>
         {task && <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-          <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{task.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4"><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><CheckCircle2 className="w-4 h-4 inline mr-1 text-primary" />{isDone ? t('common.completed') : task.status || 'To do'}</span><span className="px-3 py-1.5 rounded-full text-sm border border-gray-200 dark:border-slate-700"><Clock className="w-4 h-4 inline mr-1 text-red-500" />{task.priority || 'Medium'}</span>{Boolean((task as any).deliverable_quantity || (task as any).quantity) && <span className="px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">SL: {(task as any).deliverable_quantity ?? (task as any).quantity}</span>}{Boolean((task as any).target_department_name) && <span className="px-3 py-1.5 rounded-full text-sm font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">→ {(task as any).target_department_name}</span>}</div>{task.workflow_phase_id && <div className="mt-4"><WorkflowStatusPicker status={task.status} stage={task.workflow_status} disabled={!canEdit||readOnly} onChange={changePhaseTaskStatus}/></div>}</section>
+          <section>
+            <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{task.title}</h2>
+              {canEdit && !readOnly && (
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(value => !value)}
+                  className="inline-grid grid-flow-col auto-cols-max shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0"
+                  aria-expanded={editingTask}
+                >
+                  <Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
+                </button>
+              )}
+            </div>
+            <div className="mt-4">
+              <EntityActionBadges
+                priority={task.priority || 'medium'}
+                status={task.status || 'planning'}
+                onPriorityChange={canEdit && !readOnly ? handleTaskPriorityChange : undefined}
+                onStatusChange={canEdit && !readOnly ? handleTaskStatusChange : undefined}
+                canManage={canEdit && !readOnly}
+              >
+                {Boolean((task as any).deliverable_quantity || (task as any).quantity) && (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                    SL: {(task as any).deliverable_quantity ?? (task as any).quantity}
+                  </span>
+                )}
+                {Boolean((task as any).target_department_name) && (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                    → {(task as any).target_department_name}
+                  </span>
+                )}
+              </EntityActionBadges>
+            </div>
+            {task.workflow_phase_id && (
+              <div className="mt-4">
+                <WorkflowStatusPicker status={task.status} stage={task.workflow_status} disabled={!canEdit||readOnly} onChange={changePhaseTaskStatus}/>
+              </div>
+            )}
+          </section>
           {editingTask ? (
             <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
               <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
@@ -407,7 +491,6 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           <TaskComments key={`${profileId}:task:${task.id}`} target={{kind:'task',id:task.id}} people={mentionPeople} collaboratorIds={taskCollaborators} allowMobileEditing focusRequest={commentsFocusToken || commentFocus ? `${commentsFocusToken}:${commentFocus}` : undefined} onSent={async (_body,mentions) => { onTaskUpdated?.(); await notifyTaskParticipants(task, {id:profileId,name:profile?.name,department_id:profile?.department_id}, 'task_comment',mentions); }} onDeleted={() => { onTaskUpdated?.(); }}/>
 
         </div>}
-        <div className="sticky bottom-0 z-10 flex min-h-[76px] shrink-0 gap-3 border-t border-gray-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-800" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><button onClick={() => setCommentFocus(value => value + 1)} className="min-h-11 min-w-0 flex-1 rounded-xl border px-3 py-2 text-sm font-bold"><MessageSquare className="mr-2 inline h-4 w-4" />{t('common.comment')}</button><button disabled={isDone || saving || !canComplete} onClick={completeTask} className="min-h-11 min-w-0 flex-1 rounded-xl bg-primary hover:bg-emerald-600 dark:hover:bg-emerald-500 px-3 py-2 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:hover:bg-primary"><CheckCircle2 className="mr-2 inline h-4 w-4" />{isDone ? t('common.completed') : t('common.complete')}</button></div>
       </div>
     </>
   );

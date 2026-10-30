@@ -4,6 +4,12 @@ import { useTranslation } from '../../../i18n/translations';
 import { statusMeta } from '../../../utils/statusTheme';
 import { priorityClass } from './projectPresentation';
 
+export interface StatusOption {
+  value: string;
+  label: string;
+  dotClass: string;
+}
+
 interface EntityActionBadgesProps {
   priority: string;
   status: string;
@@ -11,6 +17,8 @@ interface EntityActionBadgesProps {
   onStatusChange?: (newStatus: string) => unknown;
   onEdit?: () => void;
   canManage?: boolean;
+  statusOptions?: StatusOption[];
+  children?: React.ReactNode;
 }
 
 export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
@@ -20,6 +28,8 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   onStatusChange,
   onEdit,
   canManage = true,
+  statusOptions: statusOptionsProp,
+  children,
 }) => {
   const { lang, t } = useTranslation();
   const isEn = lang === 'en';
@@ -62,12 +72,13 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     { value: 'low', label: isEn ? 'Low' : 'Thấp', dotClass: 'bg-blue-500' },
   ];
 
-  const statusOptions = [
+  const defaultStatusOptions: StatusOption[] = [
     { value: 'planning', label: isEn ? 'Planning' : 'Lên kế hoạch', dotClass: 'bg-amber-400' },
     { value: 'active', label: isEn ? 'In Progress' : 'Đang thực hiện', dotClass: 'bg-sky-400' },
     { value: 'completed', label: isEn ? 'Completed' : 'Hoàn thành', dotClass: 'bg-emerald-500' },
     { value: 'on_hold', label: isEn ? 'On Hold' : 'Tạm dừng', dotClass: 'bg-slate-400' },
   ];
+  const statusOptions = statusOptionsProp || defaultStatusOptions;
 
   const currentPriorityOpt = priorityOptions.find((p) => p.value === currentPriority) || {
     value: currentPriority,
@@ -93,7 +104,12 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   const currentStatusLabel = isEn ? (enStatusMap[meta.label] || meta.label) : meta.label;
 
   return (
-    <div ref={containerRef} className="grid grid-cols-[auto_auto_1fr] items-center gap-2 w-full relative">
+    <div
+      ref={containerRef}
+      className={`grid grid-flow-col auto-cols-max items-center gap-2 relative ${
+        canManage && onEdit ? 'w-full' : ''
+      }`}
+    >
       {/* 1. Priority Dropdown Button */}
       <div className="relative inline-block">
         <button
@@ -185,33 +201,43 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
             className="absolute top-full left-0 mt-1.5 z-40 w-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1 backdrop-blur-md"
             role="listbox"
           >
-            {statusOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  setStatusOpen(false);
-                  if (opt.value !== currentStatus) {
-                    onStatusChange?.(opt.value);
-                  }
-                }}
-                className={`w-full text-left px-3 py-1.5 text-xs font-medium grid grid-flow-col auto-cols-max items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
-                  currentStatus === opt.value
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : 'text-gray-700 dark:text-gray-200'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} />
-                <span>{opt.label}</span>
-              </button>
-            ))}
+            {statusOptions.map((opt) => {
+              const isSelected =
+                currentStatus === opt.value ||
+                (opt.value === 'active' && (currentStatus === 'in_progress' || currentStatus === 'doing')) ||
+                (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog' || currentStatus === 'todo')) ||
+                (opt.value === 'completed' && (currentStatus === 'done' || currentStatus === 'complete'));
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setStatusOpen(false);
+                    if (!isSelected) {
+                      onStatusChange?.(opt.value);
+                    }
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs font-medium grid grid-flow-col auto-cols-max items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
+                    isSelected
+                      ? 'bg-primary/10 text-primary font-bold'
+                      : 'text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} />
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
+      {/* Children (e.g. SL badge) */}
+      {children}
+
       {/* 3. Edit Icon Button (right aligned) */}
       {canManage && onEdit && (
-        <div className="justify-self-end">
+        <div className="ml-auto justify-self-end">
           <button
             type="button"
             onClick={onEdit}
