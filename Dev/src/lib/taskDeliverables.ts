@@ -71,11 +71,12 @@ export function computeDeliverableQuantity(taskOrMeta?: {
     return sum + (Number.isFinite(q) && q > 0 ? q : 0);
   }, 0);
 
-  // If user entered quantity for task/subtask or checklist items, take their sum.
-  // Otherwise fallback to 1 unit of deliverable.
-  const totalQuantity = (baseQuantity > 0 || checklistQuantity > 0)
-    ? (baseQuantity + checklistQuantity)
-    : 1;
+  // Khi có checklist items với số lượng (checklistQuantity > 0), thì totalQuantity = checklistQuantity
+  // (tránh double count baseQuantity + checklistQuantity).
+  // Nếu không có checklist quantity, dùng baseQuantity (nếu > 0) hoặc fallback về 1.
+  const totalQuantity = checklistQuantity > 0
+    ? checklistQuantity
+    : (baseQuantity > 0 ? baseQuantity : 1);
 
   return { baseQuantity, checklistQuantity, totalQuantity };
 }
@@ -89,47 +90,72 @@ export async function saveTaskDeliverables(
 ) {
   if (!entityId) return;
   const cacheKey = `${entityType}:${entityId}`;
-  const { supabase } = await import('../services/supabase.ts');
-  const {error} = await supabase.from('activity_log').insert({
+  let existing = getCachedDeliverable(cacheKey);
+  if (!existing || existing.checklist_items === undefined || existing.quantity === undefined) {
+    const remote = await fetchTaskDeliverableMeta(entityType, entityId);
+    if (remote) {
+      existing = { ...remote, ...(existing || {}) };
+    }
+  }
+  const merged: TaskDeliverableMeta = { ...(existing || {}), ...updates };
+  setCachedDeliverable(cacheKey, merged);
+
+  try {
+    const { supabase } = await import('../services/supabase.ts');
+    const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
       user_id: profileId ? Number(profileId) || null : null,
       action: 'details_updated',
       entity_type: entityType,
       entity_id: String(entityId),
       metadata: {
-        ...updates,
+        ...merged,
         is_internal_detail_sync: true,
       },
-  });
-  if (error) throw error;
-  setCachedDeliverable(cacheKey, updates);
-  window.dispatchEvent(new Event('tasks:changed'));
+    });
+    if (error) throw error;
+    window.dispatchEvent(new Event('tasks:changed'));
+  } catch (err) {
+    console.warn('Failed to sync deliverable metadata to activity_log:', err);
+  }
 }
 
 export async function fetchTaskDeliverableMeta(
   entityType: 'task' | 'project_subtask' | 'campaign_subtask',
   entityId: string | number,
+  forceRefresh = false,
 ): Promise<TaskDeliverableMeta | undefined> {
   const cacheKey = `${entityType}:${entityId}`;
-  const { supabase } = await import('../services/supabase.ts');
-  const patches: TaskDeliverableMeta[] = [];
-  for (let offset = 0; ; offset += 500) {
-    const { data, error } = await supabase
+  if (!forceRefresh) {
+    const cached = getCachedDeliverable(cacheKey);
+    if (cached && (cached.checklist_items !== undefined || cached.quantity !== undefined)) return cached;
+  }
+  try {
+    const { supabase } = await import('../services/supabase.ts');
+    const { data } = await supabase
+
       .from('activity_log')
       .select('metadata')
       .eq('entity_type', entityType)
       .eq('entity_id', String(entityId))
       .eq('action', 'details_updated')
       .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-      .range(offset, offset + 499);
-    if (error) throw error;
-    patches.push(...(data || []).map(row => row.metadata || {}));
-    if (!data || data.length < 500) break;
+      .limit(10);
+    if (data && data.length > 0) {
+      // Merge across rows from oldest to newest so newest fields override older ones
+      // without dropping fields recorded in an earlier details_updated row.
+      const merged: TaskDeliverableMeta = {};
+      for (let i = data.length - 1; i >= 0; i--) {
+        const rowMeta = data[i]?.metadata;
+        if (rowMeta && typeof rowMeta === 'object') {
+          Object.assign(merged, rowMeta);
+        }
+      }
+      setCachedDeliverable(cacheKey, merged);
+      return merged;
+    }
+  } catch {
+    // Ignore fetch error
   }
-  if (!patches.length) return undefined;
-  const meta = mergeDeliverableMetadata(patches);
-  // Replace stale cache fields; persisted business data is authoritative.
-  const cache = getStorageCache(); cache[cacheKey] = meta; setStorageCache(cache);
-  return meta;
+  return getCachedDeliverable(cacheKey);
 }

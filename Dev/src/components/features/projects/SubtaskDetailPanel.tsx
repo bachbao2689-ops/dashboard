@@ -6,7 +6,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, CheckCircle2, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
+import { AlignLeft, Calendar, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
@@ -21,8 +21,9 @@ import { canonicalWorkflowStatus, workflowStage, type WorkflowTaskStatus } from 
 import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
 import { inputDate } from '../../../lib/workflowHub';
-import { saveTaskDeliverables, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
+import { saveTaskDeliverables, fetchTaskDeliverableMeta, setCachedDeliverable } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
+import { EntityActionBadges } from './EntityActionBadges';
 
 type Person = { id: number; name: string; avatar_url?: string | null };
 export interface SubtaskChecklistItem {
@@ -101,6 +102,8 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [canCompleteTask, setCanCompleteTask] = useState(false);
   const [subtaskQuantity, setSubtaskQuantity] = useState<string>('');
   const [editSubtaskQuantity, setEditSubtaskQuantity] = useState<string>('');
+  const [targetDepartmentId, setTargetDepartmentId] = useState<string | null>(null);
+  const [targetDepartmentName, setTargetDepartmentName] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
@@ -108,19 +111,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editDueDate, setEditDueDate] = useState('');
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
-  const totalChecklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) + (Number(subtaskQuantity) || 0);
+  const checklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+  const totalChecklistQuantity = checklistQuantity > 0 ? checklistQuantity : (Number(subtaskQuantity) || 0);
 
-  const formatStatusLabel = (st?: string | null) => {
-    const s = (st || '').toLowerCase().trim();
-    if (completed || s === 'completed' || s === 'done') return t('common.completed');
-    if (s === 'in_progress' || s === 'doing') return lang === 'en' ? 'In progress' : 'Đang thực hiện';
-    if (s === 'backlog') return lang === 'en' ? 'Backlog' : 'Chờ xử lý';
-    if (s === 'planned') return lang === 'en' ? 'Planned' : 'Đã lên kế hoạch';
-    if (s === 'scoping') return lang === 'en' ? 'Scoping' : 'Làm rõ phạm vi';
-    if (s === 'in_qa' || s === 'review') return lang === 'en' ? 'In review' : 'Rà soát & duyệt';
-    if (s === 'canceled' || s === 'cancelled') return lang === 'en' ? 'Canceled' : 'Đã hủy';
-    return st || (lang === 'en' ? 'To do' : 'Chưa bắt đầu');
-  };
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
@@ -225,21 +218,32 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const subtaskId = subtask?.id;
   const reload = useCallback(async () => {
     if (!subtaskId) return;
-    let meta;
-    try { meta = await fetchTaskDeliverableMeta(entityType, subtaskId); }
-    catch (error: any) { toast.error(error?.message || 'Không tải được sản lượng đã lưu'); return; }
-    if (meta?.quantity != null) {
-      setSubtaskQuantity(String(meta.quantity));
-      setEditSubtaskQuantity(String(meta.quantity));
-    } else {
-      setSubtaskQuantity('');
-      setEditSubtaskQuantity('');
+    const meta = await fetchTaskDeliverableMeta(entityType, subtaskId);
+    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type',entityType).eq('entity_id',subtaskId).eq('action','details_updated').order('created_at',{ascending:false}).limit(1);
+    const details = detailsResult.data?.[0]?.metadata || {};
+    const loadedChecklist = Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []);
+    const chkQty = loadedChecklist.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
+
+    let rawBase: string = '';
+    if ((subtask as any)?.quantity != null && (subtask as any)?.quantity !== '') {
+      rawBase = String((subtask as any).quantity);
+    } else if (meta?.base_quantity != null) {
+      rawBase = String(meta.base_quantity);
+    } else if (details.base_quantity != null) {
+      rawBase = String(details.base_quantity);
+    } else if (chkQty === 0) {
+      if (meta?.quantity != null) rawBase = String(meta.quantity);
+      else if (details.quantity != null) rawBase = String(details.quantity);
     }
-    const details = meta || {};
-    setDescription(details.description || '');
-    setImageUrl(details.image_url || '');
-    setChecklistItems(Array.isArray(details.checklist_items) ? details.checklist_items.map(item => ({...item, created_at: item.created_at || ''})) : []);
-  }, [subtaskId, entityType]);
+    setSubtaskQuantity(rawBase);
+    setEditSubtaskQuantity(rawBase);
+
+    setDescription(details.description || meta?.description || '');
+    setImageUrl(details.image_url || meta?.image_url || '');
+    setTargetDepartmentId(meta?.target_department_id || details.target_department_id || null);
+    setTargetDepartmentName(meta?.target_department_name || details.target_department_name || null);
+    setChecklistItems(loadedChecklist);
+  }, [subtaskId, entityType, (subtask as any)?.quantity]);
 
   useEffect(() => {
     setCommentFocus(0);
@@ -370,6 +374,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       });
 
       const nextItems = [...checklistItems, newItem];
+      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const baseQuantityValue = Number(subtaskQuantity) || null;
+      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
         user_id: profile.id,
@@ -380,8 +388,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       setChecklistItems(nextItems);
@@ -408,6 +429,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     if (!targetItem) return;
     const nextCompleted = !targetItem.completed;
     const nextItems = checklistItems.map(i => i.id === itemId ? { ...i, completed: nextCompleted } : i);
+    const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    const baseQuantityValue = Number(subtaskQuantity) || null;
+    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
     setChecklistItems(nextItems);
     try {
@@ -421,8 +445,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -449,6 +486,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const targetItem = checklistItems.find(i => i.id === itemId);
     if (!targetItem) return;
     const nextItems = checklistItems.filter(i => i.id !== itemId);
+    const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    const baseQuantityValue = Number(subtaskQuantity) || null;
+    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
     setChecklistItems(nextItems);
     try {
@@ -462,8 +502,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -554,6 +607,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         quantity: Number.isFinite(numItemQ) && numItemQ > 0 ? numItemQ : null,
         due_date: itemDue || null,
       } : i);
+      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const baseQuantityValue = Number(subtaskQuantity) || null;
+      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
 
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
@@ -565,8 +621,21 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           description,
           image_url: imageUrl || null,
           checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
         },
+      });
+      setCachedDeliverable(`${entityType}:${subtask.id}`, {
+        description,
+        image_url: imageUrl || null,
+        checklist_items: nextItems,
+        quantity: effectiveQuantity,
+        base_quantity: baseQuantityValue,
+        target_department_id: targetDepartmentId,
+        target_department_name: targetDepartmentName,
       });
 
       void logTaskActivity({
@@ -722,14 +791,28 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       }
 
       const numQ = Number(editSubtaskQuantity);
+      const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
+      const effectiveQuantity = checklistQuantity > 0
+        ? checklistQuantity
+        : baseQuantityValue;
+
       await saveTaskDeliverables(
         entityType,
         subtask.id,
-        { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+        {
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          checklist_items: checklistItems,
+          description,
+          image_url: imageUrl || null,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
+        },
         profile?.id,
         workspaceId,
       );
-      setSubtaskQuantity(Number.isFinite(numQ) && numQ > 0 ? String(numQ) : '');
+      setSubtaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
+      setEditSubtaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
 
       setEditingTask(false);
       onUpdated({ ...subtask, ...values, assignee: assignee ? { name: assignee.name, avatar_url: assignee.avatar_url } : null });
@@ -752,6 +835,82 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       toast.success('Đã hoàn thành subtask');
     } catch (error: any) { toast.error(error.message || 'Không thể hoàn thành subtask'); }
     finally { setSaving(false); }
+  };
+
+  const handlePriorityChange = async (newPriority: string) => {
+    if (readOnly || !canEdit || !subtask || saving) return;
+    setSaving(true);
+    const nowIso = new Date().toISOString();
+    const values = { priority: newPriority, updated_at: nowIso };
+    try {
+      await updateTrackedTask(taskKey(entityType, subtask.id), values, currentUpdatedAt || subtask.updated_at);
+      setCurrentUpdatedAt(nowIso);
+      onUpdated({ ...subtask, ...values });
+      toast.success(lang === 'en' ? 'Priority updated' : 'Đã cập nhật mức ưu tiên');
+      const actorName = profile?.name || 'Thành viên';
+      void logTaskActivity({
+        workspaceId,
+        userId: profile?.id,
+        action: 'task_updated',
+        entityType,
+        entityId: subtask.id,
+        oldValue: { priority: subtask.priority },
+        newValue: { priority: newPriority },
+        metadata: {
+          field: 'priority',
+          title: `${actorName} đã đổi mức ưu tiên: "${subtask.priority || 'medium'}" → "${newPriority}"`,
+          actor_name: actorName,
+        },
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi cập nhật mức ưu tiên');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (readOnly || !canEdit || !subtask || saving) return;
+    if (newStatus === 'completed') {
+      if (!canCompleteTask) {
+        toast.error(lang === 'en' ? 'Cannot complete: Checklist items are still open.' : 'Không thể hoàn thành: Vẫn còn đầu việc chưa xong.');
+        return;
+      }
+      await complete();
+      return;
+    }
+    setSaving(true);
+    const nowIso = new Date().toISOString();
+    const values = {
+      status: newStatus,
+      workflow_status: newStatus === 'active' ? 'in_progress' : newStatus,
+      updated_at: nowIso,
+    };
+    try {
+      await updateTrackedTask(taskKey(entityType, subtask.id), values, currentUpdatedAt || subtask.updated_at);
+      setCurrentUpdatedAt(nowIso);
+      onUpdated({ ...subtask, ...values });
+      toast.success(lang === 'en' ? 'Status updated' : 'Đã cập nhật trạng thái');
+      const actorName = profile?.name || 'Thành viên';
+      void logTaskActivity({
+        workspaceId,
+        userId: profile?.id,
+        action: 'task_updated',
+        entityType,
+        entityId: subtask.id,
+        oldValue: { status: subtask.status },
+        newValue: { status: newStatus },
+        metadata: {
+          field: 'status',
+          title: `${actorName} đã đổi trạng thái: "${subtask.status || 'todo'}" → "${newStatus}"`,
+          actor_name: actorName,
+        },
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi cập nhật trạng thái');
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -791,26 +950,36 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
-        <section><div className="flex items-start justify-between gap-3"><h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>{canEdit && !readOnly && <button type="button" onClick={() => setEditingTask(value => !value)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0" aria-expanded={editingTask}><Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}</button>}</div><div className="flex flex-wrap gap-2 mt-4">
+        <section>
+          <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>
+            {canEdit && !readOnly && (
               <button
                 type="button"
-                onClick={!completed && canComplete ? complete : undefined}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-2xs ${!completed && canComplete ? 'cursor-pointer hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400' : ''}`}
-                title={!completed && canComplete ? (lang === 'en' ? 'Click to complete' : 'Bấm để hoàn thành') : undefined}
+                onClick={() => setEditingTask(value => !value)}
+                className="inline-grid grid-flow-col auto-cols-max shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0"
+                aria-expanded={editingTask}
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                <span>{formatStatusLabel(subtask.status)}</span>
+                <Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
               </button>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold lowercase border border-gray-200 dark:border-slate-700 shadow-2xs ${priorityClass(priority)}`}>
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
-                {t("common.priority")}: {t(`common.${priority}` as any).toLowerCase()}
-              </span>
+            )}
+          </div>
+          <div className="mt-4">
+            <EntityActionBadges
+              priority={priority}
+              status={subtask.status || 'planning'}
+              onPriorityChange={canEdit && !readOnly ? handlePriorityChange : undefined}
+              onStatusChange={canEdit && !readOnly ? handleStatusChange : undefined}
+              canManage={canEdit && !readOnly}
+            >
               {totalChecklistQuantity > 0 && (
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
-                  {lang === "en" ? "Total Qty" : "Tổng số lượng"}: {totalChecklistQuantity}
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                  SL: {totalChecklistQuantity}
                 </span>
               )}
-            </div></section>
+            </EntityActionBadges>
+          </div>
+        </section>
         
         {editingTask ? <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
           <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
@@ -881,10 +1050,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 type="number"
                 min="0"
                 step="1"
-                value={editSubtaskQuantity}
+                value={checklistQuantity > 0 ? checklistQuantity : editSubtaskQuantity}
                 onChange={event => setEditSubtaskQuantity(event.target.value)}
+                disabled={checklistQuantity > 0}
                 placeholder="0"
-                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
               />
             </label>
           </div>
