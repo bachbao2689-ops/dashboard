@@ -10,7 +10,8 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
-import { X, CheckCircle2, Trash2, Plus, Users } from 'lucide-react';
+import { X, Trash2, Plus, Users, Calendar } from 'lucide-react';
+import { priorityClass } from './projectPresentation';
 import { Avatar } from '../../common/Avatar';
 import { SmartCommentInput } from '../comments/SmartCommentInput';
 import { CommentMessage } from '../comments/CommentMessage';
@@ -34,7 +35,7 @@ export function ProjectCampaignDetailPanel(props:PanelProps) {
   return <ProjectCampaignDetailContent key={`${profile?.id}:${profile?.role}:${profile?.department_id}:${props.kind}:${props.item.id}`} {...props} />;
 }
 function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   useReadEntityNotifications(kind,item.id);
   const navigate = useNavigate();
   const details = useProjectCampaignDetails(kind, item.id);
@@ -131,11 +132,30 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     if (readOnly || !profile?.id || (!canManage && !isGlobalManager(profile) && Number(sub.assignee_id) !== Number(profile.id)) || isTaskDone(sub.status)) return;
     try {
       await completeTrackedTask(taskKey(`${kind}_subtask`, sub.id));
-      toast.success('Đã hoàn thành subtask');
+      toast.success(lang === 'en' ? 'Subtask completed' : 'Đã hoàn thành subtask');
       void details.refresh();
       window.dispatchEvent(new Event('tasks:changed'));
       onUpdated?.();
     } catch (error: any) { toast.error(error?.message || 'Không thể hoàn thành subtask.'); }
+  };
+
+  const toggleSubtask = async (sub: any) => {
+    const canToggle = !readOnly && Boolean(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id));
+    if (!canToggle) return;
+    if (isTaskDone(sub.status)) {
+      try {
+        const { error } = await supabase.from(`${kind}_subtasks`).update({ status: 'in_progress' }).eq('id', sub.id);
+        if (error) throw error;
+        toast.success(lang === 'en' ? 'Subtask reopened' : 'Đã mở lại subtask');
+        void details.refresh();
+        window.dispatchEvent(new Event('tasks:changed'));
+        onUpdated?.();
+      } catch (error: any) {
+        toast.error(error?.message || 'Không thể cập nhật subtask');
+      }
+    } else {
+      await completeSubtask(sub);
+    }
   };
 
   const visibleSubtasks = subtasks.filter(sub => {
@@ -233,25 +253,83 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               <div className="space-y-2">
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
-                ) : visibleSubtasks.map(sub => (
-                  <div key={sub.id} className={`p-3 rounded-xl border text-sm flex justify-between items-start ${isTaskDone(sub.status) ? 'border-emerald-500 bg-emerald-50/70 dark:border-emerald-500/50 dark:bg-emerald-950/20' : 'bg-slate-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700'}`}>
-                    <div>
-                      <button onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))} className={`text-left font-bold ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>{sub.title}</button>
-                      <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
-                        <span className="flex items-center gap-1.5"><Avatar name={sub.assignee?.name || t('common.unassigned')} src={sub.assignee?.avatar_url} className="w-4 h-4 text-[9px]" /> {sub.assignee?.name || t('common.unassigned')}</span>
-                        {sub.due_date && <span className="font-bold text-red-600 dark:text-red-400">{dateValue(sub.due_date)}</span>}
+                ) : visibleSubtasks.map(sub => {
+                  const canToggle = !readOnly && Boolean(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id));
+                  return (
+                    <div
+                      key={sub.id}
+                      className={`p-3 rounded-xl border text-sm group relative transition-all ${
+                        isTaskDone(sub.status)
+                          ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
+                          : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+                      }`}
+                    >
+                      {/* Hover action buttons in top-right */}
+                      <div
+                        className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
+                        onClick={event => event.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Xóa ${sub.title}`}
+                          disabled={busy || !canManage}
+                          onClick={() => removeSubtask(sub.id)}
+                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      {/* Main content grid: Checkbox + info */}
+                      <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-h-[32px] pr-8 select-none">
+                        <input
+                          type="checkbox"
+                          checked={isTaskDone(sub.status)}
+                          disabled={!canToggle || busy}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => void toggleSubtask(sub)}
+                          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))}
+                            className={`text-sm block font-medium text-left ${
+                              isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'
+                            }`}
+                          >
+                            {sub.title}
+                          </button>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1.5 overflow-x-auto scrollbar-none">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
+                              {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
+                            </span>
+                            {Boolean(sub.quantity) && (
+                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                                SL: {sub.quantity}
+                              </span>
+                            )}
+                            {sub.due_date && (
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                                <Calendar size={11} /> {dateValue(sub.due_date)}
+                              </span>
+                            )}
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                              {sub.assignee ? (
+                                <>
+                                  <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                                  <span className="line-clamp-1">{sub.assignee.name}</span>
+                                </>
+                              ) : (
+                                <span>{t('common.unassigned')}</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {(canManage || isGlobalManager(profile) || Number(sub.assignee_id) === Number(profile?.id)) && !isTaskDone(sub.status) && (
-                        <button aria-label={t('common.complete')} disabled={busy} onClick={() => void completeSubtask(sub)} className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-colors" title={t('common.complete')}>
-                          <CheckCircle2 size={15}/>
-                        </button>
-                      )}
-                      <button aria-label={`Xóa ${sub.title}`} disabled={busy || !canManage} onClick={() => removeSubtask(sub.id)} className="p-1 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {canManage && !showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
               {canManage && showSubtaskForm && (
