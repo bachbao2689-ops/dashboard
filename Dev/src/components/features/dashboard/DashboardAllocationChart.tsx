@@ -4,7 +4,7 @@ const toYmd=(date:Date)=>[date.getFullYear(),String(date.getMonth()+1).padStart(
 import {AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer} from 'recharts';
 import {useTranslation} from '../../../i18n/translations';
 const INK='text-gray-900 dark:text-white',MUTED='text-gray-500 dark:text-gray-400',INNER='border border-gray-200 dark:border-slate-700';
-const displayDate=(value:string,locale='vi-VN')=>new Date(`${value}T00:00:00`).toLocaleDateString(locale);
+const displayDate=(value?:string,locale='vi-VN')=>{if(!value)return '';const d=new Date(value.includes('T')?value:`${value}T00:00:00`);return isNaN(d.getTime())?value:d.toLocaleDateString(locale);};
 type Props={name:string;className?:string;rangeStart:string;rangeEnd:string;range?: 'weekly'|'custom';setRange?:(value:'weekly'|'custom')=>void;customStart?:string;setCustomStart?:(value:string)=>void;customEnd?:string;setCustomEnd?:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[];hideDateFilter?:boolean};
 export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly',setRange,customStart='',setCustomStart,customEnd='',setCustomEnd,isDark,chartData,className,hideDateFilter=false}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
           {/* Chart */}

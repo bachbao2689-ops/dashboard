@@ -290,8 +290,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(94%, clamp(880px, 60vw, 1140px));
-  height: clamp(430px, 54vh, 580px);
+  width: min(94%, clamp(640px, 46vw, 860px));
+  height: clamp(420px, 52vh, 560px);
   max-height: calc(100vh - 80px);
   border-radius: 26px;
   border: 1.5px solid rgba(255, 255, 255, 0.95);
@@ -700,4 +700,46 @@
 
 .dark [data-profile-tooltip]::before {
   border-top-color: rgba(78, 182, 72, 0.6);
+}
+
+/* ========================================================
+   2K & 4K RESOLUTION SCALING (Full HD, 2K, 4K, 16:9, 16:10)
+   ======================================================== */
+@media (min-width: 1920px) {
+  .report-profiles {
+    gap: clamp(16px, 1.5vw, 28px);
+  }
+  .report-profile-surface {
+    min-height: 350px;
+  }
+  .report-profile-expanded {
+    width: min(90%, clamp(740px, 44vw, 980px));
+    height: clamp(480px, 50vh, 620px);
+  }
+}
+
+@media (min-width: 2560px) {
+  .report-profiles {
+    gap: clamp(20px, 1.8vw, 36px);
+  }
+  .report-profile {
+    border-radius: 40px;
+    padding: 10px;
+  }
+  .report-profile-surface {
+    min-height: 420px;
+    border-radius: 32px;
+  }
+  .report-profile-identity h3 {
+    font-size: 1.25rem;
+  }
+  .report-profile-identity p {
+    font-size: 0.95rem;
+  }
+  .report-profile-expanded {
+    width: min(85%, clamp(880px, 42vw, 1200px));
+    height: clamp(560px, 48vh, 740px);
+    border-radius: 32px;
+    padding: 24px;
+  }
 }

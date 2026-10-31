@@ -208,6 +208,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const expandedModalRef = useRef<HTMLDivElement>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
+  const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
   const isDark = useUiStore((state) => state.theme) === 'dark';
   const toYmd = (d: Date) =>
@@ -671,7 +672,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const rangePanelRef = useRef<HTMLDivElement>(null);
 
   // Expandable Box state with auto-closing on outside click
-  const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
   const toggleExpanded = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setActiveExpandedId((prev) => (prev === id ? null : id));

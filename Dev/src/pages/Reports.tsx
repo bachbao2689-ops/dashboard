@@ -4,9 +4,19 @@ import { canViewTeamManagement } from '../lib/roleScope';
 import { useTranslation } from '../i18n/translations';
 
 const ReportAnalytics = lazy(() =>
-  import('../components/features/reports/ReportAnalytics').then((module) => ({
-    default: module.ReportAnalytics,
-  })),
+  import('../components/features/reports/ReportAnalytics')
+    .then((module) => ({
+      default: module.ReportAnalytics,
+    }))
+    .catch((error) => {
+      // Handle chunk mismatch when new deployment occurs
+      const hasRetried = sessionStorage.getItem('reports_chunk_retry');
+      if (!hasRetried) {
+        sessionStorage.setItem('reports_chunk_retry', '1');
+        window.location.reload();
+      }
+      throw error;
+    }),
 );
 
 export function Reports({ standalone = false }: { standalone?: boolean }) {
