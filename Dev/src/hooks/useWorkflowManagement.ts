@@ -10,7 +10,7 @@ import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/
 import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 import {supabase} from '../services/supabase';
 import {completeTrackedTask} from '../services/workspaceTasks';
-import {isGlobalManager} from '../lib/roleScope';
+import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
 import toast from 'react-hot-toast';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
@@ -128,14 +128,22 @@ export function useWorkflowManagement() {
     return () => { cancelCloseTooltip(); document.removeEventListener('click', click); window.removeEventListener('keydown', key); };
   }, [pinnedTooltip]);
   const allTasks = useMemo(() => currentEntity ? parentTasks(hub.tasks, currentEntity.type, currentEntity.entity_id) : [], [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
+  // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Workflow Management
   const phases: Phase[] = useMemo(() => (currentEntity?.phases || []).map(p => {
+    const isLeaderOrCreator = Boolean(
+      isAdmin(hub.profile) ||
+      isGlobalManager(hub.profile) ||
+      isDepartmentLeader(hub.profile) ||
+      currentEntity?.root
+    );
+    const canEditPhaseTasks = isLeaderOrCreator || p.can_edit_tasks;
     const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
-    const progress = p.can_edit_tasks ? taskProgress(rows).percent : null;
+    const progress = canEditPhaseTasks ? taskProgress(rows).percent : null;
     const score = gateScore(p.gate_criteria || []);
-    return { ...p, name: p.position + '. ' + p.title, desc: p.description || '', progress,
+    return { ...p, can_edit_tasks: canEditPhaseTasks, name: p.position + '. ' + p.title, desc: p.description || '', progress,
       gateChance: p.opportunity ?? (score != null && progress != null ? Math.round(score * .65 + progress * .35) : null),
       displayStatus: p.status === 'completed' ? 'completed' : ['in_progress','in_review'].includes(p.status) ? 'active' : 'locked' };
-  }), [currentEntity, allTasks]);
+  }), [currentEntity, allTasks, hub.profile]);
   const requestedPhaseIndex = phases.findIndex(p => p.id === activePhaseId);
   const activePhaseIndex = requestedPhaseIndex >= 0 ? requestedPhaseIndex : Math.max(0, phases.findIndex(p => p.status === 'in_progress' || p.status === 'in_review'));
   const activePhase = phases[activePhaseIndex];

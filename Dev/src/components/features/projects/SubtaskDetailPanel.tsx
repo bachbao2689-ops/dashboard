@@ -112,7 +112,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
   const checklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
-  const totalChecklistQuantity = checklistQuantity > 0 ? checklistQuantity : (Number(subtaskQuantity) || 0);
+  const totalChecklistQuantity = (Number(subtaskQuantity) || 0) + checklistQuantity;
 
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
@@ -348,7 +348,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           newValue: { due_date: itemDue },
           metadata: {
             title: `${profile.name || 'Thành viên'} đã kéo dài hạn chót đến ${displayDate(itemDue)} (do giao thêm việc)`,
-            reason: `Thêm đầu việc "${newItemTitle.trim()}" có hạn chót dài hơn`,
+            reason: `Thêm việc phát sinh "${newItemTitle.trim()}" có hạn chót dài hơn`,
             old_due_date: subtask.due_date,
             new_due_date: itemDue,
             item_title: newItemTitle.trim(),
@@ -376,7 +376,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       const nextItems = [...checklistItems, newItem];
       const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
       const baseQuantityValue = Number(subtaskQuantity) || null;
-      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+      const effectiveQuantity = (baseQuantityValue || 0) + nextChecklistQuantity;
 
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
@@ -431,7 +431,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const nextItems = checklistItems.map(i => i.id === itemId ? { ...i, completed: nextCompleted } : i);
     const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
     const baseQuantityValue = Number(subtaskQuantity) || null;
-    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+    const effectiveQuantity = (baseQuantityValue || 0) + nextChecklistQuantity;
 
     setChecklistItems(nextItems);
     try {
@@ -488,7 +488,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const nextItems = checklistItems.filter(i => i.id !== itemId);
     const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
     const baseQuantityValue = Number(subtaskQuantity) || null;
-    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+    const effectiveQuantity = (baseQuantityValue || 0) + nextChecklistQuantity;
 
     setChecklistItems(nextItems);
     try {
@@ -609,7 +609,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       } : i);
       const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
       const baseQuantityValue = Number(subtaskQuantity) || null;
-      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+      const effectiveQuantity = (baseQuantityValue || 0) + nextChecklistQuantity;
 
       await supabase.from('activity_log').insert({
         workspace_id: workspaceId,
@@ -1082,11 +1082,11 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 <>
                   <ListTodo className={`w-4 h-4 ${isAllDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`} />
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                    {lang === 'en' ? 'Checklist' : 'Đầu việc'}
+                    {lang === 'en' ? 'Checklist' : 'Việc phát sinh'}
                   </h3>
                   {total > 0 && (
                     <span
-                      title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                      title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
                       className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md border ${
                         isAllDone
                           ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
@@ -1277,7 +1277,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               <div className="rounded-xl border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
                 {lang === 'en'
                   ? `No checklist items yet. ${canAddSubtaskItem ? 'Click "Add item" to assign work.' : ''}`
-                  : `Chưa có đầu việc nào. ${canAddSubtaskItem ? 'Bấm "Thêm đầu việc" để giao thêm việc.' : ''}`}
+                  : `Chưa có việc phát sinh nào. ${canAddSubtaskItem ? 'Bấm "Thêm việc phát sinh" để giao thêm việc.' : ''}`}
               </div>
             )
           )}
@@ -1290,7 +1290,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
             >
               <Plus size={16} className="inline mr-1" />
-              <span>{lang === 'en' ? 'Add item' : 'Thêm đầu việc'}</span>
+              <span>{lang === 'en' ? 'Add item' : 'Thêm việc phát sinh'}</span>
             </button>
           )}
 
@@ -1402,7 +1402,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onClick={() => void handleAddChecklistItem()}
                   className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add item' : 'Thêm đầu việc')}
+                  {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add item' : 'Thêm việc phát sinh')}
                 </button>
               </div>
             </div>

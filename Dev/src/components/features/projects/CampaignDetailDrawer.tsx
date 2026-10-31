@@ -9,7 +9,7 @@ import {Avatar} from '../../common/Avatar';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {CommentMessage} from '../comments/CommentMessage';
 import {MultiSelect} from '../../common/MultiSelect';
-import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo} from 'lucide-react';
+import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCircle2} from 'lucide-react';
 import {dateValue,priorityClass,getCampaignPriority,setCachedCampaignPriority} from './projectPresentation';
 import {EntityPinButton} from './EntityPinButton';
 import {TaskActivityLogPopover} from '../tasks/TaskActivityLogPopover';
@@ -112,11 +112,22 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
           : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
       }`}
     >
-      {/* Hover action buttons in top-right */}
+      {/* Hover action buttons in top-right (REQ-TOT-05 / Slide 4) */}
       <div
         className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
         onClick={event => event.stopPropagation()}
       >
+        {canToggle && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void toggleCampaignSubtask(s); }}
+            title={isTaskDone(s.status) ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark done' : 'Hoàn thành nhanh')}
+            aria-label={isTaskDone(s.status) ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark done' : 'Hoàn thành nhanh')}
+            className="p-1 rounded-lg text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+          >
+            <Check size={13} strokeWidth={2.5} />
+          </button>
+        )}
         <TaskPinButton taskId={taskKey('campaign_subtask', s.id)} size={13} className="!p-1" />
         {selectedRoot && (
           <button
@@ -131,21 +142,15 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
         )}
       </div>
 
-      {/* Main content layout: Checkbox + Column 2 */}
-      <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-w-0 pr-14 select-none">
-        <input
-          type="checkbox"
-          checked={isTaskDone(s.status)}
-          disabled={!canToggle}
-          onClick={(e) => e.stopPropagation()}
-          onChange={() => void toggleCampaignSubtask(s)}
-          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-        />
-        <div className="min-w-0 grid grid-cols-1 gap-1.5">
-          {/* Row 1: Title */}
-          <span className={`text-sm font-semibold block break-words line-clamp-2 ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
-            {s.title}
-          </span>
+      {/* Main content layout: Title (with done checkmark icon) + Metadata (REQ-TOT-05 / Slide 4) */}
+      <div className="min-w-0 grid grid-cols-1 gap-1.5 pr-14 select-none">
+        {/* Row 1: Title */}
+        <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+          {s.title}
+          {isTaskDone(s.status) && (
+            <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
+          )}
+        </span>
 
           {/* Row 2: Badges */}
           <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
@@ -167,7 +172,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               const isAllDone = done === total && total > 0;
               return (
                 <span
-                  title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Đầu việc: ${done}/${total} hoàn thành`}
+                  title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
                   className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
                     isAllDone
                       ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
@@ -210,7 +215,6 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               )}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

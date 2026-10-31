@@ -37,14 +37,14 @@ test('workflow completion and removed rows are treated consistently by task and 
 });
 
 test('base plus checklist quantity is counted once and ignores a stale precomputed total',()=>{
- assert.equal(reportDeliverableQuantity({quantity:2,checklist_items:[{quantity:3},{quantity:5}],deliverable_quantity:999}),8);
+ assert.equal(reportDeliverableQuantity({quantity:2,checklist_items:[{quantity:3},{quantity:5}],deliverable_quantity:999}),10);
  assert.equal(reportDeliverableQuantity({deliverable_quantity:7}),7);
  assert.equal(reportDeliverableQuantity({quantity:NaN,checklist_items:[{quantity:-20},{quantity:Infinity}]}),1);
 });
 
 test('partial metadata edits retain saved quantity and explicit resets retain their meaning',()=>{
  const meta=mergeDeliverableMetadata([{description:'Edited description'},{quantity:5,checklist_items:[{quantity:2}]},{quantity:80}]);
- assert.equal(reportDeliverableQuantity(meta),2);
+ assert.equal(reportDeliverableQuantity(meta),7);
  const reset=mergeDeliverableMetadata([{quantity:null,checklist_items:[]},meta]);
  assert.equal(reportDeliverableQuantity(reset),1);
  assert.deepEqual(reset.checklist_items,[]);

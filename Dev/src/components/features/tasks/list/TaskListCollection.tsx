@@ -151,13 +151,17 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           <div className="task-list-row-title truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>{task.title}</div>
                         </td>
                         <td className="p-4 text-sm overflow-hidden">
-                          {(task.department?.name || task.project?.department?.name || task.campaign?.department?.name) ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate max-w-full">
-                              {task.department?.name || task.project?.department?.name || task.campaign?.department?.name}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-500 truncate block">---</span>
-                          )}
+                          {(() => {
+                            // REQ-TOT-04 / Slide 3: Tracking phòng ban thụ hưởng (Target Department) mà team đang phục vụ
+                            const targetDept = (task as any).target_department_name || task.project?.department?.name || task.campaign?.department?.name;
+                            return targetDept ? (
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-0.5 rounded-[6px] text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 truncate max-w-full">
+                                {targetDept}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500 truncate block">---</span>
+                            );
+                          })()}
                         </td>
                         <td className="p-4 text-sm overflow-hidden">
                           {task.project?.name ? (

@@ -1254,7 +1254,7 @@ export const dict = {
     'reports.viz.deliverableTotal': 'Tổng sản lượng',
     'reports.viz.deliverableTasks': 'Từ Task chính',
     'reports.viz.deliverableSubtasks': 'Từ Việc phụ (Subtask)',
-    'reports.viz.deliverableChecklists': 'Từ Đầu việc phát sinh',
+    'reports.viz.deliverableChecklists': 'Từ Việc phát sinh',
     'reports.viz.byDepartment': 'Theo Phòng ban thụ hưởng',
     'reports.viz.byTrack': 'Theo Dự án / Chiến dịch',
     'reports.viz.infoBurndownTitle': 'Cơ chế Biểu đồ Burndown (Task còn lại)',

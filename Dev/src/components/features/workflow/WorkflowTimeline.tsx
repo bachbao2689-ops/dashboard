@@ -1,7 +1,6 @@
 import {WorkflowTimelineToolbar} from './WorkflowTimelineToolbar';
 import {WorkflowStageTimeline} from './WorkflowStageTimeline';
 import {WorkflowPhaseDetails} from './WorkflowPhaseDetails';
-import {ArrowLeft} from 'lucide-react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 
 export function WorkflowTimeline({model}: {model: WorkflowModel}) {
@@ -20,17 +19,6 @@ export function WorkflowTimeline({model}: {model: WorkflowModel}) {
         {/* Luồng UX/UI Slide 6: Khi bấm Xem chi tiết thì thay đổi UX/UI ở trong bảng Lộ trình giai đoạn luôn kèm nút mũi tên back */}
         {model.isDetailOpen && model.activePhase ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-1">
-              <button
-                type="button"
-                onClick={() => model.setIsDetailOpen(false)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 shadow-2xs transition-colors cursor-pointer"
-                title={isEn ? "Back to all phases" : "Quay lại tổng quan các chặng"}
-              >
-                <ArrowLeft size={14} />
-                <span>{isEn ? 'Back to all phases' : 'Quay lại tổng quan các chặng'}</span>
-              </button>
-            </div>
             <WorkflowPhaseDetails model={model}/>
           </div>
         ) : (

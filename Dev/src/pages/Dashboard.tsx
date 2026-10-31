@@ -51,7 +51,14 @@ export const Dashboard: React.FC = () => {
   },[users, restrictDepartment, ownDepartment]);
   const navigate = useNavigate();
 
-  const [activeId, setActiveId] = useRememberedState('dashboard.activeScope', 's1');
+    const defaultScope = ownDepartment ? `dept-${ownDepartment}` : 's1';
+  const [activeId, setActiveId] = useRememberedState('dashboard.activeScope', defaultScope);
+
+  useEffect(() => {
+    if (ownDepartment && (!activeId || activeId === 's1')) {
+      setActiveId(`dept-${ownDepartment}`);
+    }
+  }, [ownDepartment, activeId, setActiveId]);
   const [range, setRange] = useRememberedState<'weekly' | 'custom'>('dashboard.range', 'weekly');
   const [customStart, setCustomStart] = useRememberedState('dashboard.customStart', toYmd(startOfCurrentWeek()));
   const [customEnd, setCustomEnd] = useRememberedState('dashboard.customEnd', (() => { const value = startOfCurrentWeek(); value.setDate(value.getDate() + 6); return toYmd(value); })());
@@ -344,7 +351,7 @@ export const Dashboard: React.FC = () => {
         <section className={`${PANEL} px-[14px] py-[16px]`}>
             <div className="flex items-center justify-between mb-[6px]">
               <h2 className={`text-sm font-bold ${INK}`}>{t('dashboard.team')}</h2>
-              <Eyebrow className="!text-xs !tracking-[.5px]">{scopedUsers.length} PIC</Eyebrow>
+              <Eyebrow className="!text-xs !tracking-[.5px]">{scopedUsers.filter(u => u.department_id && u.department_id !== "unassigned").length} PIC</Eyebrow>
             </div>
             <div>
               {teams.map(d => {

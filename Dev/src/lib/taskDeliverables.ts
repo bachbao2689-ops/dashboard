@@ -71,12 +71,11 @@ export function computeDeliverableQuantity(taskOrMeta?: {
     return sum + (Number.isFinite(q) && q > 0 ? q : 0);
   }, 0);
 
-  // Khi có checklist items với số lượng (checklistQuantity > 0), thì totalQuantity = checklistQuantity
-  // (tránh double count baseQuantity + checklistQuantity).
-  // Nếu không có checklist quantity, dùng baseQuantity (nếu > 0) hoặc fallback về 1.
-  const totalQuantity = checklistQuantity > 0
-    ? checklistQuantity
-    : (baseQuantity > 0 ? baseQuantity : 1);
+  // Tracking sản lượng chuẩn (REQ-TOT-07 / Slide 5):
+  // Subtask quantity (baseQuantity) + Việc phát sinh quantity (checklistQuantity) = Tổng sản lượng.
+  // Nếu cả hai đều không có số lượng dương thì fallback về 1.
+  const sum = baseQuantity + checklistQuantity;
+  const totalQuantity = sum > 0 ? sum : 1;
 
   return { baseQuantity, checklistQuantity, totalQuantity };
 }

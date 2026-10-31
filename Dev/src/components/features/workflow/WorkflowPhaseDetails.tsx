@@ -1,7 +1,7 @@
 import {useTaskCommentCounts} from '../../../hooks/useTaskCommentCounts';
 import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {Plus, X, Code2, Calendar, User, Edit3, Trash2, MessageSquare} from 'lucide-react';
+import {Plus, X, Code2, Calendar, User, Edit3, Trash2, MessageSquare, ArrowLeft} from 'lucide-react';
 import {displayDate} from '../../../lib/workflowHub';
 import {WorkflowStatusPicker, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
 import {WorkflowGateChecklist} from './WorkflowGateChecklist';
@@ -48,23 +48,33 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 {isDetailOpen && activePhase && (
           <div className="pt-4 border-t border-gray-100 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-300">
 
-            {/* Top Detail Bar with Close action */}
-            <div className="flex items-center justify-between bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/20">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-bold text-primary uppercase tracking-wide">
+            {/* Top Detail Bar with Back Arrow action and Collapse details (REQ-TOT-02 / Slide 2) */}
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 bg-primary/5 dark:bg-primary/10 px-3 py-2 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setIsDetailOpen(false)}
+                className="inline-grid place-items-center w-7 h-7 rounded-[8px] bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
+                title={isEn ? "Back to all phases" : "Quay lại tổng quan các chặng"}
+                aria-label={isEn ? "Back" : "Quay lại"}
+              >
+                <ArrowLeft size={15} />
+              </button>
+
+              <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2 min-w-0 overflow-hidden">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
+                <span className="text-xs font-bold text-primary uppercase tracking-wide truncate">
                   {isEn ? 'Selected Phase Details:' : 'Chi tiết chặng đang chọn:'}
                 </span>
-                <b className="text-xs text-gray-900 dark:text-white">
+                <b className="text-xs text-gray-900 dark:text-white truncate">
                   {activePhase.name} — {activePhase.desc}
                 </b>
               </div>
 
               <button
                 onClick={() => setIsDetailOpen(false)}
-                className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 font-semibold transition-colors"
+                className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 inline-grid grid-flow-col auto-cols-max items-center gap-1 font-semibold transition-colors justify-self-end"
               >
-                <X size={14} /> {isEn ? 'Collapse details' : 'Thu gọn chi tiết'}
+                <X size={14} /> <span className="hidden sm:inline">{isEn ? 'Collapse details' : 'Thu gọn chi tiết'}</span>
               </button>
             </div>
 
@@ -106,7 +116,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
                         <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-violet-600 dark:text-violet-400'} />
-                        {isEn ? 'Tasks' : 'Đầu việc'} ({doneSubtasksCount}/{totalSubtasksCount})
+                        {isEn ? 'Tasks' : 'Việc phát sinh'} ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
                       <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
                     </div>
@@ -122,7 +132,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                             : 'bg-violet-600 hover:bg-violet-700 text-white'
                         }`}
-                        title={isEn ? 'Add new task to this phase' : 'Thêm đầu việc mới vào chặng này'}
+                        title={isEn ? 'Add new task to this phase' : 'Thêm việc phát sinh mới vào chặng này'}
                       >
                         <Plus size={12} strokeWidth={2.5} />
                         <span>{isEn ? 'Add task' : 'Thêm task'}</span>
@@ -135,7 +145,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                     <form onSubmit={handleAddTask} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                          <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm đầu việc mới'}
+                          <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm việc phát sinh mới'}
                         </span>
                         <button
                           type="button"

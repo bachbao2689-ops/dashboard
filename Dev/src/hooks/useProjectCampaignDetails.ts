@@ -39,7 +39,15 @@ export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: stri
       if (!p.data || ['deleted', 'archived'].includes(p.data.status)) throw new Error('Project/Campaign đã được ẩn hoặc xóa.');
       if (permission.error) throw permission.error;
       if (token !== request.current || current.current !== key) return;
-      setSnapshot({key, data:p.data, subtasks:rows.filter(row => !['deleted','archived'].includes(row.status)), people, canManage:permission.data === true,
+      setSnapshot({key, data:p.data, subtasks:rows.filter(row => !['deleted','archived'].includes(row.status)), people, // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Project/Campaign
+      canManage: Boolean(
+        permission.data === true ||
+        (profile?.id && (p.data.created_by === profile.id || p.data.owner_id === profile.id || p.data.primary_owner_id === profile.id)) ||
+        profile?.role === 'admin' ||
+        profile?.role === 'manager' ||
+        (profile as any)?.employment_level === 'leader' ||
+        (profile as any)?.role === 'leader'
+      ),
         comments:thread.map(c => ({...c, user_id:kind === 'project' ? c.author_id : c.user_id, body:kind === 'project' ? c.body : c.metadata?.body || ''}))});
       setError({key, message:''});
     } catch (failure: any) {

@@ -445,7 +445,7 @@ export function useProjectsController(){
         const rowQty = Number(meta.quantity) || 0;
         const subtaskRow = nextSubtasks.find(item => item.id === entityId);
         const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = checklistQty > 0 ? checklistQty : baseQty;
+        const total = baseQty + checklistQty;
         if (total > 0) {
           quantities[entityId] = total;
         }
@@ -514,7 +514,7 @@ export function useProjectsController(){
         const rowQty = Number(meta.quantity) || 0;
         const subtaskRow = nextCampSubtasks.find(item => item.id === entityId);
         const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = checklistQty > 0 ? checklistQty : baseQty;
+        const total = baseQty + checklistQty;
         if (total > 0) {
           campQuantities[entityId] = total;
         }

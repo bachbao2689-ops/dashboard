@@ -28,8 +28,6 @@ interface PerfData {
   avatar_url?: string | null;
 }
 
-const WEEK_LABELS_VI=['T2','T3','T4','T5','T6','T7','CN'];
-const WEEK_LABELS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const toYmd=(d:Date)=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const startOfCurrentWeek=(day:string)=>{const d=new Date(`${day}T00:00:00`);d.setDate(d.getDate()-((d.getDay()+6)%7));d.setHours(0,0,0,0);return d;};
 const dayKey=(value?:string|null)=>calendarDay(value)||'';
@@ -92,10 +90,17 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
     if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
     const start = new Date(`${rangeStart}T00:00:00`); const end = new Date(`${rangeEnd}T00:00:00`);
     const days: Array<{ key: string; name: string; created: number; doing: number; done: number }> = [];
-    const weekLabels = lang === 'vi' ? WEEK_LABELS_VI : WEEK_LABELS_EN;
     for (let cursor = new Date(start); cursor <= end && days.length < 31; cursor.setDate(cursor.getDate() + 1)) {
       const key = toYmd(cursor);
-      days.push({ key, name: range === 'weekly' ? weekLabels[(cursor.getDay() + 6) % 7] : cursor.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit' }), created: selectedTasks.filter(task => dayKey(task.created_at) === key).length, doing: selectedTasks.filter(task => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length, done: selectedTasks.filter(task => taskDone(task) && dayKey(task.completed_at) === key).length });
+      // REQ-TOT-09 / Slide 6 / image2.png: Định dạng ngày cụ thể dd-MM trên trục hoành
+      const dayLabel = `${String(cursor.getDate()).padStart(2, '0')}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+      days.push({
+        key,
+        name: dayLabel,
+        created: selectedTasks.filter(task => dayKey(task.created_at) === key).length,
+        doing: selectedTasks.filter(task => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length,
+        done: selectedTasks.filter(task => taskDone(task) && dayKey(task.completed_at) === key).length,
+      });
     }
     return days;
   }, [rangeStart, rangeEnd, range, selectedTasks, lang]);
@@ -133,12 +138,14 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
         priority: mapPriority(task.priority),
       };
     });
-  const departmentNames = new Map(users.map(user => [user.department_id || 'unassigned', user.department?.name || t('dashboard.unassignedTeam')]));
-  const userDepartments = new Map(users.map(user => [`user-${user.id}`, user.department_id || 'unassigned']));
+  // REQ-TOT-01 / Slide 1: Ẩn nhóm "Chưa cập nhật team" (tài khoản Admin không có department)
+  const validUsers = users.filter(user => user.department_id && user.department_id !== 'unassigned');
+  const departmentNames = new Map(validUsers.map(user => [user.department_id!, user.department?.name || t('dashboard.unassignedTeam')]));
+  const userDepartments = new Map(validUsers.map(user => [`user-${user.id}`, user.department_id!]));
   const teams = [...departmentNames].map(([id,name]) => ({
     name, id:`team-${id}`,
     members:liveData.filter(member => member.type === 'staff' && userDepartments.get(member.id) === id).map(member => ({i:member.initial,id:member.id,n:member.name,r:member.role,open:member.open,a:member.avatar_url})),
-  }));
+  })).filter(t => t.members.length > 0);
 
  return {s,pct,rangeStart,rangeEnd,selectedTasks,periodTasks,chartData,selectedReferences,filteredDepts,getEyebrow,upcomingProjects,teams};
 }

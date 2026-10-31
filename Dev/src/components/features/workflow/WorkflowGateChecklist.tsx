@@ -1,5 +1,5 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {ArrowRight, ShieldCheck, Plus, Star} from 'lucide-react';
+import {ArrowRight, ShieldCheck, Plus, Star, X} from 'lucide-react';
 import {useAuthStore} from '../../../store/authStore';
 import {isAdmin, isGlobalManager} from '../../../lib/roleScope';
 
@@ -64,44 +64,68 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
 
                 {/* Gate Checklist */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <ShieldCheck size={16} className="text-emerald-500" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                        {isEn ? 'Gate Checklist' : 'Tiêu chí thẩm định Gate'}
-                      </span>
-                      <span className="text-[10px] text-gray-400 hidden sm:inline">{isEn ? '(Score ≥ 80% to unlock next phase)' : '(Đạt ≥ 80% để mở khóa chặng sau)'}</span>
-                    </div>
+                  {/* REQ-TOT-03 / Slide 2: Animation inline search-style input cho Thêm tiêu chí Gate */}
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2 min-h-[32px]">
+                    {!showAddCriteria ? (
+                      <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                        <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 truncate">
+                          {isEn ? 'Gate Checklist' : 'Tiêu chí thẩm định Gate'}
+                        </span>
+                        <span className="text-[10px] text-gray-400 hidden sm:inline truncate">{isEn ? '(Score ≥ 80% to unlock next phase)' : '(Đạt ≥ 80% để mở khóa chặng sau)'}</span>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleAddCriteria} className="inline-grid grid-cols-[1fr_64px_auto_auto] items-center gap-1.5 w-full animate-in fade-in duration-200">
+                        <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 min-w-0">
+                          <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                          <input
+                            type="text"
+                            autoFocus
+                            aria-label={isEn ? 'Criterion name' : 'Tên tiêu chí'}
+                            value={newCriteriaLabel}
+                            onChange={e => setNewCriteriaLabel(e.target.value)}
+                            placeholder={isEn ? "Criterion name..." : "Tên tiêu chí Gate..."}
+                            className="w-full text-xs px-2.5 py-1 rounded-[8px] border border-primary/40 dark:border-primary/50 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-primary shadow-2xs"
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="0.1"
+                          max="100"
+                          step="0.1"
+                          required
+                          aria-label={isEn ? 'Weight (%)' : 'Trọng số (%)'}
+                          placeholder="%"
+                          title={isEn ? 'Weight (%)' : 'Trọng số (%)'}
+                          value={newCriteriaWeight}
+                          onChange={event => setNewCriteriaWeight(event.target.value)}
+                          className="w-full text-xs px-2 py-1 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none text-center"
+                        />
+                        <button type="submit" className="px-2.5 py-1 rounded-[8px] bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors shadow-2xs">
+                          {isEn ? 'Save' : 'Lưu'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowAddCriteria(false); setNewCriteriaLabel(''); }}
+                          className="p-1 rounded-[8px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                          title={isEn ? 'Cancel' : 'Hủy'}
+                        >
+                          <X size={14} />
+                        </button>
+                      </form>
+                    )}
 
-                    <button
-                      type="button"
-                      disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
-                      onClick={() => setShowAddCriteria(!showAddCriteria)}
-                      className="text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      <Plus size={13} /> {isEn ? 'Add criterion' : 'Thêm tiêu chí'}
-                    </button>
-                  </div>
-
-                  {showAddCriteria && (
-                    <>
-                    <form onSubmit={handleAddCriteria} className="workflow-criterion-form">
-                      <input
-                        type="text"
-                        aria-label={isEn ? 'Criterion name' : 'Tên tiêu chí'}
-                        value={newCriteriaLabel}
-                        onChange={e => setNewCriteriaLabel(e.target.value)}
-                        placeholder={isEn ? "Enter gate criterion..." : "Nhập tiêu chí điều kiện Gate..."}
-                        className="flex-1 text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-primary"
-                      />
-                      <label className="workflow-weight-label">{isEn ? 'Weight (%)' : 'Trọng số (%)'}<input type="number" min="0.1" max="100" step="0.1" required value={newCriteriaWeight} onChange={event => setNewCriteriaWeight(event.target.value)} className="workflow-calendar-input" /></label>
-                      <button type="submit" className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold">
-                        {isEn ? 'Save' : 'Lưu'}
+                    {!showAddCriteria && (
+                      <button
+                        type="button"
+                        disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
+                        onClick={() => setShowAddCriteria(true)}
+                        className="text-[11px] text-primary hover:underline inline-grid grid-flow-col auto-cols-max items-center gap-1 font-semibold justify-self-end disabled:opacity-50"
+                      >
+                        <Plus size={13} /> {isEn ? 'Add criterion' : 'Thêm tiêu chí'}
                       </button>
-                    </form>
-                    <p className="mb-3 text-[10px] text-gray-500 dark:text-slate-400">{isEn ? 'Gate score = completed weight ÷ total criterion weight.' : 'Điểm Gate = trọng số đã đạt ÷ tổng trọng số các tiêu chí.'}</p>
-                    </>
-                  )}
+                    )}
+                  </div>
 
                   <div className="space-y-2">
                     {criteria.map(c => (

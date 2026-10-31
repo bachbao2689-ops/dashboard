@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeliverableQuantity } from '../src/lib/taskDeliverables.ts';
 
-test('deliverable quantity avoids double-counting checklist items with base quantity', () => {
+test('deliverable quantity sums base quantity and checklist quantity (Slide 5 REQ-TOT-07)', () => {
   // Case: Mockup chăn gối with base quantity 2 (or 4) and 2 checklist items with 2 each
   const caseWithChecklist = {
     quantity: 2,
@@ -15,7 +15,7 @@ test('deliverable quantity avoids double-counting checklist items with base quan
   const result = computeDeliverableQuantity(caseWithChecklist);
   assert.equal(result.baseQuantity, 2);
   assert.equal(result.checklistQuantity, 4);
-  assert.equal(result.totalQuantity, 4, 'Total quantity must be 4, NOT 6 (no double counting)');
+  assert.equal(result.totalQuantity, 6, 'Total quantity must be base (2) + checklist (4) = 6');
 });
 
 test('deliverable quantity falls back to base quantity when checklist items have no quantity', () => {
@@ -58,7 +58,7 @@ test('deliverable quantity falls back to 1 when neither checklist nor base quant
   assert.equal(result.totalQuantity, 1, 'Default fallback is 1 deliverable unit');
 });
 
-test('controller mapping computes total quantity without double counting', () => {
+test('controller mapping computes total quantity summing base and checklist (Slide 5 REQ-TOT-07)', () => {
   // Logic from useProjectsController.tsx
   const subtasks = [
     { id: 'sub-1', quantity: 2 },
@@ -94,13 +94,13 @@ test('controller mapping computes total quantity without double counting', () =>
     const rowQty = Number(meta.quantity) || 0;
     const subtaskRow = subtasks.find(item => item.id === entityId);
     const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-    const total = checklistQty > 0 ? checklistQty : baseQty;
+    const total = baseQty + checklistQty;
     if (total > 0) {
       quantities[entityId] = total;
     }
   });
 
-  assert.equal(quantities['sub-1'], 4, 'sub-1 should have quantity 4 from checklist items, not 2 + 4 = 6');
+  assert.equal(quantities['sub-1'], 6, 'sub-1 should have total 6 = base (2) + checklist (4)');
   assert.equal(quantities['sub-2'], 3, 'sub-2 has no item quantities, should preserve base quantity 3');
   assert.equal(quantities['sub-3'], 5, 'sub-3 has item quantity 5, total should be 5');
 });
