@@ -40,6 +40,8 @@ import {
   Info,
   Printer,
   BadgeCheck,
+  ClipboardList,
+  Plus,
 } from 'lucide-react';
 
 type StaffTrackFilter = 'all' | 'project' | 'campaign';
@@ -48,71 +50,52 @@ const staffTaskTrack = (task: any) =>
 const staffTrackCount = (tasks: any[], kind: 'project' | 'campaign') =>
   new Set(tasks.filter(task => staffTaskTrack(task) === kind).map(task => String(task[kind]?.id || task[`${kind}_id`]))).size;
 
-function ProfileBacklogPopover({ member, lang }: { member: StaffReportMember; lang: 'vi' | 'en' }) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelClose = () => { if (timer.current) clearTimeout(timer.current); };
-  const show = () => { cancelClose(); setOpen(true); };
-  const scheduleClose = () => { cancelClose(); timer.current = setTimeout(() => setOpen(false), 180); };
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  useEffect(() => {
-    if (!open) return;
-    const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !anchorRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, [open]);
-  const label = lang === 'en' ? 'Backlog tasks' : 'Công việc tồn đọng';
+/** Portrait/glass composition from the Figma “Right” reference; report data stays live. */
+export function ReportProfileCard({ member, lang, expanded = false, onDetails }: {
+  member: StaffReportMember;
+  lang: 'vi' | 'en';
+  expanded?: boolean;
+  onDetails: () => void;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [member.avatar_url]);
+  const hasImage = Boolean(member.avatar_url) && !imageFailed;
+  const tasksLabel = lang === 'en' ? 'Tasks' : 'Công việc';
+  const outputLabel = lang === 'en' ? 'Images/files' : 'Hình/file';
   return (
-    <div className="report-profile-backlog" ref={anchorRef} onMouseEnter={show} onMouseLeave={scheduleClose}>
-      <button
-        type="button"
-        aria-label={`${label}: ${member.profileBacklogCount}`}
-        aria-expanded={open}
-        aria-controls={open ? `profile-backlog-${member.id}` : undefined}
-        onFocus={show}
-        onBlur={scheduleClose}
-        onClick={show}
-      >
-        <AlertTriangle size={14} />
-      </button>
-      {open && (
-        <FilterPopover
-          anchorRef={anchorRef}
-          panelRef={panelRef}
-          align="right"
-          onClose={() => setOpen(false)}
-          id={`profile-backlog-${member.id}`}
-          role="region"
-          aria-label={`${label} · ${member.name}`}
-          className="report-profile-backlog-panel"
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
-          onFocus={cancelClose}
-          onBlur={scheduleClose}
-          tabIndex={0}
-        >
-          <h4>{label} ({member.profileBacklogCount})</h4>
-          <p>{member.name}</p>
-          <div className="report-profile-backlog-list">
-            {member.profileBacklogItems.map(item => (
-              <article key={item.id}>
-                <strong>{item.title}</strong>
-                <span>{item.entityName}</span>
-                <p>{item.reason}</p>
-                <small>{item.reportedAt}</small>
-              </article>
-            ))}
-            {!member.profileBacklogItems.length && (
-              <p>{lang === 'en' ? 'No backlog details available.' : 'Chưa có chi tiết tồn đọng.'}</p>
-            )}
+    <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
+      <div className="report-profile-surface">
+        {hasImage ? (
+          <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
+            loading="lazy" onError={() => setImageFailed(true)} />
+        ) : (
+          <div className="report-profile-fallback" aria-hidden="true"><span>{member.initial}</span></div>
+        )}
+        <div className="report-profile-glass" aria-hidden="true" />
+        <div className="report-profile-content">
+          <div className="report-profile-identity">
+            <h3>{member.name}<BadgeCheck aria-hidden="true" className="report-profile-seal" /></h3>
+            <p>{member.role}</p>
           </div>
-        </FilterPopover>
-      )}
-    </div>
+          <div className="report-profile-footer">
+            <div className="report-profile-counters">
+              <span title={`${tasksLabel}: ${member.tasks.length}`} aria-label={`${tasksLabel}: ${member.tasks.length}`}>
+                <ClipboardList aria-hidden="true" /><strong>{member.tasks.length}</strong>
+              </span>
+              <span title={`${outputLabel}: ${member.deliverableCount}`} aria-label={`${outputLabel}: ${member.deliverableCount}`}>
+                <ImagePlus aria-hidden="true" /><strong>{member.deliverableCount}</strong>
+              </span>
+            </div>
+            <button type="button" className="report-profile-cta" aria-expanded={expanded}
+              aria-label={`${expanded ? (lang === 'en' ? 'Close details' : 'Đóng chi tiết') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}: ${member.name}`}
+              onClick={onDetails}>
+              {expanded ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'Details' : 'Chi tiết')}
+              {expanded ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -151,7 +134,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     openVisualizeReport,
   } = useReports({ standalone });
 
-  const [staffView, setStaffView] = useState<'list' | 'cards'>('list');
+  const [staffView, setStaffView] = useState<'list' | 'cards'>('cards');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
@@ -1767,14 +1750,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-flow-col auto-cols-max items-center gap-2">
                 <h2 className="text-lg lg:text-xl font-bold text-slate-900 dark:text-white">
-                  {t('reports.viz.staffSectionTitle')}
+                  {staffView === 'cards' ? (lang === 'en' ? 'TEAM PROFILES' : 'HỒ SƠ THÀNH VIÊN') : t('reports.viz.staffSectionTitle')}
                 </h2>
                 <span className="px-2 py-0.5 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                   {t('reports.viz.staffCountBadge', { count: staffMembers.length })}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t('reports.viz.staffSectionSub')}
+                {staffView === 'cards' ? (lang === 'en' ? 'Meet the team and explore each member’s work.' : 'Thông tin thành viên và công việc trong kỳ báo cáo.') : t('reports.viz.staffSectionSub')}
               </p>
             </div>
 
@@ -1955,153 +1938,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 <div
                   role="region"
                   aria-label={selectedStaff.name}
-                  className="relative lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[92%] lg:max-w-[780px] z-30 mb-6 lg:mb-0 rounded-[28px] border-2 border-white/90 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_28px_70px_-12px_rgba(15,23,42,0.28)] dark:shadow-[0_28px_70px_-12px_rgba(0,0,0,0.7)] p-4 sm:p-5 transition-all duration-300 scale-[1.01]"
+                  className="report-profile-expanded relative lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[92%] lg:max-w-[1040px] z-30 mb-6 lg:mb-0 rounded-[28px] border-2 border-white/90 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_28px_70px_-12px_rgba(15,23,42,0.28)] dark:shadow-[0_28px_70px_-12px_rgba(0,0,0,0.7)] p-4 sm:p-5 transition-all duration-300 scale-[1.01]"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-5 items-start">
+                  <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 items-start">
                     {/* Cột trái: Thẻ Soft Glassmorphism của selectedStaff */}
                     <div className="w-full max-w-[330px] justify-self-center lg:justify-self-start">
-                      <article className="report-profile shadow-lg">
-                        {/* Cột 1: Chiếc thẻ gương Portrait điện ảnh (Avatar Glass Card) */}
-                        <div className="report-profile-avatar-card">
-                          {selectedStaff.avatar_url ? (
-                            <img
-                              src={selectedStaff.avatar_url}
-                              alt={selectedStaff.name}
-                              className="report-profile-avatar-img"
-                            />
-                          ) : (
-                            <div className="w-full h-full grid place-items-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-extrabold text-3xl shadow-inner">
-                              <span>{selectedStaff.initial}</span>
-                            </div>
-                          )}
-
-                          {/* Lớp gương mờ phân tầng ở nửa dưới ảnh Cột 1 */}
-                          <div className="report-profile-avatar-glass">
-                            <div className="grid grid-cols-1 justify-items-center text-center gap-0.5 w-full min-w-0">
-                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 max-w-full">
-                                <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
-                                  {selectedStaff.name}
-                                </h3>
-                                <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              </div>
-                              <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-full">
-                                {selectedStaff.role}
-                              </p>
-                            </div>
-
-                            <div className="w-full grid grid-cols-2 gap-1 pt-1">
-                              <span
-                                className="report-profile-pill-done"
-                                title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
-                              >
-                                {t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
-                              </span>
-                              <span
-                                className="report-profile-pill-remaining"
-                                title={t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
-                              >
-                                {t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Cột 2: Badge tổng/%, 4 Khung trạng thái, 3 Circle track, Nút Đóng */}
-                        <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center gap-2 w-full min-w-0">
-                          <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full">
-                            {/* Hàng badge góc trên */}
-                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
-                              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                                {t('reports.viz.staffDeliverables', { count: selectedStaff.deliverableCount ?? 0 })}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                                {selectedStaff.completionPct}%
-                              </span>
-                              {selectedStaff.profileBacklogCount > 0 && (
-                                <ProfileBacklogPopover member={selectedStaff} lang={lang} />
-                              )}
-                            </div>
-
-                            {/* 4 khung metric xếp dọc 1 cột */}
-                            <div className="grid grid-cols-1 gap-1.5 w-full">
-                              {([
-                                ['done', selectedStaff.done, t('reports.viz.colCompleted')],
-                                ['doing', selectedStaff.doing, t('reports.viz.colInProgress')],
-                                ['todo', selectedStaff.todo, t('reports.viz.statusTodo')],
-                                ['late', selectedStaff.late, t('reports.viz.colOverdue')],
-                              ] as const).map(([status, count, label]) => {
-                                const isStatusActive = staffStatusFilter === status;
-                                return (
-                                  <button
-                                    key={status}
-                                    type="button"
-                                    data-status={status}
-                                    aria-pressed={isStatusActive}
-                                    onClick={() => {
-                                      setStaffStatusFilter(status);
-                                    }}
-                                    aria-label={`${selectedStaff.name}: ${label} ${count}`}
-                                    className="report-profile-metric-btn"
-                                  >
-                                    <strong>{count}</strong>
-                                    <span>{label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* 3 vòng tròn track */}
-                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
-                              {(['all', 'project', 'campaign'] as const).map((kind) => {
-                                const count = kind === 'all' ? selectedStaff.tasks.length : staffTrackCount(selectedStaff.tasks, kind);
-                                const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
-                                const isTrackActive = staffTrackFilter === kind;
-                                const toneStyle =
-                                  kind === 'all'
-                                    ? isTrackActive
-                                      ? 'bg-indigo-600 text-white border-indigo-600'
-                                      : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
-                                    : kind === 'project'
-                                    ? isTrackActive
-                                      ? 'bg-violet-600 text-white border-violet-600'
-                                      : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
-                                    : isTrackActive
-                                    ? 'bg-amber-600 text-white border-amber-600'
-                                    : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
-
-                                return (
-                                  <button
-                                    key={kind}
-                                    type="button"
-                                    data-track={kind}
-                                    title={`${label}: ${count}`}
-                                    aria-label={`${selectedStaff.name}: ${label} (${count})`}
-                                    aria-pressed={isTrackActive}
-                                    onClick={() => {
-                                      setStaffTrackFilter(kind);
-                                      setStaffStatusFilter('all');
-                                    }}
-                                    className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
-                                  >
-                                    {count}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Nút đóng chi tiết */}
-                          <div className="w-full grid place-items-center self-end">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedStaffId(null)}
-                              className="report-profile-cta-btn"
-                            >
-                              {lang === 'en' ? 'Close' : 'Đóng'}
-                            </button>
-                          </div>
-                        </div>
-                      </article>
+                      <ReportProfileCard member={selectedStaff} lang={lang} expanded onDetails={() => setSelectedStaffId(null)} />
                     </div>
 
                     {/* Cột phải: 2 Khung xếp dọc */}
@@ -2330,171 +2172,19 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
               {/* Lưới các thẻ nhân sự chính */}
               <div
+                inert={Boolean(selectedStaff)}
                 className={`report-profiles transition-all duration-300 ${
                   selectedStaff ? 'opacity-30 blur-[3px] scale-[0.98] pointer-events-none select-none' : ''
                 }`}
               >
-                {staffMembers.map((m) => {
-                  const isSelected = selectedStaffId === m.id;
-
-                  return (
-                    <article
-                      key={m.id}
-                      className={`report-profile ${
-                        isSelected ? 'ring-2 ring-primary/80 shadow-[0_18px_40px_-8px_rgba(0,46,109,0.25)]' : ''
-                      }`}
-                    >
-                      {/* Cột 1: Chiếc thẻ gương Portrait điện ảnh (Avatar Glass Card) */}
-                      <div className="report-profile-avatar-card">
-                        {m.avatar_url ? (
-                          <img
-                            src={m.avatar_url}
-                            alt={m.name}
-                            className="report-profile-avatar-img"
-                          />
-                        ) : (
-                          <div className="w-full h-full grid place-items-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-extrabold text-3xl shadow-inner">
-                            <span>{m.initial}</span>
-                          </div>
-                        )}
-
-                        {/* Lớp gương mờ phân tầng ở nửa dưới ảnh Cột 1 */}
-                        <div className="report-profile-avatar-glass">
-                          <div className="grid grid-cols-1 justify-items-center text-center gap-0.5 w-full min-w-0">
-                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 max-w-full">
-                              <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
-                                {m.name}
-                              </h3>
-                              <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            </div>
-                            <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-full">
-                              {m.role}
-                            </p>
-                          </div>
-
-                          <div className="w-full grid grid-cols-2 gap-1 pt-1">
-                            <span
-                              className="report-profile-pill-done"
-                              title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
-                            >
-                              {t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
-                            </span>
-                            <span
-                              className="report-profile-pill-remaining"
-                              title={t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
-                            >
-                              {t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Cột 2: Badge tổng/%, 4 Khung trạng thái, 3 Circle track, Nút Xem chi tiết */}
-                      <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center gap-2 w-full min-w-0">
-                        <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full">
-                          {/* Hàng badge góc trên */}
-                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
-                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                              {t('reports.viz.staffDeliverables', { count: m.deliverableCount ?? 0 })}
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                              {m.completionPct}%
-                            </span>
-                            {m.profileBacklogCount > 0 && (
-                              <ProfileBacklogPopover member={m} lang={lang} />
-                            )}
-                          </div>
-
-                          {/* 4 khung metric xếp dọc 1 cột */}
-                          <div className="grid grid-cols-1 gap-1.5 w-full">
-                            {([
-                              ['done', m.done, t('reports.viz.colCompleted')],
-                              ['doing', m.doing, t('reports.viz.colInProgress')],
-                              ['todo', m.todo, t('reports.viz.statusTodo')],
-                              ['late', m.late, t('reports.viz.colOverdue')],
-                            ] as const).map(([status, count, label]) => {
-                              const isStatusActive = isSelected && staffStatusFilter === status;
-                              return (
-                                <button
-                                  key={status}
-                                  type="button"
-                                  data-status={status}
-                                  aria-pressed={isStatusActive}
-                                  onClick={() => {
-                                    setSelectedStaffId(m.id);
-                                    setStaffTrackFilter('all');
-                                    setStaffStatusFilter(status);
-                                  }}
-                                  aria-label={`${m.name}: ${label} ${count}`}
-                                  className="report-profile-metric-btn"
-                                >
-                                  <strong>{count}</strong>
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* 3 vòng tròn track */}
-                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
-                            {(['all', 'project', 'campaign'] as const).map((kind) => {
-                              const count = kind === 'all' ? m.tasks.length : staffTrackCount(m.tasks, kind);
-                              const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
-                              const isTrackActive = isSelected && staffTrackFilter === kind;
-                              const toneStyle =
-                                kind === 'all'
-                                  ? isTrackActive
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
-                                  : kind === 'project'
-                                  ? isTrackActive
-                                    ? 'bg-violet-600 text-white border-violet-600'
-                                    : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
-                                  : isTrackActive
-                                  ? 'bg-amber-600 text-white border-amber-600'
-                                  : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
-
-                              return (
-                                <button
-                                  key={kind}
-                                  type="button"
-                                  data-track={kind}
-                                  title={`${label}: ${count}`}
-                                  aria-label={`${m.name}: ${label} (${count})`}
-                                  aria-pressed={isTrackActive}
-                                  onClick={() => {
-                                    setSelectedStaffId(m.id);
-                                    setStaffTrackFilter(kind);
-                                    setStaffStatusFilter('all');
-                                  }}
-                                  className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
-                                >
-                                  {count}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Nút xem chi tiết */}
-                        <div className="w-full grid place-items-center self-end">
-                          <button
-                            type="button"
-                            aria-expanded={isSelected}
-                            onClick={() => {
-                              setSelectedStaffId(isSelected ? null : m.id);
-                              setStaffTrackFilter('all');
-                              setStaffStatusFilter('all');
-                            }}
-                            className="report-profile-cta-btn"
-                          >
-                            {isSelected ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                {staffMembers.map((member) => (
+                  <ReportProfileCard key={member.id} member={member} lang={lang}
+                    onDetails={() => {
+                      setSelectedStaffId(member.id);
+                      setStaffTrackFilter('all');
+                      setStaffStatusFilter('all');
+                    }} />
+                ))}
               </div>
             </div>
           )}
