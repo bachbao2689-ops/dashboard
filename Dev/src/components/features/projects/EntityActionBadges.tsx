@@ -106,7 +106,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`grid grid-flow-col auto-cols-max items-center gap-2 relative max-w-full overflow-x-auto scrollbar-none ${
+      className={`relative inline-grid grid-flow-col auto-cols-max items-center gap-2 ${
         canManage && onEdit ? 'w-full' : ''
       }`}
     >
@@ -141,7 +141,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
 
         {priorityOpen && (
           <div
-            className="absolute top-full left-0 mt-1.5 z-40 w-36 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1 backdrop-blur-md"
+            className="absolute top-full left-0 mt-1.5 z-[100] w-36 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl py-1 backdrop-blur-md"
             role="listbox"
           >
             {priorityOptions.map((opt) => (
@@ -198,7 +198,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
 
         {statusOpen && (
           <div
-            className="absolute top-full left-0 mt-1.5 z-40 w-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1 backdrop-blur-md"
+            className="absolute top-full left-0 mt-1.5 z-[100] w-44 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl py-1 backdrop-blur-md"
             role="listbox"
           >
             {statusOptions.map((opt) => {
@@ -241,11 +241,11 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-2xs"
+            className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-2xs grid place-items-center cursor-pointer"
             title={isEn ? 'Edit details' : 'Chỉnh sửa'}
             aria-label={isEn ? 'Edit details' : 'Chỉnh sửa'}
           >
-            <Edit3 size={15} />
+            <Edit3 size={13} />
           </button>
         </div>
       )}

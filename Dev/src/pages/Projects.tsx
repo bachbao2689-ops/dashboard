@@ -31,7 +31,7 @@ import {EntityInfoPopover} from '../components/features/projects/EntityInfoPopov
 import {EntityPinButton} from '../components/features/projects/EntityPinButton';
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
-import {isGlobalManager} from '../lib/roleScope';
+import {isGlobalManager, isDepartmentLeader} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
  const initialProjectColWidths = React.useMemo(() => [340, 190, 250, 130, 160, 250], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
@@ -61,6 +61,10 @@ export const Projects:React.FC=()=>{
    (comments || []).forEach(c => { if (c.user_id) ids.add(String(c.user_id)); });
    return Array.from(ids);
  }, [selected, picMembers, subtaskMembers, comments]);
+ const canManageSelectedProject = React.useMemo(() => {
+   if (!selected) return false;
+   return Boolean(selectedRoot || canManageProject(selected) || isGlobalManager(profile) || isDepartmentLeader(profile));
+ }, [selected, selectedRoot, canManageProject, profile]);
  useReadEntityNotifications(selectedCampaign ? 'campaign' : 'project', selectedCampaign?.id || selected?.id, Boolean(panelOpen && !createOpen && (selectedCampaign || selected)));
 
  return (
@@ -386,7 +390,7 @@ export const Projects:React.FC=()=>{
                 priority={selected.priority || 'medium'}
                 status={selected.status || 'active'}
                 onPriorityChange={async (newPriority) => {
-                  if (!selected || !selectedRoot) return;
+                  if (!selected || !canManageSelectedProject) return;
                   const { error } = await supabase.from('projects').update({ priority: newPriority }).eq('id', selected.id);
                   if (error) return toast.error('Lỗi cập nhật mức ưu tiên');
                   const updated = { ...selected, priority: newPriority };
@@ -398,7 +402,7 @@ export const Projects:React.FC=()=>{
                   toast.success('Đã cập nhật mức ưu tiên');
                 }}
                 onStatusChange={async (newStatus) => {
-                  if (!selected || !selectedRoot) return;
+                  if (!selected || !canManageSelectedProject) return;
                   const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', selected.id);
                   if (error) return toast.error('Lỗi cập nhật trạng thái');
                   const updated = { ...selected, status: newStatus };
@@ -419,7 +423,7 @@ export const Projects:React.FC=()=>{
                   setOwnerIds(picMembers[selected.id] || []);
                   setEditMode(true);
                 }}
-                canManage={selectedRoot}
+                canManage={canManageSelectedProject}
               />
       <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>

@@ -822,10 +822,12 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 <button
                   type="button"
                   onClick={() => setEditingTask(value => !value)}
-                  className="inline-grid grid-flow-col auto-cols-max shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0"
+                  className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white shadow-2xs grid place-items-center cursor-pointer transition-colors shrink-0"
                   aria-expanded={editingTask}
+                  title={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
+                  aria-label={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
                 >
-                  <Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
+                  <Edit3 size={13} />
                 </button>
               )}
             </div>

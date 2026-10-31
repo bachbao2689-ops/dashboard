@@ -15,7 +15,7 @@ import {EntityPinButton} from './EntityPinButton';
 import {TaskActivityLogPopover} from '../tasks/TaskActivityLogPopover';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
-import {isGlobalManager} from '../../../lib/roleScope';
+import {isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
  const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,toggleCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
@@ -39,6 +39,16 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
    (campaignComments || []).forEach(c => { if (c.user_id) ids.add(String(c.user_id)); });
    return Array.from(ids);
  }, [selectedCampaign, workflow.tracks, campaignSubtasks, campaignComments]);
+ const canManageCampaign = React.useMemo(() => {
+   if (!selectedCampaign) return false;
+   return Boolean(
+     selectedRoot ||
+     isGlobalManager(profile) ||
+     isDepartmentLeader(profile) ||
+     (profile?.id && selectedCampaign.created_by === profile.id) ||
+     (profile?.id && selectedCampaign.lead_id === profile.id)
+   );
+ }, [selectedCampaign, selectedRoot, profile]);
  return <>{selectedCampaign && (
 
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
@@ -54,7 +64,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               priority={getCampaignPriority(selectedCampaign)}
               status={selectedCampaign.status || 'planning'}
               onPriorityChange={async (newPriority) => {
-                if (!selectedCampaign || !selectedRoot) return;
+                if (!selectedCampaign || !canManageCampaign) return;
                 setCachedCampaignPriority(selectedCampaign.id, newPriority);
                 const updated = { ...selectedCampaign, priority: newPriority };
                 setSelectedCampaign(updated);
@@ -76,7 +86,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 } catch {}
               }}
               onStatusChange={async (newStatus) => {
-                if (!selectedCampaign || !selectedRoot) return;
+                if (!selectedCampaign || !canManageCampaign) return;
                 const { error } = await supabase.from('campaigns').update({ status: newStatus }).eq('id', selectedCampaign.id);
                 if (error) return toast.error('Lỗi cập nhật trạng thái');
                 const updated = { ...selectedCampaign, status: newStatus };
@@ -98,7 +108,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : '');
                 setCampaignEditMode(true);
               }}
-              canManage={selectedRoot}
+              canManage={canManageCampaign}
             /><div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-2">{(workflow.tracks.find(track => track.entity_type === "campaign" && track.entity_id === selectedCampaign.id)?.pics || []).map(person => <span key={person.id} className="flex items-center gap-1.5 text-xs font-semibold"><Avatar name={person.name} src={person.avatar_url} className="w-5 h-5 text-[10px]"/>{person.name}</span>)}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
 <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted' && (statusFilter === 'completed' ? isTaskDone(subtask.status) : true)).map(s => {
   const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);

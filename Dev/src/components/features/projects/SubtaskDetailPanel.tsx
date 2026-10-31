@@ -6,7 +6,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus } from 'lucide-react';
+import { AlignLeft, Calendar, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus, CheckCircle2, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
@@ -298,7 +298,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const isLeaderOrHigher = Boolean(profile && (isGlobalManager(profile as RoleProfile) || isDepartmentLeader(profile as RoleProfile)));
-  const canAddSubtaskItem = canEdit || isLeaderOrHigher;
+  const isAssignee = Boolean(profile?.id && subtask?.assignee_id && String(profile.id) === String(subtask.assignee_id));
+  const canManage = canEdit || isLeaderOrHigher || isAssignee;
+  const canAddSubtaskItem = canManage;
 
   const handleAddChecklistItem = async () => {
     if (!newItemTitle.trim() || !subtask || !profile?.id) return;
@@ -838,7 +840,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const handlePriorityChange = async (newPriority: string) => {
-    if (readOnly || !canEdit || !subtask || saving) return;
+    if (readOnly || !canManage || !subtask || saving) return;
     setSaving(true);
     const nowIso = new Date().toISOString();
     const values = { priority: newPriority, updated_at: nowIso };
@@ -870,7 +872,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    if (readOnly || !canEdit || !subtask || saving) return;
+    if (readOnly || !canManage || !subtask || saving) return;
     if (newStatus === 'completed') {
       if (!canCompleteTask) {
         toast.error(lang === 'en' ? 'Cannot complete: Checklist items are still open.' : 'Không thể hoàn thành: Vẫn còn đầu việc chưa xong.');
@@ -953,14 +955,16 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         <section>
           <div className="grid grid-cols-[1fr_auto] items-start gap-3">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>
-            {canEdit && !readOnly && (
+            {canManage && !readOnly && (
               <button
                 type="button"
                 onClick={() => setEditingTask(value => !value)}
-                className="inline-grid grid-flow-col auto-cols-max shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-slate-700 min-h-[44px] sm:min-h-0"
+                className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white shadow-2xs grid place-items-center cursor-pointer transition-colors"
                 aria-expanded={editingTask}
+                title={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
+                aria-label={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
               >
-                <Edit3 className="h-3.5 w-3.5" />{editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : t('common.edit')}
+                <Edit3 size={13} />
               </button>
             )}
           </div>
@@ -968,9 +972,9 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             <EntityActionBadges
               priority={priority}
               status={subtask.status || 'planning'}
-              onPriorityChange={canEdit && !readOnly ? handlePriorityChange : undefined}
-              onStatusChange={canEdit && !readOnly ? handleStatusChange : undefined}
-              canManage={canEdit && !readOnly}
+              onPriorityChange={canManage && !readOnly ? handlePriorityChange : undefined}
+              onStatusChange={canManage && !readOnly ? handleStatusChange : undefined}
+              canManage={canManage && !readOnly}
             >
               {totalChecklistQuantity > 0 && (
                 <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
@@ -1107,29 +1111,54 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               {checklistItems.map(item => (
                 <div
                   key={item.id}
-                  className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm min-w-0 overflow-hidden"
+                  className={`p-3 rounded-xl border text-sm group relative transition-all min-w-0 overflow-hidden ${
+                    item.completed
+                      ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
+                      : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+                  }`}
                 >
                   {/* Hover action buttons in top-right */}
-                  {canAddSubtaskItem && !readOnly && editingItemId !== item.id && (
-                    <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10">
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditChecklistItem(item)}
-                        title={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
-                        aria-label={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
-                        className="p-1 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                      >
-                        <Edit3 size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteChecklistItem(item.id)}
-                        title={lang === 'en' ? 'Delete item' : 'Xóa'}
-                        aria-label={lang === 'en' ? 'Delete item' : 'Xóa'}
-                        className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                  {editingItemId !== item.id && (
+                    <div
+                      className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {!readOnly && canManage && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleToggleChecklistItem(item.id);
+                          }}
+                          title={item.completed ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark done' : 'Hoàn thành nhanh')}
+                          aria-label={item.completed ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark done' : 'Hoàn thành nhanh')}
+                          className="p-1 rounded-lg text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                        >
+                          <Check size={13} strokeWidth={2.5} />
+                        </button>
+                      )}
+                      {canAddSubtaskItem && !readOnly && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditChecklistItem(item)}
+                            title={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
+                            aria-label={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
+                            className="p-1 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteChecklistItem(item.id)}
+                            title={lang === 'en' ? 'Delete item' : 'Xóa'}
+                            aria-label={lang === 'en' ? 'Delete item' : 'Xóa'}
+                            className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1232,42 +1261,46 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <label className="grid grid-cols-[auto_1fr] items-start gap-2.5 cursor-pointer min-h-[32px] select-none pr-14">
-                        <input
-                          type="checkbox"
-                          checked={item.completed}
-                          disabled={readOnly || !canEdit}
-                          onChange={() => void handleToggleChecklistItem(item.id)}
-                          className="mt-0.5 w-4 h-4 rounded text-primary border-gray-300 dark:border-slate-600 focus:ring-primary cursor-pointer disabled:cursor-not-allowed"
-                        />
-                        <div className="min-w-0">
-                          <span className={`text-xs block font-medium break-words line-clamp-2 ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-gray-100'}`}>
-                            {item.title}
+                    <div
+                      className="min-w-0 grid grid-cols-1 gap-1.5 pr-14 select-none cursor-pointer"
+                      onClick={() => {
+                        if (!readOnly && canManage) {
+                          void handleToggleChecklistItem(item.id);
+                        }
+                      }}
+                    >
+                      {/* Row 1: Title (with done checkmark icon) */}
+                      <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+                        {item.title}
+                        {item.completed && (
+                          <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
+                        )}
+                      </span>
+
+                      {/* Row 2: Badges */}
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
+                          {t(`common.${item.priority || 'medium'}`).toLowerCase()}
+                        </span>
+                        {Boolean(item.quantity) && (
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                            SL: {item.quantity}
                           </span>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1 overflow-x-auto scrollbar-none">
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
-                              {t(`common.${item.priority || 'medium'}`).toLowerCase()}
-                            </span>
-                            {Boolean(item.quantity) && (
-                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                                SL: {item.quantity}
-                              </span>
-                            )}
-                            {item.due_date && (
-                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                                <Calendar size={11} /> {displayDate(item.due_date)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </label>
+                        )}
+                        {item.due_date && (
+                          <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                            <Calendar size={11} /> {displayDate(item.due_date)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Description if present */}
                       {item.description && (
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0">
+                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0 mt-0.5">
                           {item.description}
                         </p>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               ))}
