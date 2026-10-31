@@ -50,6 +50,15 @@ body,
   -webkit-tap-highlight-color: transparent;
 }
 
+html:has(.report-standalone-mode),
+body:has(.report-standalone-mode),
+#root:has(.report-standalone-mode) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100% !important;
+}
+
 #main-scroll-container,
 .dashboard-scroll-surface {
   -webkit-overflow-scrolling: touch;
@@ -835,4 +844,55 @@ html.dark .hover-row-effect.is-magnetic-active {
   width: 0 !important;
   height: 0 !important;
   opacity: 0 !important;
+}
+
+/* ==========================================================================
+   REPORT PRINT STYLES - 2 A4 LANDSCAPE PAGES
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm 10mm;
+  }
+  html, body, #root {
+    overflow: visible !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  header, nav, button, select, input,
+  .no-print, [data-info-popover], [role="region"], .action-menu, .theme-toggle {
+    display: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .report-print-page-1 {
+    page-break-after: always !important;
+    break-after: page !important;
+    width: 100% !important;
+    min-height: calc(100vh - 16mm) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+  .report-print-page-2 {
+    page-break-before: always !important;
+    break-before: page !important;
+    width: 100% !important;
+    min-height: calc(100vh - 16mm) !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px !important;
+    align-content: center !important;
+  }
+  .report-profiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .report-profile-surface {
+    aspect-ratio: .62 !important;
+    min-height: 260px !important;
+  }
 }
