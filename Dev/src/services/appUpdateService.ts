@@ -155,7 +155,7 @@ class AppUpdateService {
   private startPolling() {
     if (typeof window === 'undefined') return;
     // Initial check after 12s
-    setTimeout(() => void this.checkForUpdates(), 12000);
+    setTimeout(() => void this.checkForUpdates(), 2000);
     // Poll every 90s
     this.checkInterval = window.setInterval(() => {
       void this.checkForUpdates();

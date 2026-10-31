@@ -150,7 +150,7 @@ export function ReportProfileCard({
                 data-profile-tooltip-pos="left"
               >
                 <ClipboardList size={12} aria-hidden="true" />
-                <strong>{member.tasks.length}</strong>
+                <strong>{member.tasks?.length || 0}</strong>
               </span>
               <span
                 className="report-profile-pill report-profile-pill--output"
@@ -159,7 +159,7 @@ export function ReportProfileCard({
                 data-profile-tooltip={deliverablesTooltip}
               >
                 <ImagePlus size={12} aria-hidden="true" />
-                <strong>{member.deliverableCount}</strong>
+                <strong>{member.deliverableCount || 0}</strong>
               </span>
             </div>
             <button
