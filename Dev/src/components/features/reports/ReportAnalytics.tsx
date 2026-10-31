@@ -1961,64 +1961,66 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <div className="w-full max-w-[330px] justify-self-center lg:justify-self-start">
                       <article className="report-profile shadow-lg">
                         {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
-                        <div className="grid grid-cols-1 items-center justify-items-center text-center gap-1.5 self-start">
-                          <div className="relative w-full h-[156px] grid place-items-center">
-                            {/* Viền xanh load thể hiện performance % */}
-                            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 148 156">
-                              <rect
-                                x="3"
-                                y="3"
-                                width="142"
-                                height="150"
-                                rx="16"
-                                ry="16"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                className="text-slate-200/80 dark:text-slate-700/80"
-                              />
-                              <rect
-                                x="3"
-                                y="3"
-                                width="142"
-                                height="150"
-                                rx="16"
-                                ry="16"
-                                fill="none"
-                                stroke="#10b981"
-                                strokeWidth="3.5"
-                                pathLength="100"
-                                strokeDasharray="100"
-                                strokeDashoffset={100 - Math.min(100, Math.max(0, selectedStaff.completionPct))}
-                                strokeLinecap="round"
-                                className="transition-all duration-700 ease-out"
-                                style={{
-                                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
-                                }}
-                              />
-                            </svg>
-                            {/* Khung avatar bên trong viền load */}
-                            <div className="w-[134px] h-[142px] report-profile-avatar-frame">
-                              {selectedStaff.avatar_url ? (
-                                <img
-                                  src={selectedStaff.avatar_url}
-                                  alt={selectedStaff.name}
-                                  className="w-full h-full object-contain"
+                        <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center text-center gap-2">
+                          <div className="grid grid-cols-1 items-start justify-items-center text-center w-full">
+                            <div className="relative w-full h-[164px] grid place-items-center">
+                              {/* Viền xanh load thể hiện performance % */}
+                              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 134 164">
+                                <rect
+                                  x="3"
+                                  y="3"
+                                  width="128"
+                                  height="158"
+                                  rx="16"
+                                  ry="16"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  className="text-slate-200/80 dark:text-slate-700/80"
                                 />
-                              ) : (
-                                <span className="report-profile-avatar-initial">
-                                  {selectedStaff.initial}
-                                </span>
-                              )}
+                                <rect
+                                  x="3"
+                                  y="3"
+                                  width="128"
+                                  height="158"
+                                  rx="16"
+                                  ry="16"
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="3.5"
+                                  pathLength="100"
+                                  strokeDasharray="100"
+                                  strokeDashoffset={100 - Math.min(100, Math.max(0, selectedStaff.completionPct))}
+                                  strokeLinecap="round"
+                                  className="transition-all duration-700 ease-out"
+                                  style={{
+                                    filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
+                                  }}
+                                />
+                              </svg>
+                              {/* Khung avatar bên trong viền load */}
+                              <div className="w-[122px] h-[152px] report-profile-avatar-frame shadow-[0_8px_18px_-4px_rgba(0,46,109,0.16)] dark:shadow-[0_8px_18px_-4px_rgba(0,0,0,0.4)]">
+                                {selectedStaff.avatar_url ? (
+                                  <img
+                                    src={selectedStaff.avatar_url}
+                                    alt={selectedStaff.name}
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : (
+                                  <span className="report-profile-avatar-initial">
+                                    {selectedStaff.initial}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center mt-2.5">
+                              {selectedStaff.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center mt-0.5">
+                              {selectedStaff.role}
+                            </p>
                           </div>
-                          <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center">
-                            {selectedStaff.name}
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center -mt-0.5">
-                            {selectedStaff.role}
-                          </p>
-                          <div className="w-full grid grid-cols-2 gap-1.5 pt-1.5">
+                          <div className="w-full grid grid-cols-2 gap-1.5 self-end">
                             <span
                               className="report-profile-pill-done"
                               title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
@@ -2035,95 +2037,99 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         </div>
 
                         {/* Cột 2: Badge tổng/%, 4 Khung trạng thái, 3 Circle track, Nút Đóng */}
-                        <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full min-w-0">
-                          {/* Hàng badge góc trên */}
-                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
-                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                              {t('reports.viz.staffDeliverables', { count: selectedStaff.deliverableCount ?? 0 })}
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                              {selectedStaff.completionPct}%
-                            </span>
-                            {selectedStaff.profileBacklogCount > 0 && (
-                              <ProfileBacklogPopover member={selectedStaff} lang={lang} />
-                            )}
-                          </div>
+                        <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center gap-2 w-full min-w-0">
+                          <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full">
+                            {/* Hàng badge góc trên */}
+                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
+                              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
+                                {t('reports.viz.staffDeliverables', { count: selectedStaff.deliverableCount ?? 0 })}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                                {selectedStaff.completionPct}%
+                              </span>
+                              {selectedStaff.profileBacklogCount > 0 && (
+                                <ProfileBacklogPopover member={selectedStaff} lang={lang} />
+                              )}
+                            </div>
 
-                          {/* 4 khung metric xếp dọc 1 cột */}
-                          <div className="grid grid-cols-1 gap-1.5 w-full">
-                            {([
-                              ['done', selectedStaff.done, t('reports.viz.colCompleted'), 'text-emerald-600 dark:text-emerald-400'],
-                              ['doing', selectedStaff.doing, t('reports.viz.colInProgress'), 'text-blue-600 dark:text-blue-400'],
-                              ['todo', selectedStaff.todo, t('reports.viz.statusTodo'), 'text-slate-600 dark:text-slate-400'],
-                              ['late', selectedStaff.late, t('reports.viz.colOverdue'), 'text-rose-600 dark:text-rose-400'],
-                            ] as const).map(([status, count, label, countColor]) => {
-                              const isStatusActive = staffStatusFilter === status;
-                              return (
-                                <button
-                                  key={status}
-                                  type="button"
-                                  data-status={status}
-                                  aria-pressed={isStatusActive}
-                                  onClick={() => {
-                                    setStaffStatusFilter(status);
-                                  }}
-                                  aria-label={`${selectedStaff.name}: ${label} ${count}`}
-                                  className="report-profile-metric-btn"
-                                >
-                                  <strong className={countColor}>{count}</strong>
-                                  <span>{label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                            {/* 4 khung metric xếp dọc 1 cột */}
+                            <div className="grid grid-cols-1 gap-1.5 w-full">
+                              {([
+                                ['done', selectedStaff.done, t('reports.viz.colCompleted')],
+                                ['doing', selectedStaff.doing, t('reports.viz.colInProgress')],
+                                ['todo', selectedStaff.todo, t('reports.viz.statusTodo')],
+                                ['late', selectedStaff.late, t('reports.viz.colOverdue')],
+                              ] as const).map(([status, count, label]) => {
+                                const isStatusActive = staffStatusFilter === status;
+                                return (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    data-status={status}
+                                    aria-pressed={isStatusActive}
+                                    onClick={() => {
+                                      setStaffStatusFilter(status);
+                                    }}
+                                    aria-label={`${selectedStaff.name}: ${label} ${count}`}
+                                    className="report-profile-metric-btn"
+                                  >
+                                    <strong>{count}</strong>
+                                    <span>{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
 
-                          {/* 3 vòng tròn track */}
-                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
-                            {(['all', 'project', 'campaign'] as const).map((kind) => {
-                              const count = kind === 'all' ? selectedStaff.tasks.length : staffTrackCount(selectedStaff.tasks, kind);
-                              const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
-                              const isTrackActive = staffTrackFilter === kind;
-                              const toneStyle =
-                                kind === 'all'
-                                  ? isTrackActive
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
-                                  : kind === 'project'
-                                  ? isTrackActive
-                                    ? 'bg-violet-600 text-white border-violet-600'
-                                    : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
-                                  : isTrackActive
-                                  ? 'bg-amber-600 text-white border-amber-600'
-                                  : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
+                            {/* 3 vòng tròn track */}
+                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
+                              {(['all', 'project', 'campaign'] as const).map((kind) => {
+                                const count = kind === 'all' ? selectedStaff.tasks.length : staffTrackCount(selectedStaff.tasks, kind);
+                                const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
+                                const isTrackActive = staffTrackFilter === kind;
+                                const toneStyle =
+                                  kind === 'all'
+                                    ? isTrackActive
+                                      ? 'bg-indigo-600 text-white border-indigo-600'
+                                      : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                                    : kind === 'project'
+                                    ? isTrackActive
+                                      ? 'bg-violet-600 text-white border-violet-600'
+                                      : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
+                                    : isTrackActive
+                                    ? 'bg-amber-600 text-white border-amber-600'
+                                    : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
 
-                              return (
-                                <button
-                                  key={kind}
-                                  type="button"
-                                  data-track={kind}
-                                  title={`${label}: ${count}`}
-                                  aria-label={`${selectedStaff.name}: ${label} (${count})`}
-                                  aria-pressed={isTrackActive}
-                                  onClick={() => {
-                                    setStaffTrackFilter(kind);
-                                    setStaffStatusFilter('all');
-                                  }}
-                                  className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
-                                >
-                                  {count}
-                                </button>
-                              );
-                            })}
+                                return (
+                                  <button
+                                    key={kind}
+                                    type="button"
+                                    data-track={kind}
+                                    title={`${label}: ${count}`}
+                                    aria-label={`${selectedStaff.name}: ${label} (${count})`}
+                                    aria-pressed={isTrackActive}
+                                    onClick={() => {
+                                      setStaffTrackFilter(kind);
+                                      setStaffStatusFilter('all');
+                                    }}
+                                    className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
+                                  >
+                                    {count}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
 
                           {/* Nút đóng chi tiết */}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedStaffId(null)}
-                            className="report-profile-cta-btn"
-                          >
-                            {lang === 'en' ? 'Close' : 'Đóng'}
-                          </button>
+                          <div className="w-full grid place-items-center self-end">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedStaffId(null)}
+                              className="report-profile-cta-btn"
+                            >
+                              {lang === 'en' ? 'Close' : 'Đóng'}
+                            </button>
+                          </div>
                         </div>
                       </article>
                     </div>
@@ -2369,64 +2375,66 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       }`}
                     >
                       {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
-                      <div className="grid grid-cols-1 items-center justify-items-center text-center gap-1.5 self-start">
-                        <div className="relative w-full h-[156px] grid place-items-center">
-                          {/* Viền xanh load thể hiện performance % */}
-                          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 148 156">
-                            <rect
-                              x="3"
-                              y="3"
-                              width="142"
-                              height="150"
-                              rx="16"
-                              ry="16"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              className="text-slate-200/80 dark:text-slate-700/80"
-                            />
-                            <rect
-                              x="3"
-                              y="3"
-                              width="142"
-                              height="150"
-                              rx="16"
-                              ry="16"
-                              fill="none"
-                              stroke="#10b981"
-                              strokeWidth="3.5"
-                              pathLength="100"
-                              strokeDasharray="100"
-                              strokeDashoffset={100 - Math.min(100, Math.max(0, m.completionPct))}
-                              strokeLinecap="round"
-                              className="transition-all duration-700 ease-out"
-                              style={{
-                                filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
-                              }}
-                            />
-                          </svg>
-                          {/* Khung avatar bên trong viền load */}
-                          <div className="w-[134px] h-[142px] report-profile-avatar-frame">
-                            {m.avatar_url ? (
-                              <img
-                                src={m.avatar_url}
-                                alt={m.name}
-                                className="w-full h-full object-contain"
+                      <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center text-center gap-2">
+                        <div className="grid grid-cols-1 items-start justify-items-center text-center w-full">
+                          <div className="relative w-full h-[164px] grid place-items-center">
+                            {/* Viền xanh load thể hiện performance % */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 134 164">
+                              <rect
+                                x="3"
+                                y="3"
+                                width="128"
+                                height="158"
+                                rx="16"
+                                ry="16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                className="text-slate-200/80 dark:text-slate-700/80"
                               />
-                            ) : (
-                              <span className="report-profile-avatar-initial">
-                                {m.initial}
-                              </span>
-                            )}
+                              <rect
+                                x="3"
+                                y="3"
+                                width="128"
+                                height="158"
+                                rx="16"
+                                ry="16"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3.5"
+                                pathLength="100"
+                                strokeDasharray="100"
+                                strokeDashoffset={100 - Math.min(100, Math.max(0, m.completionPct))}
+                                strokeLinecap="round"
+                                className="transition-all duration-700 ease-out"
+                                style={{
+                                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
+                                }}
+                              />
+                            </svg>
+                            {/* Khung avatar bên trong viền load */}
+                            <div className="w-[122px] h-[152px] report-profile-avatar-frame shadow-[0_8px_18px_-4px_rgba(0,46,109,0.16)] dark:shadow-[0_8px_18px_-4px_rgba(0,0,0,0.4)]">
+                              {m.avatar_url ? (
+                                <img
+                                  src={m.avatar_url}
+                                  alt={m.name}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <span className="report-profile-avatar-initial">
+                                  {m.initial}
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center mt-2.5">
+                            {m.name}
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center mt-0.5">
+                            {m.role}
+                          </p>
                         </div>
-                        <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center">
-                          {m.name}
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center -mt-0.5">
-                          {m.role}
-                        </p>
-                        <div className="w-full grid grid-cols-2 gap-1.5 pt-1.5">
+                        <div className="w-full grid grid-cols-2 gap-1.5 self-end">
                           <span
                             className="report-profile-pill-done"
                             title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
@@ -2443,103 +2451,107 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       </div>
 
                       {/* Cột 2: Badge tổng/%, 4 Khung trạng thái, 3 Circle track, Nút Xem chi tiết */}
-                      <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full min-w-0">
-                        {/* Hàng badge góc trên */}
-                        <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
-                          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                            {t('reports.viz.staffDeliverables', { count: m.deliverableCount ?? 0 })}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                            {m.completionPct}%
-                          </span>
-                          {m.profileBacklogCount > 0 && (
-                            <ProfileBacklogPopover member={m} lang={lang} />
-                          )}
-                        </div>
+                      <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center gap-2 w-full min-w-0">
+                        <div className="grid grid-cols-1 items-center justify-items-center gap-2 w-full">
+                          {/* Hàng badge góc trên */}
+                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 w-full">
+                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 whitespace-nowrap">
+                              {t('reports.viz.staffDeliverables', { count: m.deliverableCount ?? 0 })}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                              {m.completionPct}%
+                            </span>
+                            {m.profileBacklogCount > 0 && (
+                              <ProfileBacklogPopover member={m} lang={lang} />
+                            )}
+                          </div>
 
-                        {/* 4 khung metric xếp dọc 1 cột */}
-                        <div className="grid grid-cols-1 gap-1.5 w-full">
-                          {([
-                            ['done', m.done, t('reports.viz.colCompleted'), 'text-emerald-600 dark:text-emerald-400'],
-                            ['doing', m.doing, t('reports.viz.colInProgress'), 'text-blue-600 dark:text-blue-400'],
-                            ['todo', m.todo, t('reports.viz.statusTodo'), 'text-slate-600 dark:text-slate-400'],
-                            ['late', m.late, t('reports.viz.colOverdue'), 'text-rose-600 dark:text-rose-400'],
-                          ] as const).map(([status, count, label, countColor]) => {
-                            const isStatusActive = isSelected && staffStatusFilter === status;
-                            return (
-                              <button
-                                key={status}
-                                type="button"
-                                data-status={status}
-                                aria-pressed={isStatusActive}
-                                onClick={() => {
-                                  setSelectedStaffId(m.id);
-                                  setStaffTrackFilter('all');
-                                  setStaffStatusFilter(status);
-                                }}
-                                aria-label={`${m.name}: ${label} ${count}`}
-                                className="report-profile-metric-btn"
-                              >
-                                <strong className={countColor}>{count}</strong>
-                                <span>{label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                          {/* 4 khung metric xếp dọc 1 cột */}
+                          <div className="grid grid-cols-1 gap-1.5 w-full">
+                            {([
+                              ['done', m.done, t('reports.viz.colCompleted')],
+                              ['doing', m.doing, t('reports.viz.colInProgress')],
+                              ['todo', m.todo, t('reports.viz.statusTodo')],
+                              ['late', m.late, t('reports.viz.colOverdue')],
+                            ] as const).map(([status, count, label]) => {
+                              const isStatusActive = isSelected && staffStatusFilter === status;
+                              return (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  data-status={status}
+                                  aria-pressed={isStatusActive}
+                                  onClick={() => {
+                                    setSelectedStaffId(m.id);
+                                    setStaffTrackFilter('all');
+                                    setStaffStatusFilter(status);
+                                  }}
+                                  aria-label={`${m.name}: ${label} ${count}`}
+                                  className="report-profile-metric-btn"
+                                >
+                                  <strong>{count}</strong>
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                        {/* 3 vòng tròn track */}
-                        <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
-                          {(['all', 'project', 'campaign'] as const).map((kind) => {
-                            const count = kind === 'all' ? m.tasks.length : staffTrackCount(m.tasks, kind);
-                            const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
-                            const isTrackActive = isSelected && staffTrackFilter === kind;
-                            const toneStyle =
-                              kind === 'all'
-                                ? isTrackActive
-                                  ? 'bg-indigo-600 text-white border-indigo-600'
-                                  : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
-                                : kind === 'project'
-                                ? isTrackActive
-                                  ? 'bg-violet-600 text-white border-violet-600'
-                                  : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
-                                : isTrackActive
-                                ? 'bg-amber-600 text-white border-amber-600'
-                                : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
+                          {/* 3 vòng tròn track */}
+                          <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5" aria-label={lang === 'en' ? 'Work categories' : 'Nhóm công việc'}>
+                            {(['all', 'project', 'campaign'] as const).map((kind) => {
+                              const count = kind === 'all' ? m.tasks.length : staffTrackCount(m.tasks, kind);
+                              const label = kind === 'all' ? 'All task' : kind === 'project' ? 'Project' : 'Campaign';
+                              const isTrackActive = isSelected && staffTrackFilter === kind;
+                              const toneStyle =
+                                kind === 'all'
+                                  ? isTrackActive
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'border-indigo-300 dark:border-indigo-600/70 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                                  : kind === 'project'
+                                  ? isTrackActive
+                                    ? 'bg-violet-600 text-white border-violet-600'
+                                    : 'border-violet-300 dark:border-violet-600/70 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50'
+                                  : isTrackActive
+                                  ? 'bg-amber-600 text-white border-amber-600'
+                                  : 'border-amber-300 dark:border-amber-600/70 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50';
 
-                            return (
-                              <button
-                                key={kind}
-                                type="button"
-                                data-track={kind}
-                                title={`${label}: ${count}`}
-                                aria-label={`${m.name}: ${label} (${count})`}
-                                aria-pressed={isTrackActive}
-                                onClick={() => {
-                                  setSelectedStaffId(m.id);
-                                  setStaffTrackFilter(kind);
-                                  setStaffStatusFilter('all');
-                                }}
-                                className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
-                              >
-                                {count}
-                              </button>
-                            );
-                          })}
+                              return (
+                                <button
+                                  key={kind}
+                                  type="button"
+                                  data-track={kind}
+                                  title={`${label}: ${count}`}
+                                  aria-label={`${m.name}: ${label} (${count})`}
+                                  aria-pressed={isTrackActive}
+                                  onClick={() => {
+                                    setSelectedStaffId(m.id);
+                                    setStaffTrackFilter(kind);
+                                    setStaffStatusFilter('all');
+                                  }}
+                                  className={`w-7 h-7 rounded-full grid place-items-center text-[10.5px] font-bold border transition-transform hover:scale-110 cursor-pointer ${toneStyle}`}
+                                >
+                                  {count}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
 
                         {/* Nút xem chi tiết */}
-                        <button
-                          type="button"
-                          aria-expanded={isSelected}
-                          onClick={() => {
-                            setSelectedStaffId(isSelected ? null : m.id);
-                            setStaffTrackFilter('all');
-                            setStaffStatusFilter('all');
-                          }}
-                          className="report-profile-cta-btn"
-                        >
-                          {isSelected ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}
-                        </button>
+                        <div className="w-full grid place-items-center self-end">
+                          <button
+                            type="button"
+                            aria-expanded={isSelected}
+                            onClick={() => {
+                              setSelectedStaffId(isSelected ? null : m.id);
+                              setStaffTrackFilter('all');
+                              setStaffStatusFilter('all');
+                            }}
+                            className="report-profile-cta-btn"
+                          >
+                            {isSelected ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}
+                          </button>
+                        </div>
                       </div>
                     </article>
                   );

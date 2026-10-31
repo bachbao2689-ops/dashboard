@@ -50,7 +50,7 @@
   border-radius: 14px;
   background: linear-gradient(145deg, #f8fafc, #edf4ff);
   border: 1px solid rgba(226, 238, 255, 0.9);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), 0 8px 18px -4px rgba(0, 46, 109, 0.16);
   position: relative;
 }
 
@@ -83,8 +83,11 @@
 /* 2 Pill Badges sản lượng Cột 1 (Done / Còn lại) */
 .report-profile-pill-done {
   width: 100%;
-  padding: 4px 5px;
-  border-radius: 6px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 4px 6px;
+  border-radius: 7px;
   background: linear-gradient(180deg, #ecfdf5, #d1fae5);
   border: 1px solid #a7f3d0;
   color: #065f46;
@@ -99,8 +102,11 @@
 
 .report-profile-pill-remaining {
   width: 100%;
-  padding: 4px 5px;
-  border-radius: 6px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 4px 6px;
+  border-radius: 7px;
   background: linear-gradient(180deg, #fffbeb, #fef3c7);
   border: 1px solid #fde68a;
   color: #92400e;
@@ -113,7 +119,7 @@
   box-shadow: inset 0 1px 0 #ffffff;
 }
 
-/* 4 Hàng metric trạng thái dọc Cột 2 */
+/* 4 Hàng metric trạng thái dọc Cột 2 - Tint màu tĩnh rõ ràng, hover nâng nhẹ */
 .report-profile-metric-btn {
   width: 100%;
   display: grid;
@@ -123,11 +129,8 @@
   padding: 4px 8px;
   min-height: 33px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(220, 232, 250, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: inset 0 1px 0 #ffffff80, 0 1px 2px rgba(15, 23, 42, 0.03);
   text-align: left;
   cursor: pointer;
   transition: all .2s ease;
@@ -141,63 +144,91 @@
 
 .report-profile-metric-btn span {
   font-size: 10.5px;
-  font-weight: 500;
-  color: #526986;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color .2s ease;
 }
 
-/* Hover highlights by status - text turns white */
+/* Trạng thái Done: xanh mint */
+.report-profile-metric-btn[data-status="done"] {
+  background: linear-gradient(180deg, #ecfdf5, #d1fae5);
+  border: 1px solid #a7f3d0;
+  box-shadow: inset 0 1px 0 #ffffff;
+}
+.report-profile-metric-btn[data-status="done"] :is(strong, span) {
+  color: #065f46;
+}
 .report-profile-metric-btn[data-status="done"]:hover {
-  background: #257534;
-  border-color: #257534;
-  box-shadow: 0 4px 12px rgba(37, 117, 52, 0.25);
-}
-.report-profile-metric-btn[data-status="done"]:hover :is(strong, span) {
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #dcfce7, #bbf7d0);
+  border-color: #86efac;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  transform: translateY(-1px);
 }
 
+/* Trạng thái Doing: xanh blue */
+.report-profile-metric-btn[data-status="doing"] {
+  background: linear-gradient(180deg, #eff6ff, #dbeafe);
+  border: 1px solid #bfdbfe;
+  box-shadow: inset 0 1px 0 #ffffff;
+}
+.report-profile-metric-btn[data-status="doing"] :is(strong, span) {
+  color: #1e40af;
+}
 .report-profile-metric-btn[data-status="doing"]:hover {
-  background: #0284c7;
-  border-color: #0284c7;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
-}
-.report-profile-metric-btn[data-status="doing"]:hover :is(strong, span) {
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #e0f2fe, #bae6fd);
+  border-color: #7dd3fc;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+  transform: translateY(-1px);
 }
 
+/* Trạng thái Todo: xám slate */
+.report-profile-metric-btn[data-status="todo"] {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 #ffffff;
+}
+.report-profile-metric-btn[data-status="todo"] :is(strong, span) {
+  color: #334155;
+}
 .report-profile-metric-btn[data-status="todo"]:hover {
-  background: #475569;
-  border-color: #475569;
-  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.25);
-}
-.report-profile-metric-btn[data-status="todo"]:hover :is(strong, span) {
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.15);
+  transform: translateY(-1px);
 }
 
-.report-profile-metric-btn[data-status="late"]:hover {
-  background: #e11d48;
-  border-color: #e11d48;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+/* Trạng thái Late: đỏ rose */
+.report-profile-metric-btn[data-status="late"] {
+  background: linear-gradient(180deg, #fff1f2, #ffe4e6);
+  border: 1px solid #fecdd3;
+  box-shadow: inset 0 1px 0 #ffffff;
 }
-.report-profile-metric-btn[data-status="late"]:hover :is(strong, span) {
-  color: #ffffff !important;
+.report-profile-metric-btn[data-status="late"] :is(strong, span) {
+  color: #9f1239;
+}
+.report-profile-metric-btn[data-status="late"]:hover {
+  background: linear-gradient(180deg, #ffe4e6, #fecdd3);
+  border-color: #fda4af;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.2);
+  transform: translateY(-1px);
 }
 
 /* Active pressed state */
 .report-profile-metric-btn[aria-pressed="true"] {
-  background: #ffffff;
-  border-color: #3b82f6;
-  box-shadow: inset 0 0 0 1px #3b82f6, 0 2px 6px rgba(59, 130, 246, 0.2);
+  box-shadow: inset 0 0 0 1.5px currentColor, 0 3px 8px rgba(15, 23, 42, 0.12);
+  font-weight: 700;
 }
 
-/* Nút CTA "Xem chi tiết" / "Đóng" dạng Liquid Glass Pill */
+/* Nút CTA "Xem chi tiết" / "Đóng" dạng Liquid Glass Pill ngang hàng 2 label */
 .report-profile-cta-btn {
   width: 100%;
   max-width: 130px;
-  padding: 5px 12px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 4px 12px;
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 650;
@@ -312,7 +343,7 @@
 .dark .report-profile-avatar-frame {
   background: linear-gradient(145deg, #132237, #0e1a2b);
   border: 1px solid #1f334d;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.04), 0 8px 18px -4px rgba(0, 0, 0, 0.4);
 }
 
 .dark .report-profile-avatar-initial {
@@ -336,20 +367,65 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.dark .report-profile-metric-btn {
-  background: rgba(27, 43, 65, 0.5);
-  border-color: rgba(43, 61, 83, 0.8);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+/* Dark mode trạng thái metric button */
+.dark .report-profile-metric-btn[data-status="done"] {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.dark .report-profile-metric-btn[data-status="done"] :is(strong, span) {
+  color: #6ee7b7;
+}
+.dark .report-profile-metric-btn[data-status="done"]:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
-.dark .report-profile-metric-btn span {
-  color: #94a3b8;
+.dark .report-profile-metric-btn[data-status="doing"] {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.dark .report-profile-metric-btn[data-status="doing"] :is(strong, span) {
+  color: #38bdf8;
+}
+.dark .report-profile-metric-btn[data-status="doing"]:hover {
+  background: rgba(2, 132, 199, 0.22);
+  border-color: #0284c7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.dark .report-profile-metric-btn[data-status="todo"] {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.dark .report-profile-metric-btn[data-status="todo"] :is(strong, span) {
+  color: #cbd5e1;
+}
+.dark .report-profile-metric-btn[data-status="todo"]:hover {
+  background: rgba(148, 163, 184, 0.22);
+  border-color: #94a3b8;
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
+}
+
+.dark .report-profile-metric-btn[data-status="late"] {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.dark .report-profile-metric-btn[data-status="late"] :is(strong, span) {
+  color: #fda4af;
+}
+.dark .report-profile-metric-btn[data-status="late"]:hover {
+  background: rgba(244, 63, 94, 0.22);
+  border-color: #f43f5e;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.3);
 }
 
 .dark .report-profile-metric-btn[aria-pressed="true"] {
-  background: #1e293b;
-  border-color: #60a5fa;
-  box-shadow: inset 0 0 0 1px #60a5fa, 0 2px 6px rgba(96, 165, 250, 0.2);
+  box-shadow: inset 0 0 0 1.5px currentColor, 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .dark .report-profile-cta-btn {
