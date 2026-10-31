@@ -62,6 +62,15 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   const taskUnit = lang === 'en' ? 'Việc' : 'Việc';
   const outputUnit = 'SL';
 
+  // Performance border track color matching top cards and performance metrics
+  const perfColor = member.late > 0
+    ? '#f43f5e'
+    : member.completionPct >= 80
+    ? '#10b981'
+    : member.completionPct >= 50
+    ? '#0ea5e9'
+    : '#f59e0b';
+
   const doneTooltip = lang === 'en'
     ? `Completed: ${member.done} tasks (${member.completionPct}%)`
     : `Hoàn thành: ${member.done} việc (${member.completionPct}%)`;
@@ -79,7 +88,14 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
     : `Tổng sản lượng: ${member.deliverableCount} hình/file`;
 
   return (
-    <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
+    <article
+      className={`report-profile${hasImage ? '' : ' report-profile--initials'}`}
+      style={{
+        '--perf-pct': `${member.completionPct}%`,
+        '--perf-color': perfColor,
+      } as React.CSSProperties}
+      aria-label={member.name}
+    >
       <div className="report-profile-surface">
         {hasImage ? (
           <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
@@ -100,6 +116,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
               className="report-profile-badge report-profile-badge--done"
               title={doneTooltip}
               aria-label={doneTooltip}
+              data-profile-tooltip={doneTooltip}
+              data-profile-tooltip-pos="left"
             >
               <CheckCircle2 size={12} aria-hidden="true" />
               <strong>{member.done}</strong>
@@ -109,6 +127,7 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 className="report-profile-badge report-profile-badge--late"
                 title={lateTooltip}
                 aria-label={lateTooltip}
+                data-profile-tooltip={lateTooltip}
               >
                 <Clock size={12} aria-hidden="true" />
                 <strong>{member.late}</strong>
@@ -119,6 +138,7 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 className="report-profile-badge report-profile-badge--backlog"
                 title={backlogTooltip}
                 aria-label={backlogTooltip}
+                data-profile-tooltip={backlogTooltip}
               >
                 <AlertTriangle size={12} aria-hidden="true" />
                 <strong>{member.profileBacklogCount}</strong>
@@ -132,6 +152,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 className="report-profile-pill report-profile-pill--task"
                 title={totalTasksTooltip}
                 aria-label={totalTasksTooltip}
+                data-profile-tooltip={totalTasksTooltip}
+                data-profile-tooltip-pos="left"
               >
                 <ClipboardList aria-hidden="true" />
                 <strong>{member.tasks.length}</strong>
@@ -141,6 +163,7 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 className="report-profile-pill report-profile-pill--output"
                 title={deliverablesTooltip}
                 aria-label={deliverablesTooltip}
+                data-profile-tooltip={deliverablesTooltip}
               >
                 <ImagePlus aria-hidden="true" />
                 <strong>{member.deliverableCount}</strong>
