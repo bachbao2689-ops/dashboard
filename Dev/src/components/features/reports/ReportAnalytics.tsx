@@ -1956,23 +1956,61 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   aria-label={selectedStaff.name}
                   className="relative lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[92%] lg:max-w-[780px] z-30 mb-6 lg:mb-0 rounded-[28px] border-2 border-white/90 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_28px_70px_-12px_rgba(15,23,42,0.28)] dark:shadow-[0_28px_70px_-12px_rgba(0,0,0,0.7)] p-4 sm:p-5 transition-all duration-300 scale-[1.01]"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-[310px_1fr] gap-5 items-start">
+                  <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-5 items-start">
                     {/* Cột trái: Thẻ Soft Glassmorphism của selectedStaff */}
-                    <div className="w-full max-w-[310px] justify-self-center lg:justify-self-start">
+                    <div className="w-full max-w-[330px] justify-self-center lg:justify-self-start">
                       <article className="report-profile shadow-lg">
                         {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
                         <div className="grid grid-cols-1 items-center justify-items-center text-center gap-1.5 self-start">
-                          <div className="report-profile-avatar-frame">
-                            {selectedStaff.avatar_url ? (
-                              <img
-                                src={selectedStaff.avatar_url}
-                                alt={selectedStaff.name}
+                          <div className="relative w-full h-[156px] grid place-items-center">
+                            {/* Viền xanh load thể hiện performance % */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 148 156">
+                              <rect
+                                x="3"
+                                y="3"
+                                width="142"
+                                height="150"
+                                rx="16"
+                                ry="16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                className="text-slate-200/80 dark:text-slate-700/80"
                               />
-                            ) : (
-                              <span className="report-profile-avatar-initial">
-                                {selectedStaff.initial}
-                              </span>
-                            )}
+                              <rect
+                                x="3"
+                                y="3"
+                                width="142"
+                                height="150"
+                                rx="16"
+                                ry="16"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3.5"
+                                pathLength="100"
+                                strokeDasharray="100"
+                                strokeDashoffset={100 - Math.min(100, Math.max(0, selectedStaff.completionPct))}
+                                strokeLinecap="round"
+                                className="transition-all duration-700 ease-out"
+                                style={{
+                                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
+                                }}
+                              />
+                            </svg>
+                            {/* Khung avatar bên trong viền load */}
+                            <div className="w-[134px] h-[142px] report-profile-avatar-frame">
+                              {selectedStaff.avatar_url ? (
+                                <img
+                                  src={selectedStaff.avatar_url}
+                                  alt={selectedStaff.name}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <span className="report-profile-avatar-initial">
+                                  {selectedStaff.initial}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center">
                             {selectedStaff.name}
@@ -1980,7 +2018,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center -mt-0.5">
                             {selectedStaff.role}
                           </p>
-                          <div className="w-full grid grid-cols-1 gap-1 pt-1">
+                          <div className="w-full grid grid-cols-2 gap-1.5 pt-1.5">
                             <span
                               className="report-profile-pill-done"
                               title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
@@ -2332,17 +2370,55 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     >
                       {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
                       <div className="grid grid-cols-1 items-center justify-items-center text-center gap-1.5 self-start">
-                        <div className="report-profile-avatar-frame">
-                          {m.avatar_url ? (
-                            <img
-                              src={m.avatar_url}
-                              alt={m.name}
+                        <div className="relative w-full h-[156px] grid place-items-center">
+                          {/* Viền xanh load thể hiện performance % */}
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 148 156">
+                            <rect
+                              x="3"
+                              y="3"
+                              width="142"
+                              height="150"
+                              rx="16"
+                              ry="16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              className="text-slate-200/80 dark:text-slate-700/80"
                             />
-                          ) : (
-                            <span className="report-profile-avatar-initial">
-                              {m.initial}
-                            </span>
-                          )}
+                            <rect
+                              x="3"
+                              y="3"
+                              width="142"
+                              height="150"
+                              rx="16"
+                              ry="16"
+                              fill="none"
+                              stroke="#10b981"
+                              strokeWidth="3.5"
+                              pathLength="100"
+                              strokeDasharray="100"
+                              strokeDashoffset={100 - Math.min(100, Math.max(0, m.completionPct))}
+                              strokeLinecap="round"
+                              className="transition-all duration-700 ease-out"
+                              style={{
+                                filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
+                              }}
+                            />
+                          </svg>
+                          {/* Khung avatar bên trong viền load */}
+                          <div className="w-[134px] h-[142px] report-profile-avatar-frame">
+                            {m.avatar_url ? (
+                              <img
+                                src={m.avatar_url}
+                                alt={m.name}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <span className="report-profile-avatar-initial">
+                                {m.initial}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center">
                           {m.name}
@@ -2350,7 +2426,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center -mt-0.5">
                           {m.role}
                         </p>
-                        <div className="w-full grid grid-cols-1 gap-1 pt-1">
+                        <div className="w-full grid grid-cols-2 gap-1.5 pt-1.5">
                           <span
                             className="report-profile-pill-done"
                             title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
