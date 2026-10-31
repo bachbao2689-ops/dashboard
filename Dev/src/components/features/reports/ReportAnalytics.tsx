@@ -59,10 +59,24 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
-  const tasksLabel = lang === 'en' ? 'Tasks' : 'Công việc';
-  const outputLabel = lang === 'en' ? 'Output (Deliverables)' : 'Sản lượng (Hình/file)';
   const taskUnit = lang === 'en' ? 'Việc' : 'Việc';
   const outputUnit = 'SL';
+
+  const doneTooltip = lang === 'en'
+    ? `Completed: ${member.done} tasks (${member.completionPct}%)`
+    : `Hoàn thành: ${member.done} việc (${member.completionPct}%)`;
+  const lateTooltip = lang === 'en'
+    ? `Overdue: ${member.late} tasks`
+    : `Quá hạn: ${member.late} việc`;
+  const backlogTooltip = lang === 'en'
+    ? `Backlog: ${member.profileBacklogCount} tasks`
+    : `Tồn đọng: ${member.profileBacklogCount} việc`;
+  const totalTasksTooltip = lang === 'en'
+    ? `Total tasks: ${member.tasks.length}`
+    : `Tổng task: ${member.tasks.length} việc`;
+  const deliverablesTooltip = lang === 'en'
+    ? `Total deliverables: ${member.deliverableCount} files/images`
+    : `Tổng sản lượng: ${member.deliverableCount} hình/file`;
 
   return (
     <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
@@ -80,11 +94,12 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             <p>{member.role}</p>
           </div>
 
-          {/* Performance Status Labels: only icon & number, no extra text */}
-          <div className="report-profile-perf-row" aria-label="Performance status">
+          {/* Performance Status Labels: only icon & number, hover for details */}
+          <div className="report-profile-perf-row" aria-label={lang === 'en' ? 'Performance status' : 'Trạng thái hiệu suất'}>
             <span
               className="report-profile-badge report-profile-badge--done"
-              title={`${lang === 'en' ? 'Tasks completed' : 'Việc hoàn thành'}: ${member.done}/${member.tasks.length} (${member.completionPct}%)`}
+              title={doneTooltip}
+              aria-label={doneTooltip}
             >
               <CheckCircle2 size={12} aria-hidden="true" />
               <strong>{member.done}</strong>
@@ -92,7 +107,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             {member.late > 0 && (
               <span
                 className="report-profile-badge report-profile-badge--late"
-                title={`${lang === 'en' ? 'Overdue tasks' : 'Việc quá hạn'}: ${member.late}`}
+                title={lateTooltip}
+                aria-label={lateTooltip}
               >
                 <Clock size={12} aria-hidden="true" />
                 <strong>{member.late}</strong>
@@ -101,7 +117,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             {member.profileBacklogCount > 0 && (
               <span
                 className="report-profile-badge report-profile-badge--backlog"
-                title={`${lang === 'en' ? 'Backlog tasks' : 'Việc tồn đọng'}: ${member.profileBacklogCount}`}
+                title={backlogTooltip}
+                aria-label={backlogTooltip}
               >
                 <AlertTriangle size={12} aria-hidden="true" />
                 <strong>{member.profileBacklogCount}</strong>
@@ -113,8 +130,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             <div className="report-profile-counters">
               <span
                 className="report-profile-pill report-profile-pill--task"
-                title={`${tasksLabel}: ${member.tasks.length}`}
-                aria-label={`${tasksLabel}: ${member.tasks.length} ${taskUnit}`}
+                title={totalTasksTooltip}
+                aria-label={totalTasksTooltip}
               >
                 <ClipboardList aria-hidden="true" />
                 <strong>{member.tasks.length}</strong>
@@ -122,8 +139,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
               </span>
               <span
                 className="report-profile-pill report-profile-pill--output"
-                title={`${outputLabel}: ${member.deliverableCount}`}
-                aria-label={`${outputLabel}: ${member.deliverableCount} ${outputUnit}`}
+                title={deliverablesTooltip}
+                aria-label={deliverablesTooltip}
               >
                 <ImagePlus aria-hidden="true" />
                 <strong>{member.deliverableCount}</strong>
