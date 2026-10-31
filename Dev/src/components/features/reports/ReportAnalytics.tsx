@@ -211,34 +211,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
   const isDark = useUiStore((state) => state.theme) === 'dark';
-  const [allocationRange, setAllocationRange] = useState<'weekly' | 'custom'>('custom');
-  const [allocationCustomStart, setAllocationCustomStart] = useState<string>(periodMeta.start);
-  const [allocationCustomEnd, setAllocationCustomEnd] = useState<string>(periodMeta.today);
-
-  useEffect(() => {
-    setAllocationCustomStart(periodMeta.start);
-    setAllocationCustomEnd(periodMeta.today);
-  }, [periodMeta.start, periodMeta.today]);
-
   const toYmd = (d: Date) =>
     [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
-  const startOfCurrentWeek = (day?: string) => {
-    const d = day ? new Date(`${day}T00:00:00`) : new Date();
-    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const allocationRangeStart =
-    allocationRange === 'weekly' ? toYmd(startOfCurrentWeek(periodMeta.today)) : allocationCustomStart;
-  const allocationRangeEnd =
-    allocationRange === 'weekly'
-      ? (() => {
-          const v = startOfCurrentWeek(periodMeta.today);
-          v.setDate(v.getDate() + 6);
-          return toYmd(v);
-        })()
-      : allocationCustomEnd;
+  const allocationRangeStart = periodMeta.start;
+  const allocationRangeEnd = periodMeta.today;
 
   const allocationChartData = useMemo(() => {
     if (!allocationRangeStart || !allocationRangeEnd || allocationRangeStart > allocationRangeEnd) return [];
@@ -768,6 +744,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     };
   }, [selectedStaff, scopedStaffTasks]);
 
+  const departmentDisplayName = useMemo(() => {
+    if (departmentFilter === 'all') return selectedDepartmentName;
+    const clean = (selectedDepartmentName || '').trim();
+    return clean.toLowerCase().startsWith('team ') ? clean : `Team ${clean}`;
+  }, [departmentFilter, selectedDepartmentName]);
+
   const handleBack = () => {
     if (window.history.length > 1) {
       navigate(-1);
@@ -873,7 +855,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-flow-col auto-cols-max items-center gap-2">
                 <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white">
-                  {t('reports.viz.titlePrefix')} · {selectedDepartmentName}
+                  {t('reports.viz.titlePrefix')} · {departmentDisplayName}
                 </h1>
               </div>
               <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
@@ -1182,18 +1164,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </button>
               </div>
 
-              {/* Refresh button right next to the calendar navigation group */}
-              <button
-                type="button"
-                aria-label="Đồng bộ báo cáo"
-                title="Đồng bộ báo cáo"
-                disabled={isLoading || standalone}
-                onClick={() => refetch()}
-                className={`grid place-items-center rounded-[8px] p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm disabled:opacity-50 ${standalone ? 'pointer-events-none opacity-80' : ''}`}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
-
               {/* Combined Report Actions Dropdown Menu (Slide 1 & Slide 4) */}
               <div ref={actionMenuRef} className="relative">
                 <button
@@ -1201,11 +1171,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   onClick={() => setActionMenuOpen((prev) => !prev)}
                   aria-expanded={actionMenuOpen}
                   aria-haspopup="true"
-                  className="grid grid-flow-col auto-cols-max items-center gap-2 px-3.5 py-2 rounded-[8px] bg-[#002e6d] hover:bg-[#002250] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer min-h-[44px]"
+                  className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-colors cursor-pointer min-h-[34px]"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
                   <span>{t('reports.viz.reportActions')}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${actionMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${actionMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {actionMenuOpen && (
@@ -2767,15 +2737,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
           <DashboardAllocationChart
-            name={selectedDepartmentName}
+            name={departmentDisplayName}
             rangeStart={allocationRangeStart}
             rangeEnd={allocationRangeEnd}
-            range={allocationRange}
-            setRange={setAllocationRange}
-            customStart={allocationCustomStart}
-            setCustomStart={setAllocationCustomStart}
-            customEnd={allocationCustomEnd}
-            setCustomEnd={setAllocationCustomEnd}
+            hideDateFilter={true}
             isDark={isDark}
             chartData={allocationChartData}
             className="glass-panel p-4 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm grid grid-rows-[auto_1fr_auto] min-w-0"
