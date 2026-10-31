@@ -1,4 +1,4 @@
-/* Profile Card: compact scaled portrait, targeted name-only blur, soft ice blue & dark mode green accent */
+/* Profile Card: elegant portrait layout (aspect-ratio: .62), subtle scale-down (~12%), targeted name blur, soft ice blue & dark mode green accent */
 .report-staff-section {
   container-type: inline-size;
 }
@@ -7,39 +7,40 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
-  gap: clamp(10px, 1vw, 16px);
-  padding: 4px 2px 14px;
+  gap: clamp(12px, 1.3vw, 22px);
+  padding: 8px 2px 18px;
 }
 
-/* Outer Card Container - Compact & balanced scale to harmonize with Report tab boxes */
+/* Outer Card Container - Elegant Portrait, Soft Ice Blue */
 .report-profile {
   --profile-ink: #002e6d;
   --profile-muted: #475569;
   font-family: inherit;
   position: relative;
   min-width: 0;
-  padding: 5px;
+  padding: 7px;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
+  border-radius: 34px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff 65%, #e2f0fc);
-  box-shadow: inset 0 1px 1px #ffffff, 0 10px 20px -8px rgba(0, 46, 109, 0.08);
+  box-shadow: inset 0 1px 1px #ffffff, 0 14px 26px -10px rgba(0, 46, 109, 0.09);
   color: var(--profile-ink);
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 240ms ease, box-shadow 240ms ease;
 }
 
 .report-profile:hover {
-  transform: translateY(-2px);
-  box-shadow: inset 0 1px 1px #ffffff, 0 14px 24px -8px rgba(0, 46, 109, 0.15);
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 1px #ffffff, 0 20px 32px -10px rgba(0, 46, 109, 0.16);
 }
 
-/* Inner Surface - Fixed compact height (180px - 200px) matching Report tab card rhythm */
+/* Inner Surface - Classic portrait aspect ratio (.62), subtly scaled down to ~310px min-height */
 .report-profile-surface {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  height: clamp(175px, 14.5vw, 200px);
+  aspect-ratio: .62;
+  min-height: 310px;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 15px;
+  border-radius: 28px;
   background: linear-gradient(180deg, #eef7fc 0%, #d5e9f7 100%);
 }
 
@@ -53,43 +54,42 @@
 
 .report-profile-portrait {
   object-fit: cover;
-  object-position: center 15%;
+  object-position: center 22%;
 }
 
-/* Fallback Initials Avatar - Compact circular badge */
+/* Fallback Initials Avatar - Portrait composition */
 .report-profile-fallback {
   display: grid;
   place-items: start center;
-  padding-top: 14px;
+  padding-top: 22%;
   background: radial-gradient(ellipse at 72% 18%, #f4faff, transparent 60%), linear-gradient(150deg, #e4f1fb 0%, #d2e8f7 100%);
 }
 
 .report-profile-fallback span {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 48%;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.7);
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   color: #002e6d;
-  box-shadow: 0 3px 10px rgba(0, 46, 109, 0.06);
-  font-size: 19px;
-  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 46, 109, 0.06);
+  font-size: clamp(26px, 2.4vw, 42px);
+  font-weight: 600;
   letter-spacing: .02em;
 }
 
-/* Targeted Blur: Only covers the footer strip (~72px) behind name & controls */
+/* Targeted Blur: Only blurs from the chest/name zone down (inset: 50% 0 0), keeps head & facial expression crystal clear */
 .report-profile-glass {
   position: absolute;
   z-index: 1;
-  inset: auto 0 0;
-  height: 74px;
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.75) 24%, rgba(238, 247, 252, 0.95) 55%, rgba(230, 242, 252, 0.99) 100%);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
+  inset: 50% 0 0;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.7) 26%, rgba(238, 247, 252, 0.94) 60%, rgba(230, 242, 252, 0.99) 100%);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
   pointer-events: none;
 }
 
@@ -98,31 +98,31 @@
   z-index: 2;
   inset: auto 0 0;
   display: grid;
-  gap: 5px;
-  padding: 6px 10px 7px;
+  gap: 16px;
+  padding: 16px clamp(12px, 1vw, 18px) 15px;
 }
 
 .report-profile-identity {
   display: grid;
-  gap: 1px;
+  gap: 4px;
   min-width: 0;
 }
 
 .report-profile-identity h3 {
   display: block;
-  font-size: 13.5px;
+  font-size: clamp(16px, 1.22vw, 21px);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -.02em;
+  letter-spacing: -.025em;
   overflow-wrap: anywhere;
   color: var(--profile-ink);
   margin: 0;
 }
 
 .report-profile-identity p {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.35;
   color: var(--profile-muted);
   overflow-wrap: anywhere;
   margin: 0;
@@ -131,28 +131,28 @@
 .report-profile-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
 .report-profile-counters {
   display: grid;
   grid-template-columns: repeat(2, max-content);
-  gap: 7px;
+  gap: 10px;
   align-items: center;
 }
 
 .report-profile-counters > span {
   display: grid;
-  grid-template-columns: 12px auto;
-  gap: 3px;
+  grid-template-columns: 13px auto;
+  gap: 4px;
   align-items: center;
-  font-size: 10.5px;
+  font-size: 11.5px;
 }
 
 .report-profile-counters svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   stroke-width: 1.5;
   color: var(--profile-muted);
 }
@@ -161,21 +161,21 @@
   font-weight: 600;
 }
 
-/* CTA Details button - Compact Pill */
+/* CTA Details button - Elegant Pill */
 .report-profile-cta {
   display: grid;
-  grid-template-columns: auto 11px;
+  grid-template-columns: auto 12px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 26px;
-  padding: 0 9px;
+  gap: 6px;
+  min-height: 35px;
+  padding: 0 14px;
   border: 1px solid #d5e9f7;
   border-radius: 999px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff);
-  box-shadow: inset 0 1px 1px #ffffff, 0 2px 6px rgba(0, 46, 109, 0.08);
+  box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px rgba(0, 46, 109, 0.08);
   color: #002e6d;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -183,8 +183,8 @@
 }
 
 .report-profile-cta svg {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   stroke-width: 1.5;
 }
 
@@ -192,21 +192,21 @@
   background: #ffffff;
   border-color: #badcf6;
   color: #002e6d;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 46, 109, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 46, 109, 0.16);
 }
 
 .report-profile-cta:focus-visible {
   outline: 2px solid #002e6d;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .report-profile-expanded {
-  animation: profile-reveal 240ms ease-out;
+  animation: profile-reveal 260ms ease-out;
 }
 
 @keyframes profile-reveal {
-  from { opacity: 0; margin-top: 8px; }
+  from { opacity: 0; margin-top: 10px; }
   to { opacity: 1; margin-top: 0; }
 }
 
@@ -219,12 +219,12 @@
   --profile-muted: #94a3b8;
   border: 1.5px solid rgba(78, 182, 72, 0.5); /* Viền xanh lá cây thương hiệu */
   background: linear-gradient(145deg, #131f31 0%, #090f1b 100%);
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 12px 24px -10px rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 14px 28px -12px rgba(0, 0, 0, 0.7);
 }
 
 .dark .report-profile:hover {
   border-color: #4eb648;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.35), 0 16px 28px -8px rgba(0, 0, 0, 0.8), 0 0 14px rgba(78, 182, 72, 0.25);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.35), 0 18px 34px -10px rgba(0, 0, 0, 0.8), 0 0 16px rgba(78, 182, 72, 0.25);
 }
 
 .dark .report-profile-surface {
@@ -240,13 +240,13 @@
   background: rgba(78, 182, 72, 0.08);
   border: 1.5px solid rgba(78, 182, 72, 0.35);
   color: #90e38a;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 24%, rgba(9, 15, 27, 0.96) 55%, #090f1b 100%);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.78) 26%, rgba(9, 15, 27, 0.96) 60%, #090f1b 100%);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 
 .dark .report-profile-counters svg {
@@ -262,19 +262,19 @@
   background: linear-gradient(155deg, rgba(78, 182, 72, 0.15), rgba(19, 31, 49, 0.95));
   border: 1.5px solid #4eb648;
   color: #90e38a;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.25), 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.25), 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .dark .report-profile-cta:hover {
   background: #4eb648;
   color: #090f1b;
   border-color: #4eb648;
-  box-shadow: 0 4px 14px rgba(78, 182, 72, 0.4);
+  box-shadow: 0 4px 16px rgba(78, 182, 72, 0.4);
 }
 
 .dark .report-profile-cta:focus-visible {
   outline: 2px solid #4eb648;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 /* ========================================================
@@ -294,21 +294,21 @@
 
 @container (max-width: 479px) {
   .report-profiles {
-    grid-template-columns: minmax(0, 280px);
+    grid-template-columns: minmax(0, 310px);
     justify-content: center;
   }
 }
 
 @container (min-width: 1200px) and (max-width: 1440px) {
   .report-profile-content {
-    padding-inline: 8px;
+    padding-inline: 10px;
   }
   .report-profile-counters {
-    gap: 5px;
+    gap: 7px;
   }
   .report-profile-cta {
-    padding-inline: 8px;
-    gap: 3px;
+    padding-inline: 11px;
+    gap: 4px;
   }
 }
 
