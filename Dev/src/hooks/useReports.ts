@@ -1520,6 +1520,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
     setDepartmentFilter,
     departments: scope.departments,
     canViewAllDepartments,
+    scopedTasks,
     selectedDepartmentName: finalSelectedDepartmentName,
     periodMeta: finalPeriodMeta,
     periodLabelVi: finalPeriodMeta.labelVi,

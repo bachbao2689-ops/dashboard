@@ -6,10 +6,10 @@ import { useReports } from '../../../hooks/useReports';
 import type { TimeRange, StaffReportMember } from '../../../hooks/useReports';
 import { useTranslation } from '../../../i18n/translations';
 import { FilterPopover } from '../../common/filters/FilterPopover';
-import { taskDay } from '../../../lib/taskTracking';
+import { DashboardAllocationChart } from '../dashboard/DashboardAllocationChart';
+import { useUiStore } from '../../../store/uiStore';
+import { taskDay, taskOpen, taskDone } from '../../../lib/taskTracking';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -190,6 +190,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     setDepartmentFilter,
     departments,
     canViewAllDepartments,
+    scopedTasks,
     selectedDepartmentName,
     periodMeta,
     periodLabelVi,
@@ -209,6 +210,57 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
+  const isDark = useUiStore((state) => state.theme) === 'dark';
+  const [allocationRange, setAllocationRange] = useState<'weekly' | 'custom'>('custom');
+  const [allocationCustomStart, setAllocationCustomStart] = useState<string>(periodMeta.start);
+  const [allocationCustomEnd, setAllocationCustomEnd] = useState<string>(periodMeta.today);
+
+  useEffect(() => {
+    setAllocationCustomStart(periodMeta.start);
+    setAllocationCustomEnd(periodMeta.today);
+  }, [periodMeta.start, periodMeta.today]);
+
+  const toYmd = (d: Date) =>
+    [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+  const startOfCurrentWeek = (day?: string) => {
+    const d = day ? new Date(`${day}T00:00:00`) : new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const allocationRangeStart =
+    allocationRange === 'weekly' ? toYmd(startOfCurrentWeek(periodMeta.today)) : allocationCustomStart;
+  const allocationRangeEnd =
+    allocationRange === 'weekly'
+      ? (() => {
+          const v = startOfCurrentWeek(periodMeta.today);
+          v.setDate(v.getDate() + 6);
+          return toYmd(v);
+        })()
+      : allocationCustomEnd;
+
+  const allocationChartData = useMemo(() => {
+    if (!allocationRangeStart || !allocationRangeEnd || allocationRangeStart > allocationRangeEnd) return [];
+    const start = new Date(`${allocationRangeStart}T00:00:00`);
+    const end = new Date(`${allocationRangeEnd}T00:00:00`);
+    const days: Array<{ name: string; created: number; doing: number; done: number }> = [];
+    const dayKey = (value?: string | null) => (value ? value.slice(0, 10) : '');
+
+    for (let cursor = new Date(start); cursor <= end && days.length < 32; cursor.setDate(cursor.getDate() + 1)) {
+      const key = toYmd(cursor);
+      const dayLabel = `${String(cursor.getDate()).padStart(2, '0')}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+      days.push({
+        name: dayLabel,
+        created: (scopedTasks || []).filter((task: any) => dayKey(task.created_at) === key).length,
+        doing: (scopedTasks || []).filter(
+          (task: any) => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key,
+        ).length,
+        done: (scopedTasks || []).filter((task: any) => taskDone(task) && dayKey(task.completed_at) === key).length,
+      });
+    }
+    return days;
+  }, [allocationRangeStart, allocationRangeEnd, scopedTasks]);
   const [showCapacityInfo, setShowCapacityInfo] = useState(false);
 
   // Tự động cân giữa màn hình khi mở popup detail
@@ -2713,165 +2765,23 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         {/* TẦNG 3: 2 Bottom Charts */}
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Chart 1: BURNDOWN: TASK CÒN LẠI (Burndown / Burnup trend - Slide 4a) */}
-          <div className="glass-panel p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
-              <div className="grid grid-cols-1 gap-0.5">
-                <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {lang === 'en' ? 'BURNDOWN: REMAINING TASKS' : 'BURNDOWN: TASK CÒN LẠI'}
-                  </h3>
-                  <div data-info-popover="burndown" className="relative inline-grid place-items-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowBurndownInfo(!showBurndownInfo)}
-                      aria-label={t('reports.viz.infoBurndownTitle')}
-                      className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer ${
-                        showBurndownInfo
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                    </button>
-                    {showBurndownInfo && (
-                      <div
-                        className="absolute left-0 top-7 z-30 w-80 sm:w-96 p-3.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar"
-                        style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
-                      >
-                        <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                            <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoBurndownTitle')}</h4>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowBurndownInfo(false)}
-                            aria-label={t('common.close')}
-                            className="p-1 rounded-[6px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+          {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
+          <DashboardAllocationChart
+            name={selectedDepartmentName}
+            rangeStart={allocationRangeStart}
+            rangeEnd={allocationRangeEnd}
+            range={allocationRange}
+            setRange={setAllocationRange}
+            customStart={allocationCustomStart}
+            setCustomStart={setAllocationCustomStart}
+            customEnd={allocationCustomEnd}
+            setCustomEnd={setAllocationCustomEnd}
+            isDark={isDark}
+            chartData={allocationChartData}
+            className="glass-panel p-4 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm grid grid-rows-[auto_1fr_auto] min-w-0"
+          />
 
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-[6px] border border-blue-100 dark:border-blue-900/50">
-                          {t('reports.viz.infoBurndownSummary')}
-                        </p>
-
-                        <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
-                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
-                            <span className="font-bold text-blue-600 dark:text-blue-400">1.</span>
-                            <div>
-                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Horizontal Axis (Timeline):' : 'Trục ngang (Mốc thời gian):'}</b>{' '}
-                              {lang === 'en' ? 'Auto-divided based on filter (1 Month: 8 milestones 01 → end; 1 Week: Mon → Sun; 1 Quarter: early & mid month; 1 Year: M1 → M12).' : 'Tự động chia mốc theo bộ lọc lịch (1 Tháng: 8 mốc ngày 01 → cuối tháng; 1 Tuần: T2 → CN; 1 Quý: đầu & giữa mỗi tháng; 1 Năm: T1 → T12).'}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
-                            <span className="font-bold text-blue-600 dark:text-blue-400">2.</span>
-                            <div>
-                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Plan Line (Dashed gray):' : 'Đường Kế hoạch (Nét đứt xám — Plan):'}</b>{' '}
-                              {lang === 'en' ? 'Ideal linear burndown trend from total initial tasks to zero.' : 'Đường giảm tuyến tính lý tưởng từ tổng số task đầu kỳ về cuối kỳ.'}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
-                            <span className="font-bold text-blue-600 dark:text-blue-400">3.</span>
-                            <div>
-                              <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Actual Line (Solid blue):' : 'Đường Thực tế (Nét liền xanh — Actual):'}</b>{' '}
-                              {lang === 'en' ? 'At each checkpoint = Total active tasks minus tasks completed by that date.' : 'Tại mỗi mốc = Tổng task active trừ đi Số task đã hoàn thành tính đến mốc đó.'}
-                            </div>
-                          </div>
-
-                          <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
-                            <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoBurndownGuide')}</span>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/30 p-1.5 rounded-[6px] border border-emerald-200/50 dark:border-emerald-800/40">
-                              <span className="text-blue-500 font-bold">🔵</span>
-                              <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line UNDER dashed line:' : 'Đường xanh nằm DƯỚI đường nét đứt:'}</b> {lang === 'en' ? 'Team is completing tasks faster than planned.' : 'Team đang hoàn thành nhanh hơn kế hoạch.'}</span>
-                            </div>
-                            <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-amber-50/70 dark:bg-amber-950/30 p-1.5 rounded-[6px] border border-amber-200/50 dark:border-amber-800/40">
-                              <span className="text-amber-500 font-bold">⚠️</span>
-                              <span><b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Blue line ABOVE dashed line:' : 'Đường xanh nằm TRÊN đường nét đứt:'}</b> {lang === 'en' ? 'Team is falling behind schedule / tasks are backlogged.' : 'Team đang chậm tiến độ / tồn đọng task so với kế hoạch.'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {lang === 'en' ? 'Actual progress vs planned trend' : 'Đường hoàn thành thực tế (Actual) so với kế hoạch dự kiến (Plan)'}
-                </p>
-              </div>
-
-              {/* Legend */}
-              <div className="grid grid-flow-col auto-cols-max items-center gap-3 text-xs">
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-[#2a78d6] rounded-full" />
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {lang === 'en' ? 'Actual' : 'Thực tế'}
-                  </span>
-                </div>
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-[#898781] border-b border-dashed border-[#898781]" />
-                  <span className="font-semibold text-slate-500">
-                    {lang === 'en' ? 'Plan' : 'Kế hoạch'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={burndown} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-                  <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload || !payload.length) return null;
-                      return (
-                        <div className="rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-3 shadow-xl backdrop-blur-md text-xs">
-                          <p className="font-semibold text-slate-800 dark:text-slate-100 mb-1.5">{label}</p>
-                          <div className="grid grid-cols-1 gap-1">
-                            {payload.map((entry: any, index: number) => (
-                              <div key={index} className="grid grid-flow-col auto-cols-max items-center justify-between gap-3">
-                                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                  <span className="text-slate-600 dark:text-slate-300">{entry.name}:</span>
-                                </div>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">{entry.value} tasks</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="planned"
-                    name={lang === 'en' ? 'Plan' : 'Kế hoạch (Plan)'}
-                    stroke="#898781"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    name={lang === 'en' ? 'Actual' : 'Thực tế (Actual)'}
-                    stroke="#2a78d6"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#2a78d6' }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix - Slide 4b) */}
+                    {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix - Slide 4b) */}
           <div className="glass-panel p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
               <div className="grid grid-cols-1 gap-0.5">

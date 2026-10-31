@@ -5,10 +5,10 @@ import {AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContai
 import {useTranslation} from '../../../i18n/translations';
 const INK='text-gray-900 dark:text-white',MUTED='text-gray-500 dark:text-gray-400',INNER='border border-gray-200 dark:border-slate-700';
 const displayDate=(value:string,locale='vi-VN')=>new Date(`${value}T00:00:00`).toLocaleDateString(locale);
-type Props={name:string;rangeStart:string;rangeEnd:string;range:'weekly'|'custom';setRange:(value:'weekly'|'custom')=>void;customStart:string;setCustomStart:(value:string)=>void;customEnd:string;setCustomEnd:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[]};
-export function DashboardAllocationChart({name,rangeStart,rangeEnd,range,setRange,customStart,setCustomStart,customEnd,setCustomEnd,isDark,chartData}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
+type Props={name:string;className?:string;rangeStart:string;rangeEnd:string;range:'weekly'|'custom';setRange:(value:'weekly'|'custom')=>void;customStart:string;setCustomStart:(value:string)=>void;customEnd:string;setCustomEnd:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[]};
+export function DashboardAllocationChart({name,rangeStart,rangeEnd,range,setRange,customStart,setCustomStart,customEnd,setCustomEnd,isDark,chartData,className}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
           {/* Chart */}
-          <div className={`sm:col-span-2 ${INNER} rounded-[13px] px-4 pt-[15px] pb-[10px] grid grid-rows-[auto_1fr_auto] min-w-0`}>
+          <div className={className || `sm:col-span-2 ${INNER} rounded-[13px] px-4 pt-[15px] pb-[10px] grid grid-rows-[auto_1fr_auto] min-w-0`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <strong className={`text-sm ${INK}`}>{t('dashboard.taskAllocation')}</strong>
