@@ -1,4 +1,4 @@
-/* Profile Card: portrait layout, continuous glass, soft light-blue tint, high-contrast blur & dark mode parity */
+/* Profile Card: compact scaled portrait (-30%), targeted name-only blur, soft ice blue & dark mode green accent */
 .report-staff-section {
   container-type: inline-size;
 }
@@ -7,40 +7,40 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
-  gap: clamp(16px, 1.7vw, 30px);
-  padding: 10px 2px 22px;
+  gap: clamp(12px, 1.2vw, 20px);
+  padding: 6px 2px 16px;
 }
 
-/* Outer Card Container - Soft Ice Blue / Light Sky Blue */
+/* Outer Card Container - Compact Scaled (~30% smaller), Soft Ice Blue */
 .report-profile {
   --profile-ink: #002e6d;
   --profile-muted: #475569;
   font-family: inherit;
   position: relative;
   min-width: 0;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 42px;
+  border-radius: 28px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff 65%, #e2f0fc);
-  box-shadow: inset 0 1px 1px #ffffff, 0 16px 30px -14px rgba(0, 46, 109, 0.1);
+  box-shadow: inset 0 1px 1px #ffffff, 0 12px 24px -10px rgba(0, 46, 109, 0.09);
   color: var(--profile-ink);
-  transition: transform 280ms ease, box-shadow 280ms ease;
+  transition: transform 240ms ease, box-shadow 240ms ease;
 }
 
 .report-profile:hover {
-  transform: translateY(-4px);
-  box-shadow: inset 0 1px 1px #ffffff, 0 22px 34px -12px rgba(0, 46, 109, 0.18);
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 1px #ffffff, 0 18px 28px -10px rgba(0, 46, 109, 0.16);
 }
 
-/* Inner Surface - Soft Ice Blue (#eef7fc to #d5e9f7) */
+/* Inner Surface - Compact Aspect Ratio & ~250px min-height */
 .report-profile-surface {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  aspect-ratio: .59;
-  min-height: 360px;
+  aspect-ratio: .68;
+  min-height: 250px;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 34px;
+  border-radius: 22px;
   background: linear-gradient(180deg, #eef7fc 0%, #d5e9f7 100%);
 }
 
@@ -54,42 +54,42 @@
 
 .report-profile-portrait {
   object-fit: cover;
-  object-position: center 25%;
+  object-position: center 20%;
 }
 
-/* Fallback Initials Avatar - Soft Sky / Light Blue (#e2f0fb to #d0e7f7) */
+/* Fallback Initials Avatar - Soft Sky / Light Blue */
 .report-profile-fallback {
   display: grid;
   place-items: start center;
-  padding-top: 25%;
-  background: radial-gradient(ellipse at 72% 20%, #f0f7ff, transparent 60%), linear-gradient(150deg, #e2f0fb 0%, #d0e7f7 100%);
+  padding-top: 18%;
+  background: radial-gradient(ellipse at 72% 18%, #f4faff, transparent 60%), linear-gradient(150deg, #e4f1fb 0%, #d2e8f7 100%);
 }
 
 .report-profile-fallback span {
   display: grid;
   place-items: center;
-  width: 50%;
+  width: 48%;
   aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.7);
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   color: #002e6d;
-  box-shadow: 0 4px 16px rgba(0, 46, 109, 0.06);
-  font-size: clamp(32px, 3vw, 56px);
+  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.06);
+  font-size: clamp(22px, 2vw, 36px);
   font-weight: 600;
   letter-spacing: .02em;
 }
 
-/* Deep Glass Blur near name and role (inset: 38% 0 0, blur 20px, saturate 180%) */
+/* Targeted Blur: Only blurs the name & role zone at the bottom (inset: 56% 0 0), keeps upper portrait crystal clear */
 .report-profile-glass {
   position: absolute;
   z-index: 1;
-  inset: 38% 0 0;
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.72) 26%, rgba(238, 247, 252, 0.93) 60%, rgba(230, 242, 252, 0.99) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 100%);
+  inset: 56% 0 0;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.7) 28%, rgba(238, 247, 252, 0.94) 62%, rgba(230, 242, 252, 0.99) 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
   pointer-events: none;
 }
 
@@ -98,19 +98,19 @@
   z-index: 2;
   inset: auto 0 0;
   display: grid;
-  gap: 20px;
-  padding: 20px clamp(14px, 1.15vw, 22px) 18px;
+  gap: 12px;
+  padding: 12px clamp(10px, 0.9vw, 14px) 12px;
 }
 
 .report-profile-identity {
   display: grid;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
 }
 
 .report-profile-identity h3 {
   display: block;
-  font-size: clamp(18px, 1.35vw, 24px);
+  font-size: clamp(15px, 1.1vw, 18px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -.025em;
@@ -120,9 +120,9 @@
 }
 
 .report-profile-identity p {
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--profile-muted);
   overflow-wrap: anywhere;
   margin: 0;
@@ -131,28 +131,28 @@
 .report-profile-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .report-profile-counters {
   display: grid;
   grid-template-columns: repeat(2, max-content);
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
 .report-profile-counters > span {
   display: grid;
-  grid-template-columns: 14px auto;
-  gap: 5px;
+  grid-template-columns: 13px auto;
+  gap: 4px;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .report-profile-counters svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   stroke-width: 1.5;
   color: var(--profile-muted);
 }
@@ -161,30 +161,30 @@
   font-weight: 600;
 }
 
-/* CTA Details button */
+/* CTA Details button - Compact Pill */
 .report-profile-cta {
   display: grid;
-  grid-template-columns: auto 14px;
+  grid-template-columns: auto 12px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid #d5e9f7;
   border-radius: 999px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff);
-  box-shadow: inset 0 1px 1px #ffffff, 0 4px 10px rgba(0, 46, 109, 0.08);
+  box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px rgba(0, 46, 109, 0.08);
   color: #002e6d;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease, color 200ms ease, border-color 200ms ease;
+  transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
 }
 
 .report-profile-cta svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   stroke-width: 1.5;
 }
 
@@ -193,7 +193,7 @@
   border-color: #badcf6;
   color: #002e6d;
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0, 46, 109, 0.16);
+  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.16);
 }
 
 .report-profile-cta:focus-visible {
@@ -206,29 +206,30 @@
 }
 
 @keyframes profile-reveal {
-  from { opacity: 0; margin-top: 12px; }
+  from { opacity: 0; margin-top: 10px; }
   to { opacity: 1; margin-top: 0; }
 }
 
 /* ========================================================
-   DARK MODE — Full Slate/Navy / K COFFEE Theme Parity
+   DARK MODE — Viền Xanh Lá Cây & Button Viền Xanh Lá Cây
+   (Brand Green: #4eb648 per user standard)
    ======================================================== */
 .dark .report-profile {
   --profile-ink: #f8fafc;
   --profile-muted: #94a3b8;
-  border: 1px solid rgba(51, 65, 85, 0.7);
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 18px 30px -16px rgba(0, 0, 0, 0.65);
+  border: 1.5px solid rgba(78, 182, 72, 0.5); /* Viền xanh lá cây thương hiệu */
+  background: linear-gradient(145deg, #131f31 0%, #090f1b 100%);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 14px 28px -12px rgba(0, 0, 0, 0.7);
 }
 
 .dark .report-profile:hover {
-  border-color: rgba(71, 85, 105, 0.85);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 24px 36px -14px rgba(0, 0, 0, 0.85);
+  border-color: #4eb648; /* Sáng xanh lá cây khi hover */
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.35), 0 18px 34px -10px rgba(0, 0, 0, 0.8), 0 0 16px rgba(78, 182, 72, 0.25);
 }
 
 .dark .report-profile-surface {
-  border-color: rgba(51, 65, 85, 0.6);
-  background: #0f172a;
+  border-color: rgba(78, 182, 72, 0.25);
+  background: #090f1b;
 }
 
 .dark .report-profile-fallback {
@@ -236,16 +237,16 @@
 }
 
 .dark .report-profile-fallback span {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #e2e8f0;
+  background: rgba(78, 182, 72, 0.08);
+  border: 1.5px solid rgba(78, 182, 72, 0.35);
+  color: #90e38a;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.82) 28%, rgba(15, 23, 42, 0.96) 65%, rgba(15, 23, 42, 0.99) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.78) 28%, rgba(9, 15, 27, 0.96) 62%, #090f1b 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 
 .dark .report-profile-counters svg {
@@ -256,22 +257,23 @@
   color: #f8fafc;
 }
 
+/* Nút CTA Dark Mode - Viền Xanh Lá Cây & Text Xanh Lá Cây */
 .dark .report-profile-cta {
-  background: #1e293b;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  color: #f8fafc;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06), 0 4px 10px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(155deg, rgba(78, 182, 72, 0.15), rgba(19, 31, 49, 0.95));
+  border: 1.5px solid #4eb648; /* Viền xanh lá cây */
+  color: #90e38a; /* Text xanh lá cây */
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.25), 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .dark .report-profile-cta:hover {
-  background: #27354f;
-  border-color: rgba(148, 163, 184, 0.45);
-  color: #ffffff;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+  background: #4eb648;
+  color: #090f1b;
+  border-color: #4eb648;
+  box-shadow: 0 4px 16px rgba(78, 182, 72, 0.4);
 }
 
 .dark .report-profile-cta:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #4eb648;
   outline-offset: 3px;
 }
 
@@ -292,21 +294,21 @@
 
 @container (max-width: 479px) {
   .report-profiles {
-    grid-template-columns: minmax(0, 340px);
+    grid-template-columns: minmax(0, 320px);
     justify-content: center;
   }
 }
 
 @container (min-width: 1200px) and (max-width: 1440px) {
   .report-profile-content {
-    padding-inline: 12px;
+    padding-inline: 10px;
   }
   .report-profile-counters {
-    gap: 7px;
+    gap: 6px;
   }
   .report-profile-cta {
     padding-inline: 10px;
-    gap: 5px;
+    gap: 4px;
   }
 }
 
