@@ -60,15 +60,22 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
   const tasksLabel = lang === 'en' ? 'Tasks' : 'Công việc';
-  const outputLabel = lang === 'en' ? 'Images/files' : 'Sản lượng (Hình/file)';
-  const completionLabel = lang === 'en' ? 'completed' : 'hoàn thành';
-  const overdueLabel = lang === 'en' ? 'late' : 'quá hạn';
-  const backlogLabel = lang === 'en' ? 'backlog' : 'tồn';
-  const taskUnit = lang === 'en' ? 'tasks' : 'việc';
-  const outputUnit = lang === 'en' ? 'files' : 'SL';
+  const outputLabel = lang === 'en' ? 'Output (Deliverables)' : 'Sản lượng (Hình/file)';
+  const taskUnit = lang === 'en' ? 'Việc' : 'Việc';
+  const outputUnit = 'SL';
+
+  // Performance border track color matching top cards
+  const perfColor = member.completionPct >= 80 ? '#10b981' : member.completionPct >= 50 ? '#0ea5e9' : '#ef4444';
 
   return (
-    <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
+    <article
+      className={`report-profile${hasImage ? '' : ' report-profile--initials'}`}
+      style={{
+        '--perf-pct': `${member.completionPct}%`,
+        '--perf-color': perfColor,
+      } as React.CSSProperties}
+      aria-label={member.name}
+    >
       <div className="report-profile-surface">
         {hasImage ? (
           <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
@@ -83,31 +90,51 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             <p>{member.role}</p>
           </div>
 
-          {/* Performance Status Labels */}
+          {/* Performance Status Labels: only icon & number, no extra text */}
           <div className="report-profile-perf-row" aria-label="Performance status">
-            <span className={`report-profile-badge ${member.completionPct >= 80 ? 'report-profile-badge--good' : member.late > 0 ? 'report-profile-badge--warn' : 'report-profile-badge--info'}`}>
-              {member.completionPct}% {completionLabel}
+            <span
+              className="report-profile-badge report-profile-badge--done"
+              title={`${lang === 'en' ? 'Tasks completed' : 'Việc hoàn thành'}: ${member.done}/${member.tasks.length} (${member.completionPct}%)`}
+            >
+              <CheckCircle2 size={12} aria-hidden="true" />
+              <strong>{member.done}</strong>
             </span>
             {member.late > 0 && (
-              <span className="report-profile-badge report-profile-badge--danger">
-                {member.late} {overdueLabel}
+              <span
+                className="report-profile-badge report-profile-badge--late"
+                title={`${lang === 'en' ? 'Overdue tasks' : 'Việc quá hạn'}: ${member.late}`}
+              >
+                <Clock size={12} aria-hidden="true" />
+                <strong>{member.late}</strong>
               </span>
             )}
             {member.profileBacklogCount > 0 && (
-              <span className="report-profile-badge report-profile-badge--amber">
-                {member.profileBacklogCount} {backlogLabel}
+              <span
+                className="report-profile-badge report-profile-badge--backlog"
+                title={`${lang === 'en' ? 'Backlog tasks' : 'Việc tồn đọng'}: ${member.profileBacklogCount}`}
+              >
+                <AlertTriangle size={12} aria-hidden="true" />
+                <strong>{member.profileBacklogCount}</strong>
               </span>
             )}
           </div>
 
           <div className="report-profile-footer">
             <div className="report-profile-counters">
-              <span title={`${tasksLabel}: ${member.tasks.length}`} aria-label={`${tasksLabel}: ${member.tasks.length} ${taskUnit}`}>
+              <span
+                className="report-profile-pill report-profile-pill--task"
+                title={`${tasksLabel}: ${member.tasks.length}`}
+                aria-label={`${tasksLabel}: ${member.tasks.length} ${taskUnit}`}
+              >
                 <ClipboardList aria-hidden="true" />
                 <strong>{member.tasks.length}</strong>
                 <small>{taskUnit}</small>
               </span>
-              <span title={`${outputLabel}: ${member.deliverableCount}`} aria-label={`${outputLabel}: ${member.deliverableCount} ${outputUnit}`}>
+              <span
+                className="report-profile-pill report-profile-pill--output"
+                title={`${outputLabel}: ${member.deliverableCount}`}
+                aria-label={`${outputLabel}: ${member.deliverableCount} ${outputUnit}`}
+              >
                 <ImagePlus aria-hidden="true" />
                 <strong>{member.deliverableCount}</strong>
                 <small>{outputUnit}</small>
