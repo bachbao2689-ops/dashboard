@@ -852,16 +852,31 @@ html.dark .hover-row-effect.is-magnetic-active {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 8mm 10mm;
+    margin: 6mm 8mm;
   }
-  html, body, #root {
+  html, body, #root, #main-scroll-container, main {
+    width: 1380px !important;
+    min-width: 1380px !important;
+    max-width: 1380px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     overflow: visible !important;
     height: auto !important;
-    background: #ffffff !important;
-    color: #0f172a !important;
   }
-  header, nav, button, select, input,
-  .no-print, [data-info-popover], [role="region"], .action-menu, .theme-toggle {
+  aside,
+  .app-sidebar,
+  [data-sidebar],
+  header,
+  nav,
+  button,
+  select,
+  input,
+  .no-print,
+  [data-info-popover],
+  [role="region"],
+  .action-menu,
+  .theme-toggle,
+  .glass-panel:has(select) {
     display: none !important;
   }
   * {
@@ -871,28 +886,36 @@ html.dark .hover-row-effect.is-magnetic-active {
   .report-print-page-1 {
     page-break-after: always !important;
     break-after: page !important;
-    width: 100% !important;
-    min-height: calc(100vh - 16mm) !important;
+    width: 1380px !important;
+    min-height: calc(100vh - 12mm) !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
   }
+  .report-print-page-1 > section[aria-label="Team Performance Cards"] {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  .report-profiles {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+  .report-profile-surface {
+    aspect-ratio: .62 !important;
+    min-height: 280px !important;
+  }
   .report-print-page-2 {
     page-break-before: always !important;
     break-before: page !important;
-    width: 100% !important;
-    min-height: calc(100vh - 16mm) !important;
+    width: 1380px !important;
+    min-height: calc(100vh - 12mm) !important;
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 16px !important;
     align-content: center !important;
-  }
-  .report-profiles {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-  .report-profile-surface {
-    aspect-ratio: .62 !important;
-    min-height: 260px !important;
   }
 }

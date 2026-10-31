@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas";
 import './ReportProfiles.css';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -207,8 +206,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffDetailTab, setStaffDetailTab] = useState<'all' | 'project' | 'campaign' | 'done' | 'late' | 'backlog'>('all');
   const expandedModalRef = useRef<HTMLDivElement>(null);
-  const slide1Ref = useRef<HTMLDivElement>(null);
-  const slide2Ref = useRef<HTMLDivElement>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
@@ -318,121 +315,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     return clean.toLowerCase().startsWith('team ') ? clean : `Team ${clean}`;
   }, [departmentFilter, selectedDepartmentName]);
 
-  // Export PDF (Real DOM Screen Capture 100% matched to Tab Report)
-  const exportReportPdf = useCallback(async () => {
-    const toastId = toast.loading(lang === "en" ? "Capturing screen for PDF..." : "Đang chụp màn hình tạo PDF sắc nét...");
-    try {
-      setSelectedStaffId(null);
-      setActiveExpandedId(null);
-
-      if (!slide1Ref.current || !slide2Ref.current) {
-        throw new Error("Report elements not found for capture");
-      }
-
-      // Small delay to let popovers close
-      await new Promise((r) => setTimeout(r, 120));
-
-      const isDark = document.documentElement.classList.contains("dark");
-      const bgColor = isDark ? "#0b1120" : "#ffffff";
-
-      // Capture Slide 1: 5 Thẻ & Hồ sơ thành viên (Exact DOM Snapshot)
-      const canvas1 = await html2canvas(slide1Ref.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: bgColor,
-      });
-      const img1Data = canvas1.toDataURL("image/png");
-
-      // Capture Slide 2: 2 Biểu đồ phân bổ & công suất (Exact DOM Snapshot)
-      const canvas2 = await html2canvas(slide2Ref.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: bgColor,
-      });
-      const img2Data = canvas2.toDataURL("image/png");
-
-      toast.dismiss(toastId);
-
-      // Embed both exact screenshot images directly into print iframe
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
-      document.body.appendChild(iframe);
-
-      const doc = iframe.contentWindow?.document;
-      if (doc) {
-        doc.open();
-        doc.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>BaoCao_${departmentDisplayName}_PDF</title>
-            <style>
-              @page {
-                size: A4 landscape;
-                margin: 0;
-              }
-              html, body {
-                margin: 0;
-                padding: 0;
-                width: 100%;
-                height: 100%;
-                background: ${bgColor};
-                overflow: hidden;
-              }
-              .page {
-                width: 100vw;
-                height: 100vh;
-                page-break-after: always;
-                break-after: page;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-sizing: border-box;
-                padding: 4mm 6mm;
-              }
-              .page:last-child {
-                page-break-after: avoid;
-                break-after: avoid;
-              }
-              img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                display: block;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="page"><img src="${img1Data}" alt="Slide 1: Hồ sơ thành viên" /></div>
-            <div class="page"><img src="${img2Data}" alt="Slide 2: Lịch phân bổ task & Công suất" /></div>
-          </body>
-          </html>
-        `);
-        doc.close();
-
-        setTimeout(() => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 3500);
-        }, 300);
-      }
-    } catch (err) {
-      console.error("Export PDF capture error:", err);
-      toast.dismiss(toastId);
-      toast.error(lang === "en" ? "Unable to capture PDF" : "Không thể tạo file PDF");
-    }
-  }, [lang, departmentDisplayName]);
+  // Export PDF (A4 Landscape 2 Pages - Native Screen Precision)
+  const exportReportPdf = useCallback(() => {
+    setSelectedStaffId(null);
+    setActiveExpandedId(null);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  }, []);
 
   // Export Image (High-res 2x Canvas Snapshot - No Burndown/Capacity, Replaced with 3 Operational Detail Blocks)
   const exportReportImage = useCallback(() => {
@@ -1493,7 +1384,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           </div>
         </div>
 
-        <div ref={slide1Ref} className="report-print-page-1 space-y-6">
+        <div className="report-print-page-1 space-y-6">
         {/* TẦNG 1: 5 Team Performance Cards (Slide 3) */}
         <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
@@ -2985,7 +2876,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         </div>
 
-        <div ref={slide2Ref} className="report-print-page-2">
+        <div className="report-print-page-2">
         {/* TẦNG 3: 2 Bottom Charts */}
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
