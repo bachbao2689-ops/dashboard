@@ -39,6 +39,7 @@ import {
   ImagePlus,
   Info,
   Printer,
+  BadgeCheck,
 } from 'lucide-react';
 
 type StaffTrackFilter = 'all' | 'project' | 'campaign';
@@ -1960,79 +1961,48 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     {/* Cột trái: Thẻ Soft Glassmorphism của selectedStaff */}
                     <div className="w-full max-w-[330px] justify-self-center lg:justify-self-start">
                       <article className="report-profile shadow-lg">
-                        {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
-                        <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center text-center gap-2">
-                          <div className="grid grid-cols-1 items-start justify-items-center text-center w-full">
-                            <div className="relative w-full h-[164px] grid place-items-center">
-                              {/* Viền xanh load thể hiện performance % */}
-                              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 134 164">
-                                <rect
-                                  x="3"
-                                  y="3"
-                                  width="128"
-                                  height="158"
-                                  rx="16"
-                                  ry="16"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3"
-                                  className="text-slate-200/80 dark:text-slate-700/80"
-                                />
-                                <rect
-                                  x="3"
-                                  y="3"
-                                  width="128"
-                                  height="158"
-                                  rx="16"
-                                  ry="16"
-                                  fill="none"
-                                  stroke="#10b981"
-                                  strokeWidth="3.5"
-                                  pathLength="100"
-                                  strokeDasharray="100"
-                                  strokeDashoffset={100 - Math.min(100, Math.max(0, selectedStaff.completionPct))}
-                                  strokeLinecap="round"
-                                  className="transition-all duration-700 ease-out"
-                                  style={{
-                                    filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
-                                  }}
-                                />
-                              </svg>
-                              {/* Khung avatar bên trong viền load */}
-                              <div className="w-[122px] h-[152px] report-profile-avatar-frame shadow-[0_8px_18px_-4px_rgba(0,46,109,0.16)] dark:shadow-[0_8px_18px_-4px_rgba(0,0,0,0.4)]">
-                                {selectedStaff.avatar_url ? (
-                                  <img
-                                    src={selectedStaff.avatar_url}
-                                    alt={selectedStaff.name}
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <span className="report-profile-avatar-initial">
-                                    {selectedStaff.initial}
-                                  </span>
-                                )}
-                              </div>
+                        {/* Cột 1: Chiếc thẻ gương Portrait điện ảnh (Avatar Glass Card) */}
+                        <div className="report-profile-avatar-card">
+                          {selectedStaff.avatar_url ? (
+                            <img
+                              src={selectedStaff.avatar_url}
+                              alt={selectedStaff.name}
+                              className="report-profile-avatar-img"
+                            />
+                          ) : (
+                            <div className="w-full h-full grid place-items-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-extrabold text-3xl shadow-inner">
+                              <span>{selectedStaff.initial}</span>
                             </div>
-                            <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center mt-2.5">
-                              {selectedStaff.name}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center mt-0.5">
-                              {selectedStaff.role}
-                            </p>
-                          </div>
-                          <div className="w-full grid grid-cols-2 gap-1.5 self-end">
-                            <span
-                              className="report-profile-pill-done"
-                              title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
-                            >
-                              {t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
-                            </span>
-                            <span
-                              className="report-profile-pill-remaining"
-                              title={t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
-                            >
-                              {t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
-                            </span>
+                          )}
+
+                          {/* Lớp gương mờ phân tầng ở nửa dưới ảnh Cột 1 */}
+                          <div className="report-profile-avatar-glass">
+                            <div className="grid grid-cols-1 justify-items-center text-center gap-0.5 w-full min-w-0">
+                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 max-w-full">
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
+                                  {selectedStaff.name}
+                                </h3>
+                                <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              </div>
+                              <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-full">
+                                {selectedStaff.role}
+                              </p>
+                            </div>
+
+                            <div className="w-full grid grid-cols-2 gap-1 pt-1">
+                              <span
+                                className="report-profile-pill-done"
+                                title={t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
+                              >
+                                {t('reports.viz.staffDeliverablesDone', { count: selectedStaff.completedDeliverables ?? 0 })}
+                              </span>
+                              <span
+                                className="report-profile-pill-remaining"
+                                title={t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
+                              >
+                                {t('reports.viz.staffDeliverablesRemaining', { count: selectedStaff.remainingDeliverables ?? 0 })}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -2374,79 +2344,48 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         isSelected ? 'ring-2 ring-primary/80 shadow-[0_18px_40px_-8px_rgba(0,46,109,0.25)]' : ''
                       }`}
                     >
-                      {/* Cột 1: Avatar, Tên, Chức vụ, 2 Badge SL */}
-                      <div className="h-full grid grid-rows-[1fr_auto] items-stretch justify-items-center text-center gap-2">
-                        <div className="grid grid-cols-1 items-start justify-items-center text-center w-full">
-                          <div className="relative w-full h-[164px] grid place-items-center">
-                            {/* Viền xanh load thể hiện performance % */}
-                            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 134 164">
-                              <rect
-                                x="3"
-                                y="3"
-                                width="128"
-                                height="158"
-                                rx="16"
-                                ry="16"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                className="text-slate-200/80 dark:text-slate-700/80"
-                              />
-                              <rect
-                                x="3"
-                                y="3"
-                                width="128"
-                                height="158"
-                                rx="16"
-                                ry="16"
-                                fill="none"
-                                stroke="#10b981"
-                                strokeWidth="3.5"
-                                pathLength="100"
-                                strokeDasharray="100"
-                                strokeDashoffset={100 - Math.min(100, Math.max(0, m.completionPct))}
-                                strokeLinecap="round"
-                                className="transition-all duration-700 ease-out"
-                                style={{
-                                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.45))'
-                                }}
-                              />
-                            </svg>
-                            {/* Khung avatar bên trong viền load */}
-                            <div className="w-[122px] h-[152px] report-profile-avatar-frame shadow-[0_8px_18px_-4px_rgba(0,46,109,0.16)] dark:shadow-[0_8px_18px_-4px_rgba(0,0,0,0.4)]">
-                              {m.avatar_url ? (
-                                <img
-                                  src={m.avatar_url}
-                                  alt={m.name}
-                                  className="w-full h-full object-contain"
-                                />
-                              ) : (
-                                <span className="report-profile-avatar-initial">
-                                  {m.initial}
-                                </span>
-                              )}
-                            </div>
+                      {/* Cột 1: Chiếc thẻ gương Portrait điện ảnh (Avatar Glass Card) */}
+                      <div className="report-profile-avatar-card">
+                        {m.avatar_url ? (
+                          <img
+                            src={m.avatar_url}
+                            alt={m.name}
+                            className="report-profile-avatar-img"
+                          />
+                        ) : (
+                          <div className="w-full h-full grid place-items-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-extrabold text-3xl shadow-inner">
+                            <span>{m.initial}</span>
                           </div>
-                          <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug truncate max-w-full text-center mt-2.5">
-                            {m.name}
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full text-center mt-0.5">
-                            {m.role}
-                          </p>
-                        </div>
-                        <div className="w-full grid grid-cols-2 gap-1.5 self-end">
-                          <span
-                            className="report-profile-pill-done"
-                            title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
-                          >
-                            {t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
-                          </span>
-                          <span
-                            className="report-profile-pill-remaining"
-                            title={t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
-                          >
-                            {t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
-                          </span>
+                        )}
+
+                        {/* Lớp gương mờ phân tầng ở nửa dưới ảnh Cột 1 */}
+                        <div className="report-profile-avatar-glass">
+                          <div className="grid grid-cols-1 justify-items-center text-center gap-0.5 w-full min-w-0">
+                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 max-w-full">
+                              <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
+                                {m.name}
+                              </h3>
+                              <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            </div>
+                            <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-full">
+                              {m.role}
+                            </p>
+                          </div>
+
+                          <div className="w-full grid grid-cols-2 gap-1 pt-1">
+                            <span
+                              className="report-profile-pill-done"
+                              title={t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
+                            >
+                              {t('reports.viz.staffDeliverablesDone', { count: m.completedDeliverables ?? 0 })}
+                            </span>
+                            <span
+                              className="report-profile-pill-remaining"
+                              title={t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
+                            >
+                              {t('reports.viz.staffDeliverablesRemaining', { count: m.remainingDeliverables ?? 0 })}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
