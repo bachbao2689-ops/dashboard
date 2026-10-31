@@ -60,7 +60,13 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
   const tasksLabel = lang === 'en' ? 'Tasks' : 'Công việc';
-  const outputLabel = lang === 'en' ? 'Images/files' : 'Hình/file';
+  const outputLabel = lang === 'en' ? 'Images/files' : 'Sản lượng (Hình/file)';
+  const completionLabel = lang === 'en' ? 'completed' : 'hoàn thành';
+  const overdueLabel = lang === 'en' ? 'late' : 'quá hạn';
+  const backlogLabel = lang === 'en' ? 'backlog' : 'tồn';
+  const taskUnit = lang === 'en' ? 'tasks' : 'việc';
+  const outputUnit = lang === 'en' ? 'files' : 'SL';
+
   return (
     <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
       <div className="report-profile-surface">
@@ -76,13 +82,35 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
             <h3>{member.name}</h3>
             <p>{member.role}</p>
           </div>
+
+          {/* Performance Status Labels */}
+          <div className="report-profile-perf-row" aria-label="Performance status">
+            <span className={`report-profile-badge ${member.completionPct >= 80 ? 'report-profile-badge--good' : member.late > 0 ? 'report-profile-badge--warn' : 'report-profile-badge--info'}`}>
+              {member.completionPct}% {completionLabel}
+            </span>
+            {member.late > 0 && (
+              <span className="report-profile-badge report-profile-badge--danger">
+                {member.late} {overdueLabel}
+              </span>
+            )}
+            {member.profileBacklogCount > 0 && (
+              <span className="report-profile-badge report-profile-badge--amber">
+                {member.profileBacklogCount} {backlogLabel}
+              </span>
+            )}
+          </div>
+
           <div className="report-profile-footer">
             <div className="report-profile-counters">
-              <span title={`${tasksLabel}: ${member.tasks.length}`} aria-label={`${tasksLabel}: ${member.tasks.length}`}>
-                <ClipboardList aria-hidden="true" /><strong>{member.tasks.length}</strong>
+              <span title={`${tasksLabel}: ${member.tasks.length}`} aria-label={`${tasksLabel}: ${member.tasks.length} ${taskUnit}`}>
+                <ClipboardList aria-hidden="true" />
+                <strong>{member.tasks.length}</strong>
+                <small>{taskUnit}</small>
               </span>
-              <span title={`${outputLabel}: ${member.deliverableCount}`} aria-label={`${outputLabel}: ${member.deliverableCount}`}>
-                <ImagePlus aria-hidden="true" /><strong>{member.deliverableCount}</strong>
+              <span title={`${outputLabel}: ${member.deliverableCount}`} aria-label={`${outputLabel}: ${member.deliverableCount} ${outputUnit}`}>
+                <ImagePlus aria-hidden="true" />
+                <strong>{member.deliverableCount}</strong>
+                <small>{outputUnit}</small>
               </span>
             </div>
             <button type="button" className="report-profile-cta" aria-expanded={expanded}

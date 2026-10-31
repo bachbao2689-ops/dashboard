@@ -1,4 +1,4 @@
-/* Profile Card: elegant portrait layout (aspect-ratio: .62), subtle scale-down (~12%), targeted name blur, soft ice blue & dark mode green accent */
+/* Profile Card: portrait layout, staff performance status labels, soft ice blue & dark mode green accent */
 .report-staff-section {
   container-type: inline-size;
 }
@@ -32,7 +32,7 @@
   box-shadow: inset 0 1px 1px #ffffff, 0 20px 32px -10px rgba(0, 46, 109, 0.16);
 }
 
-/* Inner Surface - Classic portrait aspect ratio (.62), subtly scaled down to ~310px min-height */
+/* Inner Surface - Classic portrait aspect ratio (.62), ~310px min-height */
 .report-profile-surface {
   position: relative;
   isolation: isolate;
@@ -61,7 +61,7 @@
 .report-profile-fallback {
   display: grid;
   place-items: start center;
-  padding-top: 22%;
+  padding-top: 20%;
   background: radial-gradient(ellipse at 72% 18%, #f4faff, transparent 60%), linear-gradient(150deg, #e4f1fb 0%, #d2e8f7 100%);
 }
 
@@ -80,16 +80,16 @@
   letter-spacing: .02em;
 }
 
-/* Targeted Blur: Only blurs from the chest/name zone down (inset: 50% 0 0), keeps head & facial expression crystal clear */
+/* Targeted Blur: Covers the lower zone behind name, performance labels & controls */
 .report-profile-glass {
   position: absolute;
   z-index: 1;
-  inset: 50% 0 0;
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.7) 26%, rgba(238, 247, 252, 0.94) 60%, rgba(230, 242, 252, 0.99) 100%);
+  inset: 44% 0 0;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.72) 24%, rgba(238, 247, 252, 0.95) 55%, rgba(230, 242, 252, 0.99) 100%);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
   pointer-events: none;
 }
 
@@ -98,19 +98,19 @@
   z-index: 2;
   inset: auto 0 0;
   display: grid;
-  gap: 16px;
-  padding: 16px clamp(12px, 1vw, 18px) 15px;
+  gap: 10px;
+  padding: 14px clamp(11px, 1vw, 16px) 14px;
 }
 
 .report-profile-identity {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
 .report-profile-identity h3 {
   display: block;
-  font-size: clamp(16px, 1.22vw, 21px);
+  font-size: clamp(16px, 1.22vw, 20px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -.025em;
@@ -120,14 +120,72 @@
 }
 
 .report-profile-identity p {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--profile-muted);
   overflow-wrap: anywhere;
   margin: 0;
 }
 
+/* Performance Status Row & Badges */
+.report-profile-perf-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.report-profile-perf-row::-webkit-scrollbar {
+  display: none;
+}
+
+.report-profile-badge {
+  display: inline-grid;
+  place-items: center;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.report-profile-badge--good {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.report-profile-badge--warn {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.report-profile-badge--amber {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.report-profile-badge--danger {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.report-profile-badge--info {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+/* Footer & Performance Counters */
 .report-profile-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -138,16 +196,16 @@
 .report-profile-counters {
   display: grid;
   grid-template-columns: repeat(2, max-content);
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .report-profile-counters > span {
   display: grid;
-  grid-template-columns: 13px auto;
-  gap: 4px;
-  align-items: center;
-  font-size: 11.5px;
+  grid-template-columns: 13px auto auto;
+  gap: 3px;
+  align-items: baseline;
+  font-size: 11px;
 }
 
 .report-profile-counters svg {
@@ -158,7 +216,16 @@
 }
 
 .report-profile-counters strong {
+  font-weight: 700;
+  color: var(--profile-ink);
+}
+
+.report-profile-counters small {
+  font-size: 9.5px;
   font-weight: 600;
+  text-transform: uppercase;
+  color: var(--profile-muted);
+  letter-spacing: .02em;
 }
 
 /* CTA Details button - Elegant Pill */
@@ -167,15 +234,15 @@
   grid-template-columns: auto 12px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 35px;
-  padding: 0 14px;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid #d5e9f7;
   border-radius: 999px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff);
   box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px rgba(0, 46, 109, 0.08);
   color: #002e6d;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -217,7 +284,7 @@
 .dark .report-profile {
   --profile-ink: #f8fafc;
   --profile-muted: #94a3b8;
-  border: 1.5px solid rgba(78, 182, 72, 0.5); /* Viền xanh lá cây thương hiệu */
+  border: 1.5px solid rgba(78, 182, 72, 0.5);
   background: linear-gradient(145deg, #131f31 0%, #090f1b 100%);
   box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 14px 28px -12px rgba(0, 0, 0, 0.7);
 }
@@ -244,9 +311,39 @@
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.78) 26%, rgba(9, 15, 27, 0.96) 60%, #090f1b 100%);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 24%, rgba(9, 15, 27, 0.97) 55%, #090f1b 100%);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.dark .report-profile-badge--good {
+  background: rgba(6, 78, 59, 0.45);
+  color: #6ee7b7;
+  border-color: rgba(5, 150, 105, 0.5);
+}
+
+.dark .report-profile-badge--warn {
+  background: rgba(120, 53, 15, 0.45);
+  color: #fcd34d;
+  border-color: rgba(217, 119, 6, 0.5);
+}
+
+.dark .report-profile-badge--amber {
+  background: rgba(120, 53, 15, 0.5);
+  color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.dark .report-profile-badge--danger {
+  background: rgba(136, 19, 55, 0.45);
+  color: #fda4af;
+  border-color: rgba(225, 29, 72, 0.5);
+}
+
+.dark .report-profile-badge--info {
+  background: rgba(12, 74, 110, 0.45);
+  color: #7dd3fc;
+  border-color: rgba(2, 132, 199, 0.5);
 }
 
 .dark .report-profile-counters svg {
@@ -255,6 +352,10 @@
 
 .dark .report-profile-counters strong {
   color: #f8fafc;
+}
+
+.dark .report-profile-counters small {
+  color: #94a3b8;
 }
 
 /* Nút CTA Dark Mode - Viền Xanh Lá Cây & Text Xanh Lá Cây */
@@ -304,10 +405,10 @@
     padding-inline: 10px;
   }
   .report-profile-counters {
-    gap: 7px;
+    gap: 6px;
   }
   .report-profile-cta {
-    padding-inline: 11px;
+    padding-inline: 10px;
     gap: 4px;
   }
 }
