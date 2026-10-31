@@ -4,7 +4,7 @@
 
 .report-profiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   justify-content: center;
   align-items: stretch;
   gap: 16px;
@@ -16,324 +16,28 @@
   transition: opacity .25s ease, filter .25s ease;
 }
 
-/* Thẻ nhân sự squircle soft glassmorphism */
+/* Thẻ nhân sự squircle soft glassmorphism - Cấu trúc 2 cột CSS Grid */
 .report-profile {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-rows: 148px 1fr;
+  grid-template-columns: minmax(115px, 130px) 1fr;
+  gap: 12px;
+  padding: 12px;
+  align-items: stretch;
   overflow: hidden;
-  border: 2.5px solid rgba(255, 255, 255, 0.85);
-  border-radius: 24px;
-  background: linear-gradient(145deg, #ffffff, #f0f6ff);
-  box-shadow: inset 0 1px 0 #ffffffcc, 0 14px 34px -8px rgba(15, 23, 42, 0.1);
+  border: 1.5px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  transition: transform .25s ease, box-shadow .25s ease;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .2s ease;
 }
 
 .report-profile:hover {
-  box-shadow: inset 0 1px 0 #ffffff, 0 18px 40px -8px rgba(0, 46, 109, 0.15);
-}
-
-/* Hàng badge góc trên */
-.report-profile-badges {
-  position: absolute;
-  z-index: 2;
-  inset: 10px 10px auto;
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.report-profile-badges > span {
-  padding: 3px 6px;
-  border-radius: 6px;
-  background: #f5f0ff;
-  color: #6d28d9;
-  border: 1px solid #ddd6fe;
-  white-space: nowrap;
-}
-
-.report-profile-badges > span:nth-child(2) {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-
-.report-profile-badges > span:nth-child(3) {
-  justify-self: end;
-  background: #fffbeb;
-  color: #b45309;
-  border-color: #fde68a;
-}
-
-/* Frame Avatar Light mode */
-.report-profile-portrait {
-  display: grid;
-  place-items: center;
-  padding: 24px 12px 0;
-  min-width: 0;
-  height: 148px;
-  position: relative;
-}
-
-.report-profile-portrait img {
-  width: 148px;
-  height: 144px;
-  object-fit: cover;
-  object-position: center 18%;
-  border-radius: 14px;
-  transition: transform .3s ease;
-}
-
-.report-profile-portrait:hover img {
-  transform: scale(1.04);
-}
-
-.report-profile-initial {
-  display: grid;
-  place-items: center;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #dceafe, #f1f7ff);
-  color: #002e6d;
-  font-size: 30px;
-  font-weight: 600;
-  border: 2px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.1);
-}
-
-/* Kính mờ bên dưới avatar */
-.report-profile-glass {
-  position: relative;
-  isolation: isolate;
-  padding: 10px 10px 12px;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  align-content: start;
-  text-align: left;
-}
-
-.report-profile-glass::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -24px 0 0;
-  background: linear-gradient(180deg, #f0f6ff00, #f0f6ff80 25%, #f0f6fff0);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  mask-image: linear-gradient(180deg, transparent, #000 28%);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 28%);
-}
-
-.report-profile-glass h3 {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
-  color: #0f172a;
-  overflow-wrap: anywhere;
-  display: grid;
-  grid-flow: col;
-  grid-auto-columns: max-content;
-  align-items: center;
-  gap: 4px;
-}
-
-.report-profile-glass > p {
-  font-size: 11px;
-  line-height: 1.5;
-  min-height: 17px;
-  color: #526986;
-  margin: 2px 0 8px;
-}
-
-/* 4 nút trạng thái tương tác */
-.report-profile-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  align-content: start;
-}
-
-.report-profile-stats button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 5px;
-  min-height: 31px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  background: #ffffff80;
-  border: 1px solid #dce8fa;
-  text-align: left;
-  transition: background .2s, border-color .2s, color .2s;
-  cursor: pointer;
-}
-
-.report-profile-stats strong {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--status-success, #257534);
-}
-
-.report-profile-stats [data-status=doing] strong {
-  color: var(--status-info, #0369a1);
-}
-
-.report-profile-stats [data-status=todo] strong {
-  color: var(--status-neutral, #526079);
-}
-
-.report-profile-stats [data-status=late] strong {
-  color: var(--status-danger, #be123c);
-}
-
-.report-profile-stats span {
-  font-size: 10px;
-  line-height: 1.3;
-  color: #526986;
-}
-
-.report-profile-stats button[aria-pressed=true] {
-  background: #fff;
-  box-shadow: inset 0 0 0 1px #64748b60;
-}
-
-.report-profile-stats button[data-status=done]:is(:hover, :focus-visible) {
-  background: #27823c;
-  border-color: #27823c;
-}
-
-.report-profile-stats button[data-status=doing]:is(:hover, :focus-visible) {
-  background: #1476c7;
-  border-color: #1476c7;
-}
-
-.report-profile-stats button[data-status=todo]:is(:hover, :focus-visible) {
-  background: #596b83;
-  border-color: #596b83;
-}
-
-.report-profile-stats button[data-status=late]:is(:hover, :focus-visible) {
-  background: #be123c;
-  border-color: #be123c;
-}
-
-.report-profile-stats button:is(:hover, :focus-visible) :is(strong, span) {
-  color: #ffffff !important;
-}
-
-/* Footer thẻ: 3 vòng tròn track & Nút xem chi tiết */
-.report-profile-footer {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.report-profile-footer > button {
-  min-height: 32px;
-  padding: 5px 12px;
-  color: #245bdb;
-  border: 1px solid #93c5fd;
-  border-radius: 9999px;
-  background: linear-gradient(180deg, #f3f8ff, #d3e5ff);
-  box-shadow: inset 0 1px 0 #fff, 0 2px 5px #2563eb12;
-  font-size: 11px;
-  font-weight: 650;
-  transition: all .2s;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.report-profile-footer > button:hover {
-  background: linear-gradient(180deg, #e7f1ff, #bfd9ff);
-  border-color: #60a5fa;
-}
-
-/* 3 vòng tròn track đáy thẻ với hover scale và tooltip nổi */
-.report-profile-tracks {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 25px;
-  align-items: center;
-}
-
-.report-profile-footer .report-profile-tracks button {
-  position: relative;
-  width: 31px;
-  height: 31px;
-  min-height: 31px;
-  padding: 0;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1.5px solid #818cf8;
-  color: #4338ca;
-  font-size: 11px;
-  font-weight: 700;
-  transition: transform .2s ease, box-shadow .2s ease;
-  cursor: pointer;
-}
-
-.report-profile-footer .report-profile-tracks button:nth-child(n+2) {
-  margin-left: -7px;
-}
-
-.report-profile-footer .report-profile-tracks [data-track=project] {
-  color: #7c3aed;
-  border-color: #c4b5fd;
-}
-
-.report-profile-footer .report-profile-tracks [data-track=campaign] {
-  color: #c2410c;
-  border-color: #fdba74;
-}
-
-.report-profile-footer .report-profile-tracks button:hover,
-.report-profile-footer .report-profile-tracks button:focus-visible {
-  transform: scale(1.12);
-  z-index: 10;
-  box-shadow: 0 4px 10px #0f172a20;
-}
-
-.report-profile-footer .report-profile-tracks button[aria-pressed=true] {
-  background: #eef2ff;
-  box-shadow: inset 0 0 0 1px currentColor;
-}
-
-.report-profile-tracks button::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(3px);
-  min-width: max-content;
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #24344b;
-  border: 1px solid #dce8fa;
-  box-shadow: 0 4px 14px #0f172a18;
-  font-size: 11px;
-  font-weight: 500;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity .15s ease, transform .15s ease;
-  z-index: 50;
-}
-
-.report-profile-tracks button:is(:hover, :focus-visible)::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  box-shadow: 0 10px 24px -4px rgba(0, 46, 109, 0.12);
+  border-color: #cbd5e1;
 }
 
 /* Nút tam giác cảnh báo tồn đọng Profile */
@@ -344,8 +48,8 @@
 .report-profile-backlog > button {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   border: 1px solid #fde68a;
   background: #fffbeb;
@@ -416,120 +120,14 @@
 
 /* DARK MODE CHUẨN K COFFEE DASHBOARD */
 .dark .report-profile {
-  grid-template-rows: 142px 1fr;
-  background: linear-gradient(145deg, #152338, #0d192a);
-  border: 1px solid #2b3d53;
-  box-shadow: inset 0 1px 0 #c3e7ff08, 0 3px 10px #00000033;
+  background: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
 }
 
-.dark .report-profile-glass::before {
-  background: linear-gradient(180deg, #0d192a00, #0d192a80 25%, #0d192af0);
-}
-
-.dark .report-profile-glass h3 {
-  color: #eef5ff;
-}
-
-.dark .report-profile-glass > p {
-  color: #adc0d6;
-}
-
-/* Avatar Dark mode: Khung tròn viền xanh brand green */
-.dark .report-profile-portrait {
-  padding: 18px 12px 0;
-  height: 142px;
-}
-
-.dark .report-profile-portrait img,
-.dark .report-profile-initial {
-  width: 106px;
-  height: 106px;
-  border-radius: 50%;
-  border: 1px solid #4eb64880;
-  background: linear-gradient(135deg, #4eb64826, #4eb6480d);
-  box-shadow: inset 0 1px 0 #90e38a20, 0 0 0 3px #4eb64808;
-  color: #90e38a;
-}
-
-.dark .report-profile-portrait img {
-  padding: 8px;
-  object-fit: contain;
-  object-position: center;
-}
-
-.dark .report-profile-stats button {
-  background: #1b2b4166;
-  border-color: #293a50;
-}
-
-.dark .report-profile-stats button[aria-pressed=true] {
-  background: #24384c;
-  box-shadow: inset 0 0 0 1px #90e38a60;
-}
-
-.dark .report-profile-stats span {
-  color: #adc0d6;
-}
-
-.dark .report-profile-stats button:is(:hover, :focus-visible) :is(strong, span) {
-  color: #ffffff !important;
-}
-
-.dark .report-profile-badges > span {
-  background: #a78bfa14;
-  color: #c4b5fd;
-  border-color: #a78bfa40;
-}
-
-.dark .report-profile-badges > span:nth-child(2) {
-  background: #4eb64814;
-  color: #90e38a;
-  border-color: #4eb64840;
-}
-
-.dark .report-profile-badges > span:nth-child(3) {
-  background: #f59e0b14;
-  color: #fcd67a;
-  border-color: #f59e0b40;
-}
-
-.dark .report-profile-footer > button {
-  color: #90e38a;
-  border-color: #4eb64870;
-  background: linear-gradient(135deg, #4eb64826, #4eb6480d);
-  box-shadow: inset 3px 0 0 #4eb648, inset 0 1px 0 #90e38a14;
-}
-
-.dark .report-profile-footer > button:hover {
-  background: linear-gradient(135deg, #4eb64838, #4eb64818);
-  border-color: #90e38a;
-  color: #dcfce7;
-}
-
-.dark .report-profile-footer .report-profile-tracks button {
-  background: #17263b;
-  border-color: #818cf880;
-  color: #c7d2fe;
-}
-
-.dark .report-profile-footer .report-profile-tracks [data-track=project] {
-  color: #ddd6fe;
-  border-color: #a78bfa80;
-}
-
-.dark .report-profile-footer .report-profile-tracks [data-track=campaign] {
-  color: #fed7aa;
-  border-color: #fb923c80;
-}
-
-.dark .report-profile-footer .report-profile-tracks button[aria-pressed=true] {
-  background: #283c54;
-}
-
-.dark .report-profile-tracks button::after {
-  background: #17263b;
-  color: #eef5ff;
-  border-color: #34465c;
+.dark .report-profile:hover {
+  border-color: #475569;
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.6);
 }
 
 .dark .report-profile-backlog > button {
@@ -562,17 +160,15 @@
 
 /* Touch targets for mobile */
 @media (pointer: coarse) {
-  .report-profile-stats button,
-  .report-profile-footer .report-profile-tracks button,
-  .report-profile-footer > button,
   .report-profile-backlog > button {
-    min-height: 44px;
-  }
-  .report-profile-footer .report-profile-tracks button {
-    width: 44px;
-    height: 44px;
-  }
-  .report-profile-tracks {
-    grid-auto-columns: 36px;
+    min-height: 38px;
+    min-width: 38px;
   }
 }
+
+@media (max-width: 360px) {
+  .report-profile {
+    grid-template-columns: 1fr;
+  }
+}
+
