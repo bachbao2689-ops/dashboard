@@ -39,7 +39,6 @@ import {
   ImagePlus,
   Info,
   Printer,
-  BadgeCheck,
   ClipboardList,
   Plus,
 } from 'lucide-react';
@@ -74,7 +73,7 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
         <div className="report-profile-glass" aria-hidden="true" />
         <div className="report-profile-content">
           <div className="report-profile-identity">
-            <h3>{member.name}<BadgeCheck aria-hidden="true" className="report-profile-seal" /></h3>
+            <h3>{member.name}</h3>
             <p>{member.role}</p>
           </div>
           <div className="report-profile-footer">
