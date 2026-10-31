@@ -40,7 +40,6 @@ import {
   Info,
   Printer,
   ClipboardList,
-  Plus,
 } from 'lucide-react';
 
 type StaffTrackFilter = 'all' | 'project' | 'campaign';
@@ -59,18 +58,6 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
-  const taskUnit = lang === 'en' ? 'Việc' : 'Việc';
-  const outputUnit = 'SL';
-
-  // Performance border track color matching top cards and performance metrics
-  const perfColor = member.late > 0
-    ? '#f43f5e'
-    : member.completionPct >= 80
-    ? '#10b981'
-    : member.completionPct >= 50
-    ? '#0ea5e9'
-    : '#f59e0b';
-
   const doneTooltip = lang === 'en'
     ? `Completed: ${member.done} tasks (${member.completionPct}%)`
     : `Hoàn thành: ${member.done} việc (${member.completionPct}%)`;
@@ -90,13 +77,9 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   return (
     <article
       className={`report-profile${hasImage ? '' : ' report-profile--initials'}`}
-      style={{
-        '--perf-pct': `${member.completionPct}%`,
-        '--perf-color': perfColor,
-      } as React.CSSProperties}
       aria-label={member.name}
     >
-      <div className="report-profile-surface">
+        <div className="report-profile-surface">
         {hasImage ? (
           <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
             loading="lazy" onError={() => setImageFailed(true)} />
@@ -155,9 +138,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 data-profile-tooltip={totalTasksTooltip}
                 data-profile-tooltip-pos="left"
               >
-                <ClipboardList aria-hidden="true" />
+                <ClipboardList size={12} aria-hidden="true" />
                 <strong>{member.tasks.length}</strong>
-                <small>{taskUnit}</small>
               </span>
               <span
                 className="report-profile-pill report-profile-pill--output"
@@ -165,16 +147,18 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
                 aria-label={deliverablesTooltip}
                 data-profile-tooltip={deliverablesTooltip}
               >
-                <ImagePlus aria-hidden="true" />
+                <ImagePlus size={12} aria-hidden="true" />
                 <strong>{member.deliverableCount}</strong>
-                <small>{outputUnit}</small>
               </span>
             </div>
-            <button type="button" className="report-profile-cta" aria-expanded={expanded}
+            <button
+              type="button"
+              className="report-profile-cta"
+              aria-expanded={expanded}
               aria-label={`${expanded ? (lang === 'en' ? 'Close details' : 'Đóng chi tiết') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}: ${member.name}`}
-              onClick={onDetails}>
+              onClick={onDetails}
+            >
               {expanded ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'Details' : 'Chi tiết')}
-              {expanded ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
             </button>
           </div>
         </div>

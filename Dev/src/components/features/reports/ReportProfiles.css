@@ -1,19 +1,4 @@
-@property --perf-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes spinPerfAngle {
-  0% {
-    --perf-angle: 0deg;
-  }
-  100% {
-    --perf-angle: 360deg;
-  }
-}
-
-/* Profile Card: portrait layout, animated performance track border on hover, capsule pills matching details button */
+/* Profile Card: portrait layout, clean borders with soft shadow, capsule pills & system button */
 .report-staff-section {
   container-type: inline-size;
 }
@@ -26,7 +11,7 @@
   padding: 8px 2px 18px;
 }
 
-/* Outer Card Container - Performance track border runs on hover */
+/* Outer Card Container - Clean border with subtle soft shadow on hover */
 .report-profile {
   --profile-ink: #002e6d;
   --profile-muted: #475569;
@@ -37,42 +22,16 @@
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 34px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff 65%, #e2f0fc);
-  box-shadow: inset 0 1px 1px #ffffff, 0 14px 26px -10px rgba(0, 46, 109, 0.09);
+  box-shadow: inset 0 1px 1px #ffffff, 0 12px 24px -10px rgba(0, 46, 109, 0.08);
   color: var(--profile-ink);
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
   z-index: 1;
 }
 
-/* Pseudo element: Chạy viền performance theo màu của từng staff khi hover */
-.report-profile::before {
-  content: "";
-  position: absolute;
-  inset: -1.5px;
-  border-radius: 35.5px;
-  padding: 2px;
-  background: conic-gradient(
-    from var(--perf-angle, 0deg),
-    var(--perf-color, #10b981) 0% var(--perf-pct, 70%),
-    rgba(213, 233, 247, 0.25) var(--perf-pct, 70%) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 280ms ease;
-  z-index: 2;
-}
-
 .report-profile:hover {
-  transform: translateY(-3px);
-  border-color: transparent;
-  box-shadow: inset 0 1px 1px #ffffff, 0 20px 32px -10px rgba(0, 46, 109, 0.16), 0 0 16px -2px var(--perf-color, #10b981);
-}
-
-.report-profile:hover::before {
-  opacity: 1;
-  animation: spinPerfAngle 2.8s linear infinite;
+  transform: translateY(-2px);
+  border-color: rgba(186, 220, 245, 0.9);
+  box-shadow: inset 0 1px 1px #ffffff, 0 14px 28px -8px rgba(0, 46, 109, 0.13);
 }
 
 /* Inner Surface - Classic portrait aspect ratio (.62), ~310px min-height */
@@ -242,22 +201,22 @@
   align-items: center;
 }
 
-/* 2 Label Việc & SL: Capsule Pill giống UI Button Chi tiết */
+/* 2 Label Việc & SL: Icon + Số, UI Capsule Pill */
 .report-profile-pill {
   display: inline-grid;
-  grid-template-columns: 12px auto auto;
-  gap: 4px;
+  grid-template-columns: 12px auto;
+  gap: 5px;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 10px;
   border: 1px solid #d5e9f7;
-  border-radius: 999px;
+  border-radius: 9px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff);
   color: #002e6d;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px -2px rgba(0, 46, 109, 0.08);
+  box-shadow: inset 0 1px 1px #ffffff, 0 2px 6px -1px rgba(0, 46, 109, 0.08);
   cursor: default;
   transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
   white-space: nowrap;
@@ -281,52 +240,38 @@
   color: #002e6d;
 }
 
-.report-profile-pill small {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #475569;
-  letter-spacing: .02em;
-}
-
-/* CTA Details button - Elegant Pill */
+/* CTA Details button - System Button UI matching tab Báo cáo */
 .report-profile-cta {
-  display: grid;
-  grid-template-columns: auto 12px;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid #d5e9f7;
-  border-radius: 999px;
-  background: linear-gradient(155deg, #ffffff, #f0f7ff);
-  box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px rgba(0, 46, 109, 0.08);
-  color: #002e6d;
-  font-size: 11px;
+  display: inline-grid;
+  place-items: center;
+  min-height: 30px;
+  padding: 0 13px;
+  border: 1px solid rgba(147, 197, 253, 0.85);
+  border-radius: 9px;
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70));
+  color: #1d4ed8;
+  font-size: 11.5px;
   font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(30, 90, 170, 0.12);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
-}
-
-.report-profile-cta svg {
-  width: 12px;
-  height: 12px;
-  stroke-width: 1.5;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .report-profile-cta:hover {
-  background: #ffffff;
-  border-color: #badcf6;
-  color: #002e6d;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(0, 46, 109, 0.16);
+  transform: translateY(-1px);
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 1), rgba(191, 219, 254, 0.88));
+  border-color: #60a5fa;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 3px 10px rgba(30, 90, 170, 0.2);
+}
+
+.report-profile-cta:active {
+  transform: translateY(0);
 }
 
 .report-profile-cta:focus-visible {
-  outline: 2px solid #002e6d;
-  outline-offset: 3px;
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
 }
 
 .report-profile-expanded {
@@ -345,22 +290,15 @@
 .dark .report-profile {
   --profile-ink: #f8fafc;
   --profile-muted: #94a3b8;
-  border: 1.5px solid rgba(78, 182, 72, 0.5); /* Viền xanh lá cây thương hiệu như ver trước */
+  border: 1.5px solid rgba(78, 182, 72, 0.45);
   background: linear-gradient(145deg, #131f31 0%, #090f1b 100%);
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 14px 28px -12px rgba(0, 0, 0, 0.7);
-}
-
-.dark .report-profile::before {
-  background: conic-gradient(
-    from var(--perf-angle, 0deg),
-    var(--perf-color, #4eb648) 0% var(--perf-pct, 70%),
-    rgba(51, 65, 85, 0.35) var(--perf-pct, 70%) 100%
-  );
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.18), 0 12px 26px -10px rgba(0, 0, 0, 0.7);
 }
 
 .dark .report-profile:hover {
-  border-color: transparent;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.35), 0 18px 34px -10px rgba(0, 0, 0, 0.8), 0 0 20px -2px var(--perf-color, #4eb648);
+  transform: translateY(-2px);
+  border-color: #4eb648;
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.3), 0 14px 28px -8px rgba(0, 0, 0, 0.8), 0 0 14px rgba(78, 182, 72, 0.2);
 }
 
 .dark .report-profile-surface {
@@ -403,12 +341,13 @@
   border-color: rgba(245, 158, 11, 0.5);
 }
 
-/* Pills Dark Mode: Đồng bộ với CTA Button Dark Mode */
+/* Pills Dark Mode */
 .dark .report-profile-pill {
   background: linear-gradient(155deg, rgba(78, 182, 72, 0.12), rgba(19, 31, 49, 0.95));
-  border: 1.5px solid rgba(78, 182, 72, 0.5);
+  border: 1.5px solid rgba(78, 182, 72, 0.45);
   color: #90e38a;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.2), 0 3px 8px rgba(0, 0, 0, 0.4);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.18), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .dark .report-profile-pill svg {
@@ -419,33 +358,30 @@
   color: #f8fafc;
 }
 
-.dark .report-profile-pill small {
-  color: #94a3b8;
-}
-
 .dark .report-profile-pill:hover {
   border-color: #4eb648;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.35), 0 4px 12px rgba(78, 182, 72, 0.25);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.3), 0 4px 12px rgba(78, 182, 72, 0.22);
 }
 
-/* Nút CTA Dark Mode - Viền Xanh Lá Cây & Text Xanh Lá Cây */
+/* Nút CTA Dark Mode - System Button matching tab Báo cáo */
 .dark .report-profile-cta {
-  background: linear-gradient(155deg, rgba(78, 182, 72, 0.15), rgba(19, 31, 49, 0.95));
-  border: 1.5px solid #4eb648;
-  color: #90e38a;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.25), 0 3px 8px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08));
+  border: 1px solid rgba(78, 182, 72, 0.45);
+  color: #85df7d;
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .dark .report-profile-cta:hover {
-  background: #4eb648;
-  color: #090f1b;
+  background: rgba(78, 182, 72, 0.28);
+  color: #a7f3d0;
   border-color: #4eb648;
-  box-shadow: 0 4px 16px rgba(78, 182, 72, 0.4);
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.25), 0 4px 12px rgba(78, 182, 72, 0.3);
 }
 
 .dark .report-profile-cta:focus-visible {
   outline: 2px solid #4eb648;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 /* ========================================================
