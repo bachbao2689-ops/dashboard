@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 import './ReportProfiles.css';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -206,6 +207,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffDetailTab, setStaffDetailTab] = useState<'all' | 'project' | 'campaign' | 'done' | 'late' | 'backlog'>('all');
   const expandedModalRef = useRef<HTMLDivElement>(null);
+  const slide1Ref = useRef<HTMLDivElement>(null);
+  const slide2Ref = useRef<HTMLDivElement>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
@@ -315,358 +318,44 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     return clean.toLowerCase().startsWith('team ') ? clean : `Team ${clean}`;
   }, [departmentFilter, selectedDepartmentName]);
 
-  // Export PDF (Embeds 2 High-Res A4 Landscape Images directly into PDF print frame)
-  const exportReportPdf = useCallback(() => {
+  // Export PDF (Real DOM Screen Capture 100% matched to Tab Report)
+  const exportReportPdf = useCallback(async () => {
+    const toastId = toast.loading(lang === "en" ? "Capturing screen for PDF..." : "Đang chụp màn hình tạo PDF sắc nét...");
     try {
       setSelectedStaffId(null);
       setActiveExpandedId(null);
 
-      const scale = 2;
-      const width = 1400;
-      const height = 900;
-      const isDark = document.documentElement.classList.contains("dark");
-      const bg = isDark ? "#0b1120" : "#ffffff";
-      const cardBg = isDark ? "#1e293b" : "#ffffff";
-      const textColor = isDark ? "#f8fafc" : "#0f172a";
-      const subTextColor = isDark ? "#94a3b8" : "#64748b";
-      const borderColor = isDark ? "#334155" : "#e2e8f0";
-
-      // CANVAS 1: 5 Thẻ & Performance các Staff (Hồ sơ thành viên)
-      const canvas1 = document.createElement("canvas");
-      canvas1.width = width * scale;
-      canvas1.height = height * scale;
-      const ctx1 = canvas1.getContext("2d");
-      if (!ctx1) return;
-
-      ctx1.scale(scale, scale);
-      ctx1.fillStyle = bg;
-      ctx1.fillRect(0, 0, width, height);
-
-      // Header Banner
-      const grad1 = ctx1.createLinearGradient(40, 30, width - 40, 100);
-      grad1.addColorStop(0, "#002e6d");
-      grad1.addColorStop(1, "#0284c7");
-      ctx1.fillStyle = grad1;
-      ctx1.beginPath();
-      ctx1.roundRect(40, 30, width - 80, 80, 12);
-      ctx1.fill();
-
-      ctx1.fillStyle = "#ffffff";
-      ctx1.font = "bold 20px Inter, system-ui, sans-serif";
-      ctx1.fillText(`K COFFEE · ${t("reports.viz.titlePrefix")} · ${departmentDisplayName}`, 60, 65);
-      ctx1.font = "12px Inter, system-ui, sans-serif";
-      ctx1.fillStyle = "#e0f2fe";
-      ctx1.fillText(`${t("reports.viz.periodPrefix")} ${periodLabelVi} · TỔNG QUAN HIỆU SUẤT & HỒ SƠ THÀNH VIÊN`, 60, 92);
-
-      // 5 KPI Cards
-      const kpis = [
-        { title: t("reports.viz.card1Title"), val: `${teamCards.completedTasks}/${teamCards.totalTasks}`, sub: `${teamCards.completionRate}%`, color: "#10b981" },
-        { title: t("reports.viz.card2Title"), val: `${teamCards.backlogCount}`, sub: `${teamCards.staffWithBacklogCount} nhân sự`, color: "#f59e0b" },
-        { title: t("reports.viz.card3Title"), val: `${teamCards.totalTracks}`, sub: `${teamCards.projectsCount} Dự án, ${teamCards.campaignsCount} C.dịch`, color: "#6366f1" },
-        { title: t("reports.viz.card4Title"), val: `${teamCards.inProgressTasks}`, sub: `${teamCards.inProgressPct}% đang làm`, color: "#0ea5e9" },
-        { title: t("reports.viz.card5Title"), val: `${teamCards.completedDeliverables}/${teamCards.totalDeliverables}`, sub: `${teamCards.deliverableCompletionRate}% SL`, color: "#8b5cf6" },
-      ];
-      const cardW = (width - 80 - 4 * 14) / 5;
-      kpis.forEach((kpi, idx) => {
-        const x = 40 + idx * (cardW + 14);
-        const y = 125;
-        ctx1.fillStyle = cardBg;
-        ctx1.beginPath();
-        ctx1.roundRect(x, y, cardW, 100, 10);
-        ctx1.fill();
-        ctx1.strokeStyle = borderColor;
-        ctx1.lineWidth = 1;
-        ctx1.stroke();
-
-        ctx1.fillStyle = subTextColor;
-        ctx1.font = "bold 9px Inter, system-ui, sans-serif";
-        ctx1.fillText(kpi.title.toUpperCase(), x + 12, y + 24);
-        ctx1.fillStyle = kpi.color;
-        ctx1.font = "bold 20px Inter, system-ui, sans-serif";
-        ctx1.fillText(kpi.val, x + 12, y + 58);
-        ctx1.fillStyle = subTextColor;
-        ctx1.font = "11px Inter, system-ui, sans-serif";
-        ctx1.fillText(kpi.sub, x + 12, y + 82);
-      });
-
-      // HỒ SƠ THÀNH VIÊN - Thẻ nhân sự (Slide 1)
-      ctx1.fillStyle = cardBg;
-      ctx1.beginPath();
-      ctx1.roundRect(40, 240, width - 80, 620, 14);
-      ctx1.fill();
-      ctx1.strokeStyle = borderColor;
-      ctx1.stroke();
-
-      ctx1.fillStyle = textColor;
-      ctx1.font = "bold 16px Inter, system-ui, sans-serif";
-      ctx1.fillText(`${t("reports.viz.staffSectionTitle")} (${staffMembers.length} nhân sự)`, 60, 275);
-      ctx1.fillStyle = subTextColor;
-      ctx1.font = "12px Inter, system-ui, sans-serif";
-      ctx1.fillText(t("reports.viz.staffSectionSub"), 60, 296);
-
-      // Grid 5 Staff Cards
-      const staffCardW = (width - 120 - 4 * 16) / 5;
-      const staffCardH = 500;
-      const topStaff = staffMembers.slice(0, 5);
-      topStaff.forEach((m, idx) => {
-        const sx = 60 + idx * (staffCardW + 16);
-        const sy = 320;
-
-        ctx1.fillStyle = isDark ? "#172236" : "#f1f8fe";
-        ctx1.beginPath();
-        ctx1.roundRect(sx, sy, staffCardW, staffCardH, 20);
-        ctx1.fill();
-        ctx1.strokeStyle = isDark ? "#28446e" : "#badef7";
-        ctx1.lineWidth = 1.5;
-        ctx1.stroke();
-
-        const avX = sx + staffCardW / 2;
-        const avY = sy + 90;
-        ctx1.fillStyle = isDark ? "#1e293b" : "#ffffff";
-        ctx1.beginPath();
-        ctx1.arc(avX, avY, 48, 0, Math.PI * 2);
-        ctx1.fill();
-        ctx1.strokeStyle = isDark ? "#38bdf8" : "#002e6d";
-        ctx1.lineWidth = 2;
-        ctx1.stroke();
-
-        ctx1.fillStyle = isDark ? "#38bdf8" : "#002e6d";
-        ctx1.font = "bold 22px Inter, system-ui, sans-serif";
-        ctx1.textAlign = "center";
-        const initials = (m.name || "").split(" ").map(w => w[0]).join("").slice(-2).toUpperCase();
-        ctx1.fillText(initials, avX, avY + 8);
-        ctx1.textAlign = "left";
-
-        ctx1.fillStyle = textColor;
-        ctx1.font = "bold 15px Inter, system-ui, sans-serif";
-        ctx1.fillText(m.name, sx + 16, sy + 200);
-        ctx1.fillStyle = subTextColor;
-        ctx1.font = "11px Inter, system-ui, sans-serif";
-        ctx1.fillText(m.role || "Thành viên", sx + 16, sy + 220);
-
-        const bY = sy + 260;
-        ctx1.fillStyle = "#ecfdf5";
-        ctx1.beginPath();
-        ctx1.roundRect(sx + 14, bY, 44, 22, 6);
-        ctx1.fill();
-        ctx1.fillStyle = "#059669";
-        ctx1.font = "bold 11px Inter, system-ui, sans-serif";
-        ctx1.fillText(`✔ ${m.done}`, sx + 20, bY + 15);
-
-        ctx1.fillStyle = "#fff1f2";
-        ctx1.beginPath();
-        ctx1.roundRect(sx + 64, bY, 44, 22, 6);
-        ctx1.fill();
-        ctx1.fillStyle = "#e11d48";
-        ctx1.font = "bold 11px Inter, system-ui, sans-serif";
-        ctx1.fillText(`⏱ ${m.doing}`, sx + 70, bY + 15);
-
-        ctx1.fillStyle = "#fffbeb";
-        ctx1.beginPath();
-        ctx1.roundRect(sx + 114, bY, 44, 22, 6);
-        ctx1.fill();
-        ctx1.fillStyle = "#d97706";
-        ctx1.font = "bold 11px Inter, system-ui, sans-serif";
-        ctx1.fillText(`⚠ ${m.late}`, sx + 120, bY + 15);
-
-        const cY = sy + 320;
-        ctx1.fillStyle = isDark ? "#0f172a" : "#ffffff";
-        ctx1.beginPath();
-        ctx1.roundRect(sx + 14, cY, staffCardW - 28, 64, 8);
-        ctx1.fill();
-        ctx1.strokeStyle = borderColor;
-        ctx1.lineWidth = 1;
-        ctx1.stroke();
-
-        ctx1.fillStyle = subTextColor;
-        ctx1.font = "11px Inter, system-ui, sans-serif";
-        ctx1.fillText("Công việc thực tế:", sx + 22, cY + 24);
-        ctx1.fillStyle = textColor;
-        ctx1.font = "bold 13px Inter, system-ui, sans-serif";
-        ctx1.fillText(`${m.total} việc (${m.completionPct}%)`, sx + 22, cY + 48);
-
-        const btnY = sy + 410;
-        ctx1.fillStyle = isDark ? "#1e293b" : "#ffffff";
-        ctx1.beginPath();
-        ctx1.roundRect(sx + 14, btnY, staffCardW - 28, 36, 8);
-        ctx1.fill();
-        ctx1.strokeStyle = borderColor;
-        ctx1.stroke();
-        ctx1.fillStyle = isDark ? "#38bdf8" : "#002e6d";
-        ctx1.font = "bold 12px Inter, system-ui, sans-serif";
-        ctx1.textAlign = "center";
-        ctx1.fillText("Chi tiết", sx + staffCardW / 2, btnY + 23);
-        ctx1.textAlign = "left";
-      });
-
-      const img1Data = canvas1.toDataURL("image/png");
-
-      // CANVAS 2: 2 Biểu đồ A4 Ngang Phóng To
-      const canvas2 = document.createElement("canvas");
-      canvas2.width = width * scale;
-      canvas2.height = height * scale;
-      const ctx2 = canvas2.getContext("2d");
-      if (!ctx2) return;
-
-      ctx2.scale(scale, scale);
-      ctx2.fillStyle = bg;
-      ctx2.fillRect(0, 0, width, height);
-
-      // Header Banner
-      const grad2 = ctx2.createLinearGradient(40, 30, width - 40, 100);
-      grad2.addColorStop(0, "#002e6d");
-      grad2.addColorStop(1, "#0284c7");
-      ctx2.fillStyle = grad2;
-      ctx2.beginPath();
-      ctx2.roundRect(40, 30, width - 80, 80, 12);
-      ctx2.fill();
-
-      ctx2.fillStyle = "#ffffff";
-      ctx2.font = "bold 20px Inter, system-ui, sans-serif";
-      ctx2.fillText(`K COFFEE · ${t("reports.viz.titlePrefix")} · ${departmentDisplayName}`, 60, 65);
-      ctx2.font = "12px Inter, system-ui, sans-serif";
-      ctx2.fillStyle = "#e0f2fe";
-      ctx2.fillText(`${t("reports.viz.periodPrefix")} ${periodLabelVi} · LỊCH PHÂN BỔ TASK & MỨC TẢI CÔNG SUẤT`, 60, 92);
-
-      const chartW = (width - 80 - 24) / 2;
-      const chartH = 720;
-      const cy = 130;
-
-      // Chart 1: Lịch phân bổ task
-      ctx2.fillStyle = cardBg;
-      ctx2.beginPath();
-      ctx2.roundRect(40, cy, chartW, chartH, 14);
-      ctx2.fill();
-      ctx2.strokeStyle = borderColor;
-      ctx2.lineWidth = 1;
-      ctx2.stroke();
-
-      ctx2.fillStyle = textColor;
-      ctx2.font = "bold 16px Inter, system-ui, sans-serif";
-      ctx2.fillText(t("dashboard.taskAllocation"), 64, cy + 36);
-      ctx2.fillStyle = subTextColor;
-      ctx2.font = "12px Inter, system-ui, sans-serif";
-      ctx2.fillText(`${departmentDisplayName} · ${allocationRangeStart} — ${allocationRangeEnd}`, 64, cy + 58);
-
-      const chInnerY = cy + 120;
-      const chInnerH = chartH - 180;
-      const pts = allocationChartData.slice(0, 15);
-      if (pts.length > 0) {
-        const stepX = (chartW - 80) / Math.max(1, pts.length - 1);
-        const maxVal = Math.max(5, ...pts.map(p => Math.max(p.created, p.doing, p.done)));
-
-        ctx2.strokeStyle = isDark ? "#334155" : "#f1f5f9";
-        ctx2.lineWidth = 1;
-        for (let i = 0; i <= 4; i++) {
-          const gy = chInnerY + (chInnerH / 4) * i;
-          ctx2.beginPath();
-          ctx2.moveTo(70, gy);
-          ctx2.lineTo(40 + chartW - 40, gy);
-          ctx2.stroke();
-        }
-
-        ctx2.strokeStyle = isDark ? "#b4a3ff" : "#6953bd";
-        ctx2.lineWidth = 3;
-        ctx2.beginPath();
-        pts.forEach((p, i) => {
-          const px = 70 + i * stepX;
-          const py = chInnerY + chInnerH - (p.created / maxVal) * chInnerH;
-          if (i === 0) ctx2.moveTo(px, py);
-          else ctx2.lineTo(px, py);
-        });
-        ctx2.stroke();
-
-        ctx2.strokeStyle = "#4eb648";
-        ctx2.setLineDash([6, 6]);
-        ctx2.beginPath();
-        pts.forEach((p, i) => {
-          const px = 70 + i * stepX;
-          const py = chInnerY + chInnerH - (p.done / maxVal) * chInnerH;
-          if (i === 0) ctx2.moveTo(px, py);
-          else ctx2.lineTo(px, py);
-        });
-        ctx2.stroke();
-        ctx2.setLineDash([]);
-
-        ctx2.fillStyle = subTextColor;
-        ctx2.font = "10px Inter, system-ui, sans-serif";
-        pts.forEach((p, i) => {
-          if (i % 2 === 0 || i === pts.length - 1) {
-            const px = 70 + i * stepX;
-            ctx2.fillText(p.name, px - 12, chInnerY + chInnerH + 24);
-          }
-        });
+      if (!slide1Ref.current || !slide2Ref.current) {
+        throw new Error("Report elements not found for capture");
       }
 
-      // Chart 2: Ma trận mức tải công việc
-      const c2x = 40 + chartW + 24;
-      ctx2.fillStyle = cardBg;
-      ctx2.beginPath();
-      ctx2.roundRect(c2x, cy, chartW, chartH, 14);
-      ctx2.fill();
-      ctx2.strokeStyle = borderColor;
-      ctx2.stroke();
+      // Small delay to let popovers close
+      await new Promise((r) => setTimeout(r, 120));
 
-      ctx2.fillStyle = textColor;
-      ctx2.font = "bold 16px Inter, system-ui, sans-serif";
-      ctx2.fillText("MỨC TẢI CÔNG VIỆC (% CÔNG SUẤT)", c2x + 24, cy + 36);
-      ctx2.fillStyle = subTextColor;
-      ctx2.font = "12px Inter, system-ui, sans-serif";
-      ctx2.fillText("Mức độ phân bổ tải theo các mốc thời gian trong kỳ", c2x + 24, cy + 58);
+      const isDark = document.documentElement.classList.contains("dark");
+      const bgColor = isDark ? "#0b1120" : "#ffffff";
 
-      const hy = cy + 100;
-      ctx2.fillStyle = isDark ? "#334155" : "#f1f5f9";
-      ctx2.beginPath();
-      ctx2.roundRect(c2x + 20, hy, chartW - 40, 36, 6);
-      ctx2.fill();
-
-      ctx2.fillStyle = subTextColor;
-      ctx2.font = "bold 11px Inter, system-ui, sans-serif";
-      ctx2.fillText("NHÂN SỰ", c2x + 36, hy + 23);
-      const colLabels = heatmapColumnLabels || ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-      const colStep = (chartW - 220) / colLabels.length;
-      colLabels.forEach((lbl, cIdx) => {
-        ctx2.fillText(lbl, c2x + 200 + cIdx * colStep, hy + 23);
+      // Capture Slide 1: 5 Thẻ & Hồ sơ thành viên (Exact DOM Snapshot)
+      const canvas1 = await html2canvas(slide1Ref.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: bgColor,
       });
+      const img1Data = canvas1.toDataURL("image/png");
 
-      const heatRows = heatmap.slice(0, 10);
-      heatRows.forEach((row: any, rIdx: number) => {
-        const ry = hy + 50 + rIdx * 52;
-        ctx2.fillStyle = textColor;
-        ctx2.font = "bold 13px Inter, system-ui, sans-serif";
-        ctx2.fillText(row.name, c2x + 36, ry + 22);
-
-        (row.weeks || []).forEach((val: number, cIdx: number) => {
-          const cx = c2x + 195 + cIdx * colStep;
-          let bgPill = isDark ? "#334155" : "#f1f5f9";
-          let textPill = subTextColor;
-          if (val > 100) {
-            bgPill = "#ffe4e6";
-            textPill = "#be123c";
-          } else if (val >= 80) {
-            bgPill = "#dbeafe";
-            textPill = "#1d4ed8";
-          }
-          ctx2.fillStyle = bgPill;
-          ctx2.beginPath();
-          ctx2.roundRect(cx, ry + 4, 38, 24, 6);
-          ctx2.fill();
-          ctx2.fillStyle = textPill;
-          ctx2.font = "bold 10px Inter, system-ui, sans-serif";
-          ctx2.fillText(`${val}%`, cx + 6, ry + 20);
-        });
-
-        ctx2.strokeStyle = borderColor;
-        ctx2.lineWidth = 0.5;
-        ctx2.beginPath();
-        ctx2.moveTo(c2x + 20, ry + 42);
-        ctx2.lineTo(c2x + chartW - 20, ry + 42);
-        ctx2.stroke();
+      // Capture Slide 2: 2 Biểu đồ phân bổ & công suất (Exact DOM Snapshot)
+      const canvas2 = await html2canvas(slide2Ref.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: bgColor,
       });
-
       const img2Data = canvas2.toDataURL("image/png");
 
-      // Embed both high-res A4 images directly into a hidden print iframe
+      toast.dismiss(toastId);
+
+      // Embed both exact screenshot images directly into print iframe
       const iframe = document.createElement("iframe");
       iframe.style.position = "fixed";
       iframe.style.right = "0";
@@ -683,7 +372,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           <!DOCTYPE html>
           <html>
           <head>
-            <title>BaoCao_${departmentDisplayName}_A4</title>
+            <title>BaoCao_${departmentDisplayName}_PDF</title>
             <style>
               @page {
                 size: A4 landscape;
@@ -694,7 +383,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 padding: 0;
                 width: 100%;
                 height: 100%;
-                background: ${bg};
+                background: ${bgColor};
+                overflow: hidden;
               }
               .page {
                 width: 100vw;
@@ -705,7 +395,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 align-items: center;
                 justify-content: center;
                 box-sizing: border-box;
-                padding: 0;
+                padding: 4mm 6mm;
               }
               .page:last-child {
                 page-break-after: avoid;
@@ -738,10 +428,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         }, 300);
       }
     } catch (err) {
-      console.error("Export PDF error:", err);
-      toast.error(lang === "en" ? "Unable to export PDF" : "Không thể xuất file PDF");
+      console.error("Export PDF capture error:", err);
+      toast.dismiss(toastId);
+      toast.error(lang === "en" ? "Unable to capture PDF" : "Không thể tạo file PDF");
     }
-  }, [t, lang, departmentDisplayName, periodLabelVi, teamCards, staffMembers, allocationRangeStart, allocationRangeEnd, allocationChartData, heatmap, heatmapColumnLabels]);
+  }, [lang, departmentDisplayName]);
 
   // Export Image (High-res 2x Canvas Snapshot - No Burndown/Capacity, Replaced with 3 Operational Detail Blocks)
   const exportReportImage = useCallback(() => {
@@ -1802,7 +1493,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           </div>
         </div>
 
-        <div className="report-print-page-1 space-y-6">
+        <div ref={slide1Ref} className="report-print-page-1 space-y-6">
         {/* TẦNG 1: 5 Team Performance Cards (Slide 3) */}
         <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
@@ -3294,7 +2985,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         </div>
 
-        <div className="report-print-page-2">
+        <div ref={slide2Ref} className="report-print-page-2">
         {/* TẦNG 3: 2 Bottom Charts */}
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
