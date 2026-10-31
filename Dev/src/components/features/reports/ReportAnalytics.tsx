@@ -1641,7 +1641,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     {teamCards.completedDeliverables}/{teamCards.totalDeliverables}
                   </b>
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    {lang === 'en' ? 'items · done / total' : 'hình/file · đã xong / tổng'}
+                    {lang === 'en' ? 'items' : 'hình/file'}
                   </span>
                 </div>
                 <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
@@ -1657,10 +1657,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </div>
 
               <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
-                <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-emerald-700 dark:text-emerald-300">
+                <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-center text-emerald-700 dark:text-emerald-300">
                   {t('reports.viz.deliverablesDone', { count: teamCards.completedDeliverables })}
                 </span>
-                <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 px-1.5 py-1 text-amber-700 dark:text-amber-300 text-right">
+                <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 px-1.5 py-1 text-center text-amber-700 dark:text-amber-300">
                   {t('reports.viz.deliverablesRemaining', { count: teamCards.doingDeliverables })}
                 </span>
               </div>
