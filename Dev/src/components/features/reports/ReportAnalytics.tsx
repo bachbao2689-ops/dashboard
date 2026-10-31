@@ -220,7 +220,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
-  const [centeredStaffId, setCenteredStaffId] = useState<string | null>(null);
   const profileScrollRef = useRef<HTMLDivElement>(null);
   const [mobileActiveBtn, setMobileActiveBtn] = useState<'dept' | 'calendar' | 'export' | null>(null);
   const headerToolbarRef = useRef<HTMLDivElement>(null);
@@ -242,32 +241,44 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     };
   }, []);
 
-  // Track centered staff profile card on mobile 1-row carousel coverflow
+  // Track centered staff profile card on mobile 1-row carousel coverflow without triggering React re-renders
   const handleProfileScroll = useCallback(() => {
     const container = profileScrollRef.current;
     if (!container || typeof window === 'undefined' || window.innerWidth >= 640) return;
     const containerCenter = container.scrollLeft + container.clientWidth / 2;
-    const cards = container.querySelectorAll<HTMLElement>('[data-staff-id]');
-    let closestId: string | null = null;
+    const cards = container.querySelectorAll<HTMLElement>('.report-profile');
+    if (cards.length === 0) return;
+    let closestCard: HTMLElement | null = null;
     let minDiff = Infinity;
     cards.forEach((card) => {
-      const cardCenter = card.offsetLeft + card.clientWidth / 2;
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
       const diff = Math.abs(cardCenter - containerCenter);
       if (diff < minDiff) {
         minDiff = diff;
-        closestId = card.getAttribute('data-staff-id');
+        closestCard = card;
       }
     });
-    if (closestId && closestId !== centeredStaffId) {
-      setCenteredStaffId(closestId);
-    }
-  }, [centeredStaffId]);
+    cards.forEach((card) => {
+      const isCenter = card === closestCard;
+      if (isCenter) {
+        if (!card.classList.contains('report-profile--coverflow-active')) {
+          card.classList.add('report-profile--coverflow-active');
+          card.classList.add('is-carousel-center');
+        }
+      } else {
+        if (card.classList.contains('report-profile--coverflow-active')) {
+          card.classList.remove('report-profile--coverflow-active');
+          card.classList.remove('is-carousel-center');
+        }
+      }
+    });
+  }, []);
 
   useEffect(() => {
-    if (staffMembers.length > 0 && !centeredStaffId) {
-      setCenteredStaffId(staffMembers[0].id);
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      handleProfileScroll();
     }
-  }, [staffMembers, centeredStaffId]);
+  }, [handleProfileScroll, staffMembers]);
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
 
 
@@ -1002,7 +1013,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               type="button"
               onClick={handleBack}
               aria-label={t('reports.viz.backDashboard')}
-              className="grid grid-flow-col auto-cols-max items-center gap-2 px-3 py-1.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              className="grid grid-flow-col auto-cols-max items-center gap-2 px-3 py-1.5 rounded-[8px] border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-[#002e6d] dark:text-[#38bdf8]" />
               <span>{t('reports.viz.backDashboard')}</span>
@@ -1028,7 +1039,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 onClick={() => void refetch()}
                 aria-label={t('reports.viz.reload')}
                 title={t('reports.viz.reload')}
-                className="grid place-items-center w-9 h-9 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                className="grid place-items-center w-9 h-9 rounded-[8px] border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -1070,7 +1081,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     type="button"
                     onClick={() => setMobileActiveBtn(mobileActiveBtn === 'dept' ? null : 'dept')}
                     aria-label="Lọc theo phòng ban"
-                    className={`sm:hidden ${mobileActiveBtn === 'dept' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
+                    className={`sm:hidden ${mobileActiveBtn === 'dept' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#0f1e36]`}
                   >
                     <Building2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   </button>
@@ -1078,7 +1089,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   <div
                     className={`${
                       mobileActiveBtn === 'dept' ? 'grid' : 'hidden sm:grid'
-                    } grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm transition-all duration-200 animate-in fade-in ${
+                    } grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm transition-all duration-200 animate-in fade-in ${
                       standalone ? 'opacity-80 pointer-events-none' : ''
                     }`}
                   >
@@ -1103,7 +1114,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   </div>
                 </>
               ) : (
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] bg-slate-100 dark:bg-[#0a192f] border border-transparent dark:border-slate-700/80 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="hidden sm:inline">{selectedDepartmentName}</span>
                 </div>
@@ -1124,7 +1135,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     }
                   }}
                   aria-label="Lịch và kỳ báo cáo"
-                  className={`sm:hidden ${mobileActiveBtn === 'calendar' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
+                  className={`sm:hidden ${mobileActiveBtn === 'calendar' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#0f1e36]`}
                 >
                   <CalendarDays className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </button>
@@ -1132,7 +1143,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 <div
                   className={`${
                     mobileActiveBtn === 'calendar' ? 'grid' : 'hidden sm:grid'
-                  } grid-cols-[44px_1fr_44px] sm:inline-grid sm:grid-flow-col sm:auto-cols-max items-stretch rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm min-h-[44px] transition-all duration-200 animate-in fade-in ${
+                  } grid-cols-[44px_1fr_44px] sm:inline-grid sm:grid-flow-col sm:auto-cols-max items-stretch rounded-[8px] border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] shadow-sm min-h-[44px] transition-all duration-200 animate-in fade-in ${
                     standalone ? 'opacity-80 pointer-events-none' : ''
                   }`}
                 >
@@ -1141,7 +1152,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     disabled={standalone}
                     aria-label="Khoảng trước"
                     onClick={() => shiftPeriod(-1)}
-                    className="grid place-items-center rounded-l-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="grid place-items-center rounded-l-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -1158,7 +1169,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setRangeOpen((prev) => !prev);
                       }}
                       aria-expanded={rangeOpen}
-                      className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-h-[44px] min-w-[108px] w-full disabled:cursor-not-allowed"
+                      className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#0f1e36] transition-colors cursor-pointer min-h-[44px] min-w-[108px] w-full disabled:cursor-not-allowed"
                     >
                       <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
                       <span>{selectedRangeLabel}</span>
@@ -1421,7 +1432,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     setActionMenuOpen(next === 'export');
                   }}
                   aria-label="Thao tác xuất báo cáo"
-                  className={`sm:hidden ${mobileActiveBtn === 'export' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
+                  className={`sm:hidden ${mobileActiveBtn === 'export' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#0f1e36]`}
                 >
                   <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </button>
@@ -1433,7 +1444,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   aria-haspopup="true"
                   className={`${
                     mobileActiveBtn === 'export' ? 'grid' : 'hidden sm:grid'
-                  } grid-flow-col auto-cols-max items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-all duration-200 cursor-pointer min-h-[44px] animate-in fade-in`}
+                  } grid-flow-col auto-cols-max items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2 rounded-[8px] border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] hover:bg-slate-50 dark:hover:bg-[#0f1e36] text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-all duration-200 cursor-pointer min-h-[44px] animate-in fade-in`}
                 >
                   <Download className="w-4 h-4 text-slate-400" />
                   <span>{t('reports.viz.reportActions')}</span>
@@ -2783,12 +2794,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   selectedStaff ? 'opacity-30 blur-[3px] scale-[0.98] pointer-events-none select-none' : ''
                 }`}
               >
-                {staffMembers.map((member) => (
+                {staffMembers.map((member, mIdx) => (
                   <ReportProfileCard
                     key={member.id}
                     member={member}
                     lang={lang}
-                    isCenter={member.id === centeredStaffId}
+                    isCenter={mIdx === 0}
                     onDetails={() => {
                       setSelectedStaffId(member.id);
                       setStaffTrackFilter('all');

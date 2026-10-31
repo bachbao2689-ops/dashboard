@@ -750,22 +750,23 @@
 /* ========================================================
    MOBILE 1-ROW COVERFLOW CAROUSEL (< 640px)
    1 Hàng duy nhất dạng lướt ngang, focus tâm, scale 70% + blur
-   Zero Flexbox: 100% CSS Grid auto-flow column, snap-x
+   Zero Flexbox: 100% CSS Grid auto-flow column, snap-x proximity
    ======================================================== */
 @media (max-width: 639px) {
   .report-profiles {
     display: grid !important;
     grid-auto-flow: column !important;
-    grid-auto-columns: min(270px, 75vw) !important;
+    grid-auto-columns: min(220px, 60vw) !important;
     grid-template-columns: none !important;
     justify-content: start !important;
-    gap: 14px !important;
+    gap: 12px !important;
     overflow-x: auto !important;
-    scroll-snap-type: x mandatory !important;
+    scroll-snap-type: x proximity !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 16px calc(50vw - min(135px, 37.5vw)) 24px !important;
-    scroll-padding: 0 calc(50vw - min(135px, 37.5vw)) !important;
+    padding: 14px calc(50vw - min(110px, 30vw)) 22px !important;
+    scroll-padding: 0 calc(50vw - min(110px, 30vw)) !important;
     scrollbar-width: none !important;
+    touch-action: pan-x pan-y !important;
   }
 
   .report-profiles::-webkit-scrollbar {
@@ -774,12 +775,12 @@
 
   .report-profile {
     scroll-snap-align: center !important;
-    scroll-snap-stop: always !important;
     transform: scale(0.70) !important;
     filter: blur(2px) !important;
     opacity: 0.55 !important;
-    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease, opacity 320ms ease !important;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease, opacity 240ms ease !important;
     transform-origin: center center !important;
+    contain: layout style !important;
     will-change: transform, filter, opacity;
   }
 
@@ -792,14 +793,14 @@
   }
 
   .report-profile-surface {
-    min-height: 310px;
-    aspect-ratio: 0.62;
+    min-height: 290px !important;
+    aspect-ratio: 0.62 !important;
   }
 
   .report-profile-cta {
-    min-height: 44px;
-    padding: 0 16px;
-    font-size: 13px;
+    min-height: 40px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
   }
 }
 

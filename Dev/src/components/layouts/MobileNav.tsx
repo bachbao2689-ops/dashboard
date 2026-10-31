@@ -137,7 +137,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
             onClick={() => setIsDrawerOpen(true)}
             aria-label={lang === 'en' ? 'Open navigation menu' : 'Mở menu điều hướng'}
             aria-expanded={isDrawerOpen}
-            className="w-11 h-11 rounded-full grid place-items-center bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs shrink-0 active:scale-95"
+            className="w-11 h-11 rounded-full grid place-items-center bg-slate-100/90 dark:bg-[#0a192f] border border-transparent dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#0f1e36] transition-all cursor-pointer shadow-xs shrink-0 active:scale-95"
           >
             <Menu size={20} strokeWidth={2} />
           </button>
@@ -145,9 +145,9 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
           {/* 2. Middle: Integrated Search Input (Ref image1.png: Ask AI / Search pill) */}
           <form 
             onSubmit={handleSearchSubmit}
-            className="h-11 rounded-full bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 grid grid-cols-[auto_1fr_auto] items-center px-3 gap-2 min-w-0 transition-all focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50"
+            className="h-11 rounded-full bg-slate-100/90 dark:bg-[#0a192f] border border-slate-200/60 dark:border-slate-700/80 grid grid-cols-[auto_1fr_auto] items-center px-3 gap-2 min-w-0 transition-all focus-within:ring-1 focus-within:ring-[#002e6d]/40 focus-within:border-[#002e6d]/50 dark:focus-within:border-slate-600"
           >
-            <div className="w-6 h-6 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 grid place-items-center shrink-0">
+            <div className="w-6 h-6 rounded-full bg-slate-200/80 dark:bg-[#002e6d]/30 text-slate-600 dark:text-sky-300 grid place-items-center shrink-0">
               <Search size={13} strokeWidth={2.2} />
             </div>
             <input
@@ -180,7 +180,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
               "w-11 h-11 rounded-full grid place-items-center transition-all cursor-pointer shadow-xs shrink-0 active:scale-95",
               isActive
                 ? "bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] text-white shadow-md ring-2 ring-blue-400/40"
-                : "bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                : "bg-slate-100/90 dark:bg-[#0a192f] border border-transparent dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#0f1e36]"
             )}
           >
             <Layers size={20} strokeWidth={1.8} />

@@ -970,3 +970,19 @@ html.dark [contenteditable=""]:focus-visible {
   color: #ffffff !important;
 }
 
+
+/* Dark Mode: Mọi ô input, textarea, select và search ở trạng thái bình thường (kể cả chưa focus) không để nền xám đen/slate-800, mà đồng bộ tone xanh đậm #0a192f thương hiệu Phúc Sinh */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
+html.dark textarea,
+html.dark select,
+html.dark [contenteditable="true"],
+html.dark [contenteditable=""] {
+  background-color: #0a192f;
+  border-color: rgba(51, 65, 85, 0.85);
+  color: #ffffff;
+}
+
+html.dark select option {
+  background-color: #0a192f !important;
+  color: #ffffff !important;
+}
