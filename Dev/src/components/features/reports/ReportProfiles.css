@@ -5,11 +5,46 @@
 
 .report-profiles {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, clamp(185px, 14.5vw, 245px)));
-  justify-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
   align-items: start;
-  gap: clamp(12px, 1.3vw, 22px);
+  gap: clamp(12px, 1.2vw, 20px);
   padding: 8px 2px 18px;
+  width: 100%;
+}
+
+/* Tỉ lệ 4:3 (iPad ngang, màn hình 1024x768): 3 cột trải đều 100% */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .report-profiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Tỉ lệ 16:10 Laptop & 16:9 nhỏ (1280x800, 1366x768, 1440x900): 4 cột trải đều 100% */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .report-profiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Tỉ lệ 16:9 Full HD chuẩn & 16:10 lớn (1600x900, 1680x1050, 1920x1080): 5 cột trải đều 100% */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .report-profiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Tỉ lệ 16:9 & 16:10 chuẩn 2K (1920x1200, 2560x1440, 2560x1600): 6 cột trải đều 100% */
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .report-profiles {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Tỉ lệ 16:9 chuẩn 4K & Ultra-wide (>= 2560px): 7 cột hoặc tự động dàn đều kín bề ngang */
+@media (min-width: 2560px) {
+  .report-profiles {
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  }
 }
 
 /* Outer Card Container - Clean border with subtle soft shadow on hover */
@@ -41,7 +76,8 @@
   isolation: isolate;
   overflow: hidden;
   aspect-ratio: .62;
-  min-height: 310px;
+  min-height: 290px;
+  max-height: 375px;
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 28px;
   background: linear-gradient(180deg, #eef7fc 0%, #d5e9f7 100%);
@@ -284,9 +320,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(95%, clamp(920px, 68vw, 1280px));
-  height: clamp(390px, 48vh, 450px);
-  max-height: calc(100vh - 100px);
+  width: min(92%, 800px);
+  height: 388px;
+  max-height: calc(100vh - 80px);
   border-radius: 26px;
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   background: rgba(255, 255, 255, 0.98);
@@ -308,7 +344,7 @@
 
 .report-profile-modal-inner {
   display: grid;
-  grid-template-columns: clamp(210px, 14.5vw, 245px) minmax(0, 1fr);
+  grid-template-columns: 230px minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
   height: 100%;
@@ -337,7 +373,7 @@
 }
 
 .report-profile-modal-card-col {
-  width: clamp(210px, 14.5vw, 245px);
+  width: 230px;
   height: 100%;
   flex-shrink: 0;
   display: flex;
