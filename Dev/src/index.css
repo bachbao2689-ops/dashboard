@@ -919,3 +919,54 @@ html.dark .hover-row-effect.is-magnetic-active {
     align-content: center !important;
   }
 }
+
+/* ==========================================================================
+   GLOBAL INPUT FOCUS STANDARDS (LIGHT & DARK MODE TOÀN DASHBOARD)
+   ========================================================================== */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable=""] {
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible,
+[contenteditable="true"]:focus,
+[contenteditable="true"]:focus-visible,
+[contenteditable=""]:focus,
+[contenteditable=""]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-offset-shadow: none !important;
+  border-color: rgba(0, 46, 109, 0.35) !important;
+  background-color: #f8faff !important;
+  color: #0f172a !important;
+}
+
+/* Dark Mode: Nền xanh đậm Phúc Sinh #0a192f, viền tối tinh tế, không ring xanh chói */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):focus,
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):focus-visible,
+html.dark textarea:focus,
+html.dark textarea:focus-visible,
+html.dark select:focus,
+html.dark select:focus-visible,
+html.dark [contenteditable="true"]:focus,
+html.dark [contenteditable="true"]:focus-visible,
+html.dark [contenteditable=""]:focus,
+html.dark [contenteditable=""]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-offset-shadow: none !important;
+  border-color: rgba(51, 65, 85, 0.85) !important;
+  background-color: #0a192f !important;
+  color: #ffffff !important;
+}
+

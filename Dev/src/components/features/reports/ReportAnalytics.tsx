@@ -49,15 +49,25 @@ const staffTrackCount = (tasks: any[], kind: 'project' | 'campaign') =>
   new Set(tasks.filter(task => staffTaskTrack(task) === kind).map(task => String(task[kind]?.id || task[`${kind}_id`]))).size;
 
 /** Portrait/glass composition from the Figma “Right” reference; report data stays live. */
-export function ReportProfileCard({ member, lang, expanded = false, onDetails }: {
+export function ReportProfileCard({
+  member,
+  lang,
+  expanded = false,
+  isCenter = false,
+  isCoverflowActive = false,
+  onDetails,
+}: {
   member: StaffReportMember;
   lang: 'vi' | 'en';
   expanded?: boolean;
+  isCenter?: boolean;
+  isCoverflowActive?: boolean;
   onDetails: () => void;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
+  const isCoverflow = isCenter || isCoverflowActive;
   const doneTooltip = lang === 'en'
     ? `Completed: ${member.done} tasks (${member.completionPct}%)`
     : `Hoàn thành: ${member.done} việc (${member.completionPct}%)`;
@@ -76,7 +86,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
 
   return (
     <article
-      className={`report-profile${hasImage ? '' : ' report-profile--initials'}`}
+      data-staff-id={member.id}
+      className={`report-profile${hasImage ? '' : ' report-profile--initials'}${isCoverflow ? ' report-profile--coverflow-active' : ''}`}
       aria-label={member.name}
     >
         <div className="report-profile-surface">
@@ -209,7 +220,57 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
+  const [centeredStaffId, setCenteredStaffId] = useState<string | null>(null);
+  const profileScrollRef = useRef<HTMLDivElement>(null);
+  const [mobileActiveBtn, setMobileActiveBtn] = useState<'dept' | 'calendar' | 'export' | null>(null);
+  const headerToolbarRef = useRef<HTMLDivElement>(null);
+
+  // Collapse mobile active toolbar button on outside click
+  useEffect(() => {
+    const handleToolbarOutside = (e: MouseEvent | TouchEvent) => {
+      if (headerToolbarRef.current && !headerToolbarRef.current.contains(e.target as Node)) {
+        if (typeof window !== 'undefined' && window.innerWidth < 640) {
+          setMobileActiveBtn(null);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleToolbarOutside);
+    document.addEventListener('touchstart', handleToolbarOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleToolbarOutside);
+      document.removeEventListener('touchstart', handleToolbarOutside);
+    };
+  }, []);
+
+  // Track centered staff profile card on mobile 1-row carousel coverflow
+  const handleProfileScroll = useCallback(() => {
+    const container = profileScrollRef.current;
+    if (!container || typeof window === 'undefined' || window.innerWidth >= 640) return;
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+    const cards = container.querySelectorAll<HTMLElement>('[data-staff-id]');
+    let closestId: string | null = null;
+    let minDiff = Infinity;
+    cards.forEach((card) => {
+      const cardCenter = card.offsetLeft + card.clientWidth / 2;
+      const diff = Math.abs(cardCenter - containerCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestId = card.getAttribute('data-staff-id');
+      }
+    });
+    if (closestId && closestId !== centeredStaffId) {
+      setCenteredStaffId(closestId);
+    }
+  }, [centeredStaffId]);
+
+  useEffect(() => {
+    if (staffMembers.length > 0 && !centeredStaffId) {
+      setCenteredStaffId(staffMembers[0].id);
+    }
+  }, [staffMembers, centeredStaffId]);
   const [showBurndownInfo, setShowBurndownInfo] = useState(false);
+
+
   const isDark = useUiStore((state) => state.theme) === 'dark';
   const toYmd = (d: Date) =>
     [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
@@ -1001,315 +1062,378 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-flow-col sm:auto-cols-max items-stretch sm:items-center gap-2.5 sm:gap-3">
-              {/* Department Selector */}
+            <div ref={headerToolbarRef} className="grid grid-flow-col auto-cols-max sm:auto-cols-max items-center gap-2 sm:gap-3">
+              {/* Department Selector: Mobile compact icon or expanded selector */}
               {canViewAllDepartments ? (
-                <div className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm w-full sm:w-auto ${standalone ? 'opacity-80 pointer-events-none' : ''}`}>
-                  <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                  <select
-                    value={departmentFilter}
-                    disabled={standalone}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setMobileActiveBtn(mobileActiveBtn === 'dept' ? null : 'dept')}
                     aria-label="Lọc theo phòng ban"
-                    className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1 py-2.5 w-full disabled:cursor-not-allowed"
+                    className={`sm:hidden ${mobileActiveBtn === 'dept' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
                   >
-                    <option value="all">{t('reports.viz.allCompany')}</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <Building2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  </button>
+
+                  <div
+                    className={`${
+                      mobileActiveBtn === 'dept' ? 'grid' : 'hidden sm:grid'
+                    } grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-sm transition-all duration-200 animate-in fade-in ${
+                      standalone ? 'opacity-80 pointer-events-none' : ''
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                    <select
+                      value={departmentFilter}
+                      disabled={standalone}
+                      onChange={(e) => {
+                        setDepartmentFilter(e.target.value);
+                        setMobileActiveBtn(null);
+                      }}
+                      aria-label="Lọc theo phòng ban"
+                      className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1 py-2.5 w-full disabled:cursor-not-allowed"
+                    >
+                      <option value="all">{t('reports.viz.allCompany')}</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               ) : (
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 w-full sm:w-auto">
+                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 min-h-[44px] rounded-[8px] bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>{selectedDepartmentName}</span>
+                  <span className="hidden sm:inline">{selectedDepartmentName}</span>
                 </div>
               )}
 
-              {/* Calendar Navigation Group: [ < | 📅 label ⌄ | > ] */}
-              <div className={`grid grid-cols-[44px_1fr_44px] sm:inline-grid sm:grid-flow-col sm:auto-cols-max items-stretch rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm min-h-[44px] w-full sm:w-auto ${standalone ? 'opacity-80 pointer-events-none' : ''}`}>
+              {/* Calendar Navigation Group: Mobile compact icon or expanded navigation */}
+              <>
                 <button
                   type="button"
-                  disabled={standalone}
-                  aria-label="Khoảng trước"
-                  onClick={() => shiftPeriod(-1)}
-                  className="grid place-items-center rounded-l-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
-                  <button
-                    type="button"
-                    disabled={standalone}
-                    onClick={() => {
-                      if (standalone) return;
+                  onClick={() => {
+                    const next = mobileActiveBtn === 'calendar' ? null : 'calendar';
+                    setMobileActiveBtn(next);
+                    if (next === 'calendar') {
                       const cur = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
                       setPickerMonth(cur.getMonth());
                       setPickerYear(cur.getFullYear());
-                      setRangeOpen((prev) => !prev);
-                    }}
-                    aria-expanded={rangeOpen}
-                    className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-h-[44px] min-w-[108px] w-full disabled:cursor-not-allowed"
+                      setRangeOpen(true);
+                    }
+                  }}
+                  aria-label="Lịch và kỳ báo cáo"
+                  className={`sm:hidden ${mobileActiveBtn === 'calendar' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
+                >
+                  <CalendarDays className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                </button>
+
+                <div
+                  className={`${
+                    mobileActiveBtn === 'calendar' ? 'grid' : 'hidden sm:grid'
+                  } grid-cols-[44px_1fr_44px] sm:inline-grid sm:grid-flow-col sm:auto-cols-max items-stretch rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm min-h-[44px] transition-all duration-200 animate-in fade-in ${
+                    standalone ? 'opacity-80 pointer-events-none' : ''
+                  }`}
+                >
+                  <button
+                    type="button"
+                    disabled={standalone}
+                    aria-label="Khoảng trước"
+                    onClick={() => shiftPeriod(-1)}
+                    className="grid place-items-center rounded-l-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{selectedRangeLabel}</span>
-                    {!standalone && (
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
-                    )}
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
 
-                  {/* 2-Column Calendar Popover */}
-                  {rangeOpen && (
-                    <FilterPopover
-                      anchorRef={rangeMenuRef}
-                      panelRef={rangePanelRef}
-                      align="right"
-                      onClose={() => {
-                        setRangeOpen(false);
-                        setDragStart(null);
-                        setDragHover(null);
+                  <div ref={rangeMenuRef} className="relative border-x border-gray-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      disabled={standalone}
+                      onClick={() => {
+                        if (standalone) return;
+                        const cur = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
+                        setPickerMonth(cur.getMonth());
+                        setPickerYear(cur.getFullYear());
+                        setRangeOpen((prev) => !prev);
                       }}
-                      className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-[8px] border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
+                      aria-expanded={rangeOpen}
+                      className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer min-h-[44px] min-w-[108px] w-full disabled:cursor-not-allowed"
                     >
-                      {/* Left: Calendar Month Grid with Drag Range */}
-                      <div className="p-3">
-                        <div className="mb-2 grid grid-cols-[auto_1fr_auto] items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              let m = pickerMonth - 1;
-                              let y = pickerYear;
-                              if (m < 0) {
-                                m = 11;
-                                y--;
-                              }
-                              setPickerMonth(m);
-                              setPickerYear(y);
-                            }}
-                            className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                            aria-label="Tháng trước"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-bold text-center text-gray-900 dark:!text-white">
-                            {lang === 'vi'
-                              ? `Tháng ${pickerMonth + 1}, ${pickerYear}`
-                              : `${new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long' })}, ${pickerYear}`}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              let m = pickerMonth + 1;
-                              let y = pickerYear;
-                              if (m > 11) {
-                                m = 0;
-                                y++;
-                              }
-                              setPickerMonth(m);
-                              setPickerYear(y);
-                            }}
-                            className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                            aria-label="Tháng sau"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                      <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{selectedRangeLabel}</span>
+                      {!standalone && (
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${rangeOpen ? 'rotate-180' : ''}`} />
+                      )}
+                    </button>
 
-                        {/* Weekday headers */}
-                        <div className="grid grid-cols-7 gap-1 text-center">
-                          {(lang === 'vi'
-                            ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-                            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                          ).map((d) => (
-                            <div key={d} className="text-[10px] font-semibold text-gray-400 py-1">
-                              {d}
-                            </div>
-                          ))}
-                          {(() => {
-                            const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
-                            const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
-                            const offset = (firstDay + 6) % 7;
-                            const days = [];
-                            for (let i = 0; i < offset; i++) {
-                              days.push(<div key={`e-${i}`} />);
-                            }
-
-                            const curDateObj = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
-                            const activeStart =
-                              dragStart ||
-                              (timeRange === 'custom' && customStart
-                                ? new Date(`${customStart}T12:00:00Z`)
-                                : curDateObj);
-                            const activeEnd = dragStart
-                              ? dragHover
-                              : timeRange === 'custom' && customEnd
-                              ? new Date(`${customEnd}T12:00:00Z`)
-                              : null;
-                            const s =
-                              activeStart && activeEnd
-                                ? activeStart < activeEnd
-                                  ? activeStart
-                                  : activeEnd
-                                : activeStart;
-                            const e =
-                              activeStart && activeEnd
-                                ? activeStart > activeEnd
-                                  ? activeStart
-                                  : activeEnd
-                                : activeEnd;
-                            const sStr = s ? taskDay(s.toISOString()) : null;
-                            const eStr = e ? taskDay(e.toISOString()) : null;
-
-                            for (let i = 1; i <= daysInMonth; i++) {
-                              const date = new Date(pickerYear, pickerMonth, i, 12);
-                              const dateStr = taskDay(date.toISOString());
-
-                              let isSelected = false;
-                              let isRange = false;
-
-                              if (timeRange === 'custom' || dragStart) {
-                                if (sStr === dateStr || eStr === dateStr) isSelected = true;
-                                if (sStr && eStr && dateStr > sStr && dateStr < eStr) isRange = true;
-                              } else if (timeRange === 'today') {
-                                isSelected =
-                                  curDateObj.getDate() === i &&
-                                  curDateObj.getMonth() === pickerMonth &&
-                                  curDateObj.getFullYear() === pickerYear;
-                              } else {
-                                const { start, today: periodEnd } = periodMeta;
-                                if (dateStr === start || dateStr === periodEnd) isSelected = true;
-                                if (start && periodEnd && dateStr > start && dateStr < periodEnd) isRange = true;
-                              }
-
-                              days.push(
-                                <div
-                                  key={i}
-                                  className={`relative ${isRange ? 'bg-[#002e6d]/10 dark:bg-[#002e6d]/30' : ''} ${
-                                    isSelected && eStr && dateStr === sStr && sStr !== eStr
-                                      ? 'rounded-l-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
-                                      : ''
-                                  } ${
-                                    isSelected && sStr && dateStr === eStr && sStr !== eStr
-                                      ? 'rounded-r-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
-                                      : ''
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    onPointerEnter={() => {
-                                      if (dragStart) setDragHover(date);
-                                    }}
-                                    onClick={() => {
-                                      if (!dragStart) {
-                                        setDragStart(date);
-                                        setDragHover(date);
-                                        setTimeRange('custom');
-                                      } else {
-                                        let start = dragStart;
-                                        let end = date;
-                                        if (end < start) {
-                                          start = date;
-                                          end = dragStart;
-                                        }
-                                        const startIso = taskDay(start.toISOString());
-                                        const endIso = taskDay(end.toISOString());
-                                        setCustomDateRange(startIso, endIso);
-                                        setCursorDate(startIso);
-                                        setDragStart(null);
-                                        setDragHover(null);
-                                      }
-                                    }}
-                                    className={`relative z-10 h-7 w-full rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-[#002e6d] text-white shadow-md font-bold'
-                                        : 'text-gray-700 hover:bg-[#002e6d]/10 dark:text-gray-200 dark:hover:bg-slate-700'
-                                    }`}
-                                  >
-                                    {i}
-                                  </button>
-                                </div>
-                              );
-                            }
-                            return days;
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Right: Presets */}
-                      <div className="grid grid-rows-[1fr_auto] border-t sm:border-t-0 sm:border-l border-gray-100 bg-gray-50/70 dark:border-slate-700 dark:bg-slate-900/70">
-                        <div className="p-2 grid grid-cols-1 gap-1 overflow-y-auto content-start">
-                          {presetRanges.map((option) => (
+                    {/* 2-Column Calendar Popover */}
+                    {rangeOpen && (
+                      <FilterPopover
+                        anchorRef={rangeMenuRef}
+                        panelRef={rangePanelRef}
+                        align="right"
+                        onClose={() => {
+                          setRangeOpen(false);
+                          setDragStart(null);
+                          setDragHover(null);
+                          setMobileActiveBtn(null);
+                        }}
+                        className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-[8px] border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
+                      >
+                        {/* Left: Calendar Month Grid with Drag Range */}
+                        <div className="p-3">
+                          <div className="mb-2 grid grid-cols-[auto_1fr_auto] items-center gap-2">
                             <button
-                              key={option.id}
                               type="button"
                               onClick={() => {
-                                setTimeRange(option.id);
-                                setCursorDate(defaultToday);
-                                setDragStart(null);
-                                setDragHover(null);
-                              }}
-                              className={`grid grid-flow-col justify-start items-center w-full rounded-[6px] px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
-                                timeRange === option.id
-                                  ? 'bg-white text-[#002e6d] shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                                  : 'text-gray-600 hover:bg-gray-200/70 dark:text-gray-400 dark:hover:bg-slate-700/60'
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="p-2 border-t border-gray-200 dark:border-slate-700">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (dragStart && dragHover) {
-                                let start = dragStart;
-                                let end = dragHover;
-                                if (end < start) {
-                                  start = dragHover;
-                                  end = dragStart;
+                                let m = pickerMonth - 1;
+                                let y = pickerYear;
+                                if (m < 0) {
+                                  m = 11;
+                                  y--;
                                 }
-                                const startIso = taskDay(start.toISOString());
-                                const endIso = taskDay(end.toISOString());
-                                setCustomDateRange(startIso, endIso);
-                                setCursorDate(startIso);
-                                setDragStart(null);
-                                setDragHover(null);
-                              }
-                              setRangeOpen(false);
-                            }}
-                            className="w-full rounded-[6px] bg-[#002e6d] hover:bg-[#002250] py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
-                          >
-                            {t('profile.apply')}
-                          </button>
-                        </div>
-                      </div>
-                    </FilterPopover>
-                  )}
-                </div>
+                                setPickerMonth(m);
+                                setPickerYear(y);
+                              }}
+                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                              aria-label="Tháng trước"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-xs font-bold text-center text-gray-900 dark:!text-white">
+                              {lang === 'vi'
+                                ? `Tháng ${pickerMonth + 1}, ${pickerYear}`
+                                : `${new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long' })}, ${pickerYear}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                let m = pickerMonth + 1;
+                                let y = pickerYear;
+                                if (m > 11) {
+                                  m = 0;
+                                  y++;
+                                }
+                                setPickerMonth(m);
+                                setPickerYear(y);
+                              }}
+                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                              aria-label="Tháng sau"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
 
-                <button
-                  type="button"
-                  disabled={standalone}
-                  aria-label="Khoảng sau"
-                  onClick={() => shiftPeriod(1)}
-                  className="grid place-items-center rounded-r-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+                          {/* Weekday headers */}
+                          <div className="grid grid-cols-7 gap-1 text-center">
+                            {(lang === 'vi'
+                              ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+                              : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                            ).map((d) => (
+                              <div key={d} className="text-[10px] font-semibold text-gray-400 py-1">
+                                {d}
+                              </div>
+                            ))}
+                            {(() => {
+                              const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                              const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+                              const offset = (firstDay + 6) % 7;
+                              const days = [];
+                              for (let i = 0; i < offset; i++) {
+                                days.push(<div key={`e-${i}`} />);
+                              }
+
+                              const curDateObj = new Date(`${cursorDate || defaultToday}T12:00:00Z`);
+                              const activeStart =
+                                dragStart ||
+                                (timeRange === 'custom' && customStart
+                                  ? new Date(`${customStart}T12:00:00Z`)
+                                  : curDateObj);
+                              const activeEnd = dragStart
+                                ? dragHover
+                                : timeRange === 'custom' && customEnd
+                                ? new Date(`${customEnd}T12:00:00Z`)
+                                : null;
+                              const s =
+                                activeStart && activeEnd
+                                  ? activeStart < activeEnd
+                                    ? activeStart
+                                    : activeEnd
+                                  : activeStart;
+                              const e =
+                                activeStart && activeEnd
+                                  ? activeStart > activeEnd
+                                    ? activeStart
+                                    : activeEnd
+                                  : activeEnd;
+                              const sStr = s ? taskDay(s.toISOString()) : null;
+                              const eStr = e ? taskDay(e.toISOString()) : null;
+
+                              for (let i = 1; i <= daysInMonth; i++) {
+                                const date = new Date(pickerYear, pickerMonth, i, 12);
+                                const dateStr = taskDay(date.toISOString());
+
+                                let isSelected = false;
+                                let isRange = false;
+
+                                if (timeRange === 'custom' || dragStart) {
+                                  if (sStr === dateStr || eStr === dateStr) isSelected = true;
+                                  if (sStr && eStr && dateStr > sStr && dateStr < eStr) isRange = true;
+                                } else if (timeRange === 'today') {
+                                  isSelected =
+                                    curDateObj.getDate() === i &&
+                                    curDateObj.getMonth() === pickerMonth &&
+                                    curDateObj.getFullYear() === pickerYear;
+                                } else {
+                                  const { start, today: periodEnd } = periodMeta;
+                                  if (dateStr === start || dateStr === periodEnd) isSelected = true;
+                                  if (start && periodEnd && dateStr > start && dateStr < periodEnd) isRange = true;
+                                }
+
+                                days.push(
+                                  <div
+                                    key={i}
+                                    className={`relative ${isRange ? 'bg-[#002e6d]/10 dark:bg-[#002e6d]/30' : ''} ${
+                                      isSelected && eStr && dateStr === sStr && sStr !== eStr
+                                        ? 'rounded-l-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
+                                        : ''
+                                    } ${
+                                      isSelected && sStr && dateStr === eStr && sStr !== eStr
+                                        ? 'rounded-r-full bg-[#002e6d]/10 dark:bg-[#002e6d]/30'
+                                        : ''
+                                    }`}
+                                  >
+                                    <button
+                                      type="button"
+                                      onPointerEnter={() => {
+                                        if (dragStart) setDragHover(date);
+                                      }}
+                                      onClick={() => {
+                                        if (!dragStart) {
+                                          setDragStart(date);
+                                          setDragHover(date);
+                                          setTimeRange('custom');
+                                        } else {
+                                          let start = dragStart;
+                                          let end = date;
+                                          if (end < start) {
+                                            start = date;
+                                            end = dragStart;
+                                          }
+                                          const startIso = taskDay(start.toISOString());
+                                          const endIso = taskDay(end.toISOString());
+                                          setCustomDateRange(startIso, endIso);
+                                          setCursorDate(startIso);
+                                          setDragStart(null);
+                                          setDragHover(null);
+                                        }
+                                      }}
+                                      className={`relative z-10 h-7 w-full rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#002e6d] text-white shadow-md font-bold'
+                                          : 'text-gray-700 hover:bg-[#002e6d]/10 dark:text-gray-200 dark:hover:bg-slate-700'
+                                      }`}
+                                    >
+                                      {i}
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              return days;
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Right: Presets */}
+                        <div className="grid grid-rows-[1fr_auto] border-t sm:border-t-0 sm:border-l border-gray-100 bg-gray-50/70 dark:border-slate-700 dark:bg-slate-900/70">
+                          <div className="p-2 grid grid-cols-1 gap-1 overflow-y-auto content-start">
+                            {presetRanges.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => {
+                                  setTimeRange(option.id);
+                                  setCursorDate(defaultToday);
+                                  setDragStart(null);
+                                  setDragHover(null);
+                                }}
+                                className={`grid grid-flow-col justify-start items-center w-full rounded-[6px] px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
+                                  timeRange === option.id
+                                    ? 'bg-white text-[#002e6d] shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                                    : 'text-gray-600 hover:bg-gray-200/70 dark:text-gray-400 dark:hover:bg-slate-700/60'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="p-2 border-t border-gray-200 dark:border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (dragStart && dragHover) {
+                                  let start = dragStart;
+                                  let end = dragHover;
+                                  if (end < start) {
+                                    start = dragHover;
+                                    end = dragStart;
+                                  }
+                                  const startIso = taskDay(start.toISOString());
+                                  const endIso = taskDay(end.toISOString());
+                                  setCustomDateRange(startIso, endIso);
+                                  setCursorDate(startIso);
+                                  setDragStart(null);
+                                  setDragHover(null);
+                                }
+                                setRangeOpen(false);
+                                setMobileActiveBtn(null);
+                              }}
+                              className="w-full rounded-[6px] bg-[#002e6d] hover:bg-[#002250] py-2 text-center text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer"
+                            >
+                              {t('profile.apply')}
+                            </button>
+                          </div>
+                        </div>
+                      </FilterPopover>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={standalone}
+                    aria-label="Khoảng sau"
+                    onClick={() => shiftPeriod(1)}
+                    className="grid place-items-center rounded-r-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
 
               {/* Combined Report Actions Dropdown Menu (Slide 1 & Slide 4) */}
-              <div ref={actionMenuRef} className="relative w-full sm:w-auto">
+              <div ref={actionMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = mobileActiveBtn === 'export' ? null : 'export';
+                    setMobileActiveBtn(next);
+                    setActionMenuOpen(next === 'export');
+                  }}
+                  aria-label="Thao tác xuất báo cáo"
+                  className={`sm:hidden ${mobileActiveBtn === 'export' ? 'hidden' : 'grid'} place-items-center w-10 h-10 min-h-[44px] min-w-[44px] rounded-[8px] border transition-all cursor-pointer border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60`}
+                >
+                  <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setActionMenuOpen((prev) => !prev)}
                   aria-expanded={actionMenuOpen}
                   aria-haspopup="true"
-                  className="grid grid-flow-col auto-cols-max items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-colors cursor-pointer min-h-[44px] w-full sm:w-auto"
+                  className={`${
+                    mobileActiveBtn === 'export' ? 'grid' : 'hidden sm:grid'
+                  } grid-flow-col auto-cols-max items-center justify-center sm:justify-start gap-1.5 px-3.5 py-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-all duration-200 cursor-pointer min-h-[44px] animate-in fade-in`}
                 >
                   <Download className="w-4 h-4 text-slate-400" />
                   <span>{t('reports.viz.reportActions')}</span>
@@ -1321,7 +1445,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     anchorRef={actionMenuRef}
                     panelRef={actionPanelRef}
                     align="right"
-                    onClose={() => setActionMenuOpen(false)}
+                    onClose={() => {
+                      setActionMenuOpen(false);
+                      setMobileActiveBtn(null);
+                    }}
                     className="z-50 w-56 rounded-[8px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <button
@@ -1386,36 +1513,45 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         <div className="report-print-page-1 space-y-6">
         {/* TẦNG 1: 5 Team Performance Cards (Slide 3) */}
-        <section aria-label="Team Performance Cards" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
+        <section aria-label="Team Performance Cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
           {/* Card 1: Tổng Task trong filter & Hoàn thành */}
           <div
             data-expandable-box="card1"
-            className={`min-h-[150px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
-              activeExpandedId === 'card1' ? 'z-40' : 'z-10'
+            onClick={() => toggleExpanded('card1')}
+            className={`min-h-[58px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-2.5 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer sm:cursor-default ${
+              activeExpandedId === 'card1' ? 'z-40 ring-1 ring-emerald-500/40' : 'z-10'
             }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown */}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+            {/* Header Row: Icon, Title & Mobile Inline Summary */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-1 sm:mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 grid place-items-center shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
-                    {t('reports.viz.card1Title')}
-                  </h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:block">
+                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                      {t('reports.viz.card1Title')}
+                    </h3>
+                    <span className="sm:hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      {teamCards.completedTasks}/{teamCards.totalTasks} ({teamCards.completionRate}%)
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card1Sub', { period: periodLabelVi })}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right with state border */}
+              {/* Chevron Button: Hidden on mobile, desktop only */}
               <button
                 type="button"
-                onClick={(e) => toggleExpanded('card1', e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded('card1', e);
+                }}
                 aria-label={activeExpandedId === 'card1' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                className={`hidden sm:grid w-6 h-6 rounded-[8px] place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card1'
                     ? 'border border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/90 dark:bg-emerald-950/60'
                     : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1425,9 +1561,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            {/* Performance KPI & Visualize Bar */}
             <div className="grid grid-cols-1 gap-1">
-              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
                     {teamCards.completedTasks}
@@ -1441,14 +1577,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </span>
               </div>
 
-              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+              {/* Progress Bar: Always visible on mobile and desktop */}
+              <div className="w-full h-1.5 sm:h-2 my-0.5 sm:my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                   style={{ width: `${Math.min(100, teamCards.completionRate)}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
                 <span>{t('reports.viz.doneCount', { count: teamCards.completedTasks })}</span>
                 <span>{t('reports.viz.remainingCount', { count: Math.max(0, teamCards.totalTasks - teamCards.completedTasks) })}</span>
               </div>
@@ -1458,6 +1595,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card1Title')}
+              onClick={(e) => e.stopPropagation()}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-emerald-400/80 dark:border-emerald-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card1'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
@@ -1520,32 +1658,41 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {/* Card 2: Task tồn đọng (reported from Tab Profile) */}
           <div
             data-expandable-box="card2"
-            className={`min-h-[150px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
-              activeExpandedId === 'card2' ? 'z-40' : 'z-10'
+            onClick={() => toggleExpanded('card2')}
+            className={`min-h-[58px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-2.5 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer sm:cursor-default ${
+              activeExpandedId === 'card2' ? 'z-40 ring-1 ring-amber-500/40' : 'z-10'
             }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown */}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+            {/* Header Row: Icon, Title & Mobile Inline Summary */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-1 sm:mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-[8px] bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center">
-                  <AlertTriangle className="w-4 h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[8px] bg-amber-500/10 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
+                  <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
-                    {t('reports.viz.card2Title')}
-                  </h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:block">
+                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                      {t('reports.viz.card2Title')}
+                    </h3>
+                    <span className="sm:hidden text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                      {teamCards.backlogCount} {t('reports.viz.backlogUnit')}
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card2Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right with state border */}
+              {/* Chevron Button: Hidden on mobile, desktop only */}
               <button
                 type="button"
-                onClick={(e) => toggleExpanded('card2', e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded('card2', e);
+                }}
                 aria-label={activeExpandedId === 'card2' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                className={`hidden sm:grid w-6 h-6 rounded-[8px] place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card2'
                     ? 'border border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50/90 dark:bg-amber-950/60'
                     : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1555,9 +1702,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            {/* Performance KPI & Visualize Bar */}
             <div className="grid grid-cols-1 gap-1">
-              <div className="grid grid-cols-1 items-baseline">
+              <div className="hidden sm:grid grid-cols-1 items-baseline">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
                     {teamCards.backlogCount}
@@ -1568,8 +1715,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
               </div>
 
+              {/* Progress Bar: Always visible on mobile and desktop */}
               <div
-                className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
+                className="w-full h-1.5 sm:h-2 my-0.5 sm:my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
                 style={{
                   gridTemplateColumns: `${Math.max(teamCards.highSeverityBacklogCount, 0)}fr ${Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount)}fr`,
                 }}
@@ -1588,7 +1736,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 )}
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
                 <span>{t('reports.viz.highPriorityCount', { count: teamCards.highSeverityBacklogCount })}</span>
                 <span>{t('reports.viz.mediumPriorityCount', { count: Math.max(0, teamCards.backlogCount - teamCards.highSeverityBacklogCount) })}</span>
               </div>
@@ -1598,6 +1746,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card2Title')}
+              onClick={(e) => e.stopPropagation()}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-amber-400/80 dark:border-amber-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card2'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
@@ -1651,32 +1800,41 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {/* Card 3: Project & Campaign Team tham gia */}
           <div
             data-expandable-box="card3"
-            className={`min-h-[150px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
-              activeExpandedId === 'card3' ? 'z-40' : 'z-10'
+            onClick={() => toggleExpanded('card3')}
+            className={`min-h-[58px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-2.5 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer sm:cursor-default ${
+              activeExpandedId === 'card3' ? 'z-40 ring-1 ring-violet-500/40' : 'z-10'
             }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown */}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+            {/* Header Row: Icon, Title & Mobile Inline Summary */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-1 sm:mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center">
-                  <Layers className="w-4 h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
+                  <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
-                    {t('reports.viz.card3Title')}
-                  </h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:block">
+                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                      {t('reports.viz.card3Title')}
+                    </h3>
+                    <span className="sm:hidden text-[11px] font-bold text-[#093570] dark:text-blue-400">
+                      {teamCards.totalTracks} · {teamCards.avgTrackProgress}%
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card3Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right with state border */}
+              {/* Chevron Button: Hidden on mobile, desktop only */}
               <button
                 type="button"
-                onClick={(e) => toggleExpanded('card3', e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded('card3', e);
+                }}
                 aria-label={activeExpandedId === 'card3' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                className={`hidden sm:grid w-6 h-6 rounded-[8px] place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card3'
                     ? 'border border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50/90 dark:bg-violet-950/60'
                     : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1686,9 +1844,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            {/* Performance KPI & Visualize Bar */}
             <div className="grid grid-cols-1 gap-1">
-              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
                     {teamCards.totalTracks}
@@ -1702,14 +1860,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </span>
               </div>
 
-              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+              {/* Progress Bar: Always visible on mobile and desktop */}
+              <div className="w-full h-1.5 sm:h-2 my-0.5 sm:my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#093570] to-[#2a78d6] transition-all duration-500"
                   style={{ width: `${Math.min(100, teamCards.avgTrackProgress)}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
                 <span>{t('reports.viz.avgProgress')}</span>
                 <span>
                   {teamCards.tracksAtRiskCount > 0 ? (
@@ -1725,6 +1884,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card3Title')}
+              onClick={(e) => e.stopPropagation()}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card3'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
@@ -1767,32 +1927,41 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {/* Card 4: Tiếp tục đang làm (In Progress & Active) */}
           <div
             data-expandable-box="card4"
-            className={`min-h-[150px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors ${
-              activeExpandedId === 'card4' ? 'z-40' : 'z-10'
+            onClick={() => toggleExpanded('card4')}
+            className={`min-h-[58px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-2.5 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer sm:cursor-default ${
+              activeExpandedId === 'card4' ? 'z-40 ring-1 ring-blue-500/40' : 'z-10'
             }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown */}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+            {/* Header Row: Icon, Title & Mobile Inline Summary */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-1 sm:mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center">
-                  <Clock className="w-4 h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[8px] bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
-                    {t('reports.viz.card4Title')}
-                  </h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:block">
+                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                      {t('reports.viz.card4Title')}
+                    </h3>
+                    <span className="sm:hidden text-[11px] font-bold text-[#2a78d6] dark:text-blue-400">
+                      {teamCards.inProgressTasks} {t('reports.viz.inProgressUnit')}
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card4Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right with state border */}
+              {/* Chevron Button: Hidden on mobile, desktop only */}
               <button
                 type="button"
-                onClick={(e) => toggleExpanded('card4', e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded('card4', e);
+                }}
                 aria-label={activeExpandedId === 'card4' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                className={`hidden sm:grid w-6 h-6 rounded-[8px] place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card4'
                     ? 'border border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/90 dark:bg-blue-950/60'
                     : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1802,9 +1971,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               </button>
             </div>
 
-            {/* Performance KPI & Visualize Bar (Stays on background) */}
+            {/* Performance KPI & Visualize Bar */}
             <div className="grid grid-cols-1 gap-1">
-              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-[#2a78d6] dark:text-blue-400">
                     {teamCards.inProgressTasks}
@@ -1818,8 +1987,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </span>
               </div>
 
+              {/* Progress Bar: Always visible on mobile and desktop */}
               <div
-                className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
+                className="w-full h-1.5 sm:h-2 my-0.5 sm:my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden grid"
                 style={{
                   gridTemplateColumns: `${Math.max(teamCards.inProgressTasks, 0)}fr ${Math.max(teamCards.todoTasks, 0)}fr ${Math.max(teamCards.overdueTasks, 0)}fr`,
                 }}
@@ -1835,7 +2005,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 )}
               </div>
 
-              <div className="grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-center text-[11px] text-gray-500 dark:text-gray-400">
                 <span>{t('reports.viz.todoWaiting', { count: teamCards.todoTasks })}</span>
                 <span className={teamCards.overdueTasks > 0 ? 'text-rose-600 dark:text-rose-400 font-semibold' : ''}>
                   {t('reports.viz.overdueCount', { count: teamCards.overdueTasks })}
@@ -1847,6 +2017,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card4Title')}
+              onClick={(e) => e.stopPropagation()}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-blue-400/80 dark:border-blue-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card4'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[395px] p-2.5 pointer-events-auto visible'
@@ -1922,32 +2093,41 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
           {/* Card 5: Sản lượng hình ảnh / file (Deliverables Output - Slide 3) */}
           <div
             data-expandable-box="card5"
-            className={`min-h-[150px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors col-span-2 sm:col-span-1 lg:col-span-1 xl:col-span-1 ${
-              activeExpandedId === 'card5' ? 'z-40' : 'z-10'
+            onClick={() => toggleExpanded('card5')}
+            className={`min-h-[58px] sm:min-h-[160px] relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-2.5 sm:p-3.5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors col-span-1 cursor-pointer sm:cursor-default ${
+              activeExpandedId === 'card5' ? 'z-40 ring-1 ring-violet-500/40' : 'z-10'
             }`}
           >
-            {/* Header Row: Top-Right Chevron Dropdown */}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-2">
+            {/* Header Row: Icon, Title & Mobile Inline Summary */}
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-1 sm:mb-2">
               <div className="grid grid-cols-[auto_1fr] items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center">
-                  <ImagePlus className="w-4 h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-[8px] bg-violet-500/10 text-violet-600 dark:text-violet-400 grid place-items-center shrink-0">
+                  <ImagePlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="grid grid-cols-1 min-w-0">
-                  <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
-                    {t('reports.viz.card5Title')}
-                  </h3>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:block">
+                    <h3 className="text-[11px] font-bold uppercase tracking-tight text-gray-800 dark:text-gray-100 leading-tight whitespace-nowrap truncate">
+                      {t('reports.viz.card5Title')}
+                    </h3>
+                    <span className="sm:hidden text-[11px] font-bold text-violet-600 dark:text-violet-400">
+                      {teamCards.completedDeliverables}/{teamCards.totalDeliverables} ({teamCards.deliverableCompletionRate}%)
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {t('reports.viz.card5Sub')}
                   </p>
                 </div>
               </div>
 
-              {/* Chevron Button placed at top-right with state border */}
+              {/* Chevron Button: Hidden on mobile, desktop only */}
               <button
                 type="button"
-                onClick={(e) => toggleExpanded('card5', e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded('card5', e);
+                }}
                 aria-label={activeExpandedId === 'card5' ? t('reports.viz.toggleHideStatus') : t('reports.viz.toggleShowStatus')}
-                className={`w-6 h-6 rounded-[8px] grid place-items-center transition-all cursor-pointer ${
+                className={`hidden sm:grid w-6 h-6 rounded-[8px] place-items-center transition-all cursor-pointer ${
                   activeExpandedId === 'card5'
                     ? 'border border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50/90 dark:bg-violet-950/60'
                     : 'border border-transparent bg-slate-100 dark:bg-slate-700/60 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1959,7 +2139,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
             {/* Performance KPI & Visualize Bar */}
             <div className="grid grid-cols-1 gap-1">
-              <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+              <div className="hidden sm:grid grid-cols-[1fr_auto] items-baseline gap-2">
                 <div className="grid grid-flow-col auto-cols-max items-baseline gap-1.5">
                   <b className="text-2xl font-bold tracking-tight text-violet-600 dark:text-violet-400">
                     {teamCards.completedDeliverables}/{teamCards.totalDeliverables}
@@ -1973,14 +2153,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </span>
               </div>
 
-              <div className="w-full h-2 my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+              {/* Progress Bar: Always visible on mobile and desktop */}
+              <div className="w-full h-1.5 sm:h-2 my-0.5 sm:my-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-violet-500 transition-all duration-500"
                   style={{ width: `${Math.min(100, teamCards.deliverableCompletionRate)}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
+              <div className="hidden sm:grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
                 <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-1 text-center text-emerald-700 dark:text-emerald-300">
                   {t('reports.viz.deliverablesDone', { count: teamCards.completedDeliverables })}
                 </span>
@@ -1994,6 +2175,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div
               role="region"
               aria-label={t('reports.viz.card5Title')}
+              onClick={(e) => e.stopPropagation()}
               className={`absolute left-2.5 right-2.5 top-[48px] z-50 rounded-[8px] bg-slate-50/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl shadow-[0_14px_34px_-6px_rgba(15,23,42,0.16),0_4px_12px_-2px_rgba(15,23,42,0.06)] dark:shadow-[0_16px_38px_-6px_rgba(0,0,0,0.65)] border border-violet-400/80 dark:border-violet-500/80 origin-top transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 activeExpandedId === 'card5'
                   ? 'opacity-100 scale-y-100 translate-y-0 max-h-[80vh] p-2.5 pointer-events-auto visible'
@@ -2594,18 +2776,25 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
               {/* Lưới các thẻ nhân sự chính */}
               <div
+                ref={profileScrollRef}
+                onScroll={handleProfileScroll}
                 inert={Boolean(selectedStaff)}
                 className={`report-profiles transition-all duration-300 ${
                   selectedStaff ? 'opacity-30 blur-[3px] scale-[0.98] pointer-events-none select-none' : ''
                 }`}
               >
                 {staffMembers.map((member) => (
-                  <ReportProfileCard key={member.id} member={member} lang={lang}
+                  <ReportProfileCard
+                    key={member.id}
+                    member={member}
+                    lang={lang}
+                    isCenter={member.id === centeredStaffId}
                     onDetails={() => {
                       setSelectedStaffId(member.id);
                       setStaffTrackFilter('all');
                       setStaffStatusFilter('all');
-                    }} />
+                    }}
+                  />
                 ))}
               </div>
             </div>

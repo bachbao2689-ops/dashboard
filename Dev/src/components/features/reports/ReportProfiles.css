@@ -747,17 +747,55 @@
   }
 }
 
+/* ========================================================
+   MOBILE 1-ROW COVERFLOW CAROUSEL (< 640px)
+   1 Hàng duy nhất dạng lướt ngang, focus tâm, scale 70% + blur
+   Zero Flexbox: 100% CSS Grid auto-flow column, snap-x
+   ======================================================== */
 @media (max-width: 639px) {
   .report-profiles {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
-    justify-content: center;
-    gap: 16px;
-    padding-inline: 4px;
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: min(270px, 75vw) !important;
+    grid-template-columns: none !important;
+    justify-content: start !important;
+    gap: 14px !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 16px calc(50vw - min(135px, 37.5vw)) 24px !important;
+    scroll-padding: 0 calc(50vw - min(135px, 37.5vw)) !important;
+    scrollbar-width: none !important;
   }
+
+  .report-profiles::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .report-profile {
+    scroll-snap-align: center !important;
+    scroll-snap-stop: always !important;
+    transform: scale(0.70) !important;
+    filter: blur(2px) !important;
+    opacity: 0.55 !important;
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease, opacity 320ms ease !important;
+    transform-origin: center center !important;
+    will-change: transform, filter, opacity;
+  }
+
+  .report-profile.report-profile--coverflow-active,
+  .report-profile.is-carousel-center {
+    transform: scale(1) !important;
+    filter: blur(0px) !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
+  }
+
   .report-profile-surface {
-    min-height: 330px;
+    min-height: 310px;
     aspect-ratio: 0.62;
   }
+
   .report-profile-cta {
     min-height: 44px;
     padding: 0 16px;
