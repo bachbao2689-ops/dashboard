@@ -64,18 +64,8 @@ export function ReportProfileCard({ member, lang, expanded = false, onDetails }:
   const taskUnit = lang === 'en' ? 'Việc' : 'Việc';
   const outputUnit = 'SL';
 
-  // Performance border track color matching top cards
-  const perfColor = member.completionPct >= 80 ? '#10b981' : member.completionPct >= 50 ? '#0ea5e9' : '#ef4444';
-
   return (
-    <article
-      className={`report-profile${hasImage ? '' : ' report-profile--initials'}`}
-      style={{
-        '--perf-pct': `${member.completionPct}%`,
-        '--perf-color': perfColor,
-      } as React.CSSProperties}
-      aria-label={member.name}
-    >
+    <article className={`report-profile${hasImage ? '' : ' report-profile--initials'}`} aria-label={member.name}>
       <div className="report-profile-surface">
         {hasImage ? (
           <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
