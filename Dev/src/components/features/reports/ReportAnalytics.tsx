@@ -598,26 +598,76 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
   const scopedStaffTasks = useMemo(() => (selectedStaff?.tasks || []).filter(task => staffTrackFilter === 'all' || staffTaskTrack(task) === staffTrackFilter), [selectedStaff, staffTrackFilter]);
 
-  const currentStaffDetailTasks = useMemo(() => {
+  // Danh sách các Project duy nhất của selectedStaff
+  const staffProjects = useMemo(() => {
     if (!selectedStaff?.tasks) return [];
-    if (staffDetailTab === 'all') return selectedStaff.tasks;
-    if (staffDetailTab === 'project') return selectedStaff.tasks.filter((t) => staffTaskTrack(t) === 'project');
-    if (staffDetailTab === 'campaign') return selectedStaff.tasks.filter((t) => staffTaskTrack(t) === 'campaign');
-    if (staffDetailTab === 'done') {
-      return selectedStaff.tasks.filter((t) => {
-        const st = String(t.status || '').toLowerCase();
-        return st === 'done' || st === 'completed';
-      });
-    }
-    if (staffDetailTab === 'late') {
-      return selectedStaff.tasks.filter((t) => {
-        const st = String(t.status || '').toLowerCase();
-        const isDone = st === 'done' || st === 'completed';
-        return Boolean(t.is_overdue || (t.due_date && new Date(t.due_date).getTime() < Date.now() && !isDone));
-      });
-    }
-    return selectedStaff.tasks;
-  }, [selectedStaff, staffDetailTab]);
+    const map = new Map<string, { id: string; name: string; taskCount: number; doneCount: number; latestDueDate?: string }>();
+    selectedStaff.tasks.forEach((task: any) => {
+      if (staffTaskTrack(task) === 'project') {
+        const pId = String(task.project?.id || task.project_id || task.project?.name || task.project_name || 'project');
+        const pName = task.project?.name || task.project_name || task.project?.title || 'Dự án';
+        const isDone = String(task.status || '').toLowerCase() === 'done' || String(task.status || '').toLowerCase() === 'completed';
+        const existing = map.get(pId);
+        if (existing) {
+          existing.taskCount++;
+          if (isDone) existing.doneCount++;
+        } else {
+          map.set(pId, {
+            id: pId,
+            name: pName,
+            taskCount: 1,
+            doneCount: isDone ? 1 : 0,
+            latestDueDate: task.due_date,
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [selectedStaff]);
+
+  // Danh sách các Campaign duy nhất của selectedStaff
+  const staffCampaigns = useMemo(() => {
+    if (!selectedStaff?.tasks) return [];
+    const map = new Map<string, { id: string; name: string; taskCount: number; doneCount: number; latestDueDate?: string }>();
+    selectedStaff.tasks.forEach((task: any) => {
+      if (staffTaskTrack(task) === 'campaign') {
+        const cId = String(task.campaign?.id || task.campaign_id || task.campaign?.name || task.campaign_name || 'campaign');
+        const cName = task.campaign?.name || task.campaign_name || task.campaign?.title || 'Chiến dịch';
+        const isDone = String(task.status || '').toLowerCase() === 'done' || String(task.status || '').toLowerCase() === 'completed';
+        const existing = map.get(cId);
+        if (existing) {
+          existing.taskCount++;
+          if (isDone) existing.doneCount++;
+        } else {
+          map.set(cId, {
+            id: cId,
+            name: cName,
+            taskCount: 1,
+            doneCount: isDone ? 1 : 0,
+            latestDueDate: task.due_date,
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [selectedStaff]);
+
+  const staffDoneTasks = useMemo(() => {
+    if (!selectedStaff?.tasks) return [];
+    return selectedStaff.tasks.filter((t: any) => {
+      const st = String(t.status || '').toLowerCase();
+      return st === 'done' || st === 'completed';
+    });
+  }, [selectedStaff]);
+
+  const staffLateTasks = useMemo(() => {
+    if (!selectedStaff?.tasks) return [];
+    return selectedStaff.tasks.filter((t: any) => {
+      const st = String(t.status || '').toLowerCase();
+      const isDone = st === 'done' || st === 'completed';
+      return Boolean(t.is_overdue || (t.due_date && new Date(t.due_date).getTime() < Date.now() && !isDone));
+    });
+  }, [selectedStaff]);
 
   const filteredStaffTasks = useMemo(() => {
     if (!selectedStaff?.tasks) return [];
@@ -2066,7 +2116,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   ref={expandedModalRef}
                   role="region"
                   aria-label={selectedStaff.name}
-                  className="report-profile-expanded relative lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-[840px] z-30 mb-6 lg:mb-0 rounded-[24px] border border-white/90 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.22)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] p-3.5 sm:p-4 transition-all duration-300"
+                  className="report-profile-expanded"
                 >
                   {/* Nút mũi tên chuyển nhanh Staff trước */}
                   <button
@@ -2074,9 +2124,9 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     onClick={handlePrevStaff}
                     aria-label={lang === 'en' ? 'Previous member' : 'Thành viên trước'}
                     title={lang === 'en' ? 'Previous member (Left arrow)' : 'Thành viên trước (Phím mũi tên trái)'}
-                    className="absolute -left-3.5 sm:-left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 z-40 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    className="report-profile-nav-arrow report-profile-nav-arrow--prev"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
 
                   {/* Nút mũi tên chuyển nhanh Staff tiếp theo */}
@@ -2085,29 +2135,29 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     onClick={handleNextStaff}
                     aria-label={lang === 'en' ? 'Next member' : 'Thành viên tiếp theo'}
                     title={lang === 'en' ? 'Next member (Right arrow)' : 'Thành viên tiếp theo (Phím mũi tên phải)'}
-                    className="absolute -right-3.5 sm:-right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 z-40 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    className="report-profile-nav-arrow report-profile-nav-arrow--next"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-5 h-5" />
                   </button>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-4 items-stretch lg:h-[370px]">
-                    {/* Cột trái: Thẻ Soft Glassmorphism của selectedStaff */}
-                    <div className="w-full max-w-[240px] justify-self-center lg:justify-self-start h-full">
+                  <div className="report-profile-modal-inner">
+                    {/* Cột trái: Thẻ Profile ĐÚNG KÍCH THƯỚC như thẻ bên ngoài */}
+                    <div className="report-profile-modal-card-col">
                       <ReportProfileCard member={selectedStaff} lang={lang} expanded onDetails={() => setSelectedStaffId(null)} />
                     </div>
 
-                    {/* Cột phải: 1 Khung đồng bộ chiều cao với thẻ Profile, 1 hàng buttons tab */}
-                    <div className="flex flex-col h-full min-w-0 bg-slate-50/80 dark:bg-slate-800/40 rounded-[20px] p-3.5 border border-slate-200/70 dark:border-slate-700/70">
-                      {/* Hàng 1: 1 hàng buttons lọc tab + nút X */}
-                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/60 dark:border-slate-700/60">
+                    {/* Cột phải: Khung nội dung khóa chiều cao, không tràn viền */}
+                    <div className="report-profile-modal-content-col">
+                      {/* Hàng 1: Hàng filter tabs duy nhất + nút đóng X */}
+                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-700/70 shrink-0">
                         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 pr-1">
                           {/* Tất cả */}
                           <button
                             type="button"
                             onClick={() => setStaffDetailTab('all')}
-                            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                               staffDetailTab === 'all'
-                                ? 'bg-[#002e6d] dark:bg-sky-600 text-white border-transparent shadow-2xs'
+                                ? 'bg-[#002e6d] dark:bg-sky-600 text-white border-transparent shadow-xs'
                                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                           >
@@ -2115,72 +2165,72 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.tasks.length})</span>
                           </button>
 
-                          {/* Project */}
+                          {/* Project (Chỉ hiển thị các Dự án tham gia) */}
                           <button
                             type="button"
                             onClick={() => setStaffDetailTab('project')}
-                            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                               staffDetailTab === 'project'
-                                ? 'bg-violet-600 text-white border-violet-600 shadow-2xs'
+                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
                                 : 'bg-white dark:bg-slate-800 text-violet-700 dark:text-violet-300 border-slate-200 dark:border-slate-700 hover:bg-violet-50 dark:hover:bg-violet-950/40'
                             }`}
                           >
                             <span>Project</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffTrackCount(selectedStaff.tasks, 'project')})</span>
+                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffProjects.length})</span>
                           </button>
 
-                          {/* Campaign */}
+                          {/* Campaign (Chỉ hiển thị các Chiến dịch tham gia) */}
                           <button
                             type="button"
                             onClick={() => setStaffDetailTab('campaign')}
-                            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                               staffDetailTab === 'campaign'
-                                ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                                ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
                                 : 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/40'
                             }`}
                           >
                             <span>Campaign</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffTrackCount(selectedStaff.tasks, 'campaign')})</span>
+                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffCampaigns.length})</span>
                           </button>
 
-                          {/* Hoàn thành */}
+                          {/* Hoàn thành (Chỉ hiển thị các task hoàn thành) */}
                           <button
                             type="button"
                             onClick={() => setStaffDetailTab('done')}
-                            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                               staffDetailTab === 'done'
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                                 : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                             }`}
                           >
                             <span>{lang === 'en' ? 'Completed' : 'Hoàn thành'}</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.done})</span>
+                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffDoneTasks.length})</span>
                           </button>
 
-                          {/* Trễ hạn */}
-                          {selectedStaff.late > 0 && (
+                          {/* Trễ hạn (Chỉ hiển thị các task trễ hạn) */}
+                          {staffLateTasks.length > 0 && (
                             <button
                               type="button"
                               onClick={() => setStaffDetailTab('late')}
-                              className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                                 staffDetailTab === 'late'
-                                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
                                   : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40'
                               }`}
                             >
                               <span>{lang === 'en' ? 'Overdue' : 'Trễ hạn'}</span>
-                              <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.late})</span>
+                              <span className="ml-1 text-[10px] font-bold opacity-80">({staffLateTasks.length})</span>
                             </button>
                           )}
 
-                          {/* Tồn đọng */}
+                          {/* Tồn đọng (Chỉ hiển thị các mục tồn đọng báo cáo từ Profile) */}
                           {selectedStaff.profileBacklogCount > 0 && (
                             <button
                               type="button"
                               onClick={() => setStaffDetailTab('backlog')}
-                              className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                                 staffDetailTab === 'backlog'
-                                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
                                   : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40'
                               }`}
                             >
@@ -2201,10 +2251,84 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         </button>
                       </div>
 
-                      {/* Hàng 2: Danh sách cuộn mượt mà bên trong, chiều cao vừa vặn */}
-                      <div className="flex-1 min-h-0 overflow-y-auto pr-1 pt-2 space-y-2">
-                        {staffDetailTab === 'backlog' ? (
-                          /* Hiển thị Tồn đọng */
+                      {/* Hàng 2: Danh sách cuộn bên trong, không bao giờ tràn viền */}
+                      <div className="report-profile-modal-list space-y-2">
+                        {/* 1. View Tab Project: Hiển thị đúng các Dự án tham gia */}
+                        {staffDetailTab === 'project' && (
+                          staffProjects.length > 0 ? (
+                            staffProjects.map((proj) => (
+                              <div
+                                key={proj.id}
+                                className="p-3 rounded-[12px] bg-white dark:bg-slate-900 border border-violet-200/80 dark:border-violet-900/60 text-xs grid grid-cols-1 gap-2 shadow-xs transition-transform hover:translate-x-0.5"
+                              >
+                                <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                                  <span className="font-bold text-slate-900 dark:text-white truncate text-[12.5px]">
+                                    {proj.name}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/50 shrink-0">
+                                    {t('reports.viz.projectBadge')}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span className="font-medium whitespace-nowrap">
+                                    {proj.taskCount} {lang === 'en' ? 'tasks' : 'việc'} ({proj.doneCount} {lang === 'en' ? 'done' : 'xong'})
+                                  </span>
+                                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div
+                                      className="bg-violet-600 h-full rounded-full transition-all duration-300"
+                                      style={{ width: `${Math.round((proj.doneCount / proj.taskCount) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-bold text-violet-700 dark:text-violet-400 whitespace-nowrap">
+                                    {Math.round((proj.doneCount / proj.taskCount) * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 p-4 text-center">{lang === 'en' ? 'No projects joined in period' : 'Chưa tham gia dự án nào trong kỳ'}</p>
+                          )
+                        )}
+
+                        {/* 2. View Tab Campaign: Hiển thị đúng các Chiến dịch tham gia */}
+                        {staffDetailTab === 'campaign' && (
+                          staffCampaigns.length > 0 ? (
+                            staffCampaigns.map((camp) => (
+                              <div
+                                key={camp.id}
+                                className="p-3 rounded-[12px] bg-white dark:bg-slate-900 border border-orange-200/80 dark:border-orange-900/60 text-xs grid grid-cols-1 gap-2 shadow-xs transition-transform hover:translate-x-0.5"
+                              >
+                                <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                                  <span className="font-bold text-slate-900 dark:text-white truncate text-[12.5px]">
+                                    {camp.name}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-orange-100/90 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800/50 shrink-0">
+                                    {t('reports.viz.campaignBadge')}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span className="font-medium whitespace-nowrap">
+                                    {camp.taskCount} {lang === 'en' ? 'tasks' : 'việc'} ({camp.doneCount} {lang === 'en' ? 'done' : 'xong'})
+                                  </span>
+                                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div
+                                      className="bg-orange-500 h-full rounded-full transition-all duration-300"
+                                      style={{ width: `${Math.round((camp.doneCount / camp.taskCount) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">
+                                    {Math.round((camp.doneCount / camp.taskCount) * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 p-4 text-center">{lang === 'en' ? 'No campaigns joined in period' : 'Chưa tham gia chiến dịch nào trong kỳ'}</p>
+                          )
+                        )}
+
+                        {/* 3. View Tab Backlog: Hiển thị đúng các mục Tồn đọng từ Profile */}
+                        {staffDetailTab === 'backlog' && (
                           selectedStaff.profileBacklogItems && selectedStaff.profileBacklogItems.length > 0 ? (
                             selectedStaff.profileBacklogItems.map((backlog) => (
                               <div
@@ -2244,10 +2368,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               {t('reports.viz.noBacklog')}
                             </p>
                           )
-                        ) : (
-                          /* Hiển thị Tasks theo tab đã chọn */
-                          currentStaffDetailTasks && currentStaffDetailTasks.length > 0 ? (
-                            currentStaffDetailTasks.map((task: any, tIdx: number) => {
+                        )}
+
+                        {/* 4. View Tab All / Done / Late: Hiển thị danh sách Tasks theo đúng bộ lọc */}
+                        {(staffDetailTab === 'all' || staffDetailTab === 'done' || staffDetailTab === 'late') && (
+                          (staffDetailTab === 'done' ? staffDoneTasks : staffDetailTab === 'late' ? staffLateTasks : selectedStaff.tasks).length > 0 ? (
+                            (staffDetailTab === 'done' ? staffDoneTasks : staffDetailTab === 'late' ? staffLateTasks : selectedStaff.tasks).map((task: any, tIdx: number) => {
                               const isCampaign = Boolean(
                                 task.campaign?.id ||
                                 task.campaign_id ||
