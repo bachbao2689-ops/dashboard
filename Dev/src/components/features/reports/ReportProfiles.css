@@ -5,7 +5,8 @@
 
 .report-profiles {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, clamp(185px, 14.5vw, 245px)));
+  justify-content: start;
   align-items: start;
   gap: clamp(12px, 1.3vw, 22px);
   padding: 8px 2px 18px;
@@ -283,8 +284,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(94%, 930px);
-  height: 395px;
+  width: min(95%, clamp(920px, 68vw, 1280px));
+  height: clamp(390px, 48vh, 450px);
   max-height: calc(100vh - 100px);
   border-radius: 26px;
   border: 1.5px solid rgba(255, 255, 255, 0.95);
@@ -307,7 +308,7 @@
 
 .report-profile-modal-inner {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: clamp(210px, 14.5vw, 245px) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
   height: 100%;
@@ -336,7 +337,7 @@
 }
 
 .report-profile-modal-card-col {
-  width: 240px;
+  width: clamp(210px, 14.5vw, 245px);
   height: 100%;
   flex-shrink: 0;
   display: flex;
