@@ -52,6 +52,7 @@ const UI_COPY = {
     contextTooLong: 'Notes and document text must be under 16,000 characters.',
     noSession: 'Your session has expired. Sign in again.',
     defaultError: 'The Agent could not complete that request. Try again.',
+    apiUnavailable: 'The Agent API did not return JSON. This deployment may be missing the server function; try again after the Develop deployment finishes.',
     emptyQuestion: 'Enter a question or attach a voice clip first.',
     files: 'Attachments', remove: 'Remove attachment',
     taskCreation: 'Create task', work: 'Workload', search: 'Workspace search',
@@ -80,6 +81,7 @@ const UI_COPY = {
     contextTooLong: 'Ghi chú và tài liệu tối đa 16.000 ký tự.',
     noSession: 'Phiên đăng nhập hết hạn. Hãy đăng nhập lại.',
     defaultError: 'Agent chưa xử lý được yêu cầu. Hãy thử lại.',
+    apiUnavailable: 'API của Agent không trả dữ liệu hợp lệ. Bản deploy này có thể chưa có server function; hãy thử lại sau khi Develop deploy xong.',
     emptyQuestion: 'Nhập câu hỏi hoặc đính kèm voice clip trước nhé.',
     files: 'Tệp đính kèm', remove: 'Gỡ tệp đính kèm',
     taskCreation: 'Tạo task', work: 'Workload', search: 'Tìm kiếm workspace',
@@ -111,6 +113,15 @@ function MessageText({ text }: { text: string }) {
 
 function formatBytes(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function readAgentResponse(response: Response, fallback: string): Promise<AgentResponse> {
+  if (!response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+    throw new Error(fallback);
+  }
+  const result = await response.json().catch(() => ({})) as AgentResponse;
+  if (!response.ok) throw new Error(result.error || fallback);
+  return result;
 }
 
 export const Agents: React.FC = () => {
@@ -218,8 +229,8 @@ export const Agents: React.FC = () => {
         });
       }
       const response = await fetch('/api/agent', { method: 'POST', headers, body });
-      const result = await response.json().catch(() => ({})) as AgentResponse;
-      if (!response.ok) throw new Error(result.error || copy.defaultError);
+      const result = await readAgentResponse(response, copy.apiUnavailable);
+      if (!result.text?.trim()) throw new Error(copy.defaultError);
       const assistantMessage: AgentMessage = {
         id: crypto.randomUUID(), role: 'assistant', content: result.text || copy.defaultError,
         transcript: result.transcript,
@@ -251,8 +262,7 @@ export const Agents: React.FC = () => {
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'execute', approvalToken: proposal.token }),
       });
-      const result = await response.json().catch(() => ({})) as AgentResponse;
-      if (!response.ok) throw new Error(result.error || copy.defaultError);
+      await readAgentResponse(response, copy.apiUnavailable);
       setMessages(current => current.map(item => item.id === messageId
         ? { ...item, proposals: item.proposals?.map(candidate => candidate.token === proposal.token ? { ...candidate, state: 'done' } : candidate) }
         : item));
