@@ -81,6 +81,9 @@ try {
   actor.id--;
   assert.equal((await endpoint.POST(request({ action: 'execute', approvalToken: token }))).status, 200);
   assert.equal(writes, 1, 'Approved action creates a task');
+  globalThis.AI_SDK_DEFAULT_PROVIDER.languageModel = () => ({ specificationVersion: 'v3', provider: 'fixture', modelId: 'fixture/model', supportedUrls: {}, doGenerate: async () => { throw Object.assign(new Error('AI Gateway requires a valid credit card on file to service requests.'), { statusCode: 403 }); } });
+  const savedError = console.error; console.error = () => {};
+  try { assert.equal((await (await endpoint.POST(request({ message: 'Hello' }))).json()).code, 'AI_GATEWAY_BILLING_REQUIRED'); } finally { console.error = savedError; }
   console.log('Agent backend checks passed: Web entry points, health JSON, configuration, JWT auth, real SDK tool loop, 3 task sources, approval before writes, signature rejection and task creation.');
 } finally {
   globalThis.fetch = savedFetch;
