@@ -939,7 +939,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       />}
       <aside 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
