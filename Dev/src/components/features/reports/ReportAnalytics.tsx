@@ -217,6 +217,63 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffDetailTab, setStaffDetailTab] = useState<'all' | 'project' | 'campaign' | 'done' | 'late' | 'backlog'>('all');
   const expandedModalRef = useRef<HTMLDivElement>(null);
+  const modalTabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+
+  const updateTabsScrollState = useCallback(() => {
+    const el = modalTabsRef.current;
+    if (!el) return;
+    const canLeft = el.scrollLeft > 4;
+    const canRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setCanScrollTabsLeft(canLeft);
+    setCanScrollTabsRight(canRight);
+  }, []);
+
+  const handleScrollTabs = useCallback((direction: 'left' | 'right') => {
+    const el = modalTabsRef.current;
+    if (!el) return;
+    const offset = direction === 'left' ? -140 : 140;
+    el.scrollBy({ left: offset, behavior: 'smooth' });
+  }, []);
+
+  const handleStaffDetailTabClick = useCallback(
+    (
+      tabKey: 'all' | 'project' | 'campaign' | 'done' | 'late' | 'backlog',
+      e: React.MouseEvent<HTMLButtonElement>
+    ) => {
+      setStaffDetailTab(tabKey);
+      const btn = e.currentTarget;
+      const container = modalTabsRef.current;
+      if (container) {
+        const btnLeft = btn.offsetLeft;
+        const btnWidth = btn.offsetWidth;
+        const containerWidth = container.clientWidth;
+        const targetScrollLeft = btnLeft - (containerWidth / 2) + (btnWidth / 2);
+        container.scrollTo({
+          left: Math.max(0, targetScrollLeft),
+          behavior: 'smooth',
+        });
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (selectedStaffId) {
+      const timer = setTimeout(() => {
+        updateTabsScrollState();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedStaffId, updateTabsScrollState]);
+
+  useEffect(() => {
+    if (!selectedStaffId) return;
+    const handleResize = () => updateTabsScrollState();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [selectedStaffId, updateTabsScrollState]);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'all' | 'done' | 'doing' | 'todo' | 'late'>('all');
   const [staffTrackFilter, setStaffTrackFilter] = useState<StaffTrackFilter>('all');
   const [activeExpandedId, setActiveExpandedId] = useState<string | null>(null);
@@ -2506,92 +2563,124 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     <div className="report-profile-modal-content-col">
                       {/* Hàng 1: Hàng filter tabs duy nhất + nút đóng X */}
                       <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-700/70">
-                        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 pr-1">
-                          {/* Tất cả */}
-                          <button
-                            type="button"
-                            onClick={() => setStaffDetailTab('all')}
-                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                              staffDetailTab === 'all'
-                                ? 'bg-[#002e6d] dark:bg-sky-600 text-white border-transparent shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-                            }`}
-                          >
-                            <span>{lang === 'en' ? 'All' : 'Tất cả'}</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.tasks.length})</span>
-                          </button>
-
-                          {/* Project (Chỉ hiển thị các Dự án tham gia) */}
-                          <button
-                            type="button"
-                            onClick={() => setStaffDetailTab('project')}
-                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                              staffDetailTab === 'project'
-                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-violet-700 dark:text-violet-300 border-slate-200 dark:border-slate-700 hover:bg-violet-50 dark:hover:bg-violet-950/40'
-                            }`}
-                          >
-                            <span>Project</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffProjects.length})</span>
-                          </button>
-
-                          {/* Campaign (Chỉ hiển thị các Chiến dịch tham gia) */}
-                          <button
-                            type="button"
-                            onClick={() => setStaffDetailTab('campaign')}
-                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                              staffDetailTab === 'campaign'
-                                ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/40'
-                            }`}
-                          >
-                            <span>Campaign</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffCampaigns.length})</span>
-                          </button>
-
-                          {/* Hoàn thành (Chỉ hiển thị các task hoàn thành) */}
-                          <button
-                            type="button"
-                            onClick={() => setStaffDetailTab('done')}
-                            className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                              staffDetailTab === 'done'
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-                            }`}
-                          >
-                            <span>{lang === 'en' ? 'Completed' : 'Hoàn thành'}</span>
-                            <span className="ml-1 text-[10px] font-bold opacity-80">({staffDoneTasks.length})</span>
-                          </button>
-
-                          {/* Trễ hạn (Chỉ hiển thị các task trễ hạn) */}
-                          {staffLateTasks.length > 0 && (
+                        <div className="relative min-w-0 grid grid-cols-[auto_1fr_auto] items-center gap-1">
+                          {/* Nút mũi tên trượt trái (khi có thể cuộn trái) */}
+                          {canScrollTabsLeft && (
                             <button
                               type="button"
-                              onClick={() => setStaffDetailTab('late')}
-                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                                staffDetailTab === 'late'
-                                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                                  : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                              }`}
+                              onClick={() => handleScrollTabs('left')}
+                              aria-label={lang === 'en' ? 'Previous tabs' : 'Các tab trước'}
+                              title={lang === 'en' ? 'Scroll left' : 'Trượt sang trái'}
+                              className="w-6 h-6 rounded-full bg-white/95 dark:bg-[#0a192f]/95 border border-slate-200 dark:border-slate-700/80 shadow-xs grid place-items-center text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white shrink-0 cursor-pointer transition-colors"
                             >
-                              <span>{lang === 'en' ? 'Overdue' : 'Trễ hạn'}</span>
-                              <span className="ml-1 text-[10px] font-bold opacity-80">({staffLateTasks.length})</span>
+                              <ChevronLeft className="w-3.5 h-3.5" />
                             </button>
                           )}
 
-                          {/* Tồn đọng (Chỉ hiển thị các mục tồn đọng báo cáo từ Profile) */}
-                          {selectedStaff.profileBacklogCount > 0 && (
+                          <div
+                            ref={modalTabsRef}
+                            onScroll={updateTabsScrollState}
+                            className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 pr-1 scroll-smooth"
+                          >
+                            {/* Tất cả */}
                             <button
                               type="button"
-                              onClick={() => setStaffDetailTab('backlog')}
+                              onClick={(e) => handleStaffDetailTabClick('all', e)}
                               className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                                staffDetailTab === 'backlog'
-                                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                                  : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                                staffDetailTab === 'all'
+                                  ? 'bg-[#002e6d] dark:bg-sky-600 text-white border-transparent shadow-xs'
+                                  : 'bg-white dark:bg-[#0a192f] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-[#0f1e36]'
                               }`}
                             >
-                              <span>{lang === 'en' ? 'Backlog' : 'Tồn đọng'}</span>
-                              <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.profileBacklogCount})</span>
+                              <span>{lang === 'en' ? 'All' : 'Tất cả'}</span>
+                              <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.tasks.length})</span>
+                            </button>
+
+                            {/* Project (Chỉ hiển thị các Dự án tham gia) */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleStaffDetailTabClick('project', e)}
+                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                                staffDetailTab === 'project'
+                                  ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
+                                  : 'bg-white dark:bg-[#0a192f] text-violet-700 dark:text-violet-300 border-slate-200 dark:border-slate-700/80 hover:bg-violet-50 dark:hover:bg-[#0f1e36]'
+                              }`}
+                            >
+                              <span>Project</span>
+                              <span className="ml-1 text-[10px] font-bold opacity-80">({staffProjects.length})</span>
+                            </button>
+
+                            {/* Campaign (Chỉ hiển thị các Chiến dịch tham gia) */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleStaffDetailTabClick('campaign', e)}
+                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                                staffDetailTab === 'campaign'
+                                  ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                                  : 'bg-white dark:bg-[#0a192f] text-orange-700 dark:text-orange-300 border-slate-200 dark:border-slate-700/80 hover:bg-orange-50 dark:hover:bg-[#0f1e36]'
+                              }`}
+                            >
+                              <span>Campaign</span>
+                              <span className="ml-1 text-[10px] font-bold opacity-80">({staffCampaigns.length})</span>
+                            </button>
+
+                            {/* Hoàn thành (Chỉ hiển thị các task hoàn thành) */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleStaffDetailTabClick('done', e)}
+                              className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                                staffDetailTab === 'done'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-white dark:bg-[#0a192f] text-emerald-700 dark:text-emerald-300 border-slate-200 dark:border-slate-700/80 hover:bg-emerald-50 dark:hover:bg-[#0f1e36]'
+                              }`}
+                            >
+                              <span>{lang === 'en' ? 'Completed' : 'Hoàn thành'}</span>
+                              <span className="ml-1 text-[10px] font-bold opacity-80">({staffDoneTasks.length})</span>
+                            </button>
+
+                            {/* Trễ hạn (Chỉ hiển thị các task trễ hạn) */}
+                            {staffLateTasks.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleStaffDetailTabClick('late', e)}
+                                className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                                  staffDetailTab === 'late'
+                                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                                    : 'bg-white dark:bg-[#0a192f] text-rose-700 dark:text-rose-300 border-slate-200 dark:border-slate-700/80 hover:bg-rose-50 dark:hover:bg-[#0f1e36]'
+                                }`}
+                              >
+                                <span>{lang === 'en' ? 'Overdue' : 'Trễ hạn'}</span>
+                                <span className="ml-1 text-[10px] font-bold opacity-80">({staffLateTasks.length})</span>
+                              </button>
+                            )}
+
+                            {/* Tồn đọng (Chỉ hiển thị các mục tồn đọng báo cáo từ Profile) */}
+                            {selectedStaff.profileBacklogCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleStaffDetailTabClick('backlog', e)}
+                                className={`px-2.5 py-1 rounded-[7px] text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                                  staffDetailTab === 'backlog'
+                                    ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                    : 'bg-white dark:bg-[#0a192f] text-amber-800 dark:text-amber-300 border-slate-200 dark:border-slate-700/80 hover:bg-amber-50 dark:hover:bg-[#0f1e36]'
+                                }`}
+                              >
+                                <span>{lang === 'en' ? 'Backlog' : 'Tồn đọng'}</span>
+                                <span className="ml-1 text-[10px] font-bold opacity-80">({selectedStaff.profileBacklogCount})</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Nút mũi tên trượt phải (khi có thể cuộn phải) */}
+                          {canScrollTabsRight && (
+                            <button
+                              type="button"
+                              onClick={() => handleScrollTabs('right')}
+                              aria-label={lang === 'en' ? 'Next tabs' : 'Các tab tiếp theo'}
+                              title={lang === 'en' ? 'Scroll right' : 'Trượt sang phải'}
+                              className="w-6 h-6 rounded-full bg-white/95 dark:bg-[#0a192f]/95 border border-slate-200 dark:border-slate-700/80 shadow-xs grid place-items-center text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white shrink-0 cursor-pointer transition-colors"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -2601,7 +2690,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           type="button"
                           onClick={() => setSelectedStaffId(null)}
                           aria-label={t('common.close')}
-                          className="grid place-items-center w-8 h-8 rounded-[8px] bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 shadow-2xs transition-colors cursor-pointer shrink-0"
+                          className="grid place-items-center w-8 h-8 rounded-[8px] bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-slate-500 dark:text-slate-200 shadow-2xs transition-colors cursor-pointer shrink-0"
                         >
                           <X className="w-4 h-4" />
                         </button>
