@@ -100,7 +100,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
         </h1>
       </div>
 
-      <div className="mobile-actions-row flex flex-wrap items-center gap-2">
+      <div className="mobile-actions-row flex flex-wrap items-center justify-start lg:justify-end lg:justify-self-end gap-2">
         {/* 2. Status Filter */}
         <StatusFilterDropdown
           value={statusFilter}
