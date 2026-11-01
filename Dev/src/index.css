@@ -444,6 +444,26 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
   border-radius: 1rem 0 0 0;
 }
 
+@media (max-width: 1279px) {
+  body:has(.dashboard-detail-drawer.opacity-100) .liquid-glass-header {
+    transform: translateY(-100%) !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+  body:has(.dashboard-detail-drawer.opacity-100) .mobile-liquid-glass {
+    transform: translateY(100%) !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+  body:has(.dashboard-detail-drawer.opacity-100) .dashboard-detail-drawer,
+  .dashboard-detail-drawer.opacity-100 {
+    top: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+}
+
 @media (min-width: 1280px) {
   .dashboard-detail-drawer {
     right: 0.75rem;

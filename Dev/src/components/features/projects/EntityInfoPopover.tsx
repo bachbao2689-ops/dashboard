@@ -182,13 +182,13 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
         onMouseLeave={handleMouseLeave}
         aria-label={isEn ? `Info for ${entity.name}` : `Thông tin chi tiết ${entity.name}`}
         title={isEn ? "View entity details" : "Xem thông tin chi tiết"}
-        className={`w-5 h-5 rounded-md grid place-items-center shrink-0 transition-colors cursor-pointer border ${
+        className={`w-3.5 h-3.5 rounded-[3px] grid place-items-center shrink-0 transition-colors cursor-pointer border ${
           isCampaign
             ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30'
             : 'text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/30'
         }`}
       >
-        <Info size={12} strokeWidth={2.4} />
+        <Info size={8.5} strokeWidth={2.4} />
       </button>
 
       {isOpen &&
@@ -205,10 +205,10 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
             }}
             onMouseLeave={handleMouseLeave}
             onClick={e => e.stopPropagation()}
-            className={`fixed z-[9999] w-[min(350px,calc(100vw-24px))] p-3.5 rounded-2xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 space-y-3 pointer-events-auto ${
+            className={`fixed z-[9999] w-[min(350px,calc(100vw-24px))] p-3.5 rounded-[8px] border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 space-y-3 pointer-events-auto ${
               isCampaign
-                ? 'bg-amber-50/90 dark:bg-slate-900/95 border-amber-300/80 dark:border-amber-700/60 shadow-amber-500/10 text-gray-800 dark:text-slate-100'
-                : 'bg-violet-50/90 dark:bg-slate-900/95 border-violet-300/80 dark:border-violet-700/60 shadow-violet-500/10 text-gray-800 dark:text-slate-100'
+                ? 'bg-amber-50/90 dark:bg-[#0a192f] border-amber-300/80 dark:border-amber-700/60 shadow-amber-500/10 text-gray-800 dark:text-slate-100'
+                : 'bg-violet-50/90 dark:bg-[#0a192f] border-violet-300/80 dark:border-violet-700/60 shadow-violet-500/10 text-gray-800 dark:text-slate-100'
             }`}
           >
             {/* Header: Type Pill & Name */}
@@ -321,7 +321,7 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
               </div>
 
               {keyCriteria.length === 0 ? (
-                <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-dashed border-gray-200 dark:border-slate-700 text-center">
+                <div className="p-2 rounded-[8px] bg-white/70 dark:bg-[#071325]/50 border border-dashed border-gray-200 dark:border-slate-700 text-center">
                   <p className="text-[11px] text-gray-400 italic">
                     {isEn
                       ? 'No key criteria starred (★) in Gate Checklist'
@@ -333,10 +333,10 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                   {keyCriteria.map(kc => (
                     <div
                       key={kc.id}
-                      className={`p-2 rounded-xl border text-xs grid grid-cols-[auto_1fr_auto] items-start gap-2 ${
+                      className={`p-2 rounded-[8px] border text-xs grid grid-cols-[auto_1fr_auto] items-start gap-2 ${
                         kc.checked
                           ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-gray-900 dark:text-white'
-                          : 'border-gray-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-slate-800/60 text-gray-600 dark:text-gray-400'
+                          : 'border-gray-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#071325]/60 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       <div className="mt-0.5 shrink-0">

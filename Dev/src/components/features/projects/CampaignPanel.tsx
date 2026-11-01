@@ -1,10 +1,10 @@
 import { StatusBadge } from '../../common/StatusBadge';
-import { EntityNoteCell } from './EntityNoteCell';
+import { EntityNoteCell, getCachedNote } from './EntityNoteCell';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
 import { useResizableColumns } from '../../../hooks/useResizableColumns';
 import { Avatar } from '../../common/Avatar';
-import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, MessageSquare, ListTodo, Plus, X, Eye, Pencil, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, MessageSquare, ListTodo, Plus, X, Eye, Pencil, Check, FileText } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../../common/ConfirmHideModal';
 import toast from 'react-hot-toast';
@@ -183,6 +183,7 @@ export const CampaignPanel: React.FC<{
   // Tree View States (Campaign -> Subtask -> Đầu việc / Checklist)
   const [expandedCampaigns, setExpandedCampaigns] = useState<Record<string, boolean>>({});
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
+  const [openNoteEntityIds, setOpenNoteEntityIds] = useState<Record<string, boolean>>({});
   const [campaignSubtasksMap, setCampaignSubtasksMap] = useState<Record<string, any[]>>({});
   const [subtaskChecklistMap, setSubtaskChecklistMap] = useState<Record<string, any[]>>({});
   const [subtaskCommentMap, setSubtaskCommentMap] = useState<Record<string, number>>({});
@@ -662,9 +663,13 @@ export const CampaignPanel: React.FC<{
           const isCampaignExpanded = Boolean(expandedCampaigns[c.id]);
           const subtasks = campaignSubtasksMap[c.id] || [];
           const subtaskCount = subtasks.length;
+          const campNote = getCachedNote('campaign', c.id);
+          const isNoteOpen = Boolean(openNoteEntityIds[c.id]);
+          const leadPerson = c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null);
 
           return (
-            <article key={c.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
+            <article key={c.id} className={`min-w-0 rounded-[8px] border border-gray-200/90 bg-white/90 p-3 dark:border-slate-800 dark:bg-[#071325]/70 shadow-xs ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
+              {/* Hàng 1: Expand chevron, (i) icon, Title + subtask count + note icon, Status ở góc phải */}
               <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
                 <button
                   type="button"
@@ -678,49 +683,72 @@ export const CampaignPanel: React.FC<{
                   entityType="campaign"
                   entity={c}
                   track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
-                  leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
+                  leadPerson={leadPerson}
                   subPersons={subtaskMap[c.id]}
                 />
-                <button type="button" onClick={() => onSelect?.(c)} className="block w-full min-w-0 text-left">
-                  <span className="grid grid-cols-[1fr_auto] items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white">
-                    <span className="min-w-0 truncate">{c.name}</span>
-                    {subtaskCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
-                        ({subtaskCount})
-                      </span>
-                    )}
-                    {hasComments[c.id] && (
-                      <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
-                        <MessageSquare size={14} className="text-blue-500" />
-                        {(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id]) && (
-                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>
-                        )}
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{c.objective || t('tasks.noDescription')}</span>
-                </button>
-                <ChevronRight size={15} className="shrink-0 text-gray-400" />
+                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => onSelect?.(c)}
+                    className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left"
+                  >
+                    {c.name}
+                  </button>
+                  {subtaskCount > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
+                      ({subtaskCount})
+                    </span>
+                  )}
+                  {Boolean(campNote && campNote.trim()) && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenNoteEntityIds(prev => ({ ...prev, [c.id]: !prev[c.id] }));
+                      }}
+                      className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
+                      title="Xem ghi chú"
+                    >
+                      <FileText size={13} />
+                    </button>
+                  )}
+                </div>
+                {/* Status badge đưa lên góc phải */}
+                <div className="shrink-0">
+                  <StatusBadge status={c.status || 'planning'} />
+                </div>
               </div>
-              <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
-                <StatusBadge status={c.status || 'planning'} />
-                <span className="min-w-0 truncate">{c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}</span>
-                {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
-                {canManage(c) && (
-                  <div className="ml-auto flex shrink-0 items-center gap-1">
-                    <button type="button" onClick={() => void archive(c)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${c.name}`}><EyeOff size={15} /></button>
-                    <button type="button" onClick={() => remove(c)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${c.name}`}><Trash2 size={15} /></button>
+
+              {/* Hàng 2: Timeline và PIC */}
+              <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
+                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                  <span className="min-w-0 truncate">
+                    {c.end_date ? `${t('common.due')} ${formatDate(c.end_date)}` : t('common.noDueDate')}
+                  </span>
+                  {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
+                </div>
+                {leadPerson && (
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
+                    <Avatar name={leadPerson.name} src={leadPerson.avatar_url} className="w-4 h-4 text-[8px]" />
+                    <span className="text-xs text-gray-600 dark:text-gray-300 font-medium truncate max-w-[100px]">{leadPerson.name}</span>
                   </div>
                 )}
               </div>
-              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
-                <EntityNoteCell entityId={c.id} entityType="campaign" workspaceId={c.workspace_id} canEdit={canManage(c)} />
-              </div>
 
-              {/* Mobile Subtasks List */}
+              {/* Dropdown nội dung ghi chú nếu được bấm mở */}
+              {isNoteOpen && campNote && (
+                <div className="mt-2.5 p-2 rounded-[6px] bg-blue-50/70 dark:bg-[#071325] border border-blue-200/60 dark:border-slate-800 text-xs text-gray-700 dark:text-gray-300 animate-in fade-in duration-150">
+                  <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
+                    <FileText size={10} />
+                    <span>{lang === 'en' ? 'Note' : 'Ghi chú'}</span>
+                  </div>
+                  <div className="text-xs leading-relaxed whitespace-pre-wrap">{campNote}</div>
+                </div>
+              )}
+
+              {/* Mobile Subtasks List (KHÔNG có gạch phân cấp) */}
               {isCampaignExpanded && (
-                <div className="mt-3 pt-3 border-t border-amber-200/50 dark:border-slate-800 space-y-2 pl-3 relative">
-                  <div className="absolute left-1 top-3 bottom-0 w-[2px] bg-amber-400/40 dark:bg-amber-600/30" />
+                <div className="mt-3 pt-3 border-t border-amber-200/50 dark:border-slate-800 space-y-2">
                   {subtasks.map((st) => {
                     const items = subtaskChecklistMap[st.id] || [];
                     const isSubtaskExpanded = Boolean(expandedSubtasks[st.id]);
@@ -731,13 +759,21 @@ export const CampaignPanel: React.FC<{
                           <button
                             type="button"
                             onClick={() => toggleSubtaskExpand(st.id)}
-                            className="p-1 text-slate-400 hover:text-amber-600 rounded transition-transform"
+                            className="p-1 text-slate-400 hover:text-amber-600 rounded transition-transform cursor-pointer"
+                            title={isSubtaskExpanded ? 'Thu gọn đầu việc' : 'Xem các đầu việc'}
                           >
                             <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-amber-600' : ''}`} />
                           </button>
-                          <span className="font-semibold text-slate-900 dark:text-white truncate">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onOpenSubtask) onOpenSubtask(st);
+                              else onSelect?.(c);
+                            }}
+                            className="font-semibold text-slate-900 dark:text-white truncate text-left cursor-pointer"
+                          >
                             {st.title}
-                          </span>
+                          </button>
                           <StatusBadge status={st.status || 'planning'} />
                         </div>
                         <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -745,22 +781,26 @@ export const CampaignPanel: React.FC<{
                           <div>Hạn: <span className="font-medium text-slate-700 dark:text-slate-200">{st.due_date ? formatDate(st.due_date) : '—'}</span></div>
                         </div>
 
-                        {/* Mobile Checklist Items */}
+                        {/* Mobile Checklist Items (KHÔNG có gạch phân cấp, tick hình tròn) */}
                         {isSubtaskExpanded && (
-                          <div className="mt-2 pt-2 border-t border-amber-200/40 dark:border-slate-800/80 pl-3 space-y-1.5 relative">
-                            <div className="absolute left-1 top-2 bottom-0 w-[1.5px] bg-amber-400/30 dark:bg-amber-600/20" />
+                          <div className="mt-2 pt-2 border-t border-amber-200/40 dark:border-slate-800/80 space-y-1.5">
                             {items.map((it) => (
                               <div key={it.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-[11.5px]">
-                                <input
-                                  type="checkbox"
-                                  checked={Boolean(it.completed)}
-                                  onChange={() => handleToggleChecklistItem(st.id, it.id)}
-                                  className="w-3.5 h-3.5 rounded border-slate-300 text-emerald-600 focus:ring-0"
-                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleChecklistItem(st.id, it.id)}
+                                  className={`w-4 h-4 rounded-full border grid place-items-center transition-colors cursor-pointer ${
+                                    it.completed
+                                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                                      : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0a192f] hover:border-emerald-400'
+                                  }`}
+                                >
+                                  {it.completed && <Check size={10} className="stroke-[3]" />}
+                                </button>
                                 <span className={it.completed ? 'line-through text-slate-400 dark:text-slate-500 truncate' : 'text-slate-800 dark:text-slate-200 truncate'}>
                                   {it.title}
                                 </span>
-                                <button type="button" onClick={() => handleDeleteChecklistItem(st.id, it.id)} className="text-slate-400 hover:text-red-500 p-0.5">
+                                <button type="button" onClick={() => handleDeleteChecklistItem(st.id, it.id)} className="text-slate-400 hover:text-red-500 p-0.5 cursor-pointer">
                                   <Trash2 size={11} />
                                 </button>
                               </div>
@@ -774,9 +814,10 @@ export const CampaignPanel: React.FC<{
                                   void handleQuickCreateChecklistItem(st.id, title);
                                 }
                               }}
-                              className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline pt-1 block"
+                              className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 text-[11px] font-semibold transition-all cursor-pointer mt-1"
                             >
-                              + {lang === 'en' ? 'Add item' : 'Thêm đầu việc'}
+                              <Plus size={11} />
+                              <span>{lang === 'en' ? '+ Add Item' : '+ Thêm Đầu việc'}</span>
                             </button>
                           </div>
                         )}
@@ -792,9 +833,10 @@ export const CampaignPanel: React.FC<{
                         void handleQuickCreateSubtask(c.id, title);
                       }
                     }}
-                    className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline pt-1 block"
+                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 text-xs font-semibold transition-all cursor-pointer"
                   >
-                    + {lang === 'en' ? 'Add subtask' : 'Thêm subtask mới'}
+                    <Plus size={13} />
+                    <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
                   </button>
                 </div>
               )}

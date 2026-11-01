@@ -12,7 +12,7 @@ import {TaskDescriptionViewer} from '../components/features/tasks/TaskDescriptio
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
 import {CommentMessage} from '../components/features/comments/CommentMessage';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2,Pencil} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2,Pencil,FileText} from 'lucide-react';
 import {TaskActivityLogPopover} from '../components/features/tasks/TaskActivityLogPopover';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
@@ -23,7 +23,8 @@ import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../co
 import {useProjectsController} from '../hooks/useProjectsController';
 import {useResizableColumns} from '../hooks/useResizableColumns';
 import {EntityActionBadges} from '../components/features/projects/EntityActionBadges';
-import {EntityNoteCell} from '../components/features/projects/EntityNoteCell';
+import {EntityNoteCell, getCachedNote} from '../components/features/projects/EntityNoteCell';
+import {useUiStore} from '../store/uiStore';
 import {supabase} from '../services/supabase';
 import toast from 'react-hot-toast';
 import {CampaignDetailDrawer} from '../components/features/projects/CampaignDetailDrawer';
@@ -72,6 +73,21 @@ export const Projects:React.FC=()=>{
   const [projectSubtasksMap, setProjectSubtasksMap] = React.useState<Record<string, any[]>>({});
   const [projectSubtaskChecklistMap, setProjectSubtaskChecklistMap] = React.useState<Record<string, any[]>>({});
   const [treeSubtaskCommentCounts, setTreeSubtaskCommentCounts] = React.useState<Record<string, number>>({});
+  const [openNoteEntityIds, setOpenNoteEntityIds] = React.useState<Record<string, boolean>>({});
+  const setIsScanMode = useUiStore(s => s.setIsScanMode);
+  const isDetailActive = Boolean(selected || selectedCampaign || selectedSubtask);
+
+  React.useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1280;
+    if (isMobile && isDetailActive) {
+      setIsScanMode(true);
+    } else if (isMobile) {
+      setIsScanMode(false);
+    }
+    return () => {
+      if (isMobile) setIsScanMode(false);
+    };
+  }, [isDetailActive, setIsScanMode]);
 
   // Inline Creation: Project Subtask
   const [creatingSubtaskProjectId, setCreatingSubtaskProjectId] = React.useState<string | null>(null);
@@ -510,9 +526,14 @@ export const Projects:React.FC=()=>{
       const isProjectExpanded = Boolean(expandedProjects[project.id]);
       const subtasks = projectSubtasksMap[project.id] || [];
       const subtaskCount = subtasks.length;
+      const projectNote = getCachedNote('project', project.id);
+      const isNoteOpen = Boolean(openNoteEntityIds[project.id]);
+      const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
+      const leadPerson = people.find(x => String(x.id) === String(leadId));
 
       return (
-        <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-[#071325]/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
+        <article key={project.id} className={`min-w-0 rounded-[8px] border border-gray-200/90 bg-white/90 p-3 dark:border-slate-800 dark:bg-[#071325]/70 shadow-xs ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
+          {/* Hàng 1: Expand chevron, (i) icon, Title + subtask count + note icon, Status ở góc phải */}
           <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
             <button
               type="button"
@@ -526,44 +547,75 @@ export const Projects:React.FC=()=>{
               entityType="project"
               entity={project}
               track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-              leadPerson={(() => {
-                const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
-                const p = people.find(x => String(x.id) === String(leadId));
-                return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
-              })()}
+              leadPerson={leadPerson ? { name: leadPerson.name, avatar_url: (leadPerson as any).avatar_url } : null}
               subPersons={(subtaskMembers[project.id] || []).map(id => {
                 const p = people.find(x => String(x.id) === String(id));
                 return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
               })}
             />
-            <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
-              <span className="grid grid-cols-[1fr_auto] items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white">
-                <span className="min-w-0 truncate">{project.name}</span>
-                {subtaskCount > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 shrink-0">
-                    ({subtaskCount})
-                  </span>
-                )}
-                {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
-              </span>
-              <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{project.description || t('tasks.noDescription')}</span>
-            </button>
-            <ChevronRight size={15} className="shrink-0 text-gray-400" />
-          </div>
-          <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
-            <StatusBadge status={project.status || 'active'} />
-            <span className="min-w-0 truncate">{project.due_date ? `${t('common.due')} ${dateValue(project.due_date)}` : t('common.noDueDate')}</span>
-            {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
-            {canManageProject(project) && <div className="ml-auto flex shrink-0 items-center gap-1"><ActionButton icon={<EyeOff size={15} />} type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}></ActionButton><ActionButton icon={<Trash2 size={15} />} type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}></ActionButton></div>}
-          </div>
-          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
-            <EntityNoteCell entityId={project.id} entityType="project" workspaceId={(project as any).workspace_id} canEdit={canManageProject(project)} />
+            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }}
+                className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left"
+              >
+                {project.name}
+              </button>
+              {subtaskCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 shrink-0">
+                  ({subtaskCount})
+                </span>
+              )}
+              {Boolean(projectNote && projectNote.trim()) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenNoteEntityIds(prev => ({ ...prev, [project.id]: !prev[project.id] }));
+                  }}
+                  className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
+                  title="Xem ghi chú"
+                >
+                  <FileText size={13} />
+                </button>
+              )}
+            </div>
+            {/* Status badge đưa lên góc phải */}
+            <div className="shrink-0">
+              <StatusBadge status={project.status || 'active'} />
+            </div>
           </div>
 
-          {/* Mobile Subtasks List */}
+          {/* Hàng 2: Timeline và PIC */}
+          <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
+            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+              <span className="min-w-0 truncate">
+                {project.due_date ? `${t('common.due')} ${dateValue(project.due_date)}` : t('common.noDueDate')}
+              </span>
+              {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
+            </div>
+            {leadPerson && (
+              <div className="grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
+                <Avatar name={leadPerson.name} src={(leadPerson as any).avatar_url} className="w-4 h-4 text-[8px]" />
+                <span className="text-xs text-gray-600 dark:text-gray-300 font-medium truncate max-w-[100px]">{leadPerson.name}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Dropdown nội dung ghi chú nếu được bấm mở */}
+          {isNoteOpen && projectNote && (
+            <div className="mt-2.5 p-2 rounded-[6px] bg-blue-50/70 dark:bg-[#071325] border border-blue-200/60 dark:border-slate-800 text-xs text-gray-700 dark:text-gray-300 animate-in fade-in duration-150">
+              <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
+                <FileText size={10} />
+                <span>{lang === 'en' ? 'Note' : 'Ghi chú'}</span>
+              </div>
+              <div className="text-xs leading-relaxed whitespace-pre-wrap">{projectNote}</div>
+            </div>
+          )}
+
+          {/* Mobile Subtasks List (KHÔNG có gạch phân cấp) */}
           {isProjectExpanded && (
-            <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2 pl-4 relative">
-              
+            <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2">
               {subtasks.map((st: any) => {
                 const items = projectSubtaskChecklistMap[st.id] || [];
                 const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
@@ -585,7 +637,6 @@ export const Projects:React.FC=()=>{
                           setSelected(project);
                           setSelectedCampaign(null);
                           setSelectedSubtask(st);
-                          
                         }}
                         className="text-left font-semibold text-slate-900 dark:text-white truncate block cursor-pointer"
                       >
@@ -605,10 +656,9 @@ export const Projects:React.FC=()=>{
                       {st.quantity && <span className="text-emerald-600 dark:text-emerald-400 font-bold">· SL: {st.quantity}</span>}
                     </div>
 
-                    {/* Checklist inside Subtask */}
+                    {/* Checklist inside Subtask (KHÔNG có gạch phân cấp) */}
                     {isSubtaskExpanded && (
-                      <div className="pt-2 pl-3 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5 relative">
-                        
+                      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5">
                         {items.map((item: any) => (
                           <div key={item.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]">
                             {/* Vòng tròn checkmark */}
@@ -628,7 +678,6 @@ export const Projects:React.FC=()=>{
                                 setSelected(project);
                                 setSelectedCampaign(null);
                                 setSelectedSubtask(st);
-                                
                               }}
                               className={`cursor-pointer truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}
                             >

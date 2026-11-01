@@ -233,7 +233,7 @@ function serializeTextWithRichSpans(text: string, spans: RichSpan[]): string {
   return out;
 }
 
-const getCachedNote = (entityType: string, entityId: string): string => {
+export const getCachedNote = (entityType: string, entityId: string): string => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return '';
