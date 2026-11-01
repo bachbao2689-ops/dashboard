@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import endpoint from '../Dev/api/agent.ts';
-import rootEndpoint from '../api/agent.ts';
+import * as endpoint from '../Dev/api/agent.ts';
+import * as rootEndpoint from '../api/agent.ts';
 
 // Synthetic fixtures only: exercise the real SDK tool loop and HTTP handler
 // without sending workspace data to a provider or writing to Supabase.
@@ -15,14 +15,14 @@ const reads = [];
 const json = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 const request = body => new Request('https://fixture.invalid/api/agent', { method: 'POST', headers: { Authorization: 'Bearer fixture-session', 'Content-Type': 'application/json', Origin: 'https://fixture.invalid' }, body: JSON.stringify(body) });
 try {
-  assert.equal(endpoint.fetch, rootEndpoint.fetch, 'Both deployment roots use the same implementation');
-  const health = await endpoint.fetch(new Request('https://fixture.invalid/api/agent'));
+  assert.deepEqual(await (rootEndpoint.GET()).json(), await (endpoint.GET()).json());
+  const health = endpoint.GET();
   assert.equal((await health.json()).service, 'dashboard-agent');
   assert.equal(health.headers.get('cache-control'), 'no-store');
-  assert.equal((await endpoint.fetch(new Request('https://fixture.invalid/api/agent', { method: 'DELETE' }))).status, 405);
+  assert.equal((await endpoint.POST(new Request('https://fixture.invalid/api/agent', { method: 'DELETE' }))).status, 405);
   delete process.env.SUPABASE_URL; delete process.env.VITE_SUPABASE_URL;
   delete process.env.SUPABASE_ANON_KEY; delete process.env.VITE_SUPABASE_ANON_KEY;
-  assert.equal((await (await endpoint.fetch(request({ message: 'Hello' }))).json()).code, 'SUPABASE_NOT_CONFIGURED');
+  assert.equal((await (await endpoint.POST(request({ message: 'Hello' }))).json()).code, 'SUPABASE_NOT_CONFIGURED');
   process.env.SUPABASE_URL = 'https://fixture.invalid';
   process.env.SUPABASE_ANON_KEY = 'fixture-publishable';
   process.env.AI_AGENT_MODEL = 'fixture/model';
@@ -49,24 +49,24 @@ try {
       usage: { inputTokens: { total: 1 }, outputTokens: { total: 1 } }, warnings: [],
     }),
   }) };
-  assert.equal((await endpoint.fetch(new Request('https://fixture.invalid/api/agent', { method: 'POST' }))).status, 401);
-  const search = await endpoint.fetch(request({ message: 'Find Fixture' }));
+  assert.equal((await endpoint.POST(new Request('https://fixture.invalid/api/agent', { method: 'POST' }))).status, 401);
+  const search = await endpoint.POST(request({ message: 'Find Fixture' }));
   const found = await search.json();
   assert.equal(search.status, 200, JSON.stringify(found));
   assert.equal(found.text, 'Fixture task');
   assert.equal(new Set(reads).size, 3, 'Search covers tasks and both subtask sources');
   assert.equal(writes, 0);
   selectedTool = 'propose_create_task'; step = 0;
-  const proposed = await (await endpoint.fetch(request({ message: 'Create Fixture task' }))).json();
+  const proposed = await (await endpoint.POST(request({ message: 'Create Fixture task' }))).json();
   assert.equal(proposed.proposals?.length, 1, JSON.stringify(proposed));
   assert.equal(writes, 0, 'Proposal cannot write before approval');
   const token = proposed.proposals[0].token;
-  assert.equal((await endpoint.fetch(request({ action: 'execute', approvalToken: `${token}tampered` }))).status, 403);
+  assert.equal((await endpoint.POST(request({ action: 'execute', approvalToken: `${token}tampered` }))).status, 403);
   assert.equal(writes, 0);
   actor.id++;
-  assert.equal((await endpoint.fetch(request({ action: 'execute', approvalToken: token }))).status, 403, 'Approval belongs to its actor');
+  assert.equal((await endpoint.POST(request({ action: 'execute', approvalToken: token }))).status, 403, 'Approval belongs to its actor');
   actor.id--;
-  assert.equal((await endpoint.fetch(request({ action: 'execute', approvalToken: token }))).status, 200);
+  assert.equal((await endpoint.POST(request({ action: 'execute', approvalToken: token }))).status, 200);
   assert.equal(writes, 1, 'Approved action creates a task');
   console.log('Agent backend checks passed: Web entry points, health JSON, configuration, JWT auth, real SDK tool loop, 3 task sources, approval before writes, signature rejection and task creation.');
 } finally {
