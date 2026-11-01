@@ -337,7 +337,7 @@ function renderMarkdownTokens(raw: string): React.ReactNode {
 
 interface EntityNoteCellProps {
   entityId: string;
-  entityType: 'project' | 'campaign';
+  entityType: 'project' | 'campaign' | 'project_subtask' | 'campaign_subtask';
   workspaceId?: string | null;
   canEdit?: boolean;
   className?: string;

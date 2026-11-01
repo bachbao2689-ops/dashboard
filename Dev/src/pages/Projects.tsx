@@ -12,7 +12,7 @@ import {TaskDescriptionViewer} from '../components/features/tasks/TaskDescriptio
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
 import {CommentMessage} from '../components/features/comments/CommentMessage';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2,Pencil} from 'lucide-react';
 import {TaskActivityLogPopover} from '../components/features/tasks/TaskActivityLogPopover';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
@@ -79,6 +79,18 @@ export const Projects:React.FC=()=>{
   const [newSubtaskDue, setNewSubtaskDue] = React.useState('');
   const [newSubtaskPriority, setNewSubtaskPriority] = React.useState('medium');
 
+  // Quick Edit States (Subtask & Checklist Title)
+  const [editingSubtaskId, setEditingSubtaskId] = React.useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = React.useState('');
+  const [editingItemId, setEditingItemId] = React.useState<string | null>(null);
+  const [editingItemTitle, setEditingItemTitle] = React.useState('');
+
+  const toIsoDate = (val?: string) => {
+    if (!val) return null;
+    if (val.includes('/')) return val.split('/').reverse().join('-');
+    return val;
+  };
+
   // Inline Creation: Đầu việc (Checklist item)
   const [creatingItemSubtaskId, setCreatingItemSubtaskId] = React.useState<string | null>(null);
   const [newItemTitle, setNewItemTitle] = React.useState('');
@@ -142,7 +154,7 @@ export const Projects:React.FC=()=>{
       project_id: projectId,
       title: newSubtaskTitle.trim(),
       assignee_id: newSubtaskPic ? Number(newSubtaskPic) : null,
-      due_date: newSubtaskDue || null,
+      due_date: toIsoDate(newSubtaskDue),
       priority: newSubtaskPriority || 'medium',
       status: 'planning',
     }).select('*, assignee:assignee_id(id,name,avatar_url)').single();
@@ -212,7 +224,7 @@ export const Projects:React.FC=()=>{
       title: newItemTitle.trim(),
       completed: false,
       priority: newItemPriority || 'medium',
-      due_date: newItemDue || null,
+      due_date: toIsoDate(newItemDue),
       created_by: profile.id,
       created_by_name: profile.name || (lang === 'en' ? 'Member' : 'Thành viên'),
       created_at: new Date().toISOString(),
@@ -244,6 +256,33 @@ export const Projects:React.FC=()=>{
     setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
     window.dispatchEvent(new Event('tasks:changed'));
   };
+  const handleSaveEditProjectSubtask = async (subtaskId: string) => {
+    if (!editingSubtaskTitle.trim()) { setEditingSubtaskId(null); return; }
+    const { error } = await supabase.from('project_subtasks').update({ title: editingSubtaskTitle.trim() }).eq('id', subtaskId);
+    if (error) { toast.error('Không thể cập nhật tên subtask'); return; }
+    setEditingSubtaskId(null);
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleSaveEditProjectChecklistItem = async (subtaskId: string, itemId: string) => {
+    if (!editingItemTitle.trim() || !profile?.id) { setEditingItemId(null); return; }
+    const currentList = projectSubtaskChecklistMap[subtaskId] || [];
+    const nextItems = currentList.map(item => item.id === itemId ? { ...item, title: editingItemTitle.trim() } : item);
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+      user_id: profile.id,
+      action: 'details_updated',
+      entity_type: 'project_subtask',
+      entity_id: subtaskId,
+      metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
+    });
+    if (error) { toast.error('Không thể cập nhật đầu việc'); return; }
+    setEditingItemId(null);
+    setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
 
   const handleQuickCreateProjectChecklistItem = async (subtaskId: string, customTitle: string) => {
     if (!customTitle.trim() || !profile?.id) return;
@@ -508,8 +547,8 @@ export const Projects:React.FC=()=>{
 
           {/* Mobile Subtasks List */}
           {isProjectExpanded && (
-            <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2 pl-3 relative">
-              <div className="absolute left-1 top-3 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
+            <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2 pl-4 relative">
+              <div className="absolute left-1.5 top-3 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
               {subtasks.map((st: any) => {
                 const items = projectSubtaskChecklistMap[st.id] || [];
                 const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
@@ -520,7 +559,7 @@ export const Projects:React.FC=()=>{
                       <button
                         type="button"
                         onClick={() => toggleProjectSubtaskExpand(st.id)}
-                        className="p-1 text-slate-400 hover:text-violet-600 rounded transition-transform"
+                        className="p-1 text-slate-400 hover:text-violet-600 rounded transition-transform cursor-pointer"
                         title={isSubtaskExpanded ? 'Thu gọn đầu việc' : 'Xem các đầu việc'}
                       >
                         <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
@@ -531,15 +570,16 @@ export const Projects:React.FC=()=>{
                           setSelected(project);
                           setSelectedCampaign(null);
                           setSelectedSubtask(st);
+                          
                         }}
-                        className="text-left font-semibold text-slate-900 dark:text-white truncate block"
+                        className="text-left font-semibold text-slate-900 dark:text-white truncate block cursor-pointer"
                       >
                         {st.title}
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleToggleProjectSubtaskStatus(st.id, st.status)}
-                        className="hover:opacity-85"
+                        onClick={() => void handleToggleProjectSubtaskStatus(st.id, st.status)}
+                        className="hover:opacity-85 cursor-pointer"
                       >
                         <StatusBadge status={st.status || 'planning'} />
                       </button>
@@ -555,41 +595,54 @@ export const Projects:React.FC=()=>{
                       <div className="pt-2 pl-3 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5 relative">
                         <div className="absolute left-1 top-2 bottom-0 w-[1.5px] bg-violet-300/40 dark:bg-violet-700/30" />
                         {items.map((item: any) => (
-                          <div key={item.id} className="flex items-center justify-between gap-1.5 text-[11px]">
-                            <label className="flex items-center gap-1.5 truncate cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={Boolean(item.completed)}
-                                onChange={() => handleToggleProjectChecklistItem(st.id, item.id)}
-                                className="w-3 h-3 rounded-[3px] border-slate-300 text-emerald-600 focus:ring-0"
-                              />
-                              <span className={item.completed ? 'line-through text-slate-400 dark:text-slate-500 truncate' : 'text-slate-800 dark:text-slate-200 truncate'}>
-                                {item.title}
-                              </span>
-                            </label>
+                          <div key={item.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]">
+                            {/* Vòng tròn checkmark */}
                             <button
                               type="button"
-                              onClick={() => handleDeleteProjectChecklistItem(st.id, item.id)}
-                              className="text-slate-400 hover:text-red-500 p-0.5"
+                              onClick={() => void handleToggleProjectChecklistItem(st.id, item.id)}
+                              className={`w-4 h-4 rounded-full border transition-all grid place-items-center cursor-pointer shrink-0 ${
+                                item.completed
+                                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs'
+                                  : 'border-slate-300 dark:border-slate-600 hover:border-emerald-500 bg-white dark:bg-transparent'
+                              }`}
+                            >
+                              {item.completed && <Check size={10} strokeWidth={3} className="text-white" />}
+                            </button>
+                            <span
+                              onClick={() => {
+                                setSelected(project);
+                                setSelectedCampaign(null);
+                                setSelectedSubtask(st);
+                                
+                              }}
+                              className={`cursor-pointer truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}
+                            >
+                              {item.title}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteProjectChecklistItem(st.id, item.id)}
+                              className="text-slate-400 hover:text-red-500 p-0.5 cursor-pointer"
                             >
                               <Trash2 size={11} />
                             </button>
                           </div>
                         ))}
                         {/* Quick input for checklist */}
-                        <div className="pt-1 flex items-center gap-1">
-                          <input
-                            type="text"
-                            placeholder={lang === 'en' ? '+ Add item...' : '+ Thêm đầu việc...'}
-                            className="flex-1 px-2 py-0.5 text-[11px] rounded-[5px] border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-[#0a192f] text-slate-900 dark:text-white focus:outline-none"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const val = e.currentTarget.value;
-                                e.currentTarget.value = '';
-                                void handleQuickCreateProjectChecklistItem(st.id, val);
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const title = prompt(lang === 'en' ? 'Checklist item title:' : 'Tiêu đề đầu việc:');
+                              if (title && title.trim()) {
+                                void handleQuickCreateProjectChecklistItem(st.id, title);
                               }
                             }}
-                          />
+                            className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-0.5 rounded-full border border-dashed border-violet-400/80 bg-white dark:bg-[#0a192f] text-[11px] font-semibold text-violet-600 dark:text-violet-400 shadow-2xs cursor-pointer"
+                          >
+                            <Plus size={11} />
+                            <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -598,18 +651,19 @@ export const Projects:React.FC=()=>{
               })}
               {/* Quick input to add subtask on mobile */}
               <div className="pt-1">
-                <input
-                  type="text"
-                  placeholder={lang === 'en' ? '+ Add new subtask (Enter)...' : '+ Thêm subtask mới (Nhấn Enter)...'}
-                  className="w-full px-2.5 py-1 text-xs rounded-[6px] border border-violet-200 dark:border-slate-700 bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white focus:outline-none"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = e.currentTarget.value;
-                      e.currentTarget.value = '';
-                      void handleQuickCreateProjectSubtask(project.id, val);
+                <button
+                  type="button"
+                  onClick={() => {
+                    const title = prompt(lang === 'en' ? 'Subtask title:' : 'Tiêu đề subtask:');
+                    if (title && title.trim()) {
+                      void handleQuickCreateProjectSubtask(project.id, title);
                     }
                   }}
-                />
+                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-full border border-dashed border-violet-500 bg-violet-50 dark:bg-[#0a192f] text-xs font-semibold text-violet-700 dark:text-violet-300 shadow-2xs cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
+                </button>
               </div>
             </div>
           )}
@@ -816,17 +870,26 @@ export const Projects:React.FC=()=>{
                 <>
                   {subtasks.map((st: any) => {
                     const items = projectSubtaskChecklistMap[st.id] || [];
-                    const doneCount = items.filter(i => i.completed).length;
+                    const doneCount = items.filter((i: any) => i.completed).length;
                     const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
 
                     return (
                       <React.Fragment key={st.id}>
                         {/* Cấp 2: Hàng Subtask */}
-                        <tr className="bg-violet-50/20 dark:bg-[#071325]/70 hover:bg-violet-50/40 dark:hover:bg-[#0c1f3b] border-t border-dashed border-violet-200/50 dark:border-slate-800/80 transition-colors">
-                          {/* Cột 1: Title subtask có thụt lề pl-8 và icon dropdown */}
-                          <td className="p-3 pl-8 relative overflow-hidden">
-                            <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/40" />
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-[2px] bg-violet-400/40 dark:bg-violet-600/40" />
+                        <tr
+                          onClick={() => {
+                            setSelected(project);
+                            setSelectedCampaign(null);
+                            setSelectedSubtask(st);
+                            
+                          }}
+                          className="group bg-violet-50/20 dark:bg-[#071325]/70 hover:bg-violet-50/40 dark:hover:bg-[#0c1f3b] border-t border-dashed border-violet-200/50 dark:border-slate-800/80 transition-colors cursor-pointer"
+                        >
+                          {/* Cột 1: Title subtask thụt lề pl-12, dây dọc left-6 */}
+                          <td className="p-3 pl-12 relative overflow-hidden">
+                            <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                            
                             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
                               <button
                                 type="button"
@@ -840,13 +903,75 @@ export const Projects:React.FC=()=>{
                                 <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
                               </button>
                               <ListTodo className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0" />
-                              <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
-                                {st.title}
-                              </span>
+                              
+                              {editingSubtaskId === st.id ? (
+                                <input
+                                  type="text"
+                                  value={editingSubtaskTitle}
+                                  onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                                  onBlur={() => void handleSaveEditProjectSubtask(st.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') void handleSaveEditProjectSubtask(st.id);
+                                    if (e.key === 'Escape') setEditingSubtaskId(null);
+                                  }}
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 py-0.5 text-xs font-semibold rounded border border-violet-400 bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white outline-none"
+                                />
+                              ) : (
+                                <>
+                                  <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                                    {st.title}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingSubtaskId(st.id);
+                                      setEditingSubtaskTitle(st.title);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-opacity cursor-pointer shrink-0"
+                                    title={lang === 'en' ? 'Quick edit title' : 'Chỉnh sửa nhanh tên'}
+                                  >
+                                    <Pencil size={11} />
+                                  </button>
+                                </>
+                              )}
+
                               {items.length > 0 && (
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold ${doneCount === items.length ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-violet-100/90 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'}`}>
                                   ({doneCount}/{items.length} {lang === 'en' ? 'tasks' : 'việc'})
                                 </span>
+                              )}
+                            </div>
+
+                            {/* Hover action overlay on Column 1 */}
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelected(project);
+                                  setSelectedCampaign(null);
+                                  setSelectedSubtask(st);
+                                  
+                                }}
+                                className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 rounded transition-colors"
+                                title={lang === 'en' ? 'View details' : 'Xem chi tiết'}
+                              >
+                                <Eye size={13} />
+                              </button>
+                              {canManageProject(project) && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteProjectSubtask(st.id)}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+                                  title={lang === 'en' ? 'Delete subtask' : 'Xóa subtask'}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -894,7 +1019,10 @@ export const Projects:React.FC=()=>{
                             <div className="grid place-content-center">
                               <button
                                 type="button"
-                                onClick={() => handleToggleProjectSubtaskStatus(st.id, st.status)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleToggleProjectSubtaskStatus(st.id, st.status);
+                                }}
                                 title={lang === 'en' ? 'Click to toggle status' : 'Bấm để đổi trạng thái'}
                                 className="cursor-pointer hover:opacity-85 transition-opacity"
                               >
@@ -903,32 +1031,15 @@ export const Projects:React.FC=()=>{
                             </div>
                           </td>
 
-                          {/* Cột 7: NOTES / ACTIONS */}
+                          {/* Cột 7: GHI CHÚ (EntityNoteCell) */}
                           <td className="p-3 overflow-hidden text-center">
-                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 mx-auto">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelected(project);
-                                  setSelectedCampaign(null);
-                                  setSelectedSubtask(st);
-                                }}
-                                className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 rounded transition-colors"
-                                title={lang === 'en' ? 'View details' : 'Xem chi tiết'}
-                              >
-                                <Eye size={13} />
-                              </button>
-                              {canManageProject(project) && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteProjectSubtask(st.id)}
-                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
-                                  title={lang === 'en' ? 'Delete subtask' : 'Xóa subtask'}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              )}
-                            </div>
+                            <EntityNoteCell
+                              entityId={st.id}
+                              entityType="project_subtask"
+                              workspaceId={(project as any).workspace_id}
+                              canEdit={canManageProject(project)}
+                              alignCenter={true}
+                            />
                           </td>
                         </tr>
 
@@ -936,23 +1047,87 @@ export const Projects:React.FC=()=>{
                         {isSubtaskExpanded && (
                           <>
                             {items.map((item: any) => (
-                              <tr key={item.id} className="bg-violet-50/40 dark:bg-[#06101e] hover:bg-violet-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors">
-                                {/* Cột 1: Title đầu việc có checkbox và thụt lề sâu pl-14 */}
-                                <td className="py-2 px-4 pl-14 relative overflow-hidden">
-                                  <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/30 dark:bg-violet-600/20" />
-                                  <div className="absolute left-9 top-0 bottom-0 w-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
-                                  <div className="absolute left-9 top-1/2 -translate-y-1/2 w-3.5 h-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
+                              <tr
+                                key={item.id}
+                                onClick={() => {
+                                  setSelected(project);
+                                  setSelectedCampaign(null);
+                                  setSelectedSubtask(st);
+                                  
+                                }}
+                                className="group bg-violet-50/40 dark:bg-[#06101e] hover:bg-violet-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors cursor-pointer"
+                              >
+                                {/* Cột 1: Title đầu việc thụt lề sâu pl-20, dây nối left-6 & left-14 */}
+                                <td className="py-2 px-4 pl-20 relative overflow-hidden">
+                                  <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/30 dark:bg-violet-600/20" />
+                                  <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                                  <div className="absolute left-14 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                                  
                                   <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
-                                    <input
-                                      type="checkbox"
-                                      checked={Boolean(item.completed)}
-                                      onChange={() => handleToggleProjectChecklistItem(st.id, item.id)}
-                                      className="w-3.5 h-3.5 rounded-[4px] border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer"
-                                    />
-                                    <span className={`text-xs truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'}`}>
-                                      {item.title}
-                                    </span>
+                                    {/* Vòng tròn checkmark */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void handleToggleProjectChecklistItem(st.id, item.id);
+                                      }}
+                                      className={`w-4 h-4 rounded-full border transition-all grid place-items-center cursor-pointer shrink-0 ${
+                                        item.completed
+                                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs'
+                                          : 'border-slate-300 dark:border-slate-600 hover:border-emerald-500 bg-white dark:bg-transparent'
+                                      }`}
+                                      title={item.completed ? (lang === 'en' ? 'Completed' : 'Hoàn thành') : (lang === 'en' ? 'Todo' : 'Cần làm')}
+                                    >
+                                      {item.completed && <Check size={10} strokeWidth={3} className="text-white" />}
+                                    </button>
+
+                                    {editingItemId === item.id ? (
+                                      <input
+                                        type="text"
+                                        value={editingItemTitle}
+                                        onChange={(e) => setEditingItemTitle(e.target.value)}
+                                        onBlur={() => void handleSaveEditProjectChecklistItem(st.id, item.id)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') void handleSaveEditProjectChecklistItem(st.id, item.id);
+                                          if (e.key === 'Escape') setEditingItemId(null);
+                                        }}
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="px-2 py-0.5 text-xs rounded border border-violet-400 bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white outline-none"
+                                      />
+                                    ) : (
+                                      <>
+                                        <span className={`text-xs truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'}`}>
+                                          {item.title}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingItemId(item.id);
+                                            setEditingItemTitle(item.title);
+                                          }}
+                                          className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-opacity cursor-pointer shrink-0"
+                                          title={lang === 'en' ? 'Quick edit' : 'Chỉnh sửa nhanh'}
+                                        >
+                                          <Pencil size={11} />
+                                        </button>
+                                      </>
+                                    )}
                                   </div>
+
+                                  {/* Hover delete button on Title cell */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleDeleteProjectChecklistItem(st.id, item.id);
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-opacity cursor-pointer"
+                                    title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
                                 </td>
 
                                 {/* Cột 2: OWNER / PIC */}
@@ -990,25 +1165,19 @@ export const Projects:React.FC=()=>{
                                   </div>
                                 </td>
 
-                                {/* Cột 7: NOTES / ACTIONS */}
-                                <td className="py-2 px-4 overflow-hidden text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteProjectChecklistItem(st.id, item.id)}
-                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
-                                    title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
+                                {/* Cột 7: GHI CHÚ */}
+                                <td className="py-2 px-4 overflow-hidden text-center text-xs text-slate-400">
+                                  —
                                 </td>
                               </tr>
                             ))}
 
                             {/* Thanh tạo đầu việc mới */}
                             <tr className="bg-violet-50/20 dark:bg-[#06101e] border-t border-dotted border-slate-200/60 dark:border-slate-800/60">
-                              <td colSpan={7} className="py-2 px-4 pl-14 relative">
-                                <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/30 dark:bg-violet-600/20" />
-                                <div className="absolute left-9 top-0 bottom-0 w-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
+                              <td colSpan={7} className="py-2 px-4 pl-20 relative">
+                                <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/30 dark:bg-violet-600/20" />
+                                <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                                
                                 {creatingItemSubtaskId === st.id ? (
                                   <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300/80 dark:border-violet-700/60 shadow-xs">
                                     <input
@@ -1023,13 +1192,23 @@ export const Projects:React.FC=()=>{
                                         if (e.key === 'Escape') setCreatingItemSubtaskId(null);
                                       }}
                                     />
-                                    <input
-                                      type="date"
-                                      value={newItemDue}
-                                      onChange={(e) => setNewItemDue(e.target.value)}
-                                      className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
-                                      title={lang === 'en' ? 'Due date' : 'Hạn chót'}
-                                    />
+                                    <div className="tw-calendar-picker relative">
+                                      <input
+                                        type="text"
+                                        id={`inline-proj-chk-due-${st.id}`}
+                                        readOnly
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if ((window as any).openCalendar) {
+                                            (window as any).openCalendar({ displayId: `inline-proj-chk-due-${st.id}`, mode: 'single' }, e);
+                                          }
+                                        }}
+                                        value={newItemDue}
+                                        onChange={(e) => setNewItemDue(e.target.value)}
+                                        placeholder="dd/mm/yyyy"
+                                        className="w-28 px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 cursor-pointer text-center"
+                                      />
+                                    </div>
                                     <select
                                       value={newItemPriority}
                                       onChange={(e) => setNewItemPriority(e.target.value)}
@@ -1051,7 +1230,7 @@ export const Projects:React.FC=()=>{
                                     <button
                                       type="button"
                                       onClick={() => void handleCreateProjectChecklistItem(st.id)}
-                                      className="px-2.5 py-1 rounded-[6px] bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shadow-2xs cursor-pointer"
+                                      className="px-3 py-1 rounded-[6px] bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shadow-2xs cursor-pointer"
                                     >
                                       {lang === 'en' ? 'Add' : 'Thêm'}
                                     </button>
@@ -1076,10 +1255,10 @@ export const Projects:React.FC=()=>{
                                       setNewItemPriority('medium');
                                       setNewItemQuantity('');
                                     }}
-                                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 text-[11.5px] font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 hover:underline cursor-pointer"
+                                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-full border border-dashed border-violet-400 dark:border-violet-600 bg-white dark:bg-[#0a192f] text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
                                   >
-                                    <Plus size={13} />
-                                    <span>{lang === 'en' ? '+ Add checklist item' : '+ Thêm đầu việc cho subtask'}</span>
+                                    <Plus size={12} />
+                                    <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
                                   </button>
                                 )}
                               </td>
@@ -1092,8 +1271,8 @@ export const Projects:React.FC=()=>{
 
                   {/* Thanh tạo subtask mới cho Project */}
                   <tr className="bg-violet-50/15 dark:bg-[#071325]/50 border-t border-dashed border-violet-200/50 dark:border-slate-800/80">
-                    <td colSpan={7} className="py-2.5 px-4 pl-8 relative">
-                      <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
+                    <td colSpan={7} className="py-2.5 px-4 pl-12 relative">
+                      <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/30" />
                       {creatingSubtaskProjectId === project.id ? (
                         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300 dark:border-violet-700 shadow-sm">
                           <input
@@ -1118,13 +1297,23 @@ export const Projects:React.FC=()=>{
                               <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                           </select>
-                          <input
-                            type="date"
-                            value={newSubtaskDue}
-                            onChange={(e) => setNewSubtaskDue(e.target.value)}
-                            className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
-                            title={lang === 'en' ? 'Due date' : 'Hạn chót'}
-                          />
+                          <div className="tw-calendar-picker relative">
+                            <input
+                              type="text"
+                              id={`inline-proj-st-due-${project.id}`}
+                              readOnly
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if ((window as any).openCalendar) {
+                                  (window as any).openCalendar({ displayId: `inline-proj-st-due-${project.id}`, mode: 'single' }, e);
+                                }
+                              }}
+                              value={newSubtaskDue}
+                              onChange={(e) => setNewSubtaskDue(e.target.value)}
+                              placeholder="dd/mm/yyyy"
+                              className="w-28 px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 cursor-pointer text-center"
+                            />
+                          </div>
                           <select
                             value={newSubtaskPriority}
                             onChange={(e) => setNewSubtaskPriority(e.target.value)}
@@ -1165,10 +1354,10 @@ export const Projects:React.FC=()=>{
                             setNewSubtaskDue('');
                             setNewSubtaskPriority('medium');
                           }}
-                          className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 hover:underline cursor-pointer"
+                          className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-dashed border-violet-400 dark:border-violet-600 bg-violet-50/60 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                         >
-                          <Plus size={14} />
-                          <span>{lang === 'en' ? '+ Add subtask to this project' : '+ Thêm subtask mới cho dự án'}</span>
+                          <Plus size={13} />
+                          <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
                         </button>
                       )}
                     </td>
