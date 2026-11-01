@@ -51,7 +51,7 @@ export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly
               />
               )}
             </div>
-            <div className="w-full mt-3 flex-1 min-h-[150px] 2xl:min-h-[190px]">
+            <div className="w-full mt-2 flex-1 min-h-0 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>
@@ -69,9 +69,9 @@ export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly
                   separator=" "
                   contentStyle={{
                     fontSize: 11, borderRadius: 8,
-                    background: isDark ? '#1e293b' : '#fff',
+                    background: isDark ? '#0a192f' : '#fff',
                     color: isDark ? '#e2e8f0' : '#093570',
-                    border: `1px solid ${isDark ? '#334155' : '#e0eaf8'}`,
+                    border: `1px solid ${isDark ? '#1e3a5f' : '#e0eaf8'}`,
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   }}
                 />

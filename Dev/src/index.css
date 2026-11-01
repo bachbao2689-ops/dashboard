@@ -986,3 +986,11 @@ html.dark select option {
   background-color: #0a192f !important;
   color: #ffffff !important;
 }
+
+html.dark select.bg-transparent,
+.dark select.bg-transparent,
+select.bg-transparent {
+  background-color: transparent !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}

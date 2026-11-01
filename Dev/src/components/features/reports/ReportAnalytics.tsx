@@ -1102,11 +1102,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setMobileActiveBtn(null);
                       }}
                       aria-label="Lọc theo phòng ban"
-                      className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1 py-2.5 w-full disabled:cursor-not-allowed"
+                      className="bg-transparent dark:!bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer pr-1 py-2.5 w-full disabled:cursor-not-allowed border-none outline-none focus:ring-0"
                     >
-                      <option value="all">{t('reports.viz.allCompany')}</option>
+                      <option value="all" className="bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white">{t('reports.viz.allCompany')}</option>
                       {departments.map((d) => (
-                        <option key={d.id} value={d.id}>
+                        <option key={d.id} value={d.id} className="bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white">
                           {d.name}
                         </option>
                       ))}
@@ -1190,7 +1190,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           setDragHover(null);
                           setMobileActiveBtn(null);
                         }}
-                        className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-[8px] border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
+                        className="absolute right-0 top-[calc(100%+8px)] z-50 grid grid-cols-1 sm:grid-cols-[1fr_132px] overflow-hidden rounded-[8px] border border-gray-100 bg-white shadow-xl dark:border-slate-700/80 dark:bg-[#0a192f] w-[280px] sm:w-[420px] animate-in fade-in zoom-in-95 duration-150"
                       >
                         {/* Left: Calendar Month Grid with Drag Range */}
                         <div className="p-3">
@@ -1207,7 +1207,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 setPickerMonth(m);
                                 setPickerYear(y);
                               }}
-                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-[#0f1e36] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                               aria-label="Tháng trước"
                             >
                               <ChevronLeft className="w-3.5 h-3.5" />
@@ -1229,7 +1229,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 setPickerMonth(m);
                                 setPickerYear(y);
                               }}
-                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                              className="grid place-items-center rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-[#0f1e36] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                               aria-label="Tháng sau"
                             >
                               <ChevronRight className="w-3.5 h-3.5" />
@@ -1357,7 +1357,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         </div>
 
                         {/* Right: Presets */}
-                        <div className="grid grid-rows-[1fr_auto] border-t sm:border-t-0 sm:border-l border-gray-100 bg-gray-50/70 dark:border-slate-700 dark:bg-slate-900/70">
+                        <div className="grid grid-rows-[1fr_auto] border-t sm:border-t-0 sm:border-l border-gray-100 bg-gray-50/70 dark:border-slate-700/80 dark:bg-[#0d1a2d]">
                           <div className="p-2 grid grid-cols-1 gap-1 overflow-y-auto content-start">
                             {presetRanges.map((option) => (
                               <button
@@ -1371,8 +1371,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                 }}
                                 className={`grid grid-flow-col justify-start items-center w-full rounded-[6px] px-3 py-2 text-left text-xs font-semibold transition-colors cursor-pointer ${
                                   timeRange === option.id
-                                    ? 'bg-white text-[#002e6d] shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                                    : 'text-gray-600 hover:bg-gray-200/70 dark:text-gray-400 dark:hover:bg-slate-700/60'
+                                    ? 'bg-white text-[#002e6d] shadow-sm dark:bg-[#002e6d] dark:text-white'
+                                    : 'text-gray-600 hover:bg-gray-200/70 dark:text-slate-300 dark:hover:bg-[#0f1e36]'
                                 }`}
                               >
                                 {option.label}
@@ -1415,7 +1415,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     disabled={standalone}
                     aria-label="Khoảng sau"
                     onClick={() => shiftPeriod(1)}
-                    className="grid place-items-center rounded-r-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="grid place-items-center rounded-r-[8px] p-2 min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -1460,7 +1460,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       setActionMenuOpen(false);
                       setMobileActiveBtn(null);
                     }}
-                    className="z-50 w-56 rounded-[8px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
+                    className="z-50 w-56 rounded-[8px] bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-700/80 shadow-2xl p-1.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <button
                       type="button"
@@ -1469,7 +1469,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         setActionMenuOpen(false);
                         openVisualizeReport();
                       }}
-                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors text-left cursor-pointer min-h-[44px]"
+                      className="grid grid-flow-col auto-cols-max items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0f1e36] transition-colors text-left cursor-pointer min-h-[44px]"
                     >
                       <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>{t('reports.viz.viewReportWeb')}</span>
@@ -2296,7 +2296,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
             <div className="grid grid-flow-col auto-cols-max items-center gap-4">
               {/* View Switcher Buttons */}
-              <div className="grid grid-flow-col auto-cols-max gap-1 p-1 rounded-[8px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div className="grid grid-flow-col auto-cols-max gap-1 p-1 rounded-[8px] bg-slate-100 dark:bg-[#0a192f] border border-slate-200 dark:border-slate-700/80">
                 <button
                   type="button"
                   onClick={() => setStaffView('list')}
@@ -3077,10 +3077,10 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         </div>
 
         <div className="report-print-page-2">
-        {/* TẦNG 3: 2 Bottom Charts */}
-        <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* TẦNG 3: 2 Bottom Charts - Đồng bộ chiều cao h-[360px] bằng nhau 100%, max 5 nhân sự fix cứng */}
+        <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
           {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
-          <div className="w-full overflow-x-auto">
+          <div className="w-full">
             <DashboardAllocationChart
               name={departmentDisplayName}
               rangeStart={allocationRangeStart}
@@ -3088,12 +3088,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               hideDateFilter={true}
               isDark={isDark}
               chartData={allocationChartData}
-              className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm grid grid-rows-[auto_1fr_auto] min-w-[320px] sm:min-w-0"
+              className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr_auto] h-[360px] min-h-[360px] max-h-[360px] min-w-[320px] sm:min-w-0 overflow-hidden"
             />
           </div>
 
           {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix - Slide 4b) */}
-          <div className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm space-y-4 min-w-0">
+          <div className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr] h-[360px] min-h-[360px] max-h-[360px] min-w-0 overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
               <div className="grid grid-cols-1 gap-0.5">
                 <div className="grid grid-flow-col auto-cols-max items-center gap-2">
@@ -3108,7 +3108,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer ${
                         showCapacityInfo
                           ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                          : 'bg-slate-100 dark:bg-[#0f1e36] text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white border border-transparent dark:border-slate-700/60'
                       }`}
                     >
                       <Info className="w-3.5 h-3.5" />
@@ -3187,17 +3187,17 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 <span className="px-2 py-0.5 rounded font-bold bg-blue-600/15 text-blue-700 dark:text-blue-400 border border-blue-600/30 whitespace-nowrap">
                   80–100% {lang === 'en' ? 'Optimal' : 'Chuẩn'}
                 </span>
-                <span className="px-2 py-0.5 rounded font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded font-medium bg-slate-100 dark:bg-[#0f1e36] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">
                   &lt;80% {lang === 'en' ? 'Underload' : 'Trống tải'}
                 </span>
               </div>
             </div>
 
             {/* Matrix Table */}
-            <div className="overflow-x-auto -mx-1 sm:mx-0 px-1 sm:px-0">
+            <div className="overflow-x-auto overflow-y-auto mt-2 min-h-0 flex-1 custom-scrollbar">
               <table className="w-full min-w-[500px] text-xs text-left">
                 <thead>
-                  <tr className="border-b border-slate-200/70 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+                  <tr className="border-b border-slate-200/70 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-semibold sticky top-0 bg-white/95 dark:bg-[#0a192f]/95 z-10 backdrop-blur-xs">
                     <th className="py-2 px-2.5">{lang === 'en' ? 'Member' : 'Nhân sự'}</th>
                     {heatmapColumnLabels.map((lbl, idx) => (
                       <th key={idx} className="py-2 px-2 text-center whitespace-nowrap">
@@ -3207,8 +3207,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {heatmap.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                  {heatmap.slice(0, 5).map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-[#0f1e36]/50 transition-colors">
                       <td className="py-2.5 px-2.5 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 min-w-0">
                           {row.avatar_url ? (
@@ -3226,7 +3226,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                         </div>
                       </td>
                       {row.weeks.map((val: number, cIdx: number) => {
-                        let cellClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50';
+                        let cellClass = 'bg-slate-100 dark:bg-[#0f1e36] text-slate-600 dark:text-slate-300 border-slate-200/50 dark:border-slate-700/80';
                         if (val > 100) {
                           cellClass = 'bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold border-rose-500/30';
                         } else if (val >= 80) {
