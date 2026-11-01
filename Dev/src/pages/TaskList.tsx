@@ -1,3 +1,4 @@
+import { useRecentItemsStore } from '../store/recentItemsStore';
 import {useWorkspaceData} from '../hooks/useWorkspaceData';
 import {taskOverdue,taskDueWithin,taskDone,taskOpen} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
@@ -94,7 +95,13 @@ export const TaskList: React.FC = () => {
   };
 
   useEffect(() => {
-    if (searchParams.has('search')) {
+    if (searchParams.get("action") === "new") {
+      handleNewTask();
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("action");
+      setSearchParams(nextParams, { replace: true });
+    }
+    if (searchParams.has("search")) {
       setSearchTerm(searchParams.get('search') || '');
     }
     if (searchParams.has('status')) setStatusFilter(searchParams.get('status') || 'open');
@@ -110,7 +117,15 @@ export const TaskList: React.FC = () => {
     const taskId = searchParams.get('task');
     if (taskId && tasks.length) {
       const task = tasks.find(item => item.id === taskId);
-      if (task) setSelectedTask(task);
+      if (task) {
+        setSelectedTask(task);
+        useRecentItemsStore.getState().addItem({
+          id: String(task.id),
+          title: task.title,
+          kind: (task as any).parent_task_id ? "subtask" : "task",
+          path: `/tasks?task=${task.id}`,
+        });
+      }
     }
   }, [searchParams, tasks]);
 
@@ -335,7 +350,16 @@ export const TaskList: React.FC = () => {
           selectedTasks={selectedTasks}
           setSelectedTasks={setSelectedTasks}
           toggleSelectTask={toggleSelectTask}
-          onOpenTask={task => { setIsModalOpen(false); setSelectedTask(task); }}
+          onOpenTask={task => {
+            setIsModalOpen(false);
+            setSelectedTask(task);
+            useRecentItemsStore.getState().addItem({
+              id: String(task.id),
+              title: task.title,
+              kind: (task as any).parent_task_id ? "subtask" : "task",
+              path: `/tasks?task=${task.id}`,
+            });
+          }}
           deletingIds={deletingIds}
         />
 

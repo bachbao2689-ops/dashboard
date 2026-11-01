@@ -1,3 +1,4 @@
+import { useRecentItemsStore } from '../store/recentItemsStore';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import {hasCanonicalNotifications} from '../store/notificationStore';
 import React,{useEffect,useMemo,useState,useRef} from 'react';
@@ -48,10 +49,24 @@ export function useProjectsController(){
   useEffect(() => {
     if (selected?.id) {
       setRecentEntities(prev => ({ ...prev, [`project:${selected.id}`]: Date.now() }));
+      useRecentItemsStore.getState().addItem({
+        id: String(selected.id),
+        title: (selected as any).title || (selected as any).name || "Project",
+        kind: "project",
+        path: `/projects?project=${selected.id}`,
+      });
     } else if (selectedCampaign?.id) {
       setRecentEntities(prev => ({ ...prev, [`campaign:${selectedCampaign.id}`]: Date.now() }));
+      useRecentItemsStore.getState().addItem({
+        id: String(selectedCampaign.id),
+        title: (selectedCampaign as any).title || (selectedCampaign as any).name || "Campaign",
+        kind: "campaign",
+        path: `/projects?campaign=${selectedCampaign.id}`,
+      });
     }
   }, [selected?.id, selectedCampaign?.id]);
+
+
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const creationLock = React.useRef(false);
@@ -72,6 +87,16 @@ export function useProjectsController(){
   const [campaignNewSubtask, setCampaignNewSubtask] = useState(''); const [campaignSubtaskOwner, setCampaignSubtaskOwner] = useState(''); const [campaignSubtaskDue, setCampaignSubtaskDue] = useState(''); const [campaignSubtaskQuantity, setCampaignSubtaskQuantity] = useState(''); const [showCampaignSubtaskForm, setShowCampaignSubtaskForm] = useState(false); const [campaignComment, setCampaignComment] = useState(''); const [campaignEditMode, setCampaignEditMode] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]); const [comments, setComments] = useState<any[]>([]);
   const [selectedSubtask, setSelectedSubtask] = useState<any | null>(null);
+  useEffect(() => {
+    if (selectedSubtask?.id) {
+      useRecentItemsStore.getState().addItem({
+        id: String(selectedSubtask.id),
+        title: (selectedSubtask as any).title || (selectedSubtask as any).name || "Subtask",
+        kind: "subtask",
+        path: `/projects?subtask=${selectedSubtask.id}`,
+      });
+    }
+  }, [selectedSubtask?.id]);
   const [subtaskCommentCounts, setSubtaskCommentCounts] = useState<Record<string, number>>({});
   const [subtaskChecklistCounts, setSubtaskChecklistCounts] = useState<Record<string, { total: number; done: number }>>({});
   const [campaignSubtaskCommentCounts, setCampaignSubtaskCommentCounts] = useState<Record<string, number>>({});

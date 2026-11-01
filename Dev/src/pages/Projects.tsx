@@ -4,7 +4,7 @@ import {ActionButton} from '../components/common/ActionButton';
 import {StatusBadge} from '../components/common/StatusBadge';
 import {MultiSelect} from '../components/common/MultiSelect';
 import React from 'react';
-import {Link} from 'react-router-dom';
+import {Link, useSearchParams} from 'react-router-dom';
 import {officialReadEnabled} from '../services/officialReadOnly';
 import {WorkflowTrackingSummary} from '../components/features/projects/WorkflowTrackingSummary';
 import {TaskDetailPanel} from '../components/features/tasks/TaskDetailPanel';
@@ -40,7 +40,20 @@ export const Projects:React.FC=()=>{
    initialWidths: initialProjectColWidths,
    minWidth: 95,
  });
+ const [searchParams, setSearchParams] = useSearchParams();
  const state=useProjectsController();
+ React.useEffect(() => {
+   if (searchParams.get("action") === "new") {
+     state.resetCreateForm();
+     state.setCreationType("project");
+     state.setSelected(null);
+     state.setSelectedCampaign(null);
+     state.setCreateOpen(true);
+     const nextParams = new URLSearchParams(searchParams);
+     nextParams.delete("action");
+     setSearchParams(nextParams, { replace: true });
+   }
+ }, [searchParams]);
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
    const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
   const formatCreatedAt = (value?: string | null) => {

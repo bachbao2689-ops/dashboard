@@ -1,6 +1,6 @@
 import { useOverlayStore } from '../../store/overlayStore';
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, 
   Search, 
@@ -13,23 +13,31 @@ import {
   FolderKanban, 
   TrendingUp, 
   LayoutDashboard,
-  ChevronRight,
   Bot,
+  Home,
+  Clock,
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 import { canViewTeamManagement } from '../../lib/roleScope';
+import { useRecentItemsStore } from '../../store/recentItemsStore';
 
 export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden = false }) => {
   const { t, lang } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const taskDetailsOpen = useOverlayStore(state => state.taskDetails > 0);
   const isHidden = scrollHidden || taskDetailsOpen;
   const profile = useAuthStore(s => s.profile);
   const isLeader = canViewTeamManagement(profile);
   const badges = useSidebarBadges();
+  const storeRecents = useRecentItemsStore((s) => s.items);
+
+  // Detail view mode detection for mobile (Task/Project/Campaign/Subtask/Profile)
+
+    /\/(tasks|projects|campaigns|members)\/.+/.test(location.pathname);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +46,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
 
   // Close drawer on overlay click or route change
   const closeDrawer = () => setIsDrawerOpen(false);
+
 
   // Close drawer on escape key
   useEffect(() => {
@@ -73,6 +82,8 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
     { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader, desc: lang === 'en' ? 'Performance analytics and capacity' : 'Báo cáo năng suất & tải công việc' },
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, hidden: !isLeader, desc: lang === 'en' ? 'Executive overview cockpit' : 'Bảng điều khiển tổng quan' },
   ].filter(tab => !tab.hidden);
+
+  if (location.pathname === '/mobile-home') return null;
 
   return (
     <>
@@ -122,7 +133,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
         )}
       />
 
-      {/* Modern 3-Part Mobile Bottom Bar (Ref image1.png): Menu Button + Search Input + Workflow/Action Button */}
+      {/* Modern 2-Part (Detail Mode) or 3-Part (List Mode) Mobile Bottom Bar */}
       <div 
         inert={isHidden}
         aria-hidden={isHidden}
@@ -132,7 +143,10 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
           taskDetailsOpen && "nav-detail-hidden"
         )}
       >
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-full mobile-liquid-glass backdrop-blur-2xl shadow-xl border border-white/60 dark:border-slate-700/60 bg-white/80 dark:bg-[#0b1329]/85">
+        <div className={cn(
+          "items-center gap-2 p-1.5 rounded-full mobile-liquid-glass backdrop-blur-2xl shadow-xl border border-white/60 dark:border-slate-700/60 bg-white/80 dark:bg-[#0b1329]/85",
+          "grid grid-cols-[auto_1fr]"
+        )}>
           {/* 1. Left: Hamburger Menu Button (Ref image1.png) */}
           <button
             type="button"
@@ -144,7 +158,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
             <Menu size={20} strokeWidth={2} />
           </button>
 
-          {/* 2. Middle: Integrated Search Input (Ref image1.png: Ask AI / Search pill) */}
+          {/* 2. Middle: Integrated Search Input (Thanh search dài) */}
           <form 
             onSubmit={handleSearchSubmit}
             className="h-11 rounded-full bg-slate-100/90 dark:bg-[#0a192f] border border-slate-200/60 dark:border-slate-700/80 grid grid-cols-[auto_1fr_auto] items-center px-3 gap-2 min-w-0 transition-all focus-within:ring-1 focus-within:ring-[#002e6d]/40 focus-within:border-[#002e6d]/50 dark:focus-within:border-slate-600"
@@ -173,100 +187,139 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
             )}
           </form>
 
-          {/* 3. Right: Quick Action / Workflow Button (Ref image1.png & image3.png) */}
-          <NavLink
-            to="/workflow"
-            aria-label={t('nav.home')}
-            title={t('nav.home')}
-            className={({ isActive }) => cn(
-              "w-11 h-11 rounded-full grid place-items-center transition-all cursor-pointer shadow-xs shrink-0 active:scale-95",
-              isActive
-                ? "bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] text-white shadow-md ring-2 ring-blue-400/40"
-                : "bg-slate-100/90 dark:bg-[#0a192f] border border-transparent dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#0f1e36]"
-            )}
-          >
-            <Layers size={20} strokeWidth={1.8} />
-          </NavLink>
+          
         </div>
       </div>
 
-      {/* Mobile All-Tabs Drawer / Bottom Sheet (Opened by Hamburger Button) */}
+      {/* Floating Popover / Context Menu nhỏ gọn góc dưới (~270px, rounded-[14px], kính mờ, KHÔNG tràn 85vh) */}
       {isDrawerOpen && (
         <div 
-          className="fixed inset-0 z-[120] xl:hidden transition-opacity duration-300"
+          className="fixed inset-0 z-[120] xl:hidden"
           role="dialog"
           aria-modal="true"
-          aria-label={lang === 'en' ? 'Dashboard Navigation Menu' : 'Menu điều hướng Dashboard'}
+          aria-label={lang === 'en' ? 'Navigation Popover' : 'Menu điều hướng nhanh'}
         >
-          {/* Backdrop Overlay */}
+          {/* Backdrop Overlay mờ nhẹ */}
           <div 
             onClick={closeDrawer}
-            className="absolute inset-0 bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-black/25 dark:bg-black/50 backdrop-blur-[2px] transition-opacity"
           />
 
-          {/* Bottom Sheet Drawer */}
+          {/* Floating Popover Card */}
           <div 
-            className="absolute inset-x-0 bottom-0 max-h-[85vh] bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-2xl rounded-t-3xl border-t border-slate-200/80 dark:border-slate-700/80 shadow-2xl p-4 pb-[calc(24px+env(safe-area-inset-bottom))] grid grid-cols-1 gap-3 overflow-hidden animate-in slide-in-from-bottom duration-300"
+            className="absolute left-3 bottom-[calc(76px+env(safe-area-inset-bottom))] w-[270px] max-h-[75vh] bg-white/95 dark:bg-[#0a192f]/95 backdrop-blur-2xl rounded-[14px] border border-slate-200/90 dark:border-slate-700/80 shadow-2xl overflow-hidden grid grid-cols-1 grid-rows-[auto_1fr_auto] animate-in zoom-in-95 fade-in duration-200"
           >
-            {/* Sheet Header */}
-            <div className="grid grid-cols-[1fr_auto] items-center pb-2 border-b border-slate-200/70 dark:border-slate-800">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#002e6d]/10 dark:bg-[#38bdf8]/10 text-[#002e6d] dark:text-[#38bdf8] grid place-items-center">
-                  <Menu size={18} strokeWidth={2} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    {lang === 'en' ? 'Dashboard Navigation' : 'Danh mục Dashboard'}
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    {lang === 'en' ? 'Select a module to view and manage' : 'Chọn phân hệ để làm việc'}
-                  </p>
-                </div>
+            {/* Header: Tiêu đề Recents & nút đóng */}
+            <div className="grid grid-cols-[1fr_auto] items-center px-3 pt-3 pb-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                <Clock size={12} className="text-[#002e6d] dark:text-sky-400" />
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  {lang === 'en' ? 'Recents' : 'Gần đây'}
+                </span>
               </div>
-
               <button
                 type="button"
                 onClick={closeDrawer}
                 aria-label={t('common.close')}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 grid place-items-center transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 grid place-items-center transition-colors cursor-pointer"
               >
-                <X size={16} />
+                <X size={13} />
               </button>
             </div>
 
-            {/* List of Dashboard Tabs */}
-            <div className="max-h-[60vh] overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
-              {navTabs.map((tab) => (
-                <NavLink
-                  key={tab.name}
-                  to={tab.path}
-                  onClick={closeDrawer}
-                  className={({ isActive }) => cn(
-                    "grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3 rounded-[8px] transition-all cursor-pointer border",
-                    isActive
-                      ? "bg-blue-50/90 dark:bg-blue-950/40 border-blue-300/80 dark:border-blue-700/80 text-blue-900 dark:text-blue-100 shadow-xs"
-                      : "bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800/60 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                  )}
-                >
-                  <div className="w-9 h-9 rounded-[8px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 grid place-items-center text-slate-700 dark:text-slate-200 shadow-2xs shrink-0">
-                    {tab.icon}
-                  </div>
+            {/* Scrollable Content: Recents (5 mục) + Shortcuts các tab */}
+            <div className="overflow-y-auto px-2 py-1.5 space-y-2 max-h-[calc(75vh-120px)] custom-scrollbar">
+              {/* Recents items */}
+              <div className="grid grid-cols-1 gap-1">
+                {storeRecents.slice(0, 6).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      closeDrawer();
+                      navigate(item.path);
+                    }}
+                    className="w-full text-left p-1.5 rounded-[6px] hover:bg-slate-100 dark:hover:bg-slate-800/80 grid grid-cols-[auto_1fr] items-center gap-2 transition-colors cursor-pointer group"
+                  >
+                    <div className="w-6 h-6 rounded-[4px] bg-slate-100 dark:bg-slate-800 grid place-items-center shrink-0">
+                      {item.kind === 'project' ? (
+                        <FolderKanban size={12} className="text-blue-500" />
+                      ) : item.kind === 'campaign' ? (
+                        <Layers size={12} className="text-amber-500" />
+                      ) : (
+                        <CheckSquare size={12} className="text-emerald-500" />
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 min-w-0">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-primary">
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate">
+                        {item.parentName || (item.kind === 'project' ? (lang === 'en' ? 'Project' : 'Dự án') : item.kind === 'campaign' ? (lang === 'en' ? 'Campaign' : 'Chiến dịch') : (lang === 'en' ? 'Task' : 'Đầu việc'))}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-                  <div className="grid grid-cols-1 min-w-0">
-                    <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-                      <span className="font-bold text-xs truncate">{tab.name}</span>
+              {/* Shortcuts các tab chính */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-1.5">
+                <span className="block px-1 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {lang === 'en' ? 'Shortcuts' : 'Phím tắt'}
+                </span>
+                <div className="grid grid-cols-1 gap-0.5">
+                  {navTabs.map((tab) => (
+                    <NavLink
+                      key={tab.name}
+                      to={tab.path}
+                      onClick={closeDrawer}
+                      className={({ isActive }) => cn(
+                        "grid grid-cols-[auto_1fr_auto] items-center gap-2 px-2 py-1.5 rounded-[6px] transition-colors cursor-pointer text-xs font-semibold",
+                        isActive
+                          ? "bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-sky-300 font-bold"
+                          : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                      )}
+                    >
+                      <span className="w-5 h-5 grid place-items-center text-slate-500 dark:text-slate-400 shrink-0">
+                        {React.cloneElement(tab.icon as React.ReactElement<{ size?: number }>, { size: 14 })}
+                      </span>
+                      <span className="truncate">{tab.name}</span>
                       {Boolean((tab as any).badgeCount > 0) && (
-                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                        <span className="px-1 py-0.1 rounded-full text-[9px] font-bold bg-rose-500 text-white">
                           {(tab as any).badgeCount}
                         </span>
                       )}
-                    </div>
-                    <span className="text-[10px] text-slate-400 truncate mt-0.5">{tab.desc}</span>
-                  </div>
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                  <ChevronRight size={16} className="text-slate-400 justify-self-end" />
-                </NavLink>
-              ))}
+            {/* 2 Nút cố định ở đáy: Home (về Mobile Hub) + Search */}
+            <div className="border-t border-slate-200/70 dark:border-slate-800 p-2 grid grid-cols-2 gap-2 bg-slate-50/90 dark:bg-slate-900/80">
+              <button
+                type="button"
+                onClick={() => {
+                  closeDrawer();
+                  navigate('/mobile-home');
+                }}
+                className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 py-1.5 px-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-[#002e6d] dark:text-sky-300 hover:bg-slate-100 dark:hover:bg-[#0f1e36] shadow-2xs transition-all cursor-pointer active:scale-95"
+              >
+                <Home size={13} strokeWidth={2.2} />
+                <span>{lang === 'en' ? 'Home' : 'Trang chủ'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeDrawer();
+                  searchInputRef.current?.focus();
+                }}
+                className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 py-1.5 px-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0f1e36] shadow-2xs transition-all cursor-pointer active:scale-95"
+              >
+                <Search size={13} strokeWidth={2.2} />
+                <span>{t('header.search')}</span>
+              </button>
             </div>
           </div>
         </div>

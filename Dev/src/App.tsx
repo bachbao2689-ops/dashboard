@@ -23,6 +23,7 @@ const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 const Agents=lazy(()=>import('./pages/Agents').then(module=>({default:module.Agents})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
+const MobileHomeHub=lazy(()=>import('./components/mobile/MobileHomeHub'));
 import { useLocation } from 'react-router-dom';
 import { useUiStore } from './store/uiStore';
 
@@ -38,10 +39,10 @@ function RootRedirect() {
     return <Navigate to={`/workflow${location.search}`} replace />;
   }
 
-  // Mobile flow: default to Projects/Campaigns tab on mobile screens
+  // Mobile flow: default to mobile home hub on mobile screens
   const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1280;
   if (isMobileViewport) {
-    return <Navigate to="/projects" replace />;
+    return <Navigate to="/mobile-home" replace />;
   }
 
   if (canViewTeamManagement(profile)) {
@@ -97,6 +98,7 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<RootRedirect />} />
+            <Route path="mobile-home" element={<MobileHomeHub />} />
             <Route path="workflow" element={<WorkflowManagement />} />
             <Route path="workflow-management-2" element={<Navigate to="/workflow" replace />} />
             <Route path="overview" element={<AdminRoute><Overview /></AdminRoute>} />
@@ -106,7 +108,7 @@ function App() {
             <Route path="agents" element={<Agents />} />
             <Route path="main-view" element={<MainReadOnly />} />
             <Route path="my-tasks" element={<MyTasks />} />
-                        <Route path="departments-2" element={<Departments2 />} />
+            <Route path="departments-2" element={<Departments2 />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />
@@ -121,9 +123,6 @@ function App() {
           </Route>
         </Routes></Suspense>
       </BrowserRouter>
-
-
-
     </>
   );
 }
