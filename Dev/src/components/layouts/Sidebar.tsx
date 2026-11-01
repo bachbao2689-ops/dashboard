@@ -1,4 +1,36 @@
+import { entityLink } from '../../lib/taskTracking';
+import { type NotificationItem } from '../../store/notificationStore';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from "react-dom";
+import {
+  PanelLeftClose,
+  PanelLeft,
+  Search,
+  Bell,
+  Settings,
+  Sun,
+  Moon,
+  Globe,
+  Check,
+  X,
+  Sparkles,
+  RefreshCw,
+} from "lucide-react";
+import { useUiStore } from "../../store/uiStore";
+import { useNotificationCenter } from "../../hooks/useNotificationCenter";
+import { markNotificationsRead } from "../../store/notificationStore";
+import { PushNotificationSettings } from "../features/notifications/PushNotificationSettings";
+import {
+  NotificationIcon,
+  TONES,
+  toneOf,
+  toneStyle,
+  PicText,
+  formatNotificationTimestamp,
+} from "../features/notifications/notificationVisual";
+import toast from "react-hot-toast";
+import { appUpdateService, type UpdateInfo } from "../../services/appUpdateService";
+
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   DndContext,
@@ -829,6 +861,83 @@ export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isSidebarCollapsed, toggleSidebarCollapsed, setSidebarCollapsed, theme, toggleTheme, lang, setLang } = useUiStore();
+  const { items: notifications, unread } = useNotificationCenter();
+  const [markingRead, setMarkingRead] = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
+  const notifRef = useRef<HTMLDivElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
+  const settingsBtnRef = useRef<HTMLDivElement>(null);
+  const settingsPanelRef = useRef<HTMLDivElement>(null);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
+
+  useEffect(() => {
+    return appUpdateService.subscribe(setUpdateInfo);
+  }, []);
+
+  const markAllNotificationsRead = async () => {
+    if (markingRead || !unread) return;
+    setMarkingRead(true);
+    try {
+      await markNotificationsRead();
+    } catch {
+      toast.error('Chưa đánh dấu đã đọc được. Vui lòng thử lại.');
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
+  const openNotification = async (notification: NotificationItem) => {
+    void markNotificationsRead([notification.id]).catch(() =>
+      toast.error('Chưa đồng bộ trạng thái đã đọc.')
+    );
+    setShowNotifs(false);
+    const href = entityLink(
+      notification.entity_type,
+      notification.entity_id,
+      notification.metadata
+    );
+    if (href) navigate(href);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        showNotifs &&
+        notifRef.current &&
+        !notifRef.current.contains(target) &&
+        !notifPanelRef.current?.contains(target)
+      ) {
+        setShowNotifs(false);
+      }
+      if (
+        showSettings &&
+        settingsBtnRef.current &&
+        !settingsBtnRef.current.contains(target) &&
+        !settingsPanelRef.current?.contains(target)
+      ) {
+        setShowSettings(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowNotifs(false);
+        setShowSettings(false);
+      }
+    };
+    if (showNotifs || showSettings) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNotifs, showSettings]);
+
   const { profile, enrichedTasks, enrichedTracks, summary, togglePin } =
     useSidebarTrackingData();
 
@@ -898,7 +1007,13 @@ export const Sidebar: React.FC = () => {
     document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
   }, [sidebarWidth]);
 
-  // Drag resize handler
+  const currentDragWidthRef = useRef<number>(DEFAULT_SIDEBAR_WIDTH);
+
+  // Drag resize handler with Smooth Tracking & Midpoint Snap:
+  // - While dragging: continuous live width tracking (clamped 80..MAX_SIDEBAR_WIDTH)
+  // - On mouseUp:
+  //   * If dragged < 176px (more than half towards crop) -> auto-snap to collapsed (80px)
+  //   * If dragged >= 176px (more than half towards expand) -> auto-snap to expanded (272px or dragged width)
   useEffect(() => {
     if (!resizing) {
       document.documentElement.removeAttribute('data-sidebar-resizing');
@@ -907,11 +1022,26 @@ export const Sidebar: React.FC = () => {
     document.documentElement.setAttribute('data-sidebar-resizing', 'true');
     const handleMouseMove = (event: MouseEvent) => {
       const next = Math.round(event.clientX);
-      if (next >= MIN_SIDEBAR_WIDTH && next <= MAX_SIDEBAR_WIDTH) {
-        setSidebarWidth(next);
+      const clamped = Math.max(80, Math.min(MAX_SIDEBAR_WIDTH, next));
+      currentDragWidthRef.current = clamped;
+      document.documentElement.style.setProperty('--sidebar-width', `${clamped}px`);
+    };
+    const handleMouseUp = () => {
+      setResizing(false);
+      document.documentElement.removeAttribute('data-sidebar-resizing');
+      const finalWidth = currentDragWidthRef.current;
+      const MIDPOINT = 176; // (80 + 272) / 2
+      if (finalWidth < MIDPOINT) {
+        setSidebarCollapsed(true);
+        document.documentElement.style.setProperty('--sidebar-width', `${DEFAULT_SIDEBAR_WIDTH}px`);
+        setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+      } else {
+        setSidebarCollapsed(false);
+        const resolvedWidth = finalWidth >= MIN_SIDEBAR_WIDTH ? finalWidth : DEFAULT_SIDEBAR_WIDTH;
+        document.documentElement.style.setProperty('--sidebar-width', `${resolvedWidth}px`);
+        setSidebarWidth(resolvedWidth);
       }
     };
-    const handleMouseUp = () => setResizing(false);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     return () => {
@@ -919,7 +1049,7 @@ export const Sidebar: React.FC = () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.documentElement.removeAttribute('data-sidebar-resizing');
     };
-  }, [resizing, setSidebarWidth]);
+  }, [resizing, setSidebarWidth, setSidebarCollapsed]);
 
   const role = profile?.role || 'member';
   const isLeader = canViewTeamManagement(profile);
@@ -1061,6 +1191,28 @@ export const Sidebar: React.FC = () => {
 
   // Measure active group header position for the Left Spine Active Indicator Bar
   const accordionRootRef = useRef<HTMLDivElement | null>(null);
+  const collapsedNavItems = useMemo(() => {
+    const list: Array<{ id: string; label: string; icon: React.ReactNode; path: string }> = [];
+    const seenPaths = new Set<string>();
+    groups.forEach(g => {
+      const rootNode = g.nodes[g.rootNodeId];
+      if (rootNode?.items) {
+        rootNode.items.forEach(it => {
+          if (it.path && !seenPaths.has(it.path)) {
+            seenPaths.add(it.path);
+            list.push({
+              id: it.id,
+              label: it.label,
+              icon: it.icon,
+              path: it.path,
+            });
+          }
+        });
+      }
+    });
+    return list;
+  }, [groups]);
+
   const [spineIndicator, setSpineIndicator] = useState<{
     top: number;
     height: number;
@@ -1211,293 +1363,748 @@ export const Sidebar: React.FC = () => {
 
   return (
     <div className="app-sidebar-outer w-full h-full flex-shrink-0 z-10 relative">
-      <aside className="app-sidebar app-sidebar-inner w-full h-full card-hub flex flex-col pt-3 pb-3 flex-shrink-0 z-10 relative shadow-sm">
+      <aside className={cn(
+        'app-sidebar app-sidebar-inner w-full h-full card-hub flex flex-col flex-shrink-0 z-10 relative shadow-sm',
+        isSidebarCollapsed ? 'items-center py-2.5 px-0' : 'pt-2.5 pb-2.5'
+      )}>
         {/* Right-edge Drag Resize Handle */}
         <div
           onMouseDown={e => {
             e.preventDefault();
             setResizing(true);
           }}
-          onDoubleClick={() => setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)}
-          title="Kéo để thay đổi độ rộng Sidebar (Nhấp đúp để đặt lại)"
+          onDoubleClick={() => {
+            setSidebarCollapsed(false);
+            setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+          }}
+          title={lang === 'en' ? 'Drag to resize sidebar (Double click to reset)' : 'Kéo để thay đổi độ rộng Sidebar (Nhấp đúp để đặt lại)'}
           className={cn('sb-resize-handle hidden xl:flex', resizing && 'is-resizing')}
         >
           <span className="sb-resize-grip" />
         </div>
 
-        <NavLink
-          to="/"
-          className="sb-logo-card mb-3 grid place-items-center bg-[#FAFAFA] dark:bg-slate-800 mx-3 py-2.5 px-3 min-h-[80px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-2xs transition-transform hover:scale-[1.01]"
-        >
-          <img
-            src="/logo-light.svg"
-            alt="Phúc Sinh Logo"
-            className="h-16 sm:h-[72px] w-auto max-w-full object-contain filter drop-shadow-xs block dark:hidden"
-          />
-          <img
-            src="/logo-dark.svg"
-            alt="Phúc Sinh Logo"
-            className="h-16 sm:h-[72px] w-auto max-w-full object-contain filter drop-shadow-xs hidden dark:block"
-          />
-        </NavLink>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setActiveDrag(null)}
-      >
-        <div className="flex-1 overflow-y-auto px-3.5 custom-scrollbar">
-          {/* ==========================================
-              ZONE 1: PINNED (ĐÃ GHIM - Sortable & Drop-to-Pin)
-             ========================================== */}
-          {(totalPinnedCount > 0 || activeDrag?.source === 'workspace-nav') && (
-            <div className="mb-3">
-              <div className="sb-section-divider">
-                <span className="flex items-center gap-1.5">
-                  <StylizedPinIcon size={11.5} pinned className="text-blue-600 dark:text-emerald-400" />
-                  <span>Đã ghim</span>
-                </span>
-                <span className="text-[10px] font-bold opacity-75">{totalPinnedCount}</span>
+        {/* ==========================================
+            ROW 1 (TOP): LOGO + PHUC SINH CONSUMERS + QUICK CROP TOGGLE
+           ========================================== */}
+        {isSidebarCollapsed ? (
+          <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
+            <NavLink
+              to="/"
+              className="w-9 h-9 rounded-[8px] bg-white dark:bg-[#0a192f] flex items-center justify-center shrink-0 border border-gray-200/80 dark:border-slate-700 shadow-2xs group relative"
+              title="Phúc Sinh Dashboard"
+            >
+              <img src="/logo-light.svg" alt="PS" className="h-5 w-auto object-contain block dark:hidden" />
+              <img src="/logo-dark.svg" alt="PS" className="h-5 w-auto object-contain hidden dark:block" />
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => toggleSidebarCollapsed()}
+              title={lang === 'en' ? 'Expand sidebar' : 'Mở rộng thanh bên'}
+              aria-label={lang === 'en' ? 'Expand sidebar' : 'Mở rộng thanh bên'}
+              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors cursor-pointer shrink-0"
+            >
+              <PanelLeft size={18} />
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-3 pt-1 pb-2.5 border-b border-gray-100 dark:border-slate-800/80 mb-2.5">
+            <NavLink
+              to="/"
+              className="grid grid-flow-col auto-cols-max items-center gap-2.5 min-w-0 group"
+              title="Phúc Sinh Dashboard"
+            >
+              <div className="w-8 h-8 rounded-[8px] bg-white dark:bg-[#0a192f] grid place-items-center shrink-0 border border-gray-200/80 dark:border-slate-700 shadow-2xs">
+                <img src="/logo-light.svg" alt="PS" className="h-5 w-auto block dark:hidden" />
+                <img src="/logo-dark.svg" alt="PS" className="h-5 w-auto hidden dark:block" />
               </div>
-
-              <PinnedDropZone isDraggingAny={Boolean(activeDrag)}>
-                {totalPinnedCount === 0 ? (
-                  <div className="py-2.5 px-3 text-center text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
-                    Thả mục vào đây để ghim lên đầu Sidebar
-                  </div>
-                ) : (
-                  <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-                    <ul className="space-y-1">
-                      {visiblePinnedNavs.map(({ item, group }) => {
-                        const [basePath, query] = (item.path || '').split('?');
-                        const active =
-                          Boolean(item.path) &&
-                          location.pathname === basePath &&
-                          (!query || location.search.includes(query));
-                        const sortableId = `pinned-nav:${item.id}`;
-
-                        return (
-                          <SortablePinnedItemRow
-                            key={sortableId}
-                            sortableId={sortableId}
-                            dragPayload={{
-                              id: sortableId,
-                              source: 'pinned-nav',
-                              label: item.label,
-                              accentColor: group.accentColor,
-                              navId: item.id,
-                            }}
-                            label={item.label}
-                            icon={item.icon}
-                            active={active}
-                            onClick={() => item.path && navigate(item.path)}
-                            onUnpin={() => toggleNavPinStore(item.id, profile?.id)}
-                          />
-                        );
-                      })}
-
-                      {pinnedEntities.map(entity => {
-                        const href =
-                          entity.kind === 'campaign'
-                            ? `/projects?campaign=${encodeURIComponent(entity.id)}`
-                            : `/projects?project=${encodeURIComponent(entity.id)}`;
-                        const active =
-                          location.pathname === '/projects' &&
-                          location.search.includes(`${entity.kind}=${entity.id}`);
-                        const sortableId = `pinned-entity:${entity.kind}:${entity.id}`;
-                        const icon =
-                          entity.kind === 'campaign' ? (
-                            <Megaphone size={16} className="text-amber-500" />
-                          ) : (
-                            <FolderKanban size={16} className="text-violet-500" />
-                          );
-
-                        return (
-                          <SortablePinnedItemRow
-                            key={sortableId}
-                            sortableId={sortableId}
-                            dragPayload={{
-                              id: sortableId,
-                              source: 'pinned-entity',
-                              label: entity.name,
-                              accentColor: entity.kind === 'campaign' ? '#F59E0B' : '#7C3AED',
-                              entity,
-                            }}
-                            label={entity.name}
-                            icon={icon}
-                            active={active}
-                            onClick={() => navigate(href)}
-                            onUnpin={() => unpinEntity(entity.kind, entity.id)}
-                          />
-                        );
-                      })}
-
-                      {pinnedTaskItems.map(task => {
-                        const active =
-                          location.pathname === '/tasks' &&
-                          location.search.includes(encodeURIComponent(task.id));
-                        const sortableId = `pinned-task:${task.id}`;
-                        const icon = <CheckSquare size={16} />;
-
-                        return (
-                          <SortablePinnedItemRow
-                            key={sortableId}
-                            sortableId={sortableId}
-                            dragPayload={{
-                              id: sortableId,
-                              source: 'pinned-task',
-                              label: task.title,
-                              accentColor: '#2563EB',
-                              taskId: task.id,
-                            }}
-                            label={task.title}
-                            icon={icon}
-                            active={active}
-                            onClick={() => navigate(task.href)}
-                            onUnpin={() => togglePin(task.id)}
-                          />
-                        );
-                      })}
-                    </ul>
-                  </SortableContext>
-                )}
-              </PinnedDropZone>
-            </div>
-          )}
-
-          {/* ==========================================
-              ZONE 2: WORKSPACES (Tree Accordion with Dynamic SVG Branch)
-             ========================================== */}
-          <div className="sb-section-divider mt-1">
-            <span>Không gian làm việc</span>
+              <div className="min-w-0 leading-tight">
+                <span className="block text-xs font-black tracking-wider uppercase text-[#002e6d] dark:text-blue-300 truncate font-sans">
+                  PHUC SINH
+                </span>
+                <span className="block text-[9.5px] font-bold tracking-widest uppercase text-gray-500 dark:text-slate-400 truncate -mt-0.5">
+                  CONSUMERS
+                </span>
+              </div>
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => toggleSidebarCollapsed()}
+              title={lang === 'en' ? 'Collapse sidebar' : 'Thu gọn thanh bên'}
+              aria-label={lang === 'en' ? 'Collapse sidebar' : 'Thu gọn thanh bên'}
+              className="w-8 h-8 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#0a192f] transition-colors cursor-pointer shrink-0 border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+            >
+              <PanelLeftClose size={17} />
+            </button>
           </div>
-
-          <div ref={accordionRootRef} className="sb-tree-accordion-root">
-            {/* Left Vertical Spine Track */}
-            <div className="sb-left-spine-track" aria-hidden="true" />
-
-            {/* Sliding Active Group Bar on Left Spine */}
-            <div
-              aria-hidden="true"
-              className="sb-spine-active-bar"
-              style={{
-                transform: `translateY(${spineIndicator.top}px)`,
-                height: `${spineIndicator.height}px`,
-              }}
-            />
-
-            {groups.map(group => (
-              <SidebarTreeGroupSection
-                key={group.id}
-                group={group}
-                isOpen={openGroupIds.includes(group.id)}
-                onSelectGroup={handleSelectGroup}
-                currentPath={location.pathname}
-                currentSearch={location.search}
-                openDropdownItemId={openDropdownItemId}
-                onToggleItemDropdown={handleToggleItemDropdown}
-                onNavigate={path => navigate(path)}
-                pinnedNavIds={pinnedNavIds}
-                onToggleNavPin={handleToggleNavPin}
-                onToggleTaskPin={taskId => {
-                  const wasPinned = pinnedTaskIds.includes(taskId);
-                  togglePin(taskId);
-                  if (!wasPinned) {
-                    showPinToast('📌 Đã ghim công việc lên đầu danh sách');
-                  }
-                }}
-                onItemCheck={handleItemCheck}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Floating Drag Overlay (#18181B solid black pill) */}
-        <DragOverlay dropAnimation={null}>
-          {activeDrag ? (
-            <div className="sb-dragging-floating-pill">
-              <span className="shrink-0 inline-flex items-center justify-center text-blue-400">
-                {renderDragOverlayIcon(activeDrag)}
-              </span>
-              <span className="truncate max-w-[180px]">{activeDrag.label}</span>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-
-      {/* Floating Toast Pill Feedback when pinning */}
-      {pinToastMessage && (
-        <div role="status" aria-live="polite" className="sb-pin-toast-pill">
-          <span>{pinToastMessage}</span>
-        </div>
-      )}
-
-      {/* ==========================================
-          ZONE 3: BOTTOM STAFF PROFILE CARD (/my-tasks)
-         ========================================== */}
-      <div className="mt-auto px-3.5 pt-2 space-y-2">
-        <NavLink
-          to="/my-tasks"
-          title={t('nav.profile')}
-          className={({ isActive }) =>
-            cn(
-              'sidebar-link sb-profile-footer-card flex items-center gap-3 w-full cursor-pointer select-none',
-              isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
-            )
-          }
-        >
-          <div className="relative shrink-0">
-            <div className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-sm shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={staffName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{staffInitials}</span>
-              )}
-            </div>
-            <span
-              aria-hidden="true"
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
-            />
-          </div>
-
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-sm font-bold leading-tight text-gray-900 dark:text-white">
-              {staffName}
-            </p>
-            <p className="truncate text-xs font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
-              {staffPositionLabel}
-            </p>
-          </div>
-        </NavLink>
-
-        {officialReadEnabled && (
-          <NavLink
-            to="/main-view"
-            className={({ isActive }) =>
-              cn(
-                'sidebar-link flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium border border-transparent',
-                isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
-              )
-            }
-          >
-            <ExternalLink size={14} />
-            <span className="truncate">Theo dõi Main · Chỉ đọc</span>
-          </NavLink>
         )}
 
-        <div className="pt-0.5 text-center">
-          <p className="text-[11px] font-medium text-[#A1A1AA] tracking-wider">
-            Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
-          </p>
-        </div>
-      </div>
-    </aside>
-  </div>
-);
+        {/* ==========================================
+            ROW 2: SEARCH INPUT + NOTIFICATION BELL
+           ========================================== */}
+        {isSidebarCollapsed ? (
+          <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              title={lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
+              aria-label={lang === 'en' ? 'Search' : 'Tìm kiếm'}
+              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+            >
+              <Search size={16} />
+            </button>
+            <div className="relative shrink-0 flex items-center justify-center" ref={notifRef}>
+              <button
+                type="button"
+                onClick={() => setShowNotifs(!showNotifs)}
+                title={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                aria-expanded={showNotifs}
+                className={cn(
+                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors relative cursor-pointer border shrink-0',
+                  showNotifs
+                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                )}
+              >
+                <span className={unread > 0 ? 'notif-bell' : undefined}><Bell size={16} /></span>
+                {unread > 0 && (
+                  <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 px-3 mb-2.5">
+            <div className="relative min-w-0">
+              <input
+                type="text"
+                value={sidebarSearchQuery}
+                onChange={e => setSidebarSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && sidebarSearchQuery.trim()) {
+                    navigate(`/tasks?search=${encodeURIComponent(sidebarSearchQuery.trim())}`);
+                  }
+                }}
+                placeholder={lang === 'en' ? 'Search... (⌘K)' : 'Tìm kiếm... (⌘K)'}
+                className="w-full h-8 pl-8 pr-8 text-xs rounded-[8px] bg-slate-50 dark:bg-[#0a192f] text-gray-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 focus:outline-none focus:border-[#002e6d]/40 dark:focus:border-blue-400/50 transition-colors"
+              />
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-1 py-0.2 text-[9px] font-bold text-gray-400 dark:text-gray-500 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 pointer-events-none">
+                ⌘K
+              </span>
+            </div>
+            <div className="relative shrink-0" ref={notifRef}>
+              <button
+                type="button"
+                onClick={() => setShowNotifs(!showNotifs)}
+                title={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                aria-expanded={showNotifs}
+                className={cn(
+                  'w-8 h-8 rounded-[8px] grid place-items-center transition-colors relative cursor-pointer border',
+                  showNotifs
+                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                )}
+              >
+                <span className={unread > 0 ? 'notif-bell' : undefined}><Bell size={16} /></span>
+                {unread > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white border-2 border-white dark:border-slate-900">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            MIDDLE NAVIGATION: COLLAPSED OR FULL DND
+           ========================================== */}
+        {isSidebarCollapsed ? (
+          <div className="flex-1 w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col items-center gap-1.5 py-1">
+            {collapsedNavItems.map(item => {
+              const [basePath, query] = (item.path || '').split('?');
+              const active =
+                Boolean(item.path) &&
+                location.pathname === basePath &&
+                (!query || location.search.includes(query));
+
+              return (
+                <div key={item.id} className="group/nav relative flex items-center justify-center shrink-0 w-full">
+                  <NavLink
+                    to={item.path}
+                    className={cn(
+                      'sidebar-link w-9 h-9 rounded-[8px] flex items-center justify-center transition-all cursor-pointer relative shrink-0',
+                      active
+                        ? 'sidebar-link-active'
+                        : 'sidebar-link-idle hover:bg-gray-100 dark:hover:bg-[#0a192f]'
+                    )}
+                    title={item.label}
+                  >
+                    <span className="[&>svg]:w-[18px] [&>svg]:h-[18px] flex items-center justify-center">{item.icon}</span>
+                  </NavLink>
+                  {/* Floating tooltip on hover */}
+                  <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                    {item.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveDrag(null)}
+          >
+            <div className="flex-1 overflow-y-auto px-3.5 custom-scrollbar">
+              {/* ZONE 1: PINNED (ĐÃ GHIM - Sortable & Drop-to-Pin) */}
+              {(totalPinnedCount > 0 || activeDrag?.source === 'workspace-nav') && (
+                <div className="mb-3">
+                  <div className="sb-section-divider">
+                    <span className="flex items-center gap-1.5">
+                      <StylizedPinIcon size={11.5} pinned className="text-blue-600 dark:text-emerald-400" />
+                      <span>{lang === 'en' ? 'Pinned' : 'Đã ghim'}</span>
+                    </span>
+                    <span className="text-[10px] font-bold opacity-75">{totalPinnedCount}</span>
+                  </div>
+
+                  <PinnedDropZone isDraggingAny={Boolean(activeDrag)}>
+                    {totalPinnedCount === 0 ? (
+                      <div className="py-2.5 px-3 text-center text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
+                        {lang === 'en' ? 'Drop items here to pin to top' : 'Thả mục vào đây để ghim lên đầu'}
+                      </div>
+                    ) : (
+                      <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+                        <ul className="space-y-1">
+                          {visiblePinnedNavs.map(({ item, group }) => {
+                            const [basePath, query] = (item.path || '').split('?');
+                            const active =
+                              Boolean(item.path) &&
+                              location.pathname === basePath &&
+                              (!query || location.search.includes(query));
+                            const sortableId = `pinned-nav:${item.id}`;
+
+                            return (
+                              <SortablePinnedItemRow
+                                key={sortableId}
+                                sortableId={sortableId}
+                                dragPayload={{
+                                  id: sortableId,
+                                  source: 'pinned-nav',
+                                  label: item.label,
+                                  accentColor: group.accentColor,
+                                  navId: item.id,
+                                }}
+                                label={item.label}
+                                icon={item.icon}
+                                active={active}
+                                onClick={() => item.path && navigate(item.path)}
+                                onUnpin={() => toggleNavPinStore(item.id, profile?.id)}
+                              />
+                            );
+                          })}
+
+                          {pinnedEntities.map(entity => {
+                            const href =
+                              entity.kind === 'campaign'
+                                ? `/projects?campaign=${encodeURIComponent(entity.id)}`
+                                : `/projects?project=${encodeURIComponent(entity.id)}`;
+                            const active =
+                              location.pathname === '/projects' &&
+                              location.search.includes(`${entity.kind}=${entity.id}`);
+                            const sortableId = `pinned-entity:${entity.kind}:${entity.id}`;
+                            const icon =
+                              entity.kind === 'campaign' ? (
+                                <Megaphone size={16} className="text-amber-500" />
+                              ) : (
+                                <FolderKanban size={16} className="text-violet-500" />
+                              );
+
+                            return (
+                              <SortablePinnedItemRow
+                                key={sortableId}
+                                sortableId={sortableId}
+                                dragPayload={{
+                                  id: sortableId,
+                                  source: 'pinned-entity',
+                                  label: entity.name,
+                                  accentColor: entity.kind === 'campaign' ? '#F59E0B' : '#7C3AED',
+                                  entity,
+                                }}
+                                label={entity.name}
+                                icon={icon}
+                                active={active}
+                                onClick={() => navigate(href)}
+                                onUnpin={() => unpinEntity(entity.kind, entity.id)}
+                              />
+                            );
+                          })}
+
+                          {pinnedTaskItems.map(task => {
+                            const href = `/workflow?task=${encodeURIComponent(task.id)}`;
+                            const active =
+                              location.pathname === '/workflow' &&
+                              location.search.includes(`task=${task.id}`);
+                            const sortableId = `pinned-task:${task.id}`;
+
+                            return (
+                              <SortablePinnedItemRow
+                                key={sortableId}
+                                sortableId={sortableId}
+                                dragPayload={{
+                                  id: sortableId,
+                                  source: 'pinned-task',
+                                  label: task.title,
+                                  accentColor: '#3B82F6',
+                                  taskId: task.id,
+                                }}
+                                label={task.title}
+                                icon={<CheckSquare size={16} className="text-blue-500" />}
+                                active={active}
+                                onClick={() => navigate(href)}
+                                onUnpin={() => togglePin(task.id)}
+                              />
+                            );
+                          })}
+                        </ul>
+                      </SortableContext>
+                    )}
+                  </PinnedDropZone>
+                </div>
+              )}
+
+              {/* ZONE 2: WORKSPACE ACCORDION GROUPS */}
+              <div className="relative space-y-1">
+                {/* Sliding Active Group Bar on Left Spine */}
+                <div
+                  aria-hidden="true"
+                  className="sb-spine-active-bar"
+                  style={{
+                    transform: `translateY(${spineIndicator.top}px)`,
+                    height: `${spineIndicator.height}px`,
+                  }}
+                />
+
+                {groups.map(group => (
+                  <SidebarTreeGroupSection
+                    key={group.id}
+                    group={group}
+                    isOpen={openGroupIds.includes(group.id)}
+                    onSelectGroup={handleSelectGroup}
+                    currentPath={location.pathname}
+                    currentSearch={location.search}
+                    openDropdownItemId={openDropdownItemId}
+                    onToggleItemDropdown={handleToggleItemDropdown}
+                    onNavigate={path => navigate(path)}
+                    pinnedNavIds={pinnedNavIds}
+                    onToggleNavPin={handleToggleNavPin}
+                    onToggleTaskPin={taskId => {
+                      const wasPinned = pinnedTaskIds.includes(taskId);
+                      togglePin(taskId);
+                      if (!wasPinned) {
+                        showPinToast('📌 Đã ghim công việc lên đầu danh sách');
+                      }
+                    }}
+                    onItemCheck={handleItemCheck}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Floating Drag Overlay */}
+            <DragOverlay dropAnimation={null}>
+              {activeDrag ? (
+                <div className="sb-dragging-floating-pill">
+                  <span className="shrink-0 inline-flex items-center justify-center text-blue-400">
+                    {renderDragOverlayIcon(activeDrag)}
+                  </span>
+                  <span className="truncate max-w-[180px]">{activeDrag.label}</span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )}
+
+        {/* Floating Toast Pill Feedback when pinning */}
+        {pinToastMessage && (
+          <div role="status" aria-live="polite" className="sb-pin-toast-pill">
+            <span>{pinToastMessage}</span>
+          </div>
+        )}
+
+        {/* ==========================================
+            ZONE 3: BOTTOM STAFF PROFILE CARD + SETTINGS GEAR
+           ========================================== */}
+        {isSidebarCollapsed ? (
+          <div className="mt-auto w-full pt-2 border-t border-gray-100 dark:border-slate-800/80 flex flex-col items-center gap-2 pb-1 shrink-0">
+            <NavLink
+              to="/my-tasks"
+              title={`${staffName} (${t('nav.profile')})`}
+              className="group/avatar relative flex items-center justify-center shrink-0"
+            >
+              <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80 shrink-0">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{staffInitials}</span>
+                )}
+              </div>
+              <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/avatar:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                {staffName} · {t('nav.profile')}
+              </div>
+            </NavLink>
+            <div className="relative shrink-0 flex items-center justify-center" ref={settingsBtnRef}>
+              <button
+                type="button"
+                onClick={() => setShowSettings(!showSettings)}
+                title={lang === 'en' ? 'Settings' : 'Cài đặt'}
+                aria-label={lang === 'en' ? 'Settings' : 'Cài đặt'}
+                className={cn(
+                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0',
+                  showSettings
+                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                )}
+              >
+                <Settings size={18} className={cn('transition-transform duration-300', showSettings && 'rotate-45 text-primary dark:text-blue-400')} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-auto px-3 pt-2 border-t border-gray-100 dark:border-slate-800/80 space-y-2">
+            <div
+              className={cn(
+                'sidebar-link sb-profile-footer-card grid grid-cols-[1fr_auto] items-center gap-2 w-full p-1.5 rounded-[8px] select-none transition-colors border',
+                location.pathname === '/my-tasks'
+                  ? 'sidebar-link-active'
+                  : 'sidebar-link-idle bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-slate-800/60'
+              )}
+            >
+              <div
+                onClick={() => navigate('/my-tasks')}
+                className="grid grid-cols-[auto_1fr] items-center gap-2.5 min-w-0 cursor-pointer flex-1"
+                title={t('nav.profile')}
+              >
+                <div className="relative shrink-0">
+                  <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{staffInitials}</span>
+                    )}
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                  />
+                </div>
+
+                <div className="min-w-0 text-left">
+                  <p className="truncate text-xs font-bold leading-tight text-gray-900 dark:text-white">
+                    {staffName}
+                  </p>
+                  <p className="truncate text-[11px] font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
+                    {staffPositionLabel}
+                  </p>
+                </div>
+              </div>
+
+              {/* Settings Gear Button INSIDE the profile card */}
+              <div className="relative shrink-0" ref={settingsBtnRef}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSettings(!showSettings);
+                  }}
+                  title={lang === 'en' ? 'Settings' : 'Cài đặt'}
+                  aria-label={lang === 'en' ? 'Settings' : 'Cài đặt'}
+                  aria-expanded={showSettings}
+                  className={cn(
+                    'w-7 h-7 rounded-[6px] grid place-items-center transition-colors cursor-pointer border border-transparent',
+                    showSettings
+                      ? 'bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-300'
+                      : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-slate-700/60'
+                  )}
+                >
+                  <Settings size={15} className={cn('transition-transform duration-300', showSettings && 'rotate-45 text-primary dark:text-blue-400')} />
+                </button>
+              </div>
+            </div>
+
+            {officialReadEnabled && (
+              <NavLink
+                to="/main-view"
+                className={({ isActive }) =>
+                  cn(
+                    'sidebar-link flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-xs font-medium border border-transparent',
+                    isActive ? 'sidebar-link-active' : 'sidebar-link-idle'
+                  )
+                }
+              >
+                <ExternalLink size={13} />
+                <span className="truncate">Theo dõi Main · Chỉ đọc</span>
+              </NavLink>
+            )}
+
+            <div className="pt-0.5 text-center">
+              <p className="text-[10px] font-medium text-[#A1A1AA] tracking-wider">
+                Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            PORTAL 1: NOTIFICATION POPOVER PANEL
+           ========================================== */}
+        {showNotifs &&
+          createPortal(
+            <div
+              ref={notifPanelRef}
+              style={(() => {
+                const r = notifRef.current?.getBoundingClientRect();
+                return r
+                  ? {
+                      top: isSidebarCollapsed ? Math.max(12, r.top) : r.bottom + 8,
+                      left: isSidebarCollapsed
+                        ? Math.min(r.right + 12, window.innerWidth - 372)
+                        : Math.max(12, Math.min(r.left, window.innerWidth - 372)),
+                    }
+                  : { top: 60, left: 12 };
+              })()}
+              className="notif-glass fixed w-[min(360px,calc(100vw-24px))] bg-white dark:bg-[#0a192f] rounded-[8px] shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700/80 font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center">
+                <span className="text-xs font-semibold">
+                  {lang === 'en' ? 'Notifications' : 'Thông báo'}
+                  {unread > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-300">
+                      {unread}
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={markingRead || !unread}
+                    title={lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}
+                    aria-label={lang === 'en' ? 'Mark all as read' : 'Đã đọc tất cả'}
+                    className="p-1.5 rounded-[6px] text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                    onClick={() => void markAllNotificationsRead()}
+                  >
+                    <Check size={16} strokeWidth={2.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNotifs(false)}
+                    title={lang === 'en' ? 'Collapse' : 'Thu gọn'}
+                    aria-label={lang === 'en' ? 'Collapse' : 'Thu gọn'}
+                    className="p-1.5 rounded-[6px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-[min(60vh,420px)] overflow-y-auto">
+                <PushNotificationSettings hideWhenEnabled />
+                {updateInfo && (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => void appUpdateService.reloadApp()}
+                    className="m-3 p-3 rounded-[8px] bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-8 h-8 rounded-[8px] bg-blue-500/20 text-blue-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                        <Sparkles size={16} className="animate-pulse" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                          {updateInfo.title || 'Cập nhật phiên bản mới'}
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
+                          {updateInfo.message || 'Bấm để tải lại và trải nghiệm ngay'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        void appUpdateService.reloadApp();
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-[6px] shrink-0 shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <RefreshCw size={11} />
+                      <span>{lang === 'en' ? 'Reload' : 'Tải lại'}</span>
+                    </button>
+                  </div>
+                )}
+                {notifications.length === 0 ? (
+                  <p className="p-4 text-sm text-gray-500">{lang === 'en' ? 'No notifications yet.' : 'Chưa có thông báo.'}</p>
+                ) : (
+                  notifications.map((notification: NotificationItem) => (
+                    <div
+                      key={notification.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => void openNotification(notification)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void openNotification(notification);
+                      }}
+                      style={toneStyle(notification)}
+                      className="notif-row group flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                    >
+                      <NotificationIcon dim={notification.is_read} message={notification.message} metadata={notification.metadata} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{notification.title}</b>
+                          <span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{TONES[toneOf(notification)].label}</span>
+                        </span>
+                        <span className="notif-msg mt-0.5 block text-xs leading-4">
+                          <PicText message={notification.message} metadata={notification.metadata} />
+                        </span>
+                        <time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={notification.created_at}>
+                          {formatNotificationTimestamp(notification.created_at, lang)}
+                        </time>
+                      </span>
+                      {!notification.is_read && (
+                        <button
+                          type="button"
+                          aria-label={lang === 'en' ? 'Mark as read' : 'Đánh dấu đã đọc'}
+                          onClick={e => {
+                            e.stopPropagation();
+                            void markNotificationsRead([notification.id]).catch(() => toast.error('Chưa đồng bộ trạng thái đã đọc.'));
+                          }}
+                          className="notif-x notif-x-static"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>,
+            document.body
+          )}
+
+        {/* ==========================================
+            PORTAL 2: SETTINGS (LANGUAGE + THEME)
+           ========================================== */}
+        {showSettings &&
+          createPortal(
+            <div
+              ref={settingsPanelRef}
+              style={(() => {
+                const r = settingsBtnRef.current?.getBoundingClientRect();
+                if (!r) return { bottom: 24, left: isSidebarCollapsed ? 84 : 280 };
+                return {
+                  bottom: isSidebarCollapsed
+                    ? Math.max(16, window.innerHeight - r.bottom)
+                    : Math.max(16, window.innerHeight - r.top + 8),
+                  left: isSidebarCollapsed
+                    ? Math.min(r.right + 12, window.innerWidth - 260)
+                    : Math.min(Math.max(12, r.left), window.innerWidth - 260),
+                };
+              })()}
+              className="fixed z-[9999] w-[240px] p-3 rounded-[8px] bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-3 pointer-events-auto"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  {lang === 'en' ? 'Quick Settings' : 'Cài đặt nhanh'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 rounded-[6px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* 1. Language switcher */}
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                  <Globe size={13} className="text-primary dark:text-blue-400" />
+                  <span>{lang === 'en' ? 'Language' : 'Ngôn ngữ'}</span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/60 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setLang('vi')}
+                    className={cn(
+                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer',
+                      lang === 'vi'
+                        ? 'bg-white dark:bg-[#002e6d] text-[#002e6d] dark:text-white shadow-xs'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    Tiếng Việt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLang('en')}
+                    className={cn(
+                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer',
+                      lang === 'en'
+                        ? 'bg-white dark:bg-[#002e6d] text-[#002e6d] dark:text-white shadow-xs'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    English
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Theme switcher */}
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                  {theme === 'dark' ? <Moon size={13} className="text-amber-400" /> : <Sun size={13} className="text-amber-500" />}
+                  <span>{lang === 'en' ? 'Appearance' : 'Giao diện'}</span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/60 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (theme !== 'light') toggleTheme();
+                    }}
+                    className={cn(
+                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                      theme === 'light'
+                        ? 'bg-white text-gray-900 shadow-xs'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    <Sun size={13} />
+                    <span>{lang === 'en' ? 'Light' : 'Sáng'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (theme !== 'dark') toggleTheme();
+                    }}
+                    className={cn(
+                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                      theme === 'dark'
+                        ? 'bg-[#002e6d] text-white shadow-xs'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    <Moon size={13} />
+                    <span>{lang === 'en' ? 'Dark' : 'Tối'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+      </aside>
+    </div>
+  );
 };

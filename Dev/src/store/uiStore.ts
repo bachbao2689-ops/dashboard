@@ -6,6 +6,7 @@ interface UiState {
   theme: 'light' | 'dark';
   lang: 'en' | 'vi';
   isSidebarOpen: boolean;
+  isSidebarCollapsed: boolean;
   introFinished: boolean;
   isScanMode: boolean;
   setIntroFinished: (finished: boolean) => void;
@@ -13,6 +14,8 @@ interface UiState {
   toggleTheme: () => void;
   setLang: (lang: 'en' | 'vi') => void;
   toggleSidebar: () => void;
+  toggleSidebarCollapsed: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   syncWithUser: () => void;
 }
 
@@ -20,6 +23,7 @@ export const useUiStore = create<UiState>((set) => ({
   theme: 'light',
   lang: 'vi',
   isSidebarOpen: true,
+  isSidebarCollapsed: false,
   introFinished: true,
   isScanMode: false,
   setIntroFinished: (introFinished) => set({ introFinished }),
@@ -47,6 +51,19 @@ export const useUiStore = create<UiState>((set) => ({
       return { isSidebarOpen: newState };
     });
   },
+  toggleSidebarCollapsed: () => {
+    const profileId = useAuthStore.getState().profile?.id;
+    set((state) => {
+      const nextCollapsed = !state.isSidebarCollapsed;
+      userCache.set(profileId, 'sidebarCollapsed', nextCollapsed);
+      return { isSidebarCollapsed: nextCollapsed };
+    });
+  },
+  setSidebarCollapsed: (collapsed: boolean) => {
+    const profileId = useAuthStore.getState().profile?.id;
+    userCache.set(profileId, 'sidebarCollapsed', collapsed);
+    set({ isSidebarCollapsed: collapsed });
+  },
   syncWithUser: () => {
     const profileId = useAuthStore.getState().profile?.id;
     if (!profileId) {
@@ -58,11 +75,12 @@ export const useUiStore = create<UiState>((set) => ({
     const cachedTheme = userCache.get<'light' | 'dark'>(profileId, 'theme', 'light');
     const cachedLang = userCache.get<'en' | 'vi'>(profileId, 'lang', 'vi');
     const cachedSidebar = userCache.get<boolean>(profileId, 'sidebar', true);
+    const cachedCollapsed = userCache.get<boolean>(profileId, 'sidebarCollapsed', false);
     
     if (cachedTheme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
     
-    set({ theme: cachedTheme, lang: cachedLang, isSidebarOpen: cachedSidebar });
+    set({ theme: cachedTheme, lang: cachedLang, isSidebarOpen: cachedSidebar, isSidebarCollapsed: cachedCollapsed });
   }
 }));
 
@@ -73,7 +91,7 @@ useAuthStore.subscribe((state, prevState) => {
   }
 });
 
-for (const key of ['theme', 'lang', 'sidebar']) {
+for (const key of ['theme', 'lang', 'sidebar', 'sidebarCollapsed']) {
   let unsubscribe = () => {};
   const bind = (userId?: number) => {
     unsubscribe();
