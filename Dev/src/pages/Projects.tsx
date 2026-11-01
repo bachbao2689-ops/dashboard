@@ -33,7 +33,7 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager, isDepartmentLeader} from '../lib/roleScope';
 export const Projects:React.FC=()=>{
- const initialProjectColWidths = React.useMemo(() => [340, 190, 250, 130, 160, 250], []);
+ const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 130, 150, 220], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
    tableKey: 'projects_table',
    initialWidths: initialProjectColWidths,
@@ -66,9 +66,256 @@ export const Projects:React.FC=()=>{
    return Boolean(selectedRoot || canManageProject(selected) || isGlobalManager(profile) || isDepartmentLeader(profile));
  }, [selected, selectedRoot, canManageProject, profile]);
  useReadEntityNotifications(selectedCampaign ? 'campaign' : 'project', selectedCampaign?.id || selected?.id, Boolean(panelOpen && !createOpen && (selectedCampaign || selected)));
+  // Tree View States (Project -> Subtask -> Đầu việc / Checklist)
+  const [expandedProjects, setExpandedProjects] = React.useState<Record<string, boolean>>({});
+  const [expandedProjectSubtasks, setExpandedProjectSubtasks] = React.useState<Record<string, boolean>>({});
+  const [projectSubtasksMap, setProjectSubtasksMap] = React.useState<Record<string, any[]>>({});
+  const [projectSubtaskChecklistMap, setProjectSubtaskChecklistMap] = React.useState<Record<string, any[]>>({});
+
+  // Inline Creation: Project Subtask
+  const [creatingSubtaskProjectId, setCreatingSubtaskProjectId] = React.useState<string | null>(null);
+  const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
+  const [newSubtaskPic, setNewSubtaskPic] = React.useState('');
+  const [newSubtaskDue, setNewSubtaskDue] = React.useState('');
+  const [newSubtaskPriority, setNewSubtaskPriority] = React.useState('medium');
+
+  // Inline Creation: Đầu việc (Checklist item)
+  const [creatingItemSubtaskId, setCreatingItemSubtaskId] = React.useState<string | null>(null);
+  const [newItemTitle, setNewItemTitle] = React.useState('');
+  const [newItemDue, setNewItemDue] = React.useState('');
+  const [newItemPriority, setNewItemPriority] = React.useState('medium');
+  const [newItemQuantity, setNewItemQuantity] = React.useState('');
+
+  const toggleProjectExpand = (id: string) => {
+    setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleProjectSubtaskExpand = (id: string) => {
+    setExpandedProjectSubtasks(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const loadProjectTreeData = React.useCallback(async () => {
+    const { data: allProjectSubtasks } = await supabase
+      .from('project_subtasks')
+      .select('*, assignee:assignee_id(id,name,avatar_url)')
+      .neq('status', 'deleted')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: true });
+
+    const pSubMap: Record<string, any[]> = {};
+    (allProjectSubtasks || []).forEach((st: any) => {
+      if (!pSubMap[st.project_id]) pSubMap[st.project_id] = [];
+      pSubMap[st.project_id].push(st);
+    });
+    setProjectSubtasksMap(pSubMap);
+
+    const subtaskIds = (allProjectSubtasks || []).map((s: any) => s.id);
+    if (subtaskIds.length > 0) {
+      const { data: detailsData } = await supabase
+        .from('activity_log')
+        .select('entity_id, metadata, created_at')
+        .eq('entity_type', 'project_subtask')
+        .eq('action', 'details_updated')
+        .in('entity_id', subtaskIds)
+        .order('created_at', { ascending: false });
+
+      const chkMap: Record<string, any[]> = {};
+      (detailsData || []).forEach((row: any) => {
+        if (!chkMap[row.entity_id] && row.metadata && Array.isArray(row.metadata.checklist_items)) {
+          chkMap[row.entity_id] = row.metadata.checklist_items;
+        }
+      });
+      setProjectSubtaskChecklistMap(chkMap);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void loadProjectTreeData();
+  }, [loadProjectTreeData]);
+
+  const handleCreateProjectSubtask = async (projectId: string) => {
+    if (!newSubtaskTitle.trim()) {
+      toast.error(lang === 'en' ? 'Please enter subtask title' : 'Vui lòng nhập tên subtask');
+      return;
+    }
+    const { data, error } = await supabase.from('project_subtasks').insert({
+      project_id: projectId,
+      title: newSubtaskTitle.trim(),
+      assignee_id: newSubtaskPic ? Number(newSubtaskPic) : null,
+      due_date: newSubtaskDue || null,
+      priority: newSubtaskPriority || 'medium',
+      status: 'planning',
+    }).select('*, assignee:assignee_id(id,name,avatar_url)').single();
+
+    if (error || !data) {
+      toast.error(error?.message || 'Không thể tạo subtask');
+      return;
+    }
+    toast.success(lang === 'en' ? 'Subtask created' : 'Đã tạo subtask thành công');
+    setCreatingSubtaskProjectId(null);
+    setNewSubtaskTitle('');
+    setNewSubtaskPic('');
+    setNewSubtaskDue('');
+    setNewSubtaskPriority('medium');
+    setExpandedProjects(prev => ({ ...prev, [projectId]: true }));
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleQuickCreateProjectSubtask = async (projectId: string, customTitle: string) => {
+    if (!customTitle.trim()) return;
+    const { error } = await supabase.from('project_subtasks').insert({
+      project_id: projectId,
+      title: customTitle.trim(),
+      priority: 'medium',
+      status: 'planning',
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(lang === 'en' ? 'Subtask created' : 'Đã tạo subtask');
+    setExpandedProjects(prev => ({ ...prev, [projectId]: true }));
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleDeleteProjectSubtask = async (subtaskId: string) => {
+    const { error } = await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('id', subtaskId);
+    if (error) {
+      toast.error('Không thể xóa subtask');
+      return;
+    }
+    toast.success('Đã xóa subtask');
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleToggleProjectSubtaskStatus = async (subtaskId: string, currentStatus: string) => {
+    const isDone = ['done', 'complete', 'completed'].includes((currentStatus || '').toLowerCase());
+    const nextStatus = isDone ? 'in_progress' : 'completed';
+    const { error } = await supabase.from('project_subtasks').update({ status: nextStatus }).eq('id', subtaskId);
+    if (error) {
+      toast.error('Không thể cập nhật trạng thái');
+      return;
+    }
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleCreateProjectChecklistItem = async (subtaskId: string) => {
+    if (!newItemTitle.trim() || !profile?.id) {
+      toast.error(lang === 'en' ? 'Please enter item title' : 'Vui lòng nhập tên đầu việc');
+      return;
+    }
+    const currentList = projectSubtaskChecklistMap[subtaskId] || [];
+    const numQ = Number(newItemQuantity);
+    const newItem: any = {
+      id: 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      title: newItemTitle.trim(),
+      completed: false,
+      priority: newItemPriority || 'medium',
+      due_date: newItemDue || null,
+      created_by: profile.id,
+      created_by_name: profile.name || (lang === 'en' ? 'Member' : 'Thành viên'),
+      created_at: new Date().toISOString(),
+      quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null,
+    };
+    const nextItems = [...currentList, newItem];
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+      user_id: profile.id,
+      action: 'details_updated',
+      entity_type: 'project_subtask',
+      entity_id: subtaskId,
+      metadata: {
+        checklist_items: nextItems,
+        is_internal_detail_sync: true,
+      },
+    });
+    if (error) {
+      toast.error('Không thể lưu đầu việc');
+      return;
+    }
+    toast.success(lang === 'en' ? 'Checklist item added' : 'Đã thêm đầu việc thành công');
+    setCreatingItemSubtaskId(null);
+    setNewItemTitle('');
+    setNewItemDue('');
+    setNewItemPriority('medium');
+    setNewItemQuantity('');
+    setExpandedProjectSubtasks(prev => ({ ...prev, [subtaskId]: true }));
+    setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleQuickCreateProjectChecklistItem = async (subtaskId: string, customTitle: string) => {
+    if (!customTitle.trim() || !profile?.id) return;
+    const currentList = projectSubtaskChecklistMap[subtaskId] || [];
+    const newItem: any = {
+      id: 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      title: customTitle.trim(),
+      completed: false,
+      priority: 'medium',
+      created_by: profile.id,
+      created_by_name: profile.name || (lang === 'en' ? 'Member' : 'Thành viên'),
+      created_at: new Date().toISOString(),
+    };
+    const nextItems = [...currentList, newItem];
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+      user_id: profile.id,
+      action: 'details_updated',
+      entity_type: 'project_subtask',
+      entity_id: subtaskId,
+      metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
+    });
+    if (error) { toast.error('Không thể lưu đầu việc'); return; }
+    toast.success(lang === 'en' ? 'Checklist item added' : 'Đã thêm đầu việc');
+    setExpandedProjectSubtasks(prev => ({ ...prev, [subtaskId]: true }));
+    setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleToggleProjectChecklistItem = async (subtaskId: string, itemId: string) => {
+    if (!profile?.id) return;
+    const currentList = projectSubtaskChecklistMap[subtaskId] || [];
+    const nextItems = currentList.map(item => item.id === itemId ? { ...item, completed: !item.completed } : item);
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+      user_id: profile.id,
+      action: 'details_updated',
+      entity_type: 'project_subtask',
+      entity_id: subtaskId,
+      metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
+    });
+    if (error) {
+      toast.error('Không thể cập nhật đầu việc');
+      return;
+    }
+    setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleDeleteProjectChecklistItem = async (subtaskId: string, itemId: string) => {
+    if (!profile?.id) return;
+    const currentList = projectSubtaskChecklistMap[subtaskId] || [];
+    const nextItems = currentList.filter(item => item.id !== itemId);
+    const { error } = await supabase.from('activity_log').insert({
+      workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca',
+      user_id: profile.id,
+      action: 'details_updated',
+      entity_type: 'project_subtask',
+      entity_id: subtaskId,
+      metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
+    });
+    if (error) {
+      toast.error('Không thể xóa đầu việc');
+      return;
+    }
+    toast.success(lang === 'en' ? 'Item deleted' : 'Đã xóa đầu việc');
+    setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
 
  return (
-  <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className="relative flex min-h-full">
+   <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className="relative flex min-h-full">
     {/* Mobile/Tablet Backdrop when Detail Drawer is open */}
     {panelOpen && (
       <div 
@@ -195,151 +442,743 @@ export const Projects:React.FC=()=>{
           filters={campaignFilters}
           rootCampaignIds={rootCampaignIds}
           workflowTracks={workflow.tracks}
+          people={people}
+          onOpenSubtask={(st) => {
+            setSelected(null);
+            setSelectedCampaign(campaigns.find(c => c.id === st.campaign_id) || null);
+            setSelectedSubtask(st);
+          }}
         />
-        <section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <><div className="space-y-3 p-3 xl:hidden">{visibleProjects.map(project => {
-  return <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
-    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1.5">
-      <EntityInfoPopover
-        entityType="project"
-        entity={project}
-        track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-        leadPerson={(() => {
-          const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
-          const p = people.find(x => String(x.id) === String(leadId));
-          return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
-        })()}
-        subPersons={(subtaskMembers[project.id] || []).map(id => {
-          const p = people.find(x => String(x.id) === String(id));
-          return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-        })}
-      />
-      <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
-        <span className="grid grid-cols-[1fr_auto] items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white">
-          <span className="min-w-0 truncate">{project.name}</span>
-          {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
-        </span>
-        <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{project.description || t('tasks.noDescription')}</span>
-      </button>
-      <ChevronRight size={15} className="shrink-0 text-gray-400" />
-    </div>
-    <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
-      <StatusBadge status={project.status || 'active'} />
-      <span className="min-w-0 truncate">{project.due_date ? `${t('common.due')} ${dateValue(project.due_date)}` : t('common.noDueDate')}</span>
-      {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
-      {canManageProject(project) && <div className="ml-auto flex shrink-0 items-center gap-1"><ActionButton icon={<EyeOff size={15} />} type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}></ActionButton><ActionButton icon={<Trash2 size={15} />} type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}></ActionButton></div>}
-    </div>
-    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
-      <EntityNoteCell entityId={project.id} entityType="project" workspaceId={(project as any).workspace_id} canEdit={canManageProject(project)} />
-    </div>
-  </article>;
-})}{visibleProjects.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</p>}</div><div className="hidden overflow-x-auto xl:block">
-  <table ref={projectTableRef} className="w-full table-fixed text-left border-collapse">
-    <colgroup>
-      {projectColWidths.map((w, idx) => (
-        <col key={idx} style={{ width: `${w}px` }} />
-      ))}
-    </colgroup>
-    <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
-      <tr>
-        <th className="p-4 relative text-left">
-          <span className="truncate block text-left">{t('projects.col.project')}</span>
-          <div onMouseDown={(e) => startProjectColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-        </th>
-        <th className="p-4 relative text-center">
-          <span className="truncate block text-center">{t('projects.col.owner')}</span>
-          <div onMouseDown={(e) => startProjectColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-        </th>
-        <th className="p-4 relative text-center">
-          <span className="truncate block text-center">{t('projects.col.dates')}</span>
-          <div onMouseDown={(e) => startProjectColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-        </th>
-        <th className="p-4 relative text-center">
-          <span className="truncate block text-center">{t('projects.col.priority')}</span>
-          <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-        </th>
-        <th className="p-4 relative text-center">
-          <span className="truncate block text-center">{t('projects.col.status')}</span>
-          <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-        </th>
-        <th className="p-4 relative text-center">
-          <span className="truncate block text-center">{t('projects.col.notes')}</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody>{visibleProjects.map(project => <tr key={project.id} onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""}`}>
-<td className="p-4 relative overflow-hidden">
-  <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
-    <EntityInfoPopover
-      entityType="project"
-      entity={project}
-      track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-      leadPerson={(() => {
-        const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
-        const p = people.find(x => String(x.id) === String(leadId));
-        return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
-      })()}
-      subPersons={(subtaskMembers[project.id] || []).map(id => {
-        const p = people.find(x => String(x.id) === String(id));
-        return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-      })}
-    />
-    <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
-    {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
-  </div>
-  <p className="text-xs text-gray-500 truncate mt-1">{project.description || t('tasks.noDescription')}</p>
-  {canManageProject(project) && (
-    <div 
-      onClick={(e) => e.stopPropagation()}
-      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
-    >
-      <ActionButton 
-        icon={<EyeOff size={14}/>} 
-        onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} 
-        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
-        title={t('common.hide')}
-      />
-      <ActionButton 
-        icon={<Trash2 size={14}/>} 
-        onClick={(e) => { e.stopPropagation(); void removeProject(project); }} 
-        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
-        title={t('common.delete')}
-      />
-    </div>
-  )}
-</td>
-<td className="p-4 overflow-hidden text-center">
-  <div className="grid place-content-center">
-    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
-      <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
-        {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
-      </div>
-      {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
-        <>
-          <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
-          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800 shrink-0">
-            <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
-            <div className="grid grid-flow-col auto-cols-max -space-x-2">
-              {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
-            </div>
+        <section className="card-hub rounded-2xl overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <>
+  {/* Mobile Cards (xl:hidden) with 3-tier tree view */}
+  <div className="space-y-3 p-3 xl:hidden">
+    {visibleProjects.map(project => {
+      const isProjectExpanded = Boolean(expandedProjects[project.id]);
+      const subtasks = projectSubtasksMap[project.id] || [];
+      const subtaskCount = subtasks.length;
+
+      return (
+        <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
+          <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => toggleProjectExpand(project.id)}
+              className="p-1 -ml-1 text-slate-400 hover:text-violet-500 rounded-[6px] transition-transform cursor-pointer shrink-0"
+              title={isProjectExpanded ? 'Thu gọn subtasks' : 'Mở rộng subtasks'}
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
+            </button>
+            <EntityInfoPopover
+              entityType="project"
+              entity={project}
+              track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
+              leadPerson={(() => {
+                const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
+                const p = people.find(x => String(x.id) === String(leadId));
+                return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
+              })()}
+              subPersons={(subtaskMembers[project.id] || []).map(id => {
+                const p = people.find(x => String(x.id) === String(id));
+                return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
+              })}
+            />
+            <button type="button" onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }} className="block w-full min-w-0 text-left">
+              <span className="grid grid-cols-[1fr_auto] items-center gap-1 text-sm font-bold leading-5 text-gray-900 dark:text-white">
+                <span className="min-w-0 truncate">{project.name}</span>
+                {subtaskCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 shrink-0">
+                    ({subtaskCount})
+                  </span>
+                )}
+                {hasComments[project.id] && <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0"><MessageSquare size={14} className="text-blue-500" />{(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>}</span>}
+              </span>
+              <span className="mt-1 block truncate text-xs text-gray-500 dark:text-slate-400">{project.description || t('tasks.noDescription')}</span>
+            </button>
+            <ChevronRight size={15} className="shrink-0 text-gray-400" />
           </div>
-        </>
-      )}
-    </div>
+          <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
+            <StatusBadge status={project.status || 'active'} />
+            <span className="min-w-0 truncate">{project.due_date ? `${t('common.due')} ${dateValue(project.due_date)}` : t('common.noDueDate')}</span>
+            {project.due_date && getDueStatusLabel(project.due_date, project.status, lang === 'en')}
+            {canManageProject(project) && <div className="ml-auto flex shrink-0 items-center gap-1"><ActionButton icon={<EyeOff size={15} />} type="button" onClick={() => void archiveProject(project)} className="rounded-lg p-1.5 text-amber-600" aria-label={`${t('common.hide')} ${project.name}`}></ActionButton><ActionButton icon={<Trash2 size={15} />} type="button" onClick={() => void removeProject(project)} className="rounded-lg p-1.5 text-red-500" aria-label={`${t('common.delete')} ${project.name}`}></ActionButton></div>}
+          </div>
+          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <EntityNoteCell entityId={project.id} entityType="project" workspaceId={(project as any).workspace_id} canEdit={canManageProject(project)} />
+          </div>
+
+          {/* Mobile Subtasks List */}
+          {isProjectExpanded && (
+            <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2 pl-3 relative">
+              <div className="absolute left-1 top-3 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
+              {subtasks.map((st: any) => {
+                const items = projectSubtaskChecklistMap[st.id] || [];
+                const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
+
+                return (
+                  <div key={st.id} className="p-2.5 rounded-[8px] bg-violet-50/40 dark:bg-[#071325] border border-violet-200/60 dark:border-slate-800 text-xs space-y-2">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => toggleProjectSubtaskExpand(st.id)}
+                        className="p-1 text-slate-400 hover:text-violet-600 rounded transition-transform"
+                        title={isSubtaskExpanded ? 'Thu gọn đầu việc' : 'Xem các đầu việc'}
+                      >
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelected(project);
+                          setSelectedCampaign(null);
+                          setSelectedSubtask(st);
+                        }}
+                        className="text-left font-semibold text-slate-900 dark:text-white truncate block"
+                      >
+                        {st.title}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleProjectSubtaskStatus(st.id, st.status)}
+                        className="hover:opacity-85"
+                      >
+                        <StatusBadge status={st.status || 'planning'} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      <span>{st.assignee?.name || t('common.unassigned')}</span>
+                      {st.due_date && <span>· {dateValue(st.due_date)}</span>}
+                      {st.quantity && <span className="text-emerald-600 dark:text-emerald-400 font-bold">· SL: {st.quantity}</span>}
+                    </div>
+
+                    {/* Checklist inside Subtask */}
+                    {isSubtaskExpanded && (
+                      <div className="pt-2 pl-3 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5 relative">
+                        <div className="absolute left-1 top-2 bottom-0 w-[1.5px] bg-violet-300/40 dark:bg-violet-700/30" />
+                        {items.map((item: any) => (
+                          <div key={item.id} className="flex items-center justify-between gap-1.5 text-[11px]">
+                            <label className="flex items-center gap-1.5 truncate cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(item.completed)}
+                                onChange={() => handleToggleProjectChecklistItem(st.id, item.id)}
+                                className="w-3 h-3 rounded-[3px] border-slate-300 text-emerald-600 focus:ring-0"
+                              />
+                              <span className={item.completed ? 'line-through text-slate-400 dark:text-slate-500 truncate' : 'text-slate-800 dark:text-slate-200 truncate'}>
+                                {item.title}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProjectChecklistItem(st.id, item.id)}
+                              className="text-slate-400 hover:text-red-500 p-0.5"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        ))}
+                        {/* Quick input for checklist */}
+                        <div className="pt-1 flex items-center gap-1">
+                          <input
+                            type="text"
+                            placeholder={lang === 'en' ? '+ Add item...' : '+ Thêm đầu việc...'}
+                            className="flex-1 px-2 py-0.5 text-[11px] rounded-[5px] border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-[#0a192f] text-slate-900 dark:text-white focus:outline-none"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const val = e.currentTarget.value;
+                                e.currentTarget.value = '';
+                                void handleQuickCreateProjectChecklistItem(st.id, val);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {/* Quick input to add subtask on mobile */}
+              <div className="pt-1">
+                <input
+                  type="text"
+                  placeholder={lang === 'en' ? '+ Add new subtask (Enter)...' : '+ Thêm subtask mới (Nhấn Enter)...'}
+                  className="w-full px-2.5 py-1 text-xs rounded-[6px] border border-violet-200 dark:border-slate-700 bg-white dark:bg-[#0a192f] text-slate-900 dark:text-white focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = e.currentTarget.value;
+                      e.currentTarget.value = '';
+                      void handleQuickCreateProjectSubtask(project.id, val);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </article>
+      );
+    })}
+    {visibleProjects.length === 0 && (
+      <p className="p-6 text-center text-sm text-gray-500">
+        {projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}
+      </p>
+    )}
   </div>
-</td>
-<td className="p-4 overflow-hidden text-sm text-gray-600 dark:text-gray-300 text-center"><div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 truncate mx-auto"><span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>{project.due_date && <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0"><div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />{getDueStatusLabel(project.due_date, project.status, lang === 'en')}</div>}</div></td>
-<td className="p-4 overflow-hidden text-center"><div className="grid place-items-center"><span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>{project.priority || 'medium'}</span></div></td>
-<td className="p-4 overflow-hidden text-center"><div className="grid place-items-center"><StatusBadge status={project.status || 'active'} /></div></td>
-<td className="p-4 overflow-hidden text-center">
-  <EntityNoteCell
-    entityId={project.id}
-    entityType="project"
-    workspaceId={(project as any).workspace_id}
-    canEdit={canManageProject(project)}
-    alignCenter={true}
-  />
-</td>
-</tr>)}</tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
+
+  {/* Desktop Table (hidden xl:block) with 3-tier tree view */}
+  <div className="hidden overflow-x-auto xl:block">
+    <table ref={projectTableRef} className="w-full table-fixed text-left border-collapse">
+      <colgroup>
+        {projectColWidths.map((w, idx) => (
+          <col key={idx} style={{ width: `${w}px` }} />
+        ))}
+      </colgroup>
+      <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
+        <tr>
+          <th className="p-4 relative text-left">
+            <span className="truncate block text-left">{t('projects.col.project')}</span>
+            <div onMouseDown={(e) => startProjectColResize(0, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.owner')}</span>
+            <div onMouseDown={(e) => startProjectColResize(1, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.dates')}</span>
+            <div onMouseDown={(e) => startProjectColResize(2, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.priority')}</span>
+            <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.budget')}</span>
+            <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.status')}</span>
+            <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+          </th>
+          <th className="p-4 relative text-center">
+            <span className="truncate block text-center">{t('projects.col.notes')}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {visibleProjects.map(project => {
+          const isProjectExpanded = Boolean(expandedProjects[project.id]);
+          const subtasks = projectSubtasksMap[project.id] || [];
+          const subtaskCount = subtasks.length;
+
+          return (
+            <React.Fragment key={project.id}>
+              {/* Cấp 1: Hàng Dự án */}
+              <tr
+                onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }}
+                className={`group border-t border-gray-100 dark:border-slate-800 cursor-pointer hover-row-effect hover-row-project transition-all duration-200 ${selected?.id === project.id ? 'bg-violet-50/70 dark:bg-violet-950/20' : ''} ${deletingIds.includes(project.id) ? "animate-fade-out" : ""} ${isProjectExpanded ? 'bg-violet-50/20 dark:bg-[#071325]/50' : ''}`}
+              >
+                {/* Cột 1: Title có icon dropdown trước title */}
+                <td className="p-4 relative overflow-hidden">
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleProjectExpand(project.id);
+                      }}
+                      className="p-1 -ml-1 text-slate-400 hover:text-violet-500 rounded-[6px] transition-transform hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer shrink-0"
+                      title={isProjectExpanded ? (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtask') : (lang === 'en' ? 'Expand subtasks' : 'Xem các subtask')}
+                      aria-label={isProjectExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                    >
+                      <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
+                    </button>
+                    <EntityInfoPopover
+                      entityType="project"
+                      entity={project}
+                      track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
+                      leadPerson={(() => {
+                        const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
+                        const p = people.find(x => String(x.id) === String(leadId));
+                        return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
+                      })()}
+                      subPersons={(subtaskMembers[project.id] || []).map(id => {
+                        const p = people.find(x => String(x.id) === String(id));
+                        return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
+                      })}
+                    />
+                    <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
+                    {subtaskCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 shrink-0">
+                        ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
+                      </span>
+                    )}
+                    {hasComments[project.id] && (
+                      <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
+                        <MessageSquare size={14} className="text-blue-500" />
+                        {(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && (
+                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mt-1 pl-6">{project.description || t('tasks.noDescription')}</p>
+                  {canManageProject(project) && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                    >
+                      <ActionButton 
+                        icon={<EyeOff size={14}/>} 
+                        onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} 
+                        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+                        title={t('common.hide')}
+                      />
+                      <ActionButton 
+                        icon={<Trash2 size={14}/>} 
+                        onClick={(e) => { e.stopPropagation(); void removeProject(project); }} 
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+                        title={t('common.delete')}
+                      />
+                    </div>
+                  )}
+                </td>
+
+                {/* Cột 2: OWNER / PIC */}
+                <td className="p-4 overflow-hidden text-center">
+                  <div className="grid place-content-center">
+                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+                      <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
+                        {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
+                      </div>
+                      {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
+                        <>
+                          <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800 shrink-0">
+                            <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
+                            <div className="grid grid-flow-col auto-cols-max -space-x-2">
+                              {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                {/* Cột 3: DATES */}
+                <td className="p-4 overflow-hidden text-sm text-gray-600 dark:text-gray-300 text-center">
+                  <div className="grid place-content-center">
+                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 truncate mx-auto">
+                      <span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>
+                      {project.due_date && (
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
+                          <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />
+                          {getDueStatusLabel(project.due_date, project.status, lang === 'en')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                {/* Cột 4: PRIORITY */}
+                <td className="p-4 overflow-hidden text-center">
+                  <div className="grid place-items-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>
+                      {project.priority || 'medium'}
+                    </span>
+                  </div>
+                </td>
+
+                {/* Cột 5: BUDGET */}
+                <td className="p-4 overflow-hidden text-sm font-semibold text-gray-800 dark:text-gray-200 truncate text-center">
+                  {(project as any).budget ? `${new Intl.NumberFormat('vi-VN').format(Number((project as any).budget))} VND` : '—'}
+                </td>
+
+                {/* Cột 6: STATUS */}
+                <td className="p-4 overflow-hidden text-center">
+                  <div className="grid place-items-center">
+                    <StatusBadge status={project.status || 'active'} />
+                  </div>
+                </td>
+
+                {/* Cột 7: NOTES */}
+                <td className="p-4 overflow-hidden text-center">
+                  <EntityNoteCell
+                    entityId={project.id}
+                    entityType="project"
+                    workspaceId={(project as any).workspace_id}
+                    canEdit={canManageProject(project)}
+                    alignCenter={true}
+                  />
+                </td>
+              </tr>
+
+              {/* Tree view lồng cấp 2 & cấp 3 khi Project được mở rộng */}
+              {isProjectExpanded && (
+                <>
+                  {subtasks.map((st: any) => {
+                    const items = projectSubtaskChecklistMap[st.id] || [];
+                    const doneCount = items.filter(i => i.completed).length;
+                    const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
+
+                    return (
+                      <React.Fragment key={st.id}>
+                        {/* Cấp 2: Hàng Subtask */}
+                        <tr className="bg-violet-50/20 dark:bg-[#071325]/70 hover:bg-violet-50/40 dark:hover:bg-[#0c1f3b] border-t border-dashed border-violet-200/50 dark:border-slate-800/80 transition-colors">
+                          {/* Cột 1: Title subtask có thụt lề pl-8 và icon dropdown */}
+                          <td className="p-3 pl-8 relative overflow-hidden">
+                            <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/40" />
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-[2px] bg-violet-400/40 dark:bg-violet-600/40" />
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleProjectSubtaskExpand(st.id);
+                                }}
+                                className="p-1 text-slate-400 hover:text-violet-600 rounded-[5px] transition-transform cursor-pointer shrink-0"
+                                title={isSubtaskExpanded ? (lang === 'en' ? 'Collapse items' : 'Thu gọn đầu việc') : (lang === 'en' ? 'Expand items' : 'Xem các đầu việc')}
+                              >
+                                <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
+                              </button>
+                              <ListTodo className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0" />
+                              <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                                {st.title}
+                              </span>
+                              {items.length > 0 && (
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold ${doneCount === items.length ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-violet-100/90 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'}`}>
+                                  ({doneCount}/{items.length} {lang === 'en' ? 'tasks' : 'việc'})
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Cột 2: OWNER / PIC */}
+                          <td className="p-3 overflow-hidden text-center">
+                            <div className="grid place-content-center">
+                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 mx-auto">
+                                <Avatar name={st.assignee?.name || t('common.unassigned')} src={st.assignee?.avatar_url} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-xs" />
+                                <span className="text-xs text-slate-700 dark:text-slate-300 truncate max-w-[110px]">{st.assignee?.name || '—'}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Cột 3: DATES */}
+                          <td className="p-3 overflow-hidden text-center text-xs text-slate-600 dark:text-slate-300">
+                            <div className="grid place-content-center">
+                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 truncate mx-auto">
+                                <span>{st.start_date ? dateValue(st.start_date) : '—'} – {st.due_date ? dateValue(st.due_date) : '—'}</span>
+                                {st.due_date && getDueStatusLabel(st.due_date, st.status, lang === 'en')}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Cột 4: PRIORITY */}
+                          <td className="p-3 overflow-hidden text-center">
+                            <div className="grid place-content-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize truncate ${priorityClass(st.priority || 'medium')}`}>
+                                {st.priority || 'medium'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Cột 5: BUDGET / SL */}
+                          <td className="p-3 overflow-hidden text-xs font-semibold text-slate-800 dark:text-slate-200 truncate text-center">
+                            {st.quantity ? (
+                              <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                SL: {st.quantity}
+                              </span>
+                            ) : (st.budget ? `${new Intl.NumberFormat('vi-VN').format(Number(st.budget))} VND` : '—')}
+                          </td>
+
+                          {/* Cột 6: STATUS */}
+                          <td className="p-3 overflow-hidden text-center">
+                            <div className="grid place-content-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleProjectSubtaskStatus(st.id, st.status)}
+                                title={lang === 'en' ? 'Click to toggle status' : 'Bấm để đổi trạng thái'}
+                                className="cursor-pointer hover:opacity-85 transition-opacity"
+                              >
+                                <StatusBadge status={st.status || 'planning'} />
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Cột 7: NOTES / ACTIONS */}
+                          <td className="p-3 overflow-hidden text-center">
+                            <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelected(project);
+                                  setSelectedCampaign(null);
+                                  setSelectedSubtask(st);
+                                }}
+                                className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 rounded transition-colors"
+                                title={lang === 'en' ? 'View details' : 'Xem chi tiết'}
+                              >
+                                <Eye size={13} />
+                              </button>
+                              {canManageProject(project) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProjectSubtask(st.id)}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+                                  title={lang === 'en' ? 'Delete subtask' : 'Xóa subtask'}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Cấp 3: Danh sách Đầu việc (Checklist Items bên trong Subtask) */}
+                        {isSubtaskExpanded && (
+                          <>
+                            {items.map((item: any) => (
+                              <tr key={item.id} className="bg-violet-50/40 dark:bg-[#06101e] hover:bg-violet-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors">
+                                {/* Cột 1: Title đầu việc có checkbox và thụt lề sâu pl-14 */}
+                                <td className="py-2 px-4 pl-14 relative overflow-hidden">
+                                  <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/30 dark:bg-violet-600/20" />
+                                  <div className="absolute left-9 top-0 bottom-0 w-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
+                                  <div className="absolute left-9 top-1/2 -translate-y-1/2 w-3.5 h-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
+                                  <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
+                                    <input
+                                      type="checkbox"
+                                      checked={Boolean(item.completed)}
+                                      onChange={() => handleToggleProjectChecklistItem(st.id, item.id)}
+                                      className="w-3.5 h-3.5 rounded-[4px] border-slate-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                                    />
+                                    <span className={`text-xs truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'}`}>
+                                      {item.title}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Cột 2: OWNER / PIC */}
+                                <td className="py-2 px-4 overflow-hidden text-center">
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
+                                    {item.created_by_name || '—'}
+                                  </span>
+                                </td>
+
+                                {/* Cột 3: DATES */}
+                                <td className="py-2 px-4 overflow-hidden text-center text-[11px] text-slate-500 dark:text-slate-400">
+                                  {item.due_date ? dateValue(item.due_date) : '—'}
+                                </td>
+
+                                {/* Cột 4: PRIORITY */}
+                                <td className="py-2 px-4 overflow-hidden text-center">
+                                  <div className="grid place-content-center">
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold capitalize truncate ${priorityClass(item.priority || 'medium')}`}>
+                                      {item.priority || 'medium'}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Cột 5: BUDGET / SL */}
+                                <td className="py-2 px-4 overflow-hidden text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate text-center">
+                                  {item.quantity ? `SL: ${item.quantity}` : '—'}
+                                </td>
+
+                                {/* Cột 6: STATUS */}
+                                <td className="py-2 px-4 overflow-hidden text-center">
+                                  <div className="grid place-content-center">
+                                    <span className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold ${item.completed ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-100 text-slate-600 dark:bg-[#0a192f] dark:text-slate-300 border border-slate-200 dark:border-slate-700/80'}`}>
+                                      {item.completed ? (lang === 'en' ? 'Done' : 'Đã xong') : (lang === 'en' ? 'Todo' : 'Cần làm')}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Cột 7: NOTES / ACTIONS */}
+                                <td className="py-2 px-4 overflow-hidden text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteProjectChecklistItem(st.id, item.id)}
+                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+                                    title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+
+                            {/* Thanh tạo đầu việc mới */}
+                            <tr className="bg-violet-50/20 dark:bg-[#06101e] border-t border-dotted border-slate-200/60 dark:border-slate-800/60">
+                              <td colSpan={7} className="py-2 px-4 pl-14 relative">
+                                <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/30 dark:bg-violet-600/20" />
+                                <div className="absolute left-9 top-0 bottom-0 w-[1.5px] bg-violet-400/40 dark:bg-violet-600/30" />
+                                {creatingItemSubtaskId === st.id ? (
+                                  <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300/80 dark:border-violet-700/60 shadow-xs">
+                                    <input
+                                      type="text"
+                                      value={newItemTitle}
+                                      onChange={(e) => setNewItemTitle(e.target.value)}
+                                      placeholder={lang === 'en' ? 'New task item title...' : 'Tiêu đề đầu việc mới...'}
+                                      className="px-2.5 py-1 text-xs rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-0"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') void handleCreateProjectChecklistItem(st.id);
+                                        if (e.key === 'Escape') setCreatingItemSubtaskId(null);
+                                      }}
+                                    />
+                                    <input
+                                      type="date"
+                                      value={newItemDue}
+                                      onChange={(e) => setNewItemDue(e.target.value)}
+                                      className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                                      title={lang === 'en' ? 'Due date' : 'Hạn chót'}
+                                    />
+                                    <select
+                                      value={newItemPriority}
+                                      onChange={(e) => setNewItemPriority(e.target.value)}
+                                      className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                                    >
+                                      <option value="low">Low</option>
+                                      <option value="medium">Medium</option>
+                                      <option value="high">High</option>
+                                      <option value="urgent">Urgent</option>
+                                    </select>
+                                    <input
+                                      type="number"
+                                      value={newItemQuantity}
+                                      onChange={(e) => setNewItemQuantity(e.target.value)}
+                                      placeholder="SL"
+                                      className="w-14 px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                                      title="Sản lượng"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleCreateProjectChecklistItem(st.id)}
+                                      className="px-2.5 py-1 rounded-[6px] bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shadow-2xs cursor-pointer"
+                                    >
+                                      {lang === 'en' ? 'Add' : 'Thêm'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCreatingItemSubtaskId(null);
+                                        setNewItemTitle('');
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCreatingItemSubtaskId(st.id);
+                                      setNewItemTitle('');
+                                      setNewItemDue('');
+                                      setNewItemPriority('medium');
+                                      setNewItemQuantity('');
+                                    }}
+                                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 text-[11.5px] font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 hover:underline cursor-pointer"
+                                  >
+                                    <Plus size={13} />
+                                    <span>{lang === 'en' ? '+ Add checklist item' : '+ Thêm đầu việc cho subtask'}</span>
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          </>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* Thanh tạo subtask mới cho Project */}
+                  <tr className="bg-violet-50/15 dark:bg-[#071325]/50 border-t border-dashed border-violet-200/50 dark:border-slate-800/80">
+                    <td colSpan={7} className="py-2.5 px-4 pl-8 relative">
+                      <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
+                      {creatingSubtaskProjectId === project.id ? (
+                        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300 dark:border-violet-700 shadow-sm">
+                          <input
+                            type="text"
+                            value={newSubtaskTitle}
+                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                            placeholder={lang === 'en' ? 'Subtask title...' : 'Tiêu đề subtask mới...'}
+                            className="px-2.5 py-1 text-xs rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-0"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') void handleCreateProjectSubtask(project.id);
+                              if (e.key === 'Escape') setCreatingSubtaskProjectId(null);
+                            }}
+                          />
+                          <select
+                            value={newSubtaskPic}
+                            onChange={(e) => setNewSubtaskPic(e.target.value)}
+                            className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                          >
+                            <option value="">{lang === 'en' ? '-- Select PIC --' : '-- Chọn PIC --'}</option>
+                            {(people || []).map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            value={newSubtaskDue}
+                            onChange={(e) => setNewSubtaskDue(e.target.value)}
+                            className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                            title={lang === 'en' ? 'Due date' : 'Hạn chót'}
+                          />
+                          <select
+                            value={newSubtaskPriority}
+                            onChange={(e) => setNewSubtaskPriority(e.target.value)}
+                            className="px-2 py-1 text-[11px] rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300"
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => void handleCreateProjectSubtask(project.id)}
+                            className="px-3 py-1 rounded-[6px] bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            {lang === 'en' ? 'Create' : 'Tạo'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCreatingSubtaskProjectId(null);
+                              setNewSubtaskTitle('');
+                              setNewSubtaskPic('');
+                              setNewSubtaskDue('');
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatingSubtaskProjectId(project.id);
+                            setNewSubtaskTitle('');
+                            setNewSubtaskPic('');
+                            setNewSubtaskDue('');
+                            setNewSubtaskPriority('medium');
+                          }}
+                          className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 hover:underline cursor-pointer"
+                        >
+                          <Plus size={14} />
+                          <span>{lang === 'en' ? '+ Add subtask to this project' : '+ Thêm subtask mới cho dự án'}</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                </>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
   
   
     </div></div>
