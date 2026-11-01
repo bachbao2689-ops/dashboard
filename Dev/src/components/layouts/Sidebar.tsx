@@ -1523,6 +1523,76 @@ export const Sidebar: React.FC = () => {
            ========================================== */}
         {isSidebarCollapsed ? (
           <div className="flex-1 w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col items-center gap-1.5 py-1">
+            {/* Pinned Tasks and Entities when Sidebar is Collapsed / Cropped */}
+            {(pinnedTaskItems.length > 0 || pinnedEntities.length > 0) && (
+              <div className="w-full flex flex-col items-center gap-1.5 pb-1.5 border-b border-gray-200/80 dark:border-slate-800/80 mb-1 shrink-0">
+                {pinnedTaskItems.map(task => {
+                  const href = `/workflow?task=${encodeURIComponent(task.id)}`;
+                  const active =
+                    location.pathname === '/workflow' &&
+                    location.search.includes(`task=${task.id}`);
+
+                  return (
+                    <div key={`col-pinned-task-${task.id}`} className="group/nav relative flex items-center justify-center shrink-0 w-full">
+                      <button
+                        type="button"
+                        onClick={() => navigate(href)}
+                        className={cn(
+                          'sidebar-link w-9 h-9 rounded-[8px] flex items-center justify-center transition-all cursor-pointer relative shrink-0',
+                          active
+                            ? 'sidebar-link-active'
+                            : 'sidebar-link-idle hover:bg-blue-50 dark:hover:bg-[#002e6d]/30 text-blue-600 dark:text-sky-400'
+                        )}
+                        title={task.title}
+                      >
+                        <CheckSquare size={17} strokeWidth={2.2} />
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-500 ring-1 ring-white dark:ring-[#0a192f]" />
+                      </button>
+                      <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                        <span className="text-blue-400 mr-1.5 font-bold">📌 {lang === 'en' ? 'Task:' : 'Công việc:'}</span> {task.title}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {pinnedEntities.map(entity => {
+                  const href =
+                    entity.kind === 'campaign'
+                      ? `/projects?campaign=${encodeURIComponent(entity.id)}`
+                      : `/projects?project=${encodeURIComponent(entity.id)}`;
+                  const active =
+                    location.pathname === '/projects' &&
+                    location.search.includes(`${entity.kind}=${entity.id}`);
+
+                  return (
+                    <div key={`col-pinned-ent-${entity.kind}-${entity.id}`} className="group/nav relative flex items-center justify-center shrink-0 w-full">
+                      <button
+                        type="button"
+                        onClick={() => navigate(href)}
+                        className={cn(
+                          'sidebar-link w-9 h-9 rounded-[8px] flex items-center justify-center transition-all cursor-pointer relative shrink-0',
+                          active
+                            ? 'sidebar-link-active'
+                            : 'sidebar-link-idle hover:bg-gray-100 dark:hover:bg-[#0a192f]'
+                        )}
+                        title={entity.name}
+                      >
+                        {entity.kind === 'campaign' ? (
+                          <Megaphone size={16} className="text-amber-500" />
+                        ) : (
+                          <FolderKanban size={16} className="text-violet-500" />
+                        )}
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500 ring-1 ring-white dark:ring-[#0a192f]" />
+                      </button>
+                      <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                        <span className="text-amber-400 mr-1.5 font-bold">📌 {entity.kind === 'campaign' ? 'Campaign:' : 'Project:'}</span> {entity.name}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {collapsedNavItems.map(item => {
               const [basePath, query] = (item.path || '').split('?');
               const active =

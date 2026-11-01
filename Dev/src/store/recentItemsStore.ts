@@ -13,18 +13,8 @@ export interface RecentItem {
   parentName?: string;
 }
 
-const DEFAULT_RECENT_ITEMS: RecentItem[] = [
-  { id: 'rec-1', title: 'Wedding set up', kind: 'project', path: '/projects?project=wedding-setup', timestamp: Date.now() - 1000 * 60 * 5 },
-  { id: 'rec-2', title: '39: BART SPACE', kind: 'task', path: '/tasks?task=39', timestamp: Date.now() - 1000 * 60 * 15 },
-  { id: 'rec-3', title: 'BCM X MENTOS GUM - PROPOSAL', kind: 'campaign', path: '/projects?campaign=bcm-mentos', timestamp: Date.now() - 1000 * 60 * 30 },
-  { id: 'rec-4', title: 'Execution Plan 23Apr (Cozy)', kind: 'project', path: '/projects?project=execution-plan', timestamp: Date.now() - 1000 * 60 * 60 },
-  { id: 'rec-5', title: 'MOONY', kind: 'project', path: '/projects?project=moony', timestamp: Date.now() - 1000 * 60 * 120 },
-  { id: 'rec-6', title: 'Ecommerce Quotation Shopee', kind: 'task', path: '/tasks?task=shopee-quote', timestamp: Date.now() - 1000 * 60 * 180 },
-  { id: 'rec-7', title: 'identity spa', kind: 'project', path: '/projects?project=identity-spa', timestamp: Date.now() - 1000 * 60 * 240 },
-  { id: 'rec-8', title: 'Sprint board', kind: 'task', path: '/workflow', timestamp: Date.now() - 1000 * 60 * 300 },
-];
-
 const loadRecents = (userId?: number | string | null): RecentItem[] => {
+  if (!userId) return [];
   const value = userCache.get<unknown>(userId, 'recentItems', null);
   if (Array.isArray(value) && value.length > 0) {
     return value.filter((entry): entry is RecentItem =>
@@ -38,7 +28,7 @@ const loadRecents = (userId?: number | string | null): RecentItem[] => {
       )
     ).slice(0, 10);
   }
-  return DEFAULT_RECENT_ITEMS;
+  return [];
 };
 
 interface RecentItemsState {
@@ -51,7 +41,7 @@ interface RecentItemsState {
 
 export const useRecentItemsStore = create<RecentItemsState>((set, get) => ({
   ownerId: null,
-  items: DEFAULT_RECENT_ITEMS,
+  items: [],
 
   syncOwner: (userId) => {
     const key = userId != null ? String(userId) : null;
@@ -63,7 +53,8 @@ export const useRecentItemsStore = create<RecentItemsState>((set, get) => ({
   },
 
   addItem: (item) => {
-    const key = get().ownerId;
+    const key = get().ownerId || (useAuthStore.getState().profile?.id ? String(useAuthStore.getState().profile?.id) : null);
+    if (!key) return;
     const current = get().items;
     // Deduplicate by id or path
     const filtered = current.filter((i) => i.id !== item.id && i.path !== item.path);
@@ -76,12 +67,12 @@ export const useRecentItemsStore = create<RecentItemsState>((set, get) => ({
     ].slice(0, 10);
 
     userCache.set(key, 'recentItems', updated);
-    set({ items: updated });
+    set({ ownerId: key, items: updated });
   },
 
   clearItems: () => {
     const key = get().ownerId;
-    userCache.set(key, 'recentItems', []);
+    if (key) userCache.set(key, 'recentItems', []);
     set({ items: [] });
   },
 }));
