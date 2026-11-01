@@ -6,7 +6,7 @@ export function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { default: handler } = await import('../server/agent.ts');
+    const { default: handler } = await import('../server/agent.js');
     return await handler(request);
   } catch (error) {
     const failure = error as Error & { code?: string };

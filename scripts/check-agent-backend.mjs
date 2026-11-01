@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict';
-import * as endpoint from '../Dev/api/agent.ts';
-import * as rootEndpoint from '../api/agent.ts';
+import { registerHooks } from 'node:module';
+import { existsSync } from 'node:fs';
+// Resolve emitted .js specifiers to their TypeScript sources in this source-only check.
+registerHooks({ resolve(specifier, context, nextResolve) {
+  try { return nextResolve(specifier, context); }
+  catch (error) {
+    if (specifier.endsWith('/server/agent.js')) {
+      const source = new URL(specifier.replace(/\.js$/, '.ts'), context.parentURL);
+      if (existsSync(source)) return nextResolve(source.href, context);
+    }
+    throw error;
+  }
+} });
+const endpoint = await import('../Dev/api/agent.ts');
+const rootEndpoint = await import('../api/agent.ts');
 
 // Synthetic fixtures only: exercise the real SDK tool loop and HTTP handler
 // without sending workspace data to a provider or writing to Supabase.
