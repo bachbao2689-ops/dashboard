@@ -171,7 +171,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
         {/* Header */}
         <div className="grid grid-cols-[1fr_auto] items-center gap-3 p-4 sm:p-6 border-b border-gray-100 dark:border-slate-700/60">
           <div className="grid grid-cols-[auto_1fr] items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#002e6d]/10 dark:bg-cyan-500/10 grid place-items-center text-[#002e6d] dark:text-cyan-400 shrink-0">
+            <div className="w-10 h-10 rounded-[8px] bg-[#002e6d]/10 dark:bg-cyan-500/10 grid place-items-center text-[#002e6d] dark:text-cyan-400 shrink-0">
               <QrCode size={20} />
             </div>
             <div className="min-w-0">
@@ -196,7 +196,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-4">
           {/* Camera Viewfinder Area */}
-          <div className="relative w-full aspect-video sm:h-56 bg-slate-900 rounded-2xl overflow-hidden grid place-items-center border border-gray-200/50 dark:border-slate-700/60 shadow-inner">
+          <div className="relative w-full aspect-video sm:h-56 bg-slate-900 rounded-[8px] overflow-hidden grid place-items-center border border-gray-200/50 dark:border-slate-700/60 shadow-inner">
             <video
               ref={videoRef}
               autoPlay
@@ -208,7 +208,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
             {cameraActive ? (
               <>
                 {/* Scanner laser and overlay reticle */}
-                <div className="absolute inset-6 pointer-events-none border-2 border-cyan-400/50 rounded-xl grid place-items-center">
+                <div className="absolute inset-6 pointer-events-none border-2 border-cyan-400/50 rounded-[8px] grid place-items-center">
                   <div className="w-full h-0.5 bg-cyan-400 shadow-[0_0_12px_#38bdf8] animate-pulse" />
                 </div>
                 <div className="absolute bottom-3 inset-x-3 grid justify-items-center">
@@ -236,7 +236,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={startCamera}
-                  className="min-h-[44px] px-4 py-2 bg-[#002e6d] hover:bg-[#001f4d] text-white rounded-xl text-xs sm:text-sm font-semibold grid grid-flow-col auto-cols-max items-center gap-2 transition-all shadow-md shadow-[#002e6d]/30"
+                  className="min-h-[44px] px-4 py-2 bg-[#002e6d] hover:bg-[#001f4d] text-white rounded-[8px] text-xs sm:text-sm font-semibold grid grid-flow-col auto-cols-max items-center gap-2 transition-all shadow-md shadow-[#002e6d]/30"
                 >
                   <Camera size={16} />
                   <span>Bật camera quét</span>
@@ -246,7 +246,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
           </div>
 
           {cameraError && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-[8px] text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
               {cameraError}
             </div>
           )}
@@ -263,13 +263,13 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
                   value={inputCode}
                   onChange={(e) => setInputCode(e.target.value)}
                   placeholder="Vd: AST-0001, AST-LAP-01..."
-                  className="w-full min-h-[44px] px-4 py-2 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
+                  className="w-full min-h-[44px] px-4 py-2 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-[8px] text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!inputCode.trim()}
-                className="min-h-[44px] px-5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-xs sm:text-sm grid place-items-center transition-all shadow-sm shadow-[#002e6d]/20"
+                className="min-h-[44px] px-5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-[8px] text-xs sm:text-sm grid place-items-center transition-all shadow-sm shadow-[#002e6d]/20"
               >
                 Tra cứu
               </button>
@@ -293,7 +293,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
                       toast.success(`Đã chọn: ${asset.name}`);
                       onClose();
                     }}
-                    className="w-full text-left p-2.5 rounded-xl bg-gray-50 dark:bg-slate-800/60 hover:bg-primary/5 dark:hover:bg-primary/20 border border-gray-100 dark:border-slate-700/60 transition-all grid grid-cols-[auto_1fr_auto] items-center gap-3 min-h-[44px] group"
+                    className="w-full text-left p-2.5 rounded-[8px] bg-gray-50 dark:bg-slate-800/60 hover:bg-primary/5 dark:hover:bg-primary/20 border border-gray-100 dark:border-slate-700/60 transition-all grid grid-cols-[auto_1fr_auto] items-center gap-3 min-h-[44px] group"
                   >
                     <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-700/60 grid place-items-center text-primary dark:text-cyan-400 border border-gray-200/50 dark:border-slate-600/50">
                       <QrCode size={16} />

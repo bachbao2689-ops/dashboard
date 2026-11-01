@@ -10,7 +10,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
           {/* Card 1: Tiến độ tổng thể */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-[8px] bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-blue transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'overall_progress'
                 ? 'z-30 ring-2 ring-blue-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
@@ -64,7 +64,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={cancelCloseTooltip}
                 onMouseLeave={scheduleCloseTooltip}
-                className="absolute z-40 left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                className="absolute z-40 left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-[8px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-blue-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
@@ -99,7 +99,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
           {/* Card 2: Sức khỏe & Cơ hội qua Phase (Health Card) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${(gatePassChancePct ?? -1) >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-[8px] bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card ${(gatePassChancePct ?? -1) >= 80 ? 'magnetic-emerald' : 'magnetic-amber'} transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'phase_health_gate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
@@ -159,7 +159,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={cancelCloseTooltip}
                 onMouseLeave={scheduleCloseTooltip}
-                className="absolute z-40 left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                className="absolute z-40 left-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-[8px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className={`p-1 rounded-md bg-gray-100 dark:bg-slate-800 ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
@@ -194,7 +194,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
           {/* Card 3: Vận tốc (Velocity) */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-[8px] bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-violet transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'velocity'
                 ? 'z-30 ring-2 ring-indigo-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
@@ -248,7 +248,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={cancelCloseTooltip}
                 onMouseLeave={scheduleCloseTooltip}
-                className="absolute z-40 left-0 sm:left-auto sm:right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                className="absolute z-40 left-0 sm:left-auto sm:right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-[8px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-indigo-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
@@ -283,7 +283,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
           {/* Card 4: Đúng cam kết hạn */}
           <div
             data-tooltip-container="true"
-            className={`p-3 sm:p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-default ${
+            className={`p-3 sm:p-3.5 rounded-[8px] bg-slate-50/80 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 flex flex-col justify-between hover-magnetic-card magnetic-emerald transition-all relative group/card min-w-0 h-full cursor-default ${
               activeTooltip === 'on_time_rate'
                 ? 'z-30 ring-2 ring-emerald-500/40 shadow-xl bg-white dark:bg-slate-800'
                 : 'z-10'
@@ -337,7 +337,7 @@ export function WorkflowKpis({model}: {model: WorkflowModel}) {
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={cancelCloseTooltip}
                 onMouseLeave={scheduleCloseTooltip}
-                className="absolute z-40 right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                className="absolute z-40 right-0 top-[calc(100%+8px)] w-72 sm:w-80 p-4 rounded-[8px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100 dark:border-slate-800">
                   <span className="p-1 rounded-md bg-emerald-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400">

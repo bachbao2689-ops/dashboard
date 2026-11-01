@@ -1,3 +1,4 @@
+import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import { useMemo } from 'react';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useAuthStore } from '../store/authStore';
@@ -101,7 +102,12 @@ export function computeWorkloadHeatmap(
 }
 
 // Explicit planning estimate: 5 active tasks = 100%; no stored hours exist yet.
-export const useTeamWorkload = (departmentFilter = 'all') => {
+export const useTeamWorkload = (
+  departmentFilter = 'all',
+  calendarFilter = 'all',
+  customStartDate = '',
+  customEndDate = ''
+) => {
   const { tasks, users, departments: workspaceDepartments, loading, error, refetch } = useWorkspaceData();
   const profile = useAuthStore((state) => state.profile);
   const today = taskDay(new Date().toISOString());
@@ -137,9 +143,14 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
     const week = weeklyReportRange('current');
     return filteredUsers
       .map((u) => {
-        const memberTasks = scopedTasks.filter(
+        let memberTasks = scopedTasks.filter(
           (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
         );
+        if (calendarFilter !== 'all' || customStartDate || customEndDate) {
+          memberTasks = memberTasks.filter((t) =>
+            checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, isTaskDone(t.status))
+          );
+        }
         const openList = memberTasks.filter((t) => taskOpen(t));
         const doneList = memberTasks.filter((t) => isTaskDone(t.status));
         const overdueList = openList.filter((t) => taskOverdue(t, today));
@@ -186,7 +197,7 @@ export const useTeamWorkload = (departmentFilter = 'all') => {
         };
       })
       .sort((a, b) => b.capacityPercentage - a.capacityPercentage || b.totalTasksCount - a.totalTasksCount);
-  }, [scopedTasks, filteredUsers, today]);
+  }, [scopedTasks, filteredUsers, today, calendarFilter, customStartDate, customEndDate]);
 
   const burndown = useMemo(() => computeBurndownSeries(scopedTasks), [scopedTasks]);
 

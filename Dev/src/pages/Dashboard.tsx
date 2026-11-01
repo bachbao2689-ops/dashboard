@@ -1,5 +1,6 @@
 import {ActionButton} from '../components/common/ActionButton';
 import {DashboardAllocationChart} from '../components/features/dashboard/DashboardAllocationChart';
+import {DashboardActivityHistory} from '../components/features/dashboard/DashboardActivityHistory';
 import {taskOwningDepartment,useDashboardPerformance} from '../hooks/useDashboardPerformance';
 import {isDepartmentLeader} from '../lib/roleScope';
 import {useAuthStore} from '../store/authStore';
@@ -8,7 +9,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Avatar } from "../components/common/Avatar";
 
 import {
-  Users, ChevronDown, Clock, Info, Check, Calendar, FileText, BarChart2, ArrowRight, Search
+  Users, ChevronDown, Clock, Info, Check, Calendar, BarChart2, ArrowRight, Search
 } from 'lucide-react';
 import { useUiStore } from '../store/uiStore';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
@@ -105,45 +106,41 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="relative z-[100]" ref={searchRef}>
-            <div className="flex items-center bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-lg p-1">
-              <span className={`hidden md:inline text-xs font-semibold px-2 ${MUTED}`}>{t('dashboard.department')}:</span>
+            <div className="grid grid-flow-col auto-cols-max items-center bg-gray-50 dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700/80 rounded-[8px] p-0.5">
               <ActionButton mobileOnlyIcon icon={<Users size={16}/>} label={s.type === 'department' ? s.name : t('dashboard.selectDept')}
                 onClick={() => setShowSearch(!showSearch)}
-                className="flex items-center justify-between min-w-[130px] gap-2 px-2.5 py-1 bg-white dark:bg-slate-800 rounded-md shadow-sm text-xs font-semibold border border-gray-200 dark:border-slate-600"
+                className="grid grid-flow-col auto-cols-max items-center justify-between min-w-[130px] gap-2 px-2.5 py-1 bg-white dark:bg-[#071325] rounded-[6px] shadow-2xs text-xs font-semibold border border-gray-200 dark:border-slate-700/80 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-1.5 truncate">
+                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 truncate">
                   <span className={INK}>{s.type === 'department' ? s.name : t('dashboard.selectDept')}</span>
                 </div>
                 <ChevronDown size={13} className={MUTED} />
               </ActionButton>
-              <button onClick={() => setRange('custom')} className={`w-7 h-7 rounded-md grid place-items-center ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:text-white dark:hover:bg-slate-600 transition-colors`} title={t('dashboard.customDateRange')}>
-                <Calendar size={14} />
-              </button>
             </div>
 
             {showSearch && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col">
-                <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700/80 rounded-[8px] shadow-xl overflow-hidden grid grid-cols-1">
+                <div className="p-2 border-b border-gray-100 dark:border-slate-800">
                   <div className="relative">
                     <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${MUTED}`} />
                     <input
                       type="text" autoFocus placeholder={t('dashboard.searchDept')}
-                      className={`w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-sm outline-none focus:border-blue-500 ${INK}`}
+                      className={`w-full bg-gray-50 dark:bg-[#071325] border border-gray-200 dark:border-slate-700/80 rounded-[6px] pl-8 pr-3 py-1.5 text-xs outline-none focus:outline-none focus:ring-0 ${INK}`}
                       value={search} onChange={e => setSearch(e.target.value)}
                     />
                   </div>
                 </div>
-                <div className="max-h-64 overflow-auto p-1">
+                <div className="max-h-64 overflow-auto p-1 custom-scrollbar">
                   {filteredDepts.length > 0 ? filteredDepts.map(d => (
                     <button
                       key={d.id}
                       onClick={() => { setActiveId(d.id); setShowSearch(false); setSearch(''); }}
-                      className={`w-full text-left px-3 py-2 rounded-lg flex flex-col ${d.id === activeId ? 'bg-blue-50 dark:bg-slate-700' : 'hover:bg-gray-50 dark:hover:bg-slate-700/50'}`}
+                      className={`w-full text-left px-3 py-2 rounded-[6px] grid grid-cols-1 ${d.id === activeId ? 'bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-sky-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                     >
-                      <span className={`text-sm font-semibold ${INK}`}>{d.name}</span>
+                      <span className={`text-xs ${INK}`}>{d.name}</span>
                     </button>
                   )) : (
-                    <div className={`p-4 text-center text-sm ${MUTED}`}>{t('dashboard.noDeptFound')}</div>
+                    <div className={`p-4 text-center text-xs ${MUTED}`}>{t('dashboard.noDeptFound')}</div>
                   )}
                 </div>
               </div>
@@ -153,7 +150,7 @@ export const Dashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr] lg:grid-rows-[auto_1fr] gap-3 flex-1">
           {/* Context Spotlight */}
-          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-2xl px-4 py-4 bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
+          <div className="sm:col-span-2 lg:col-span-1 lg:row-span-2 border border-gray-100 dark:border-slate-700 rounded-[8px] px-4 py-4 bg-[radial-gradient(ellipse_at_50%_28%,#f4f9ff,white_66%)] dark:bg-none dark:bg-slate-800 flex flex-col items-center justify-between text-center min-w-0">
             <div className="w-full flex items-center justify-between">
               <Eyebrow className="!text-xs !tracking-[1.5px]">{getEyebrow()}</Eyebrow>
             </div>
@@ -175,7 +172,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="w-full mt-auto pt-2 space-y-3">
-              <div className="grid grid-cols-3 gap-2 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[14px] p-2 border border-white/60 dark:border-slate-700/50 shadow-sm relative">
+              <div className="grid grid-cols-3 gap-2 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[8px] p-2 border border-white/60 dark:border-slate-700/50 shadow-sm relative">
                 {[[s.open, t('dashboard.openTasks'), 'open'], [s.done, t('dashboard.doneTasks'), 'done'], [s.projects, s.projectsLabel, 'projects']].map(([v, l, type]) => {
                   let items: any[] = [];
                   if (type === 'open') items = selectedTasks.filter(t => !isDone(t.status));
@@ -190,7 +187,7 @@ export const Dashboard: React.FC = () => {
                         else if (type === 'done') openFilteredTasks('completed');
                         else navigate('/projects');
                       }}
-                      className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer ${
+                      className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-[8px] transition-all cursor-pointer ${
                         type === 'done'
                           ? 'hover:bg-emerald-500/10 hover:border-emerald-500/20'
                           : type === 'projects'
@@ -209,7 +206,7 @@ export const Dashboard: React.FC = () => {
 
                       {/* Hover Bubble / Popover */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] origin-bottom cursor-auto pointer-events-none group-hover:pointer-events-auto text-left">
-                        <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[16px] shadow-[0_20px_60px_rgb(0,0,0,0.18)] relative">
+                        <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-3xl saturate-200 border border-blue-100 dark:border-slate-700 rounded-[8px] shadow-[0_20px_60px_rgb(0,0,0,0.18)] relative">
                           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur-3xl border-b border-r border-blue-100 dark:border-slate-700 transform rotate-45 rounded-sm"></div>
                           <div className="relative z-10 p-3 flex flex-col max-h-[300px]">
                             <div className="flex items-center justify-between mb-2 px-1 shrink-0">
@@ -243,7 +240,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Progress */}
-          <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col`}>
+          <div className={`${INNER} rounded-[8px] px-[15px] py-4 min-w-0 flex flex-col`}>
             <div className="flex items-center justify-between">
               <strong className={`text-sm ${INK}`}>{t('dashboard.completionProgress')}</strong>
               <Info size={13} className={MUTED} />
@@ -265,7 +262,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Focus needed */}
-          <div className={`${INNER} rounded-[14px] px-[15px] py-4 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
+          <div className={`${INNER} rounded-[8px] px-[15px] py-4 min-w-0 flex flex-col bg-[radial-gradient(ellipse_at_100%_110%,#fff1f3_0%,transparent_55%)] dark:bg-[radial-gradient(ellipse_at_100%_110%,rgba(176,54,75,0.18)_0%,transparent_55%)]`}>
             <div className="flex items-center justify-between">
               <strong className={`text-sm ${INK}`}>{t('dashboard.accelerateProgress')}</strong>
               <Clock size={14} className={MUTED} />
@@ -285,7 +282,7 @@ export const Dashboard: React.FC = () => {
 
           <DashboardAllocationChart name={s.name} rangeStart={rangeStart} rangeEnd={rangeEnd} range={range} setRange={setRange} customStart={customStart} setCustomStart={setCustomStart} customEnd={customEnd} setCustomEnd={setCustomEnd} isDark={isDark} chartData={chartData} />
           {/* Insight strip */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[13px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-3.5 mt-1">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-[13px] border border-blue-100 dark:border-slate-700 rounded-[8px] bg-[linear-gradient(115deg,#f6faff,#fff)] dark:bg-none dark:bg-slate-700/40 px-[13px] py-3.5 mt-1">
             <span className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 grid place-items-center text-[#3a7bd5] dark:text-sky-400 shrink-0"><BarChart2 size={15} /></span>
             <div className="min-w-0">
               <strong className={`text-sm font-semibold ${INK}`}>{t('dashboard.trackingIncomplete', { name: s.name, count: s.open })}</strong>
@@ -299,22 +296,8 @@ export const Dashboard: React.FC = () => {
       {/* ============ RIGHT STACK (compact) ============ */}
       <div className="flex flex-col gap-4 min-w-0">
 
-        {/* History */}
-        <section className={`${PANEL} px-4 pt-4 pb-3 flex flex-col`}>
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <Eyebrow className="!text-xs mb-[3px]">HISTORY</Eyebrow>
-              <h2 className={`text-base font-bold ${INK}`}>{t('dashboard.history')}</h2>
-            </div>
-            <i className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-          </div>
-          <p className={`text-xs ${MUTED}`}>{t('dashboard.noHistory')}</p>
-          <div className="flex flex-col items-center justify-center text-center py-4">
-            <FileText size={22} className="text-[#b9c6d8] dark:text-slate-500 mb-2" />
-            <h3 className={`text-sm font-bold ${INK}`}>{t('dashboard.noHistory')}</h3>
-            <p className={`text-xs mt-1 ${MUTED}`}>{t('dashboard.noHistoryDesc')}</p>
-          </div>
-        </section>
+        {/* Activity History with Role Permission */}
+        <DashboardActivityHistory users={users} />
 
         {/* Upcoming Projects */}
         <section className={`${PANEL} px-3.5 py-4 flex flex-col`}>
@@ -330,7 +313,7 @@ export const Dashboard: React.FC = () => {
               <button
                 key={p.id}
                 onClick={() => p.parentKey?setActiveId(p.parentKey):navigate(`/tasks?task=${encodeURIComponent(p.id)}`)}
-                className={`w-full text-left bg-gray-50/80 dark:bg-slate-800/60 transition-all border ${activeId === p.parentKey ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700/80'} rounded-xl p-3 hover-magnetic-card ${p.priority === 'High' || p.priority === 'Urgent' ? 'magnetic-rose' : 'magnetic-amber'}`}
+                className={`w-full text-left bg-gray-50/80 dark:bg-slate-800/60 transition-all border ${activeId === p.parentKey ? 'border-blue-400 dark:border-sky-500 ring-1 ring-blue-400 dark:ring-sky-500' : 'border-gray-200 dark:border-slate-700/80'} rounded-[8px] p-3 hover-magnetic-card ${p.priority === 'High' || p.priority === 'Urgent' ? 'magnetic-rose' : 'magnetic-amber'}`}
               >
                 <div className="flex items-center justify-between text-xs mb-2">
                   <b className={INK}>{p.code}</b>

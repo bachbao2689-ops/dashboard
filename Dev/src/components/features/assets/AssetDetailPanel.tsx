@@ -225,7 +225,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="xl:hidden px-3 py-2 min-h-[44px] rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-semibold grid grid-flow-col auto-cols-max items-center gap-1.5 transition-colors"
+                className="xl:hidden px-3 py-2 min-h-[44px] rounded-[8px] bg-gray-100 hover:bg-gray-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-semibold grid grid-flow-col auto-cols-max items-center gap-1.5 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Về Dashboard</span>
@@ -240,7 +240,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
               </button>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Đóng" className="p-2 min-h-[44px] min-w-[44px] rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors grid place-items-center">
+          <button onClick={onClose} aria-label="Đóng" className="p-2 min-h-[44px] min-w-[44px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors grid place-items-center">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -252,7 +252,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
               {/* Asset header card */}
               <div>
                 <div className="grid grid-cols-[auto_1fr] items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 grid place-items-center">
+                  <div className="w-12 h-12 rounded-[8px] bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 grid place-items-center">
                     {getIcon(asset.category?.name)}
                   </div>
                   <div>
@@ -269,7 +269,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
 
               {/* Security-scoped Tab Switcher: Only visible for Manager / Asset Approver when not in scan mode */}
               {showHistoryTab && (
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100/80 dark:bg-slate-900/60 rounded-xl border border-gray-200/60 dark:border-slate-700/60">
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100/80 dark:bg-slate-900/60 rounded-[8px] border border-gray-200/60 dark:border-slate-700/60">
                   <button
                     type="button"
                     onClick={() => setActiveTab('info')}
@@ -344,7 +344,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                     <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 grid grid-flow-col auto-cols-max items-center gap-2">
                       {t('assets.maintenanceNotes')}
                     </h3>
-                    <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
+                    <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-[8px] border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 min-h-[100px]">
                       {asset.notes || t('assets.noNotes')}
                     </div>
                   </div>
@@ -355,13 +355,13 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                       <button
                         type="button"
                         onClick={handleBorrowClick}
-                        className="w-full min-h-[48px] px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-2 cursor-pointer"
+                        className="w-full min-h-[48px] px-6 py-3 rounded-[8px] bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-2 cursor-pointer"
                       >
                         <Box className="w-5 h-5" />
                         <span>Mượn ngay</span>
                       </button>
                     ) : asset.status === 'borrowed' ? (
-                      <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-blue-800 dark:text-blue-300">
+                      <div className="p-4 rounded-[8px] bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-blue-800 dark:text-blue-300">
                         <Clock className="w-5 h-5 shrink-0 text-blue-500" />
                         <div className="text-xs">
                           <p className="font-semibold text-sm">Thiết bị hiện đang được mượn</p>
@@ -378,7 +378,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                         </div>
                       </div>
                     ) : asset.status === 'maintenance' || asset.status === 'broken' ? (
-                      <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-rose-800 dark:text-rose-300">
+                      <div className="p-4 rounded-[8px] bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-rose-800 dark:text-rose-300">
                         <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
                         <div className="text-xs">
                           <p className="font-semibold text-sm">Thiết bị đang bảo trì / tạm ngưng</p>
@@ -388,7 +388,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                         </div>
                       </div>
                     ) : asset.status === 'reserved' ? (
-                      <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-amber-800 dark:text-amber-300">
+                      <div className="p-4 rounded-[8px] bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 grid grid-flow-col auto-cols-max items-center gap-3 text-amber-800 dark:text-amber-300">
                         <Clock className="w-5 h-5 shrink-0 text-amber-500" />
                         <div className="text-xs">
                           <p className="font-semibold text-sm">Thiết bị đã có người đặt mượn</p>
@@ -400,7 +400,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-center text-xs text-gray-500 dark:text-gray-400">
+                      <div className="p-4 rounded-[8px] bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-center text-xs text-gray-500 dark:text-gray-400">
                         Thiết bị hiện không khả dụng
                       </div>
                     )}
@@ -431,19 +431,19 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                       <p className="text-xs text-gray-500 dark:text-gray-400">Đang tải lịch sử mượn trả...</p>
                     </div>
                   ) : historyError ? (
-                    <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-2xl text-center space-y-3">
+                    <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-[8px] text-center space-y-3">
                       <p className="text-xs text-rose-600 dark:text-rose-400">{historyError}</p>
                       <button
                         type="button"
                         onClick={fetchBorrowHistory}
-                        className="min-h-[44px] px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold"
+                        className="min-h-[44px] px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-[8px] text-xs font-semibold"
                       >
                         Thử lại
                       </button>
                     </div>
                   ) : history.length === 0 ? (
-                    <div className="p-8 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 grid justify-items-center space-y-2">
-                      <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-slate-800 grid place-items-center text-gray-400">
+                    <div className="p-8 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[8px] border border-dashed border-gray-200 dark:border-slate-700 grid justify-items-center space-y-2">
+                      <div className="w-12 h-12 rounded-[8px] bg-gray-100 dark:bg-slate-800 grid place-items-center text-gray-400">
                         <Clock size={20} />
                       </div>
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chưa có lịch sử mượn trả</p>
@@ -463,7 +463,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
                             {/* Dot indicator */}
                             <div className={`absolute left-0 top-3.5 w-3.5 h-3.5 rounded-full border-2 ${status.dotColor} shadow-xs z-10`} />
 
-                            <div className="bg-white dark:bg-slate-900/60 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-xs hover:border-primary/40 dark:hover:border-cyan-500/40 transition-all">
+                            <div className="bg-white dark:bg-slate-900/60 p-4 rounded-[8px] border border-gray-200/80 dark:border-slate-700/80 shadow-xs hover:border-primary/40 dark:hover:border-cyan-500/40 transition-all">
                               {/* Header: Requester + Status */}
                               <div className="grid grid-cols-[1fr_auto] items-start gap-2 mb-2">
                                 <div>
@@ -500,7 +500,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
 
                               {/* Purpose */}
                               {item.purpose ? (
-                                <div className="bg-gray-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-gray-100 dark:border-slate-800 text-xs mt-2">
+                                <div className="bg-gray-50 dark:bg-slate-800/50 p-2.5 rounded-[8px] border border-gray-100 dark:border-slate-800 text-xs mt-2">
                                   <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 block mb-0.5">
                                     Mục đích:
                                   </span>

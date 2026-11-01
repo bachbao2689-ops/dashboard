@@ -127,7 +127,7 @@ const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, i
   const isDone = ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
   if (isDone) {
     return (
-      <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30">
+      <span className="text-[10px] px-1.5 py-0.5 rounded-[6px] font-bold whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30">
         {isEn ? 'Completed' : 'Hoàn thành'}
       </span>
     );
@@ -150,7 +150,7 @@ const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, i
     ? (isEn ? 'Due today' : 'Hôm nay')
     : (isEn ? `${diffDays}d left` : `Còn ${diffDays} ngày`);
   
-  return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-[6px] font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
 
 export const CampaignPanel: React.FC<{ 
@@ -647,7 +647,7 @@ export const CampaignPanel: React.FC<{
   }, [campaigns, filters, subtaskMap, profile?.id]);
 
   return (
-    <section className="card-hub rounded-2xl overflow-hidden shrink-0">
+    <section className="card-hub rounded-[8px] overflow-hidden shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
         <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />

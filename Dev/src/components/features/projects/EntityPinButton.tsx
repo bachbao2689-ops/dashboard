@@ -41,7 +41,7 @@ export const EntityPinButton: React.FC<EntityPinButtonProps> = ({
       }}
       title={isPinned ? 'Bỏ ghim khỏi Sidebar' : 'Ghim vào thanh bên trái'}
       aria-label={isPinned ? 'Bỏ ghim khỏi Sidebar' : 'Ghim vào thanh bên trái'}
-      className={`p-2 rounded-xl transition-colors shrink-0 ${
+      className={`p-2 rounded-[8px] transition-colors shrink-0 ${
         isPinned
           ? 'text-slate-900 bg-gray-100 hover:bg-gray-200/80 dark:text-slate-100 dark:bg-slate-700/80 dark:hover:bg-slate-700'
           : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'

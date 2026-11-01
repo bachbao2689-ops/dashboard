@@ -811,8 +811,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       >
         {isOpen && !embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-          <div><span className="text-xs font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
-          <div className="flex items-center gap-1"><TaskActivityLogPopover entityType="task" entityId={task?.id} workspaceId={task?.workspace_id} /><TaskPinButton taskId={task?.id} /><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
+          <div><span className="text-xs font-semibold px-3 py-1.5 rounded-[6px] uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
+          <div className="flex items-center gap-1"><TaskActivityLogPopover entityType="task" entityId={task?.id} workspaceId={task?.workspace_id} /><TaskPinButton taskId={task?.id} /><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
         </div>
         {task && <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
 <section>
@@ -840,12 +840,12 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 canManage={canEdit && !readOnly}
               >
                 {totalChecklistQuantity > 0 && (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
                     {lang === 'en' ? 'Total Qty' : 'Tổng số lượng'}: {totalChecklistQuantity}
                   </span>
                 )}
                 {Boolean(targetDepartmentName || (task as any).target_department_name) && (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
                     → {targetDepartmentName || (task as any).target_department_name}
                   </span>
                 )}
@@ -858,20 +858,20 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
             )}
           </section>
           {editingTask ? (
-            <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
+            <section className="space-y-4 rounded-[8px] border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
               <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
-                <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
               </label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.assignee')}
-                  <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     <option value="">{t('common.unassigned')}</option>
                     {(assignablePeople || mentionPeople).map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
                     {task.assignee_id != null && task.assignee?.name && !(assignablePeople || mentionPeople).some(person => String(person.id) === String(task.assignee_id)) && <option value={task.assignee_id}>{task.assignee.name}</option>}
                   </select>
                 </label>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.priority')}
-                  <select value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  <select value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     <option value="low">{t('common.low')}</option><option value="medium">{t('common.medium')}</option><option value="high">{t('common.high')}</option><option value="urgent">{t('common.urgent')}</option>
                   </select>
                 </label>
@@ -895,7 +895,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     value={editStartDate ? displayDate(editStartDate).replace('—', '') : ''}
                     onChange={(e) => setEditStartDate(inputDate(e.target.value) || '')}
                     placeholder="dd/mm/yyyy"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div className="tw-calendar-picker relative">
@@ -918,7 +918,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     value={editDueDate ? displayDate(editDueDate).replace('—', '') : ''}
                     onChange={(e) => setEditDueDate(inputDate(e.target.value) || '')}
                     placeholder="dd/mm/yyyy"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 sm:col-span-2">
@@ -931,14 +931,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     onChange={event => setEditTaskQuantity(event.target.value)}
                     disabled={checklistQuantity > 0}
                     placeholder="0"
-                    className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
+                    className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
                   />
                 </label>
               </div>
-              <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
+              <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
             </section>
           ) : (
-            <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700"><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{task.assignee ? <div className="flex items-center gap-2"><Avatar name={task.assignee.name} src={task.assignee.avatar_url || undefined} /><b className="text-sm">{task.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>{task.start_date ? <div className="text-sm flex items-center gap-1.5 flex-wrap"><span className="font-normal text-gray-700 dark:text-gray-300">{new Date(task.start_date).toLocaleDateString('vi-VN')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</span></div> : <b className="text-sm font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>{task.project?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span> : task.campaign?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span> : <b className="text-sm text-gray-400">{t('common.unlinked')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className="text-sm">{task.department?.name || 'N/A'}</b></div></section>
+            <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700"><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{task.assignee ? <div className="flex items-center gap-2"><Avatar name={task.assignee.name} src={task.assignee.avatar_url || undefined} /><b className="text-sm">{task.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>{task.start_date ? <div className="text-sm flex items-center gap-1.5 flex-wrap"><span className="font-normal text-gray-700 dark:text-gray-300">{new Date(task.start_date).toLocaleDateString('vi-VN')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</span></div> : <b className="text-sm font-bold text-red-600 dark:text-red-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : t('common.noDueDate')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>{task.project?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span> : task.campaign?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span> : <b className="text-sm text-gray-400">{t('common.unlinked')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className="text-sm">{task.department?.name || 'N/A'}</b></div></section>
           )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{task.created_at ? new Date(task.created_at).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</span>
@@ -981,7 +981,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 {checklistItems.map(item => (
                   <div
                     key={item.id}
-                    className="p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm min-w-0 overflow-hidden"
+                    className="p-3 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm min-w-0 overflow-hidden"
                   >
                     {/* Hover action buttons in top-right */}
                     {canAddChecklistItem && !readOnly && editingItemId !== item.id && (
@@ -991,7 +991,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                           onClick={() => handleStartEditChecklistItem(item)}
                           title={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
                           aria-label={lang === 'en' ? 'Edit item' : 'Chỉnh sửa'}
-                          className="p-1 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          className="p-1 rounded-[6px] text-gray-400 hover:text-primary hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                         >
                           <Edit3 size={13} />
                         </button>
@@ -1000,7 +1000,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                           onClick={() => void handleDeleteChecklistItem(item.id)}
                           title={lang === 'en' ? 'Delete item' : 'Xóa'}
                           aria-label={lang === 'en' ? 'Delete item' : 'Xóa'}
-                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          className="p-1 rounded-[6px] text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -1017,7 +1017,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                             value={editItemTitle}
                             onChange={(e) => setEditItemTitle(e.target.value)}
                             maxLength={500}
-                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                            className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
                             autoFocus
                           />
                         </label>
@@ -1027,7 +1027,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                             value={editItemDescription}
                             onChange={(e) => setEditItemDescription(e.target.value)}
                             rows={2}
-                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
+                            className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
                           />
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1036,7 +1036,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                             <select
                               value={editItemPriority}
                               onChange={(e) => setEditItemPriority(e.target.value as any)}
-                              className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
+                              className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
                             >
                               <option value="low">{t('common.low').toLowerCase()}</option>
                               <option value="medium">{t('common.medium').toLowerCase()}</option>
@@ -1053,7 +1053,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                               value={editItemQuantity}
                               onChange={(e) => setEditItemQuantity(e.target.value)}
                               placeholder="0"
-                              className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                              className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
                             />
                           </label>
                           <div className="tw-calendar-picker relative">
@@ -1077,7 +1077,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                               value={editItemDueDate ? displayDate(editItemDueDate).replace('—', '') : ''}
                               onChange={(e) => setEditItemDueDate(inputDate(e.target.value) || '')}
                               placeholder="dd/mm/yyyy"
-                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                             />
                           </div>
                         </div>
@@ -1092,7 +1092,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                           <button
                             type="button"
                             onClick={handleCancelEditChecklistItem}
-                            className="px-3 py-1.5 text-xs rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
+                            className="px-3 py-1.5 text-xs rounded-[6px] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
                           >
                             {t('common.cancel')}
                           </button>
@@ -1100,7 +1100,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                             type="button"
                             disabled={savingItem || !editItemTitle.trim()}
                             onClick={() => void handleSaveEditChecklistItem(item.id)}
-                            className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
+                            className="px-3.5 py-1.5 text-xs font-semibold rounded-[6px] bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
                           >
                             {savingItem ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save' : 'Lưu')}
                           </button>
@@ -1149,7 +1149,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               </div>
             ) : (
               !showAddItemForm && (
-                <div className="rounded-xl border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
+                <div className="rounded-[8px] border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
                   {lang === 'en'
                     ? `No checklist items yet. ${canAddChecklistItem ? 'Click "Add item" to assign work.' : ''}`
                     : `Chưa có việc phát sinh nào. ${canAddChecklistItem ? 'Bấm "Thêm việc phát sinh" để giao thêm việc.' : ''}`}
@@ -1162,7 +1162,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <button
                 type="button"
                 onClick={() => setShowAddItemForm(true)}
-                className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
+                className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
               >
                 <Plus size={16} className="inline mr-1" />
                 <span>{lang === 'en' ? 'Add item' : 'Thêm việc phát sinh'}</span>
@@ -1171,7 +1171,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
 
             {/* Form thêm đầu việc */}
             {showAddItemForm && (
-              <div className="mt-3 p-3.5 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
+              <div className="mt-3 p-3.5 bg-gray-50 dark:bg-slate-800 rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                   {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
                   <input
@@ -1180,7 +1180,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     onChange={(e) => setNewItemTitle(e.target.value)}
                     placeholder={lang === 'en' ? 'Enter item title...' : 'Nhập tên đầu việc cần giao...'}
                     maxLength={500}
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                    className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
                     autoFocus
                   />
                 </label>
@@ -1192,7 +1192,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     onChange={(e) => setNewItemDescription(e.target.value)}
                     placeholder={lang === 'en' ? 'Brief description or requirements...' : 'Mô tả tóm tắt nội dung yêu cầu...'}
                     rows={2}
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
+                    className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
                   />
                 </label>
 
@@ -1202,7 +1202,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     <select
                       value={newItemPriority}
                       onChange={(e) => setNewItemPriority(e.target.value as any)}
-                      className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
+                      className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
                     >
                       <option value="low">{t('common.low').toLowerCase()}</option>
                       <option value="medium">{t('common.medium').toLowerCase()}</option>
@@ -1220,7 +1220,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                       value={newItemQuantity}
                       onChange={(e) => setNewItemQuantity(e.target.value)}
                       placeholder="0"
-                      className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                      className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
                     />
                   </label>
 
@@ -1245,7 +1245,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                       value={newItemDueDate ? displayDate(newItemDueDate).replace('—', '') : ''}
                       onChange={(e) => setNewItemDueDate(inputDate(e.target.value) || '')}
                       placeholder="dd/mm/yyyy"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
@@ -1269,7 +1269,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                       setNewItemQuantity('');
                       setNewItemDueDate('');
                     }}
-                    className="px-3 py-1.5 text-xs rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
+                    className="px-3 py-1.5 text-xs rounded-[6px] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
                   >
                     {t('common.cancel')}
                   </button>
@@ -1277,7 +1277,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                     type="button"
                     disabled={addingItem || !newItemTitle.trim()}
                     onClick={() => void handleAddChecklistItem()}
-                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-[6px] bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add' : 'Thêm')}
                   </button>

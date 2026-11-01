@@ -60,14 +60,13 @@ export const BorrowRequests: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('borrow.title')}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('borrow.subtitle')}</p>
-          {mine && <p className="text-xs text-primary mt-1">{t('borrow.viewingMine')}</p>}
+                    {mine && <p className="text-xs text-primary mt-1">{t('borrow.viewingMine')}</p>}
         </div>
         <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
           <StatusFilterDropdown value={filter} onChange={setFilter} isOpen={filterOpen} onToggle={() => setFilterOpen(value => !value)} onClose={() => setFilterOpen(false)}
             options={[{key: 'all', dot: 'bg-gray-400', label: t('common.all')}, {key: 'pending', dot: 'bg-amber-400', label: t('borrow.statusPending')}, {key: 'approved', dot: 'bg-blue-400', label: t('borrow.statusApproved')}, {key: 'returned', dot: 'bg-emerald-400', label: t('borrow.statusReturned')}, {key: 'rejected', dot: 'bg-red-400', label: t('borrow.statusRejected')}]} />
           <ActionButton icon={<Plus size={16} />} type="button" onClick={() => navigate('/assets?borrow=1')}
-            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-medium transition-all shadow-sm">
+            className="btn-add-new h-10 flex items-center gap-2 px-4 rounded-[8px] text-sm font-medium transition-all shadow-sm">
              <span>{t('borrow.newRequest')}</span>
           </ActionButton>
         </div>
@@ -84,16 +83,16 @@ export const BorrowRequests: React.FC = () => {
           const status = getStatusLabel(request.approval_status, request.returned_at);
           return (
             <div key={request.id} onClick={() => setSelectedId(request.id)}
-              className="glass-panel p-5 flex flex-col group hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
+              className="glass-panel p-5 flex flex-col rounded-[8px] group hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
               <div className="flex justify-between items-start gap-3 mb-4">
                 <div className="min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white truncate">{request.asset?.name || t('assets.col.asset')}</h3>
                   <p className="text-xs text-gray-500 font-mono mt-1">{request.asset?.asset_code || '—'}</p>
                   <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-2"><User size={12} />{request.requester?.name || t('common.unassigned')}</p>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${request.returned_at ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : request.approval_status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : request.approval_status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{status}</span>
+                <span className={`shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold ${request.returned_at ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : request.approval_status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : request.approval_status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{status}</span>
               </div>
-              <p className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-gray-700/50 flex-1 line-clamp-3">
+              <p className="bg-gray-50/50 dark:bg-gray-800/30 rounded-[6px] p-3 text-sm text-gray-600 dark:text-gray-300 mb-4 border border-gray-100 dark:border-gray-700/50 flex-1 line-clamp-3">
                 {request.purpose || t('borrow.notRecorded')}
               </p>
               <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
@@ -103,12 +102,12 @@ export const BorrowRequests: React.FC = () => {
                 </div>
                 {canManage && request.approval_status === 'pending' && (
                   <div className="flex gap-2">
-                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'reject'); }} className="px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg disabled:opacity-50">{t('borrow.reject')}</button>
-                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'approve'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg disabled:opacity-50">{t('borrow.approve')}</button>
+                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'reject'); }} className="px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-900/20 rounded-[6px] disabled:opacity-50">{t('borrow.reject')}</button>
+                    <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'approve'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-[6px] disabled:opacity-50">{t('borrow.approve')}</button>
                   </div>
                 )}
                 {canManage && request.approval_status === 'approved' && !request.returned_at && (
-                  <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'return'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-700 rounded-lg disabled:opacity-50">{t('borrow.confirmReturn')}</button>
+                  <button type="button" disabled={busyId === request.id} onClick={event => { event.stopPropagation(); void act(request.id, 'return'); }} className="px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-700 rounded-[6px] disabled:opacity-50">{t('borrow.confirmReturn')}</button>
                 )}
               </div>
             </div>

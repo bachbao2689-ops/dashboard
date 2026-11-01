@@ -125,14 +125,14 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
           <button 
             disabled={loading}
             onClick={onClose} 
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-          <section className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
+          <section className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">{t('borrow.borrowerInfo')}</h4>
             <div className="flex items-center gap-3">
               <Avatar name={profile?.name || ''} src={profile?.avatar_url || undefined} className="w-10 h-10 shadow-sm" />
@@ -160,21 +160,21 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                   onChange={e => setAssetCodeInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleAddByCode(); } }}
                   placeholder={t('borrow.enterCode')} 
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
+                  className="w-full pl-9 pr-3 py-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none focus:border-primary"
                 />
               </div>
-              <button type="button" onClick={handleAddByCode} className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+              <button type="button" onClick={handleAddByCode} className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-[8px] text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                 {t('common.add')}
               </button>
             </div>
 
-            <div className="h-[min(36vh,340px)] min-h-[180px] max-h-[60vh] resize-y overflow-y-auto custom-scrollbar p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/40">
+            <div className="h-[min(36vh,340px)] min-h-[180px] max-h-[60vh] resize-y overflow-y-auto custom-scrollbar p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/40">
               {cartAssets.length === 0 ? (
                 <p className="text-sm text-gray-500 italic text-center py-4">{t('borrow.noEquipment')}</p>
               ) : (
                 <div className="space-y-2">
                   {cartAssets.map(a => (
-                    <div key={a.id} className="flex items-start gap-2 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+                    <div key={a.id} className="flex items-start gap-2 p-3 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
                       <div className="min-w-0 flex-1">
                         <b className="text-sm leading-5 block break-words text-gray-900 dark:text-slate-100">{a.name}</b>
                         <span className="text-[11px] text-gray-500 dark:text-slate-400 font-mono bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mt-1 inline-block break-all">{a.asset_code}</span>
@@ -198,7 +198,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                   type="text"
                   value={toDisplayDate(localToday())}
                   disabled
-                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 text-sm font-semibold text-gray-500 cursor-not-allowed"
+                  className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 text-sm font-semibold text-gray-500 cursor-not-allowed"
                 />
               </div>
               <div className="tw-calendar-picker relative min-w-0">
@@ -214,7 +214,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                     value={dueDate ? toDisplayDate(dueDate) : ''}
                     placeholder={t('borrow.selectReturnDate')}
                     aria-label={t('borrow.selectReturnDate')}
-                    className="w-full pl-3 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 outline-none focus:border-primary cursor-pointer"
+                    className="w-full pl-3 pr-9 py-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 outline-none focus:border-primary cursor-pointer"
                   />
                   <CalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400" />
                 </div>
@@ -228,7 +228,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
                 value={purpose}
                 onChange={e => setPurpose(e.target.value)}
                 placeholder={t('borrow.purposePlaceholder')}
-                className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none min-h-24 focus:border-primary"
+                className="w-full p-3 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm outline-none min-h-24 focus:border-primary"
               />
             </div>
           </form>
@@ -239,7 +239,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
             type="button" 
             disabled={loading} 
             onClick={onClose} 
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             {t('common.cancel')}
           </button>
@@ -247,7 +247,7 @@ export const BorrowDrawer: React.FC<BorrowDrawerProps> = ({ isOpen, onClose, car
             type="submit" 
             form="borrow-form"
             disabled={loading || !profile || cartAssets.length === 0 || !dueDate || !purpose.trim()}
-            className="flex-1 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-colors shadow-sm"
+            className="flex-1 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] disabled:opacity-50 text-white font-bold text-sm rounded-[8px] transition-colors shadow-sm"
           >
             {loading ? t('borrow.submitting') : t('borrow.submit')}
           </button>

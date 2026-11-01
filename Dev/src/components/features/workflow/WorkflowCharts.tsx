@@ -9,7 +9,7 @@ export function WorkflowCharts({model}: {model: WorkflowModel}) {
 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Chart 1: Donut Chart - Trạng thái Task tháng này (5 Cols) */}
-        <div className="lg:col-span-5 card-hub p-5 rounded-2xl flex flex-col justify-between">
+        <div className="lg:col-span-5 card-hub p-5 rounded-[8px] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-3 mb-2">
               <div>
@@ -79,7 +79,7 @@ export function WorkflowCharts({model}: {model: WorkflowModel}) {
         </div>
 
         {/* Chart 2: Performance & Velocity Charts Row (7 Cols) */}
-        <div className="lg:col-span-7 card-hub p-5 rounded-2xl flex flex-col justify-between">
+        <div className="lg:col-span-7 card-hub p-5 rounded-[8px] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-3 mb-4">
               <div>
@@ -154,7 +154,7 @@ export function WorkflowCharts({model}: {model: WorkflowModel}) {
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
+          <div className="p-3 rounded-[8px] bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700 text-xs text-gray-500 flex flex-wrap items-center justify-between gap-2">
             <span>{isEn ? `Pace assessment (${activePhase?.name || 'No phase'}):` : `Đánh giá nhịp độ (${activePhase?.name || 'Chưa có phase'}):`}</span>
             <span className="font-semibold text-emerald-500">
               {isEn ? `Progress ${pct(activePhase?.progress)} — Gate indicator ${pct(gatePassChancePct)}` : `Tiến độ ${pct(activePhase?.progress)} — Chỉ báo Gate ${pct(gatePassChancePct)}`}

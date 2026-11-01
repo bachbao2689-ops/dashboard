@@ -91,7 +91,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
           onToggle();
           setSearchQuery('');
         }}
-        className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+        className={`h-9 px-3 rounded-[8px] border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
           isFiltered
             ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
@@ -104,7 +104,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
 
       {isOpen && (
         <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-80`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-80`}
           onClick={e => e.stopPropagation()}
         >
           <div className="px-1 pb-2">
@@ -113,7 +113,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('projects.searchPic')}
-              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-2.5 py-1.5 text-xs rounded-[6px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
               autoFocus
             />
           </div>
@@ -126,7 +126,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
                 onChange(allKey);
                 onClose();
               }}
-              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+              className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
                 value === allKey
                   ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
                   : 'text-gray-700 dark:text-gray-300'
@@ -144,7 +144,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
                   onChange('me');
                   onClose();
                 }}
-                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
                   value === 'me'
                     ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
                     : 'text-gray-700 dark:text-gray-300'
@@ -166,7 +166,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
                   onChange('unassigned');
                   onClose();
                 }}
-                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
                   value === 'unassigned'
                     ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
                     : 'text-gray-700 dark:text-gray-300'
@@ -196,7 +196,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
                     onChange(String(p.id));
                     onClose();
                   }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer ${
                     active
                       ? 'font-bold text-primary dark:text-blue-400 bg-primary/5 dark:bg-primary/10'
                       : 'text-gray-700 dark:text-gray-300'

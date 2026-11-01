@@ -59,7 +59,7 @@ export function SearchInput({
       } ${className}`}
     >
       <div
-        className={`relative h-9 sm:h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs transition-all duration-300 overflow-hidden ${
+        className={`relative h-9 sm:h-10 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs transition-all duration-300 overflow-hidden ${
           isExpanded
             ? 'w-full ring-2 ring-primary/20 border-primary dark:border-[#85df7d]/70'
             : 'w-9 sm:w-10 hover:border-gray-300 dark:hover:border-slate-600'

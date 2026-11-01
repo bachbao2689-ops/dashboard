@@ -103,7 +103,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
     <div className="flex flex-col gap-2.5 w-full">
       {/* Alert / Notification Banner */}
       <div
-        className={`flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium rounded-xl border shadow-xs ${
+        className={`flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium rounded-[8px] border shadow-xs ${
           summary.overloadedCount > 0 || summary.overdueTasks > 0
             ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
             : 'bg-blue-50/80 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200/80 dark:border-blue-800/50'
@@ -129,7 +129,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
       {/* Executive KPI Ribbon (Optional) */}
       {showKpiRibbon && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiCompletion')}</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -142,7 +142,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiInProgress')}</span>
               <Layers3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -155,7 +155,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOverdue')}</span>
               <Clock className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -180,7 +180,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.totalMembers')}</span>
               <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -193,7 +193,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.avgTasks')}</span>
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
@@ -208,7 +208,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-3 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.overloaded')}</span>
               <Flame className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -232,7 +232,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
       {/* Core 2-Column Grid from Departments UI: BURNDOWN: REMAINING TASKS + MEMBER WORKLOAD (% CAPACITY) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {/* Left Card: Burndown Chart */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[280px]">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm flex flex-col h-[280px]">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400 truncate">
@@ -279,7 +279,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                   content={({ active, payload, label }) => {
                     if (!active || !payload || !payload.length) return null;
                     return (
-                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2 text-xs">
+                      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-lg p-2 text-xs">
                         <p className="font-semibold text-gray-900 dark:text-white mb-1">
                           {t('departments.weekLabel', { label: String(label) })}
                           {selectedDeptName ? ` · ${selectedDeptName}` : ''}
@@ -322,7 +322,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
         </div>
 
         {/* Right Card: Member Workload (% Capacity) with integrated Capacity Breakdown & inline Task Expand */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[280px] justify-between">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm flex flex-col h-[280px] justify-between">
           <div className="flex items-center justify-between mb-1.5">
             <div>
               <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
@@ -347,7 +347,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               return (
                 <div
                   key={m.id}
-                  className={`rounded-xl border transition-all ${
+                  className={`rounded-[8px] border transition-all ${
                     isSelected
                       ? 'bg-blue-50/60 dark:bg-slate-700/60 border-blue-300 dark:border-blue-500/50 shadow-xs'
                       : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/40'
@@ -475,7 +475,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             <div
               className={`${
                 showHeatmap ? 'lg:col-span-7' : 'col-span-full'
-              } bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[280px]`}
+              } bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm flex flex-col h-[280px]`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <div>
@@ -512,12 +512,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                   <div
                     role="group"
                     aria-label="Chế độ hiển thị biểu đồ phân bổ trạng thái"
-                    className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-gray-100 dark:bg-slate-700/80 border border-gray-200 dark:border-slate-600"
+                    className="inline-flex items-center gap-0.5 p-0.5 rounded-[6px] bg-gray-100 dark:bg-slate-700/80 border border-gray-200 dark:border-slate-600"
                   >
                     <button
                       type="button"
                       onClick={() => setComparisonChartMode('horizontal')}
-                      className={`p-1.5 rounded-md transition-all ${
+                      className={`p-1.5 rounded-[6px] transition-all ${
                         comparisonChartMode === 'horizontal'
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
@@ -530,7 +530,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                     <button
                       type="button"
                       onClick={() => setComparisonChartMode('column')}
-                      className={`p-1.5 rounded-md transition-all ${
+                      className={`p-1.5 rounded-[6px] transition-all ${
                         comparisonChartMode === 'column'
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
@@ -584,7 +584,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                           if (!active || !payload || !payload.length) return null;
                           const d = payload[0].payload;
                           return (
-                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2.5 text-xs z-50">
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-lg p-2.5 text-xs z-50">
                               <p className="font-semibold text-gray-900 dark:text-white mb-1.5 flex items-center justify-between gap-4">
                                 <span>{d.name}</span>
                                 <span className="text-blue-600 dark:text-blue-400 font-bold">
@@ -672,7 +672,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                           if (!active || !payload || !payload.length) return null;
                           const d = payload[0].payload;
                           return (
-                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-2.5 text-xs z-50">
+                            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-lg p-2.5 text-xs z-50">
                               <p className="font-semibold text-gray-900 dark:text-white mb-1.5 flex items-center justify-between gap-4">
                                 <span>{d.name}</span>
                                 <span className="text-blue-600 dark:text-blue-400 font-bold">
@@ -735,7 +735,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
             <div
               className={`${
                 showComparisonChart ? 'lg:col-span-5' : 'col-span-full'
-              } bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col h-[280px] justify-between`}
+              } bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm flex flex-col h-[280px] justify-between`}
             >
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">

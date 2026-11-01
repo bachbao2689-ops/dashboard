@@ -58,7 +58,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     aria-pressed={isSelected}
                     onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handlePhaseClick(idx); } }}
                     onClick={() => handlePhaseClick(idx)}
-                    className={`w-48 sm:w-56 p-3.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 group ${
+                    className={`w-48 sm:w-56 p-3.5 rounded-[8px] border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 group ${
                       isSelected
                         ? isCampaign
                           ? 'border-amber-500 ring-2 ring-amber-500/25 bg-amber-50/10 dark:bg-amber-950/15 shadow-md -translate-y-0.5'
@@ -220,7 +220,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         handlePhaseClick(idx);
                         setIsDetailOpen(open);
                       }}
-                      className={`w-full mt-2 py-1.5 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
+                      className={`w-full mt-2 py-1.5 px-2 rounded-[8px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
                         isSelected && isDetailOpen
                           ? isCampaign
                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'

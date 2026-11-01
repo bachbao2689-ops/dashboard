@@ -49,7 +49,7 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
                     onClick={(e) => e.stopPropagation()}
                     onMouseEnter={cancelCloseTooltip}
                     onMouseLeave={scheduleCloseTooltip}
-                    className="absolute z-40 left-0 top-[calc(100%+8px)] w-[320px] sm:w-[480px] md:w-[540px] max-w-[92vw] p-4 sm:p-5 rounded-2xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
+                    className="absolute z-40 left-0 top-[calc(100%+8px)] w-[320px] sm:w-[480px] md:w-[540px] max-w-[92vw] p-4 sm:p-5 rounded-[8px] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] text-left pointer-events-auto before:absolute before:-top-3 before:inset-x-0 before:h-3 before:content-[''] transition-all animate-in fade-in zoom-in-95 duration-150"
                   >
                     <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-gray-100 dark:border-slate-800">
                       <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
                         return (
                           <div
                             key={item.status}
-                            className="p-2.5 rounded-xl bg-gray-50/80 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700/70 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
+                            className="p-2.5 rounded-[8px] bg-gray-50/80 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700/70 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
                           >
                             <div className="flex items-center gap-1.5 mb-1">
                               <WorkflowHexagonIcon status={item.status} size={14} />
@@ -132,7 +132,7 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
                 value={phases.length > 0 ? activePhaseIndex : 0}
                 disabled={phases.length === 0}
                 onChange={e => handlePhaseClick(Number(e.target.value))}
-                className="min-w-[140px] max-w-full appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-xl pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-violet-400 dark:hover:border-violet-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="min-w-[140px] max-w-full appearance-none bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-900 dark:text-white rounded-[8px] pl-3 pr-8 py-1.5 outline-none cursor-pointer hover:border-violet-400 dark:hover:border-violet-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {phases.length === 0 ? (
                   <option value={0} className="dark:bg-slate-800">
@@ -152,7 +152,7 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
             {/* Toggle Expand / Collapse Button */}
             {isDetailOpen && <button
               onClick={() => setIsDetailOpen(false)}
-              className="p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-500 transition-colors ml-1"
+              className="p-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/60 text-gray-500 transition-colors ml-1"
               title={isDetailOpen ? (isEn ? 'Collapse details' : 'Thu gọn chi tiết') : (isEn ? 'Expand details' : 'Mở rộng chi tiết')}
             >
               <ChevronUp size={16} />

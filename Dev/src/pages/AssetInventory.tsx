@@ -142,18 +142,18 @@ export const AssetInventory: React.FC = () => {
         <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
 
-          {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
+          {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[8px] text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
              <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
           </ActionButton>}
           {canAddAsset && (
-            <ActionButton icon={<Plus size={18} />} onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-xl text-sm font-medium transition-all shadow-sm">
+            <ActionButton icon={<Plus size={18} />} onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-[8px] text-sm font-medium transition-all shadow-sm">
                <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
             </ActionButton>
           )}
         </div>
       </div>
 
-      <div className="card-hub flex-1 overflow-hidden rounded-2xl shadow-sm">
+      <div className="card-hub flex-1 overflow-hidden rounded-[8px] shadow-sm">
         <div className="divide-y divide-gray-100 dark:divide-slate-700 xl:hidden">
           {loading ? <p className="p-6 text-center text-sm text-gray-500">{t('assets.loading')}</p> : filteredAssets.length === 0 ? <p className="p-6 text-center text-sm text-gray-500">{error || t('assets.noAssets')}</p> : filteredAssets.map(asset => {
             const inCart = cart.some(item => item.id === asset.id);
@@ -167,8 +167,8 @@ export const AssetInventory: React.FC = () => {
               </button>
               <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || t('common.unassigned')}</p>
               <div className="ml-6 mt-2 flex min-w-0 items-center justify-between gap-2">
-                <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
-                {canBorrowAsset && (canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
+                <span className={`shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
+                {canBorrowAsset && (canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-[6px] px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
               </div>
             </div>;
           })}
@@ -224,11 +224,11 @@ export const AssetInventory: React.FC = () => {
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => { setSelectedAsset(asset); setIsScanMode(false); }} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
                     <td className="p-4 overflow-hidden">
-                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md border border-gray-200 dark:border-slate-600 truncate block">{asset.asset_code}</span>
+                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-[6px] border border-gray-200 dark:border-slate-600 truncate block">{asset.asset_code}</span>
                     </td>
                     <td className="p-4 overflow-hidden">
                       <div className="flex items-center gap-3 overflow-hidden min-w-0">
-                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 shrink-0">
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-[6px] shadow-sm border border-gray-100 dark:border-slate-700 shrink-0">
                           {getIcon(asset.category?.name)}
                         </div>
                         <div className="overflow-hidden min-w-0">
@@ -241,7 +241,7 @@ export const AssetInventory: React.FC = () => {
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{asset.location || 'N/A'}</span></td>
                     <td className="p-4 text-sm overflow-hidden">
                       <div className="truncate">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold truncate inline-block ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        <span className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold truncate inline-block ${asset.status === 'available' && asset.is_available !== false ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                           {asset.status === 'available' && asset.is_available !== false ? t('assets.statusAvailable') : asset.status === 'reserved' ? t('assets.statusReserved') : asset.status === 'borrowed' ? t('assets.statusBorrowed') : t('assets.statusUnavailable')}
                         </span>
                       </div>
@@ -257,24 +257,24 @@ export const AssetInventory: React.FC = () => {
                         const inCart = cart.find(a => a.id === asset.id);
                         if (canBorrowAsset && inCart) {
                           return (
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 truncate">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 truncate">
                               {t('assets.inSlip')}
                             </button>
                           );
                         }
                         if (asset.status === 'reserved') {
-                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 truncate inline-block">{t('assets.pendingApproval')}</span>;
+                          return <span className="px-3 py-1.5 text-xs font-semibold rounded-[6px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 truncate inline-block">{t('assets.pendingApproval')}</span>;
                         }
                         if (asset.status === 'borrowed') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-400 text-black shadow-sm opacity-90 truncate">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-amber-400 text-black shadow-sm opacity-90 truncate">
                               {t('assets.statusBorrowed')}
                             </button>
                           );
                         }
                         if (asset.status === 'maintenance' || asset.status === 'broken') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white shadow-sm opacity-90 truncate">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-red-500 text-white shadow-sm opacity-90 truncate">
                               {t('assets.maintenance')}
                             </button>
                           );
@@ -285,7 +285,7 @@ export const AssetInventory: React.FC = () => {
                         if (!canBorrowAsset) return <span className="text-xs text-gray-500 truncate inline-block">{t('assets.statusAvailable')}</span>;
                         return (
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all truncate">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all truncate">
                               {t('assets.addToSlip')}
                             </button>
                           </div>

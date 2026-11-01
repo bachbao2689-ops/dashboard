@@ -122,7 +122,7 @@ export const DepartmentsLegacyPreview: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex items-center gap-0.5 p-1 rounded-[8px] bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
             {tabs.map((tItem) => (
               <button
                 key={tItem.id}
@@ -136,7 +136,7 @@ export const DepartmentsLegacyPreview: React.FC = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-0.5 p-1 rounded-[8px] bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
             {(
               [
                 ['week', t('departments.periodWeek')],
@@ -157,7 +157,7 @@ export const DepartmentsLegacyPreview: React.FC = () => {
               window.open(url, '_blank', 'noopener,noreferrer');
             }}
             title="Mở Báo cáo Visualize (View Report)"
-            className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#002e6d] to-[#094191] hover:from-[#002150] hover:to-[#002e6d] shadow-sm hover:shadow transition-all cursor-pointer"
+            className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-gradient-to-r from-[#002e6d] to-[#094191] hover:from-[#002150] hover:to-[#002e6d] shadow-sm hover:shadow transition-all cursor-pointer"
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span>View Report</span>

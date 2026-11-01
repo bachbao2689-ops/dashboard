@@ -72,7 +72,7 @@ const TrackedDepartments: React.FC = () => {
         </div>
 
         <div className="mobile-actions-row flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex items-center gap-0.5 p-1 rounded-[8px] bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 overflow-x-auto scrollbar-hide max-w-full">
             {tabs.map((tItem) => (
               <button
                 key={tItem.id}
@@ -86,7 +86,7 @@ const TrackedDepartments: React.FC = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-0.5 p-1 rounded-[8px] bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
             {(
               [
                 ['week', t('departments.periodWeek')],
@@ -107,7 +107,7 @@ const TrackedDepartments: React.FC = () => {
               window.open(url, '_blank', 'noopener,noreferrer');
             }}
             title="Mở Báo cáo Visualize (View Report)"
-            className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#002e6d] to-[#094191] hover:from-[#002150] hover:to-[#002e6d] shadow-sm hover:shadow transition-all cursor-pointer"
+            className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-gradient-to-r from-[#002e6d] to-[#094191] hover:from-[#002150] hover:to-[#002e6d] shadow-sm hover:shadow transition-all cursor-pointer"
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span>View Report</span>
@@ -149,19 +149,19 @@ export const Departments2: React.FC = () => {
   return (
     <div className="min-w-0 space-y-4">
       {canPreviewLegacy && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/70">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-blue-100 bg-blue-50/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/70">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-900 dark:text-white">Xem lại giao diện Departments</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Bản trước tracking dùng dữ liệu minh họa; không phản ánh số liệu đang vận hành.</p>
           </div>
-          <div role="group" aria-label="Chọn phiên bản Departments" className="inline-flex max-w-full gap-1 rounded-xl border border-blue-100 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+          <div role="group" aria-label="Chọn phiên bản Departments" className="inline-flex max-w-full gap-1 rounded-[8px] border border-blue-100 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
             <button type="button" onClick={() => setMode('legacy')} aria-pressed={mode === 'legacy'} className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${mode === 'legacy' ? 'bg-[#093570] text-white' : 'text-gray-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-slate-800'}`}>UI trước tracking</button>
             <button type="button" onClick={() => setMode('tracked')} aria-pressed={mode === 'tracked'} className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${mode === 'tracked' ? 'bg-[#093570] text-white' : 'text-gray-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-slate-800'}`}>Dữ liệu hiện tại</button>
           </div>
         </div>
       )}
       {mode === 'legacy' && canPreviewLegacy ? (
-        <React.Suspense fallback={<div role="status" className="rounded-2xl bg-gray-100 p-6 text-sm text-gray-500 animate-pulse dark:bg-slate-800">Đang tải giao diện…</div>}>
+        <React.Suspense fallback={<div role="status" className="rounded-[8px] bg-gray-100 p-6 text-sm text-gray-500 animate-pulse dark:bg-slate-800">Đang tải giao diện…</div>}>
           <DepartmentsLegacyPreview />
         </React.Suspense>
       ) : <TrackedDepartments />}

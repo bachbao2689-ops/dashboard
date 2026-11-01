@@ -8,7 +8,7 @@ import { InviteMemberModal } from '../components/features/members/InviteMemberMo
 import { useTranslation } from '../i18n/translations';
 import {canViewPersonInTeam,isGlobalManager,isAdmin} from '../lib/roleScope';
 import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
-import { SearchInput, StatusFilterDropdown } from '../components/common/filters';
+import { StatusFilterDropdown } from '../components/common/filters';
 
 export function MemberManagement() {
   const { t } = useTranslation();
@@ -86,15 +86,9 @@ export function MemberManagement() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 shrink-0 relative z-50">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('members.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm">{t('members.subtitle')}</p>
-        </div>
+                  </div>
         
         <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder={t('members.search')}
-          />
 
           <StatusFilterDropdown
             value={roleFilter}
@@ -137,7 +131,7 @@ export function MemberManagement() {
                 setRoleFilter('');
                 setStatusFilter('active');
               }}
-              className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              className="h-9 px-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               title={t('projects.clearFilters')}
             >
 
@@ -149,7 +143,7 @@ export function MemberManagement() {
             <ActionButton icon={<Plus size={15} />}
               type="button"
               onClick={() => setIsInviteModalOpen(true)}
-              className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl font-medium text-xs shadow-2xs cursor-pointer"
+              className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-[8px] font-medium text-xs shadow-2xs cursor-pointer"
             >
 
               <span className="hidden sm:inline">{t('members.invite')}</span>
@@ -158,7 +152,7 @@ export function MemberManagement() {
         </div>
       </div>
 
-      <div className="glass-panel rounded-3xl border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
+      <div className="glass-panel rounded-[8px] border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
         <div className="overflow-x-auto">
           <table ref={memberTableRef} className="w-full table-fixed text-left border-collapse">
             <colgroup>
@@ -235,14 +229,14 @@ export function MemberManagement() {
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{member.employment_level || '—'}</span></td>
                     <td className="px-6 py-4 overflow-hidden">
                       <div className="truncate">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium truncate inline-block ${getRoleColor(member.role)}`}>
+                        <span className={`px-3 py-1 rounded-[6px] text-xs font-medium truncate inline-block ${getRoleColor(member.role)}`}>
                           {member.role?.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 overflow-hidden">
                       <div className="truncate">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium truncate inline-block ${getStatusColor(member.status || 'pending')}`}>
+                        <span className={`px-3 py-1 rounded-[6px] text-xs font-medium truncate inline-block ${getStatusColor(member.status || 'pending')}`}>
                           {member.status === 'active' ? t('members.active').toUpperCase() : t('members.removed').toUpperCase()}
                         </span>
                       </div>
@@ -294,12 +288,12 @@ export function MemberManagement() {
         canAddAdmin={profile?.role === 'admin'}
       />
       {memberToRemove && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => !savingMember && setMemberToRemove(null)}>
-        <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
+        <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-[8px] bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
           <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">{t('members.removeTitle')}</h2>
           <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{t('members.removeConfirm', { name: memberToRemove.name })}</p>
           <div className="mt-6 flex justify-end gap-2">
-            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">{t('common.cancel')}</button>
-            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? t('members.removing') : t('members.removeBtn')}</button>
+            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-[8px] border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">{t('common.cancel')}</button>
+            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-[8px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? t('members.removing') : t('members.removeBtn')}</button>
           </div>
         </div>
       </div>}

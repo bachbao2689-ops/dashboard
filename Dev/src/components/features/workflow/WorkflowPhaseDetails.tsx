@@ -49,7 +49,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
           <div className="pt-4 border-t border-gray-100 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-300">
 
             {/* Top Detail Bar with Back Arrow action and Collapse details (REQ-TOT-02 / Slide 2) */}
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 bg-primary/5 dark:bg-primary/10 px-3 py-2 rounded-xl">
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 bg-primary/5 dark:bg-primary/10 px-3 py-2 rounded-[8px]">
               <button
                 type="button"
                 onClick={() => setIsDetailOpen(false)}
@@ -109,7 +109,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                 style={{ flex: 1 }}
                 className="w-full lg:min-w-[300px] shrink-0 mt-4 lg:mt-0 min-h-full flex flex-col"
               >
-                <div className="w-full h-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                <div className="w-full h-full p-4 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
                 <div>
                   {/* Column Header */}
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700/80 pb-2.5 mb-2.5">
@@ -127,7 +127,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         type="button"
                         disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                         onClick={() => { if (!showAddTask) { setNewTaskStart(taskCalendar.start); setNewTaskDue(taskCalendar.due); } setShowAddTask(!showAddTask); }}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-[8px] text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
                           isCampaign
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                             : 'bg-violet-600 hover:bg-violet-700 text-white'
@@ -142,7 +142,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                   {/* Inline Add Task Form */}
                   {showAddTask && (
-                    <form onSubmit={handleAddTask} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
+                    <form onSubmit={handleAddTask} className="p-3 rounded-[8px] border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
                           <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm việc phát sinh mới'}
@@ -162,7 +162,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         onChange={e => setNewTaskTitle(e.target.value)}
                         placeholder={isEn ? 'Enter task title...' : 'Nhập tên đầu việc...'}
                         autoFocus
-                        className="w-full text-xs p-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                        className="w-full text-xs p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
                       />
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -172,7 +172,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         <select
                           value={newTaskStatus}
                           onChange={e => setNewTaskStatus(e.target.value as WorkflowTaskStatus)}
-                          className="text-xs p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                          className="text-xs p-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
                         >
                           {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                             <option key={st} value={st}>
@@ -193,7 +193,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         </button>
                         <button
                           type="submit"
-                          className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                          className="px-3 py-1 rounded-[8px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
                         >
                           {isEn ? 'Save task' : 'Lưu đầu việc'}
                         </button>
@@ -214,7 +214,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         return (
                           <div
                             key={s.id}
-                            className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group group/task relative ${
+                            className={`p-2.5 rounded-[8px] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group group/task relative ${
                               'z-10'
                             } ${
                               done
@@ -336,7 +336,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                 </div>
 
                 {/* Footer summary */}
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
+                <div className="p-2.5 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
                   <span>{isEn ? 'Phase completion:' : 'Tiến độ hoàn thành chặng:'}</span>
                   <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'công việc xong'}</b>
                 </div>

@@ -1085,9 +1085,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   {t('reports.viz.standaloneTitle')}
                 </h1>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {t('reports.viz.standaloneSubtitle')}
-              </p>
+
             </div>
 
             <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 justify-self-end">
@@ -1125,9 +1123,6 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                   {t('reports.viz.titlePrefix')} · {departmentDisplayName}
                 </h1>
               </div>
-              <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-                {t('reports.viz.periodPrefix')} <strong className="text-slate-700 dark:text-slate-200">{periodLabelVi}</strong> · {t('reports.viz.headerDesc')}
-              </p>
             </div>
 
             <div ref={headerToolbarRef} className="grid grid-flow-col auto-cols-max sm:auto-cols-max items-center gap-2 sm:gap-3">

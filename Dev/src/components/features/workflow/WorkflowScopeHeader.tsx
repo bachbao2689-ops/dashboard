@@ -9,11 +9,11 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
 <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2.5">
           {/* Top Row: Button trên title scale nhỏ 20% (Projects / Campaigns) & Description (Requirement 1) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex items-center p-0.5 rounded-lg bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+            <div className="inline-flex items-center p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <button
                 type="button"
                 onClick={() => handleFilterChange('project')}
-                className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
+                className={`px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                   entityFilter === 'project'
                     ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -25,7 +25,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               <button
                 type="button"
                 onClick={() => handleFilterChange('campaign')}
-                className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
+                className={`px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                   entityFilter === 'campaign'
                     ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -46,7 +46,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
             <button
               type="button"
               onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
-              className={`inline-flex max-w-full min-w-0 items-center gap-2.5 px-2.5 py-1.5 -ml-1 rounded-2xl border transition-all duration-200 group text-left focus:outline-none cursor-pointer ${
+              className={`inline-flex max-w-full min-w-0 items-center gap-2.5 px-2.5 py-1.5 -ml-1 rounded-[8px] border transition-all duration-200 group text-left focus:outline-none cursor-pointer ${
                 isTitleDropdownOpen
                   ? isCampaign
                     ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-700/60 shadow-xs'
@@ -55,7 +55,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               }`}
               title={isEn ? "Click to select and filter Project / Campaign" : "Bấm để chọn và lọc Project / Campaign"}
             >
-              <div className={`p-1.5 rounded-xl shrink-0 transition-colors border ${
+              <div className={`p-1.5 rounded-[8px] shrink-0 transition-colors border ${
                 isCampaign
                   ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25 group-hover:bg-amber-500/25'
                   : 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/25 group-hover:bg-violet-500/25'
@@ -69,7 +69,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                   ? currentEntity.name 
                   : `[${isCampaign ? 'Campaign' : 'Project'}] ${currentEntity.name}`}
               </h1>
-              <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-200 ${
+              <span className={`w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 border transition-all duration-200 ${
                 isTitleDropdownOpen
                   ? isCampaign
                     ? 'bg-amber-500/20 border-amber-400/50 text-amber-600 dark:text-amber-300'
@@ -93,7 +93,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                   className="fixed inset-0 z-40 bg-transparent"
                   onClick={() => setIsTitleDropdownOpen(false)}
                 />
-                <div className="absolute z-50 left-0 top-full mt-2 w-[min(24rem,calc(100vw-3rem))] p-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95">
+                <div className="absolute z-50 left-0 top-full mt-2 w-[min(24rem,calc(100vw-3rem))] p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95">
                   <div className="relative mb-2">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -101,7 +101,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                       value={searchEntityQuery}
                       onChange={e => setSearchEntityQuery(e.target.value)}
                       placeholder={isEn ? "Search project or campaign..." : "Tìm kiếm dự án hoặc chiến dịch..."}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-violet-500"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-[8px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-violet-500"
                       autoFocus
                     />
                   </div>
@@ -125,7 +125,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                             key={e.id}
                             type="button"
                             onClick={() => handleSelectEntity(e.id)}
-                            className={`w-full text-left p-2.5 rounded-xl text-xs grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
+                            className={`w-full text-left p-2.5 rounded-[6px] text-xs grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
                               isSelected
                                 ? e.type === 'campaign'
                                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
@@ -143,11 +143,11 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                             </div>
                             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
                               {isCompleted && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-[6px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                   {isEn ? 'Done' : 'Hoàn thành'}
                                 </span>
                               )}
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[6px] ${
                                 e.type === 'campaign' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-violet-500/15 text-violet-600 dark:text-violet-300'
                               }`}>
                                 {e.type === 'campaign' ? 'Campaign' : 'Project'}
@@ -166,7 +166,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
           {/* Time row: Timeline + Workload còn mấy ngày (Requirement 2) */}
           <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">
             <span>{entityTimeline}</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Clock size={10} />
               <span>
                 {daysRemaining == null
@@ -181,7 +181,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
           {/* Lead chính ở dưới time, Sub track avatars, and Project/Campaign status (Requirement 2) */}
           <div className="flex items-center gap-2 flex-wrap pt-0.5">
             {/* Lead chính badge */}
-            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-full border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-[6px] border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-xs ${
                 isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
               }`}>
@@ -194,7 +194,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
               <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">
                 {leadInfo.name}
               </span>
-              <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-md ${
+              <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-[6px] ${
                 isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
               }`}>
                 {leadInfo.role}
@@ -215,7 +215,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
             </div>
 
             {/* Project / Campaign Status Pill */}
-            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-[6px] text-[10px] font-bold border ${
               currentEntity.status === 'completed'
                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'

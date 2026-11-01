@@ -95,7 +95,7 @@ export const MyTasks: React.FC = () => {
                       setFilterDept('');
                       setFilterPic('');
                     }}
-                    className="h-9 px-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                    className="h-9 px-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
                     title={t('projects.clearFilters')}
                   >
                     <RotateCcw size={13} />
@@ -105,13 +105,13 @@ export const MyTasks: React.FC = () => {
             )
           }
         />
-        {reportOpen && <div ref={reportRef} role="status" className="card-hub flex min-h-40 items-center gap-4 rounded-2xl border border-blue-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-primary dark:bg-slate-700 dark:text-blue-300"><FileText size={22} /></span>
+        {reportOpen && <div ref={reportRef} role="status" className="card-hub flex min-h-40 items-center gap-4 rounded-[8px] border border-blue-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[8px] bg-blue-50 text-primary dark:bg-slate-700 dark:text-blue-300"><FileText size={22} /></span>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-gray-900 dark:text-white">{t('profile.myReport')}</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('profile.reportComingSoon')}</p>
           </div>
-          <button type="button" onClick={() => setReportOpen(false)} aria-label={t('common.close')} className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700"><X size={18} /></button>
+          <button type="button" onClick={() => setReportOpen(false)} aria-label={t('common.close')} className="rounded-[8px] p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700"><X size={18} /></button>
         </div>}
       </div>
       <TaskDetailPanel task={selected?.kind === 'task' ? selected.record : null} isOpen={selected?.kind === 'task'} onClose={() => setSelectedKey(null)} onTaskUpdated={calendar.refresh} />

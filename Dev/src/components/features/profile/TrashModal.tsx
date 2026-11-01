@@ -72,7 +72,7 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col relative overflow-hidden animate-in zoom-in-95">
+      <div className="bg-white dark:bg-slate-800 rounded-[8px] shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col relative overflow-hidden animate-in zoom-in-95">
         <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50 shrink-0">
           <h2 className="text-xl font-bold flex items-center gap-2"><Archive className="text-red-500"/> Log (Đã xóa & Đã ẩn)</h2>
           <button onClick={onClose} className="p-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors"><X size={20}/></button>
@@ -80,7 +80,7 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-3">
-            <button onClick={() => setExpandProjects(!expandProjects)} className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-lg transition-colors">
+            <button onClick={() => setExpandProjects(!expandProjects)} className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-[6px] transition-colors">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><FolderKanban className="text-violet-500" size={18}/> Projects đã lưu trữ ({deletedProjects.length})</h3>
               {expandProjects ? <ChevronDown size={18} className="text-gray-400"/> : <ChevronRight size={18} className="text-gray-400"/>}
             </button>
@@ -88,17 +88,17 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-2">
                 {deletedProjects.length === 0 && <p className="text-sm text-gray-500">Trống</p>}
                 {deletedProjects.map(p => (
-                  <div key={p.id} className="p-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center group">
+                  <div key={p.id} className="p-4 rounded-[8px] border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center group">
                     <div>
                       <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center gap-2">
                         {p.name}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase ${p.status === 'archived' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>{p.status === 'archived' ? 'Đã ẩn' : 'Đã xóa'}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-[6px] font-semibold uppercase ${p.status === 'archived' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>{p.status === 'archived' ? 'Đã ẩn' : 'Đã xóa'}</span>
                       </h4>
                       <p className="text-xs text-gray-500 truncate max-w-[200px] mt-1">{p.description || 'Không có mô tả'}</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => restoreItem('projects', p.id, e)} className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Khôi phục"><RefreshCcw size={16}/></button>
-                      <button onClick={(e) => hardDeleteItem('projects', p.id, e)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Xóa vĩnh viễn"><Trash2 size={16}/></button>
+                      <button onClick={(e) => restoreItem('projects', p.id, e)} className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-[6px] transition-colors" title="Khôi phục"><RefreshCcw size={16}/></button>
+                      <button onClick={(e) => hardDeleteItem('projects', p.id, e)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-[6px] transition-colors" title="Xóa vĩnh viễn"><Trash2 size={16}/></button>
                     </div>
                   </div>
                 ))}
@@ -107,7 +107,7 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
           </div>
 
           <div className="space-y-3">
-            <button onClick={() => setExpandCampaigns(!expandCampaigns)} className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-lg transition-colors">
+            <button onClick={() => setExpandCampaigns(!expandCampaigns)} className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-[6px] transition-colors">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Megaphone className="text-amber-500" size={18}/> Campaigns đã lưu trữ ({deletedCampaigns.length})</h3>
               {expandCampaigns ? <ChevronDown size={18} className="text-gray-400"/> : <ChevronRight size={18} className="text-gray-400"/>}
             </button>
@@ -115,16 +115,16 @@ export const TrashModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-2">
                 {deletedCampaigns.length === 0 && <p className="text-sm text-gray-500">Trống</p>}
                 {deletedCampaigns.map(c => (
-                  <div key={c.id} className="p-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center group">
+                  <div key={c.id} className="p-4 rounded-[8px] border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex justify-between items-center group">
                     <div>
                       <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center gap-2">
                         {c.name}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase ${c.status === 'archived' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>{c.status === 'archived' ? 'Đã ẩn' : 'Đã xóa'}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-[6px] font-semibold uppercase ${c.status === 'archived' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>{c.status === 'archived' ? 'Đã ẩn' : 'Đã xóa'}</span>
                       </h4>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => restoreItem('campaigns', c.id, e)} className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Khôi phục"><RefreshCcw size={16}/></button>
-                      <button onClick={(e) => hardDeleteItem('campaigns', c.id, e)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Xóa vĩnh viễn"><Trash2 size={16}/></button>
+                      <button onClick={(e) => restoreItem('campaigns', c.id, e)} className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-[6px] transition-colors" title="Khôi phục"><RefreshCcw size={16}/></button>
+                      <button onClick={(e) => hardDeleteItem('campaigns', c.id, e)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-[6px] transition-colors" title="Xóa vĩnh viễn"><Trash2 size={16}/></button>
                     </div>
                   </div>
                 ))}

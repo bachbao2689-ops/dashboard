@@ -204,7 +204,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             <button
               type="button"
               onClick={handleCopyLink}
-              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
+              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
             >
               {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
               <span>{copied ? 'Đã chép' : 'Sao chép'}</span>
@@ -214,7 +214,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             <button
               type="button"
               onClick={handleDownload}
-              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-[#e2edfa] hover:bg-[#d0e2f7] dark:bg-sky-950/70 dark:hover:bg-sky-900/90 text-[#002e6d] dark:text-sky-300 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
+              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-[#e2edfa] hover:bg-[#d0e2f7] dark:bg-sky-950/70 dark:hover:bg-sky-900/90 text-[#002e6d] dark:text-sky-300 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
             >
               <Download size={16} />
               <span>Tải về</span>
@@ -224,7 +224,7 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             <button
               type="button"
               onClick={handlePrint}
-              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-[#002e6d] hover:bg-[#00204d] text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-md shadow-[#002e6d]/25 active:scale-95"
+              className="min-h-[44px] px-2.5 py-2.5 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 bg-[#002e6d] hover:bg-[#00204d] text-white rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-md shadow-[#002e6d]/25 active:scale-95"
             >
               <Printer size={16} />
               <span>In mã</span>

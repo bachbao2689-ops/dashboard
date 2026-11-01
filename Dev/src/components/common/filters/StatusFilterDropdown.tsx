@@ -64,7 +64,7 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
           e.stopPropagation();
           onToggle();
         }}
-        className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+        className={`h-9 px-3 rounded-[8px] border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
           isFiltered
             ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
@@ -76,7 +76,7 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
 
       {isOpen && (
         <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150`}
           onClick={e => e.stopPropagation()}
         >
           <div className="px-3 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">

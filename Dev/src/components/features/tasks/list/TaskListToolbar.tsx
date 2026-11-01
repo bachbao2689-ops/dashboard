@@ -1,10 +1,9 @@
 import {ActionButton} from '../../../common/ActionButton';
 import React from 'react';
 import {useMobileReadOnly} from '../../../../hooks/useMobileReadOnly';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ListTodo } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/translations';
 import {
-  SearchInput,
   StatusFilterDropdown,
   PicFilterDropdown,
   DateFilterDropdown,
@@ -47,8 +46,8 @@ interface TaskListToolbarProps {
 }
 
 export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
-  searchTerm,
-  onSearchChange,
+  searchTerm: _searchTerm,
+  onSearchChange: _onSearchChange,
   statusFilter,
   onStatusChange,
   assigneeFilter,
@@ -93,19 +92,15 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 w-full">
-      <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-        {t('tasks.title')}
-      </h1>
+    <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] items-start lg:items-center justify-between gap-3 mb-4 w-full">
+      <div className="grid grid-flow-col auto-cols-max items-center gap-2.5">
+        <ListTodo className="w-6 h-6 text-[#002e6d] dark:text-sky-400" />
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
+          {t('tasks.title')}
+        </h1>
+      </div>
 
       <div className="mobile-actions-row flex flex-wrap items-center gap-2">
-        {/* 1. Search */}
-        <SearchInput
-          value={searchTerm}
-          onChange={onSearchChange}
-          placeholder={t('tasks.search')}
-        />
-
         {/* 2. Status Filter */}
         <StatusFilterDropdown
           value={statusFilter}
@@ -177,7 +172,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
             type="button"
             onClick={onResetFilters}
             title={t('projects.clearFilters')}
-            className="h-9 px-2.5 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+            className="h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
           >
 
             <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
@@ -189,7 +184,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
           <ActionButton icon={<Plus className="w-4 h-4" />}
             type="button"
             onClick={onCreate}
-            className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+            className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
           >
 
             <span>{t('tasks.createBtn')}</span>

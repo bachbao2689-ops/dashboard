@@ -199,7 +199,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
           e.stopPropagation();
           onToggle();
         }}
-        className={`h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+        className={`h-9 px-3 rounded-[8px] border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
           isFiltered
             ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
@@ -212,7 +212,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
 
       {isOpen && (
         <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-76 sm:w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-150 space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-76 sm:w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-150 space-y-2.5 max-h-[85vh] overflow-y-auto custom-scrollbar`}
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
@@ -243,7 +243,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
                     onSelectPreset(opt.key);
                     onClose();
                   }}
-                  className={`text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                  className={`text-left px-2.5 py-1.5 rounded-[6px] text-xs flex items-center justify-between transition-colors cursor-pointer ${
                     active
                       ? 'font-bold text-primary dark:text-blue-400 bg-primary/10 dark:bg-primary/20'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
@@ -271,7 +271,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
 
             {/* Range display boxes */}
             <div className="grid grid-cols-2 gap-1.5">
-              <div className={`p-2 rounded-xl border text-xs text-center transition-all ${
+              <div className={`p-2 rounded-[6px] border text-xs text-center transition-all ${
                 tempStart && !tempEnd && isPickingEnd
                   ? 'border-primary ring-1 ring-primary/30 bg-primary/5 dark:bg-primary/10'
                   : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/60'
@@ -279,7 +279,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
                 <div className="text-[9px] uppercase font-bold text-gray-400 mb-0.5">{t('projects.startDate')}</div>
                 <div className="font-semibold text-gray-800 dark:text-gray-100">{tempStart ? formatVN(tempStart) : '—/—/————'}</div>
               </div>
-              <div className={`p-2 rounded-xl border text-xs text-center transition-all ${
+              <div className={`p-2 rounded-[6px] border text-xs text-center transition-all ${
                 isPickingEnd
                   ? 'border-primary ring-1 ring-primary/30 bg-primary/5 dark:bg-primary/10'
                   : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/60'
@@ -290,13 +290,13 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
             </div>
 
             {/* Mini Month Calendar */}
-            <div className="bg-gray-50/80 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/60 rounded-xl p-2.5">
+            <div className="bg-gray-50/80 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/60 rounded-[8px] p-2.5">
               {/* Month Navigation */}
               <div className="flex items-center justify-between mb-2">
                 <button
                   type="button"
                   onClick={prevMonth}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-[6px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   aria-label="Previous month"
                 >
                   <ChevronLeft size={14} />
@@ -307,7 +307,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-6 h-6 rounded-[6px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   aria-label="Next month"
                 >
                   <ChevronRight size={14} />
@@ -343,15 +343,15 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
 
                   let cellClass = 'h-7 w-7 mx-auto flex items-center justify-center text-xs transition-colors cursor-pointer ';
                   if (isStart && isEnd) {
-                    cellClass += 'bg-primary text-white font-bold rounded-lg shadow-xs';
+                    cellClass += 'bg-primary text-white font-bold rounded-[6px] shadow-xs';
                   } else if (isStart) {
-                    cellClass += 'bg-primary text-white font-bold rounded-l-lg rounded-r-none shadow-xs';
+                    cellClass += 'bg-primary text-white font-bold rounded-l-[6px] rounded-r-none shadow-xs';
                   } else if (isEnd) {
-                    cellClass += 'bg-primary text-white font-bold rounded-r-lg rounded-l-none shadow-xs';
+                    cellClass += 'bg-primary text-white font-bold rounded-r-[6px] rounded-l-none shadow-xs';
                   } else if (inRange) {
                     cellClass += 'bg-primary/15 dark:bg-primary/25 text-primary dark:text-blue-300 font-medium rounded-none';
                   } else {
-                    cellClass += 'text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-slate-800 rounded-lg ';
+                    cellClass += 'text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-slate-800 rounded-[6px] ';
                     if (isToday) cellClass += 'font-bold text-primary dark:text-blue-400 ring-1 ring-primary/30';
                   }
 
@@ -375,7 +375,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-[6px] transition-colors cursor-pointer"
               >
                 {t('projects.clearFilters')}
               </button>
@@ -383,7 +383,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
                 type="button"
                 onClick={handleApply}
                 disabled={!tempStart}
-                className={`px-4 py-1.5 text-xs font-semibold rounded-lg text-white transition-all shadow-xs cursor-pointer ${
+                className={`px-4 py-1.5 text-xs font-semibold rounded-[6px] text-white transition-all shadow-xs cursor-pointer ${
                   tempStart
                     ? 'bg-[#002e6d] hover:bg-[#001f4d] dark:bg-blue-600 dark:hover:bg-blue-500'
                     : 'bg-gray-300 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'

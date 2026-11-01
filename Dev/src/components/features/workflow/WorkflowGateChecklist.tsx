@@ -22,11 +22,11 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
   );
   return (<>
               {/* Left Column: Tiêu chí Gatekeeper & Duyệt Chuyển Phase */}
-              <div className="w-full h-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4 flex flex-col justify-between">
+              <div className="w-full h-full p-4 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4 flex flex-col justify-between">
 
                 {/* 2 Big Gauge Boxes */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
+                  <div className="p-3 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                       <span>{isEn ? 'Task progress' : 'Tiến độ công việc'}</span>
                       <span className="font-bold text-primary">{pct(phaseProgressPct)}</span>
@@ -39,7 +39,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
+                  <div className="p-3 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
                     <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                       <span className="font-semibold text-gray-700 dark:text-gray-300">{isEn ? 'Gate Opportunity' : 'Cơ hội qua Phase'}</span>
                       <span className={`font-bold ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
@@ -131,7 +131,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                     {criteria.map(c => (
                       <label
                         key={c.id}
-                        className={`grid grid-cols-[auto_1fr] items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer group/gate-item ${
+                        className={`grid grid-cols-[auto_1fr] items-start gap-2.5 p-2.5 rounded-[8px] border transition-all cursor-pointer group/gate-item ${
                           c.checked
                             ? 'border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-gray-900 dark:text-white'
                             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-gray-600 dark:text-gray-400 hover:border-gray-300'
@@ -184,7 +184,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                       type="button"
                       disabled={hub.busy || !readyToApprove}
                       onClick={handleAdvancePhase}
-                      className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                      className={`w-full sm:w-auto px-4 py-2 rounded-[8px] text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                         (gatePassChancePct ?? -1) >= 80
                           ? 'bg-[#002e6d] hover:bg-[#001f4d] text-white cursor-pointer hover:shadow-md'
                           : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-70'
