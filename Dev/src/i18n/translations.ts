@@ -21,6 +21,7 @@ export const dict = {
     'nav.team': 'Team Workload',
     'nav.members': 'Members',
     'nav.reports': 'Report',
+    'nav.agent': 'AI Agent',
 
     // Header
     'header.search': 'Search...',
@@ -674,6 +675,7 @@ export const dict = {
     'nav.team': 'Năng suất Team',
     'nav.members': 'Thành viên',
     'nav.reports': 'Báo cáo',
+    'nav.agent': 'AI Agent',
 
     // Header
     'header.search': 'Tìm kiếm...',

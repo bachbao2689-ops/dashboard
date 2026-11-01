@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BarChart2, Layers, CheckSquare, FolderKanban, Megaphone, User, Users,
+  BarChart2, Layers, CheckSquare, FolderKanban, Megaphone, User, Users, Bot,
   Box, History, MessageSquare, AtSign, AlertTriangle,
   Clock, CheckCircle2, ExternalLink
 } from 'lucide-react';
@@ -480,6 +480,13 @@ export function buildSidebarGroups({
     label: t('nav.tasks'),
     icon: <CheckSquare size={18} />,
     path: '/tasks',
+  });
+
+  tpRootItems.push({
+    id: 'tp:root:agents',
+    label: t('nav.agent'),
+    icon: <Bot size={18} />,
+    path: '/agents',
   });
 
   // 2.2 Projects & Campaigns (Drill-down with notifications only)
