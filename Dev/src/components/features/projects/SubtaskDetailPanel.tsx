@@ -933,13 +933,13 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   return (
     <>
       {!embedded && <div
-        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-[#071325]/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />}
       <aside 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-slate-800' : `dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
@@ -949,7 +949,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             {t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}
           </span>
         </div>
-        <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
+        <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
         <section>
@@ -959,7 +959,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               <button
                 type="button"
                 onClick={() => setEditingTask(value => !value)}
-                className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:hover:text-white shadow-2xs grid place-items-center cursor-pointer transition-colors"
+                className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0a192f] text-gray-500 hover:text-gray-900 dark:hover:text-white shadow-2xs grid place-items-center cursor-pointer transition-colors"
                 aria-expanded={editingTask}
                 title={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
                 aria-label={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
@@ -985,20 +985,20 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           </div>
         </section>
         
-        {editingTask ? <section className="space-y-4 rounded-2xl border border-primary/20 bg-gray-50 p-4 dark:bg-slate-800/50">
+        {editingTask ? <section className="space-y-4 rounded-[8px] border border-primary/20 bg-gray-50 p-4 dark:bg-[#0a192f]/50">
           <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Task title' : 'Tiêu đề task'}
-            <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+            <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-[#071325] dark:text-white" />
           </label>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.assignee')}
-              <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+              <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white">
                 <option value="">{t('common.unassigned')}</option>
                 {(assignablePeople || []).map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
                 {subtask.assignee_id != null && subtask.assignee?.name && !(assignablePeople || []).some(person => String(person.id) === String(subtask.assignee_id)) && <option value={subtask.assignee_id}>{subtask.assignee.name}</option>}
               </select>
             </label>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Status' : 'Trạng thái'}
-              <select value={editStatus} onChange={event => setEditStatus(event.target.value as WorkflowTaskStatus)} className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+              <select value={editStatus} onChange={event => setEditStatus(event.target.value as WorkflowTaskStatus)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white">
                 <option value="backlog">{lang === 'en' ? 'Backlog' : 'Chờ xử lý'}</option><option value="planned">{lang === 'en' ? 'Planned' : 'Đã lên kế hoạch'}</option><option value="scoping">{lang === 'en' ? 'Scoping' : 'Làm rõ phạm vi'}</option><option value="in_progress">{lang === 'en' ? 'In progress' : 'Đang triển khai'}</option><option value="in_qa">{lang === 'en' ? 'In review' : 'Rà soát & duyệt'}</option><option value="completed" disabled={!canComplete && !completed}>{t('common.completed')}</option><option value="canceled">{lang === 'en' ? 'Canceled' : 'Đã hủy'}</option>
               </select>
             </label>
@@ -1022,7 +1022,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 value={editStartDate ? displayDate(editStartDate).replace('—', '') : ''}
                 onChange={(e) => setEditStartDate(inputDate(e.target.value) || '')}
                 placeholder="dd/mm/yyyy"
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="tw-calendar-picker relative">
@@ -1045,7 +1045,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 value={editDueDate ? displayDate(editDueDate).replace('—', '') : ''}
                 onChange={(e) => setEditDueDate(inputDate(e.target.value) || '')}
                 placeholder="dd/mm/yyyy"
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 sm:col-span-2">
@@ -1058,12 +1058,12 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                 onChange={event => setEditSubtaskQuantity(event.target.value)}
                 disabled={checklistQuantity > 0}
                 placeholder="0"
-                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
+                className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-[#071325] dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-500"
               />
             </label>
           </div>
-          <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
-        </section> : <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
+          <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
+        </section> : <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#0a192f]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
           <div><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{subtask.assignee ? <div className="flex items-center gap-2"><Avatar name={subtask.assignee.name || t('common.unassigned')} src={(subtask.assignee as any)?.avatar_url} /><b className="text-sm">{subtask.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div>
           <div><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{t('common.dueDate')}</p><b className="text-sm font-bold text-red-600 dark:text-red-400">{subtask.due_date ? displayDate(subtask.due_date) : t('common.noDueDate')}</b></div>
           <div><p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}</p>{entityType === 'campaign_subtask' ? <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.campaign')}</span> : <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.project')}</span>}</div>
@@ -1111,10 +1111,10 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               {checklistItems.map(item => (
                 <div
                   key={item.id}
-                  className={`p-3 rounded-xl border text-sm group relative transition-all min-w-0 overflow-hidden ${
+                  className={`p-3 rounded-[8px] border text-sm group relative transition-all min-w-0 overflow-hidden ${
                     item.completed
                       ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
-                      : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+                      : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0a192f]/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
                   }`}
                 >
                   {/* Hover action buttons in top-right */}
@@ -1172,7 +1172,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                           value={editItemTitle}
                           onChange={(e) => setEditItemTitle(e.target.value)}
                           maxLength={500}
-                          className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                          className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary"
                           autoFocus
                         />
                       </label>
@@ -1182,7 +1182,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                           value={editItemDescription}
                           onChange={(e) => setEditItemDescription(e.target.value)}
                           rows={2}
-                          className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
+                          className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary resize-none"
                         />
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1191,7 +1191,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                           <select
                             value={editItemPriority}
                             onChange={(e) => setEditItemPriority(e.target.value as any)}
-                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
+                            className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
                           >
                             <option value="low">{t('common.low').toLowerCase()}</option>
                             <option value="medium">{t('common.medium').toLowerCase()}</option>
@@ -1208,7 +1208,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                             value={editItemQuantity}
                             onChange={(e) => setEditItemQuantity(e.target.value)}
                             placeholder="0"
-                            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                            className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary"
                           />
                         </label>
                         <div className="tw-calendar-picker relative">
@@ -1231,7 +1231,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                             value={editItemDueDate ? displayDate(editItemDueDate).replace('—', '') : ''}
                             onChange={(e) => setEditItemDueDate(inputDate(e.target.value) || '')}
                             placeholder="dd/mm/yyyy"
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                           />
                         </div>
                       </div>
@@ -1296,7 +1296,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
                       {/* Description if present */}
                       {item.description && (
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-slate-900/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0 mt-0.5">
+                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-[#071325]/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0 mt-0.5">
                           {item.description}
                         </p>
                       )}
@@ -1307,7 +1307,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             </div>
           ) : (
             !showAddItemForm && (
-              <div className="rounded-xl border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
+              <div className="rounded-[8px] border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
                 {lang === 'en'
                   ? `No checklist items yet. ${canAddSubtaskItem ? 'Click "Add item" to assign work.' : ''}`
                   : `Chưa có việc phát sinh nào. ${canAddSubtaskItem ? 'Bấm "Thêm việc phát sinh" để giao thêm việc.' : ''}`}
@@ -1320,7 +1320,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             <button
               type="button"
               onClick={() => setShowAddItemForm(true)}
-              className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
+              className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
             >
               <Plus size={16} className="inline mr-1" />
               <span>{lang === 'en' ? 'Add item' : 'Thêm việc phát sinh'}</span>
@@ -1329,7 +1329,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
           {/* Form thêm đầu việc */}
           {showAddItemForm && (
-            <div className="mt-3 p-3.5 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
+            <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                 {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
                 <input
@@ -1338,7 +1338,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onChange={(e) => setNewItemTitle(e.target.value)}
                   placeholder={lang === 'en' ? 'Enter item title...' : 'Nhập tên đầu việc cần giao...'}
                   maxLength={500}
-                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                  className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary"
                   autoFocus
                 />
               </label>
@@ -1350,7 +1350,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onChange={(e) => setNewItemDescription(e.target.value)}
                   placeholder={lang === 'en' ? 'Brief description or requirements...' : 'Mô tả tóm tắt nội dung yêu cầu...'}
                   rows={2}
-                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary resize-none"
+                  className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary resize-none"
                 />
               </label>
 
@@ -1360,7 +1360,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   <select
                     value={newItemPriority}
                     onChange={(e) => setNewItemPriority(e.target.value as any)}
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
+                    className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary lowercase cursor-pointer"
                   >
                     <option value="low">{t('common.low').toLowerCase()}</option>
                     <option value="medium">{t('common.medium').toLowerCase()}</option>
@@ -1378,7 +1378,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                     value={newItemQuantity}
                     onChange={(e) => setNewItemQuantity(e.target.value)}
                     placeholder="0"
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white outline-none focus:border-primary"
+                    className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary"
                   />
                 </label>
 
@@ -1402,7 +1402,7 @@ export const SubtaskDetailPanel: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                     value={newItemDueDate ? displayDate(newItemDueDate).replace('—', '') : ''}
                     onChange={(e) => setNewItemDueDate(inputDate(e.target.value) || '')}
                     placeholder="dd/mm/yyyy"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>

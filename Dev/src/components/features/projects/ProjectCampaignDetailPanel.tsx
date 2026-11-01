@@ -169,13 +169,13 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   return (
     <>
       <div 
-        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-[#071325]/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
       <aside 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
@@ -183,21 +183,21 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
           <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span>
         </div>
-        <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>
+        <button onClick={onClose} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>
       </div>
       
       <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
         {details.error && <p role="alert" className="mb-4 text-sm text-red-500">{details.error}<button onClick={() => void details.refresh()} className="ml-2 underline">Thử lại</button></p>}
         {!details.data ? <p role="status" className="text-sm text-gray-500">{details.loading ? 'Đang tải Project/Campaign…' : ''}</p> : editMode&&!readOnly ? (
           <div className="space-y-5">
-            <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" /></div>
+            <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] font-bold outline-none mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="detail-panel-start" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-start', mode: 'single', maxDate: due || undefined }, e)} value={start ? dateValue(start) : ''} onChange={e=>setStart(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
-              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="detail-panel-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-due', mode: 'single', minDate: start || undefined }, e)} value={due ? dateValue(due) : ''} onChange={e=>setDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
+              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="detail-panel-start" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-start', mode: 'single', maxDate: due || undefined }, e)} value={start ? dateValue(start) : ''} onChange={e=>setStart(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div>
+              <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="detail-panel-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-due', mode: 'single', minDate: start || undefined }, e)} value={due ? dateValue(due) : ''} onChange={e=>setDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div>
             </div>
             <EntityStatusField value={editStatus} onChange={setEditStatus} />
-            <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.description')}</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" /></div>
-            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl text-sm font-semibold">{t('common.cancel')}</button><button disabled={busy} onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-xl text-sm font-semibold">{t('projects.saveChanges')}</button></div>
+            <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.description')}</label><textarea value={desc} onChange={e=>setDesc(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none min-h-24 mt-1 text-sm" /></div>
+            <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-[#0a192f] rounded-[8px] text-sm font-semibold">{t('common.cancel')}</button><button disabled={busy} onClick={saveEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-[8px] text-sm font-semibold">{t('projects.saveChanges')}</button></div>
           </div>
         ) : (
           <div className="space-y-7">
@@ -226,7 +226,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               }}
               canManage={canManage && !readOnly}
             />
-            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm">
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
               <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.lead?.name || data.creator?.name || '---'} src={data.lead?.avatar_url || data.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.lead?.name || data.creator?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
             </div>
@@ -236,7 +236,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-sm flex gap-2 items-center"><Users size={16}/> {t('projects.subtasks')}</h3>
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0a192f] p-0.5 rounded-lg text-xs">
                   <button type="button" onClick={() => setSubtaskFilter('open')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'open' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.active') || 'Chưa xong'}</button>
                   <button type="button" onClick={() => setSubtaskFilter('completed')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'completed' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.completed') || 'Đã xong'}</button>
                   <button type="button" onClick={() => setSubtaskFilter('all')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'all' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.all') || 'Tất cả'}</button>
@@ -251,10 +251,10 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                     <div
                       key={sub.id}
                       onClick={() => navigate(taskLink(taskKey(`${kind}_subtask`, sub.id)))}
-                      className={`p-3 rounded-xl border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${
+                      className={`p-3 rounded-[8px] border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${
                         isTaskDone(sub.status)
                           ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
-                          : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+                          : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0a192f]/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
                       }`}
                     >
                       {/* Hover action buttons in top-right */}
@@ -337,14 +337,14 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                   );
                 })}
               </div>
-              {canManage && !showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
+              {canManage && !showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
               {canManage && showSubtaskForm && (
-                <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3">
-                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3">
+                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                    <input type="number" min="0" step="1" value={newSubtaskQuantity} onChange={e=>setNewSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm"/>
-                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none text-sm w-full cursor-pointer"/></div>
+                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    <input type="number" min="0" step="1" value={newSubtaskQuantity} onChange={e=>setNewSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/>
+                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm w-full cursor-pointer"/></div>
                   </div>
                   <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">{t('common.cancel')}</button><button disabled={busy} onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">{t('common.add')}</button></div>
                 </div>

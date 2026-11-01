@@ -71,6 +71,7 @@ export const Projects:React.FC=()=>{
   const [expandedProjectSubtasks, setExpandedProjectSubtasks] = React.useState<Record<string, boolean>>({});
   const [projectSubtasksMap, setProjectSubtasksMap] = React.useState<Record<string, any[]>>({});
   const [projectSubtaskChecklistMap, setProjectSubtaskChecklistMap] = React.useState<Record<string, any[]>>({});
+  const [treeSubtaskCommentCounts, setTreeSubtaskCommentCounts] = React.useState<Record<string, number>>({});
 
   // Inline Creation: Project Subtask
   const [creatingSubtaskProjectId, setCreatingSubtaskProjectId] = React.useState<string | null>(null);
@@ -123,13 +124,27 @@ export const Projects:React.FC=()=>{
 
     const subtaskIds = (allProjectSubtasks || []).map((s: any) => s.id);
     if (subtaskIds.length > 0) {
-      const { data: detailsData } = await supabase
-        .from('activity_log')
-        .select('entity_id, metadata, created_at')
-        .eq('entity_type', 'project_subtask')
-        .eq('action', 'details_updated')
-        .in('entity_id', subtaskIds)
-        .order('created_at', { ascending: false });
+      const [{ data: detailsData }, { data: commentsData }] = await Promise.all([
+        supabase
+          .from('activity_log')
+          .select('entity_id, metadata, created_at')
+          .eq('entity_type', 'project_subtask')
+          .eq('action', 'details_updated')
+          .in('entity_id', subtaskIds)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('activity_log')
+          .select('entity_id')
+          .eq('entity_type', 'project_subtask')
+          .eq('action', 'comment')
+          .in('entity_id', subtaskIds),
+      ]);
+
+      const cMap: Record<string, number> = {};
+      (commentsData || []).forEach((row: any) => {
+        cMap[row.entity_id] = (cMap[row.entity_id] || 0) + 1;
+      });
+      setTreeSubtaskCommentCounts(cMap);
 
       const chkMap: Record<string, any[]> = {};
       (detailsData || []).forEach((row: any) => {
@@ -497,7 +512,7 @@ export const Projects:React.FC=()=>{
       const subtaskCount = subtasks.length;
 
       return (
-        <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
+        <article key={project.id} className={`min-w-0 rounded-xl border border-gray-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-[#071325]/50 ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
           <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
             <button
               type="button"
@@ -548,7 +563,7 @@ export const Projects:React.FC=()=>{
           {/* Mobile Subtasks List */}
           {isProjectExpanded && (
             <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 space-y-2 pl-4 relative">
-              <div className="absolute left-1.5 top-3 bottom-0 w-[2px] bg-violet-400/40 dark:bg-violet-600/30" />
+              
               {subtasks.map((st: any) => {
                 const items = projectSubtaskChecklistMap[st.id] || [];
                 const isSubtaskExpanded = Boolean(expandedProjectSubtasks[st.id]);
@@ -593,7 +608,7 @@ export const Projects:React.FC=()=>{
                     {/* Checklist inside Subtask */}
                     {isSubtaskExpanded && (
                       <div className="pt-2 pl-3 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5 relative">
-                        <div className="absolute left-1 top-2 bottom-0 w-[1.5px] bg-violet-300/40 dark:bg-violet-700/30" />
+                        
                         {items.map((item: any) => (
                           <div key={item.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px]">
                             {/* Vòng tròn checkmark */}
@@ -638,7 +653,7 @@ export const Projects:React.FC=()=>{
                                 void handleQuickCreateProjectChecklistItem(st.id, title);
                               }
                             }}
-                            className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-0.5 rounded-full border border-dashed border-violet-400/80 bg-white dark:bg-[#0a192f] text-[11px] font-semibold text-violet-600 dark:text-violet-400 shadow-2xs cursor-pointer"
+                            className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-0.5 rounded-[8px] border border-dashed border-slate-300 dark:border-slate-700 bg-transparent text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
                           >
                             <Plus size={11} />
                             <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
@@ -659,7 +674,7 @@ export const Projects:React.FC=()=>{
                       void handleQuickCreateProjectSubtask(project.id, title);
                     }
                   }}
-                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-full border border-dashed border-violet-500 bg-violet-50 dark:bg-[#0a192f] text-xs font-semibold text-violet-700 dark:text-violet-300 shadow-2xs cursor-pointer"
+                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300 dark:border-slate-700 bg-transparent text-xs font-semibold text-slate-400 dark:text-slate-500 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                 >
                   <Plus size={13} />
                   <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
@@ -886,9 +901,7 @@ export const Projects:React.FC=()=>{
                           className="group bg-violet-50/20 dark:bg-[#071325]/70 hover:bg-violet-50/40 dark:hover:bg-[#0c1f3b] border-t border-dashed border-violet-200/50 dark:border-slate-800/80 transition-colors cursor-pointer"
                         >
                           {/* Cột 1: Title subtask thụt lề pl-12, dây dọc left-6 */}
-                          <td className="p-3 pl-12 relative overflow-hidden">
-                            <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
-                            <div className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                          <td className="p-3 pl-10 relative overflow-hidden">
                             
                             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
                               <button
@@ -943,6 +956,25 @@ export const Projects:React.FC=()=>{
                                   ({doneCount}/{items.length} {lang === 'en' ? 'tasks' : 'việc'})
                                 </span>
                               )}
+
+                              {((treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]) || 0) > 0 && (
+                                <span
+                                  title={`${treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]} ${lang === 'en' ? 'comments' : 'bình luận'}`}
+                                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-blue-500 font-medium shrink-0 ml-1"
+                                >
+                                  <MessageSquare size={12} />
+                                  <span>{treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]}</span>
+                                </span>
+                              )}
+
+                              {Array.isArray(st.tags) && st.tags.map((tag: string, tIdx: number) => (
+                                <span
+                                  key={tIdx}
+                                  className="px-1.5 py-0.2 rounded-[4px] bg-violet-100/80 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 text-[10px] font-semibold border border-violet-200/60 dark:border-violet-800/60 shrink-0"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
                             </div>
 
                             {/* Hover action overlay on Column 1 */}
@@ -1058,10 +1090,7 @@ export const Projects:React.FC=()=>{
                                 className="group bg-violet-50/40 dark:bg-[#06101e] hover:bg-violet-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors cursor-pointer"
                               >
                                 {/* Cột 1: Title đầu việc thụt lề sâu pl-20, dây nối left-6 & left-14 */}
-                                <td className="py-2 px-4 pl-20 relative overflow-hidden">
-                                  <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/30 dark:bg-violet-600/20" />
-                                  <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
-                                  <div className="absolute left-14 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                                <td className="py-2 px-4 pl-16 relative overflow-hidden">
                                   
                                   <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                                     {/* Vòng tròn checkmark */}
@@ -1165,18 +1194,22 @@ export const Projects:React.FC=()=>{
                                   </div>
                                 </td>
 
-                                {/* Cột 7: GHI CHÚ */}
-                                <td className="py-2 px-4 overflow-hidden text-center text-xs text-slate-400">
-                                  —
+                                {/* Cột 7: GHI CHÚ (EntityNoteCell) */}
+                                <td className="py-2 px-4 overflow-hidden text-center">
+                                  <EntityNoteCell
+                                    entityId={item.id}
+                                    entityType="project_item"
+                                    workspaceId={(project as any).workspace_id}
+                                    canEdit={canManageProject(project)}
+                                    alignCenter={true}
+                                  />
                                 </td>
                               </tr>
                             ))}
 
                             {/* Thanh tạo đầu việc mới */}
                             <tr className="bg-violet-50/20 dark:bg-[#06101e] border-t border-dotted border-slate-200/60 dark:border-slate-800/60">
-                              <td colSpan={7} className="py-2 px-4 pl-20 relative">
-                                <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/30 dark:bg-violet-600/20" />
-                                <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/40" />
+                              <td colSpan={7} className="py-2 px-4 pl-16 relative">
                                 
                                 {creatingItemSubtaskId === st.id ? (
                                   <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300/80 dark:border-violet-700/60 shadow-xs">
@@ -1255,7 +1288,7 @@ export const Projects:React.FC=()=>{
                                       setNewItemPriority('medium');
                                       setNewItemQuantity('');
                                     }}
-                                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-full border border-dashed border-violet-400 dark:border-violet-600 bg-white dark:bg-[#0a192f] text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
+                                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-300 hover:border-violet-400 dark:hover:border-violet-500 hover:bg-violet-50/60 dark:hover:bg-violet-950/30 text-[11px] font-semibold transition-all cursor-pointer"
                                   >
                                     <Plus size={12} />
                                     <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
@@ -1271,8 +1304,7 @@ export const Projects:React.FC=()=>{
 
                   {/* Thanh tạo subtask mới cho Project */}
                   <tr className="bg-violet-50/15 dark:bg-[#071325]/50 border-t border-dashed border-violet-200/50 dark:border-slate-800/80">
-                    <td colSpan={7} className="py-2.5 px-4 pl-12 relative">
-                      <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-violet-400/50 dark:bg-violet-600/30" />
+                    <td colSpan={7} className="py-2.5 px-4 pl-10 relative">
                       {creatingSubtaskProjectId === project.id ? (
                         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300 dark:border-violet-700 shadow-sm">
                           <input
@@ -1354,7 +1386,7 @@ export const Projects:React.FC=()=>{
                             setNewSubtaskDue('');
                             setNewSubtaskPriority('medium');
                           }}
-                          className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-dashed border-violet-400 dark:border-violet-600 bg-violet-50/60 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                          className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-300 hover:border-violet-400 dark:hover:border-violet-500 hover:bg-violet-50/60 dark:hover:bg-violet-950/30 text-xs font-semibold transition-all cursor-pointer"
                         >
                           <Plus size={13} />
                           <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
@@ -1375,7 +1407,7 @@ export const Projects:React.FC=()=>{
     {sourceTask && <TaskDetailPanel task={workflow.tasks.find(task => task.id === sourceTask.id) || sourceTask} isOpen onClose={() => setSourceTask(null)} onTaskUpdated={() => void workflow.refresh()} />}
 
     {/* Right Side: Detail Panel */}
-    <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${panelOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto ' + (selectedCampaign ? 'shadow-drawer-campaign' : 'shadow-drawer-project') : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[60] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
+    <div style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${panelOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto ' + (selectedCampaign ? 'shadow-drawer-campaign' : 'shadow-drawer-project') : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[60] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
       {panelOpen && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       {selected && (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
@@ -1453,7 +1485,7 @@ export const Projects:React.FC=()=>{
                 }}
                 canManage={canManageSelectedProject}
               />
-      <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
+      <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-1">{(picMembers[selected?.id || ''] || []).length > 0 ? (picMembers[selected?.id || ''] || []).map(id => { const p = people.find(p=>String(p.id)===id); return p ? <div key={id} className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800 rounded-full pr-3 pl-1 py-1"><Avatar name={p.name} src={(p as any).avatar_url || undefined} className="w-5 h-5 text-[10px]" /><span className="text-xs font-semibold">{p.name}{Number(id) === Number(projectPrimaryOwners[selected.id]) && <span className="ml-1 text-primary">· {t('common.primary')}</span>}</span></div> : null }) : t('common.unassigned')}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selected?.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span></div></div></div>
       <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={selected?.description} /></section>
       <section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{subtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true).map(s => {
         const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
@@ -1596,7 +1628,7 @@ export const Projects:React.FC=()=>{
       />
     )}
 
-    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${createOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
+    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${createOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
       {createOpen && <>
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('projects.createTitle')}</h3><ActionButton icon={<X className="w-5 h-5 text-gray-500" />} disabled={creating} aria-label={t('common.close')} onClick={() => setCreateOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"></ActionButton></div>
@@ -1610,12 +1642,12 @@ export const Projects:React.FC=()=>{
 
         <div>
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.nameLabel')} <span className="text-red-500">*</span></label>
-          <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400 shadow-sm" placeholder={t('projects.namePlaceholder')} />
+          <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400 shadow-sm" placeholder={t('projects.namePlaceholder')} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.startDate')}</label><input type="text" id="create-start-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-start-input', mode: 'single' }, e); }} value={start} onChange={(e) => setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
-          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.dueDate')}</label><input type="text" id="create-end-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-end-input', mode: 'single' }, e); }} value={due} onChange={(e) => setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
+          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.startDate')}</label><input type="text" id="create-start-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-start-input', mode: 'single' }, e); }} value={start} onChange={(e) => setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
+          <div className="tw-calendar-picker relative"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.dueDate')}</label><input type="text" id="create-end-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'create-end-input', mode: 'single' }, e); }} value={due} onChange={(e) => setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white cursor-pointer shadow-sm" /></div>
         </div>
 
         <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">{t('projects.primaryOwner')} <span className="text-red-500">*</span></label>
@@ -1631,7 +1663,7 @@ export const Projects:React.FC=()=>{
           <select
             value={departmentId}
             onChange={e => setDepartmentId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
           >
             <option value="">{lang === 'en' ? 'Select department...' : 'Chọn phòng ban...'}</option>
             {departments.map((d: any) => (
@@ -1640,19 +1672,19 @@ export const Projects:React.FC=()=>{
           </select>
         </div>
 
-        {creationType === 'campaign' ? <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder={t('projects.objectives')} /></div> : <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.description')}</label><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white" placeholder={t('tasks.descPlaceholder')} /></div>}
+        {creationType === 'campaign' ? <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white" placeholder={t('projects.objectives')} /></div> : <div><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('common.description')}</label><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white" placeholder={t('tasks.descPlaceholder')} /></div>}
 
         <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-sm font-semibold text-primary hover:underline">{showAdvanced ? t('projects.hideMore') : t('projects.showMore')}</button>
-        {showAdvanced && (creationType === 'project' ? <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4">
-          <div><label className="block text-sm font-semibold mb-1">{t('projects.belongsToCampaign')}</label><select value={parentCampaignId} onChange={e=>selectParentCampaign(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="">{t('projects.standalone')}</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-          <div><label className="block text-sm font-semibold mb-1">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"><option value="high">{t('common.high')}</option><option value="medium">{t('common.medium')}</option><option value="low">{t('common.low')}</option></select></div>
+        {showAdvanced && (creationType === 'project' ? <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-[#071325]/40 p-4">
+          <div><label className="block text-sm font-semibold mb-1">{t('projects.belongsToCampaign')}</label><select value={parentCampaignId} onChange={e=>selectParentCampaign(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f]"><option value="">{t('projects.standalone')}</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div><label className="block text-sm font-semibold mb-1">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f]"><option value="high">{t('common.high')}</option><option value="medium">{t('common.medium')}</option><option value="low">{t('common.low')}</option></select></div>
           <div><label className="block text-sm font-semibold mb-1">{t('projects.executingMembers')}</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder={t('projects.tagMembers')} /></div>
-          <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
-        </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><div className="relative"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 pr-14 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" placeholder={t('projects.budgetPlaceholder')} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="grid grid-flow-col auto-cols-max items-center gap-2 rounded-lg bg-white dark:bg-slate-800 px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
+          <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f]" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
+        </div> : <div className="space-y-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-[#071325]/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><div className="relative"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 pr-14 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f]" placeholder={t('projects.budgetPlaceholder')} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="grid grid-flow-col auto-cols-max items-center gap-2 rounded-lg bg-white dark:bg-[#0a192f] px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#0a192f]" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-xl border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
 
         </fieldset>
       </div>
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-slate-800"><button type="button" disabled={creating} onClick={() => setCreateOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700">{t('common.cancel')}</button><button disabled={creating || !title.trim() || !primaryOwnerId} type="submit" className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl">{creating ? t('projects.creating') : t('projects.createBtn')}</button></div>
+        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-[#0a192f]"><button type="button" disabled={creating} onClick={() => setCreateOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700">{t('common.cancel')}</button><button disabled={creating || !title.trim() || !primaryOwnerId} type="submit" className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-xl">{creating ? t('projects.creating') : t('projects.createBtn')}</button></div>
       </form>
       </>}
     </div>

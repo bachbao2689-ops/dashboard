@@ -185,6 +185,7 @@ export const CampaignPanel: React.FC<{
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
   const [campaignSubtasksMap, setCampaignSubtasksMap] = useState<Record<string, any[]>>({});
   const [subtaskChecklistMap, setSubtaskChecklistMap] = useState<Record<string, any[]>>({});
+  const [subtaskCommentMap, setSubtaskCommentMap] = useState<Record<string, number>>({});
 
   // Inline Creation: Subtask
   const [creatingSubtaskCampaignId, setCreatingSubtaskCampaignId] = useState<string | null>(null);
@@ -256,13 +257,27 @@ export const CampaignPanel: React.FC<{
     // Fetch checklist items (đầu việc) for all subtasks
     const subtaskIds = (allSubtasks || []).map((s: any) => s.id);
     if (subtaskIds.length > 0) {
-      const { data: detailsData } = await supabase
-        .from('activity_log')
-        .select('entity_id, metadata, created_at')
-        .eq('entity_type', 'campaign_subtask')
-        .eq('action', 'details_updated')
-        .in('entity_id', subtaskIds)
-        .order('created_at', { ascending: false });
+      const [{ data: detailsData }, { data: stCommentsData }] = await Promise.all([
+        supabase
+          .from('activity_log')
+          .select('entity_id, metadata, created_at')
+          .eq('entity_type', 'campaign_subtask')
+          .eq('action', 'details_updated')
+          .in('entity_id', subtaskIds)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('activity_log')
+          .select('entity_id')
+          .eq('entity_type', 'campaign_subtask')
+          .eq('action', 'comment')
+          .in('entity_id', subtaskIds),
+      ]);
+
+      const cMap: Record<string, number> = {};
+      (stCommentsData || []).forEach((row: any) => {
+        cMap[row.entity_id] = (cMap[row.entity_id] || 0) + 1;
+      });
+      setSubtaskCommentMap(cMap);
 
       const chkMap: Record<string, any[]> = {};
       (detailsData || []).forEach((row: any) => {
@@ -996,9 +1011,7 @@ export const CampaignPanel: React.FC<{
                     className="group bg-amber-50/20 dark:bg-[#071325]/70 hover:bg-amber-50/40 dark:hover:bg-[#0c1f3b] border-t border-dashed border-amber-200/50 dark:border-slate-800/80 transition-colors cursor-pointer"
                   >
                     {/* Cột 1: Title subtask thụt lề pl-12, dây dọc left-6 */}
-                    <td className="p-3 pl-12 relative overflow-hidden">
-                      <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-amber-400/50 dark:bg-amber-500/40" />
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-amber-400/50 dark:bg-amber-500/40" />
+                    <td className="p-3 pl-10 relative overflow-hidden">
                       
                       <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
                         <button
@@ -1053,6 +1066,25 @@ export const CampaignPanel: React.FC<{
                             ({doneCount}/{items.length} {lang === 'en' ? 'tasks' : 'việc'})
                           </span>
                         )}
+
+                        {(subtaskCommentMap[st.id] || 0) > 0 && (
+                          <span
+                            title={`${subtaskCommentMap[st.id]} ${lang === 'en' ? 'comments' : 'bình luận'}`}
+                            className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-blue-500 font-medium shrink-0 ml-1"
+                          >
+                            <MessageSquare size={12} />
+                            <span>{subtaskCommentMap[st.id]}</span>
+                          </span>
+                        )}
+
+                        {Array.isArray(st.tags) && st.tags.map((tag: string, tIdx: number) => (
+                          <span
+                            key={tIdx}
+                            className="px-1.5 py-0.2 rounded-[4px] bg-amber-100/80 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-[10px] font-semibold border border-amber-200/60 dark:border-amber-800/60 shrink-0"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
                       </div>
 
                       {/* Hover action overlay on Column 1 */}
@@ -1160,10 +1192,7 @@ export const CampaignPanel: React.FC<{
                           className="group bg-amber-50/40 dark:bg-[#06101e] hover:bg-amber-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors cursor-pointer"
                         >
                           {/* Cột 1: Title đầu việc thụt lề sâu pl-20, dây nối left-6 & left-14 */}
-                          <td className="py-2 px-4 pl-20 relative overflow-hidden">
-                            <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-amber-400/30 dark:bg-amber-600/20" />
-                            <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-amber-400/50 dark:bg-amber-600/40" />
-                            <div className="absolute left-14 top-1/2 -translate-y-1/2 w-4 h-[1.5px] bg-amber-400/50 dark:bg-amber-600/40" />
+                          <td className="py-2 px-4 pl-16 relative overflow-hidden">
                             
                             <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                               {/* Vòng tròn checkmark */}
@@ -1267,18 +1296,22 @@ export const CampaignPanel: React.FC<{
                             </div>
                           </td>
 
-                          {/* Cột 7: GHI CHÚ */}
-                          <td className="py-2 px-4 overflow-hidden text-center text-xs text-slate-400">
-                            —
+                          {/* Cột 7: GHI CHÚ (EntityNoteCell) */}
+                          <td className="py-2 px-4 overflow-hidden text-center">
+                            <EntityNoteCell
+                              entityId={item.id}
+                              entityType="campaign_item"
+                              workspaceId={c.workspace_id}
+                              canEdit={canManage(c)}
+                              alignCenter={true}
+                            />
                           </td>
                         </tr>
                       ))}
 
                       {/* Thanh tạo đầu việc mới */}
                       <tr className="bg-amber-50/20 dark:bg-[#06101e] border-t border-dotted border-slate-200/60 dark:border-slate-800/60">
-                        <td colSpan={7} className="py-2 px-4 pl-20 relative">
-                          <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-amber-400/30 dark:bg-amber-600/20" />
-                          <div className="absolute left-14 top-0 bottom-0 w-[1.5px] bg-amber-400/50 dark:bg-amber-600/40" />
+                        <td colSpan={7} className="py-2 px-4 pl-16 relative">
                           
                           {creatingItemSubtaskId === st.id ? (
                             <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-amber-300/80 dark:border-amber-700/60 shadow-xs">
@@ -1357,7 +1390,7 @@ export const CampaignPanel: React.FC<{
                                 setNewItemPriority('medium');
                                 setNewItemQuantity('');
                               }}
-                              className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-full border border-dashed border-amber-400 dark:border-amber-600 bg-white dark:bg-[#0a192f] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
+                              className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-300 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 text-[11px] font-semibold transition-all cursor-pointer"
                             >
                               <Plus size={12} />
                               <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
@@ -1373,8 +1406,7 @@ export const CampaignPanel: React.FC<{
 
             {/* Thanh tạo subtask mới cho Campaign */}
             <tr className="bg-amber-50/15 dark:bg-[#071325]/50 border-t border-dashed border-amber-200/50 dark:border-slate-800/80">
-              <td colSpan={7} className="py-2.5 px-4 pl-12 relative">
-                <div className="absolute left-6 top-0 bottom-0 w-[1.5px] bg-amber-400/50 dark:bg-amber-600/30" />
+              <td colSpan={7} className="py-2.5 px-4 pl-10 relative">
                 {creatingSubtaskCampaignId === c.id ? (
                   <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-amber-300 dark:border-amber-700 shadow-sm">
                     <input
@@ -1454,7 +1486,7 @@ export const CampaignPanel: React.FC<{
                       setNewSubtaskDue('');
                       setNewSubtaskPriority('medium');
                     }}
-                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50/60 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                    className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-300 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <Plus size={13} />
                     <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>

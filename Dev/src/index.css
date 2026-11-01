@@ -129,7 +129,7 @@ body:has(.report-standalone-mode),
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border: 1px solid #dce8fa;
-  border-radius: 16px;
+  border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
@@ -257,7 +257,7 @@ section.bg-white.border,
 .card-hub {
   background: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%), #ffffff;
   border-color: #e0eaff;
-  border-radius: 16px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 .card-hub, .glass-panel {

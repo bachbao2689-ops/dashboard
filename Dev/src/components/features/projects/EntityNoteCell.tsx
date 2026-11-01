@@ -337,7 +337,7 @@ function renderMarkdownTokens(raw: string): React.ReactNode {
 
 interface EntityNoteCellProps {
   entityId: string;
-  entityType: 'project' | 'campaign' | 'project_subtask' | 'campaign_subtask';
+  entityType: 'project' | 'campaign' | 'project_subtask' | 'campaign_subtask' | 'project_item' | 'campaign_item' | string;
   workspaceId?: string | null;
   canEdit?: boolean;
   className?: string;
@@ -636,7 +636,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
                 left: `${bubblePos.left}px`,
                 zIndex: 99999,
               }}
-              className="bg-slate-900/95 text-white border border-slate-700/90 rounded-xl px-2 py-1 shadow-2xl backdrop-blur-xs animate-in fade-in zoom-in-95 duration-100"
+              className="bg-[#0a192f] text-white border border-slate-700/90 rounded-[8px] px-2 py-1 shadow-2xl backdrop-blur-xs animate-in fade-in zoom-in-95 duration-100"
             >
               {showLinkInput ? (
                 <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 py-0.5">
@@ -656,7 +656,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
                     }}
                     placeholder="https://..."
                     autoFocus
-                    className="bg-slate-800 text-white text-xs px-2 py-1 rounded-md outline-none border border-slate-600 focus:border-primary w-44"
+                    className="bg-[#071325] dark:bg-[#071325] text-white text-xs px-2 py-1 rounded-[6px] outline-none border border-slate-700/90 focus:border-primary w-44"
                   />
                   <button
                     type="button"
@@ -665,7 +665,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
                       applyFormatting('link', linkUrlDraft || 'https://');
                       setLinkUrlDraft('');
                     }}
-                    className="px-2 py-1 rounded-md bg-primary hover:bg-primary/90 text-white text-[11px] font-semibold transition-colors"
+                    className="px-2 py-1 rounded-[6px] bg-primary hover:bg-primary/90 text-white text-[11px] font-semibold transition-colors"
                   >
                     Gắn link
                   </button>
@@ -675,7 +675,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
                       e.preventDefault();
                       setShowLinkInput(false);
                     }}
-                    className="p-1 text-slate-400 hover:text-white rounded-md"
+                    className="p-1 text-slate-400 hover:text-white rounded-[6px]"
                   >
                     <X size={12} />
                   </button>
@@ -749,7 +749,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
 
                   {/* Color Preset Palette */}
                   {showColorMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 shadow-xl z-[100000]">
+                    <div className="absolute bottom-full right-0 mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5 bg-[#0a192f] border border-slate-700/90 rounded-[8px] px-2.5 py-1.5 shadow-xl z-[100000]">
                       {TEXT_COLOR_PRESETS.map((preset) => (
                         <button
                           key={preset.id}
@@ -782,7 +782,7 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
           handleStartEdit(e);
         }
       }}
-      className={`group/note relative w-full h-full min-w-0 py-1.5 px-2 rounded-lg transition-colors cursor-pointer hover:bg-gray-100/70 dark:hover:bg-slate-800/60 ${alignCenter ? 'text-center' : ''} ${className}`}
+      className={`group/note relative w-full h-full min-w-0 py-1.5 px-2 rounded-[6px] transition-colors cursor-pointer hover:bg-gray-100/70 dark:hover:bg-[#0a192f]/60 ${alignCenter ? 'text-center' : ''} ${className}`}
       title={rawNote ? undefined : canEdit ? t('projects.notePlaceholder') : undefined}
     >
       {rawNote ? (
