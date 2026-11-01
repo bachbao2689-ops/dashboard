@@ -605,7 +605,7 @@ export const Projects:React.FC=()=>{
           {/* Dropdown nội dung ghi chú nếu được bấm mở */}
           {isNoteOpen && projectNote && (
             <div className="mt-2.5 p-2 rounded-[6px] bg-blue-50/70 dark:bg-[#071325] border border-blue-200/60 dark:border-slate-800 text-xs text-gray-700 dark:text-gray-300 animate-in fade-in duration-150">
-              <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
+              <div className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-0.5 grid grid-flow-col auto-cols-max items-center gap-1">
                 <FileText size={10} />
                 <span>{lang === 'en' ? 'Note' : 'Ghi chú'}</span>
               </div>
@@ -650,7 +650,7 @@ export const Projects:React.FC=()=>{
                         <StatusBadge status={st.status || 'planning'} />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                       <span>{st.assignee?.name || t('common.unassigned')}</span>
                       {st.due_date && <span>· {dateValue(st.due_date)}</span>}
                       {st.quantity && <span className="text-emerald-600 dark:text-emerald-400 font-bold">· SL: {st.quantity}</span>}
