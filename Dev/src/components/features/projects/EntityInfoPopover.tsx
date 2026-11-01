@@ -182,13 +182,13 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
         onMouseLeave={handleMouseLeave}
         aria-label={isEn ? `Info for ${entity.name}` : `Thông tin chi tiết ${entity.name}`}
         title={isEn ? "View entity details" : "Xem thông tin chi tiết"}
-        className={`w-3.5 h-3.5 rounded-[3px] grid place-items-center shrink-0 transition-colors cursor-pointer border ${
+        className={`p-0.5 inline-grid place-items-center shrink-0 transition-colors cursor-pointer ${
           isCampaign
-            ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30'
-            : 'text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/30'
+            ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'
+            : 'text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'
         }`}
       >
-        <Info size={8.5} strokeWidth={2.4} />
+        <Info size={13} strokeWidth={2} />
       </button>
 
       {isOpen &&
