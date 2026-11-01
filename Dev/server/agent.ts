@@ -902,7 +902,7 @@ export default async function handler(request: Request): Promise<Response> {
     console.error('Dashboard agent request failed:', error instanceof Error ? error.message : 'unknown error');
     const failure = error && typeof error === 'object' && 'lastError' in error ? error.lastError : error;
     const status = failure && typeof failure === 'object' && 'statusCode' in failure ? Number(failure.statusCode) : 0;
-    if (status === 401 || status === 403) return json({ code: 'AI_GATEWAY_AUTH', error: 'AI Gateway chưa cho phép project này gọi model. Cần bật Gateway/OIDC hoặc cấu hình AI_GATEWAY_API_KEY trên Vercel Preview.' }, 503);
+    if (status === 401 || status === 403) return json({ code: 'AI_GATEWAY_AUTH', diagnostic: { reason: failure instanceof Error ? failure.message.split('\n')[0].slice(0,180) : 'Gateway authentication failed', oidcHeaderPresent: request.headers.has('x-vercel-oidc-token'), oidcEnvironmentPresent: Boolean(process.env.VERCEL_OIDC_TOKEN) }, error: 'AI Gateway chưa cho phép project này gọi model. Cần bật Gateway/OIDC hoặc cấu hình AI_GATEWAY_API_KEY trên Vercel Preview.' }, 503);
     if (status === 402) return json({ code: 'AI_GATEWAY_BUDGET', error: 'AI Gateway đã hết hạn mức hoặc chưa có credit. Cần kiểm tra billing/budget trên Vercel.' }, 503);
     if (status === 429) return json({ code: 'AI_GATEWAY_RATE_LIMIT', error: 'Model đang giới hạn số lượt gọi. Hãy thử lại sau ít phút.' }, 429);
     return json({ code: 'AI_PROVIDER_UNAVAILABLE', error: 'Không kết nối được model AI. Cần kiểm tra AI Gateway và runtime logs trên Vercel.' }, 503);
