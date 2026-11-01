@@ -1,7 +1,7 @@
 {
   "version": 1,
   "allowedRoots": ["Dev", "api", "backend", "scripts", ".github", ".githooks"],
-  "allowedRootFiles": [".gitignore", ".gitattributes", ".vercelignore", "source-policy.json", "LICENSE", "NOTICE"],
+  "allowedRootFiles": [".gitignore", ".gitattributes", ".vercelignore", "source-policy.json", "LICENSE", "NOTICE", "package.json", "vercel.json"],
   "allowedExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".css", ".scss", ".html", ".json", ".sql", ".toml", ".yaml", ".yml", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".ico", ".woff", ".woff2", ".ttf", ".eot", ".webmanifest"],
   "allowedSpecialFiles": ["Dev/.gitignore", "Dev/.vercelignore", "Dev/.env.example", "backend/.env.example", ".githooks/pre-commit", ".githooks/pre-push"],
   "localOnlyPrefixes": [".agents/", ".codex/", ".claude/", ".gemini/", "Brief/", "GUIDELINE/", "UX_UI_DESIGN_SYSTEM/", "Dev/Login/", "Dev/LOGO/"],

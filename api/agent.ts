@@ -1,6 +1,5 @@
-// Vercel deploys Functions from the project root. Keep the implementation in
-// Dev/api so both the app-root and repository-root Vercel configurations work.
-export { default } from '../Dev/api/agent.ts';
+import handler from '../Dev/server/agent.ts';
 
-// Keep Agent requests within the AI SDK tool-loop timeout budget.
+// Entry point when Vercel builds from the repository root.
+export default { fetch: handler };
 export const maxDuration = 30;

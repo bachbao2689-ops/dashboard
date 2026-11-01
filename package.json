@@ -1,0 +1,11 @@
+{
+  "name": "dashboard-deployment",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build --prefix Dev"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

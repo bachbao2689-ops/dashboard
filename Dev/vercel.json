@@ -44,5 +44,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/agent.ts": {
+      "maxDuration": 30
+    }
+  }
 }
