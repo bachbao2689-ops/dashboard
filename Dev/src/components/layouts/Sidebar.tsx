@@ -1418,7 +1418,7 @@ export const Sidebar: React.FC = () => {
             ROW 1 (TOP): LOGO + PHUC SINH CONSUMERS (Centered & scaled +20%)
            ========================================== */}
         {isSidebarCollapsed ? (
-          <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
+          <div className="w-full flex flex-col items-center gap-1.5 pb-[0.7rem] mb-1.5 shrink-0">
             <NavLink
               to="/"
               onMouseEnter={(e) => showTooltip("Phuc Sinh Consumers", e)}
@@ -1435,13 +1435,13 @@ export const Sidebar: React.FC = () => {
               onMouseLeave={hideTooltip}
               title={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
               aria-label={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
-              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors cursor-pointer shrink-0"
+              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer shrink-0"
             >
               <PanelLeft size={18} />
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full px-3 pt-1 pb-2.5 border-b border-gray-100 dark:border-slate-800/80 mb-2.5">
+          <div className="flex items-center justify-center w-full px-3 pt-1 pb-[0.7rem] mb-2.5">
             <NavLink
               to="/"
               className="flex items-center justify-center min-w-0 group"
@@ -1470,16 +1470,16 @@ export const Sidebar: React.FC = () => {
                   setShowSettings(false);
                   setShowCollapsedSearch(!showCollapsedSearch);
                 }}
-                onMouseEnter={(e) => showTooltip(lang === "en" ? "Search (⌘K)" : "Tìm kiếm (⌘K)", e)}
+                onMouseEnter={(e) => showTooltip(lang === "en" ? "Search" : "Tìm kiếm", e)}
                 onMouseLeave={hideTooltip}
-                title={lang === "en" ? "Search (⌘K)" : "Tìm kiếm (⌘K)"}
+                title={lang === "en" ? "Search" : "Tìm kiếm"}
                 aria-label={lang === "en" ? "Search" : "Tìm kiếm"}
                 aria-expanded={showCollapsedSearch}
                 className={cn(
-                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0",
+                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer shrink-0",
                   showCollapsedSearch
-                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
+                    ? "bg-primary/10 text-primary dark:bg-slate-800 dark:text-blue-300"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70"
                 )}
               >
                 <Search size={16} />
@@ -1499,10 +1499,10 @@ export const Sidebar: React.FC = () => {
                 aria-label={lang === "en" ? "Notifications" : "Thông báo"}
                 aria-expanded={showNotifs}
                 className={cn(
-                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors relative cursor-pointer border shrink-0",
+                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors relative cursor-pointer shrink-0",
                   showNotifs
-                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
+                    ? "bg-primary/10 text-primary dark:bg-slate-800 dark:text-blue-300"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70"
                 )}
               >
                 <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
@@ -1524,13 +1524,10 @@ export const Sidebar: React.FC = () => {
                     navigate(`/tasks?search=${encodeURIComponent(sidebarSearchQuery.trim())}`);
                   }
                 }}
-                placeholder={lang === "en" ? "Search... (⌘K)" : "Tìm kiếm... (⌘K)"}
-                className="w-full h-8 pl-8 pr-8 text-xs rounded-[8px] bg-slate-50 dark:bg-[#0a192f] text-gray-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 focus:outline-none focus:border-[#002e6d]/40 dark:focus:border-blue-400/50 transition-colors"
+                placeholder={lang === "en" ? "Search..." : "Tìm kiếm..."}
+                className="w-full h-8 pl-8 pr-2 text-xs bg-transparent border-0 border-none outline-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white transition-colors"
               />
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-1 py-0.2 text-[9px] font-bold text-gray-400 dark:text-gray-500 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 pointer-events-none">
-                ⌘K
-              </span>
             </div>
             {/* Collapse sidebar button (to the left of notification button) */}
             <button
@@ -1538,7 +1535,7 @@ export const Sidebar: React.FC = () => {
               onClick={() => toggleSidebarCollapsed()}
               title={lang === "en" ? "Collapse sidebar" : "Thu gọn thanh bên"}
               aria-label={lang === "en" ? "Collapse sidebar" : "Thu gọn thanh bên"}
-              className="w-8 h-8 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#0a192f] transition-colors cursor-pointer shrink-0 border border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-[#0a192f]"
+              className="w-8 h-8 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer shrink-0"
             >
               <PanelLeftClose size={16} />
             </button>
@@ -1551,10 +1548,10 @@ export const Sidebar: React.FC = () => {
                 aria-label={lang === "en" ? "Notifications" : "Thông báo"}
                 aria-expanded={showNotifs}
                 className={cn(
-                  "w-8 h-8 rounded-[8px] grid place-items-center transition-colors relative cursor-pointer border",
+                  "w-8 h-8 rounded-[8px] grid place-items-center transition-colors relative cursor-pointer",
                   showNotifs
-                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
+                    ? "bg-primary/10 text-primary dark:bg-slate-800 dark:text-blue-300"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70"
                 )}
               >
                 <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
