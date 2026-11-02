@@ -39,9 +39,9 @@ export const DashboardLayout: React.FC = () => {
         {/* Left Sidebar: Collapsed (80px) or Expanded (--sidebar-width, default 272px) - Desktop only */}
         <div
           style={{ width: isSidebarCollapsed ? 80 : "var(--sidebar-width, 272px)" }}
-          className={`hidden xl:block transition-[width] duration-320 ease-[cubic-bezier(0.25,1,0.5,1)] shrink-0 overflow-hidden ${!introFinished ? "cockpit-dock-waiting" : dockingActive ? "cockpit-dock-left" : ""}`}
+          className={`hidden xl:block transition-[width] duration-300 ease-in-out will-change-[width] shrink-0 overflow-hidden ${!introFinished ? "cockpit-dock-waiting" : dockingActive ? "cockpit-dock-left" : ""}`}
         >
-          <div className={`w-full min-w-0 ${isSidebarCollapsed ? "px-2.5" : "pl-3.5 pr-0"} py-3.5 h-full transition-[padding] duration-320 ease-[cubic-bezier(0.25,1,0.5,1)]`}>
+          <div className={`w-full min-w-0 ${isSidebarCollapsed ? "px-2.5" : "pl-3.5 pr-0"} py-3.5 h-full transition-[padding] duration-300 ease-in-out`}>
              <Sidebar />
           </div>
         </div>

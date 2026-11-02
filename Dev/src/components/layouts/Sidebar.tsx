@@ -7,7 +7,6 @@ import {
   PanelLeft,
   Search,
   Bell,
-  Settings,
   Sun,
   Moon,
   Globe,
@@ -15,6 +14,7 @@ import {
   X,
   Sparkles,
   RefreshCw,
+  User,
 } from "lucide-react";
 import { useUiStore } from "../../store/uiStore";
 import { useNotificationCenter } from "../../hooks/useNotificationCenter";
@@ -867,9 +867,13 @@ export const Sidebar: React.FC = () => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
+  const [showCollapsedSearch, setShowCollapsedSearch] = useState(false);
+  const collapsedSearchBtnRef = useRef<HTMLButtonElement>(null);
+  const collapsedSearchPanelRef = useRef<HTMLDivElement>(null);
+  const [collapsedSearchQuery, setCollapsedSearchQuery] = useState('');
   const notifRef = useRef<HTMLDivElement>(null);
   const notifPanelRef = useRef<HTMLDivElement>(null);
-  const settingsBtnRef = useRef<HTMLDivElement>(null);
+  const settingsBtnRef = useRef<any>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
 
@@ -905,6 +909,14 @@ export const Sidebar: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
+      if (
+        showCollapsedSearch &&
+        collapsedSearchBtnRef.current &&
+        !collapsedSearchBtnRef.current.contains(target) &&
+        !collapsedSearchPanelRef.current?.contains(target)
+      ) {
+        setShowCollapsedSearch(false);
+      }
       if (
         showNotifs &&
         notifRef.current &&
@@ -1390,11 +1402,10 @@ export const Sidebar: React.FC = () => {
           <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
             <NavLink
               to="/"
-              className="w-9 h-9 rounded-[8px] bg-white dark:bg-[#0a192f] flex items-center justify-center shrink-0 border border-gray-200/80 dark:border-slate-700 shadow-2xs group relative"
+              className="w-9 h-9 flex items-center justify-center shrink-0 group relative"
               title="Phúc Sinh Dashboard"
             >
-              <img src="/logo-light.svg" alt="PS" className="h-5 w-auto object-contain block dark:hidden" />
-              <img src="/logo-dark.svg" alt="PS" className="h-5 w-auto object-contain hidden dark:block" />
+              <img src="/logo-ps-square.svg" alt="PS" className="h-6 w-6 object-contain" />
             </NavLink>
             <button
               type="button"
@@ -1410,21 +1421,14 @@ export const Sidebar: React.FC = () => {
           <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-3 pt-1 pb-2.5 border-b border-gray-100 dark:border-slate-800/80 mb-2.5">
             <NavLink
               to="/"
-              className="grid grid-flow-col auto-cols-max items-center gap-2.5 min-w-0 group"
+              className="flex items-center min-w-0 group pl-0.5"
               title="Phúc Sinh Dashboard"
             >
-              <div className="w-8 h-8 rounded-[8px] bg-white dark:bg-[#0a192f] grid place-items-center shrink-0 border border-gray-200/80 dark:border-slate-700 shadow-2xs">
-                <img src="/logo-light.svg" alt="PS" className="h-5 w-auto block dark:hidden" />
-                <img src="/logo-dark.svg" alt="PS" className="h-5 w-auto hidden dark:block" />
-              </div>
-              <div className="min-w-0 leading-tight">
-                <span className="block text-xs font-black tracking-wider uppercase text-[#002e6d] dark:text-blue-300 truncate font-sans">
-                  PHUC SINH
-                </span>
-                <span className="block text-[9.5px] font-bold tracking-widest uppercase text-gray-500 dark:text-slate-400 truncate -mt-0.5">
-                  CONSUMERS
-                </span>
-              </div>
+              <img
+                src="/logo-phuc-sinh-consumer-text.svg"
+                alt="Phuc Sinh Consumers"
+                className="h-8 w-auto max-w-[190px] object-contain block dark:brightness-125"
+              />
             </NavLink>
             <button
               type="button"
@@ -1443,19 +1447,39 @@ export const Sidebar: React.FC = () => {
            ========================================== */}
         {isSidebarCollapsed ? (
           <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setSidebarCollapsed(false)}
-              title={lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
-              aria-label={lang === 'en' ? 'Search' : 'Tìm kiếm'}
-              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
-            >
-              <Search size={16} />
-            </button>
-            <div className="relative shrink-0 flex items-center justify-center" ref={notifRef}>
+            <div className="relative shrink-0 flex items-center justify-center group/nav">
+              <button
+                ref={collapsedSearchBtnRef}
+                type="button"
+                onClick={() => {
+                  setShowNotifs(false);
+                  setShowSettings(false);
+                  setShowCollapsedSearch(!showCollapsedSearch);
+                }}
+                title={lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
+                aria-label={lang === 'en' ? 'Search' : 'Tìm kiếm'}
+                aria-expanded={showCollapsedSearch}
+                className={cn(
+                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0',
+                  showCollapsedSearch
+                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                )}
+              >
+                <Search size={16} />
+              </button>
+              <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                {lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
+              </div>
+            </div>
+            <div className="relative shrink-0 flex items-center justify-center group/nav" ref={notifRef}>
               <button
                 type="button"
-                onClick={() => setShowNotifs(!showNotifs)}
+                onClick={() => {
+                  setShowCollapsedSearch(false);
+                  setShowSettings(false);
+                  setShowNotifs(!showNotifs);
+                }}
                 title={lang === 'en' ? 'Notifications' : 'Thông báo'}
                 aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
                 aria-expanded={showNotifs}
@@ -1471,6 +1495,9 @@ export const Sidebar: React.FC = () => {
                   <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
               </button>
+              <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
+                {lang === 'en' ? 'Notifications' : 'Thông báo'}
+              </div>
             </div>
           </div>
         ) : (
@@ -1509,9 +1536,7 @@ export const Sidebar: React.FC = () => {
               >
                 <span className={unread > 0 ? 'notif-bell' : undefined}><Bell size={16} /></span>
                 {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white border-2 border-white dark:border-slate-900">
-                    {unread > 99 ? '99+' : unread}
-                  </span>
+                  <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
               </button>
             </div>
@@ -1807,14 +1832,20 @@ export const Sidebar: React.FC = () => {
         )}
 
         {/* ==========================================
-            ZONE 3: BOTTOM STAFF PROFILE CARD + SETTINGS GEAR
+            ZONE 3: BOTTOM STAFF PROFILE CARD (Settings merged into Avatar)
            ========================================== */}
         {isSidebarCollapsed ? (
           <div className="mt-auto w-full pt-2 border-t border-gray-100 dark:border-slate-800/80 flex flex-col items-center gap-2 pb-1 shrink-0">
-            <NavLink
-              to="/my-tasks"
-              title={`${staffName} (${t('nav.profile')})`}
-              className="group/avatar relative flex items-center justify-center shrink-0"
+            <button
+              ref={settingsBtnRef}
+              type="button"
+              onClick={() => {
+                setShowNotifs(false);
+                setShowCollapsedSearch(false);
+                setShowSettings(!showSettings);
+              }}
+              title={`${staffName} (${lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"})`}
+              className="group/avatar relative flex items-center justify-center shrink-0 cursor-pointer"
             >
               <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80 shrink-0">
                 {profile?.avatar_url ? (
@@ -1824,85 +1855,48 @@ export const Sidebar: React.FC = () => {
                 )}
               </div>
               <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/avatar:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
-                {staffName} · {t('nav.profile')}
+                {staffName} · {lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}
               </div>
-            </NavLink>
-            <div className="relative shrink-0 flex items-center justify-center" ref={settingsBtnRef}>
-              <button
-                type="button"
-                onClick={() => setShowSettings(!showSettings)}
-                title={lang === 'en' ? 'Settings' : 'Cài đặt'}
-                aria-label={lang === 'en' ? 'Settings' : 'Cài đặt'}
-                className={cn(
-                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0',
-                  showSettings
-                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
-                )}
-              >
-                <Settings size={18} className={cn('transition-transform duration-300', showSettings && 'rotate-45 text-primary dark:text-blue-400')} />
-              </button>
-            </div>
+            </button>
           </div>
         ) : (
           <div className="mt-auto px-3 pt-2 border-t border-gray-100 dark:border-slate-800/80 space-y-2">
             <div
+              ref={settingsBtnRef}
+              onClick={() => {
+                setShowNotifs(false);
+                setShowCollapsedSearch(false);
+                setShowSettings(!showSettings);
+              }}
               className={cn(
-                'sidebar-link sb-profile-footer-card grid grid-cols-[1fr_auto] items-center gap-2 w-full p-1.5 rounded-[8px] select-none transition-colors border',
-                location.pathname === '/my-tasks'
-                  ? 'sidebar-link-active'
-                  : 'sidebar-link-idle bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-slate-800/60'
+                'sidebar-link sb-profile-footer-card grid grid-cols-[auto_1fr] items-center gap-2.5 w-full p-2 rounded-[8px] select-none transition-colors border cursor-pointer',
+                showSettings
+                  ? 'bg-blue-50/80 dark:bg-[#002e6d]/30 border-blue-200 dark:border-blue-700/60 shadow-xs'
+                  : 'bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-slate-800/60'
               )}
+              title={lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}
             >
-              <div
-                onClick={() => navigate('/my-tasks')}
-                className="grid grid-cols-[auto_1fr] items-center gap-2.5 min-w-0 cursor-pointer flex-1"
-                title={t('nav.profile')}
-              >
-                <div className="relative shrink-0">
-                  <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{staffInitials}</span>
-                    )}
-                  </div>
-                  <span
-                    aria-hidden="true"
-                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
-                  />
+              <div className="relative shrink-0">
+                <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{staffInitials}</span>
+                  )}
                 </div>
-
-                <div className="min-w-0 text-left">
-                  <p className="truncate text-xs font-bold leading-tight text-gray-900 dark:text-white">
-                    {staffName}
-                  </p>
-                  <p className="truncate text-[11px] font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
-                    {staffPositionLabel}
-                  </p>
-                </div>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                />
               </div>
 
-              {/* Settings Gear Button INSIDE the profile card */}
-              <div className="relative shrink-0" ref={settingsBtnRef}>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSettings(!showSettings);
-                  }}
-                  title={lang === 'en' ? 'Settings' : 'Cài đặt'}
-                  aria-label={lang === 'en' ? 'Settings' : 'Cài đặt'}
-                  aria-expanded={showSettings}
-                  className={cn(
-                    'w-7 h-7 rounded-[6px] grid place-items-center transition-colors cursor-pointer border border-transparent',
-                    showSettings
-                      ? 'bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-300'
-                      : 'text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-slate-700/60'
-                  )}
-                >
-                  <Settings size={15} className={cn('transition-transform duration-300', showSettings && 'rotate-45 text-primary dark:text-blue-400')} />
-                </button>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-xs font-bold leading-tight text-gray-900 dark:text-white">
+                  {staffName}
+                </p>
+                <p className="truncate text-[11px] font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
+                  {staffPositionLabel}
+                </p>
               </div>
             </div>
 
@@ -1920,14 +1914,68 @@ export const Sidebar: React.FC = () => {
                 <span className="truncate">Theo dõi Main · Chỉ đọc</span>
               </NavLink>
             )}
-
-            <div className="pt-0.5 text-center">
-              <p className="text-[10px] font-medium text-[#A1A1AA] tracking-wider">
-                Making by <span className="text-primary dark:text-blue-400 font-bold">BART</span>
-              </p>
-            </div>
           </div>
         )}
+
+        {/* PORTAL 0: FLOATING SEARCH POPOVER WHEN COLLAPSED */}
+        {showCollapsedSearch && isSidebarCollapsed &&
+          createPortal(
+            <div
+              ref={collapsedSearchPanelRef}
+              style={(() => {
+                const r = collapsedSearchBtnRef.current?.getBoundingClientRect();
+                return r
+                  ? {
+                      top: Math.max(12, r.top),
+                      left: Math.min(r.right + 12, window.innerWidth - 300),
+                    }
+                  : { top: 60, left: 84 };
+              })()}
+              className="fixed w-[280px] p-2.5 bg-white dark:bg-[#0a192f] rounded-[8px] shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] animate-in fade-in zoom-in-95 duration-150 space-y-2 pointer-events-auto"
+            >
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (collapsedSearchQuery.trim()) {
+                    navigate(`/tasks?search=${encodeURIComponent(collapsedSearchQuery.trim())}`);
+                    setShowCollapsedSearch(false);
+                    setCollapsedSearchQuery('');
+                  }
+                }}
+                className="relative"
+              >
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={collapsedSearchQuery}
+                  onChange={(e) => setCollapsedSearchQuery(e.target.value)}
+                  placeholder={lang === 'en' ? 'Search tasks, projects...' : 'Tìm việc, dự án...'}
+                  className="w-full text-xs pl-8 pr-7 py-1.5 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/80 dark:border-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                />
+                {collapsedSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCollapsedSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </form>
+              <div className="flex items-center justify-between text-[10px] text-gray-400 px-1">
+                <span>{lang === 'en' ? 'Press Enter to search' : 'Nhấn Enter để tìm'}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowCollapsedSearch(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  {lang === 'en' ? 'Close' : 'Đóng'}
+                </button>
+              </div>
+            </div>,
+            document.body
+          )}
 
         {/* ==========================================
             PORTAL 1: NOTIFICATION POPOVER PANEL
@@ -2087,7 +2135,7 @@ export const Sidebar: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-gray-900 dark:text-white">
-                  {lang === 'en' ? 'Quick Settings' : 'Cài đặt nhanh'}
+                  {lang === 'en' ? 'Account & Settings' : 'Tài khoản & Cài đặt'}
                 </span>
                 <button
                   type="button"
@@ -2097,6 +2145,22 @@ export const Sidebar: React.FC = () => {
                   <X size={14} />
                 </button>
               </div>
+
+              {/* Profile Jump Link */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettings(false);
+                  navigate('/my-tasks');
+                }}
+                className="w-full text-left p-2 rounded-[6px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 flex items-center justify-between transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              >
+                <span className="flex items-center gap-2">
+                  <User size={14} className="text-[#002e6d] dark:text-sky-400" />
+                  <span>{lang === 'en' ? 'Personal Profile' : 'Hồ sơ cá nhân'}</span>
+                </span>
+                <ChevronRight size={13} className="text-gray-400" />
+              </button>
 
               {/* 1. Language switcher */}
               <div>

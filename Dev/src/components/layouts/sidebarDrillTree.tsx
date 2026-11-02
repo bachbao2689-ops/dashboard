@@ -482,12 +482,14 @@ export function buildSidebarGroups({
     path: '/tasks',
   });
 
-  tpRootItems.push({
-    id: 'tp:root:agents',
-    label: t('nav.agent'),
-    icon: <Bot size={18} />,
-    path: '/agents',
-  });
+  if (roleLower === 'admin') {
+    tpRootItems.push({
+      id: 'tp:root:agents',
+      label: t('nav.agent'),
+      icon: <Bot size={18} />,
+      path: '/agents',
+    });
+  }
 
   // 2.2 Projects & Campaigns (Drill-down with notifications only)
   const projPriorityTasks = enrichedTasks

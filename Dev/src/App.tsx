@@ -122,7 +122,7 @@ function App() {
             <Route path="ui-dashboard" element={<TeamManagementRoute><Dashboard /></TeamManagementRoute>} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<Projects />} />
-            <Route path="agents" element={<Agents />} />
+            <Route path="agents" element={<AdminRoute><Agents /></AdminRoute>} />
             <Route path="main-view" element={<MainReadOnly />} />
             <Route path="my-tasks" element={<MyTasks />} />
             <Route path="departments-2" element={<Departments2 />} />

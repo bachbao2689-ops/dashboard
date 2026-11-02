@@ -25,11 +25,11 @@
   font-family: inherit;
   position: relative;
   min-width: 0;
-  padding: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 34px;
+  padding: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
   background: linear-gradient(155deg, #ffffff, #f0f7ff 65%, #e2f0fc);
-  box-shadow: inset 0 1px 1px #ffffff, 0 12px 24px -10px rgba(0, 46, 109, 0.08);
+  box-shadow: inset 0 1px 1px #ffffff, 0 12px 28px -10px rgba(0, 46, 109, 0.10);
   color: var(--profile-ink);
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
   z-index: 1;
@@ -46,10 +46,10 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  aspect-ratio: .62;
-  min-height: 310px;
+  aspect-ratio: .60;
+  min-height: 330px;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 28px;
+  border-radius: 18px;
   background: linear-gradient(180deg, #eef7fc 0%, #d5e9f7 100%);
 }
 
@@ -63,7 +63,7 @@
 
 .report-profile-portrait {
   object-fit: cover;
-  object-position: center 22%;
+  object-position: center 15%;
 }
 
 /* Fallback Initials Avatar - Portrait composition */
@@ -93,12 +93,18 @@
 .report-profile-glass {
   position: absolute;
   z-index: 1;
-  inset: 44% 0 0;
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.72) 24%, rgba(238, 247, 252, 0.95) 55%, rgba(230, 242, 252, 0.99) 100%);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
+  inset: 38% 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(240, 247, 255, 0) 0%,
+    rgba(240, 247, 255, 0.45) 20%,
+    rgba(238, 247, 252, 0.86) 50%,
+    rgba(230, 242, 252, 0.98) 100%
+  );
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.2) 15%, black 45%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.2) 15%, black 45%, black 100%);
   pointer-events: none;
 }
 
@@ -253,25 +259,26 @@
 .report-profile-cta {
   display: inline-grid;
   place-items: center;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid rgba(147, 197, 253, 0.85);
-  border-radius: 9px;
-  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70));
-  color: #1d4ed8;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 18px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  color: #2563eb;
   font-size: 12px;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(30, 90, 170, 0.12);
+  font-weight: 700;
+  box-shadow: inset 0 1px 1px #ffffff, 0 2px 6px rgba(37, 99, 235, 0.12);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: all 180ms ease;
 }
 
 .report-profile-cta:hover {
   transform: translateY(-1px);
-  background: linear-gradient(to bottom, rgba(219, 234, 254, 1), rgba(191, 219, 254, 0.88));
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
   border-color: #60a5fa;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 3px 10px rgba(30, 90, 170, 0.2);
+  box-shadow: inset 0 1px 1px #ffffff, 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
 .report-profile-cta:active {
@@ -279,7 +286,7 @@
 }
 
 .report-profile-cta:focus-visible {
-  outline: 2px solid #1d4ed8;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
@@ -650,9 +657,9 @@
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 24%, rgba(9, 15, 27, 0.97) 55%, #090f1b 100%);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.5) 20%, rgba(9, 15, 27, 0.9) 50%, #090f1b 100%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 
 .dark .report-profile-badge--done {
@@ -697,22 +704,26 @@
 
 /* Nút CTA Dark Mode - System Button matching tab Báo cáo */
 .dark .report-profile-cta {
-  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08));
-  border: 1px solid rgba(78, 182, 72, 0.45);
-  color: #85df7d;
-  border-radius: 9px;
-  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 2px 6px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(180deg, rgba(30, 58, 138, 0.6) 0%, rgba(30, 58, 138, 0.85) 100%);
+  border: 1.5px solid rgba(96, 165, 250, 0.5);
+  color: #93c5fd;
+  border-radius: 9999px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .dark .report-profile-cta:hover {
-  background: rgba(78, 182, 72, 0.28);
-  color: #a7f3d0;
-  border-color: #4eb648;
-  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.25), 0 4px 12px rgba(78, 182, 72, 0.3);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.7) 0%, rgba(37, 99, 235, 0.95) 100%);
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.dark .report-profile-cta:active {
+  transform: translateY(0);
 }
 
 .dark .report-profile-cta:focus-visible {
-  outline: 2px solid #4eb648;
+  outline: 2px solid #60a5fa;
   outline-offset: 2px;
 }
 

@@ -132,48 +132,63 @@ export const DashboardActivityHistory: React.FC<DashboardActivityHistoryProps> =
     const act = (action || '').toLowerCase();
     if (act.includes('done') || act.includes('complete')) {
       return {
-        icon: <CheckCircle2 size={12} className="text-emerald-500" />,
-        text: lang === 'en' ? 'Completed' : 'Hoàn thành',
-        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60',
+        icon: <CheckCircle2 size={10} className="text-emerald-500" />,
+        text: lang === 'en' ? 'Done' : 'Xong',
+        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60',
       };
     }
     if (act.includes('create') || act.includes('add')) {
       return {
-        icon: <PlusCircle size={12} className="text-blue-500" />,
-        text: lang === 'en' ? 'Created' : 'Tạo mới',
-        color: 'text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60',
+        icon: <PlusCircle size={10} className="text-blue-500" />,
+        text: lang === 'en' ? 'New' : 'Tạo mới',
+        color: 'text-blue-600 dark:text-sky-400 bg-blue-50/90 dark:bg-blue-950/40 border-blue-200/90 dark:border-blue-800/60',
       };
     }
     if (act.includes('comment')) {
       return {
-        icon: <MessageSquare size={12} className="text-amber-500" />,
-        text: lang === 'en' ? 'Comment' : 'Bình luận',
-        color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
+        icon: <MessageSquare size={10} className="text-amber-500" />,
+        text: lang === 'en' ? 'Chat' : 'Trao đổi',
+        color: 'text-amber-600 dark:text-amber-400 bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60',
       };
     }
     return {
-      icon: <Edit3 size={12} className="text-violet-500" />,
-      text: lang === 'en' ? 'Updated' : 'Cập nhật',
-      color: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/60',
+      icon: <Edit3 size={10} className="text-violet-500" />,
+      text: lang === 'en' ? 'Edit' : 'Sửa',
+      color: 'text-violet-600 dark:text-violet-400 bg-violet-50/90 dark:bg-violet-950/40 border-violet-200/90 dark:border-violet-800/60',
     };
   };
 
   const getActionSummary = (item: ActivityItem) => {
     const meta = item.metadata || {};
-    const title = meta.title || meta.task_title || meta.name || item.entity_id;
-    const body = meta.body ? `: "${meta.body.slice(0, 45)}${meta.body.length > 45 ? '...' : ''}"` : '';
+    const rawTitle = meta.title || meta.task_title || meta.name;
+    const fallbackTitle =
+      item.entity_type === 'project'
+        ? (lang === 'en' ? 'Project' : 'Dự án')
+        : item.entity_type === 'campaign'
+        ? (lang === 'en' ? 'Campaign' : 'Chiến dịch')
+        : (lang === 'en' ? 'Task' : 'Công việc');
+
+    // Filter out raw UUIDs
+    const isUuid = typeof rawTitle === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(rawTitle);
+    const displayTitle = !rawTitle || isUuid
+      ? fallbackTitle
+      : rawTitle.length > 34
+      ? `${rawTitle.slice(0, 33)}…`
+      : rawTitle;
+
+    const body = meta.body ? `: "${meta.body.slice(0, 24)}${meta.body.length > 24 ? '…' : ''}"` : '';
 
     const act = (item.action || '').toLowerCase();
     if (act.includes('comment')) {
-      return `${lang === 'en' ? 'Commented on' : 'Bình luận'}: ${title}${body}`;
+      return `${lang === 'en' ? 'Note' : 'Ý kiến'}: ${displayTitle}${body}`;
     }
     if (act.includes('complete') || act.includes('done')) {
-      return `${lang === 'en' ? 'Completed' : 'Đã hoàn thành'}: ${title}`;
+      return `${lang === 'en' ? 'Done' : 'Đã xong'}: ${displayTitle}`;
     }
     if (act.includes('create') || act.includes('add')) {
-      return `${lang === 'en' ? 'Created' : 'Đã tạo'}: ${title}`;
+      return `${lang === 'en' ? 'Created' : 'Mở mới'}: ${displayTitle}`;
     }
-    return `${lang === 'en' ? 'Updated' : 'Cập nhật'}: ${title}`;
+    return `${lang === 'en' ? 'Updated' : 'Cập nhật'}: ${displayTitle}`;
   };
 
   const handleItemClick = (item: ActivityItem) => {

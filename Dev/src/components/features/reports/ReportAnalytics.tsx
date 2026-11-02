@@ -39,7 +39,6 @@ import {
   ImagePlus,
   Info,
   Printer,
-  ClipboardList,
 } from 'lucide-react';
 
 type StaffTrackFilter = 'all' | 'project' | 'campaign';
@@ -68,34 +67,26 @@ export function ReportProfileCard({
   useEffect(() => setImageFailed(false), [member.avatar_url]);
   const hasImage = Boolean(member.avatar_url) && !imageFailed;
   const isCoverflow = isCenter || isCoverflowActive;
-  const doneTooltip = lang === 'en'
-    ? `Completed: ${member.done} tasks (${member.completionPct}%)`
-    : `Hoàn thành: ${member.done} việc (${member.completionPct}%)`;
-  const lateTooltip = lang === 'en'
-    ? `Overdue: ${member.late} tasks`
-    : `Quá hạn: ${member.late} việc`;
-  const backlogTooltip = lang === 'en'
-    ? `Backlog: ${member.profileBacklogCount} tasks`
-    : `Tồn đọng: ${member.profileBacklogCount} việc`;
-  const totalTasksTooltip = lang === 'en'
-    ? `Total tasks: ${member.tasks.length}`
-    : `Tổng task: ${member.tasks.length} việc`;
-  const deliverablesTooltip = lang === 'en'
-    ? `Total deliverables: ${member.deliverableCount} files/images`
-    : `Tổng sản lượng: ${member.deliverableCount} hình/file`;
 
   return (
     <article
       data-staff-id={member.id}
-      className={`report-profile${hasImage ? '' : ' report-profile--initials'}${isCoverflow ? ' report-profile--coverflow-active' : ''}`}
+      className={`report-profile${hasImage ? "" : " report-profile--initials"}${isCoverflow ? " report-profile--coverflow-active" : ""}`}
       aria-label={member.name}
     >
-        <div className="report-profile-surface">
+      <div className="report-profile-surface">
         {hasImage ? (
-          <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
-            loading="lazy" onError={() => setImageFailed(true)} />
+          <img
+            className="report-profile-portrait"
+            src={member.avatar_url!}
+            alt={member.name}
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+          />
         ) : (
-          <div className="report-profile-fallback" aria-hidden="true"><span>{member.initial}</span></div>
+          <div className="report-profile-fallback" aria-hidden="true">
+            <span>{member.initial}</span>
+          </div>
         )}
         <div className="report-profile-glass" aria-hidden="true" />
         <div className="report-profile-content">
@@ -104,72 +95,15 @@ export function ReportProfileCard({
             <p>{member.role}</p>
           </div>
 
-          {/* Performance Status Labels: only icon & number, hover for details */}
-          <div className="report-profile-perf-row" aria-label={lang === 'en' ? 'Performance status' : 'Trạng thái hiệu suất'}>
-            <span
-              className="report-profile-badge report-profile-badge--done"
-              title={doneTooltip}
-              aria-label={doneTooltip}
-              data-profile-tooltip={doneTooltip}
-              data-profile-tooltip-pos="left"
-            >
-              <CheckCircle2 size={12} aria-hidden="true" />
-              <strong>{member.done}</strong>
-            </span>
-            {member.late > 0 && (
-              <span
-                className="report-profile-badge report-profile-badge--late"
-                title={lateTooltip}
-                aria-label={lateTooltip}
-                data-profile-tooltip={lateTooltip}
-              >
-                <Clock size={12} aria-hidden="true" />
-                <strong>{member.late}</strong>
-              </span>
-            )}
-            {member.profileBacklogCount > 0 && (
-              <span
-                className="report-profile-badge report-profile-badge--backlog"
-                title={backlogTooltip}
-                aria-label={backlogTooltip}
-                data-profile-tooltip={backlogTooltip}
-              >
-                <AlertTriangle size={12} aria-hidden="true" />
-                <strong>{member.profileBacklogCount}</strong>
-              </span>
-            )}
-          </div>
-
           <div className="report-profile-footer">
-            <div className="report-profile-counters">
-              <span
-                className="report-profile-pill report-profile-pill--task"
-                title={totalTasksTooltip}
-                aria-label={totalTasksTooltip}
-                data-profile-tooltip={totalTasksTooltip}
-                data-profile-tooltip-pos="left"
-              >
-                <ClipboardList size={12} aria-hidden="true" />
-                <strong>{member.tasks?.length || 0}</strong>
-              </span>
-              <span
-                className="report-profile-pill report-profile-pill--output"
-                title={deliverablesTooltip}
-                aria-label={deliverablesTooltip}
-                data-profile-tooltip={deliverablesTooltip}
-              >
-                <ImagePlus size={12} aria-hidden="true" />
-                <strong>{member.deliverableCount || 0}</strong>
-              </span>
-            </div>
             <button
               type="button"
               className="report-profile-cta"
               aria-expanded={expanded}
-              aria-label={`${expanded ? (lang === 'en' ? 'Close details' : 'Đóng chi tiết') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}: ${member.name}`}
+              aria-label={`${expanded ? (lang === "en" ? "Close details" : "Đóng chi tiết") : (lang === "en" ? "View details" : "Xem chi tiết")}: ${member.name}`}
               onClick={onDetails}
             >
-              {expanded ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'Details' : 'Chi tiết')}
+              {lang === "en" ? (expanded ? "Close" : "View details") : (expanded ? "Đóng" : "Xem chi tiết")}
             </button>
           </div>
         </div>
@@ -2335,14 +2269,14 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
             <div className="grid grid-cols-1 gap-1">
               <div className="grid grid-flow-col auto-cols-max items-center gap-2">
                 <h2 className="text-lg lg:text-xl font-bold text-slate-900 dark:text-white">
-                  {staffView === 'cards' ? (lang === 'en' ? 'TEAM PROFILES' : 'HỒ SƠ THÀNH VIÊN') : t('reports.viz.staffSectionTitle')}
+                  {t('reports.viz.staffSectionTitle')}
                 </h2>
                 <span className="px-2 py-0.5 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                   {t('reports.viz.staffCountBadge', { count: staffMembers.length })}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {staffView === 'cards' ? (lang === 'en' ? 'Meet the team and explore each member’s work.' : 'Thông tin thành viên và công việc trong kỳ báo cáo.') : t('reports.viz.staffSectionSub')}
+                {t('reports.viz.staffSectionSub')}
               </p>
             </div>
 

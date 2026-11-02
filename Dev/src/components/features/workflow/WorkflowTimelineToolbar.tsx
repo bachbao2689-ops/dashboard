@@ -103,7 +103,9 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
                 )}
               </div>
 
-              {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[]).map(st => {
+              {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[])
+                .filter(st => (taskCountsByStatus[st] || 0) > 0)
+                .map(st => {
                 const count = taskCountsByStatus[st] || 0;
                 const cfg = WORKFLOW_STATUS_CONFIG[st];
                 const statusLabel = isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || cfg.label);
