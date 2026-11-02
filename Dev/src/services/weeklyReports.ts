@@ -1,8 +1,7 @@
 import {supabase} from './supabase';
-import {readAll,completeTrackedTask} from './workspaceTasks';
+import {readAll} from './workspaceTasks';
 import {taskKey,taskTarget,taskActive} from '../lib/taskTracking';
 import {checklistTaskKey} from '../lib/taskChecklist';
-import {fetchTaskDeliverableMeta} from '../lib/taskDeliverables';
 export type WeeklyMetadata={body?:string;blocker?:string|null;next_step?:string|null;image_url?:string|null;unchanged?:boolean;week_start?:string;week_end?:string};
 export type WeeklyRow={id:string;user_id:number;entity_id:string;entity_type:string;created_at:string;metadata?:WeeklyMetadata|null;task_key:string};
 export async function readWeeklyReports(keys:string[],start:string,end:string,userIds?:number[]){
@@ -48,21 +47,10 @@ export async function weeklyUserActivity(userId:number,action:'weekly_summary_im
 // Use a distinct action so the parent report RPC cannot overwrite a child's report.
 async function saveChecklistReport(item:{id:string;metadata:WeeklyMetadata;complete?:boolean},start:string,end:string){
  const target=taskTarget(item.id);
- const {data:auth,error:authError}=await supabase.auth.getUser();if(authError)throw authError;
- const {data:actor,error:actorError}=await supabase.from('users').select('id').eq('auth_id',auth.user?.id).single();if(actorError)throw actorError;
- const {data:parent,error}=await supabase.from(target.table).select('*').eq('id',target.id).single();if(error)throw error;
- if(!taskActive(parent)||String(parent.assignee_id)!==String(actor.id))throw new Error('Chỉ người được giao công việc có thể gửi report.');
- const details=await fetchTaskDeliverableMeta(target.kind,target.id,true);
- const child=details?.checklist_items?.find(value=>value.id===target.checklistItemId);
- if(!child)throw new Error('Đầu việc không còn tồn tại.');
- if(!item.metadata.unchanged&&!item.metadata.body?.trim())throw new Error('Nhập kết quả công việc.');
- let workspace=parent.workspace_id;
- if(target.kind!=='task'){
-  const kind=target.kind==='project_subtask'?'project':'campaign';
-  const {data:p,error:failure}=await supabase.from(`${kind}s`).select('workspace_id,status').eq('id',parent[`${kind}_id`]).single();if(failure)throw failure;
-  if(['deleted','archived'].includes(p.status))throw new Error('Project/Campaign đã được ẩn hoặc xóa.');workspace=p.workspace_id;
- }
- const metadata={...item.metadata,week_start:start,week_end:end,task_kind:target.kind,checklist_item_id:target.checklistItemId,task_title:child.title};
- const {error:failure}=await supabase.from('activity_log').insert({workspace_id:workspace,user_id:actor.id,entity_type:target.kind,entity_id:target.id,action:'checklist_weekly_report',metadata});if(failure)throw failure;
- if(item.complete)await completeTrackedTask(item.id);
+ const {data,error}=await supabase.rpc('save_task_checklist_report',{
+  p_kind:target.kind,p_id:target.id,p_item_id:target.checklistItemId,p_metadata:item.metadata,
+  p_week_start:start,p_week_end:end,p_complete:Boolean(item.complete),
+ });
+ if(error)throw error;
+ if(data!==true)throw new Error('Chưa lưu đầy đủ báo cáo đầu việc.');
 }
