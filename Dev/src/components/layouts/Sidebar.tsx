@@ -1525,7 +1525,7 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
                 placeholder={lang === "en" ? "Search..." : "Tìm kiếm..."}
-                className="w-full h-8 pl-8 pr-2 text-xs bg-transparent border-0 border-none outline-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white transition-colors"
+                className="w-full h-8 pl-8 pr-2.5 text-xs rounded-[8px] bg-transparent text-gray-900 dark:text-white border border-slate-200/90 dark:border-slate-700/80 focus:outline-none focus:border-blue-500/60 dark:focus:border-blue-400/60 transition-colors"
               />
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
