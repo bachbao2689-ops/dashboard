@@ -689,9 +689,36 @@
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 18%, rgba(9, 15, 27, 0.97) 45%, #090f1b 100%);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  inset: 53% 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 15, 27, 0) 0%,
+    rgba(9, 15, 27, 0.15) 16%,
+    rgba(9, 15, 27, 0.42) 32%,
+    rgba(9, 15, 27, 0.72) 52%,
+    rgba(9, 15, 27, 0.93) 76%,
+    #090f1b 100%
+  );
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.05) 12%,
+    rgba(0, 0, 0, 0.28) 28%,
+    rgba(0, 0, 0, 0.68) 48%,
+    rgba(0, 0, 0, 0.95) 70%,
+    black 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.05) 12%,
+    rgba(0, 0, 0, 0.28) 28%,
+    rgba(0, 0, 0, 0.68) 48%,
+    rgba(0, 0, 0, 0.95) 70%,
+    black 100%
+  );
   border-radius: 0 0 28px 28px;
 }
 
