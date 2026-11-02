@@ -142,3 +142,29 @@ test('Reports Access: Staff role has visibility in navigation and scoped access 
   assert.deepEqual(scope.users.map(u => u.id), ['staff-1', 'staff-2']);
   assert.deepEqual(scope.tasks.map(t => t.id), ['t1', 't2']);
 });
+
+// Test 6: Mobile navigation hides when detail panels open and restores when closed
+test('Detail overlay: MobileNav hides when task/subtask/calendar/project detail opens and restores when closed', async () => {
+  const { useOverlayStore, retainTaskDetail } = await import('../src/store/overlayStore.ts');
+
+  assert.equal(useOverlayStore.getState().taskDetails, 0);
+
+  // 1. Opening a task detail in All Tasks
+  const releaseTask = retainTaskDetail();
+  assert.equal(useOverlayStore.getState().taskDetails, 1);
+  assert.equal(useOverlayStore.getState().taskDetails > 0, true);
+
+  // 2. Opening a nested subtask or another overlay on top
+  const releaseSubtask = retainTaskDetail();
+  assert.equal(useOverlayStore.getState().taskDetails, 2);
+
+  // 3. Closing the subtask detail
+  releaseSubtask();
+  assert.equal(useOverlayStore.getState().taskDetails, 1);
+  assert.equal(useOverlayStore.getState().taskDetails > 0, true);
+
+  // 4. Closing the task detail -> back to 0 (MobileNav visible)
+  releaseTask();
+  assert.equal(useOverlayStore.getState().taskDetails, 0);
+  assert.equal(useOverlayStore.getState().taskDetails > 0, false);
+});

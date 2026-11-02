@@ -1,11 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reportDeliverableQuantity,reportPeriodTasks,reportTaskTotals} from '../src/lib/reportTaskTracking.ts';
+import {reportAsOfDay,reportDeliverableQuantity,reportPeriodTasks,reportTaskTotals} from '../src/lib/reportTaskTracking.ts';
 import {mergeDeliverableMetadata,setCachedDeliverable} from '../src/lib/taskDeliverables.ts';
 import {mapWorkspaceTasks} from '../src/lib/workspaceTaskMapping.ts';
 
 const start='2026-10-19',end='2026-10-24';
 const task=(id,status,quantity)=>({id,status,quantity,created_at:'2026-10-19T03:00:00Z',completed_at:status==='done'?'2026-10-21T10:00:00Z':null});
+
+test('current and past reporting periods use a valid overdue as-of day',()=>{
+ assert.equal(reportAsOfDay('2026-11-30','2026-11-02'),'2026-11-02');
+ assert.equal(reportAsOfDay('2026-10-31','2026-11-02'),'2026-10-31');
+ assert.equal(reportAsOfDay('2099-12-31','2026-11-02'),'2026-11-02');
+});
 
 test('screenshot totals reconcile 27 of 42 tasks with 79 of 635 deliverables without mixing units',()=>{
  const rows=[...Array.from({length:27},(_,i)=>task('done-'+i,'done',i===26?53:1)),...Array.from({length:15},(_,i)=>task('open-'+i,'todo',i===14?542:1))];

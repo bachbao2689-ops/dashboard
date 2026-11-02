@@ -92,8 +92,18 @@
   .dashboard-top-chrome.mobile-header-hidden header {
     pointer-events: none;
   }
+  body:has(.dashboard-detail-drawer.opacity-100) .mobile-nav-container,
+  body:has(.dashboard-detail-drawer.opacity-100) .mobile-liquid-glass {
+    transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom, 0px))) !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
   .mobile-nav-container.nav-detail-hidden, .mobile-nav-mask.nav-detail-hidden {
-    visibility: hidden;
+    transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom, 0px))) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
   }
   .workflow-status-strip {
     flex-wrap: nowrap !important;

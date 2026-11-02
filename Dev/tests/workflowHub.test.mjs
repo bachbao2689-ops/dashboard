@@ -5,6 +5,13 @@ test('progress uses actual completion statuses; empty phases have no invented pe
   assert.deepEqual(taskProgress([]), { total: 0, done: 0, percent: null });
   assert.deepEqual(taskProgress([{ status:'done' },{ status:'completed' },{ status:'todo' },{ status:'deleted' }]), { total:3,done:2,percent:67 });
 });
+test('workflow progress reconciles canonical stages, legacy values and canceled rows', () => {
+  assert.deepEqual(taskProgress([
+    {status:'active'},
+    {status:'in_progress',workflow_status:'completed'},
+    {status:'todo',workflow_status:'canceled'},
+  ]), {total:2,done:1,percent:50});
+});
 test('source links address existing Workflow tab and preserve exact parent type/id', () => {
   assert.equal(workflowLink('project','abc'), '/workflow?project=abc');
   assert.equal(workflowLink('campaign','abc'), '/workflow?campaign=abc');

@@ -5,7 +5,7 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
 import { workflowResource, workspaceScope } from '../services/workspaceResources';
 import { useSidebarPinStore } from '../store/sidebarPinStore';
-import { taskKey, taskOpen, taskOverdue, taskDone, taskActive, taskLink } from '../lib/taskTracking';
+import { taskKey, taskOpen, taskOverdue, taskDone, taskActive, taskState, taskLink } from '../lib/taskTracking';
 import { workflowLink, projectsLink, type HubTrack } from '../lib/workflowHub';
 import type { Task } from './useTasks';
 import type { NotificationItem } from '../store/notificationStore';
@@ -267,14 +267,8 @@ export function useSidebarTrackingData() {
     const myTasks = enrichedTasks.filter(t => t.isMine && !t.isDone);
     const myPriorityTasks = enrichedTasks.filter(t => t.isMine || t.isPinned || t.isMentioned || t.isCommented);
     const overdueTasks = openTasks.filter(t => t.isOverdue);
-    const doingTasks = openTasks.filter(t =>
-      ['in_progress', 'in-progress', 'doing', 'scoping'].includes((t.task.status || '').toLowerCase()) ||
-      ['in_progress', 'scoping'].includes((t.task.workflow_status || '').toLowerCase())
-    );
-    const reviewTasks = openTasks.filter(t =>
-      ['in_review', 'review', 'in_qa', 'feedback', 'pending'].includes((t.task.status || '').toLowerCase()) ||
-      t.task.workflow_status === 'in_qa'
-    );
+    const doingTasks = openTasks.filter(t => taskState(t.task) === 'in_progress');
+    const reviewTasks = openTasks.filter(t => taskState(t.task) === 'in_review');
     const doneTasks = enrichedTasks.filter(t => t.isDone);
 
     const availableAssets = (workspace.assets || []).filter(a => a.is_available);

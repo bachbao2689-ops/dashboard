@@ -1,6 +1,11 @@
 import {taskActive, taskDay, taskDone, type TrackedTask} from './taskTracking.ts';
 import {computeDeliverableQuantity} from './taskDeliverables.ts';
 
+/** Overdue status is evaluated at now for the current/future period, and at period end for a past period. */
+export function reportAsOfDay(periodEnd: string, currentDay: string): string {
+  return currentDay < periodEnd ? currentDay : periodEnd;
+}
+
 export type ReportQuantityTask = TrackedTask & {
   quantity?: number | null;
   deliverable_quantity?: number | null;

@@ -8,7 +8,7 @@ import { useTranslation } from '../../../i18n/translations';
 import { FilterPopover } from '../../common/filters/FilterPopover';
 import { DashboardAllocationChart } from '../dashboard/DashboardAllocationChart';
 import { useUiStore } from '../../../store/uiStore';
-import { taskDay, taskOpen, taskDone } from '../../../lib/taskTracking';
+import { taskDay, taskOpen, taskDone, taskBucket, taskOverdue } from '../../../lib/taskTracking';
 import {
   BarChart,
   Bar,
@@ -359,7 +359,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         name: dayLabel,
         created: (scopedTasks || []).filter((task: any) => dayKey(task.created_at) === key).length,
         doing: (scopedTasks || []).filter(
-          (task: any) => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key,
+          (task: any) => taskOpen(task) && ['in_progress', 'in_review'].includes(taskBucket(task, taskDay(new Date().toISOString()))) && dayKey(task.updated_at || task.created_at) === key,
         ).length,
         done: (scopedTasks || []).filter((task: any) => taskDone(task) && dayKey(task.completed_at) === key).length,
       });
@@ -619,13 +619,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
       // DATA EXTRACTION
       const backlogTasks = (scopedTasks || []).filter((task: any) => {
-        const st = String(task.status || "").toLowerCase();
-        const isDone = st === "done" || st === "completed";
-        const isLate = Boolean(
-          task.is_overdue ||
-          (task.due_date && new Date(task.due_date).getTime() < Date.now() && !isDone)
-        );
-        return !isDone && (isLate || st === "backlog");
+        const bucket = taskBucket(task, taskDay(new Date().toISOString()));
+        return bucket === 'overdue' || bucket === 'todo';
       }).slice(0, 8);
 
       const projectMap = new Map<string, { name: string; total: number; done: number }>();
@@ -634,16 +629,15 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         if (pName) {
           const entry = projectMap.get(pName) || { name: pName, total: 0, done: 0 };
           entry.total += 1;
-          const st = String(task.status || "").toLowerCase();
-          if (st === "done" || st === "completed") entry.done += 1;
+          if (taskDone(task)) entry.done += 1;
           projectMap.set(pName, entry);
         }
       });
       const projectList = Array.from(projectMap.values()).slice(0, 8);
 
       const inProgressTasks = (scopedTasks || []).filter((task: any) => {
-        const st = String(task.status || "").toLowerCase();
-        return st === "in_progress" || st === "doing";
+        const bucket = taskBucket(task, taskDay(new Date().toISOString()));
+        return bucket === 'in_progress' || bucket === 'in_review';
       }).slice(0, 8);
 
       // COLUMN 1: CÁC VIỆC TỒN ĐỌNG (BACKLOG)
@@ -907,7 +901,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       if (staffTaskTrack(task) === 'project') {
         const pId = String(task.project?.id || task.project_id || task.project?.name || task.project_name || 'project');
         const pName = task.project?.name || task.project_name || task.project?.title || 'Dự án';
-        const isDone = String(task.status || '').toLowerCase() === 'done' || String(task.status || '').toLowerCase() === 'completed';
+        const isDone = taskDone(task);
         const existing = map.get(pId);
         if (existing) {
           existing.taskCount++;
@@ -934,7 +928,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
       if (staffTaskTrack(task) === 'campaign') {
         const cId = String(task.campaign?.id || task.campaign_id || task.campaign?.name || task.campaign_name || 'campaign');
         const cName = task.campaign?.name || task.campaign_name || task.campaign?.title || 'Chiến dịch';
-        const isDone = String(task.status || '').toLowerCase() === 'done' || String(task.status || '').toLowerCase() === 'completed';
+        const isDone = taskDone(task);
         const existing = map.get(cId);
         if (existing) {
           existing.taskCount++;
@@ -955,36 +949,24 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
   const staffDoneTasks = useMemo(() => {
     if (!selectedStaff?.tasks) return [];
-    return selectedStaff.tasks.filter((t: any) => {
-      const st = String(t.status || '').toLowerCase();
-      return st === 'done' || st === 'completed';
-    });
+    return selectedStaff.tasks.filter((t: any) => taskDone(t));
   }, [selectedStaff]);
 
   const staffLateTasks = useMemo(() => {
     if (!selectedStaff?.tasks) return [];
-    return selectedStaff.tasks.filter((t: any) => {
-      const st = String(t.status || '').toLowerCase();
-      const isDone = st === 'done' || st === 'completed';
-      return Boolean(t.is_overdue || (t.due_date && new Date(t.due_date).getTime() < Date.now() && !isDone));
-    });
+    return selectedStaff.tasks.filter((t: any) => taskOverdue(t));
   }, [selectedStaff]);
 
   const filteredStaffTasks = useMemo(() => {
     if (!selectedStaff?.tasks) return [];
     if (staffStatusFilter === 'all') return scopedStaffTasks;
+    const today = taskDay(new Date().toISOString());
     return scopedStaffTasks.filter((task: any) => {
-      const st = String(task.status || '').toLowerCase();
-      const isDone = st === 'done' || st === 'completed';
-      const isDoing = st === 'in_progress' || st === 'doing';
-      const isLate = Boolean(
-        task.is_overdue ||
-        (task.due_date && new Date(task.due_date).getTime() < Date.now() && !isDone)
-      );
-      if (staffStatusFilter === 'done') return isDone;
-      if (staffStatusFilter === 'doing') return isDoing && !isLate;
-      if (staffStatusFilter === 'late') return isLate;
-      if (staffStatusFilter === 'todo') return !isDone && !isDoing && !isLate;
+      const bucket = taskBucket(task, today);
+      if (staffStatusFilter === 'done') return bucket === 'done';
+      if (staffStatusFilter === 'doing') return ['in_progress', 'in_review'].includes(bucket);
+      if (staffStatusFilter === 'late') return bucket === 'overdue';
+      if (staffStatusFilter === 'todo') return bucket === 'todo';
       return true;
     });
   }, [selectedStaff, scopedStaffTasks, staffStatusFilter]);
@@ -995,17 +977,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
     let doing = 0;
     let todo = 0;
     let late = 0;
+    const today = taskDay(new Date().toISOString());
     scopedStaffTasks.forEach((task: any) => {
-      const st = String(task.status || '').toLowerCase();
-      const isDone = st === 'done' || st === 'completed';
-      const isDoing = st === 'in_progress' || st === 'doing';
-      const isLate = Boolean(
-        task.is_overdue ||
-        (task.due_date && new Date(task.due_date).getTime() < Date.now() && !isDone)
-      );
-      if (isDone) done++;
-      else if (isLate) late++;
-      else if (isDoing) doing++;
+      const bucket = taskBucket(task, today);
+      if (bucket === 'done') done++;
+      else if (bucket === 'overdue') late++;
+      else if (bucket === 'in_progress' || bucket === 'in_review') doing++;
       else todo++;
     });
     return {

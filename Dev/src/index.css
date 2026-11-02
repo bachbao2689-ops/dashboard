@@ -450,10 +450,12 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
     pointer-events: none !important;
     opacity: 0 !important;
   }
-  body:has(.dashboard-detail-drawer.opacity-100) .mobile-liquid-glass {
-    transform: translateY(100%) !important;
+  body:has(.dashboard-detail-drawer.opacity-100) .mobile-liquid-glass,
+  body:has(.dashboard-detail-drawer.opacity-100) .mobile-nav-container {
+    transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom, 0px))) !important;
     pointer-events: none !important;
     opacity: 0 !important;
+    visibility: hidden !important;
   }
   body:has(.dashboard-detail-drawer.opacity-100) .dashboard-detail-drawer,
   .dashboard-detail-drawer.opacity-100 {

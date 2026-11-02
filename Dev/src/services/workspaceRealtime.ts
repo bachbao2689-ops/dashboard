@@ -1,7 +1,7 @@
 import {supabase} from './supabase';
 export type WorkspaceChange={revision:number;table?:string;new?:Record<string,any>;old?:Record<string,any>;eventType?:string};
 type Listener={tables:Set<string>;refresh:(change:WorkspaceChange)=>unknown;status:(connected:boolean)=>void;filter?:(change:WorkspaceChange)=>boolean;timer?:ReturnType<typeof setTimeout>;pending?:WorkspaceChange};
-type Group={listeners:Set<Listener>;channel?:ReturnType<typeof supabase.channel>;key:string;connected:boolean;connectedOnce:boolean;revision:number;rebuild?:ReturnType<typeof setTimeout>;stop?:ReturnType<typeof setTimeout>;dispose:()=>void};
+type Group={listeners:Set<Listener>;channel?:ReturnType<typeof supabase.channel>;key:string;connected:boolean;revision:number;rebuild?:ReturnType<typeof setTimeout>;stop?:ReturnType<typeof setTimeout>;dispose:()=>void};
 const groups=new Map<number,Group>();
 let revision=0,socket=0;
 const eventTables:Record<string,string[]|undefined>={
@@ -24,7 +24,7 @@ function rebuild(group:Group,actor:number){
  group.rebuild=setTimeout(()=>{
   const key=[...new Set([...group.listeners].flatMap(listener=>[...listener.tables]))].sort().join(',');
   if(!key||key===group.key)return;
-  const reconnect=Boolean(group.channel);if(group.channel)void supabase.removeChannel(group.channel);
+  if(group.channel)void supabase.removeChannel(group.channel);
   group.key=key;group.connected=false;
   let channel=supabase.channel(`workspace-shared-${actor}-${++socket}`);
   for(const table of key.split(','))channel=channel.on('postgres_changes',{event:'*',schema:'public',table},payload=>schedule(group,[table],{...payload,table}));
@@ -32,14 +32,15 @@ function rebuild(group:Group,actor:number){
   channel.subscribe(status=>{
    if(group.channel!==channel)return;
    group.connected=status==='SUBSCRIBED';group.listeners.forEach(listener=>listener.status(group.connected));
-   if(group.connected){if(group.connectedOnce||reconnect)schedule(group);group.connectedOnce=true;}
+   // Reconcile after every successful subscribe so a write during initial load/connect isn't missed.
+   if(group.connected)schedule(group);
   });
  },0);
 }
 export function retainWorkspaceRealtime(actor:number,tables:readonly string[],refresh:Listener['refresh'],status:Listener['status']=()=>{},filter?:Listener['filter']){
  let group=groups.get(actor);
  if(!group){
-  group={listeners:new Set(),key:'',connected:false,connectedOnce:false,revision:0,dispose:()=>{}};groups.set(actor,group);
+  group={listeners:new Set(),key:'',connected:false,revision:0,dispose:()=>{}};groups.set(actor,group);
   const target=group;
   const local=(event:Event)=>{const detail=(event as CustomEvent<{tables?:string[]}>).detail;schedule(target,detail?.tables||eventTables[event.type]);};
   const visible=()=>{if(document.visibilityState==='visible')schedule(target);};

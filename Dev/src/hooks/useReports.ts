@@ -4,16 +4,17 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
 import { workflowResource, workspaceScope } from '../services/workspaceResources';
 import { isDone as isWorkflowDone } from '../lib/workflowHub';
-import {reportDeliverableQuantity, reportPeriodTasks, reportTaskTotals} from '../lib/reportTaskTracking';
+import {reportAsOfDay, reportDeliverableQuantity, reportPeriodTasks, reportTaskTotals} from '../lib/reportTaskTracking';
 import { useRememberedState } from './useRememberedState';
 import {
-  isTaskClosed,
   reportAnalytics,
   taskActive,
   taskDay,
   taskDone,
+  taskBucket,
   taskOpen,
   taskOverdue,
+  taskState,
   type TrackedTask,
 } from '../lib/taskTracking';
 import { scopeTeamWorkload } from '../lib/workloadScope';
@@ -289,7 +290,7 @@ function computePeriodBurndown(
 ): BurndownItem[] {
   const activeList = tasks.filter((t) => taskActive(t));
   const totalTasks = Math.max(8, activeList.length);
-  const openNow = activeList.filter((t) => !isTaskClosed(t.status)).length;
+  const openNow = activeList.filter(taskOpen).length;
   const { start, today } = getPeriodBounds(range, now, customStart, customEnd, lang);
   const startMs = new Date(`${start}T12:00:00Z`).getTime();
   const endMs = new Date(`${today}T12:00:00Z`).getTime();
@@ -533,7 +534,7 @@ function computePeriodHeatmap(
   };
 }
 
-export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v2";
+export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v3";
 
 export interface ReportSnapshotPayload {
   scopeKey: string;
@@ -794,6 +795,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       ),
     [timeRange, cursorDate, defaultToday, customStart, customEnd, lang],
   );
+  const statusAsOfDay = reportAsOfDay(periodMeta.today, defaultToday);
 
   // Filter tasks relevant to the chosen period (week / month / quarter / year)
   const periodTasks = useMemo(() => {
@@ -812,14 +814,14 @@ export const useReports = (options?: { standalone?: boolean }) => {
       reportAnalytics(
         scopedTasks,
         analyticRange as any,
-        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+        new Date(`${statusAsOfDay}T12:00:00Z`),
       ),
-    [scopedTasks, analyticRange, cursorDate, defaultToday],
+    [scopedTasks, analyticRange, statusAsOfDay],
   );
 
   // Build Staff Performance list (shared 1:1 between List Mode and Staff Cards Mode)
   const staffMembers = useMemo<StaffReportMember[]>(() => {
-    const today = periodMeta.today;
+    const today = statusAsOfDay;
 
     return scopedUsers
       .map((u) => {
@@ -828,17 +830,9 @@ export const useReports = (options?: { standalone?: boolean }) => {
         );
         const openList = memberAllTasks.filter((t) => taskOpen(t));
         const doneList = memberAllTasks.filter((t) => taskDone(t));
-        const overdueList = openList.filter((t) => taskOverdue(t, today));
-        const todoList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
-        const doingList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
+        const overdueList = openList.filter((t) => taskBucket(t, today) === 'overdue');
+        const todoList = openList.filter((t) => taskBucket(t, today) === 'todo');
+        const doingList = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today)));
 
         const done = doneList.length;
         const doing = doingList.length;
@@ -871,9 +865,9 @@ export const useReports = (options?: { standalone?: boolean }) => {
         const deptName = u.department?.name || selectedDepartmentName;
         const initial = getInitial(u.name);
 
-        const realBacklogTasks = memberAllTasks.filter(
-          (t) => taskOpen(t) && (taskOverdue(t, today) || (t.status || '').toLowerCase() === 'backlog'),
-        );
+        const realBacklogTasks = memberAllTasks.filter((t) => {
+          return taskOpen(t) && (taskOverdue(t, today) || taskState(t) === 'todo');
+        });
 
         const profileBacklogItems: ProfileBacklogItem[] = realBacklogTasks.map((t, bIdx) => {
           const isOverdue = taskOverdue(t, today);
@@ -945,12 +939,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
 
         const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks
           .map((t) => {
-            const isDone = taskDone(t);
-            const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
-            const isTodo =
-              !isDone &&
-              !isOverdue &&
-              ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+            const bucket = taskBucket(t, statusAsOfDay);
+            const isDone = bucket === 'done';
+            const isOverdue = bucket === 'overdue';
+            const isTodo = bucket === 'todo';
             const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
               ? 'done'
               : isOverdue
@@ -1034,25 +1026,17 @@ export const useReports = (options?: { standalone?: boolean }) => {
         if (rankA !== rankB) return rankA - rankB;
         return b.total - a.total || b.capacityPercentage - a.capacityPercentage || a.name.localeCompare(b.name, 'vi');
       });
-  }, [scopedUsers, periodTasks, periodMeta.today, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
+  }, [scopedUsers, periodTasks, statusAsOfDay, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
 
   // Build 4 Team Performance Cards (100% consistent with staffMembers & periodTasks)
   const teamCards = useMemo<TeamReportCardsData>(() => {
-    const today = periodMeta.today;
+    const today = statusAsOfDay;
     const totals = reportTaskTotals(periodTasks);
     const completedTasks = totals.completedTasks;
     const openList = periodTasks.filter((t) => taskOpen(t));
     const overdueTasks = openList.filter((t) => taskOverdue(t, today)).length;
-    const todoTasks = openList.filter(
-      (t) =>
-        !taskOverdue(t, today) &&
-        ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-    ).length;
-    const inProgressTasks = openList.filter(
-      (t) =>
-        !taskOverdue(t, today) &&
-        !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-    ).length;
+    const todoTasks = openList.filter((t) => taskBucket(t, today) === 'todo').length;
+    const inProgressTasks = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today))).length;
     const totalTasks = totals.totalTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -1193,12 +1177,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
     const sourceTasks = periodTasks;
     const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks
       .map((t) => {
-        const isDone = taskDone(t);
-        const isOverdue = !isDone && taskOverdue(t, today);
-        const isTodo =
-          !isDone &&
-          !isOverdue &&
-          ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+        const bucket = taskBucket(t, today);
+        const isDone = bucket === 'done';
+        const isOverdue = bucket === 'overdue';
+        const isTodo = bucket === 'todo';
         const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
           ? 'done'
           : isOverdue
@@ -1247,9 +1229,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
     const deliverableItems: DeliverableTaskSummaryItem[] = [];
 
     periodTasks.forEach((t) => {
-      const isDone = taskDone(t);
-      const isOverdue = !isDone && taskOverdue(t, today);
-      const isTodo = !isDone && !isOverdue && ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+      const bucket = taskBucket(t, today);
+      const isDone = bucket === 'done';
+      const isOverdue = bucket === 'overdue';
+      const isTodo = bucket === 'todo';
       const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone ? 'done' : isOverdue ? 'overdue' : isTodo ? 'todo' : 'doing';
 
       const q = computeTaskDeliverableQty(t);
@@ -1337,7 +1320,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       deliverableItems,
     };
   }, [
-    periodMeta.today,
+    statusAsOfDay,
     periodTasks,
     data.kpis.tasksCompletedPrev,
     staffMembers,

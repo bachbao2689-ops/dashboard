@@ -41,6 +41,14 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
   // Close drawer on overlay click or route change
   const closeDrawer = () => setIsDrawerOpen(false);
 
+  // Automatically dismiss mobile drawer and search when task detail panel opens
+  useEffect(() => {
+    if (taskDetailsOpen) {
+      setIsDrawerOpen(false);
+      setIsSearching(false);
+    }
+  }, [taskDetailsOpen]);
+
   // Close drawer on escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,7 +112,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
         inert={isHidden}
         aria-hidden={isHidden}
         className={cn(
-          "xl:hidden fixed left-3 right-3 z-[99] mobile-nav-container transition-all",
+          "xl:hidden fixed left-3 right-3 z-[99] mobile-nav-container mobile-liquid-glass transition-all",
           isHidden && "nav-hidden",
           taskDetailsOpen && "nav-detail-hidden"
         )}
