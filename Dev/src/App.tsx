@@ -53,6 +53,23 @@ function RootRedirect() {
   return <Navigate to="/my-tasks" replace />;
 }
 
+function MobileHomeRoute({ children }: { children: React.ReactNode }) {
+  const profile = useAuthStore(state => state.profile);
+  const loading = useAuthStore(state => state.loading);
+
+  if (loading) return null;
+
+  const isDesktopViewport = typeof window !== 'undefined' && window.innerWidth >= 1280;
+  if (isDesktopViewport) {
+    if (canViewTeamManagement(profile)) {
+      return <Navigate to="/ui-dashboard" replace />;
+    }
+    return <Navigate to="/my-tasks" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session = useAuthStore(state => state.session);
@@ -98,7 +115,7 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<RootRedirect />} />
-            <Route path="mobile-home" element={<MobileHomeHub />} />
+            <Route path="mobile-home" element={<MobileHomeRoute><MobileHomeHub /></MobileHomeRoute>} />
             <Route path="workflow" element={<WorkflowManagement />} />
             <Route path="workflow-management-2" element={<Navigate to="/workflow" replace />} />
             <Route path="overview" element={<AdminRoute><Overview /></AdminRoute>} />

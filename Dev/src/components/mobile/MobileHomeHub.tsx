@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -96,6 +96,22 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
   const [navDrawerOpen, setNavDrawerOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [notifsOpen, setNotifsOpen] = useState(false);
+
+  // Desktop guard: Immediately redirect to desktop destination if viewport >= 1280
+  useEffect(() => {
+    const checkViewport = () => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 1280) {
+        if (canViewTeamManagement(profile)) {
+          navigate('/ui-dashboard', { replace: true });
+        } else {
+          navigate('/my-tasks', { replace: true });
+        }
+      }
+    };
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
+  }, [profile, navigate]);
 
   // Dynamic Recent Items: 100% real data from storeRecents (Feedback #2)
   const displayRecents: MobileHomeHubItem[] = (recentItems && recentItems.length > 0)
@@ -196,7 +212,7 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
   ].filter(tab => !tab.hidden);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-[#071325] text-slate-800 dark:text-slate-100 pb-28">
+    <div className="xl:hidden min-h-screen bg-slate-50/50 dark:bg-[#071325] text-slate-800 dark:text-slate-100 pb-28">
       {/* 1. TOP HEADER */}
       <header className="sticky top-0 z-30 px-3.5 py-2.5 bg-white/90 dark:bg-[#0a192f]/95 backdrop-blur-xl border-b border-gray-200/70 dark:border-slate-800/80 shadow-2xs">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 max-w-lg mx-auto relative">
