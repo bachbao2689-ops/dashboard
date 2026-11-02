@@ -19,7 +19,7 @@ import { TaskDescriptionViewer } from './TaskDescriptionViewer';
 import { TaskDescriptionEditor } from './TaskDescriptionEditor';
 import { canCompleteTrackedTask, completeTrackedTask, updateTrackedTask } from '../../../services/workspaceTasks';
 import { EntityActionBadges } from '../projects/EntityActionBadges';
-import { saveTaskDeliverables, fetchTaskDeliverableMeta, setCachedDeliverable, type DeliverableChecklistItem } from '../../../lib/taskDeliverables';
+import { saveTaskDeliverables, computeDeliverableQuantity, fetchTaskDeliverableMeta, type DeliverableChecklistItem } from '../../../lib/taskDeliverables';
 import { priorityClass } from '../projects/projectPresentation';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
 
@@ -31,10 +31,17 @@ interface TaskDetailPanelProps {
   floating?: boolean;
   embedded?: boolean;
   commentsFocusToken?: number;
+  focusChecklistItemId?: string;
   assignablePeople?: { id: number; name: string; avatar_url?: string | null }[];
 }
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false, embedded = false, commentsFocusToken = 0, assignablePeople }) => {
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = (props) => {
+  const parent = (props.task as any)?.checklist_parent;
+  const resolved = parent ? {...parent, id: parent.raw_id || parent.id} : props.task;
+  return <TaskDetailPanelContent {...props} task={resolved} focusChecklistItemId={(props.task as any)?.checklist_item_id || props.focusChecklistItemId} />;
+};
+
+const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, onClose, onTaskUpdated, floating = false, embedded = false, commentsFocusToken = 0, assignablePeople, focusChecklistItemId }) => {
   const { t, lang } = useTranslation();
   useTaskDetailVisibility(isOpen);
   useReadEntityNotifications('task',task?.id,isOpen&&Boolean(task));
@@ -62,8 +69,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const [targetDepartmentId, setTargetDepartmentId] = useState<string | null>(null);
   const [targetDepartmentName, setTargetDepartmentName] = useState<string | null>(null);
   const [checklistItems, setChecklistItems] = useState<DeliverableChecklistItem[]>([]);
+  const focusChecklistReady = Boolean(focusChecklistItemId && checklistItems.some(item => item.id === focusChecklistItemId));
+  useEffect(() => {
+    if (!focusChecklistItemId || !focusChecklistReady) return;
+    const frame=requestAnimationFrame(() => document.getElementById(`checklist-item-${focusChecklistItemId}`)?.scrollIntoView({block:'center'}));
+    return () => cancelAnimationFrame(frame);
+  }, [focusChecklistItemId, focusChecklistReady]);
   const checklistQuantity = checklistItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
-  const totalChecklistQuantity = checklistQuantity > 0 ? checklistQuantity : (Number(taskQuantity) || 0);
+  const totalChecklistQuantity = checklistQuantity + (Number(taskQuantity) || 0);
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | null | undefined>(task?.updated_at);
 
   const [showAddItemForm, setShowAddItemForm] = useState(false);
@@ -87,23 +100,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const taskId = task?.id;
   const reload = React.useCallback(async () => {
     if (!taskId) return;
-    const meta = await fetchTaskDeliverableMeta('task', taskId);
-    const detailsResult = await supabase.from('activity_log').select('metadata').eq('entity_type', 'task').eq('entity_id', String(taskId)).eq('action', 'details_updated').order('created_at', { ascending: false }).limit(1);
-    const details = detailsResult.data?.[0]?.metadata || {};
-    const loadedChecklist = Array.isArray(details.checklist_items) ? details.checklist_items : (meta?.checklist_items || []);
-    const chkQty = loadedChecklist.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-
-    let rawBase: string = '';
-    if ((task as any)?.quantity != null && (task as any)?.quantity !== '') {
-      rawBase = String((task as any).quantity);
-    } else if (meta?.base_quantity != null) {
-      rawBase = String(meta.base_quantity);
-    } else if (details.base_quantity != null) {
-      rawBase = String(details.base_quantity);
-    } else if (chkQty === 0) {
-      if (meta?.quantity != null) rawBase = String(meta.quantity);
-      else if (details.quantity != null) rawBase = String(details.quantity);
-    }
+    const meta = await fetchTaskDeliverableMeta('task', taskId, true);
+    const details = meta || {};
+    const loadedChecklist = meta?.checklist_items || [];
+    const baseQuantity = computeDeliverableQuantity(meta || {quantity: (task as any)?.quantity}).baseQuantity;
+    const rawBase = baseQuantity > 0 ? String(baseQuantity) : '';
     setTaskQuantity(rawBase);
     setEditTaskQuantity(rawBase);
     setTargetDepartmentId(meta?.target_department_id || details.target_department_id || (task as any)?.target_department_id || null);
@@ -115,7 +116,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     if (!taskId) return;
     const channel = supabase.channel(`realtime-activity_log-task-${taskId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log', filter: `entity_id=eq.${taskId}` }, () => {
-        void reload();
+        void reload().catch(() => toast.error('Không thể đồng bộ thông tin công việc.'));
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
@@ -139,7 +140,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     setEditItemDueDate('');
     setNewItemQuantity('');
     setCurrentUpdatedAt(task?.updated_at);
-    void reload();
+    void reload().catch(() => toast.error('Không thể đồng bộ thông tin công việc.'));
   }, [task?.id, task?.title, task?.assignee_id, task?.priority, task?.start_date, task?.due_date, task?.description, isOpen, profileId, reload]);
 
   useEffect(() => {
@@ -271,6 +272,23 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         });
       }
 
+
+
+      const nextItems = [...checklistItems, newItem];
+      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const baseQuantityValue = Number(taskQuantity) || null;
+      const effectiveQuantity = nextChecklistQuantity + (baseQuantityValue || 0);
+
+      await saveTaskDeliverables('task', task.id, {
+          description: task.description || description,
+          checklist_items: nextItems,
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
+          is_internal_detail_sync: true,
+        }, profileId, task.workspace_id, checklistItems);
+
       void logTaskActivity({
         workspaceId: task.workspace_id,
         userId: profileId,
@@ -285,37 +303,6 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           due_date: itemDue || null,
           actor_name: profile?.name,
         },
-      });
-
-      const nextItems = [...checklistItems, newItem];
-      const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
-      const baseQuantityValue = Number(taskQuantity) || null;
-      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
-
-      await supabase.from('activity_log').insert({
-        workspace_id: task.workspace_id,
-        user_id: profileId,
-        action: 'details_updated',
-        entity_type: 'task',
-        entity_id: String(task.id),
-        metadata: {
-          description: task.description || description,
-          checklist_items: nextItems,
-          quantity: effectiveQuantity,
-          base_quantity: baseQuantityValue,
-          target_department_id: targetDepartmentId,
-          target_department_name: targetDepartmentName,
-          is_internal_detail_sync: true,
-        },
-      });
-
-      setCachedDeliverable(`task:${task.id}`, {
-        description: task.description || description,
-        checklist_items: nextItems,
-        quantity: effectiveQuantity,
-        base_quantity: baseQuantityValue,
-        target_department_id: targetDepartmentId,
-        target_department_name: targetDepartmentName,
       });
 
       setChecklistItems(nextItems);
@@ -341,20 +328,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const targetItem = checklistItems.find(i => i.id === itemId);
     if (!targetItem) return;
     const nextCompleted = !targetItem.completed;
-    const nextItems = checklistItems.map(i => i.id === itemId ? { ...i, completed: nextCompleted } : i);
+    const nextItems = checklistItems.map(i => i.id === itemId ? { ...i, completed: nextCompleted, completed_at: nextCompleted ? new Date().toISOString() : null } : i);
     const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
     const baseQuantityValue = Number(taskQuantity) || null;
-    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+    const effectiveQuantity = nextChecklistQuantity + (baseQuantityValue || 0);
 
     setChecklistItems(nextItems);
     try {
-      await supabase.from('activity_log').insert({
-        workspace_id: task.workspace_id,
-        user_id: profileId,
-        action: 'details_updated',
-        entity_type: 'task',
-        entity_id: String(task.id),
-        metadata: {
+      await saveTaskDeliverables('task', task.id, {
           description: task.description || description,
           checklist_items: nextItems,
           quantity: effectiveQuantity,
@@ -362,16 +343,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           target_department_id: targetDepartmentId,
           target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
-        },
-      });
-      setCachedDeliverable(`task:${task.id}`, {
-        description: task.description || description,
-        checklist_items: nextItems,
-        quantity: effectiveQuantity,
-        base_quantity: baseQuantityValue,
-        target_department_id: targetDepartmentId,
-        target_department_name: targetDepartmentName,
-      });
+        }, profileId, task.workspace_id, checklistItems);
 
       void logTaskActivity({
         workspaceId: task.workspace_id,
@@ -388,7 +360,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       });
       onTaskUpdated?.();
     } catch (err) {
-      console.warn('Failed to update checklist item state', err);
+      setChecklistItems(checklistItems);
+      toast.error((err as any)?.message || 'Không thể lưu đầu việc');
+      void reload().catch(() => {});
     }
   };
 
@@ -399,17 +373,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const nextItems = checklistItems.filter(i => i.id !== itemId);
     const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
     const baseQuantityValue = Number(taskQuantity) || null;
-    const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+    const effectiveQuantity = nextChecklistQuantity + (baseQuantityValue || 0);
 
     setChecklistItems(nextItems);
     try {
-      await supabase.from('activity_log').insert({
-        workspace_id: task.workspace_id,
-        user_id: profileId,
-        action: 'details_updated',
-        entity_type: 'task',
-        entity_id: String(task.id),
-        metadata: {
+      await saveTaskDeliverables('task', task.id, {
           description: task.description || description,
           checklist_items: nextItems,
           quantity: effectiveQuantity,
@@ -417,16 +385,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           target_department_id: targetDepartmentId,
           target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
-        },
-      });
-      setCachedDeliverable(`task:${task.id}`, {
-        description: task.description || description,
-        checklist_items: nextItems,
-        quantity: effectiveQuantity,
-        base_quantity: baseQuantityValue,
-        target_department_id: targetDepartmentId,
-        target_department_name: targetDepartmentName,
-      });
+        }, profileId, task.workspace_id, checklistItems);
 
       void logTaskActivity({
         workspaceId: task.workspace_id,
@@ -442,7 +401,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       });
       onTaskUpdated?.();
     } catch (err) {
-      console.warn('Failed to delete checklist item', err);
+      setChecklistItems(checklistItems);
+      toast.error((err as any)?.message || 'Không thể lưu đầu việc');
+      void reload().catch(() => {});
     }
   };
 
@@ -521,15 +482,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       } : i);
       const nextChecklistQuantity = nextItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
       const baseQuantityValue = Number(taskQuantity) || null;
-      const effectiveQuantity = nextChecklistQuantity > 0 ? nextChecklistQuantity : baseQuantityValue;
+      const effectiveQuantity = nextChecklistQuantity + (baseQuantityValue || 0);
 
-      await supabase.from('activity_log').insert({
-        workspace_id: task.workspace_id,
-        user_id: profileId,
-        action: 'details_updated',
-        entity_type: 'task',
-        entity_id: String(task.id),
-        metadata: {
+      await saveTaskDeliverables('task', task.id, {
           description: task.description || description,
           checklist_items: nextItems,
           quantity: effectiveQuantity,
@@ -537,16 +492,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
           target_department_id: targetDepartmentId,
           target_department_name: targetDepartmentName,
           is_internal_detail_sync: true,
-        },
-      });
-      setCachedDeliverable(`task:${task.id}`, {
-        description: task.description || description,
-        checklist_items: nextItems,
-        quantity: effectiveQuantity,
-        base_quantity: baseQuantityValue,
-        target_department_id: targetDepartmentId,
-        target_department_name: targetDepartmentName,
-      });
+        }, profileId, task.workspace_id, checklistItems);
 
       void logTaskActivity({
         workspaceId: task.workspace_id,
@@ -698,24 +644,26 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
 
     const numQ = Number(editTaskQuantity);
     const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
-    const effectiveQuantity = checklistQuantity > 0
-      ? checklistQuantity
-      : baseQuantityValue;
+    const effectiveQuantity = (baseQuantityValue || 0) + checklistQuantity;
 
-    await saveTaskDeliverables(
-      'task',
-      task.id,
-      {
-        quantity: effectiveQuantity,
-        base_quantity: baseQuantityValue,
-        checklist_items: checklistItems,
-        description: task.description || description,
-        target_department_id: targetDepartmentId,
-        target_department_name: targetDepartmentName,
-      },
-      profileId,
-      task.workspace_id,
-    );
+    try {
+      await saveTaskDeliverables(
+        'task',
+        task.id,
+        {
+          quantity: effectiveQuantity,
+          base_quantity: baseQuantityValue,
+          description: task.description || description,
+          target_department_id: targetDepartmentId,
+          target_department_name: targetDepartmentName,
+        },
+        profileId,
+        task.workspace_id,
+      );
+    } catch (failure: any) {
+      onTaskUpdated?.(values);
+      return toast.error(failure?.message || 'Đã lưu thông tin task nhưng chưa lưu được số lượng. Vui lòng thử lại.');
+    }
     setTaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
     setEditTaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
 
@@ -981,6 +929,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 {checklistItems.map(item => (
                   <div
                     key={item.id}
+                    id={`checklist-item-${item.id}`}
                     className="p-3 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70 transition-all group relative space-y-2 text-sm min-w-0 overflow-hidden"
                   >
                     {/* Hover action buttons in top-right */}

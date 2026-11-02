@@ -2,6 +2,9 @@ import {mapWorkspaceTasks} from '../lib/workspaceTaskMapping';
 import {supabase} from './supabase';
 import type {Task} from '../hooks/useTasks';
 import {taskActive,taskKey,taskTarget} from '../lib/taskTracking';
+import {deliverableHistory, patchChecklistItem} from '../lib/taskChecklist';
+import {fetchTaskDeliverableMeta, saveTaskDeliverables} from '../lib/taskDeliverables';
+import {useAuthStore} from '../store/authStore';
 export async function readAll(query:any):Promise<any[]> {
   const rows:any[]=[];
   for(let offset=0;;offset+=500){const {data,error}=await query.range(offset,offset+499);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<500)return rows;}
@@ -13,6 +16,8 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     readAll(supabase.from('campaign_subtasks').select('*,campaigns:campaign_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id'))
   ]);
   const details = new Map<string, any>();
+  const history = new Map<string, any[]>();
+  const addDetail = (key: string, row: any) => { const rows = history.get(key) || []; rows.push(row); history.set(key, rows); };
   const subtaskIds = [...new Set([...projects, ...campaigns].map((row) => row.id))];
   const realIds = [...new Set(real.map((row) => row.id))];
 
@@ -29,7 +34,7 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     );
     rows.forEach((row) => {
       const key = taskKey(row.entity_type, row.entity_id);
-      details.set(key, {...(row.metadata || {}), ...(details.get(key) || {})});
+      addDetail(key, row);
     });
   }
 
@@ -46,16 +51,28 @@ export async function readWorkspaceTasks():Promise<Task[]> {
     );
     rows.forEach((row) => {
       const key = String(row.entity_id);
-      details.set(key, {...(row.metadata || {}), ...(details.get(key) || {})});
+      addDetail(key, row);
     });
   }
 
+  history.forEach((rows, key) => details.set(key, deliverableHistory(rows)));
   // Archived/deleted parents disappear consistently across the lists and analytics.
   // Cancelled work stays in lists/history; metrics exclude it with taskActive().
   return mapWorkspaceTasks(real, projects, campaigns, details);
 }
 export async function updateTrackedTask(key:string,values:Record<string,unknown>, expectedUpdatedAt?: string | null) {
   const target=taskTarget(key);
+  if (target.checklistItemId) {
+    const access = target.kind === 'task'
+      ? await supabase.rpc('workflow_task_access', {tid: target.id, editing: true})
+      : await supabase.rpc('workflow_old_task_access', {k: target.kind === 'project_subtask' ? 'project' : 'campaign', tid: target.id, editing: true});
+    if (access.error) throw access.error;
+    if (access.data !== true && !(await canCompleteTrackedTask(key))) throw new Error('Không có quyền cập nhật đầu việc này.');
+    const meta = await fetchTaskDeliverableMeta(target.kind, target.id, true);
+    const items = patchChecklistItem(meta?.checklist_items || [], target.checklistItemId, values);
+    await saveTaskDeliverables(target.kind, target.id, {checklist_items: items}, useAuthStore.getState().profile?.id, undefined, meta?.checklist_items || []);
+    return;
+  }
   let query = supabase.from(target.table).update(values).eq('id',target.id);
   if (expectedUpdatedAt) {
     query = query.eq('updated_at', expectedUpdatedAt);
@@ -78,6 +95,10 @@ export async function canCompleteTrackedTask(key:string) {
 }
 export async function completeTrackedTask(key:string) {
  const target=taskTarget(key);
+ if(target.checklistItemId){
+  if(!(await canCompleteTrackedTask(key)))throw new Error('Bạn không có quyền hoàn thành đầu việc này.');
+  return updateTrackedTask(key,{status:'done',workflow_status:'completed'});
+ }
  const {data,error}=await supabase.rpc('complete_tracked_task',{p_kind:target.kind,p_id:target.id});
  if(error)throw error;
  if(data!==true)throw new Error('Bạn không có quyền hoàn thành công việc này.');
@@ -86,6 +107,10 @@ export async function completeTrackedTask(key:string) {
 export const activeWorkspaceTasks=(tasks:Task[])=>tasks.filter(taskActive);
 
 export async function completeTrackedTasks(keys:string[]){
- const unique=[...new Set(keys)];const {data,error}=await supabase.rpc('complete_tracked_tasks',{p_items:unique.map(key=>{const {kind,id}=taskTarget(key);return {kind,id};})});
- if(error)throw error;if(data!==unique.length)throw new Error('Chưa lưu đầy đủ trạng thái.');window.dispatchEvent(new Event('tasks:changed'));
+ const unique=[...new Set(keys)],regular=unique.filter(key=>!taskTarget(key).checklistItemId);
+ if(regular.length){const {data,error}=await supabase.rpc('complete_tracked_tasks',{p_items:regular.map(key=>{const {kind,id}=taskTarget(key);return {kind,id};})});
+ if(error)throw error;if(data!==regular.length)throw new Error('Chưa lưu đầy đủ trạng thái.');}
+ // Sequential per item prevents sibling snapshots overwriting one another.
+ for(const key of unique.filter(key=>taskTarget(key).checklistItemId))await completeTrackedTask(key);
+ window.dispatchEvent(new Event('tasks:changed'));
 }

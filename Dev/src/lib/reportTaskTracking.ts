@@ -1,5 +1,6 @@
 import {taskActive, taskDay, taskDone, type TrackedTask} from './taskTracking.ts';
 import {computeDeliverableQuantity} from './taskDeliverables.ts';
+import {taskCompletedInPeriod} from './taskPeriod.ts';
 
 /** Overdue status is evaluated at now for the current/future period, and at period end for a past period. */
 export function reportAsOfDay(periodEnd: string, currentDay: string): string {
@@ -8,17 +9,20 @@ export function reportAsOfDay(periodEnd: string, currentDay: string): string {
 
 export type ReportQuantityTask = TrackedTask & {
   quantity?: number | null;
+  base_quantity?: number | null;
+  tracking_quantity?: number;
   deliverable_quantity?: number | null;
   checklist_items?: Array<{quantity?: number | null; completed?: boolean}>;
 };
 
 /** The mapped total already includes checklist quantities; never add it twice. */
 export function reportDeliverableQuantity(task: ReportQuantityTask): number {
+  if (task.tracking_quantity != null) return Number.isFinite(task.tracking_quantity) ? Math.max(0, task.tracking_quantity) : 0;
   if ('quantity' in task || Array.isArray(task.checklist_items)) {
     return computeDeliverableQuantity(task).totalQuantity;
   }
   const quantity = Number(task.deliverable_quantity);
-  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
 }
 
 /** Every card, drilldown, staff row and export receives the same period rows. */
@@ -26,13 +30,9 @@ export function reportPeriodTasks<T extends TrackedTask>(tasks: readonly T[], st
   return tasks.filter(task => {
     if (!taskActive(task)) return false;
     if (all) return true;
+    if (taskDone(task)) return taskCompletedInPeriod(task,start,end);
     const created = taskDay(task.created_at) || taskDay(task.start_date);
     if (created && created > end) return false;
-    if (taskDone(task)) {
-      // A deadline/edit is not evidence of when the task was completed.
-      const completed = taskDay(task.completed_at);
-      return Boolean(completed && completed >= start && completed <= end);
-    }
     const due = taskDay(task.due_date);
     return !due || due <= end || Boolean(created && created >= start);
   });
