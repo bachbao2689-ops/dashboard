@@ -22,7 +22,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import type { AlertLevel, BurndownItem, HeatmapRow } from '../types/department';
 
-export type TimeRange = 'today' | 'three' | 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
+export type TimeRange = 'today' | 'three' | 'last_week' | 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
 
 export interface ProfileBacklogItem {
   id: string;
@@ -206,13 +206,17 @@ function getPeriodBounds(
     return { start, today, periodDays, labelVi };
   }
 
-  if (range === 'three') {
-    const start = rawToday;
-    const endDate = new Date(`${rawToday}T12:00:00Z`);
-    endDate.setUTCDate(endDate.getUTCDate() + 2);
-    const today = taskDay(endDate.toISOString());
-    const periodDays = 3;
-    const labelVi = lang === 'en' ? '3 Days' : '3 ngày';
+  if (range === 'last_week' || range === 'three') {
+    const cur = new Date(`${rawToday}T12:00:00Z`);
+    const dayIndex = (cur.getUTCDay() + 6) % 7;
+    const monday = new Date(cur);
+    monday.setUTCDate(cur.getUTCDate() - dayIndex - 7);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    const start = taskDay(monday.toISOString());
+    const today = taskDay(sunday.toISOString());
+    const periodDays = 7;
+    const labelVi = lang === 'en' ? 'Last Week' : 'Tuần trước';
     return { start, today, periodDays, labelVi };
   }
 
@@ -297,7 +301,7 @@ function computePeriodBurndown(
 
   let pointsMeta: Array<{ label: string; cutoffDate: string }> = [];
 
-  if (range === "week") {
+  if (range === "week" || range === "last_week") {
     const weekdayLabels =
       lang === "en"
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -422,7 +426,7 @@ function computePeriodHeatmap(
 
   let checkpoints: Array<{ label: string; pointEnd: string }> = [];
 
-  if (range === "week") {
+  if (range === "week" || range === "last_week") {
     const weekdayLabels =
       lang === "en"
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -570,7 +574,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
   const urlFrom = searchParams.get('from');
   const urlTo = searchParams.get('to');
 
-  const validPeriods: TimeRange[] = ['today', 'three', 'week', 'month', 'quarter', 'year', 'custom', 'all'];
+  const validPeriods: TimeRange[] = ['today', 'three', 'last_week', 'week', 'month', 'quarter', 'year', 'custom', 'all'];
   const normalizedRemembered: TimeRange = validPeriods.includes(rememberedRange) ? rememberedRange : 'month';
   const timeRange: TimeRange = urlPeriod && validPeriods.includes(urlPeriod) ? urlPeriod : normalizedRemembered;
   const customStart = urlFrom || rememberedCustomStart || defaultMonthStart;
@@ -628,7 +632,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       } else if (timeRange === 'three') {
         cur.setUTCDate(cur.getUTCDate() + direction * 3);
         setCursorDate(taskDay(cur.toISOString()));
-      } else if (timeRange === 'week') {
+      } else if (timeRange === 'last_week' || timeRange === 'week') {
         cur.setUTCDate(cur.getUTCDate() + direction * 7);
         setCursorDate(taskDay(cur.toISOString()));
       } else if (timeRange === 'month') {
@@ -804,7 +808,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
   }, [scopedTasks, periodMeta, timeRange]);
 
   const analyticRange =
-    timeRange === 'today' || timeRange === 'three'
+    timeRange === 'today' || timeRange === 'three' || timeRange === 'last_week'
       ? 'week'
       : timeRange === 'custom'
       ? 'month'
