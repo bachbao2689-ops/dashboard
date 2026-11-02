@@ -1,5 +1,6 @@
 import {taskActive, taskDay, taskDone, type TrackedTask} from './taskTracking.ts';
 import {computeDeliverableQuantity} from './taskDeliverables.ts';
+import {taskCompletedInPeriod} from './taskPeriod.ts';
 
 /** Overdue status is evaluated at now for the current/future period, and at period end for a past period. */
 export function reportAsOfDay(periodEnd: string, currentDay: string): string {
@@ -29,13 +30,9 @@ export function reportPeriodTasks<T extends TrackedTask>(tasks: readonly T[], st
   return tasks.filter(task => {
     if (!taskActive(task)) return false;
     if (all) return true;
+    if (taskDone(task)) return taskCompletedInPeriod(task,start,end);
     const created = taskDay(task.created_at) || taskDay(task.start_date);
     if (created && created > end) return false;
-    if (taskDone(task)) {
-      // A deadline/edit is not evidence of when the task was completed.
-      const completed = taskDay(task.completed_at);
-      return Boolean(completed && completed >= start && completed <= end);
-    }
     const due = taskDay(task.due_date);
     return !due || due <= end || Boolean(created && created >= start);
   });

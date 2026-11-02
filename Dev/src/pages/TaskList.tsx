@@ -1,6 +1,7 @@
 import { useRecentItemsStore } from '../store/recentItemsStore';
 import {useWorkspaceData} from '../hooks/useWorkspaceData';
 import {taskOverdue,taskDueWithin,taskDone,taskOpen} from '../lib/taskTracking';
+import {completedTaskDateMatch,visibleTaskSelection} from '../lib/taskListFilters';
 import {calendarDay} from '../lib/profileCalendar';
 import {useTrackingAvailability} from '../hooks/useTrackingAvailability';
 import {useTaskListActions} from '../hooks/useTaskListActions';
@@ -132,7 +133,7 @@ export const TaskList: React.FC = () => {
   const canBulkComplete=useTrackingAvailability();
   const actions=useTaskListActions(tasks,profileId,refetch);
   const {deletingIds}=actions;
-  const handleBulkComplete=async()=>{if(await actions.complete(selectedTasks))setSelectedTasks([]);};
+  const handleBulkComplete=async()=>{if(await actions.complete(visibleSelectedTasks))setSelectedTasks([]);};
   useEffect(()=>{setSelectedTask((current:any)=>current?tasks.find(t=>t.id===current.id)||null:null);},[tasks]);
   const toggleSelectTask = (id: string) => {
     if (selectedTasks.includes(id)) {
@@ -176,7 +177,7 @@ export const TaskList: React.FC = () => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
 
-  const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);const removed=await actions.remove(selectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
+  const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);const removed=await actions.remove(visibleSelectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
   const handleSingleDelete=async()=>{if(!taskToDelete)return;const key=taskToDelete.id;setTaskToDelete(null);await actions.remove([key]);};
 
   const filteredTasks = tasks.filter(t => {
@@ -224,7 +225,13 @@ export const TaskList: React.FC = () => {
 
     // 5. Calendar Filter (Custom inline calendar & presets)
     const isDone = taskDone(t);
-    if (calendarFilter !== 'all') {
+    const completedDateMatch = completedTaskDateMatch(t, {
+      calendar: calendarFilter, customStart: customStartDate, customEnd: customEndDate,
+      queryStart: startParam, queryEnd: endParam,
+    });
+    if (completedDateMatch !== null) {
+      if (!completedDateMatch) return false;
+    } else if (calendarFilter !== 'all') {
       if (!checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, isDone)) {
         return false;
       }
@@ -262,6 +269,11 @@ export const TaskList: React.FC = () => {
 
     return true;
   });
+
+  const visibleSelectedTasks = visibleTaskSelection(selectedTasks,filteredTasks);
+  useEffect(() => {
+    setSelectedTasks(current => visibleTaskSelection(current,filteredTasks));
+  }, [filteredTasks]);
 
   const groupedTasks = useMemo(() => {
     if (groupBy === 'none') return { 'All Tasks': filteredTasks };
@@ -347,7 +359,7 @@ export const TaskList: React.FC = () => {
           groupBy={groupBy}
           collapsedGroups={collapsedGroups}
           toggleGroup={toggleGroup}
-          selectedTasks={selectedTasks}
+          selectedTasks={visibleSelectedTasks}
           setSelectedTasks={setSelectedTasks}
           toggleSelectTask={toggleSelectTask}
           onOpenTask={task => {
@@ -364,7 +376,7 @@ export const TaskList: React.FC = () => {
         />
 
         <TaskListBulkActions
-          selectedTasks={selectedTasks}
+          selectedTasks={visibleSelectedTasks}
           onComplete={handleBulkComplete}
           busy={actions.busy}
           canComplete={canBulkComplete}
