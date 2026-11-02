@@ -12,7 +12,6 @@ import { DashboardLayout } from './components/layouts/DashboardLayout';
 const Overview=lazy(()=>import('./pages/Overview').then(module=>({default:module.Overview})));
 const WorkflowManagement=lazy(()=>import('./pages/WorkflowManagement').then(module=>({default:module.WorkflowManagement})));
 const Dashboard=lazy(()=>import('./pages/Dashboard').then(module=>({default:module.Dashboard})));
-const Departments2=lazy(()=>import('./pages/Departments2').then(module=>({default:module.Departments2})));
 const TaskList=lazy(()=>import('./pages/TaskList').then(module=>({default:module.TaskList})));
 const AssetInventory=lazy(()=>import('./pages/AssetInventory').then(module=>({default:module.AssetInventory})));
 const BorrowRequests=lazy(()=>import('./pages/BorrowRequests').then(module=>({default:module.BorrowRequests})));
@@ -21,7 +20,6 @@ const TeamWorkload=lazy(()=>import('./pages/TeamWorkload').then(module=>({defaul
 const Reports=lazy(()=>import('./pages/Reports').then(module=>({default:module.Reports})));
 const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>({default:module.MemberManagement})));
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
-const Agents=lazy(()=>import('./pages/Agents').then(module=>({default:module.Agents})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
 const MobileHomeHub=lazy(()=>import('./components/mobile/MobileHomeHub'));
 import { useLocation } from 'react-router-dom';
@@ -122,10 +120,10 @@ function App() {
             <Route path="ui-dashboard" element={<TeamManagementRoute><Dashboard /></TeamManagementRoute>} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="projects" element={<Projects />} />
-            <Route path="agents" element={<AdminRoute><Agents /></AdminRoute>} />
+            <Route path="agents" element={<Navigate to="/tasks" replace />} />
             <Route path="main-view" element={<MainReadOnly />} />
             <Route path="my-tasks" element={<MyTasks />} />
-            <Route path="departments-2" element={<Departments2 />} />
+            <Route path="departments-2" element={<Navigate to="/tasks" replace />} />
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />
