@@ -6,7 +6,7 @@ self.addEventListener('push',event=>{
  const raw=typeof payload.url==='string'?payload.url:'/my-tasks';
  const target=new URL(raw,self.location.origin);
  const url=target.origin===self.location.origin?target.href:self.location.origin+'/my-tasks';
- event.waitUntil(self.registration.showNotification(payload.title||'K COFFEE',{
+ event.waitUntil(self.registration.showNotification(payload.title||'Phuc Sinh Consumers',{
   body:payload.body||'Bạn có thông báo mới.',icon:'/pwa-192.png',badge:'/pwa-192.png',
   tag:payload.tag||'dashboard-notification',data:{url,notificationId:payload.notificationId},
  }));

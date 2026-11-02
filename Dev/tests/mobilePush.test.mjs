@@ -12,7 +12,7 @@ function worker(){
 test('push shows a system notification with same-origin task target and stable dedup tag',async()=>{
  const w=worker();let done;
  w.events.push({data:{json:()=>({body:'Task mới',url:'/tasks?task=ps-123',tag:'notification-abc'})},waitUntil:p=>done=p});await done;
- assert.equal(w.shown[0][0],'K COFFEE');assert.equal(w.shown[0][1].data.url,'https://dashboard.example/tasks?task=ps-123');assert.equal(w.shown[0][1].tag,'notification-abc');
+ assert.equal(w.shown[0][0],'Phuc Sinh Consumers');assert.equal(w.shown[0][1].data.url,'https://dashboard.example/tasks?task=ps-123');assert.equal(w.shown[0][1].tag,'notification-abc');
 });
 test('notification payload cannot redirect a device to another origin',async()=>{
  const w=worker();let done;

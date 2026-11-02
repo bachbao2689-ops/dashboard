@@ -1,7 +1,7 @@
 {
-  "name": "K COFFEE Dashboard",
-  "short_name": "K COFFEE",
-  "description": "K COFFEE Operations & Workflow Management Dashboard",
+  "name": "Phuc Sinh Consumers",
+  "short_name": "Phuc Sinh Consumers",
+  "description": "Phuc Sinh Consumers Operations & Workflow Management Dashboard",
   "id": "/",
   "scope": "/",
   "start_url": "/my-tasks",
@@ -11,25 +11,25 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/pwa-192.png?v=ps-consumers-1",
+      "src": "/pwa-192.png?v=psc-20261102",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512.png?v=ps-consumers-1",
+      "src": "/pwa-512.png?v=psc-20261102",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/app-icon-1024.png?v=ps-consumers-1",
+      "src": "/app-icon-1024.png?v=psc-20261102",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512.png?v=ps-consumers-1",
+      "src": "/pwa-512.png?v=psc-20261102",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

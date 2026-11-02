@@ -868,6 +868,25 @@ export const Sidebar: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
   const [showCollapsedSearch, setShowCollapsedSearch] = useState(false);
+  const [floatingTooltip, setFloatingTooltip] = useState<{ text: string; top: number; left: number } | null>(null);
+
+  const showTooltip = (text: string, e: React.MouseEvent<HTMLElement>) => {
+    if (!isSidebarCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFloatingTooltip({
+      text,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 10,
+    });
+  };
+
+  const hideTooltip = () => {
+    setFloatingTooltip(null);
+  };
+
+  useEffect(() => {
+    setFloatingTooltip(null);
+  }, [isSidebarCollapsed]);
   const collapsedSearchBtnRef = useRef<HTMLButtonElement>(null);
   const collapsedSearchPanelRef = useRef<HTMLDivElement>(null);
   const [collapsedSearchQuery, setCollapsedSearchQuery] = useState('');
@@ -1396,54 +1415,49 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* ==========================================
-            ROW 1 (TOP): LOGO + PHUC SINH CONSUMERS + QUICK CROP TOGGLE
+            ROW 1 (TOP): LOGO + PHUC SINH CONSUMERS (Centered & scaled +20%)
            ========================================== */}
         {isSidebarCollapsed ? (
           <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
             <NavLink
               to="/"
+              onMouseEnter={(e) => showTooltip("Phuc Sinh Consumers", e)}
+              onMouseLeave={hideTooltip}
               className="w-9 h-9 flex items-center justify-center shrink-0 group relative"
-              title="Phúc Sinh Dashboard"
+              title="Phuc Sinh Consumers"
             >
               <img src="/logo-ps-square.svg" alt="PS" className="h-6 w-6 object-contain" />
             </NavLink>
             <button
               type="button"
               onClick={() => toggleSidebarCollapsed()}
-              title={lang === 'en' ? 'Expand sidebar' : 'Mở rộng thanh bên'}
-              aria-label={lang === 'en' ? 'Expand sidebar' : 'Mở rộng thanh bên'}
+              onMouseEnter={(e) => showTooltip(lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên", e)}
+              onMouseLeave={hideTooltip}
+              title={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
+              aria-label={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
               className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors cursor-pointer shrink-0"
             >
               <PanelLeft size={18} />
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-3 pt-1 pb-2.5 border-b border-gray-100 dark:border-slate-800/80 mb-2.5">
+          <div className="flex items-center justify-center w-full px-3 pt-1 pb-2.5 border-b border-gray-100 dark:border-slate-800/80 mb-2.5">
             <NavLink
               to="/"
-              className="flex items-center min-w-0 group pl-0.5"
-              title="Phúc Sinh Dashboard"
+              className="flex items-center justify-center min-w-0 group"
+              title="Phuc Sinh Consumers"
             >
               <img
                 src="/logo-phuc-sinh-consumer-text.svg"
                 alt="Phuc Sinh Consumers"
-                className="h-8 w-auto max-w-[190px] object-contain block dark:brightness-125"
+                className="h-[38px] w-auto max-w-[228px] object-contain block dark:brightness-125 transition-transform"
               />
             </NavLink>
-            <button
-              type="button"
-              onClick={() => toggleSidebarCollapsed()}
-              title={lang === 'en' ? 'Collapse sidebar' : 'Thu gọn thanh bên'}
-              aria-label={lang === 'en' ? 'Collapse sidebar' : 'Thu gọn thanh bên'}
-              className="w-8 h-8 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#0a192f] transition-colors cursor-pointer shrink-0 border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
-            >
-              <PanelLeftClose size={17} />
-            </button>
           </div>
         )}
 
         {/* ==========================================
-            ROW 2: SEARCH INPUT + NOTIFICATION BELL
+            ROW 2: SEARCH INPUT + COLLAPSE + NOTIFICATION BELL
            ========================================== */}
         {isSidebarCollapsed ? (
           <div className="w-full flex flex-col items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-800/80 mb-1.5 shrink-0">
@@ -1456,21 +1470,20 @@ export const Sidebar: React.FC = () => {
                   setShowSettings(false);
                   setShowCollapsedSearch(!showCollapsedSearch);
                 }}
-                title={lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
-                aria-label={lang === 'en' ? 'Search' : 'Tìm kiếm'}
+                onMouseEnter={(e) => showTooltip(lang === "en" ? "Search (⌘K)" : "Tìm kiếm (⌘K)", e)}
+                onMouseLeave={hideTooltip}
+                title={lang === "en" ? "Search (⌘K)" : "Tìm kiếm (⌘K)"}
+                aria-label={lang === "en" ? "Search" : "Tìm kiếm"}
                 aria-expanded={showCollapsedSearch}
                 className={cn(
-                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0',
+                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shrink-0",
                   showCollapsedSearch
-                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
                 )}
               >
                 <Search size={16} />
               </button>
-              <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
-                {lang === 'en' ? 'Search (⌘K)' : 'Tìm kiếm (⌘K)'}
-              </div>
             </div>
             <div className="relative shrink-0 flex items-center justify-center group/nav" ref={notifRef}>
               <button
@@ -1480,39 +1493,38 @@ export const Sidebar: React.FC = () => {
                   setShowSettings(false);
                   setShowNotifs(!showNotifs);
                 }}
-                title={lang === 'en' ? 'Notifications' : 'Thông báo'}
-                aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                onMouseEnter={(e) => showTooltip(lang === "en" ? "Notifications" : "Thông báo", e)}
+                onMouseLeave={hideTooltip}
+                title={lang === "en" ? "Notifications" : "Thông báo"}
+                aria-label={lang === "en" ? "Notifications" : "Thông báo"}
                 aria-expanded={showNotifs}
                 className={cn(
-                  'w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors relative cursor-pointer border shrink-0',
+                  "w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors relative cursor-pointer border shrink-0",
                   showNotifs
-                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
                 )}
               >
-                <span className={unread > 0 ? 'notif-bell' : undefined}><Bell size={16} /></span>
+                <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
                 {unread > 0 && (
                   <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
               </button>
-              <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/nav:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
-                {lang === 'en' ? 'Notifications' : 'Thông báo'}
-              </div>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 px-3 mb-2.5">
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-1.5 px-3 mb-2.5">
             <div className="relative min-w-0">
               <input
                 type="text"
                 value={sidebarSearchQuery}
                 onChange={e => setSidebarSearchQuery(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && sidebarSearchQuery.trim()) {
+                  if (e.key === "Enter" && sidebarSearchQuery.trim()) {
                     navigate(`/tasks?search=${encodeURIComponent(sidebarSearchQuery.trim())}`);
                   }
                 }}
-                placeholder={lang === 'en' ? 'Search... (⌘K)' : 'Tìm kiếm... (⌘K)'}
+                placeholder={lang === "en" ? "Search... (⌘K)" : "Tìm kiếm... (⌘K)"}
                 className="w-full h-8 pl-8 pr-8 text-xs rounded-[8px] bg-slate-50 dark:bg-[#0a192f] text-gray-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 focus:outline-none focus:border-[#002e6d]/40 dark:focus:border-blue-400/50 transition-colors"
               />
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -1520,21 +1532,32 @@ export const Sidebar: React.FC = () => {
                 ⌘K
               </span>
             </div>
+            {/* Collapse sidebar button (to the left of notification button) */}
+            <button
+              type="button"
+              onClick={() => toggleSidebarCollapsed()}
+              title={lang === "en" ? "Collapse sidebar" : "Thu gọn thanh bên"}
+              aria-label={lang === "en" ? "Collapse sidebar" : "Thu gọn thanh bên"}
+              className="w-8 h-8 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#0a192f] transition-colors cursor-pointer shrink-0 border border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-[#0a192f]"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+            {/* Notification button */}
             <div className="relative shrink-0" ref={notifRef}>
               <button
                 type="button"
                 onClick={() => setShowNotifs(!showNotifs)}
-                title={lang === 'en' ? 'Notifications' : 'Thông báo'}
-                aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
+                title={lang === "en" ? "Notifications" : "Thông báo"}
+                aria-label={lang === "en" ? "Notifications" : "Thông báo"}
                 aria-expanded={showNotifs}
                 className={cn(
-                  'w-8 h-8 rounded-[8px] grid place-items-center transition-colors relative cursor-pointer border',
+                  "w-8 h-8 rounded-[8px] grid place-items-center transition-colors relative cursor-pointer border",
                   showNotifs
-                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40'
-                    : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100'
+                    ? "bg-primary/10 text-primary border-primary/30 dark:bg-[#0a192f] dark:text-blue-300 dark:border-blue-500/40"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100"
                 )}
               >
-                <span className={unread > 0 ? 'notif-bell' : undefined}><Bell size={16} /></span>
+                <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
                 {unread > 0 && (
                   <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
@@ -1629,6 +1652,8 @@ export const Sidebar: React.FC = () => {
                 <div key={item.id} className="group/nav relative flex items-center justify-center shrink-0 w-full">
                   <NavLink
                     to={item.path}
+                    onMouseEnter={(e) => showTooltip(item.label, e)}
+                    onMouseLeave={hideTooltip}
                     className={cn(
                       'sidebar-link w-9 h-9 rounded-[8px] flex items-center justify-center transition-all cursor-pointer relative shrink-0',
                       active
@@ -1845,6 +1870,8 @@ export const Sidebar: React.FC = () => {
                 setShowSettings(!showSettings);
               }}
               title={`${staffName} (${lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"})`}
+              onMouseEnter={(e) => showTooltip(`${staffName} · ${lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}`, e)}
+              onMouseLeave={hideTooltip}
               className="group/avatar relative flex items-center justify-center shrink-0 cursor-pointer"
             >
               <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80 shrink-0">
@@ -1920,59 +1947,78 @@ export const Sidebar: React.FC = () => {
         {/* PORTAL 0: FLOATING SEARCH POPOVER WHEN COLLAPSED */}
         {showCollapsedSearch && isSidebarCollapsed &&
           createPortal(
-            <div
-              ref={collapsedSearchPanelRef}
-              style={(() => {
-                const r = collapsedSearchBtnRef.current?.getBoundingClientRect();
-                return r
-                  ? {
-                      top: Math.max(12, r.top),
-                      left: Math.min(r.right + 12, window.innerWidth - 300),
-                    }
-                  : { top: 60, left: 84 };
-              })()}
-              className="fixed w-[280px] p-2.5 bg-white dark:bg-[#0a192f] rounded-[8px] shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] animate-in fade-in zoom-in-95 duration-150 space-y-2 pointer-events-auto"
-            >
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (collapsedSearchQuery.trim()) {
-                    navigate(`/tasks?search=${encodeURIComponent(collapsedSearchQuery.trim())}`);
-                    setShowCollapsedSearch(false);
-                    setCollapsedSearchQuery('');
-                  }
-                }}
-                className="relative"
+            <>
+              {/* Transparent full-screen backdrop to dismiss on click outside */}
+              <div
+                className="fixed inset-0 z-[9998] bg-transparent cursor-default"
+                onClick={() => setShowCollapsedSearch(false)}
+              />
+              <div
+                ref={collapsedSearchPanelRef}
+                style={(() => {
+                  const r = collapsedSearchBtnRef.current?.getBoundingClientRect();
+                  return r
+                    ? {
+                        top: Math.max(12, r.top),
+                        left: Math.min(r.right + 12, window.innerWidth - 300),
+                      }
+                    : { top: 60, left: 84 };
+                })()}
+                className="fixed w-[280px] p-2 bg-white dark:bg-[#0a192f] rounded-[8px] shadow-2xl border border-gray-200 dark:border-slate-700 z-[9999] animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
               >
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={collapsedSearchQuery}
-                  onChange={(e) => setCollapsedSearchQuery(e.target.value)}
-                  placeholder={lang === 'en' ? 'Search tasks, projects...' : 'Tìm việc, dự án...'}
-                  className="w-full text-xs pl-8 pr-7 py-1.5 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/80 dark:border-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
-                />
-                {collapsedSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setCollapsedSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </form>
-              <div className="flex items-center justify-between text-[10px] text-gray-400 px-1">
-                <span>{lang === 'en' ? 'Press Enter to search' : 'Nhấn Enter để tìm'}</span>
-                <button
-                  type="button"
-                  onClick={() => setShowCollapsedSearch(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (collapsedSearchQuery.trim()) {
+                      navigate(`/tasks?search=${encodeURIComponent(collapsedSearchQuery.trim())}`);
+                      setShowCollapsedSearch(false);
+                      setCollapsedSearchQuery('');
+                    }
+                  }}
+                  className="relative"
                 >
-                  {lang === 'en' ? 'Close' : 'Đóng'}
-                </button>
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    autoFocus
+                    value={collapsedSearchQuery}
+                    onChange={(e) => setCollapsedSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setShowCollapsedSearch(false);
+                    }}
+                    placeholder={lang === "en" ? "Search tasks, projects..." : "Tìm việc, dự án..."}
+                    className="w-full text-xs pl-8 pr-7 py-1.5 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/80 dark:border-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                  />
+                  {collapsedSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </form>
               </div>
+            </>,
+            document.body
+          )}
+
+        {/* PORTAL TOOLTIP FOR COLLAPSED SIDEBAR ITEMS */}
+        {floatingTooltip && isSidebarCollapsed &&
+          createPortal(
+            <div
+              style={{
+                position: "fixed",
+                top: floatingTooltip.top,
+                left: floatingTooltip.left,
+                transform: "translateY(-50%)",
+                zIndex: 999999,
+                pointerEvents: "none",
+              }}
+              className="flex items-center whitespace-nowrap rounded-[6px] bg-gray-900/95 dark:bg-[#0a192f]/95 px-2.5 py-1.5 text-xs font-semibold text-white shadow-2xl border border-gray-800 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-100"
+            >
+              {floatingTooltip.text}
             </div>,
             document.body
           )}
