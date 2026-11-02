@@ -102,11 +102,11 @@
 .report-profile-glass {
   position: absolute;
   z-index: 1;
-  inset: 44% 0 0;
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.72) 24%, rgba(238, 247, 252, 0.95) 55%, rgba(230, 242, 252, 0.99) 100%);
+  inset: 60% 0 0;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0) 0%, rgba(240, 247, 255, 0.72) 18%, rgba(238, 247, 252, 0.95) 45%, rgba(230, 242, 252, 0.99) 100%);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
   border-radius: 0 0 28px 28px;
   pointer-events: none;
@@ -689,7 +689,7 @@
 }
 
 .dark .report-profile-glass {
-  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 24%, rgba(9, 15, 27, 0.97) 55%, #090f1b 100%);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0) 0%, rgba(9, 15, 27, 0.8) 18%, rgba(9, 15, 27, 0.97) 45%, #090f1b 100%);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   border-radius: 0 0 28px 28px;
