@@ -9,6 +9,7 @@ import type {Task} from './useTasks';
 import toast from 'react-hot-toast';
 import {useTranslation} from '../i18n/translations';
 import {supabase} from '../services/supabase';
+import {readAll} from '../services/workspaceTasks';
 import {useAuthStore} from '../store/authStore';
 import {checkDateMatch,type CampaignFilters} from '../components/features/projects/CampaignPanel';
 import {recordTaskDeletion} from '../services/taskDeletionLog';
@@ -19,7 +20,7 @@ import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {editOwnedComment} from '../lib/commentEditing';
 import {useRememberedState} from './useRememberedState';
 import {completeTrackedTask} from '../services/workspaceTasks';
-import {saveTaskDeliverables} from '../lib/taskDeliverables';
+import {saveTaskDeliverables, computeDeliverableQuantity} from '../lib/taskDeliverables';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -437,7 +438,7 @@ export function useProjectsController(){
       }
       const [commentsRes, detailsRes] = await Promise.all([
         supabase.from('activity_log').select('entity_id').eq('entity_type', 'project_subtask').eq('action', 'comment').in('entity_id', nextSubtasks.map(item => item.id)),
-        supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'project_subtask').eq('action', 'details_updated').in('entity_id', nextSubtasks.map(item => item.id)).order('created_at', { ascending: false })
+        readAll(supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'project_subtask').eq('action', 'details_updated').in('entity_id', nextSubtasks.map(item => item.id)).order('created_at', { ascending: false }).order('id', { ascending: false })).then(data => ({data}))
       ]);
       if (!active) return;
       const counts = (commentsRes.data || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
@@ -445,17 +446,9 @@ export function useProjectsController(){
 
       const checklistCounts: Record<string, { total: number; done: number }> = {};
       const quantities: Record<string, number> = {};
-      const mergedMeta: Record<string, { checklist_items?: any[]; quantity?: number }> = {};
+      const mergedMeta: Record<string, any> = {};
       (detailsRes.data || []).forEach((row: any) => {
-        if (!mergedMeta[row.entity_id]) {
-          mergedMeta[row.entity_id] = {};
-        }
-        if (row.metadata && 'checklist_items' in row.metadata && mergedMeta[row.entity_id].checklist_items === undefined) {
-          mergedMeta[row.entity_id].checklist_items = Array.isArray(row.metadata.checklist_items) ? row.metadata.checklist_items : [];
-        }
-        if (row.metadata && 'quantity' in row.metadata && mergedMeta[row.entity_id].quantity === undefined) {
-          mergedMeta[row.entity_id].quantity = row.metadata.quantity;
-        }
+        mergedMeta[row.entity_id] = {...(row.metadata || {}), ...(mergedMeta[row.entity_id] || {})};
       });
 
       Object.entries(mergedMeta).forEach(([entityId, meta]) => {
@@ -466,11 +459,7 @@ export function useProjectsController(){
             done: items.filter((i: any) => i.completed).length,
           };
         }
-        const checklistQty = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-        const rowQty = Number(meta.quantity) || 0;
-        const subtaskRow = nextSubtasks.find(item => item.id === entityId);
-        const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = baseQty + checklistQty;
+        const total = computeDeliverableQuantity(meta).totalQuantity;
         if (total > 0) {
           quantities[entityId] = total;
         }
@@ -506,7 +495,7 @@ export function useProjectsController(){
       }
       const [stCommentsRes, stDetailsRes] = await Promise.all([
         supabase.from('activity_log').select('entity_id').eq('entity_type', 'campaign_subtask').eq('action', 'comment').in('entity_id', nextCampSubtasks.map(item => item.id)),
-        supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'campaign_subtask').eq('action', 'details_updated').in('entity_id', nextCampSubtasks.map(item => item.id)).order('created_at', { ascending: false })
+        readAll(supabase.from('activity_log').select('entity_id, metadata, created_at').eq('entity_type', 'campaign_subtask').eq('action', 'details_updated').in('entity_id', nextCampSubtasks.map(item => item.id)).order('created_at', { ascending: false }).order('id', { ascending: false })).then(data => ({data}))
       ]);
       if (!active) return;
       const stCounts = (stCommentsRes.data || []).reduce((acc: Record<string, number>, item: any) => ({ ...acc, [item.entity_id]: (acc[item.entity_id] || 0) + 1 }), {});
@@ -514,17 +503,9 @@ export function useProjectsController(){
 
       const stChecklistCounts: Record<string, { total: number; done: number }> = {};
       const campQuantities: Record<string, number> = {};
-      const mergedCampMeta: Record<string, { checklist_items?: any[]; quantity?: number }> = {};
+      const mergedCampMeta: Record<string, any> = {};
       (stDetailsRes.data || []).forEach((row: any) => {
-        if (!mergedCampMeta[row.entity_id]) {
-          mergedCampMeta[row.entity_id] = {};
-        }
-        if (row.metadata && 'checklist_items' in row.metadata && mergedCampMeta[row.entity_id].checklist_items === undefined) {
-          mergedCampMeta[row.entity_id].checklist_items = Array.isArray(row.metadata.checklist_items) ? row.metadata.checklist_items : [];
-        }
-        if (row.metadata && 'quantity' in row.metadata && mergedCampMeta[row.entity_id].quantity === undefined) {
-          mergedCampMeta[row.entity_id].quantity = row.metadata.quantity;
-        }
+        mergedCampMeta[row.entity_id] = {...(row.metadata || {}), ...(mergedCampMeta[row.entity_id] || {})};
       });
 
       Object.entries(mergedCampMeta).forEach(([entityId, meta]) => {
@@ -535,11 +516,7 @@ export function useProjectsController(){
             done: items.filter((i: any) => i.completed).length,
           };
         }
-        const checklistQty = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-        const rowQty = Number(meta.quantity) || 0;
-        const subtaskRow = nextCampSubtasks.find(item => item.id === entityId);
-        const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-        const total = baseQty + checklistQty;
+        const total = computeDeliverableQuantity(meta).totalQuantity;
         if (total > 0) {
           campQuantities[entityId] = total;
         }

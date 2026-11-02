@@ -9,10 +9,12 @@ export interface DeliverableChecklistItem {
   created_by?: number | null;
   created_by_name?: string | null;
   created_at?: string;
+  completed_at?: string | null;
 }
 
 export interface TaskDeliverableMeta {
   quantity?: number | null;
+  base_quantity?: number | null;
   target_department_id?: string | null;
   target_department_name?: string | null;
   checklist_items?: DeliverableChecklistItem[];
@@ -22,7 +24,6 @@ export interface TaskDeliverableMeta {
 }
 
 const STORAGE_KEY = 'kcoffee.deliverables.v1';
-const DEFAULT_WORKSPACE_ID = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 
 function getStorageCache(): Record<string, TaskDeliverableMeta> {
   if (typeof window === 'undefined') return {};
@@ -61,9 +62,12 @@ export function mergeDeliverableMetadata(newestFirst: readonly (TaskDeliverableM
 
 export function computeDeliverableQuantity(taskOrMeta?: {
   quantity?: number | null;
+  base_quantity?: number | null;
   checklist_items?: Array<{ quantity?: number | null; completed?: boolean }>;
 }): { baseQuantity: number; checklistQuantity: number; totalQuantity: number } {
-  const rawBase = Number(taskOrMeta?.quantity);
+  // Current detail snapshots store quantity as the aggregate and base_quantity
+  // as the subtask's own output. Older creation events stored only the base.
+  const rawBase = Number(taskOrMeta && 'base_quantity' in taskOrMeta ? taskOrMeta.base_quantity : taskOrMeta?.quantity);
   const baseQuantity = Number.isFinite(rawBase) && rawBase > 0 ? rawBase : 0;
   const items = Array.isArray(taskOrMeta?.checklist_items) ? taskOrMeta.checklist_items : [];
   const checklistQuantity = items.reduce((sum, item) => {
@@ -71,11 +75,8 @@ export function computeDeliverableQuantity(taskOrMeta?: {
     return sum + (Number.isFinite(q) && q > 0 ? q : 0);
   }, 0);
 
-  // Tracking sản lượng chuẩn (REQ-TOT-07 / Slide 5):
-  // Subtask quantity (baseQuantity) + Việc phát sinh quantity (checklistQuantity) = Tổng sản lượng.
-  // Nếu cả hai đều không có số lượng dương thì fallback về 1.
-  const sum = baseQuantity + checklistQuantity;
-  const totalQuantity = sum > 0 ? sum : 1;
+  // Missing output quantity is zero images/files; the work still counts as one task.
+  const totalQuantity = baseQuantity + checklistQuantity;
 
   return { baseQuantity, checklistQuantity, totalQuantity };
 }
@@ -84,39 +85,20 @@ export async function saveTaskDeliverables(
   entityType: 'task' | 'project_subtask' | 'campaign_subtask',
   entityId: string | number,
   updates: Partial<TaskDeliverableMeta>,
-  profileId?: number | string | null,
-  workspaceId: string = DEFAULT_WORKSPACE_ID,
+  _profileId?: number | string | null,
+  _workspaceId?: string,
+  expectedItems?: DeliverableChecklistItem[],
 ) {
-  if (!entityId) return;
-  const cacheKey = `${entityType}:${entityId}`;
-  let existing = getCachedDeliverable(cacheKey);
-  if (!existing || existing.checklist_items === undefined || existing.quantity === undefined) {
-    const remote = await fetchTaskDeliverableMeta(entityType, entityId);
-    if (remote) {
-      existing = { ...remote, ...(existing || {}) };
-    }
-  }
-  const merged: TaskDeliverableMeta = { ...(existing || {}), ...updates };
-  setCachedDeliverable(cacheKey, merged);
-
-  try {
-    const { supabase } = await import('../services/supabase.ts');
-    const { error } = await supabase.from('activity_log').insert({
-      workspace_id: workspaceId,
-      user_id: profileId ? Number(profileId) || null : null,
-      action: 'details_updated',
-      entity_type: entityType,
-      entity_id: String(entityId),
-      metadata: {
-        ...merged,
-        is_internal_detail_sync: true,
-      },
-    });
-    if (error) throw error;
-    window.dispatchEvent(new Event('tasks:changed'));
-  } catch (err) {
-    console.warn('Failed to sync deliverable metadata to activity_log:', err);
-  }
+  if (!entityId) throw new Error('Chưa xác định được công việc.');
+  const {supabase} = await import('../services/supabase.ts');
+  const {data,error} = await supabase.rpc('save_task_deliverables', {
+    p_kind: entityType, p_id: String(entityId), p_updates: updates,
+    p_expected_items: expectedItems ?? null,
+  });
+  if (error) throw error;
+  if (!data) throw new Error('Không thể lưu số lượng công việc.');
+  setCachedDeliverable(`${entityType}:${entityId}`, data);
+  window.dispatchEvent(new Event('tasks:changed'));
 }
 
 export async function fetchTaskDeliverableMeta(
@@ -131,21 +113,27 @@ export async function fetchTaskDeliverableMeta(
   }
   try {
     const { supabase } = await import('../services/supabase.ts');
-    const { data } = await supabase
-
+    const rows: any[] = [];
+    for (let offset = 0;; offset += 500) {
+      const { data, error } = await supabase
       .from('activity_log')
       .select('metadata')
       .eq('entity_type', entityType)
       .eq('entity_id', String(entityId))
       .eq('action', 'details_updated')
       .order('created_at', { ascending: false })
-      .limit(10);
-    if (data && data.length > 0) {
+      .order('id', { ascending: false })
+      .range(offset, offset + 499);
+      if (error) throw error;
+      rows.push(...(data || []));
+      if (!data || data.length < 500) break;
+    }
+    if (rows.length > 0) {
       // Merge across rows from oldest to newest so newest fields override older ones
       // without dropping fields recorded in an earlier details_updated row.
       const merged: TaskDeliverableMeta = {};
-      for (let i = data.length - 1; i >= 0; i--) {
-        const rowMeta = data[i]?.metadata;
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const rowMeta = rows[i]?.metadata;
         if (rowMeta && typeof rowMeta === 'object') {
           Object.assign(merged, rowMeta);
         }
@@ -153,8 +141,8 @@ export async function fetchTaskDeliverableMeta(
       setCachedDeliverable(cacheKey, merged);
       return merged;
     }
-  } catch {
-    // Ignore fetch error
+  } catch (error) {
+    if (forceRefresh) throw error;
   }
-  return getCachedDeliverable(cacheKey);
+  return forceRefresh ? undefined : getCachedDeliverable(cacheKey);
 }

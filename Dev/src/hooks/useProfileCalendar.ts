@@ -1,10 +1,11 @@
 import {useNotificationCenter} from './useNotificationCenter';
 import {useNotificationStore} from '../store/notificationStore';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
-import {workspaceScope} from '../services/workspaceResources';
+import {taskResource,workspaceScope} from '../services/workspaceResources';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import {taskTarget} from '../lib/taskTracking';
 import { calendarDates, isCalendarVisible } from '../lib/profileCalendar';
 import type { CalendarItem, CalendarKind } from '../lib/profileCalendar';
 
@@ -51,17 +52,21 @@ export function useProfileCalendar(targetUserId?: string | number) {
           allRows(supabase.from('workflow_phase_members').select('phase_id,phase:phase_id(track:workflow_id(entity_type,entity_id))').eq('user_id',profileId).order('phase_id'))
         ]);
         const mentionedIds = [...new Set(mentionRows.map(r => r.task_id))];
-        let personalTaskQuery = supabase.from('tasks').select('*,project:project_id(id,name),campaign:campaign_id(id,name),assignee:assignee_id(name,avatar_url),department:department_id(name)');
-        personalTaskQuery = mentionedIds.length ? personalTaskQuery.or(`assignee_id.eq.${profileId},id.in.(${mentionedIds.join(',')})`) : personalTaskQuery.eq('assignee_id', profileId);
-        const [tasks, memberships, projectSubtasks, campaignSubtasks, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
-          allRows(personalTaskQuery.order('id')),
+        const [memberships, ownedProjects, ownedCampaigns, notificationResult] = await Promise.all([
           allRows(supabase.from('project_members').select('project_id,user:user_id(name)').eq('user_id', profileId).order('project_id')),
-          allRows(supabase.from('project_subtasks').select('*,assignee:assignee_id(name,avatar_url)').or(`assignee_id.eq.${profileId}${legacyMentions.filter(m=>m.entity_type==='project_subtask').length?`,id.in.(${legacyMentions.filter(m=>m.entity_type==='project_subtask').map(m=>m.entity_id).join(',')})`:''}`).neq('status', 'deleted').order('id')),
-          allRows(supabase.from('campaign_subtasks').select('*,assignee:assignee_id(name,avatar_url)').or(`assignee_id.eq.${profileId}${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').length?`,id.in.(${legacyMentions.filter(m=>m.entity_type==='campaign_subtask').map(m=>m.entity_id).join(',')})`:''}`).neq('status', 'deleted').order('id')),
           allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').eq('created_by', profileId).order('id')),
           allRows(supabase.from('campaigns').select('*,lead:lead_id(name,avatar_url)').or(`lead_id.eq.${profileId},created_by.eq.${profileId}`).order('id')),
           String(profileId)===String(myProfileId)?Promise.resolve({data:useNotificationStore.getState().history,error:null}):supabase.from('notifications').select('id,entity_id,entity_type,message,is_read,created_at').eq('user_id', profileId).in('entity_type', ['task', 'project', 'campaign', 'project_subtask', 'campaign_subtask']).order('created_at', { ascending: false }).limit(50),
+          taskResource.refresh(scope),
         ]);
+        const taskSnapshot=taskResource.getSnapshot(scope);
+        if(taskSnapshot.error)throw new Error(taskSnapshot.error);
+        const personal=(taskSnapshot.data||[]).filter(row=>{
+          const target=taskTarget(row.id);
+          return String(row.assignee_id)===String(profileId)||(target.kind==='task'?mentionedIds.includes(target.id):legacyMentions.some(m=>m.entity_type===target.kind&&m.entity_id===target.id));
+        });
+        const sourceRows=(kind:string)=>personal.filter(row=>taskTarget(row.id).kind===kind).map(row=>({...row,id:row.id.startsWith('ps-')||row.id.startsWith('cs-')?row.id.slice(3):row.id}));
+        const tasks=sourceRows('task'),projectSubtasks=sourceRows('project_subtask'),campaignSubtasks=sourceRows('campaign_subtask');
         if (notificationResult.error) throw notificationResult.error;
         const projectIds = [...new Set([...phaseMemberships.filter(row=>row.phase?.track?.entity_type==='project').map(row=>row.phase.track.entity_id),...memberships.map(row => row.project_id), ...tasks.map(row => row.project_id), ...projectSubtasks.map(row => row.project_id)].filter(Boolean))];
         const linkedProjects = projectIds.length ? await allRows(supabase.from('projects').select('*,creator:created_by(name,avatar_url)').in('id', projectIds).order('id')) : [];

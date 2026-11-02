@@ -1,11 +1,12 @@
 import { supabase } from './supabase';
 import { deleteOwnedComment } from '../lib/commentDeletion';
 import { editOwnedComment } from '../lib/commentEditing';
+import {taskTarget} from '../lib/taskTracking';
 
 export type CommentKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type CommentTarget = { kind: CommentKind; id: string };
 export type ThreadComment = { id: string; author_id: number; body: string; created_at: string; edited_at?: string | null; author: { name: string; avatar_url?: string | null } | null };
-export const commentTarget = (id: string): CommentTarget => id.startsWith('ps-') ? { kind: 'project_subtask', id: id.slice(3) } : id.startsWith('cs-') ? { kind: 'campaign_subtask', id: id.slice(3) } : { kind: 'task', id };
+export const commentTarget = (key: string): CommentTarget => {const {kind,id}=taskTarget(key);return {kind,id};};
 export const commentKey = ({kind,id}: CommentTarget) => `${kind}:${id}`;
 
 export async function readTaskComments(target: CommentTarget): Promise<ThreadComment[]> {

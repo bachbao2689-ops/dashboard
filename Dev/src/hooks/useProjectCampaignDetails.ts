@@ -4,11 +4,14 @@ import { readAll } from '../services/workspaceTasks';
 import { useAuthStore } from '../store/authStore';
 import { useWorkspaceRealtime } from './useWorkspaceRealtime';
 import toast from 'react-hot-toast';
+import {useTasks} from './useTasks';
+import {taskKey} from '../lib/taskTracking';
 
 type Snapshot = { key: string; data: any; subtasks: any[]; comments: any[]; people: any[]; canManage: boolean };
 const sources = ['projects', 'campaigns', 'project_subtasks', 'campaign_subtasks', 'project_comments', 'activity_log', 'project_members', 'campaign_members'];
 
 export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: string) {
+  const tracked = useTasks();
   const profile = useAuthStore(s => s.profile);
   const key = `${profile?.id}:${profile?.role}:${profile?.employment_level}:${profile?.department_id}:${kind}:${id}`;
   const current = useRef(key);
@@ -80,5 +83,10 @@ export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: stri
   };
   const visible = snapshot?.key === key ? snapshot : null;
   const error = errorState.key === key ? errorState.message : "";
-  return { profile, data:visible?.data, subtasks:visible?.subtasks || [], comments:visible?.comments || [], people:visible?.people || [], canManage:visible?.canManage || false, loading:!visible && !error, error, busy, refresh, mutate };
+  const byKey = new Map(tracked.tasks.map(task => [task.id, task]));
+  const subtasks = (visible?.subtasks || []).map(row => {
+    const task = byKey.get(taskKey(`${kind}_subtask`, row.id));
+    return task ? {...row, status: task.status, quantity: task.quantity, subtask_total_quantity: task.subtask_total_quantity} : row;
+  });
+  return { profile, data:visible?.data, subtasks, comments:visible?.comments || [], people:visible?.people || [], canManage:visible?.canManage || false, loading:!visible && !error, error, busy, refresh, mutate };
 }

@@ -302,9 +302,9 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                             <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
                               {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
                             </span>
-                            {Boolean(sub.quantity) && (
+                            {Boolean(sub.subtask_total_quantity) && (
                               <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                                SL: {sub.quantity}
+                                SL: {sub.subtask_total_quantity}
                               </span>
                             )}
                             {sub.due_date && (

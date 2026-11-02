@@ -1,10 +1,15 @@
 import {calendarDay} from './profileCalendar.ts';
 import {localDay} from './workflowHub.ts';
+import {checklistTarget} from './taskChecklist.ts';
 import {isTaskActive as taskActive, isTaskDone as taskDone, isTaskDoneStatus as isTaskDone, isTaskOpen as taskOpen, normalizeTaskStatus as normalizeStatus, taskState} from './taskStatus.ts';
 export {taskActive, taskDone, taskOpen, taskState, isTaskDone, normalizeStatus};
 export type TaskKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type TrackedTask = {id?:string; assignee_id?:string|number|null; assignee?:{name?:string}|null; priority?:string|null;status?:string|null; workflow_status?:string|null; due_date?:string|null; created_at?:string|null; start_date?:string|null; completed_at?:string|null};
-export const taskTarget = (key:string): {kind:TaskKind;id:string;table:string} => key.startsWith('ps-') ? {kind:'project_subtask',id:key.slice(3),table:'project_subtasks'} : key.startsWith('cs-') ? {kind:'campaign_subtask',id:key.slice(3),table:'campaign_subtasks'} : {kind:'task',id:key,table:'tasks'};
+export const taskTarget = (key:string): {kind:TaskKind;id:string;table:string;checklistItemId?:string} => {
+  const {parentKey, checklistItemId} = checklistTarget(key);
+  const target = parentKey.startsWith('ps-') ? {kind:'project_subtask' as const,id:parentKey.slice(3),table:'project_subtasks'} : parentKey.startsWith('cs-') ? {kind:'campaign_subtask' as const,id:parentKey.slice(3),table:'campaign_subtasks'} : {kind:'task' as const,id:parentKey,table:'tasks'};
+  return checklistItemId ? {...target, checklistItemId} : target;
+};
 export const taskKey = (kind:string,id:string) => kind==='project_subtask'?`ps-${id}`:kind==='campaign_subtask'?`cs-${id}`:id;
 export const taskIdentity = taskTarget;
 export const taskUIId = taskKey;

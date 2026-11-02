@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Edit3, FileText, FolderKanban, History, ImagePlus, RefreshCcw, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {readAll,readWorkspaceTasks} from '../../../services/workspaceTasks';
+import {taskKey} from '../../../lib/taskTracking';
+import {checklistTaskKey} from '../../../lib/taskChecklist';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
@@ -8,8 +11,10 @@ import { notifyTaskParticipants } from '../../../services/taskNotifications';
 type ReportLog = {
   id: string;
   entity_id: string;
+  entity_type: string;
+  action: string;
   created_at: string;
-  metadata?: { body?: string; blocker?: string | null; next_step?: string | null; image_url?: string | null; unchanged?: boolean; week_start?: string; week_end?: string } | null;
+  metadata?: { body?: string; blocker?: string | null; next_step?: string | null; image_url?: string | null; unchanged?: boolean; week_start?: string; week_end?: string; checklist_item_id?: string; task_title?: string } | null;
   taskTitle?: string;
   taskRef?: string | null;
 };
@@ -18,7 +23,7 @@ type ArchivedProject = { id: string; name: string; status: 'archived' | 'deleted
 
 const dateLabel = (date?: string) => date ? new Date(`${date}T00:00:00`).toLocaleDateString('vi-VN') : 'Chưa xác định';
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
-const reportKey = (log: ReportLog) => `${log.entity_id}:${log.metadata?.week_start || ''}:${log.metadata?.week_end || ''}`;
+const reportKey = (log: ReportLog) => `${log.entity_type}:${log.entity_id}:${log.metadata?.checklist_item_id || ''}:${log.metadata?.week_start || ''}:${log.metadata?.week_end || ''}`;
 
 export const ReportHistoryModal: React.FC<{ isOpen?: boolean; onClose?: () => void; variant?: 'modal' | 'inline' }> = ({ isOpen = true, onClose, variant = 'modal' }) => {
   const profile = useAuthStore(state => state.profile);
@@ -38,12 +43,19 @@ export const ReportHistoryModal: React.FC<{ isOpen?: boolean; onClose?: () => vo
   const loadLogs = useCallback(async () => {
     if (!profileId) return;
     setLoading(true);
-    const { data, error } = await supabase.from('activity_log').select('id,entity_id,created_at,metadata').eq('user_id', profileId).eq('entity_type', 'task').eq('action', 'weekly_report').order('created_at', { ascending: false });
-    if (error) { setLoading(false); return toast.error('Không thể tải lịch sử report'); }
-    const taskIds = [...new Set((data || []).map(row => row.entity_id).filter(Boolean))];
-    const taskResult = taskIds.length ? await supabase.from('tasks').select('id,title,task_ref').in('id', taskIds) : { data: [] as any[] };
-    const taskMap = new Map((taskResult.data || []).map((task: any) => [task.id, task]));
-    setLogs((data || []).map((row: any) => ({ ...row, taskTitle: taskMap.get(row.entity_id)?.title || 'Task đã bị xoá', taskRef: taskMap.get(row.entity_id)?.task_ref })));
+    try {
+      const [data,tasks]=await Promise.all([
+        readAll(supabase.from('activity_log').select('id,entity_id,entity_type,action,created_at,metadata').eq('user_id', profileId).in('entity_type',['task','project_subtask','campaign_subtask']).in('action',['weekly_report','checklist_weekly_report']).order('created_at', { ascending: false }).order('id',{ascending:false})),
+        readWorkspaceTasks(),
+      ]);
+      const taskMap=new Map(tasks.map(task=>[task.id,task]));
+      setLogs(data.map(row=>{
+        const parent=taskKey(row.entity_type,row.entity_id);
+        const key=row.metadata?.checklist_item_id?checklistTaskKey(parent,row.metadata.checklist_item_id):parent;
+        const task=taskMap.get(key);
+        return {...row,taskTitle:task?.title||row.metadata?.task_title||'Task đã bị xoá',taskRef:task?.task_ref};
+      }));
+    } catch { toast.error('Không thể tải lịch sử report'); }
     setLoading(false);
   }, [profileId]);
 
@@ -97,13 +109,13 @@ export const ReportHistoryModal: React.FC<{ isOpen?: boolean; onClose?: () => vo
     const { error } = await supabase.from('activity_log').insert({
       workspace_id: workspaceId,
       user_id: profileId,
-      action: 'weekly_report',
-      entity_type: 'task',
+      action: log.action || 'weekly_report',
+      entity_type: log.entity_type || 'task',
       entity_id: log.entity_id,
       metadata: { ...log.metadata, body: body.trim(), image_url: imageUrl.trim() || null },
     });
     if (error) return toast.error('Không thể cập nhật report');
-    void notifyTaskParticipants({ id: log.entity_id, title: log.taskTitle, task_ref: log.taskRef }, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'weekly_report');
+    void notifyTaskParticipants({ id: taskKey(log.entity_type,log.entity_id), title: log.taskTitle, task_ref: log.taskRef }, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'weekly_report');
     toast.success('Đã cập nhật report');
     setEditingId(null);
     await loadLogs();

@@ -8,17 +8,20 @@ export function reportAsOfDay(periodEnd: string, currentDay: string): string {
 
 export type ReportQuantityTask = TrackedTask & {
   quantity?: number | null;
+  base_quantity?: number | null;
+  tracking_quantity?: number;
   deliverable_quantity?: number | null;
   checklist_items?: Array<{quantity?: number | null; completed?: boolean}>;
 };
 
 /** The mapped total already includes checklist quantities; never add it twice. */
 export function reportDeliverableQuantity(task: ReportQuantityTask): number {
+  if (task.tracking_quantity != null) return Number.isFinite(task.tracking_quantity) ? Math.max(0, task.tracking_quantity) : 0;
   if ('quantity' in task || Array.isArray(task.checklist_items)) {
     return computeDeliverableQuantity(task).totalQuantity;
   }
   const quantity = Number(task.deliverable_quantity);
-  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
 }
 
 /** Every card, drilldown, staff row and export receives the same period rows. */
