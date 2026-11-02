@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { canViewTeamManagement } from '../lib/roleScope';
 import { useTranslation } from '../i18n/translations';
 
 const ReportAnalytics = lazy(() =>
@@ -22,7 +21,7 @@ const ReportAnalytics = lazy(() =>
 export function Reports({ standalone = false }: { standalone?: boolean }) {
   const profile = useAuthStore((state) => state.profile);
   const { t } = useTranslation();
-  if (!standalone && !canViewTeamManagement(profile)) return null;
+  if (!standalone && !profile) return null;
   return (
     <Suspense
       fallback={

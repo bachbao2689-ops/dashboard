@@ -323,7 +323,7 @@ export function buildSidebarGroups({
   isDismissed?: (key: string) => boolean;
 }): SidebarGroupModel[] {
   const canViewDashboard = isLeader;
-  const canViewReports = isLeader;
+  const canViewReports = true;
 
   // ==========================================
   // GROUP 1: MAIN (Dashboard [plain], Workflow Management [drill-down])
