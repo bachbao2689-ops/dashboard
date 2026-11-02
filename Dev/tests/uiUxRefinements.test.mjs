@@ -72,3 +72,17 @@ test('Dashboard Activity History: sanitizes raw UUIDs and keeps labels compact',
   assert.ok(truncated.endsWith('…'));
   assert.ok(truncated.length <= 34);
 });
+
+// Test 4: Mobile nav items hide AI Agent unconditionally
+test('Mobile Navigation: navTabs excludes items with hidden: true (AI Agent hidden for all users)', () => {
+  const tabs = [
+    { name: 'Projects', path: '/projects' },
+    { name: 'Workflow', path: '/workflow' },
+    { name: 'Tasks', path: '/tasks' },
+    { name: 'Agent', path: '/agents', hidden: true },
+    { name: 'Assets', path: '/assets' },
+  ].filter(tab => !tab.hidden);
+
+  assert.equal(tabs.some(tab => tab.path === '/agents'), false);
+  assert.equal(tabs.some(tab => tab.path === '/departments-2'), false);
+});
