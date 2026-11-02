@@ -1,3 +1,5 @@
+import {isTaskActive, isTaskDone, taskState} from './taskStatus.ts';
+
 export interface WorkflowPerson { id: number; name: string; avatar_url?: string; role?: 'pic' | 'sub_pic' }
 export interface HubPhase {
   id: string; title: string; position: number; start_date: string | null; due_date: string | null;
@@ -64,10 +66,10 @@ export function parentTasks<T extends { project_id?: string | null; campaign_id?
   return tasks.filter(task => kind === 'project' ? task.project_id === id : task.campaign_id === id && !task.project_id);
 }
 export const daysUntil = (date: string | null | undefined, now = new Date()) => date ? Math.round((Date.parse(date.slice(0, 10)) - Date.parse(localDay(now))) / 86400000) : null;
-export const isDone = (status?: string | null) => ['done', 'completed', 'complete'].includes((status || '').toLowerCase());
+export const isDone = (status?: string | null) => ['done', 'completed', 'complete'].includes((status || '').trim().toLowerCase());
 export function taskProgress(tasks: { status: string; workflow_status?: string | null }[]) {
-  const active = tasks.filter(t => !['deleted', 'archived', 'canceled', 'cancelled'].includes((t.status || '').toLowerCase()) && t.workflow_status !== 'canceled');
-  const done = active.filter(t => isDone(t.status) || t.workflow_status === 'completed').length;
+  const active = tasks.filter(isTaskActive);
+  const done = active.filter(isTaskDone).length;
   return { total: active.length, done, percent: active.length ? Math.round(done * 100 / active.length) : null };
 }
 export const displayDate = (s: string | null | undefined) => s ? s.split('T')[0].split('-').reverse().join('/') : '—';
@@ -92,32 +94,31 @@ export function gateReady(tasks: { status: string; workflow_status?: string | nu
 }
 export function workflowMetrics(tasks: MetricTask[], now = new Date()) {
   const day = localDay(now), month = day.slice(0, 7);
-  const current = tasks.filter(t => !['deleted', 'archived', 'canceled', 'cancelled'].includes((t.status || '').toLowerCase()) && t.workflow_status !== 'canceled');
+  const current = tasks.filter(isTaskActive);
   // Each task belongs to one slice. Overdue never appears again in Todo/Doing.
   const buckets = [0, 0, 0, 0, 0];
   for (const t of current) {
     const created = t.created_at ? localDay(t.created_at) : (t.start_date ? t.start_date.slice(0, 10) : '');
     const completed = t.completed_at ? localDay(t.completed_at) : null;
     const due = t.due_date ? t.due_date.slice(0, 10) : '';
-    const st = (t.status || '').toLowerCase();
-    const wf = (t.workflow_status || '').toLowerCase();
-    const taskDone = isDone(st) || wf === 'completed';
+    const state = taskState(t);
+    const done = state === 'done';
 
     const relevant = (created && created.slice(0, 7) === month) ||
       (completed && completed.slice(0, 7) === month) ||
       (due && due.slice(0, 7) === month) ||
-      (!taskDone && (!created || created <= day));
+      (!done && (!created || created <= day));
 
     if (!relevant) continue;
 
     const isOverdue = due && due < day;
-    const isReview = ['in_review', 'review', 'pending', 'in_qa', 'feedback'].includes(st) || wf === 'in_qa';
-    const isDoing = ['in_progress', 'in-progress', 'doing', 'scoping'].includes(st) || wf === 'in_progress' || wf === 'scoping';
+    const isReview = state === 'in_review';
+    const isDoing = state === 'in_progress';
 
-    const index = taskDone ? 0 : isOverdue ? 3 : isReview ? 2 : isDoing ? 1 : 4;
+    const index = done ? 0 : isOverdue ? 3 : isReview ? 2 : isDoing ? 1 : 4;
     buckets[index]++;
   }
-  const completed = current.filter(t => (isDone(t.status) || t.workflow_status === 'completed') && t.completed_at);
+  const completed = current.filter(t => isTaskDone(t) && t.completed_at);
   const cycle = completed.map(t => ({ end: Date.parse(t.completed_at!), start: Date.parse(t.start_date || t.created_at || '') })).filter(t => Number.isFinite(t.start) && t.end >= t.start);
   const dated = completed.filter(t => t.due_date);
   return {

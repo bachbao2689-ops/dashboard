@@ -207,7 +207,7 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} />, badgeCount: badges.borrowCount, desc: isEn ? 'Equipment and inventory items' : 'Thiết bị & mượn trả tài sản' },
     { name: t('nav.team'), path: '/team', icon: <Users size={20} strokeWidth={1.8} />, desc: isEn ? 'Department members and workloads' : 'Nhân sự & khối lượng công việc' },
     { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} />, desc: isEn ? 'My profile and personal calendar' : 'Hồ sơ cá nhân & lịch làm việc' },
-    { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: !isLeader, desc: isEn ? 'Performance analytics and capacity' : 'Báo cáo năng suất & tải công việc' },
+    { name: t('nav.reports'), path: '/reports', icon: <TrendingUp size={20} strokeWidth={1.8} />, hidden: false, desc: isEn ? 'Performance analytics and capacity' : 'Báo cáo năng suất & tải công việc' },
     { name: t('nav.dashboard'), path: '/ui-dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.8} />, hidden: !isLeader, desc: isEn ? 'Executive overview cockpit' : 'Bảng điều khiển tổng quan' },
   ].filter(tab => !tab.hidden);
 

@@ -17,7 +17,10 @@ import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
 import {isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
+import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
+
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
+ useTaskDetailVisibility(Boolean(state.selectedCampaign));
  const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,toggleCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
   const formatCreatedAt = (value?: string | null) => {
     if (!value) return '';

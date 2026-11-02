@@ -129,7 +129,7 @@ function App() {
             <Route path="assets" element={<AssetInventory />} />
             <Route path="borrow-requests" element={<BorrowRequests />} />
             <Route path="team" element={<TeamWorkload />} />
-            <Route path="reports" element={<TeamManagementRoute><Reports /></TeamManagementRoute>} />
+            <Route path="reports" element={<Reports />} />
             <Route path="members" element={<MemberManagement />} />
             <Route path="*" element={
               <div className="glass-panel p-10 m-8 rounded-3xl text-center flex flex-col items-center justify-center min-h-[300px]">

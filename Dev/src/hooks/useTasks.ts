@@ -11,6 +11,12 @@ export interface Task {
   project?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; campaign?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; assignee_id?: string;
   assignee?: { id?: string; name: string; avatar_url: string }; department?: { id?: string; name: string }; column?: { name: string };
   quantity?: number | null;
+  base_quantity?: number | null;
+  tracking_quantity?: number;
+  subtask_total_quantity?: number;
+  parent_task_id?: string;
+  checklist_item_id?: string;
+  checklist_parent?: Task;
   checklist_quantity?: number;
   deliverable_quantity?: number;
   target_department_id?: string | null;

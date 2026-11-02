@@ -25,6 +25,15 @@ test('cycle time requires a genuine completion timestamp',()=>{
  const m=workflowMetrics([{status:'done',start_date:'2026-10-01',completed_at:'2026-10-03T00:00:00Z'},{status:'completed'}],now);
  assert.equal(m.velocity,2);assert.equal(m.onTime,null);
 });
+test('workflow status is authoritative for staff performance buckets',()=>{
+ const m=workflowMetrics([
+  {status:'active',created_at:'2026-10-01T00:00:00Z'},
+  {status:'in_progress',workflow_status:'in_qa',created_at:'2026-10-01T00:00:00Z'},
+  {status:'todo',workflow_status:'completed',created_at:'2026-10-01T00:00:00Z',completed_at:'2026-10-12T00:00:00Z'},
+  {status:'todo',workflow_status:'canceled',created_at:'2026-10-01T00:00:00Z'},
+ ],now);
+ assert.deepEqual(m.buckets,[1,0,1,0,1]);
+});
 test('gate readiness uses persisted weights and checks',()=>{
  assert.equal(gateScore([{id:'a',label:'Review',weight:80,checked:true},{id:'b',label:'Delivery',weight:20,checked:false}]),80);
 });

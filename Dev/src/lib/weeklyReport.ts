@@ -1,5 +1,5 @@
 export type WeekSelection = 'current' | 'previous' | string;
-import {isTaskClosed,isTaskDone,taskDay} from './taskTracking.ts';
+import {taskActive,taskDay,taskDone} from './taskTracking.ts';
 
 type ReportTask = {
   status?: string | null;
@@ -28,10 +28,10 @@ export const weeklyReportRange = (selection: WeekSelection) => {
 // or was closed during/after that week. Tasks closed before Monday stay in history.
 export const tasksForWeeklyReport = <T extends ReportTask>(tasks: T[], weekStart: string, weekEnd: string): T[] =>
   tasks.filter(task => {
-    if(isTaskClosed(task.status) && !isTaskDone(task.status))return false;
+    if(!taskActive(task))return false;
     const created = taskDay(task.created_at);
     if (created && created > weekEnd) return false;
-    if (!isTaskDone(task.status)) return true;
+    if (!taskDone(task)) return true;
     const lastChange = taskDay(task.completed_at) || created;
     return Boolean(lastChange && lastChange >= weekStart);
   });

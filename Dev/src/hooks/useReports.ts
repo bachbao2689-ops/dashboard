@@ -4,16 +4,17 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
 import { workflowResource, workspaceScope } from '../services/workspaceResources';
 import { isDone as isWorkflowDone } from '../lib/workflowHub';
-import {reportDeliverableQuantity, reportPeriodTasks, reportTaskTotals} from '../lib/reportTaskTracking';
+import {reportAsOfDay, reportDeliverableQuantity, reportPeriodTasks, reportTaskTotals} from '../lib/reportTaskTracking';
 import { useRememberedState } from './useRememberedState';
 import {
-  isTaskClosed,
   reportAnalytics,
   taskActive,
   taskDay,
   taskDone,
+  taskBucket,
   taskOpen,
   taskOverdue,
+  taskState,
   type TrackedTask,
 } from '../lib/taskTracking';
 import { scopeTeamWorkload } from '../lib/workloadScope';
@@ -21,7 +22,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import type { AlertLevel, BurndownItem, HeatmapRow } from '../types/department';
 
-export type TimeRange = 'today' | 'three' | 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
+export type TimeRange = 'today' | 'three' | 'last_week' | 'week' | 'month' | 'quarter' | 'year' | 'custom' | 'all';
 
 export interface ProfileBacklogItem {
   id: string;
@@ -205,13 +206,17 @@ function getPeriodBounds(
     return { start, today, periodDays, labelVi };
   }
 
-  if (range === 'three') {
-    const start = rawToday;
-    const endDate = new Date(`${rawToday}T12:00:00Z`);
-    endDate.setUTCDate(endDate.getUTCDate() + 2);
-    const today = taskDay(endDate.toISOString());
-    const periodDays = 3;
-    const labelVi = lang === 'en' ? '3 Days' : '3 ngày';
+  if (range === 'last_week' || range === 'three') {
+    const cur = new Date(`${rawToday}T12:00:00Z`);
+    const dayIndex = (cur.getUTCDay() + 6) % 7;
+    const monday = new Date(cur);
+    monday.setUTCDate(cur.getUTCDate() - dayIndex - 7);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    const start = taskDay(monday.toISOString());
+    const today = taskDay(sunday.toISOString());
+    const periodDays = 7;
+    const labelVi = lang === 'en' ? 'Last Week' : 'Tuần trước';
     return { start, today, periodDays, labelVi };
   }
 
@@ -289,14 +294,14 @@ function computePeriodBurndown(
 ): BurndownItem[] {
   const activeList = tasks.filter((t) => taskActive(t));
   const totalTasks = Math.max(8, activeList.length);
-  const openNow = activeList.filter((t) => !isTaskClosed(t.status)).length;
+  const openNow = activeList.filter(taskOpen).length;
   const { start, today } = getPeriodBounds(range, now, customStart, customEnd, lang);
   const startMs = new Date(`${start}T12:00:00Z`).getTime();
   const endMs = new Date(`${today}T12:00:00Z`).getTime();
 
   let pointsMeta: Array<{ label: string; cutoffDate: string }> = [];
 
-  if (range === "week") {
+  if (range === "week" || range === "last_week") {
     const weekdayLabels =
       lang === "en"
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -421,7 +426,7 @@ function computePeriodHeatmap(
 
   let checkpoints: Array<{ label: string; pointEnd: string }> = [];
 
-  if (range === "week") {
+  if (range === "week" || range === "last_week") {
     const weekdayLabels =
       lang === "en"
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -533,7 +538,7 @@ function computePeriodHeatmap(
   };
 }
 
-export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v2";
+export const REPORT_SNAPSHOT_STORAGE_KEY = "kcoffee.report.snapshot.v3";
 
 export interface ReportSnapshotPayload {
   scopeKey: string;
@@ -569,7 +574,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
   const urlFrom = searchParams.get('from');
   const urlTo = searchParams.get('to');
 
-  const validPeriods: TimeRange[] = ['today', 'three', 'week', 'month', 'quarter', 'year', 'custom', 'all'];
+  const validPeriods: TimeRange[] = ['today', 'three', 'last_week', 'week', 'month', 'quarter', 'year', 'custom', 'all'];
   const normalizedRemembered: TimeRange = validPeriods.includes(rememberedRange) ? rememberedRange : 'month';
   const timeRange: TimeRange = urlPeriod && validPeriods.includes(urlPeriod) ? urlPeriod : normalizedRemembered;
   const customStart = urlFrom || rememberedCustomStart || defaultMonthStart;
@@ -627,7 +632,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       } else if (timeRange === 'three') {
         cur.setUTCDate(cur.getUTCDate() + direction * 3);
         setCursorDate(taskDay(cur.toISOString()));
-      } else if (timeRange === 'week') {
+      } else if (timeRange === 'last_week' || timeRange === 'week') {
         cur.setUTCDate(cur.getUTCDate() + direction * 7);
         setCursorDate(taskDay(cur.toISOString()));
       } else if (timeRange === 'month') {
@@ -794,6 +799,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       ),
     [timeRange, cursorDate, defaultToday, customStart, customEnd, lang],
   );
+  const statusAsOfDay = reportAsOfDay(periodMeta.today, defaultToday);
 
   // Filter tasks relevant to the chosen period (week / month / quarter / year)
   const periodTasks = useMemo(() => {
@@ -802,7 +808,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
   }, [scopedTasks, periodMeta, timeRange]);
 
   const analyticRange =
-    timeRange === 'today' || timeRange === 'three'
+    timeRange === 'today' || timeRange === 'three' || timeRange === 'last_week'
       ? 'week'
       : timeRange === 'custom'
       ? 'month'
@@ -812,14 +818,14 @@ export const useReports = (options?: { standalone?: boolean }) => {
       reportAnalytics(
         scopedTasks,
         analyticRange as any,
-        new Date(`${cursorDate || defaultToday}T12:00:00Z`),
+        new Date(`${statusAsOfDay}T12:00:00Z`),
       ),
-    [scopedTasks, analyticRange, cursorDate, defaultToday],
+    [scopedTasks, analyticRange, statusAsOfDay],
   );
 
   // Build Staff Performance list (shared 1:1 between List Mode and Staff Cards Mode)
   const staffMembers = useMemo<StaffReportMember[]>(() => {
-    const today = periodMeta.today;
+    const today = statusAsOfDay;
 
     return scopedUsers
       .map((u) => {
@@ -828,17 +834,9 @@ export const useReports = (options?: { standalone?: boolean }) => {
         );
         const openList = memberAllTasks.filter((t) => taskOpen(t));
         const doneList = memberAllTasks.filter((t) => taskDone(t));
-        const overdueList = openList.filter((t) => taskOverdue(t, today));
-        const todoList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
-        const doingList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
+        const overdueList = openList.filter((t) => taskBucket(t, today) === 'overdue');
+        const todoList = openList.filter((t) => taskBucket(t, today) === 'todo');
+        const doingList = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today)));
 
         const done = doneList.length;
         const doing = doingList.length;
@@ -871,9 +869,9 @@ export const useReports = (options?: { standalone?: boolean }) => {
         const deptName = u.department?.name || selectedDepartmentName;
         const initial = getInitial(u.name);
 
-        const realBacklogTasks = memberAllTasks.filter(
-          (t) => taskOpen(t) && (taskOverdue(t, today) || (t.status || '').toLowerCase() === 'backlog'),
-        );
+        const realBacklogTasks = memberAllTasks.filter((t) => {
+          return taskOpen(t) && (taskOverdue(t, today) || taskState(t) === 'todo');
+        });
 
         const profileBacklogItems: ProfileBacklogItem[] = realBacklogTasks.map((t, bIdx) => {
           const isOverdue = taskOverdue(t, today);
@@ -945,12 +943,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
 
         const periodTaskItems: TrackedTaskSummaryItem[] = memberAllTasks
           .map((t) => {
-            const isDone = taskDone(t);
-            const isOverdue = !isDone && taskOverdue(t, periodMeta.today);
-            const isTodo =
-              !isDone &&
-              !isOverdue &&
-              ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+            const bucket = taskBucket(t, statusAsOfDay);
+            const isDone = bucket === 'done';
+            const isOverdue = bucket === 'overdue';
+            const isTodo = bucket === 'todo';
             const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
               ? 'done'
               : isOverdue
@@ -1034,25 +1030,17 @@ export const useReports = (options?: { standalone?: boolean }) => {
         if (rankA !== rankB) return rankA - rankB;
         return b.total - a.total || b.capacityPercentage - a.capacityPercentage || a.name.localeCompare(b.name, 'vi');
       });
-  }, [scopedUsers, periodTasks, periodMeta.today, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
+  }, [scopedUsers, periodTasks, statusAsOfDay, timeRange, selectedDepartmentName, lang, profile, workspaceTasks]);
 
   // Build 4 Team Performance Cards (100% consistent with staffMembers & periodTasks)
   const teamCards = useMemo<TeamReportCardsData>(() => {
-    const today = periodMeta.today;
+    const today = statusAsOfDay;
     const totals = reportTaskTotals(periodTasks);
     const completedTasks = totals.completedTasks;
     const openList = periodTasks.filter((t) => taskOpen(t));
     const overdueTasks = openList.filter((t) => taskOverdue(t, today)).length;
-    const todoTasks = openList.filter(
-      (t) =>
-        !taskOverdue(t, today) &&
-        ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-    ).length;
-    const inProgressTasks = openList.filter(
-      (t) =>
-        !taskOverdue(t, today) &&
-        !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-    ).length;
+    const todoTasks = openList.filter((t) => taskBucket(t, today) === 'todo').length;
+    const inProgressTasks = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today))).length;
     const totalTasks = totals.totalTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -1193,12 +1181,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
     const sourceTasks = periodTasks;
     const periodTaskItems: TrackedTaskSummaryItem[] = sourceTasks
       .map((t) => {
-        const isDone = taskDone(t);
-        const isOverdue = !isDone && taskOverdue(t, today);
-        const isTodo =
-          !isDone &&
-          !isOverdue &&
-          ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+        const bucket = taskBucket(t, today);
+        const isDone = bucket === 'done';
+        const isOverdue = bucket === 'overdue';
+        const isTodo = bucket === 'todo';
         const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone
           ? 'done'
           : isOverdue
@@ -1247,9 +1233,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
     const deliverableItems: DeliverableTaskSummaryItem[] = [];
 
     periodTasks.forEach((t) => {
-      const isDone = taskDone(t);
-      const isOverdue = !isDone && taskOverdue(t, today);
-      const isTodo = !isDone && !isOverdue && ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase());
+      const bucket = taskBucket(t, today);
+      const isDone = bucket === 'done';
+      const isOverdue = bucket === 'overdue';
+      const isTodo = bucket === 'todo';
       const statusKind: 'done' | 'doing' | 'todo' | 'overdue' = isDone ? 'done' : isOverdue ? 'overdue' : isTodo ? 'todo' : 'doing';
 
       const q = computeTaskDeliverableQty(t);
@@ -1337,7 +1324,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
       deliverableItems,
     };
   }, [
-    periodMeta.today,
+    statusAsOfDay,
     periodTasks,
     data.kpis.tasksCompletedPrev,
     staffMembers,

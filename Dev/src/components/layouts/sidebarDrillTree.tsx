@@ -325,7 +325,7 @@ export function buildSidebarGroups({
   const roleLower = (role || 'member').toLowerCase();
   const canViewDashboard = isLeader;
   const canViewDepartments = roleLower === 'admin';
-  const canViewReports = isLeader;
+  const canViewReports = true;
 
   // ==========================================
   // GROUP 1: MAIN (Dashboard [plain], Workflow Management [drill-down])

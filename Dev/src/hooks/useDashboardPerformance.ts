@@ -1,7 +1,7 @@
 import {tasksForProfileWeek as tasksForWeeklyReport} from '../lib/profileTaskTracking';
 import {useMemo,useState,useEffect} from 'react';
 import {useTranslation} from '../i18n/translations';
-import {taskDone,taskOpen,taskOverdue,taskDueWithin} from '../lib/taskTracking';
+import {taskDone,taskOpen,taskOverdue,taskDueWithin,taskState} from '../lib/taskTracking';
 import {calendarDay} from '../lib/profileCalendar';
 import {mapPriority} from '../components/features/tasks/list/taskListPresentation';
 import type {Task} from './useTasks';
@@ -55,7 +55,7 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
       });
       const month = Array.from({ length: 4 }, (_, offset) => {
         const date = new Date(today.getFullYear(), today.getMonth() - 3 + offset, 1);
-        return list.filter(task => task.due_date && new Date(task.due_date).getFullYear() === date.getFullYear() && new Date(task.due_date).getMonth() === date.getMonth()).length;
+        return list.filter(task => taskOpen(task) && task.due_date && new Date(task.due_date).getFullYear() === date.getFullYear() && new Date(task.due_date).getMonth() === date.getMonth()).length;
       });
       return { id, type, initial: name.slice(0, 2).toUpperCase(), name, role, dept, open, done, projects, projectsLabel: t('dashboard.projects'), total: list.length, overdue, due3, urgent, noDeadline, week, month, avatar_url };
     };
@@ -98,7 +98,7 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
         key,
         name: dayLabel,
         created: selectedTasks.filter(task => dayKey(task.created_at) === key).length,
-        doing: selectedTasks.filter(task => taskOpen(task) && (task.status || '').toLowerCase() !== 'todo' && dayKey(task.updated_at || task.created_at) === key).length,
+        doing: selectedTasks.filter(task => taskOpen(task) && ['in_progress','in_review'].includes(taskState(task)) && dayKey(task.updated_at || task.created_at) === key).length,
         done: selectedTasks.filter(task => taskDone(task) && dayKey(task.completed_at) === key).length,
       });
     }

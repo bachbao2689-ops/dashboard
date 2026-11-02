@@ -4,9 +4,11 @@ import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone } from '../../../lib/profileCalendar';
 import { useTranslation } from '../../../i18n/translations';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
+import { useTaskDetailVisibility } from '../../../hooks/useTaskDetailVisibility';
 
 // The same drawer shape, information card and scroll/footer layout as TaskDetailPanel.
 export function CalendarWorkDetail({ item, items, onClose, onOpen }: { item: CalendarItem; items: CalendarItem[]; onClose: () => void; onOpen: (item: CalendarItem) => void }) {
+  useTaskDetailVisibility(Boolean(item));
   const { t } = useTranslation();
   const [width, setWidth] = useState(440);
   const [resizing, setResizing] = useState(false);
@@ -30,7 +32,7 @@ export function CalendarWorkDetail({ item, items, onClose, onOpen }: { item: Cal
       <aside 
         aria-label={`Chi tiết ${calendarKindLabel[item.kind]}`} 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
         <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-4 dark:border-slate-700"><span className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border ${item.kind === 'campaign' || item.kind === 'campaign_subtask' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : item.kind === 'project' || item.kind === 'project_subtask' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-blue-50 text-primary border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'}`}><Icon size={15} />{calendarKindLabel[item.kind]}</span><button type="button" aria-label={t('common.close')} onClick={onClose} className="rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={20} /></button></header>

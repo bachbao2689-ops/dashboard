@@ -4,9 +4,9 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useAuthStore } from '../store/authStore';
 import { scopeTeamWorkload } from '../lib/workloadScope';
 import {
-  isTaskClosed,
-  isTaskDone,
   taskActive,
+  taskBucket,
+  taskDone,
   taskDay,
   taskOpen,
   taskOverdue,
@@ -48,7 +48,7 @@ const getInitial = (name: string) => {
 export function computeBurndownSeries(tasks: TrackedTask[], now = new Date()): BurndownItem[] {
   const activeList = tasks.filter((t) => taskActive(t));
   const totalTasks = activeList.length;
-  const openNow = activeList.filter((t) => !isTaskClosed(t.status)).length;
+  const openNow = activeList.filter(taskOpen).length;
   const todayStr = taskDay(now.toISOString());
   const endMs = new Date(`${todayStr || new Date().toISOString().slice(0, 10)}T12:00:00Z`).getTime();
 
@@ -56,7 +56,7 @@ export function computeBurndownSeries(tasks: TrackedTask[], now = new Date()): B
     const weeksAgo = 7 - idx;
     const cutoffDate = new Date(endMs - weeksAgo * 7 * 86400000).toISOString().slice(0, 10);
     const completedByCutoff = activeList.filter((t) => {
-      if (!isTaskDone(t.status)) return false;
+      if (!taskDone(t)) return false;
       const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at) || taskDay(t.due_date);
       return doneDay ? doneDay <= cutoffDate : idx === 7;
     }).length;
@@ -86,7 +86,7 @@ export function computeWorkloadHeatmap(
       const openAtWeek = activeList.filter((t) => {
         const createdDay = taskDay(t.created_at) || taskDay(t.start_date);
         if (createdDay && createdDay > weekEnd) return false;
-        if (!isTaskDone(t.status)) return true;
+        if (!taskDone(t)) return true;
         const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at);
         return Boolean(doneDay && doneDay > weekEnd);
       }).length;
@@ -148,22 +148,14 @@ export const useTeamWorkload = (
         );
         if (calendarFilter !== 'all' || customStartDate || customEndDate) {
           memberTasks = memberTasks.filter((t) =>
-            checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, isTaskDone(t.status))
+            checkDateMatch(t.start_date, t.due_date, calendarFilter, customStartDate, customEndDate, taskDone(t))
           );
         }
         const openList = memberTasks.filter((t) => taskOpen(t));
-        const doneList = memberTasks.filter((t) => isTaskDone(t.status));
+        const doneList = memberTasks.filter((t) => taskDone(t));
         const overdueList = openList.filter((t) => taskOverdue(t, today));
-        const todoList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            ['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
-        const inProgressList = openList.filter(
-          (t) =>
-            !taskOverdue(t, today) &&
-            !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-        );
+        const todoList = openList.filter((t) => taskBucket(t, today) === 'todo');
+        const inProgressList = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today)));
         const capacityPercentage = openList.length * 20;
         const totalTasksCount = memberTasks.length;
         const completionPct = totalTasksCount
@@ -216,13 +208,11 @@ export const useTeamWorkload = (
 
   const summary = useMemo(() => {
     const activeTasks = scopedTasks.filter((t) => taskActive(t));
-    const doneTasks = activeTasks.filter((t) => isTaskDone(t.status)).length;
+    const doneTasks = activeTasks.filter((t) => taskDone(t)).length;
     const openTasks = activeTasks.filter((t) => taskOpen(t));
     const overdueTasks = openTasks.filter((t) => taskOverdue(t, today)).length;
-    const inProgressTasks = openTasks.filter(
-      (t) => !['todo', 'backlog', 'planned'].includes((t.status || '').toLowerCase()),
-    ).length;
-    const todoTasks = openTasks.length - inProgressTasks;
+    const inProgressTasks = openTasks.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today))).length;
+    const todoTasks = openTasks.filter((t) => taskBucket(t, today) === 'todo').length;
     const completionRate = activeTasks.length
       ? Math.round((doneTasks / activeTasks.length) * 100)
       : 0;

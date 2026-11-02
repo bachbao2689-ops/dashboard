@@ -46,7 +46,7 @@ test('deliverable quantity falls back to base quantity when no checklist items e
   assert.equal(result.totalQuantity, 3);
 });
 
-test('deliverable quantity falls back to 1 when neither checklist nor base quantity is provided', () => {
+test('deliverable quantity is zero when neither checklist nor base quantity is provided', () => {
   const caseEmpty = {
     quantity: null,
     checklist_items: [],
@@ -55,54 +55,7 @@ test('deliverable quantity falls back to 1 when neither checklist nor base quant
   const result = computeDeliverableQuantity(caseEmpty);
   assert.equal(result.baseQuantity, 0);
   assert.equal(result.checklistQuantity, 0);
-  assert.equal(result.totalQuantity, 1, 'Default fallback is 1 deliverable unit');
-});
-
-test('controller mapping computes total quantity summing base and checklist (Slide 5 REQ-TOT-07)', () => {
-  // Logic from useProjectsController.tsx
-  const subtasks = [
-    { id: 'sub-1', quantity: 2 },
-    { id: 'sub-2', quantity: 3 },
-    { id: 'sub-3', quantity: null },
-  ];
-
-  const metadataRows = {
-    'sub-1': {
-      quantity: 2,
-      checklist_items: [
-        { id: 'c1', quantity: 2 },
-        { id: 'c2', quantity: 2 },
-      ],
-    },
-    'sub-2': {
-      quantity: 3,
-      checklist_items: [
-        { id: 'c3', quantity: null },
-      ],
-    },
-    'sub-3': {
-      checklist_items: [
-        { id: 'c4', quantity: 5 },
-      ],
-    },
-  };
-
-  const quantities = {};
-  Object.entries(metadataRows).forEach(([entityId, meta]) => {
-    const items = Array.isArray(meta.checklist_items) ? meta.checklist_items : [];
-    const checklistQty = items.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
-    const rowQty = Number(meta.quantity) || 0;
-    const subtaskRow = subtasks.find(item => item.id === entityId);
-    const baseQty = Number(subtaskRow?.quantity) || rowQty || 0;
-    const total = baseQty + checklistQty;
-    if (total > 0) {
-      quantities[entityId] = total;
-    }
-  });
-
-  assert.equal(quantities['sub-1'], 6, 'sub-1 should have total 6 = base (2) + checklist (4)');
-  assert.equal(quantities['sub-2'], 3, 'sub-2 has no item quantities, should preserve base quantity 3');
-  assert.equal(quantities['sub-3'], 5, 'sub-3 has item quantity 5, total should be 5');
+  assert.equal(result.totalQuantity, 0, 'Unspecified output must not invent an image/file');
 });
 
 test('checklist deadline extension correctly identifies when task deadline must extend', () => {

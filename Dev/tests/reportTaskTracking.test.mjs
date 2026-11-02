@@ -1,11 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reportDeliverableQuantity,reportPeriodTasks,reportTaskTotals} from '../src/lib/reportTaskTracking.ts';
+import {reportAsOfDay,reportDeliverableQuantity,reportPeriodTasks,reportTaskTotals} from '../src/lib/reportTaskTracking.ts';
 import {mergeDeliverableMetadata,setCachedDeliverable} from '../src/lib/taskDeliverables.ts';
 import {mapWorkspaceTasks} from '../src/lib/workspaceTaskMapping.ts';
 
 const start='2026-10-19',end='2026-10-24';
 const task=(id,status,quantity)=>({id,status,quantity,created_at:'2026-10-19T03:00:00Z',completed_at:status==='done'?'2026-10-21T10:00:00Z':null});
+
+test('current and past reporting periods use a valid overdue as-of day',()=>{
+ assert.equal(reportAsOfDay('2026-11-30','2026-11-02'),'2026-11-02');
+ assert.equal(reportAsOfDay('2026-10-31','2026-11-02'),'2026-10-31');
+ assert.equal(reportAsOfDay('2099-12-31','2026-11-02'),'2026-11-02');
+});
 
 test('screenshot totals reconcile 27 of 42 tasks with 79 of 635 deliverables without mixing units',()=>{
  const rows=[...Array.from({length:27},(_,i)=>task('done-'+i,'done',i===26?53:1)),...Array.from({length:15},(_,i)=>task('open-'+i,'todo',i===14?542:1))];
@@ -39,14 +45,14 @@ test('workflow completion and removed rows are treated consistently by task and 
 test('base plus checklist quantity is counted once and ignores a stale precomputed total',()=>{
  assert.equal(reportDeliverableQuantity({quantity:2,checklist_items:[{quantity:3},{quantity:5}],deliverable_quantity:999}),10);
  assert.equal(reportDeliverableQuantity({deliverable_quantity:7}),7);
- assert.equal(reportDeliverableQuantity({quantity:NaN,checklist_items:[{quantity:-20},{quantity:Infinity}]}),1);
+ assert.equal(reportDeliverableQuantity({quantity:NaN,checklist_items:[{quantity:-20},{quantity:Infinity}]}),0);
 });
 
 test('partial metadata edits retain saved quantity and explicit resets retain their meaning',()=>{
  const meta=mergeDeliverableMetadata([{description:'Edited description'},{quantity:5,checklist_items:[{quantity:2}]},{quantity:80}]);
  assert.equal(reportDeliverableQuantity(meta),7);
  const reset=mergeDeliverableMetadata([{quantity:null,checklist_items:[]},meta]);
- assert.equal(reportDeliverableQuantity(reset),1);
+ assert.equal(reportDeliverableQuantity(reset),0);
  assert.deepEqual(reset.checklist_items,[]);
 });
 

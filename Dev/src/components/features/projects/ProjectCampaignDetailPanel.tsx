@@ -25,6 +25,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
+import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -40,6 +41,7 @@ const formatCreatedAt = (value?: string | null) => {
 
 type PanelProps = {item:any; kind:'project' | 'campaign'; onClose:() => void; onUpdated?:() => void};
 export function ProjectCampaignDetailPanel(props:PanelProps) {
+  useTaskDetailVisibility(Boolean(props.item));
   const profile = useAuthStore(s => s.profile);
   return <ProjectCampaignDetailContent key={`${profile?.id}:${profile?.role}:${profile?.department_id}:${props.kind}:${props.item.id}`} {...props} />;
 }
@@ -175,7 +177,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       />
       <aside 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
@@ -300,9 +302,9 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                             <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
                               {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
                             </span>
-                            {Boolean(sub.quantity) && (
+                            {Boolean(sub.subtask_total_quantity) && (
                               <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                                SL: {sub.quantity}
+                                SL: {sub.subtask_total_quantity}
                               </span>
                             )}
                             {sub.due_date && (
