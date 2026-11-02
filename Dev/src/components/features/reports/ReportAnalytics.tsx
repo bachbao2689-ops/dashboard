@@ -3137,8 +3137,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
         </div>
 
-        <div className="report-print-page-2">
-        {/* TẦNG 3: 2 Bottom Charts - Đồng bộ chiều cao h-[360px] bằng nhau 100%, max 5 nhân sự fix cứng */}
+        <div className="report-print-page-2 mt-2 lg:mt-3">
+        {/* TẦNG 3: 2 Bottom Charts - Chiều cao co giãn linh hoạt chiếm khoảng trống dưới của khung hình 16:9, max 5 nhân sự fix cứng */}
         <section aria-label="Bottom Analytics Charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
           {/* Chart 1: Lịch phân bổ task (Task Allocation Schedule) thay thế Burndown, track filter theo tab Report */}
           <div className="w-full">
@@ -3149,12 +3149,12 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               hideDateFilter={true}
               isDark={isDark}
               chartData={allocationChartData}
-              className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr_auto] h-[360px] min-h-[360px] max-h-[360px] min-w-[320px] sm:min-w-0 overflow-hidden"
+              className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr_auto] min-h-[360px] h-[clamp(360px,42vh,480px)] lg:h-[clamp(380px,44vh,500px)] min-w-[320px] sm:min-w-0 overflow-hidden"
             />
           </div>
 
           {/* Chart 2: Ma trận Công suất & Phân bổ Tải (Capacity Heatmap Matrix - Slide 4b) */}
-          <div className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr] h-[360px] min-h-[360px] max-h-[360px] min-w-0 overflow-hidden">
+          <div className="glass-panel p-3.5 sm:p-5 rounded-[8px] border border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#0a192f]/90 shadow-sm grid grid-rows-[auto_1fr] min-h-[360px] h-[clamp(360px,42vh,480px)] lg:h-[clamp(380px,44vh,500px)] min-w-0 overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center gap-2">
               <div className="grid grid-cols-1 gap-0.5">
                 <div className="grid grid-flow-col auto-cols-max items-center gap-2">
