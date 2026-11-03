@@ -1,6 +1,7 @@
 /* Profile Card: portrait layout, clean borders with soft shadow, capsule pills & system button */
 .report-staff-section {
   container-type: inline-size;
+  container-name: staff-section;
 }
 
 .report-profiles {
@@ -14,6 +15,7 @@
 
 /* Outer Card Container - Clean border with subtle soft shadow on hover */
 .report-profile {
+  container-type: inline-size;
   --profile-ink: #002e6d;
   --profile-muted: #475569;
   font-family: inherit;
@@ -28,6 +30,7 @@
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
   z-index: 1;
   overflow: hidden;
+  cursor: pointer;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
@@ -35,6 +38,11 @@
   transform: translateY(-2px);
   border-color: rgba(186, 220, 245, 0.9);
   box-shadow: inset 0 1px 1px #ffffff, 0 14px 28px -8px rgba(0, 46, 109, 0.13);
+}
+
+.report-profile:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
 }
 
 /* Inner Surface - Prominent portrait height showing full avatar & staff performance metrics */
@@ -95,12 +103,12 @@
   letter-spacing: .02em;
 }
 
-/* Targeted Blur: Covers the lower zone behind name, performance labels & controls */
+/* Targeted Blur: Covers the lower zone behind name & performance labels */
 .report-profile-glass {
   position: absolute;
   z-index: 1;
   inset: auto 0 0;
-  height: clamp(88px, 9.5vh, 102px);
+  height: clamp(82px, 9vh, 94px);
   background: linear-gradient(
     180deg,
     rgba(240, 247, 255, 0) 0%,
@@ -136,79 +144,234 @@
   pointer-events: none;
 }
 
+/* 100% CSS Grid, Zero Flexbox: 2-row layout mặc định cho Desktop & Màn hình 2K
+   Hàng 1: Tên staff (20px, 700) + Subtitle (tracking màu Quyền) CÙNG HÀNG
+   Hàng 2: CẢ 5 LABEL PERFORMANCE CÙNG 1 HÀNG DUY NHẤT (display: contents !important) */
 .report-profile-content {
   position: absolute;
   z-index: 10;
   inset: auto 0 0;
   display: grid;
-  gap: 7px;
-  padding: 10px 12px 12px;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  justify-content: start;
+  justify-items: start;
+  align-items: center;
+  row-gap: 5px;
+  padding: 8px 10px 10px 12px;
   -webkit-transform: translate3d(0, 0, 10px);
   transform: translate3d(0, 0, 10px);
 }
 
 .report-profile-identity {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.report-profile-identity h3 {
-  display: block;
-  font-size: clamp(14.5px, 1.05vw, 17px);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -.025em;
-  overflow-wrap: anywhere;
-  color: var(--profile-ink);
-  margin: 0;
-}
-
-.report-profile-identity p {
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.25;
-  color: var(--profile-muted);
-  overflow-wrap: anywhere;
-  margin: 0;
-}
-
-/* Performance Status Row - Icon & Number Only, No Text */
-.report-profile-perf-row {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.report-profile-badge {
+/* Hàng 1, Item 1: Tên staff (font-size 20px, bold 700) */
+.report-profile-identity h3 {
+  grid-column: auto;
+  grid-row: auto;
+  align-self: center;
+  display: block;
+  font-size: 20px !important;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #002e6d;
+  margin: 0;
+}
+
+.dark .report-profile-identity h3 {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Hàng 1, Item 2: Subtitle staff - Cân đối vừa vặn (+15%), căn giữa hoàn hảo cả 2 trục */
+.report-profile-subtitle {
+  grid-column: auto;
+  grid-row: auto;
+  align-self: center;
   display: inline-grid;
-  grid-template-columns: 11px auto;
+  place-items: center;
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
+  text-align: center;
+  height: 15px;
+  min-height: 15px;
+  box-sizing: border-box;
+  font-size: 8.8px;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1;
+  padding: 1.2px 5.5px;
+  border-radius: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+/* Member: Màu xanh lá (default) */
+.report-profile-subtitle,
+.report-profile-subtitle--member {
+  border: 1px solid #a7f3d0 !important;
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+.dark .report-profile-subtitle,
+.dark .report-profile-subtitle--member {
+  border: 1px solid rgba(78, 182, 72, 0.45) !important;
+  background: rgba(19, 31, 49, 0.95) !important;
+  color: #90e38a !important;
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.15) !important;
+}
+
+/* Leader / Team Lead: Màu cam */
+.report-profile-subtitle--leader {
+  border: 1px solid #fed7aa !important;
+  background: #ffedd5 !important;
+  color: #c2410c !important;
+}
+
+.dark .report-profile-subtitle--leader {
+  border: 1px solid rgba(249, 115, 22, 0.45) !important;
+  background: rgba(124, 45, 18, 0.25) !important;
+  color: #fb923c !important;
+  box-shadow: inset 0 1px 0 rgba(249, 115, 22, 0.15) !important;
+}
+
+/* Manager: Màu xanh dương */
+.report-profile-subtitle--manager {
+  border: 1px solid #bfdbfe !important;
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.dark .report-profile-subtitle--manager {
+  border: 1px solid rgba(59, 130, 246, 0.45) !important;
+  background: rgba(30, 58, 138, 0.25) !important;
+  color: #93c5fd !important;
+  box-shadow: inset 0 1px 0 rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Admin: Màu tím */
+.report-profile-subtitle--admin {
+  border: 1px solid #e9d5ff !important;
+  background: #f3e8ff !important;
+  color: #6b21a8 !important;
+}
+
+.dark .report-profile-subtitle--admin {
+  border: 1px solid rgba(168, 85, 247, 0.45) !important;
+  background: rgba(88, 28, 135, 0.25) !important;
+  color: #d8b4fe !important;
+  box-shadow: inset 0 1px 0 rgba(168, 85, 247, 0.15) !important;
+}
+
+/* Viewer: Màu xám */
+.report-profile-subtitle--viewer {
+  border: 1px solid #e2e8f0 !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+.dark .report-profile-subtitle--viewer {
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  background: rgba(30, 41, 59, 0.45) !important;
+  color: #cbd5e1 !important;
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.15) !important;
+}
+
+/* Hàng 2: CẢ 5 LABEL PERFORMANCE CÙNG 1 HÀNG DUY NHẤT (display: contents !important) */
+.report-profile-metrics {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 3.5px;
   align-items: center;
-  gap: 3px;
-  padding: 2.5px 7px;
+  justify-content: start;
+  min-width: 0;
+}
+
+.report-profile-metrics-row {
+  display: contents !important;
+}
+
+.report-profile-metrics-row--primary,
+.report-profile-metrics-row--alerts {
+  display: contents !important;
+  align-items: center;
+}
+
+.report-profile-perf-row,
+.report-profile-counters {
+  display: contents;
+}
+
+/* Performance Status Badges & Pills (Lấy label Hoàn thành làm chuẩn: đồng bộ size 100%, căn giữa tuyệt đối) */
+.report-profile-badge,
+.report-profile-pill {
+  display: inline-grid;
+  grid-template-columns: 10px auto;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
+  gap: 2.5px;
+  padding: 2px 5.5px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1;
+  height: 20px;
+  min-height: 20px;
+  box-sizing: border-box;
   white-space: nowrap;
-  border: 1px solid transparent;
+  flex-shrink: 0;
   cursor: default;
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
 }
 
-.report-profile-badge:hover {
+.report-profile-badge:hover,
+.report-profile-pill:hover {
   transform: translateY(-1px);
 }
 
-.report-profile-badge svg {
-  width: 11px;
-  height: 11px;
+.report-profile-badge svg,
+.report-profile-pill svg {
+  width: 10px;
+  height: 10px;
   stroke-width: 2.2;
+  flex-shrink: 0;
 }
 
-/* Done Tasks Badge - Tone Emerald */
+.report-profile-badge strong,
+.report-profile-pill strong {
+  font-weight: 700;
+  line-height: 1;
+}
+
+.report-profile-badge {
+  border: 1px solid transparent;
+}
+
+/* Done Tasks Badge - Tone Emerald (Chuẩn kích thước) */
 .report-profile-badge--done {
   background: #ecfdf5;
   color: #047857;
@@ -229,92 +392,20 @@
   border-color: #fde68a;
 }
 
-/* Footer & Performance Counters (Palette theo 5 thẻ Performance) */
-.report-profile-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 7px;
-  align-items: center;
-}
-
-.report-profile-counters {
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 5px;
-  align-items: center;
-}
-
-/* 2 Label Việc & SL: Icon + Số, UI Capsule Pill */
+/* 2 Label Việc & SL: Đồng bộ 100% kích thước với label Hoàn thành */
 .report-profile-pill {
-  display: inline-grid;
-  grid-template-columns: 11px auto;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 0 9px;
   border: 1px solid #d5e9f7;
-  border-radius: 8px;
-  background: linear-gradient(155deg, #ffffff, #f0f7ff);
+  background: #f0f7ff;
   color: #002e6d;
-  font-size: 11px;
-  font-weight: 700;
-  box-shadow: inset 0 1px 1px #ffffff, 0 2px 5px -1px rgba(0, 46, 109, 0.08);
-  cursor: default;
-  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
-  white-space: nowrap;
 }
 
 .report-profile-pill:hover {
-  transform: translateY(-1px);
   border-color: #b9dcf5;
-  box-shadow: inset 0 1px 1px #ffffff, 0 3px 8px -2px rgba(0, 46, 109, 0.14);
+  box-shadow: 0 2px 6px rgba(0, 46, 109, 0.12);
 }
 
 .report-profile-pill svg {
-  width: 11px;
-  height: 11px;
-  stroke-width: 1.8;
   color: #002e6d;
-}
-
-.report-profile-pill strong {
-  font-weight: 700;
-  color: #002e6d;
-}
-
-/* CTA Details button - System Button UI matching tab Báo cáo */
-.report-profile-cta {
-  display: inline-grid;
-  place-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border: 1px solid rgba(147, 197, 253, 0.85);
-  border-radius: 8px;
-  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70));
-  color: #1d4ed8;
-  font-size: 11.5px;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 5px rgba(30, 90, 170, 0.12);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.report-profile-cta:hover {
-  transform: translateY(-1px);
-  background: linear-gradient(to bottom, rgba(219, 234, 254, 1), rgba(191, 219, 254, 0.88));
-  border-color: #60a5fa;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 3px 8px rgba(30, 90, 170, 0.2);
-}
-
-.report-profile-cta:active {
-  transform: translateY(0);
-}
-
-.report-profile-cta:focus-visible {
-  outline: 2px solid #1d4ed8;
-  outline-offset: 2px;
 }
 
 
@@ -492,6 +583,11 @@
     align-content: center;
   }
 
+  .report-profile-modal-card-col .report-profile-identity {
+    padding: 3px 6px !important;
+    border-radius: 6px !important;
+  }
+
   .report-profile-modal-card-col .report-profile-identity h3 {
     font-size: 14.5px !important;
     line-height: 1.2;
@@ -502,7 +598,7 @@
     line-height: 1.3;
   }
 
-  .report-profile-modal-card-col .report-profile-footer {
+  .report-profile-modal-card-col .report-profile-counters {
     display: none !important;
   }
 
@@ -717,7 +813,7 @@
 
 .dark .report-profile-glass {
   inset: auto 0 0;
-  height: clamp(88px, 9.5vh, 102px);
+  height: clamp(84px, 9.5vh, 98px);
   background: linear-gradient(
     180deg,
     rgba(9, 15, 27, 0) 0%,
@@ -752,6 +848,17 @@
   border-radius: 0 0 18px 18px;
 }
 
+.dark .report-profile-identity h3 {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.dark .report-profile-identity p {
+  font-style: normal;
+  font-weight: 500;
+}
+
 .dark .report-profile-badge--done {
   background: rgba(6, 78, 59, 0.45);
   color: #6ee7b7;
@@ -770,13 +877,18 @@
   border-color: rgba(245, 158, 11, 0.5);
 }
 
-/* Pills Dark Mode */
+/* Pills Dark Mode: nền tối gọn gàng, viền xanh lá, đồng bộ 100% với badge Hoàn thành */
 .dark .report-profile-pill {
-  background: linear-gradient(155deg, rgba(78, 182, 72, 0.12), rgba(19, 31, 49, 0.95));
-  border: 1.5px solid rgba(78, 182, 72, 0.45);
+  background: rgba(19, 31, 49, 0.95);
+  border: 1px solid rgba(78, 182, 72, 0.45);
   color: #90e38a;
-  border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.18), 0 2px 6px rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 2px 5.5px;
+  height: 20px;
+  min-height: 20px;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.15);
 }
 
 .dark .report-profile-pill svg {
@@ -789,26 +901,10 @@
 
 .dark .report-profile-pill:hover {
   border-color: #4eb648;
-  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.3), 0 4px 12px rgba(78, 182, 72, 0.22);
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.3), 0 2px 8px rgba(78, 182, 72, 0.25);
 }
 
-/* Nút CTA Dark Mode - System Button matching tab Báo cáo */
-.dark .report-profile-cta {
-  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08));
-  border: 1px solid rgba(78, 182, 72, 0.45);
-  color: #85df7d;
-  border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-.dark .report-profile-cta:hover {
-  background: rgba(78, 182, 72, 0.28);
-  color: #a7f3d0;
-  border-color: #4eb648;
-  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.25), 0 4px 12px rgba(78, 182, 72, 0.3);
-}
-
-.dark .report-profile-cta:focus-visible {
+.dark .report-profile:focus-visible {
   outline: 2px solid #4eb648;
   outline-offset: 2px;
 }
@@ -816,7 +912,7 @@
 /* ========================================================
    Responsive Breakpoints (Desktop & Tablet >= 640px: 5 cards ALWAYS in 1 single row)
    ======================================================== */
-@container (max-width: 1199px) {
+@container staff-section (max-width: 1199px) {
   .report-profiles {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(6px, 0.9vw, 12px);
@@ -857,45 +953,11 @@
   .report-profile-glass,
   .dark .report-profile-glass {
     inset: auto 0 0;
-    height: clamp(80px, 9vh, 96px);
     border-radius: 0 0 16px 16px;
-  }
-  .report-profile-content {
-    gap: 5px;
-    padding: 6px 8px 10px;
-  }
-  .report-profile-identity h3 {
-    font-size: clamp(12px, 0.95vw, 14.5px);
-  }
-  .report-profile-identity p {
-    font-size: 10.5px;
-  }
-  .report-profile-perf-row {
-    gap: 3px;
-  }
-  .report-profile-badge {
-    padding: 1.5px 5px;
-    font-size: 10px;
-  }
-  .report-profile-footer {
-    gap: 4px;
-  }
-  .report-profile-counters {
-    gap: 3px;
-  }
-  .report-profile-pill {
-    min-height: 24px;
-    padding: 0 6px;
-    font-size: 10px;
-  }
-  .report-profile-cta {
-    min-height: 24px;
-    padding: 0 8px;
-    font-size: 10.5px;
   }
 }
 
-@container (max-width: 799px) {
+@container staff-section (max-width: 799px) {
   .report-profiles {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(4px, 0.6vw, 8px);
@@ -920,29 +982,10 @@
     height: 36px;
     font-size: 14px;
   }
-  .report-profile-content {
-    gap: 4px;
-    padding: 4px 6px 8px;
-  }
-  .report-profile-identity h3 {
-    font-size: 11.5px;
-  }
-  .report-profile-identity p {
-    font-size: 9.5px;
-  }
-  .report-profile-badge {
-    padding: 1px 4px;
-    font-size: 9px;
-  }
-  .report-profile-pill {
-    min-height: 22px;
-    padding: 0 4px;
-    font-size: 9px;
-  }
-  .report-profile-cta {
-    min-height: 22px;
-    padding: 0 6px;
-    font-size: 9.5px;
+  .report-profile-glass,
+  .dark .report-profile-glass {
+    inset: auto 0 0;
+    border-radius: 0 0 13px 13px;
   }
 }
 
@@ -950,7 +993,7 @@
    MOBILE 1-ROW COVERFLOW CAROUSEL (< 640px)
    1 Hàng duy nhất dạng lướt ngang, khung chiếm ~2/3 màn hình
    Chiều cao tăng 30% (~400px), chiều rộng tăng 20% (68vw ~ 270px)
-   Hiển thị to rõ đầy đủ Performance labels, badges, pills & CTA
+   Hiển thị to rõ đầy đủ Performance labels, badges & pills
    Zero Flexbox: 100% CSS Grid auto-flow column, snap-x proximity
    ======================================================== */
 @media (max-width: 639px) {
@@ -1060,7 +1103,18 @@
     color: #cbd5e1 !important;
   }
 
-  .report-profile-perf-row {
+  .report-profile-subtitle {
+    font-size: 11px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+    justify-self: start !important;
+    line-height: 1.3 !important;
+  }
+
+  .report-profile-perf-row,
+  .report-profile-metrics-row--alerts {
     display: grid !important;
     grid-auto-flow: column !important;
     grid-auto-columns: max-content !important;
@@ -1091,7 +1145,8 @@
     align-items: center !important;
   }
 
-  .report-profile-counters {
+  .report-profile-counters,
+  .report-profile-metrics-row--primary {
     display: grid !important;
     grid-auto-flow: column !important;
     grid-auto-columns: max-content !important;
@@ -1115,34 +1170,16 @@
     width: 12px !important;
     height: 12px !important;
   }
-
-  .report-profile-cta {
-    min-height: 38px !important;
-    padding: 0 16px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-    display: inline-grid !important;
-    place-items: center !important;
-  }
 }
 
-@container (min-width: 1200px) and (max-width: 1440px) {
+@container staff-section (min-width: 1200px) and (max-width: 1440px) {
   .report-profile-content {
-    padding-inline: 10px;
-  }
-  .report-profile-counters {
-    gap: 5px;
-  }
-  .report-profile-cta {
-    padding-inline: 10px;
-    gap: 4px;
+    padding-inline: 8px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .report-profile,
-  .report-profile-cta {
+  .report-profile {
     transition: none;
   }
   .report-profile-expanded {
@@ -1270,12 +1307,6 @@
     max-height: 365px;
     border-radius: 20px;
   }
-  .report-profile-identity h3 {
-    font-size: 1.05rem;
-  }
-  .report-profile-identity p {
-    font-size: 0.85rem;
-  }
   .report-profile-expanded {
     width: min(85%, clamp(800px, 40vw, 1040px));
     height: clamp(330px, 34vh, 380px);
@@ -1283,3 +1314,152 @@
     padding: 14px;
   }
 }
+
+/* ========================================================
+   MÀN HÌNH LỚN (2K 16:9, viewport >= 1800px hoặc staff-section >= 1400px)
+   - Tên Staff font-size 20px, Subtitle staff dạng pill xanh UI giống Tổng task
+   - Các Label Performance xuống 1 hàng duy nhất
+   - 2 label Tổng task và Số lượng BẰNG SIZE 3 label còn lại (11px, padding 2.5px 7px)
+   - Glass blur: height clamp(86px, 9.5vh, 100px)
+   - Zero Flexbox, 100% CSS Grid
+   ======================================================== */
+/* ========================================================
+   TRẠNG THÁI 2: THẺ CO NHỎ LẠI / CỬA SỔ THU NHỎ TRÊN DESKTOP/TABLET (<= 300px, >= 640px)
+   - Giữ nguyên 100% UI mobile trên nhánh develop (< 640px)
+   - Trên Desktop/Tablet khi thu nhỏ cửa sổ:
+     * Label Subtitle nhỏ hơn 30% ở dưới Tên staff (Hàng 1: Tên staff, Hàng 2: Subtitle)
+     * Hàng 3: 3 label [Tổng task] [Hoàn thành] [Số lượng]
+     * Hàng 4: 2 label [Quá hạn] [Tồn đọng] xuống hàng ở dưới cùng
+   - Glass blur: height clamp(98px, 11.5vh, 112px) bao trọn 4 hàng mềm mại
+   - 100% CSS Grid, Zero Flexbox, căn giữa tâm box tuyệt đối
+   ======================================================== */
+@media (min-width: 640px) {
+  @container (max-width: 300px) {
+    .report-profile-glass,
+    .dark .report-profile-glass {
+      height: clamp(98px, 11.5vh, 112px) !important;
+    }
+
+    .report-profile-content {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      grid-template-rows: auto auto !important;
+      row-gap: 3.5px !important;
+      padding: 6px 8px 8px 10px !important;
+      justify-content: start !important;
+      justify-items: start !important;
+      align-items: center !important;
+    }
+
+    /* Hàng 1 Tên Staff + Hàng 2 Subtitle Staff */
+    .report-profile-identity {
+      display: grid !important;
+      grid-template-rows: auto auto !important;
+      grid-auto-flow: row !important;
+      row-gap: 2.5px !important;
+      min-width: 0 !important;
+    }
+
+    .report-profile-identity h3 {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      font-size: clamp(13.5px, 1.05vw, 15px) !important;
+      font-weight: 700 !important;
+      line-height: 1.2 !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      color: #002e6d !important;
+      margin: 0 !important;
+    }
+
+    .dark .report-profile-identity h3 {
+      color: #ffffff !important;
+      font-weight: 700 !important;
+    }
+
+    .report-profile-subtitle,
+    .report-profile-identity p {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      justify-self: start !important;
+      display: inline-grid !important;
+      place-items: center !important;
+      align-content: center !important;
+      justify-content: center !important;
+      justify-items: center !important;
+      text-align: center !important;
+      box-sizing: border-box !important;
+      font-size: 8.8px !important;
+      font-weight: 600 !important;
+      line-height: 1 !important;
+      padding: 1.2px 5.5px !important;
+      border-radius: 5px !important;
+      height: 15px !important;
+      min-height: 15px !important;
+    }
+
+    /* Cụm nhãn performance: 2 hàng */
+    .report-profile-metrics {
+      display: grid !important;
+      grid-template-rows: auto auto !important;
+      grid-auto-flow: row !important;
+      row-gap: 3px !important;
+      justify-content: start !important;
+      justify-items: start !important;
+      min-width: 0 !important;
+    }
+
+    /* Hàng 3: 3 label [Tổng task] [Hoàn thành] [Số lượng] */
+    .report-profile-metrics-row,
+    .report-profile-metrics-row--primary {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      display: grid !important;
+      grid-auto-flow: column !important;
+      grid-auto-columns: max-content !important;
+      gap: 3px !important;
+      align-items: center !important;
+      justify-content: start !important;
+    }
+
+    /* Hàng 4: 2 label [Quá hạn] [Tồn đọng] xuống hàng ở dưới cùng */
+    .report-profile-metrics-row--alerts {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      display: grid !important;
+      grid-auto-flow: column !important;
+      grid-auto-columns: max-content !important;
+      gap: 3px !important;
+      align-items: center !important;
+      justify-content: start !important;
+    }
+
+    .report-profile-badge,
+    .report-profile-pill {
+      display: inline-grid !important;
+      place-items: center !important;
+      align-content: center !important;
+      justify-content: center !important;
+      justify-items: center !important;
+      text-align: center !important;
+      box-sizing: border-box !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      padding: 2px 5px !important;
+      border-radius: 5px !important;
+      gap: 2.5px !important;
+      height: 19px !important;
+      min-height: 19px !important;
+    }
+
+    .report-profile-badge svg,
+    .report-profile-pill svg {
+      width: 10px !important;
+      height: 10px !important;
+    }
+  }
+}
+
+

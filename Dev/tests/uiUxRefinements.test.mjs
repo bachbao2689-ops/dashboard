@@ -144,6 +144,11 @@ test('Reports Access: Staff role has visibility in navigation and scoped access 
   assert.equal(scope.effectiveDepartmentFilter, 'dept-marketing');
   assert.deepEqual(scope.users.map(u => u.id), ['staff-1', 'staff-2']);
   assert.deepEqual(scope.tasks.map(t => t.id), ['t1', 't2']);
+
+  // 4. Verify useReports hooks enforce locked department for staff
+  const useReportsSource = fs.readFileSync(path.resolve('Dev/src/hooks/useReports.ts'), 'utf8');
+  assert.equal(useReportsSource.includes('if (!canViewAllDepartments) return;'), true);
+  assert.equal(useReportsSource.includes('if (!canViewAllDepartments && profile?.department_id)'), true);
 });
 
 // Test 6: Mobile navigation hides when detail panels open and restores when closed
@@ -206,4 +211,82 @@ test('TaskListCollection: uses displayDate(task.due_date) for table and mobile v
   assert.equal(file.includes('displayDate(task.due_date)'), true);
   assert.equal(file.includes('new Date(task.due_date).toLocaleDateString()'), false);
 });
+
+// Test 9: Report profile label order & subtitle role tracking
+test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2K)', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const css = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportProfiles.css'), 'utf-8');
+  const tsx = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportAnalytics.tsx'), 'utf-8');
+
+  // Verify label order: Tổng task -> Hoàn thành -> Số lượng -> Quá hạn -> Tồn đọng
+  const taskIdx = tsx.indexOf('report-profile-pill--task');
+  const doneIdx = tsx.indexOf('report-profile-badge--done');
+  const outputIdx = tsx.indexOf('report-profile-pill--output');
+  const lateIdx = tsx.indexOf('report-profile-badge--late');
+  const backlogIdx = tsx.indexOf('report-profile-badge--backlog');
+
+  assert.equal(taskIdx !== -1 && doneIdx !== -1 && outputIdx !== -1 && lateIdx !== -1 && backlogIdx !== -1, true);
+  assert.equal(taskIdx < doneIdx, true, 'Tổng task must appear before Hoàn thành');
+  assert.equal(doneIdx < outputIdx, true, 'Hoàn thành must appear before Số lượng');
+  assert.equal(outputIdx < lateIdx, true, 'Số lượng must appear before Quá hạn');
+  assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng');
+
+  // Verify role styling classes in CSS & helper in TSX
+  assert.equal(tsx.includes('getStaffRoleKey'), true);
+  assert.equal(tsx.includes('report-profile-subtitle--'), true);
+
+  // Leader / Team Lead: cam
+  assert.equal(css.includes('.report-profile-subtitle--leader'), true);
+  assert.equal(css.includes('color: #fb923c !important;'), true);
+  assert.equal(css.includes('color: #c2410c !important;'), true);
+
+  // Member: xanh lá
+  assert.equal(css.includes('.report-profile-subtitle--member'), true);
+  assert.equal(css.includes('color: #90e38a !important;'), true);
+  assert.equal(css.includes('color: #047857 !important;'), true);
+
+  // Manager: xanh dương
+  assert.equal(css.includes('.report-profile-subtitle--manager'), true);
+  assert.equal(css.includes('color: #93c5fd !important;'), true);
+  assert.equal(css.includes('color: #1e40af !important;'), true);
+
+  // Admin: tím
+  assert.equal(css.includes('.report-profile-subtitle--admin'), true);
+  assert.equal(css.includes('color: #d8b4fe !important;'), true);
+  assert.equal(css.includes('color: #6b21a8 !important;'), true);
+
+  // Viewer: xám
+  assert.equal(css.includes('.report-profile-subtitle--viewer'), true);
+  assert.equal(css.includes('color: #cbd5e1 !important;'), true);
+  assert.equal(css.includes('color: #475569 !important;'), true);
+
+  // Verify 2-row metrics structure (primary row and alerts row)
+  assert.equal(tsx.includes('report-profile-metrics-row--primary'), true);
+  assert.equal(tsx.includes('report-profile-metrics-row--alerts'), true);
+  assert.equal(css.includes('.report-profile-metrics-row--primary'), true);
+  assert.equal(css.includes('.report-profile-metrics-row--alerts'), true);
+
+  // Verify Glass height
+  assert.equal(css.includes('height: clamp(82px, 9vh, 94px);'), true);
+  assert.equal(css.includes('height: clamp(98px, 11.5vh, 112px) !important;'), true);
+
+  // Verify complete removal of CTA button & card interaction preserved
+  assert.equal(css.includes('.report-profile-cta'), false);
+  assert.equal(tsx.includes('report-profile-cta'), false);
+  assert.equal(css.includes('cursor: pointer;'), true);
+  assert.equal(tsx.includes('role="button"'), true);
+  assert.equal(tsx.includes('onClick={onDetails}'), true);
+
+  // Verify Default Desktop & 2K macOS base layout: 1-row name+subtitle and 1-row 5 labels
+  assert.equal(css.includes('font-size: 20px !important;'), true);
+  assert.equal(css.includes('font-size: 8.8px;'), true);
+  assert.equal(css.includes('padding: 1.2px 5.5px;'), true);
+  assert.equal(css.includes('display: contents !important;'), true);
+  assert.equal(css.includes('padding: 2px 5.5px;'), true);
+
+  // Verify State 2 compact scaling on Desktop/Tablet (<= 300px) and develop mobile coverflow (< 640px)
+  assert.equal(css.includes('@container (max-width: 300px)'), true);
+  assert.equal(css.includes('@media (max-width: 639px)'), true);
+});
+
 

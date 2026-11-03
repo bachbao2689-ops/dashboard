@@ -49,6 +49,16 @@ const staffTaskTrack = (task: any) =>
 const staffTrackCount = (tasks: any[], kind: 'project' | 'campaign') =>
   new Set(tasks.filter(task => staffTaskTrack(task) === kind).map(task => String(task[kind]?.id || task[`${kind}_id`]))).size;
 
+const getStaffRoleKey = (m: StaffReportMember) => {
+  const sys = (m.systemRole || '').toLowerCase();
+  const r = (m.role || '').toLowerCase();
+  if (sys === 'admin' || r.includes('admin')) return 'admin';
+  if (sys === 'manager' || r.includes('manager')) return 'manager';
+  if (sys === 'leader' || sys === 'team_lead' || r.includes('lead') || r.includes('trưởng')) return 'leader';
+  if (sys === 'viewer' || r.includes('viewer')) return 'viewer';
+  return 'member';
+};
+
 /** Portrait/glass composition from the Figma “Right” reference; report data stays live. */
 export function ReportProfileCard({
   member,
@@ -88,10 +98,20 @@ export function ReportProfileCard({
   return (
     <article
       data-staff-id={member.id}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`${expanded ? (lang === 'en' ? 'Close details' : 'Đóng chi tiết') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}: ${member.name}`}
+      onClick={onDetails}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onDetails();
+        }
+      }}
       className={`report-profile${hasImage ? '' : ' report-profile--initials'}${isCoverflow ? ' report-profile--coverflow-active' : ''}`}
-      aria-label={member.name}
     >
-        <div className="report-profile-surface">
+      <div className="report-profile-surface">
         {hasImage ? (
           <img className="report-profile-portrait" src={member.avatar_url!} alt={member.name}
             loading="lazy" onError={() => setImageFailed(true)} />
@@ -102,47 +122,13 @@ export function ReportProfileCard({
         <div className="report-profile-content">
           <div className="report-profile-identity">
             <h3>{member.name}</h3>
-            <p>{member.role}</p>
+            <p className={`report-profile-subtitle report-profile-subtitle--${getStaffRoleKey(member)}`}>{member.role}</p>
           </div>
 
-          {/* Performance Status Labels: only icon & number, hover for details */}
-          <div className="report-profile-perf-row" aria-label={lang === 'en' ? 'Performance status' : 'Trạng thái hiệu suất'}>
-            <span
-              className="report-profile-badge report-profile-badge--done"
-              title={doneTooltip}
-              aria-label={doneTooltip}
-              data-profile-tooltip={doneTooltip}
-              data-profile-tooltip-pos="left"
-            >
-              <CheckCircle2 size={12} aria-hidden="true" />
-              <strong>{member.done}</strong>
-            </span>
-            {member.late > 0 && (
-              <span
-                className="report-profile-badge report-profile-badge--late"
-                title={lateTooltip}
-                aria-label={lateTooltip}
-                data-profile-tooltip={lateTooltip}
-              >
-                <Clock size={12} aria-hidden="true" />
-                <strong>{member.late}</strong>
-              </span>
-            )}
-            {member.profileBacklogCount > 0 && (
-              <span
-                className="report-profile-badge report-profile-badge--backlog"
-                title={backlogTooltip}
-                aria-label={backlogTooltip}
-                data-profile-tooltip={backlogTooltip}
-              >
-                <AlertTriangle size={12} aria-hidden="true" />
-                <strong>{member.profileBacklogCount}</strong>
-              </span>
-            )}
-          </div>
-
-          <div className="report-profile-footer">
-            <div className="report-profile-counters">
+          <div className="report-profile-metrics" aria-label={lang === 'en' ? 'Performance status' : 'Trạng thái hiệu suất'}>
+            {/* Hàng trên: Tổng task, Hoàn thành, Số lượng */}
+            <div className="report-profile-metrics-row report-profile-metrics-row--primary">
+              {/* 1. Tổng task */}
               <span
                 className="report-profile-pill report-profile-pill--task"
                 title={totalTasksTooltip}
@@ -153,6 +139,19 @@ export function ReportProfileCard({
                 <ClipboardList size={12} aria-hidden="true" />
                 <strong>{member.tasks?.length || 0}</strong>
               </span>
+
+              {/* 2. Hoàn thành */}
+              <span
+                className="report-profile-badge report-profile-badge--done"
+                title={doneTooltip}
+                aria-label={doneTooltip}
+                data-profile-tooltip={doneTooltip}
+              >
+                <CheckCircle2 size={12} aria-hidden="true" />
+                <strong>{member.done}</strong>
+              </span>
+
+              {/* 3. Số lượng */}
               <span
                 className="report-profile-pill report-profile-pill--output"
                 title={deliverablesTooltip}
@@ -163,15 +162,37 @@ export function ReportProfileCard({
                 <strong>{member.deliverableCount || 0}</strong>
               </span>
             </div>
-            <button
-              type="button"
-              className="report-profile-cta"
-              aria-expanded={expanded}
-              aria-label={`${expanded ? (lang === 'en' ? 'Close details' : 'Đóng chi tiết') : (lang === 'en' ? 'View details' : 'Xem chi tiết')}: ${member.name}`}
-              onClick={onDetails}
-            >
-              {expanded ? (lang === 'en' ? 'Close' : 'Đóng') : (lang === 'en' ? 'Details' : 'Chi tiết')}
-            </button>
+
+            {/* Hàng dưới cùng: Quá hạn, Tồn đọng */}
+            {(member.late > 0 || member.profileBacklogCount > 0) && (
+              <div className="report-profile-metrics-row report-profile-metrics-row--alerts">
+                {/* 4. Quá hạn */}
+                {member.late > 0 && (
+                  <span
+                    className="report-profile-badge report-profile-badge--late"
+                    title={lateTooltip}
+                    aria-label={lateTooltip}
+                    data-profile-tooltip={lateTooltip}
+                  >
+                    <Clock size={12} aria-hidden="true" />
+                    <strong>{member.late}</strong>
+                  </span>
+                )}
+
+                {/* 5. Tồn đọng */}
+                {member.profileBacklogCount > 0 && (
+                  <span
+                    className="report-profile-badge report-profile-badge--backlog"
+                    title={backlogTooltip}
+                    aria-label={backlogTooltip}
+                    data-profile-tooltip={backlogTooltip}
+                  >
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    <strong>{member.profileBacklogCount}</strong>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1496,7 +1517,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               ) : (
                 <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 h-9 sm:h-10 min-h-[38px] sm:min-h-[40px] rounded-[8px] bg-slate-100 dark:bg-[#0a192f] border border-transparent dark:border-slate-700/80 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="hidden sm:inline">{selectedDepartmentName}</span>
+                  <span className="inline">{selectedDepartmentName}</span>
                 </div>
               )}
 

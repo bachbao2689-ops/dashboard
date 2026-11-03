@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useSharedResource } from './useSharedResource';
@@ -66,6 +66,7 @@ export interface StaffReportMember {
   name: string;
   initial: string;
   role: string;
+  systemRole?: string | null;
   avatar_url?: string | null;
   department_id?: string | null;
   department_name?: string | null;
@@ -660,24 +661,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
     [cursorDate, defaultToday, timeRange, customStart, customEnd, setCustomDateRange],
   );
 
-  const setDepartmentFilter = useCallback(
-    (nextDept: string) => {
-      setRememberedDept(nextDept);
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (nextDept && nextDept !== 'all') {
-            next.set('dept', nextDept);
-          } else {
-            next.delete('dept');
-          }
-          return next;
-        },
-        { replace: true },
-      );
-    },
-    [setRememberedDept, setSearchParams],
-  );
+
 
   const profile = useAuthStore((state) => state.profile);
   const {
@@ -778,6 +762,43 @@ export const useReports = (options?: { standalone?: boolean }) => {
   const canViewAllDepartments = scope.canViewAllDepartments;
   const scopedUsers = scope.users;
   const scopedTasks = scope.tasks;
+
+  const setDepartmentFilter = useCallback(
+    (nextDept: string) => {
+      if (!canViewAllDepartments) return;
+      setRememberedDept(nextDept);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (nextDept && nextDept !== 'all') {
+            next.set('dept', nextDept);
+          } else {
+            next.delete('dept');
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [canViewAllDepartments, setRememberedDept, setSearchParams],
+  );
+
+  // Fix cứng tầm view cho staff: URL dept luôn tự động khớp với phòng ban của staff
+  useEffect(() => {
+    if (!canViewAllDepartments && profile?.department_id) {
+      const targetDept = String(profile.department_id);
+      if (searchParams.get('dept') !== targetDept) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('dept', targetDept);
+            return next;
+          },
+          { replace: true },
+        );
+      }
+    }
+  }, [canViewAllDepartments, profile?.department_id, searchParams, setSearchParams]);
 
   const selectedDepartmentName = useMemo(() => {
     if (effectiveDepartmentFilter === 'all') return t('reports.viz.allTeams');
@@ -987,6 +1008,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
           name: u.name,
           initial,
           role: roleLabel,
+          systemRole: (u as any).role || null,
           avatar_url: staffAvatarUrl,
           department_id: u.department_id,
           department_name: deptName,
