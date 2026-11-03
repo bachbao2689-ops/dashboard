@@ -278,14 +278,14 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   assert.equal(tsx.includes('onClick={onDetails}'), true);
 
   // Verify Default Desktop & 2K macOS base layout: 1-row name+subtitle and 1-row 5 labels
-  assert.equal(css.includes('font-size: 20px !important;'), true);
+  assert.equal(css.includes('font-size: clamp(14px, 1.05vw, 16px) !important;'), true);
   assert.equal(css.includes('font-size: 8.8px;'), true);
   assert.equal(css.includes('padding: 1.2px 5.5px;'), true);
   assert.equal(css.includes('display: contents !important;'), true);
   assert.equal(css.includes('padding: 2px 5.5px;'), true);
 
-  // Verify State 2 compact scaling on Desktop/Tablet (<= 300px) and develop mobile coverflow (< 640px)
-  assert.equal(css.includes('@container (max-width: 300px)'), true);
+  // Verify State 2 compact scaling on Desktop/Tablet (<= 205px) and develop mobile coverflow (< 640px)
+  assert.equal(css.includes('@container (max-width: 205px)'), true);
   assert.equal(css.includes('@media (max-width: 639px)'), true);
 });
 

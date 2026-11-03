@@ -145,7 +145,7 @@
 }
 
 /* 100% CSS Grid, Zero Flexbox: 2-row layout mặc định cho Desktop & Màn hình 2K
-   Hàng 1: Tên staff (20px, 700) + Subtitle (tracking màu Quyền) CÙNG HÀNG
+   Hàng 1: Tên staff + Subtitle (tracking màu Quyền) CÙNG HÀNG
    Hàng 2: CẢ 5 LABEL PERFORMANCE CÙNG 1 HÀNG DUY NHẤT (display: contents !important) */
 .report-profile-content {
   position: absolute;
@@ -153,11 +153,11 @@
   inset: auto 0 0;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: 24px 20px;
   justify-content: start;
   justify-items: start;
   align-items: center;
-  row-gap: 5px;
+  row-gap: 6px;
   padding: 8px 10px 10px 12px;
   -webkit-transform: translate3d(0, 0, 10px);
   transform: translate3d(0, 0, 10px);
@@ -170,23 +170,25 @@
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
+  height: 24px;
 }
 
-/* Hàng 1, Item 1: Tên staff (font-size 20px, bold 700) */
+/* Hàng 1, Item 1: Tên staff (font-size clamp cân đối, bold 700) */
 .report-profile-identity h3 {
   grid-column: auto;
   grid-row: auto;
   align-self: center;
   display: block;
-  font-size: 20px !important;
+  font-size: clamp(14px, 1.05vw, 16px) !important;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: clamp(85px, 8vw, 125px);
   color: #002e6d;
   margin: 0;
 }
@@ -221,6 +223,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   margin: 0;
+  flex-shrink: 0;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
@@ -1324,17 +1327,17 @@
    - Zero Flexbox, 100% CSS Grid
    ======================================================== */
 /* ========================================================
-   TRẠNG THÁI 2: THẺ CO NHỎ LẠI / CỬA SỔ THU NHỎ TRÊN DESKTOP/TABLET (<= 300px, >= 640px)
+   TRẠNG THÁI 2: THẺ CO NHỎ LẠI / KHI SPACE ÍT LẠI TRÊN DESKTOP/TABLET (<= 205px, >= 640px)
    - Giữ nguyên 100% UI mobile trên nhánh develop (< 640px)
-   - Trên Desktop/Tablet khi thu nhỏ cửa sổ:
-     * Label Subtitle nhỏ hơn 30% ở dưới Tên staff (Hàng 1: Tên staff, Hàng 2: Subtitle)
+   - Trên Desktop/Tablet khi thu nhỏ cửa sổ / space ít lại (card <= 205px):
+     * Label Subtitle nhỏ hơn ở dưới Tên staff (Hàng 1: Tên staff, Hàng 2: Subtitle)
      * Hàng 3: 3 label [Tổng task] [Hoàn thành] [Số lượng]
      * Hàng 4: 2 label [Quá hạn] [Tồn đọng] xuống hàng ở dưới cùng
    - Glass blur: height clamp(98px, 11.5vh, 112px) bao trọn 4 hàng mềm mại
    - 100% CSS Grid, Zero Flexbox, căn giữa tâm box tuyệt đối
    ======================================================== */
 @media (min-width: 640px) {
-  @container (max-width: 300px) {
+  @container (max-width: 205px) {
     .report-profile-glass,
     .dark .report-profile-glass {
       height: clamp(98px, 11.5vh, 112px) !important;
@@ -1358,17 +1361,19 @@
       grid-auto-flow: row !important;
       row-gap: 2.5px !important;
       min-width: 0 !important;
+      height: auto !important;
     }
 
     .report-profile-identity h3 {
       grid-column: 1 !important;
       grid-row: 1 !important;
-      font-size: clamp(13.5px, 1.05vw, 15px) !important;
+      font-size: clamp(13px, 1vw, 14.5px) !important;
       font-weight: 700 !important;
       line-height: 1.2 !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
+      max-width: 100% !important;
       color: #002e6d !important;
       margin: 0 !important;
     }
@@ -1408,6 +1413,7 @@
       justify-content: start !important;
       justify-items: start !important;
       min-width: 0 !important;
+      height: auto !important;
     }
 
     /* Hàng 3: 3 label [Tổng task] [Hoàn thành] [Số lượng] */
