@@ -3533,7 +3533,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             <span className="font-bold text-blue-600 dark:text-blue-400">2.</span>
                             <div>
                               <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Capacity % Formula:' : 'Công thức quy đổi % Công suất:'}</b>{' '}
-                              {lang === 'en' ? 'Standard benchmark: 100% capacity = 5 open tasks concurrently (1 task = 20% load, capped at 140%).' : 'Định mức chuẩn: 100% công suất = 5 task đang mở cùng lúc (1 task = 20% tải, hiển thị tối đa 140%).'}
+                              {t('reports.viz.infoCapacityDesc')}
                             </div>
                           </div>
 
@@ -3541,11 +3541,11 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoCapacityThresholds')}</span>
                             <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 p-1.5 rounded-[6px] border border-rose-200/50 dark:border-rose-800/40">
                               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mt-0.5 inline-block shrink-0"></span>
-                              <span><b className="text-rose-700 dark:text-rose-400">{lang === 'en' ? '> 100% (Red — Overload):' : '> 100% (Đỏ — Quá tải):'}</b> {lang === 'en' ? 'Holding 6+ tasks (120% – 140%) → Needs task sharing or rebalancing.' : 'Đang ôm từ 6 task trở lên (120% – 140%) → Cần san sẻ bớt việc.'}</span>
+                              <span><b className="text-rose-700 dark:text-rose-400">{lang === 'en' ? '> 100% (Red — Overload):' : '> 100% (Đỏ — Quá tải):'}</b> {lang === 'en' ? 'Estimated workload exceeds the standard capacity; rebalance tasks.' : 'Tổng tải ước tính vượt công suất chuẩn; cần cân đối lại công việc.'}</span>
                             </div>
                             <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-blue-50/70 dark:bg-blue-950/30 p-1.5 rounded-[6px] border border-blue-200/50 dark:border-blue-800/40">
                               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-0.5 inline-block shrink-0"></span>
-                              <span><b className="text-blue-700 dark:text-blue-400">{lang === 'en' ? '80% – 100% (Blue — Optimal):' : '80% – 100% (Xanh dương — Chuẩn):'}</b> {lang === 'en' ? 'Handling 4 – 5 tasks → Optimal healthy workload.' : 'Đang xử lý 4 – 5 task → Đúng tải tối ưu.'}</span>
+                              <span><b className="text-blue-700 dark:text-blue-400">{lang === 'en' ? '80% – 100% (Blue — Optimal):' : '80% – 100% (Xanh dương — Chuẩn):'}</b> {lang === 'en' ? 'Estimated workload is within standard capacity.' : 'Tổng tải ước tính đang trong ngưỡng công suất chuẩn.'}</span>
                             </div>
                             <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-slate-100/70 dark:bg-slate-800/50 p-1.5 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60">
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-400 mt-0.5 inline-block shrink-0"></span>

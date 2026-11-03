@@ -120,7 +120,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
         <span className="flex-1">
           {summary.overloadedCount > 0 || summary.overdueTasks > 0
             ? `${selectedDeptName ? `[${selectedDeptName}] ` : ''}Cảnh báo tải công việc: Có ${summary.overloadedCount} thành viên vượt ngưỡng >100% capacity và ${summary.overdueTasks} công việc quá hạn cần ưu tiên xử lý.`
-            : `${selectedDeptName ? `[${selectedDeptName}] ` : ''}Tải công việc ổn định: ${summary.totalMembers} thành viên đang xử lý ${summary.openTasks} công việc mở (Trung bình ${summary.averageLoad} task/người · 5 task mở = 100% capacity).`}
+            : `${selectedDeptName ? `[${selectedDeptName}] ` : ''}Tải công việc ổn định: ${summary.totalMembers} thành viên đang xử lý ${summary.openTasks} công việc mở (Trung bình ${summary.averageLoad} task/người).`}
         </span>
         <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/80 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-slate-700">
           {selectedDeptName ? `${selectedDeptName} · Live Tracking` : 'Live Tracking · Team Workload'}
@@ -205,7 +205,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.averageLoad}
             </b>
             <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              Chuẩn 5 task = 100%
+              Công suất tính theo ưu tiên, hạn và loại công việc
             </span>
           </div>
 
@@ -421,7 +421,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                     <div className="px-3 pb-2.5 pt-1.5 border-t border-blue-100 dark:border-slate-600/70 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                         <span>
-                          {t('dashboard.openTasks')}: <b className="text-gray-800 dark:text-gray-200">{m.activeTasksCount}</b> ({m.capacityPercentage}% capacity ước tính)
+                          {t('dashboard.openTasks')}: <b className="text-gray-800 dark:text-gray-200">{m.activeTasksCount}</b> ({m.capacityPercentage}% capacity theo mức ưu tiên và hạn công việc)
                         </span>
                         <span>
                           Xong: <b>{m.doneTotal}</b> · Đang làm: <b>{m.inProgressCount}</b> · Chờ: <b>{m.todoCount}</b> · Trễ: <b className={m.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : ''}>{m.overdueCount}</b>

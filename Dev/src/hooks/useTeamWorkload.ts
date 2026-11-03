@@ -11,6 +11,7 @@ import {
   taskOpen,
   taskOverdue,
   weeklyActivity,
+  workloadCapacityPercent,
   type TrackedTask,
 } from '../lib/taskTracking';
 import { weeklyReportRange } from '../lib/weeklyReport';
@@ -89,8 +90,8 @@ export function computeWorkloadHeatmap(
         if (!taskDone(t)) return true;
         const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at);
         return Boolean(doneDay && doneDay > weekEnd);
-      }).length;
-      return Math.round((openAtWeek * 20) / scale);
+      });
+      return Math.round(workloadCapacityPercent(openAtWeek, weekEnd) / scale);
     }) as [number, number, number, number];
 
     return {
@@ -156,7 +157,7 @@ export const useTeamWorkload = (
         const overdueList = openList.filter((t) => taskOverdue(t, today));
         const todoList = openList.filter((t) => taskBucket(t, today) === 'todo');
         const inProgressList = openList.filter((t) => ['in_progress', 'in_review'].includes(taskBucket(t, today)));
-        const capacityPercentage = openList.length * 20;
+        const capacityPercentage = workloadCapacityPercent(openList, today);
         const totalTasksCount = memberTasks.length;
         const completionPct = totalTasksCount
           ? Math.round((doneList.length / totalTasksCount) * 100)

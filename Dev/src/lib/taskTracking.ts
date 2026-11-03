@@ -5,6 +5,25 @@ import {isTaskActive as taskActive, isTaskDone as taskDone, isTaskDoneStatus as 
 export {taskActive, taskDone, taskOpen, taskState, isTaskDone, normalizeStatus};
 export type TaskKind = 'task' | 'project_subtask' | 'campaign_subtask';
 export type TrackedTask = {id?:string; assignee_id?:string|number|null; assignee?:{name?:string}|null; priority?:string|null;status?:string|null; workflow_status?:string|null; due_date?:string|null; created_at?:string|null; start_date?:string|null; completed_at?:string|null};
+const priorityWeight=(priority?:string|null)=>({low:3,medium:5,high:10,urgent:15}[String(priority||'medium').trim().toLowerCase()]||5);
+const subtaskWeight=(priority?:string|null)=>({low:6,medium:10,high:20,urgent:30}[String(priority||'medium').trim().toLowerCase()]||10);
+/** Shared planning estimate for Report and Team Workload. */
+export function taskCapacityContribution(task:TrackedTask & {project_id?:string|null;campaign_id?:string|null;checklist_item_id?:string|null},asOfDay=taskDay(new Date().toISOString())){
+  const kind=task.id?taskTarget(task.id).kind:'task';
+  const isChild=kind!=='task'||Boolean(task.checklist_item_id);
+  const isTrackedProjectWork=Boolean(task.project_id||task.campaign_id||kind!=='task');
+  if(!isTrackedProjectWork)return priorityWeight(task.priority);
+  let contribution=0;
+  if(task.due_date){
+    const due=taskDay(task.due_date);
+    const days=due&&asOfDay?Math.ceil((Date.parse(`${due}T12:00:00Z`)-Date.parse(`${asOfDay}T12:00:00Z`))/86400000):null;
+    contribution+=days==null?0:days<=3?15:days<5?10:days<=7?5:3;
+  }
+  if(isChild)contribution+=subtaskWeight(task.priority);
+  return contribution;
+}
+export const workloadCapacityPercent=(tasks:readonly (TrackedTask & {project_id?:string|null;campaign_id?:string|null;checklist_item_id?:string|null})[],asOfDay?:string)=>
+  tasks.reduce((sum,task)=>sum+taskCapacityContribution(task,asOfDay),0);
 export const taskTarget = (key:string): {kind:TaskKind;id:string;table:string;checklistItemId?:string} => {
   const {parentKey, checklistItemId} = checklistTarget(key);
   const target = parentKey.startsWith('ps-') ? {kind:'project_subtask' as const,id:parentKey.slice(3),table:'project_subtasks'} : parentKey.startsWith('cs-') ? {kind:'campaign_subtask' as const,id:parentKey.slice(3),table:'campaign_subtasks'} : {kind:'task' as const,id:parentKey,table:'tasks'};
