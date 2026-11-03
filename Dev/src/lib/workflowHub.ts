@@ -72,7 +72,30 @@ export function taskProgress(tasks: { status: string; workflow_status?: string |
   const done = active.filter(isTaskDone).length;
   return { total: active.length, done, percent: active.length ? Math.round(done * 100 / active.length) : null };
 }
-export const displayDate = (s: string | null | undefined) => s ? s.split('T')[0].split('-').reverse().join('/') : '—';
+export function displayDate(s: string | null | undefined, fallback = '—'): string {
+  if (!s) return fallback;
+  const isoDatePart = s.split('T')[0];
+  const parts = isoDatePart.split('-');
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+export function displayDateTime(s: string | null | undefined, fallback = '—'): string {
+  if (!s) return fallback;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${hours}:${minutes} ${day}/${month}/${year}`;
+}
+
 export const inputDate = (s: string) => s.includes('/') ? s.split('/').reverse().join('-') : s || null;
 
 type MetricTask = { status: string; workflow_status?: string | null; due_date?: string | null; start_date?: string | null; created_at?: string | null; completed_at?: string | null };

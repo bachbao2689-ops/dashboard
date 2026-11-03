@@ -7,6 +7,7 @@ import type { Task } from '../../../../hooks/useTasks';
 import { useResizableColumns } from '../../../../hooks/useResizableColumns';
 import { mapPriority } from './taskListPresentation';
 import { useTranslation } from '../../../../i18n/translations';
+import { displayDate } from '../../../../lib/workflowHub';
 
 type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
 export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds}: Props) {
@@ -65,7 +66,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                       </p>
                       <div className="task-list-mobile-status">
                         <StatusBadge status={task.status} />
-                        <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${new Date(task.due_date).toLocaleDateString()}` : t('common.noDueDate')}</span>
+                        <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${displayDate(task.due_date)}` : t('common.noDueDate')}</span>
                         {['High','Urgent'].includes(mapPriority(task.priority)) && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">{mapPriority(task.priority)}</span>}
                       </div>
                     </div>
@@ -193,7 +194,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           </div>
                         </td>
                         <td className="p-4 text-sm text-gray-600 dark:text-gray-400 overflow-hidden">
-                          <span className="truncate block">{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}</span>
+                          <span className="truncate block">{task.due_date ? displayDate(task.due_date) : 'N/A'}</span>
                         </td>
                         <td className="p-4 text-right overflow-hidden">
                           <button aria-label={`Xem ${task.title}`} className="task-list-row-menu">

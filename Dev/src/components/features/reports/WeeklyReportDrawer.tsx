@@ -11,6 +11,7 @@ import {useWorkspaceRealtime} from '../../../hooks/useWorkspaceRealtime';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
 import { useAuthStore } from '../../../store/authStore';
 import type { WeekSelection } from '../../../lib/weeklyReport';
+import { displayDate } from '../../../lib/workflowHub';
 
 export type WeeklyReportTask = {
   id: string;
@@ -63,7 +64,7 @@ interface WeeklyReportDrawerProps {
   showHeader?: boolean;
 }
 
-const dateLabel = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString('vi-VN');
+const dateLabel = (date: string) => displayDate(date);
 
 export const WeeklyReportDrawer: React.FC<WeeklyReportDrawerProps> = ({
   isOpen, onClose, ownerName, userId, canEdit = false, weekStart, weekEnd,

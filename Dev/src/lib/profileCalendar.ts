@@ -1,3 +1,5 @@
+import { displayDate } from './workflowHub.ts';
+
 export type CalendarKind = 'task' | 'project' | 'campaign' | 'project_subtask' | 'campaign_subtask';
 
 export interface CalendarItem {
@@ -67,4 +69,4 @@ export function monthDays(year: number, month: number): Date[] {
   return Array.from({ length: count }, (_, index) => new Date(year, month, 1 - offset + index, 12));
 }
 
-export const formatCalendarDay = (day?: string | null) => day ? new Date(`${day}T12:00:00`).toLocaleDateString('vi-VN') : 'Chưa lên lịch';
+export const formatCalendarDay = (day?: string | null) => day ? displayDate(day, 'Chưa lên lịch') : 'Chưa lên lịch';

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isAdmin } from '../src/lib/roleScope.ts';
 import { scopeTeamWorkload } from '../src/lib/workloadScope.ts';
 
@@ -168,3 +171,39 @@ test('Detail overlay: MobileNav hides when task/subtask/calendar/project detail 
   assert.equal(useOverlayStore.getState().taskDetails, 0);
   assert.equal(useOverlayStore.getState().taskDetails > 0, false);
 });
+
+// Test 7: Vietnamese date format standardization (dd/mm/yyyy with 2-digit zero-padding)
+test('Date format: displayDate uses VN standard dd/mm/yyyy with 2-digit zero padding and no UTC drift', async () => {
+  const { displayDate, displayDateTime } = await import('../src/lib/workflowHub.ts');
+
+  // Exact YYYY-MM-DD input
+  assert.equal(displayDate('2026-11-08'), '08/11/2026');
+  assert.equal(displayDate('2026-05-04'), '04/05/2026');
+  assert.equal(displayDate('2026-01-01'), '01/01/2026');
+  assert.equal(displayDate('2026-12-31'), '31/12/2026');
+
+  // ISO timestamp input
+  assert.equal(displayDate('2026-11-08T14:30:00Z'), '08/11/2026');
+
+  // Fallback handling
+  assert.equal(displayDate(null), '—');
+  assert.equal(displayDate(undefined), '—');
+  assert.equal(displayDate(null, 'N/A'), 'N/A');
+  assert.equal(displayDate('', 'Chưa lên lịch'), 'Chưa lên lịch');
+
+  // displayDateTime format: HH:mm dd/mm/yyyy
+  const d = new Date(2026, 10, 8, 9, 5); // 08/11/2026 09:05 local
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  assert.equal(displayDateTime(d.toISOString()), `${hours}:${minutes} 08/11/2026`);
+  assert.equal(displayDateTime(null), '—');
+});
+
+// Test 8: TaskListCollection uses displayDate for due dates in table and mobile
+test('TaskListCollection: uses displayDate(task.due_date) for table and mobile views', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const file = fs.readFileSync(path.resolve(__dirname, '../src/components/features/tasks/list/TaskListCollection.tsx'), 'utf-8');
+  assert.equal(file.includes('displayDate(task.due_date)'), true);
+  assert.equal(file.includes('new Date(task.due_date).toLocaleDateString()'), false);
+});
+

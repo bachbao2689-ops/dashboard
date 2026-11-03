@@ -450,7 +450,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
     const parts = dateStr.slice(0, 10).split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    if (parts.length === 3) return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
     return dateStr;
   };
 
@@ -3155,7 +3155,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                                     </span>
                                     <span className="text-slate-500 dark:text-slate-400 truncate block min-w-0">
                                       {entityName}
-                                      {task.due_date && ` · ${t('reports.viz.duePrefix')} ${task.due_date}`}
+                                      {task.due_date && ` · ${t('reports.viz.duePrefix')} ${formatDateDisplay(task.due_date)}`}
                                     </span>
                                   </div>
                                 </div>
@@ -3387,7 +3387,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               </span>
                               <span className="text-slate-500 dark:text-slate-400 truncate block min-w-0">
                                 {entityName}
-                                {task.due_date && ` · ${t('reports.viz.duePrefix')} ${task.due_date}`}
+                                {task.due_date && ` · ${t('reports.viz.duePrefix')} ${formatDateDisplay(task.due_date)}`}
                               </span>
                             </div>
                           </div>

@@ -7,6 +7,7 @@ import {mapPriority} from '../components/features/tasks/list/taskListPresentatio
 import type {Task} from './useTasks';
 import type {WorkspaceData} from './useWorkspaceData';
 import type {ReportReference} from '../components/features/reports/WeeklyReportDrawer';
+import { displayDate } from '../lib/workflowHub';
 interface PerfData {
   id: string;
   type: 'staff' | 'department' | 'project';
@@ -132,7 +133,7 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
         code: task.task_ref || '—',
         name: task.project?.name || task.campaign?.name || task.title,
         dept: task.department?.name || t('dashboard.unassignedDept'),
-        date: new Date(task.due_date!).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US'),
+        date: displayDate(task.due_date),
         dueStr,
         isOverdue: diffDays < 0,
         priority: mapPriority(task.priority),
