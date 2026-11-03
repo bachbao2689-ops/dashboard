@@ -7,6 +7,7 @@ import {useNotificationCenter} from '../../../hooks/useNotificationCenter';
 import {entityLink} from '../../../lib/taskTracking';
 import {NotificationIcon,TONES,toneOf,toneStyle,PicText,formatNotificationTimestamp} from './notificationVisual';
 import {appUpdateService,type UpdateInfo} from '../../../services/appUpdateService';
+import {DevFloatingTools} from '../../common/DevFloatingTools';
 
 const VISIBLE=4,EXIT_MS=550,HISTORY=12;
 // Per-depth visual targets: scale down, dim and sink with each layer; last layer fades to 0.
@@ -74,10 +75,10 @@ export function NotificationPopupStack(){
 
  return <>
   {import.meta.env.DEV&&(
-   <div className="fixed bottom-24 right-4 z-[9400] hidden md:flex flex-col items-end gap-2 md:bottom-6">
-    <button type="button" onClick={()=>appUpdateService.triggerUpdate()} className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-emerald-700 cursor-pointer">Test update popup</button>
-    <button type="button" onClick={demo} className="rounded-full bg-[#002e6d] px-3.5 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-[#001f4d] cursor-pointer">Test popup</button>
-   </div>
+   <DevFloatingTools
+    onTriggerUpdate={()=>void appUpdateService.triggerUpdate()}
+    onTriggerDemo={demo}
+   />
   )}
 
   {/* ========================================================

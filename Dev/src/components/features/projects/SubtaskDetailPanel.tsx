@@ -1,19 +1,17 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import {hasCanonicalNotifications} from '../../../store/notificationStore';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { workflowDateError } from '../../../lib/workflowCalendar';
 import { TaskComments } from '../comments/TaskComments';
 import { Avatar } from '../../common/Avatar';
 
-import { AlignLeft, Calendar, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus, CheckCircle2, Check } from 'lucide-react';
+import { AlignLeft, Calendar, Edit3, ImagePlus, User, X, Clock, Save, ListTodo, Trash2, Plus, Check, ArrowLeft, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import { supabase } from '../../../services/supabase';
 import { canCompleteTrackedTask, completeTrackedTask, updateTrackedTask } from '../../../services/workspaceTasks';
 import { taskKey } from '../../../lib/taskTracking';
-import { TaskPinButton } from '../tasks/TaskPinButton';
-import { TaskActivityLogPopover } from '../tasks/TaskActivityLogPopover';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
 import { TaskDescriptionEditor } from '../tasks/TaskDescriptionEditor';
 import { useTranslation } from '../../../i18n/translations';
@@ -118,6 +116,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editDueDate, setEditDueDate] = useState('');
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
   const [checklistItems, setChecklistItems] = useState<SubtaskChecklistItem[]>([]);
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false);
   const focusChecklistReady = Boolean(focusChecklistItemId && checklistItems.some(item => item.id === focusChecklistItemId));
   useEffect(() => {
     if (!focusChecklistItemId || !focusChecklistReady) return;
@@ -865,6 +864,40 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     return () => { void supabase.removeChannel(channel); };
   }, [subtask?.id, reload]);
 
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
+  useEffect(() => {
+    if (embedded) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (panelRef.current && panelRef.current.contains(target)) return;
+      if (
+        target.closest('.tw-calendar-popover') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('[role="menu"]') ||
+        target.closest('[role="listbox"]') ||
+        target.closest('.toast') ||
+        target.closest('#headlessui-portal-root')
+      ) {
+        return;
+      }
+      onClose();
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handlePointerDown);
+      document.addEventListener('touchstart', handlePointerDown);
+    }, 60);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [embedded, onClose]);
+
   if (!subtask) return null;
   const completed = isDone(subtask.status);
   const canComplete = canCompleteTask;
@@ -878,35 +911,35 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         aria-hidden="true"
       />}
       <aside 
+        ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
         className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
         <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+          {embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 -ml-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors grid place-items-center cursor-pointer"
+              title={lang === 'en' ? 'Back' : 'Quay lại'}
+              aria-label={lang === 'en' ? 'Back' : 'Quay lại'}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <span className="text-xs font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">SUBTASK</span>
           <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(priority)}`}>
             {t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}
           </span>
         </div>
-        <div className="flex items-center gap-1"><TaskActivityLogPopover entityType={entityType} entityId={subtask ? subtask.id : null} workspaceId={workspaceId} /><TaskPinButton taskId={subtask ? taskKey(entityType, subtask.id) : null} /><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
+        <div className="flex items-center gap-1"><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
         <section>
-          <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+          <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">{subtask.title}</h2>
-            {canManage && !readOnly && (
-              <button
-                type="button"
-                onClick={() => setEditingTask(value => !value)}
-                className="w-7 h-7 rounded-[6px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0a192f] text-gray-500 hover:text-gray-900 dark:hover:text-white shadow-2xs grid place-items-center cursor-pointer transition-colors"
-                aria-expanded={editingTask}
-                title={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
-                aria-label={editingTask ? (lang === 'en' ? 'Cancel edit' : 'Hủy sửa') : (lang === 'en' ? 'Edit details' : 'Chỉnh sửa')}
-              >
-                <Edit3 size={13} />
-              </button>
-            )}
           </div>
           <div className="mt-4">
             <EntityActionBadges
@@ -915,10 +948,20 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               onPriorityChange={canManage && !readOnly ? handlePriorityChange : undefined}
               onStatusChange={canManage && !readOnly ? handleStatusChange : undefined}
               canManage={canManage && !readOnly}
+              onEdit={canManage && !readOnly ? () => setEditingTask(v => !v) : undefined}
+              entityType={entityType}
+              entityId={subtask?.id}
+              entityName={subtask?.title}
+              workspaceId={workspaceId}
             >
               {totalChecklistQuantity > 0 && (
-                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
                   SL: {totalChecklistQuantity}
+                </span>
+              )}
+              {Boolean(parentDetails?.departmentName) && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                  {lang === 'en' ? 'Department' : 'Phòng ban'}: {parentDetails?.departmentName}
                 </span>
               )}
             </EntityActionBadges>
@@ -1006,7 +1049,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         </section> : <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#0a192f]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
           <div><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{subtask.assignee ? <div className="flex items-center gap-2"><Avatar name={subtask.assignee.name || t('common.unassigned')} src={(subtask.assignee as any)?.avatar_url} /><b className="text-sm">{subtask.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div>
           <div><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{t('common.dueDate')}</p><b className="text-sm font-bold text-red-600 dark:text-red-400">{subtask.due_date ? displayDate(subtask.due_date) : t('common.noDueDate')}</b></div>
-          <div><p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}</p>{entityType === 'campaign_subtask' ? <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.campaign')}</span> : <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.project')}</span>}</div>
+          <div><p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}</p>{entityType === 'campaign_subtask' ? <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.campaign')}</span> : <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 line-clamp-1 ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.project')}</span>}</div>
           <div><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className={`text-sm ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.departmentName || t('common.unassigned')}</b></div>
         </section>}
 
@@ -1017,33 +1060,39 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
         {/* CHECKLIST / ĐẦU VIỆC */}
         <section className="space-y-3">
-          <div className="grid grid-flow-col auto-cols-max items-center gap-2">
-            {(() => {
-              const done = checklistItems.filter(i => i.completed).length;
-              const total = checklistItems.length;
-              const isAllDone = done === total && total > 0;
-              return (
-                <>
-                  <ListTodo className={`w-4 h-4 ${isAllDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`} />
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                    {lang === 'en' ? 'Checklist' : 'Việc phát sinh'}
-                  </h3>
-                  {total > 0 && (
-                    <span
-                      title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
-                      className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md border ${
-                        isAllDone
-                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
-                          : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
-                      }`}
-                    >
-                      <span>{done}/{total}</span>
+          {(() => {
+            const total = checklistItems.length;
+            const done = checklistItems.filter(i => i.completed).length;
+            const open = total - done;
+            return (
+              <div className="grid grid-flow-col justify-between items-center mb-3">
+                <button
+                  type="button"
+                  onClick={() => setChecklistCollapsed(v => !v)}
+                  className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
+                  aria-expanded={!checklistCollapsed}
+                  title={checklistCollapsed ? (lang === 'en' ? 'Expand checklist' : 'Mở rộng việc phát sinh') : (lang === 'en' ? 'Collapse checklist' : 'Thu gọn việc phát sinh')}
+                >
+                  <ListTodo size={16} className="text-sky-600 dark:text-sky-400" />
+                  <span>{lang === 'en' ? 'Checklist' : 'Việc phát sinh'}</span>
+                  {done > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      {done} {lang === 'en' ? 'completed' : 'hoàn thành'}
                     </span>
                   )}
-                </>
-              );
-            })()}
-          </div>
+                  {open > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      {open} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
+                    </span>
+                  )}
+                  <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${checklistCollapsed ? '-rotate-90' : ''}`} />
+                </button>
+              </div>
+            );
+          })()}
+
+          {!checklistCollapsed && (
+            <>
 
           {/* Checklist Items List */}
           {checklistItems.length > 0 ? (
@@ -1202,45 +1251,54 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className="min-w-0 grid grid-cols-1 gap-1.5 pr-14 select-none cursor-pointer"
-                      onClick={() => {
-                        if (!readOnly && canManage) {
+                    <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 min-w-0 pr-14 select-text">
+                      <button
+                        type="button"
+                        disabled={readOnly || !canManage}
+                        onClick={(e) => {
+                          e.stopPropagation();
                           void handleToggleChecklistItem(item.id);
-                        }
-                      }}
-                    >
-                      {/* Row 1: Title (with done checkmark icon) */}
-                      <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
-                        {item.title}
-                        {item.completed && (
-                          <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
-                        )}
-                      </span>
-
-                      {/* Row 2: Badges */}
-                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
-                          {t(`common.${item.priority || 'medium'}`).toLowerCase()}
+                        }}
+                        className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer mt-0.5 shrink-0 ${
+                          item.completed
+                            ? 'bg-emerald-500 border border-emerald-500 text-white hover:bg-emerald-600'
+                            : 'border-2 border-gray-300 dark:border-slate-600 hover:border-emerald-500 text-transparent hover:text-emerald-500 bg-transparent'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                        title={item.completed ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark complete' : 'Hoàn thành')}
+                        aria-label={item.completed ? (lang === 'en' ? 'Reopen' : 'Mở lại') : (lang === 'en' ? 'Mark complete' : 'Hoàn thành')}
+                      >
+                        <Check size={11} strokeWidth={3} className={item.completed ? 'block' : 'opacity-0 hover:opacity-100'} />
+                      </button>
+                      <div className="min-w-0">
+                        {/* Row 1: Title */}
+                        <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${item.completed ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+                          {item.title}
                         </span>
-                        {Boolean(item.quantity) && (
-                          <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                            SL: {item.quantity}
+
+                        {/* Row 2: Badges */}
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs mt-1">
+                          <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold lowercase ${priorityClass(item.priority || 'medium')}`}>
+                            {t(`common.${item.priority || 'medium'}`).toLowerCase()}
                           </span>
-                        )}
-                        {item.due_date && (
-                          <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                            <Calendar size={11} /> {displayDate(item.due_date)}
-                          </span>
+                          {Boolean(item.quantity) && (
+                            <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                              SL: {item.quantity}
+                            </span>
+                          )}
+                          {item.due_date && (
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-red-200/80 dark:border-red-800/60 bg-red-50/80 text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                              <Calendar size={11} /> {displayDate(item.due_date)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description if present */}
+                        {item.description && (
+                          <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-[#071325]/50 p-2 rounded-[6px] border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0 mt-1.5">
+                            {item.description}
+                          </p>
                         )}
                       </div>
-
-                      {/* Description if present */}
-                      {item.description && (
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-[#071325]/50 p-2 rounded-lg border border-gray-100 dark:border-slate-700/60 leading-relaxed whitespace-pre-wrap break-words min-w-0 mt-0.5">
-                          {item.description}
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1343,7 +1401,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                     value={newItemDueDate ? displayDate(newItemDueDate).replace('—', '') : ''}
                     onChange={(e) => setNewItemDueDate(inputDate(e.target.value) || '')}
                     placeholder="dd/mm/yyyy"
-                    className="w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-[8px] border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#071325] px-3 py-2 text-sm text-gray-900 dark:text-white cursor-pointer shadow-sm outline-none focus:outline-none focus:ring-0 focus:border-[#002e6d] dark:focus:border-primary/60"
                   />
                 </div>
               </div>
@@ -1366,7 +1424,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                     setNewItemPriority('medium');
                     setNewItemDueDate('');
                   }}
-                  className="px-3 py-1.5 text-xs rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-[6px] bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
@@ -1374,28 +1432,36 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   type="button"
                   disabled={addingItem || !newItemTitle.trim()}
                   onClick={() => void handleAddChecklistItem()}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm"
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-[6px] bg-[#002e6d] text-white hover:bg-[#002150] disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
                 >
                   {addingItem ? (lang === 'en' ? 'Adding…' : 'Đang thêm…') : (lang === 'en' ? 'Add item' : 'Thêm việc phát sinh')}
                 </button>
               </div>
             </div>
           )}
+            </>
+          )}
         </section>
 
         <section>
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm font-bold"><AlignLeft className="w-4 h-4 inline mr-2" />{t('common.description')}</p>
+          <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
+            <p className="text-sm font-bold grid grid-flow-col auto-cols-max items-center gap-2">
+              <AlignLeft className="w-4 h-4" />
+              <span>{t('common.description')}</span>
+            </p>
             {!editing && !readOnly && canEdit && (
               <button
+                type="button"
                 onClick={() => {
                   setDraftDescription(description);
                   setDraftImageUrl(imageUrl);
                   setEditing(true);
                 }}
-                className="text-xs text-primary font-semibold cursor-pointer hover:underline"
+                className="p-1 rounded-[6px] text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors border-0 shadow-none grid place-items-center cursor-pointer"
+                title={lang === 'en' ? 'Edit description' : 'Chỉnh sửa mô tả'}
+                aria-label={lang === 'en' ? 'Edit description' : 'Chỉnh sửa mô tả'}
               >
-                <Edit3 className="w-3.5 h-3.5 inline mr-1" />{t('common.edit')}
+                <Edit3 size={14} />
               </button>
             )}
           </div>

@@ -102,6 +102,13 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
           opacity: 0;
           pointer-events: none;
         }
+        .mobile-nav-container input[type="text"] {
+          background-color: transparent !important;
+          border: none !important;
+          border-color: transparent !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
         @media (prefers-reduced-motion: reduce) {
           .mobile-nav-container { transition-duration: 0.01ms; }
         }
@@ -112,7 +119,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
         inert={isHidden}
         aria-hidden={isHidden}
         className={cn(
-          "xl:hidden fixed left-3 right-3 z-[99] mobile-nav-container mobile-liquid-glass transition-all",
+          "xl:hidden fixed left-3 right-3 z-[99] mobile-nav-container transition-all",
           isHidden && "nav-hidden",
           taskDetailsOpen && "nav-detail-hidden"
         )}
@@ -144,7 +151,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={lang === 'en' ? 'Search or ask...' : 'Tìm kiếm nhanh...'}
               aria-label={t('header.search')}
-              className="w-full bg-transparent text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none border-none min-w-0"
+              className="w-full !bg-transparent text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 !outline-none !border-none !border-transparent !shadow-none focus:!ring-0 focus:!outline-none min-w-0"
             />
             {searchQuery && (
               <button

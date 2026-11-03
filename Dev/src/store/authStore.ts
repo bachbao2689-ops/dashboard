@@ -148,19 +148,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     initialize: async () => {
       if(initializing)return;initializing=true;
       try {
-        const isLocalDev = Boolean(import.meta.env.DEV && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
-        if (!isLocalDev && typeof window !== 'undefined') {
+        if (typeof window !== 'undefined') {
           localStorage.removeItem('kcoffee_dev_session');
-        }
-        const devSession = isLocalDev ? localStorage.getItem('kcoffee_dev_session') : null;
-        const isRememberMe = localStorage.getItem('kcoffee_auth_remember') === 'true';
-        if (devSession) {
-          if (!isRememberMe && !sessionStorage.getItem('kcoffee_session_active')) localStorage.removeItem('kcoffee_dev_session');
-          else {
-            sessionStorage.setItem('kcoffee_session_active', 'true');
-            get().devLogin(isRememberMe);
-            return;
-          }
         }
 
         const { data: { session } } = await supabase.auth.getSession();

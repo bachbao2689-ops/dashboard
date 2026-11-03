@@ -1,7 +1,7 @@
 import {EntityStatusField} from './EntityStatusField';
 import {EntityActionBadges} from './EntityActionBadges';
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { inputDate } from '../../../lib/workflowHub';
@@ -10,7 +10,7 @@ import { workflowDateError } from '../../../lib/workflowCalendar';
 import { useProjectCampaignDetails } from '../../../hooks/useProjectCampaignDetails';
 import { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import { WorkflowTrackingSummary } from './WorkflowTrackingSummary';
-import { X, Trash2, Plus, Users, Calendar, Clock3, Check, CheckCircle2 } from 'lucide-react';
+import { X, Trash2, Plus, Users, Calendar, Clock3, Check, CheckCircle2, ChevronDown, Edit3 } from 'lucide-react';
 import { TaskPinButton } from '../tasks/TaskPinButton';
 import { priorityClass } from './projectPresentation';
 import { Avatar } from '../../common/Avatar';
@@ -58,6 +58,28 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [commentText, setCommentText] = useState('');
   const [width, setWidth] = useState(500);
   const [resizing, setResizing] = useState(false);
+  const [subtasksCollapsed, setSubtasksCollapsed] = useState(false);
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
+  const [savingDesc, setSavingDesc] = useState(false);
+
+  const handleSaveDesc = async () => {
+    if (!item?.id) return;
+    setSavingDesc(true);
+    try {
+      const updateField = kind === 'project' ? { description: descDraft } : { objective: descDraft };
+      const { error } = await supabase.from(`${kind}s`).update(updateField).eq('id', item.id);
+      if (error) throw error;
+      await details.refresh();
+      onUpdated?.();
+      toast.success(lang === 'en' ? 'Description updated' : 'Đã cập nhật mô tả');
+      setIsEditingDesc(false);
+    } catch (err: any) {
+      toast.error(err?.message || (lang === 'en' ? 'Failed to update description' : 'Lỗi cập nhật mô tả'));
+    } finally {
+      setSavingDesc(false);
+    }
+  };
 
   const itemCollaboratorIds = useMemo(() => {
     const ids = new Set<string | number>();
@@ -82,6 +104,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   const [newSubtaskOwner, setNewSubtaskOwner] = useState('');
   const [newSubtaskDue, setNewSubtaskDue] = useState('');
   const [newSubtaskQuantity, setNewSubtaskQuantity] = useState('');
+  const [newSubtaskPriority, setNewSubtaskPriority] = useState('medium');
 
   useEffect(() => {
     if (!resizing) return;
@@ -118,6 +141,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
     const bounds = {start:startDate, due:data.due_date || data.end_date || ''};
     if (workflowDateError(startDate, dueDate, bounds)) return toast.error('Lịch subtask phải nằm trong lịch Project/Campaign.');
     const payload = {title:newSubtaskTitle.trim(), start_date:startDate || null, due_date:dueDate || null, status:'todo',
+      priority:newSubtaskPriority || 'medium',
       assignee_id:newSubtaskOwner ? Number(newSubtaskOwner) : null, [`${kind}_id`]:item.id};
     const numQ = Number(newSubtaskQuantity);
     if (await details.mutate(async () => {
@@ -135,7 +159,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       }
       return res;
     }, 'Đã thêm subtask')) {
-      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setNewSubtaskQuantity(''); setShowSubtaskForm(false); onUpdated?.();
+      setNewSubtaskTitle(''); setNewSubtaskOwner(''); setNewSubtaskDue(''); setNewSubtaskQuantity(''); setNewSubtaskPriority('medium'); setShowSubtaskForm(false); onUpdated?.();
     }
   };
 
@@ -166,6 +190,39 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
   const shadowClass = kind === 'project' ? 'shadow-drawer-project border-violet-500/20' : 'shadow-drawer-campaign border-amber-500/20';
 
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (panelRef.current && panelRef.current.contains(target)) return;
+      if (
+        target.closest('.tw-calendar-popover') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('[role="menu"]') ||
+        target.closest('[role="listbox"]') ||
+        target.closest('.toast') ||
+        target.closest('#headlessui-portal-root')
+      ) {
+        return;
+      }
+      onClose();
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handlePointerDown);
+      document.addEventListener('touchstart', handlePointerDown);
+    }, 60);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [onClose]);
+
   if (!data) return null;
 
   return (
@@ -176,6 +233,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
         aria-hidden="true"
       />
       <aside 
+        ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
         className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
@@ -227,23 +285,63 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 setEditMode(true);
               }}
               canManage={canManage && !readOnly}
-            />
-            <div className="grid grid-cols-2 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
+              entityType={kind}
+              entityId={item.id}
+              entityName={data.name}
+            >
+              {Boolean((data as any).department_name || (data as any).department?.name) && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                  {lang === 'en' ? 'Department' : 'Phòng ban'}: {(data as any).department_name || (data as any).department?.name}
+                </span>
+              )}
+            </EntityActionBadges>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
               <div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={data.lead?.name || data.creator?.name || '---'} src={data.lead?.avatar_url || data.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{data.lead?.name || data.creator?.name || '---'}</span></div></div>
               <div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(data.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(data.end_date || data.due_date)}</span></div></div>
+              <div><p className="text-[10px] uppercase text-gray-400 mb-1">{lang === 'en' ? 'Department' : 'Phòng ban'}</p><div className="mt-1 font-semibold text-xs text-gray-700 dark:text-gray-300 line-clamp-1">{(data as any).department_name || (data as any).department?.name || (lang === 'en' ? 'Unassigned' : 'Chưa phân')}</div></div>
             </div>
             <WorkflowTrackingSummary kind={kind} id={item.id} hub={hub} onOpenTask={task => navigate(taskLink(task.id))} statusFilter={subtaskFilter} />
-            <section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><TaskDescriptionViewer description={data.description || data.objective} /></section>
+            <section><div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2"><h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>{canManage && !isEditingDesc && (<button type="button" onClick={() => { setDescDraft(data.description || data.objective || ''); setIsEditingDesc(true); }} className="p-1 rounded-[6px] text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors border-0 shadow-none grid place-items-center cursor-pointer" title={lang === 'en' ? 'Quick edit description' : 'Chỉnh sửa nhanh mô tả'} aria-label={lang === 'en' ? 'Quick edit description' : 'Chỉnh sửa nhanh mô tả'}><Edit3 size={14} /></button>)}</div>{isEditingDesc ? (<div className="space-y-2"><textarea value={descDraft} onChange={e => setDescDraft(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none min-h-24 text-sm text-gray-900 dark:text-white focus:border-primary" /><div className="grid grid-flow-col auto-cols-max gap-2 justify-end"><button type="button" onClick={() => setIsEditingDesc(false)} className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-[6px] text-xs font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button><button type="button" disabled={savingDesc} onClick={handleSaveDesc} className="px-3 py-1.5 bg-[#002e6d] text-white rounded-[6px] text-xs font-semibold hover:bg-[#002150] transition-colors disabled:opacity-50">{savingDesc ? (lang === 'en' ? 'Saving...' : 'Đang lưu...') : t('common.save')}</button></div></div>) : (<TaskDescriptionViewer description={data.description || data.objective} />)}</section>
             
             <section>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-sm flex gap-2 items-center"><Users size={16}/> {t('projects.subtasks')}</h3>
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0a192f] p-0.5 rounded-lg text-xs">
-                  <button type="button" onClick={() => setSubtaskFilter('open')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'open' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.active') || 'Chưa xong'}</button>
-                  <button type="button" onClick={() => setSubtaskFilter('completed')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'completed' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.completed') || 'Đã xong'}</button>
-                  <button type="button" onClick={() => setSubtaskFilter('all')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'all' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.all') || 'Tất cả'}</button>
-                </div>
-              </div>
+              {(() => {
+                const validPanelSubtasks = visibleSubtasks.filter(s => (s as any).status !== 'deleted');
+                const doneCount = validPanelSubtasks.filter(s => isTaskDone((s as any).status)).length;
+                const openCount = validPanelSubtasks.filter(s => !isTaskDone((s as any).status)).length;
+                return (
+                  <div className="grid grid-flow-col justify-between items-center mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSubtasksCollapsed(v => !v)}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
+                      aria-expanded={!subtasksCollapsed}
+                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtasks') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtasks')}
+                    >
+                      <Users size={16}/>
+                      <span>{t('projects.subtasks')}</span>
+                      {doneCount > 0 && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          {doneCount} {lang === 'en' ? 'completed' : 'hoàn thành'}
+                        </span>
+                      )}
+                      {openCount > 0 && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          {openCount} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
+                        </span>
+                      )}
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${subtasksCollapsed ? '-rotate-90' : ''}`} />
+                    </button>
+                    {!subtasksCollapsed && (
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1 bg-slate-100 dark:bg-[#0a192f] p-0.5 rounded-lg text-xs">
+                        <button type="button" onClick={() => setSubtaskFilter('open')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'open' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.active') || 'Chưa xong'}</button>
+                        <button type="button" onClick={() => setSubtaskFilter('completed')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'completed' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.completed') || 'Đã xong'}</button>
+                        <button type="button" onClick={() => setSubtaskFilter('all')} className={`px-2 py-0.5 rounded-md transition-colors ${subtaskFilter === 'all' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-bold shadow-2xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{t('common.all') || 'Tất cả'}</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              {!subtasksCollapsed && (<>
               <div className="space-y-2">
                 {visibleSubtasks.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">{t('common.noData')}</p>
@@ -299,16 +397,16 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
                           {/* Row 2: Badges */}
                           <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
+                            <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold lowercase ${priorityClass(sub.priority || data.priority || 'medium')}`}>
                               {t(`common.${sub.priority || data.priority || 'medium'}` as any).toLowerCase()}
                             </span>
                             {Boolean(sub.subtask_total_quantity) && (
-                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                              <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                                 SL: {sub.subtask_total_quantity}
                               </span>
                             )}
                             {sub.due_date && (
-                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-red-200/80 dark:border-red-800/60 bg-red-50/80 text-red-600 dark:bg-red-950/30 dark:text-red-400">
                                 <Calendar size={11} /> {dateValue(sub.due_date)}
                               </span>
                             )}
@@ -318,7 +416,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                           {(sub.assignee || sub.created_at) && (
                             <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-xs text-gray-500 dark:text-gray-400 overflow-x-auto scrollbar-none">
                               {sub.assignee && (
-                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-[6px] text-gray-700 dark:text-gray-300 text-[11px] font-medium">
                                   <Avatar name={sub.assignee.name} src={sub.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
                                   <span className="line-clamp-1">{sub.assignee.name}</span>
                                 </span>
@@ -342,16 +440,21 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
               {canManage && !showSubtaskForm && <button onClick={() => setShowSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
               {canManage && showSubtaskForm && (
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3">
-                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                    <input type="number" min="0" step="1" value={newSubtaskQuantity} onChange={e=>setNewSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/>
-                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm w-full cursor-pointer"/></div>
+                  <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    <select value={newSubtaskPriority} onChange={e=>setNewSubtaskPriority(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm font-medium">
+                      <option value="low">{t('common.low')}</option>
+                      <option value="medium">{t('common.medium')}</option>
+                      <option value="high">{t('common.high')}</option>
+                    </select>
+                    <input type="number" min="0" step="1" value={newSubtaskQuantity} onChange={e=>setNewSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
+                    <div className="tw-calendar-picker relative w-full"><input type="text" id="detail-panel-new-subtask-due" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'detail-panel-new-subtask-due', mode: 'single', minDate: data.start_date || undefined, maxDate: data.due_date || data.end_date || undefined }, e)} value={newSubtaskDue ? dateValue(newSubtaskDue) : ''} onChange={e=>setNewSubtaskDue(inputDate(e.target.value) || '')} placeholder="dd/mm/yyyy" className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm w-full cursor-pointer"/></div>
                   </div>
-                  <div className="flex gap-2 justify-end"><button onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg">{t('common.cancel')}</button><button disabled={busy} onClick={addSubtask} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg">{t('common.add')}</button></div>
+                  <div className="grid grid-flow-col justify-end gap-2"><button type="button" onClick={() => setShowSubtaskForm(false)} className="px-3 py-1.5 text-sm font-medium rounded-[8px] hover:bg-gray-200/70 dark:hover:bg-slate-800 transition-colors">{t('common.cancel')}</button><button type="button" disabled={busy} onClick={addSubtask} className="px-3.5 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-[8px] hover:bg-[#002557] transition-colors">{t('common.add')}</button></div>
                 </div>
               )}
-            </section>
+            </>)}</section>
 
             <section>
               <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-3">Comments {comments.length > 0 && <span>({comments.length})</span>}</p>

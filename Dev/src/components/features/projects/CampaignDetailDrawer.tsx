@@ -9,10 +9,8 @@ import {Avatar} from '../../common/Avatar';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {CommentMessage} from '../comments/CommentMessage';
 import {MultiSelect} from '../../common/MultiSelect';
-import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCircle2} from 'lucide-react';
+import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCircle2,Edit3,ChevronDown} from 'lucide-react';
 import {dateValue,priorityClass,getCampaignPriority,setCachedCampaignPriority} from './projectPresentation';
-import {EntityPinButton} from './EntityPinButton';
-import {TaskActivityLogPopover} from '../tasks/TaskActivityLogPopover';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
 import {isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
@@ -21,7 +19,32 @@ import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 
 export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProjectsController>}){
  useTaskDetailVisibility(Boolean(state.selectedCampaign));
- const {editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,toggleCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
+ const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,setSourceTask,profile,selectedCampaign,setSelectedCampaign,selectedRoot,deletingIds,title,setTitle,start,setStart,due,setDue,primaryOwnerId,setPrimaryOwnerId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignSubtasks,campaignComments,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,hasMentionOrUnread,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,campaignSubtaskPriority,setCampaignSubtaskPriority,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,setSelectedSubtask,visiblePeople,statusFilter,campaignCommentInput,removeCampaignSubtask,toggleCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,addCampaignSubtask,addCampaignComment,saveCampaignEdit}=state;
+  const [subtasksCollapsed, setSubtasksCollapsed] = React.useState(false);
+  const [isEditingDesc, setIsEditingDesc] = React.useState(false);
+  const [descDraft, setDescDraft] = React.useState('');
+  const [savingDesc, setSavingDesc] = React.useState(false);
+
+  const handleSaveDesc = async () => {
+    if (!selectedCampaign) return;
+    setSavingDesc(true);
+    try {
+      const { error } = await supabase.from('campaigns').update({ objective: descDraft }).eq('id', selectedCampaign.id);
+      if (error) throw error;
+      const updated = { ...selectedCampaign, objective: descDraft };
+      setSelectedCampaign(updated);
+      if ((state as any).setCampaigns) {
+        (state as any).setCampaigns((items: any[]) => items.map((item: any) => item.id === selectedCampaign.id ? { ...item, objective: descDraft } : item));
+      }
+      window.dispatchEvent(new Event('campaigns:changed'));
+      toast.success(lang === 'en' ? 'Description updated' : 'Đã cập nhật mô tả');
+      setIsEditingDesc(false);
+    } catch (err: any) {
+      toast.error(err?.message || (lang === 'en' ? 'Failed to update description' : 'Lỗi cập nhật mô tả'));
+    } finally {
+      setSavingDesc(false);
+    }
+  };
   const formatCreatedAt = (value?: string | null) => {
     if (!value) return '';
     const d = new Date(value);
@@ -60,10 +83,10 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selectedCampaign.name}</h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">{t('projects.campaigns')}</span>
             </div>
-            <div className="flex items-center gap-1 shrink-0"><TaskActivityLogPopover entityType="campaign" entityId={selectedCampaign.id} /><EntityPinButton kind="campaign" id={selectedCampaign.id} name={selectedCampaign.name} /><button onClick={() => { setSelectedCampaign(null); setParams({}, { replace: true }); }} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button></div>
+            <div className="flex items-center gap-1 shrink-0"><button onClick={() => { setSelectedCampaign(null); setParams({}, { replace: true }); }} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-gray-500" /></button></div>
           </div>
           <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="edit-camp-start-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-start-input', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="edit-camp-due-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-due-input', mode: 'single' }, e)} value={due} onChange={e=>setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={visiblePeople.map(person=>({value:String(person.id),label:person.name+(person.departments?.name?` · ${person.departments.name}`:'')}))} value={primaryOwnerId?[primaryOwnerId]:[]} maxSelected={1} onChange={(ids:string[])=>setPrimaryOwnerId(ids[0]||'')} placeholder={t('common.selectPic')} /></div><EntityStatusField value={editStatus} onChange={setEditStatus} /><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><div className="relative mt-1"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 pr-14 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm font-semibold" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div className="grid grid-flow-col auto-cols-max gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-[#0a192f] rounded-[8px] text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-[8px] text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><EntityActionBadges
+            {campaignEditMode ? <div className="space-y-5"><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label><input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] font-bold outline-none mt-1" /></div><div className="grid grid-cols-2 gap-3"><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="edit-camp-start-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-start-input', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div><div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.endDate')}</label><input type="text" id="edit-camp-due-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-camp-due-input', mode: 'single' }, e)} value={due} onChange={e=>setDue(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm cursor-pointer"/></div></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={visiblePeople.map(person=>({value:String(person.id),label:person.name+(person.departments?.name?` · ${person.departments.name}`:'')}))} value={primaryOwnerId?[primaryOwnerId]:[]} maxSelected={1} onChange={(ids:string[])=>setPrimaryOwnerId(ids[0]||'')} placeholder={t('common.selectPic')} /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.department') || (lang === 'en' ? 'Department' : 'Phòng ban')}</label><select value={departmentId} onChange={e=>setDepartmentId(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none mt-1 text-sm text-gray-900 dark:text-white"><option value="">{lang === 'en' ? 'Select department...' : 'Chọn phòng ban...'}</option>{departments.map((dept: any) => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select></div><EntityStatusField value={editStatus} onChange={setEditStatus} /><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.objectives')}</label><textarea value={campaignObjective} onChange={e=>setCampaignObjective(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none min-h-24 mt-1 text-sm" /></div><div><label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.col.budget')}</label><div className="relative mt-1"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full p-2.5 pr-14 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm font-semibold" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div className="grid grid-flow-col auto-cols-max gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700"><button onClick={() => setCampaignEditMode(false)} className="px-5 py-2.5 bg-gray-100 dark:bg-[#0a192f] rounded-[8px] text-sm font-semibold">{t('common.cancel')}</button><button onClick={saveCampaignEdit} className="px-5 py-2.5 bg-[#002e6d] text-white rounded-[8px] text-sm font-semibold">{t('projects.saveChanges')}</button></div></div> : <div className="space-y-7"><EntityActionBadges
               priority={getCampaignPriority(selectedCampaign)}
               status={selectedCampaign.status || 'planning'}
               onPriorityChange={async (newPriority) => {
@@ -109,11 +132,116 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 setCampaignObjective(selectedCampaign.objective || '');
                 setCampaignBudget(selectedCampaign.budget ? String(selectedCampaign.budget) : '');
                 setPrimaryOwnerId(selectedCampaign.lead_id ? String(selectedCampaign.lead_id) : '');
+                setDepartmentId(selectedCampaign.department_id ? String(selectedCampaign.department_id) : '');
                 setCampaignEditMode(true);
               }}
               canManage={canManageCampaign}
-            /><div className="grid grid-cols-3 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm"><div><p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p><div className="mt-1 flex flex-wrap gap-2">{(workflow.tracks.find(track => track.entity_type === "campaign" && track.entity_id === selectedCampaign.id)?.pics || []).map(person => <span key={person.id} className="flex items-center gap-1.5 text-xs font-semibold"><Avatar name={person.name} src={person.avatar_url} className="w-5 h-5 text-[10px]"/>{person.name}</span>)}</div></div><div><p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span></div></div><div><p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p><div className="mt-1 font-semibold flex items-center gap-2"><Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" /> <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span></div></div></div><WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} /><section><h3 className="font-bold text-sm mb-2">{t('common.description')}</h3><div className="p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div></section>
-<section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><Users size={16}/> {t('projects.subtasks')}</h3><div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted' && (statusFilter === 'completed' ? isTaskDone(subtask.status) : true)).map(s => {
+              entityType="campaign"
+              entityId={selectedCampaign.id}
+              entityName={selectedCampaign.name}
+            >
+              {Boolean(departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name) && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                  {lang === 'en' ? 'Department' : 'Phòng ban'}: {departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name}
+                </span>
+              )}
+            </EntityActionBadges>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
+              <div>
+                <p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {(workflow.tracks.find(track => track.entity_type === "campaign" && track.entity_id === selectedCampaign.id)?.pics || []).map(person => (
+                    <span key={person.id} className="flex items-center gap-1.5 text-xs font-semibold">
+                      <Avatar name={person.name} src={person.avatar_url} className="w-5 h-5 text-[10px]" />
+                      {person.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.timeline')}</p>
+                <div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm">
+                  <span className="font-normal text-gray-700 dark:text-gray-300">{dateValue(selectedCampaign.start_date || '')}</span>
+                  <span className="text-gray-400">–</span>
+                  <span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p>
+                <div className="mt-1 font-semibold flex items-center gap-2">
+                  <Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" />
+                  <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400">{lang === 'en' ? 'Department' : 'Phòng ban'}</p>
+                <div className="mt-1 font-semibold text-xs text-gray-700 dark:text-gray-300 line-clamp-1">
+                  {departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name || (lang === 'en' ? 'Unassigned' : 'Chưa phân')}
+                </div>
+              </div>
+            </div>
+            <WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} />
+            <section>
+              <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>
+                {canManageCampaign && !isEditingDesc && (
+                  <button
+                    type="button"
+                    onClick={() => { setDescDraft(selectedCampaign.objective || ''); setIsEditingDesc(true); }}
+                    className="p-1 rounded-[6px] text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors border-0 shadow-none grid place-items-center cursor-pointer"
+                    title={lang === 'en' ? 'Quick edit description' : 'Chỉnh sửa nhanh mô tả'}
+                    aria-label={lang === 'en' ? 'Quick edit description' : 'Chỉnh sửa nhanh mô tả'}
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+              {isEditingDesc ? (
+                <div className="space-y-2">
+                  <textarea value={descDraft} onChange={e => setDescDraft(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none min-h-24 text-sm text-gray-900 dark:text-white focus:border-primary" placeholder={lang === 'en' ? 'Enter campaign description / objectives...' : 'Nhập mô tả / mục tiêu chiến dịch...'} />
+                  <div className="grid grid-flow-col auto-cols-max gap-2 justify-end">
+                    <button type="button" onClick={() => setIsEditingDesc(false)} className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-[6px] text-xs font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">{t('common.cancel')}</button>
+                    <button type="button" disabled={savingDesc} onClick={handleSaveDesc} className="px-3 py-1.5 bg-[#002e6d] text-white rounded-[6px] text-xs font-semibold hover:bg-[#002150] transition-colors disabled:opacity-50">{savingDesc ? (lang === 'en' ? 'Saving...' : 'Đang lưu...') : t('common.save')}</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div>
+              )}
+            </section>
+            <section>
+              {(() => {
+                const validSubtasks = campaignSubtasks.filter(subtask => subtask.status !== 'deleted');
+                const doneCount = validSubtasks.filter(s => isTaskDone(s.status)).length;
+                const openCount = validSubtasks.filter(s => !isTaskDone(s.status)).length;
+                return (
+                  <div className="grid grid-flow-col justify-between items-center mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSubtasksCollapsed(v => !v)}
+                      className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
+                      aria-expanded={!subtasksCollapsed}
+                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtasks') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtasks')}
+                    >
+                      <Users size={16}/>
+                      <span>{t('projects.subtasks')}</span>
+                      {doneCount > 0 && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          {doneCount} {lang === 'en' ? 'completed' : 'hoàn thành'}
+                        </span>
+                      )}
+                      {openCount > 0 && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          {openCount} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
+                        </span>
+                      )}
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${subtasksCollapsed ? '-rotate-90' : ''}`} />
+                    </button>
+                  </div>
+                );
+              })()}
+              {!subtasksCollapsed && (
+                <>
+                  <div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted' && (statusFilter === 'completed' ? isTaskDone(subtask.status) : true)).map(s => {
   const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
   return (
     <div
@@ -167,16 +295,16 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
 
           {/* Row 2: Badges */}
           <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
+            <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
               {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any).toLowerCase()}
             </span>
             {Boolean(campaignSubtaskQuantities?.[s.id] || s.quantity) && (
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+              <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                 SL: {campaignSubtaskQuantities?.[s.id] || s.quantity}
               </span>
             )}
             {s.due_date && (
-              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-red-200/80 dark:border-red-800/60 bg-red-50/80 text-red-600 dark:bg-red-950/30 dark:text-red-400">
                 <Calendar size={11} /> {dateValue(s.due_date)}
               </span>
             )}
@@ -186,7 +314,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               return (
                 <span
                   title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
-                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md border ${
+                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border ${
                     isAllDone
                       ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
                       : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
@@ -232,7 +360,30 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
     </div>
   );
 })}</div>{selectedRoot && !showCampaignSubtaskForm && <button onClick={() => setShowCampaignSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
-{selectedRoot && showCampaignSubtaskForm && <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3"><input value={campaignNewSubtask} onChange={e=>setCampaignNewSubtask(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/><div className="grid grid-cols-1 sm:grid-cols-3 gap-2"><select value={campaignSubtaskOwner} onChange={e=>setCampaignSubtaskOwner(e.target.value)} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"><option value="">{t('common.selectPic')}</option>{visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}</select><input type="number" min="0" step="1" value={campaignSubtaskQuantity} onChange={e=>setCampaignSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm"/><div className="tw-calendar-picker relative w-full"><input type="text" id="campaign-subtask-due-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'campaign-subtask-due-input', mode: 'single' }, e); }} value={campaignSubtaskDue} onChange={(e) => setCampaignSubtaskDue(e.target.value)} placeholder="dd/mm/yyyy" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] outline-none text-sm w-full cursor-pointer"/></div></div><div className="flex gap-2 justify-end"><button onClick={() => setShowCampaignSubtaskForm(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700">{t('common.cancel')}</button><button onClick={() => { addCampaignSubtask(); }} className="px-3 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-lg shadow-sm">{t('common.add')}</button></div></div>}</section><section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> {t('common.activityComments')}</h3><div className="space-y-3">{campaignComments.map(c => <CommentMessage key={c.id} id={c.id} authorId={c.user_id} actorId={profile?.id}
+{selectedRoot && showCampaignSubtaskForm && (
+  <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3">
+    <input value={campaignNewSubtask} onChange={e=>setCampaignNewSubtask(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <select value={campaignSubtaskOwner} onChange={e=>setCampaignSubtaskOwner(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm">
+        <option value="">{t('common.selectPic')}</option>
+        {visiblePeople.map(p => <option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}
+      </select>
+      <select value={campaignSubtaskPriority} onChange={e=>setCampaignSubtaskPriority(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm font-medium">
+        <option value="low">{t('common.low')}</option>
+        <option value="medium">{t('common.medium')}</option>
+        <option value="high">{t('common.high')}</option>
+      </select>
+      <input type="number" min="0" step="1" value={campaignSubtaskQuantity} onChange={e=>setCampaignSubtaskQuantity(e.target.value)} placeholder={t('tasks.quantity')} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
+      <div className="tw-calendar-picker relative w-full">
+        <input type="text" id="campaign-subtask-due-input" readOnly onClick={(e) => { if ((window as any).openCalendar) (window as any).openCalendar({ displayId: 'campaign-subtask-due-input', mode: 'single' }, e); }} value={campaignSubtaskDue} onChange={(e) => setCampaignSubtaskDue(e.target.value)} placeholder="dd/mm/yyyy" className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm w-full cursor-pointer"/>
+      </div>
+    </div>
+    <div className="grid grid-flow-col justify-end gap-2">
+      <button type="button" onClick={() => setShowCampaignSubtaskForm(false)} className="px-3 py-1.5 text-sm font-medium rounded-[8px] hover:bg-gray-200/70 dark:hover:bg-slate-800 transition-colors">{t('common.cancel')}</button>
+      <button type="button" onClick={() => { addCampaignSubtask(); }} className="px-3.5 py-1.5 bg-[#002e6d] text-white text-sm font-semibold rounded-[8px] hover:bg-[#002557] transition-colors shadow-sm">{t('common.add')}</button>
+    </div>
+  </div>
+)}</>)}</section><section><h3 className="font-bold text-sm flex gap-2 items-center mb-3"><MessageSquare size={16}/> {t('common.activityComments')}</h3><div className="space-y-3">{campaignComments.map(c => <CommentMessage key={c.id} id={c.id} authorId={c.user_id} actorId={profile?.id}
         authorName={c.user?.name || 'Member'} avatarUrl={c.user?.avatar_url} body={c.metadata?.body || ''} createdAt={c.created_at} editedAt={c.new_value?.edited_at}
         onEdit={saveEditedCampaignComment} onDelete={removeCampaignComment}
         onReply={()=>{setCampaignComment(value=>`${value}${value && !value.endsWith(' ') ? ' ' : ''}@${(c.user?.name || 'Member').replace(/\s+/g,'')} `);window.setTimeout(()=>campaignCommentInput.current?.focus(),0);}} />)}</div><div className="mt-4"><SmartCommentInput inputRef={campaignCommentInput} value={campaignComment} onChange={setCampaignComment} onSubmit={body => void addCampaignComment(body)} people={visiblePeople} collaboratorIds={campaignCollaboratorIds} placeholder="Add a comment..." /></div></section></div>}
