@@ -9,6 +9,7 @@ import { useTranslation } from '../i18n/translations';
 import {canViewPersonInTeam,isGlobalManager,isAdmin} from '../lib/roleScope';
 import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
 import { StatusFilterDropdown } from '../components/common/filters';
+import { displayDate } from '../lib/workflowHub';
 
 export function MemberManagement() {
   const { t } = useTranslation();
@@ -242,7 +243,7 @@ export function MemberManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden relative">
-                      <span className="truncate block">{member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}</span>
+                      <span className="truncate block">{member.created_at ? displayDate(member.created_at) : '-'}</span>
                       {canDeleteMember && member.id !== profile?.id && (
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity flex items-center z-10">
                           {member.status === 'active' ? (

@@ -3,6 +3,7 @@ import type {FormEvent} from 'react';
 import {Eye,RefreshCw,Search,ShieldCheck,LogOut} from 'lucide-react';
 import {useAuthStore} from '../store/authStore';
 import {officialReadClient} from '../services/officialReadOnly';
+import {displayDate} from '../lib/workflowHub';
 
 type Kind='projects'|'campaigns'|'tasks';
 type Entry={id:string;name?:string;title?:string;description?:string|null;status?:string|null;start_date?:string|null;due_date?:string|null;end_date?:string|null;created_at?:string;updated_at?:string};
@@ -14,7 +15,7 @@ const fields:Record<Kind,string>={
   campaigns:'id,name,status,start_date,end_date,created_at',
   tasks:'id,title,description,status,start_date,due_date,created_at,updated_at',
 };
-const date=(value?:string|null)=>value?new Date(value).toLocaleDateString('vi-VN'):'—';
+const date=(value?:string|null)=>displayDate(value);
 
 export default function MainReadOnly(){
   const client=officialReadClient;

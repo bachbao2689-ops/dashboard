@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import type { BorrowRequest } from '../../../hooks/useBorrowRequests';
 import { useTranslation } from '../../../i18n/translations';
+import { displayDate } from '../../../lib/workflowHub';
 
 interface BorrowRequestDetailModalProps {
   isOpen: boolean;
@@ -14,9 +15,7 @@ interface BorrowRequestDetailModalProps {
   onReturn: () => void;
 }
 
-const formatDate = (value?: string | null) => value
-  ? new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('vi-VN')
-  : '—';
+const formatDate = (value?: string | null) => displayDate(value);
 
 export const BorrowRequestDetailModal: React.FC<BorrowRequestDetailModalProps> = ({
   isOpen, onClose, request, canManage, busy, onApprove, onReject, onReturn,

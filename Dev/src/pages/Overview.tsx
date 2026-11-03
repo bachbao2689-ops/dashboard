@@ -15,6 +15,7 @@ import { useRememberedState } from '../hooks/useRememberedState';
 import {isAdmin} from '../lib/roleScope';
 import { transitionBorrowRequest } from '../services/borrowWorkflow';
 import type { BorrowAction } from '../services/borrowWorkflow';
+import { displayDate } from '../lib/workflowHub';
 
 /* Shared design tokens (same as Dashboard / Departments 2) */
 const INK = 'text-gray-900 dark:text-white';
@@ -285,7 +286,7 @@ export const Overview: React.FC = () => {
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-semibold truncate ${INK}`}>{task.title}</p>
                   <p className={`text-xs flex items-center gap-1 ${MUTED}`}>
-                    <Clock size={11} /> {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'} · {task.assignee?.name || t('common.unassigned')}
+                    <Clock size={11} /> {task.due_date ? displayDate(task.due_date) : 'N/A'} · {task.assignee?.name || t('common.unassigned')}
                   </p>
                 </div>
               </div>
@@ -342,7 +343,7 @@ export const Overview: React.FC = () => {
                 <p className={`text-sm ${INK}`}>
                   <b>{req.requester?.name}</b> {t('overview.wantsToBorrow')} <b>{req.asset?.name}</b>
                 </p>
-                <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {new Date(req.due_date).toLocaleDateString()}</p>
+                <p className={`text-xs mt-0.5 flex items-center gap-1 ${MUTED}`}><Clock size={11} /> {t('overview.due')}: {displayDate(req.due_date)}</p>
                 {req.approval_status === 'pending' && canAdmin ? (
                   <div className="flex gap-2 mt-2.5">
                     <button onClick={() => void handleUpdateStatus(req.id, 'approve')} className="flex-1 bg-emerald-600 hover:opacity-90 text-white py-1.5 rounded-[8px] text-xs font-semibold transition-opacity">{t('overview.approve')}</button>

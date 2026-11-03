@@ -3,16 +3,16 @@ import {DateFilterDropdown} from '../../common/filters';
 const toYmd=(date:Date)=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
 import {AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer} from 'recharts';
 import {useTranslation} from '../../../i18n/translations';
+import {displayDate} from '../../../lib/workflowHub';
 const INK='text-gray-900 dark:text-white',MUTED='text-gray-500 dark:text-gray-400',INNER='border border-gray-200 dark:border-slate-700';
-const displayDate=(value?:string,locale='vi-VN')=>{if(!value)return '';const d=new Date(value.includes('T')?value:`${value}T00:00:00`);return isNaN(d.getTime())?value:d.toLocaleDateString(locale);};
 type Props={name:string;className?:string;rangeStart:string;rangeEnd:string;range?: 'weekly'|'custom';setRange?:(value:'weekly'|'custom')=>void;customStart?:string;setCustomStart?:(value:string)=>void;customEnd?:string;setCustomEnd?:(value:string)=>void;isDark:boolean;chartData:{name:string;created:number;doing:number;done:number}[];hideDateFilter?:boolean};
-export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly',setRange,customStart='',setCustomStart,customEnd='',setCustomEnd,isDark,chartData,className,hideDateFilter=false}:Props){const {t,lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
+export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly',setRange,customStart='',setCustomStart,customEnd='',setCustomEnd,isDark,chartData,className,hideDateFilter=false}:Props){const {t, lang}=useTranslation();const [calendarFilter,setCalendarFilter]=useState('this_week');const [dateFilterOpen,setDateFilterOpen]=useState(false);return (<>
           {/* Chart */}
           <div className={className || `sm:col-span-2 ${INNER} rounded-[13px] px-4 pt-[15px] pb-[10px] grid grid-rows-[auto_1fr_auto] min-w-0`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <strong className={`text-sm ${INK}`}>{t('dashboard.taskAllocation')}</strong>
-                <p className={`text-xs mt-[3px] ${MUTED}`}>{name} · {displayDate(rangeStart, lang === 'vi' ? 'vi-VN' : 'en-US')} — {displayDate(rangeEnd, lang === 'vi' ? 'vi-VN' : 'en-US')}</p>
+                <p className={`text-xs mt-[3px] ${MUTED}`}>{name} · {displayDate(rangeStart)} — {displayDate(rangeEnd)}</p>
               </div>
               {!hideDateFilter && (
               <DateFilterDropdown

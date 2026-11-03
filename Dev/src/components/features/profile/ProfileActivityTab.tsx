@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { CheckCircle2, ArrowRightLeft, Package } from 'lucide-react';
 import { useProfileWorkload } from '../../../hooks/useProfileWorkload';
 import { borrowStatusLabel } from '../../../services/borrowWorkflow';
+import { displayDateTime } from '../../../lib/workflowHub';
 
 type ActivityFilter = 'All' | 'Tasks' | 'Assets';
 
-const formatDate = (value?: string | null) => value
-  ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  : 'Chưa có thời gian';
+const formatDate = (value?: string | null) => displayDateTime(value, 'Chưa có thời gian');
 
 export const ProfileActivityTab: React.FC = () => {
   const [filter, setFilter] = useState<ActivityFilter>('All');

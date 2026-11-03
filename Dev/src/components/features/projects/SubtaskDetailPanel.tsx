@@ -20,7 +20,7 @@ import { useTranslation } from '../../../i18n/translations';
 import { canonicalWorkflowStatus, workflowStage, type WorkflowTaskStatus } from '../tasks/WorkflowStatusPicker';
 import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
-import { inputDate } from '../../../lib/workflowHub';
+import { displayDate as formatHubDate, displayDateTime, inputDate } from '../../../lib/workflowHub';
 import { saveTaskDeliverables, computeDeliverableQuantity, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
 import { EntityActionBadges } from './EntityActionBadges';
@@ -57,7 +57,7 @@ type Subtask = {
 type ParentDetails = { name: string; priority?: string | null; departmentName?: string | null; start_date?: string | null; due_date?: string | null; end_date?: string | null };
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
-const displayDate = (date?: string | null) => date ? new Date(date).toLocaleDateString('vi-VN') : '---';
+const displayDate = (date?: string | null) => date ? formatHubDate(date) : '---';
 
 interface SubtaskDetailPanelProps {
   embedded?: boolean;
@@ -1011,7 +1011,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         </section>}
 
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{subtask.created_at ? new Date(subtask.created_at).toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</span>
+          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{displayDateTime(subtask.created_at)}</span>
           {subtask.created_at && subtask.updated_at && new Date(subtask.updated_at).getTime() > new Date(subtask.created_at).getTime() + 1000 && <span>· {lang === 'en' ? 'Edited' : 'Đã chỉnh sửa'}</span>}
         </p>
 

@@ -15,6 +15,7 @@ import { useUiStore } from '../store/uiStore';
 import {canSubmitAssetRequest} from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import { displayDate } from '../lib/workflowHub';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box size={16} className="text-gray-500" />;
@@ -168,7 +169,7 @@ export const AssetInventory: React.FC = () => {
               <p className="ml-6 mt-1 truncate text-[11px] text-gray-500 dark:text-gray-400">{asset.asset_code} · {asset.category?.name || t('common.unassigned')}</p>
               <div className="ml-6 mt-2 flex min-w-0 items-center justify-between gap-2">
                 <span className={`shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-semibold ${canBorrow ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : asset.status === 'reserved' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : asset.status === 'borrowed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{statusLabel}</span>
-                {canBorrowAsset && (canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-[6px] px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : null}
+                {canBorrowAsset && (canBorrow || inCart) ? <ActionButton icon={inCart ? <Check size={16}/> : <Plus size={16}/>} type="button" onClick={() => toggleCart(asset)} className={`shrink-0 rounded-[6px] px-2.5 py-1.5 text-[11px] font-semibold text-white ${inCart ? 'bg-emerald-600' : 'bg-primary'}`}>{inCart ? t('assets.removeFromSlip') : t('assets.addToSlip')}</ActionButton> : asset.due_date ? <span className="min-w-0 truncate text-[11px] text-gray-500 dark:text-gray-400">{t('common.due')} {displayDate(asset.due_date)}</span> : null}
               </div>
             </div>;
           })}
@@ -250,7 +251,7 @@ export const AssetInventory: React.FC = () => {
                       {asset.current_borrower?.name ? <span className="font-semibold text-primary truncate block">{asset.current_borrower.name}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
-                      {asset.due_date ? <span className="font-medium truncate block">{new Date(`${asset.due_date}T00:00:00`).toLocaleDateString('vi-VN')}</span> : <span className="text-gray-400 truncate block">---</span>}
+                      {asset.due_date ? <span className="font-medium truncate block">{displayDate(asset.due_date, '---')}</span> : <span className="text-gray-400 truncate block">---</span>}
                     </td>
                     <td className="p-4 text-right overflow-hidden">
                       {(() => {

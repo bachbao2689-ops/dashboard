@@ -10,8 +10,9 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import {canSubmitAssetRequest,isAssetApprover} from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
+import { displayDate } from '../lib/workflowHub';
 
-const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('vi-VN');
+const formatDate = (value: string) => displayDate(value);
 
 export const BorrowRequests: React.FC = () => {
   const { t } = useTranslation();

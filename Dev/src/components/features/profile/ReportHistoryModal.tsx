@@ -7,6 +7,7 @@ import {checklistTaskKey} from '../../../lib/taskChecklist';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { notifyTaskParticipants } from '../../../services/taskNotifications';
+import { displayDate } from '../../../lib/workflowHub';
 
 type ReportLog = {
   id: string;
@@ -21,7 +22,7 @@ type ReportLog = {
 type DeletedTaskLog = { id: string; entity_id: string; entity_type: string; created_at: string; metadata?: { task_title?: string; parent_name?: string; parent_type?: string } | null };
 type ArchivedProject = { id: string; name: string; status: 'archived' | 'deleted'; description?: string | null };
 
-const dateLabel = (date?: string) => date ? new Date(`${date}T00:00:00`).toLocaleDateString('vi-VN') : 'Chưa xác định';
+const dateLabel = (date?: string) => displayDate(date, 'Chưa xác định');
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const reportKey = (log: ReportLog) => `${log.entity_type}:${log.entity_id}:${log.metadata?.checklist_item_id || ''}:${log.metadata?.week_start || ''}:${log.metadata?.week_end || ''}`;
 

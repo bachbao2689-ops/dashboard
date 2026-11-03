@@ -23,6 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTeamWorkload } from '../../hooks/useTeamWorkload';
 import { useTranslation } from '../../i18n/translations';
+import { displayDate } from '../../lib/workflowHub';
 import { useUiStore } from '../../store/uiStore';
 import { taskLink } from '../../lib/taskTracking';
 import { useRememberedState } from '../../hooks/useRememberedState';
@@ -449,7 +450,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                                 <span className="truncate font-medium">{task.title}</span>
                               </button>
                               <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">
-                                {task.due_date || '—'}
+                                {displayDate(task.due_date)}
                               </span>
                             </li>
                           ))}

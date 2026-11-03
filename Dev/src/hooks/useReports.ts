@@ -168,7 +168,7 @@ const getInitial = (name: string) => {
 function formatShortDate(iso: string): string {
   if (!iso || iso.length < 10) return iso;
   const [y, m, d] = iso.slice(0, 10).split('-');
-  return `${d}/${m}/${y}`;
+  return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
 }
 
 function getPeriodBounds(
@@ -1373,8 +1373,8 @@ export const useReports = (options?: { standalone?: boolean }) => {
         t.department?.name || selectedDepartmentName,
         t.status || '',
         t.priority || '',
-        t.due_date || '',
-        t.completed_at || '',
+        t.due_date ? formatShortDate(t.due_date) : '',
+        t.completed_at ? formatShortDate(t.completed_at) : '',
       ]),
     ];
     const csv = rows

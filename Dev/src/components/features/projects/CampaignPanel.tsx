@@ -14,7 +14,7 @@ import { useTranslation } from '../../../i18n/translations';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
 import { getCampaignPriority } from './projectPresentation';
-import type { HubTrack } from '../../../lib/workflowHub';
+import { displayDate, type HubTrack } from '../../../lib/workflowHub';
 
 export interface CampaignFilters {
   searchTerm: string;
@@ -99,8 +99,8 @@ const strictFormatVN = (dateStr?: string | null) => {
   if (!dateStr) return '—';
   const ymd = dateStr.split('T')[0];
   const parts = ymd.split('-');
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  return new Date(dateStr).toLocaleDateString('vi-VN');
+  if (parts.length === 3) return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+  return displayDate(dateStr);
 };
 const formatDate = strictFormatVN;
 const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';

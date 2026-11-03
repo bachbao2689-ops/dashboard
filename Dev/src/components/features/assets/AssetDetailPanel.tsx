@@ -6,6 +6,7 @@ import { useTranslation } from '../../../i18n/translations';
 import { isGlobalManager, isAssetApprover } from '../../../lib/roleScope';
 import { useAuthStore } from '../../../store/authStore';
 import { supabase } from '../../../services/supabase';
+import { displayDate } from '../../../lib/workflowHub';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box className="w-5 h-5 text-gray-500" />;
@@ -146,16 +147,7 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
     onBorrowNow?.(asset);
   };
 
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return '—';
-    try {
-      const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('vi-VN');
-    } catch {
-      return dateStr;
-    }
-  };
+  const formatDate = (dateStr?: string | null) => displayDate(dateStr);
 
   const getHistoryStatus = (item: any) => {
     if (item.returned_at) {
