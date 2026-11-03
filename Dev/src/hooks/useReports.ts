@@ -15,6 +15,7 @@ import {
   taskOpen,
   taskOverdue,
   taskState,
+  workloadCapacityPercent,
   type TrackedTask,
 } from '../lib/taskTracking';
 import { scopeTeamWorkload } from '../lib/workloadScope';
@@ -519,8 +520,8 @@ function computePeriodHeatmap(
         if (!taskDone(t)) return true;
         const doneDay = taskDay(t.completed_at) || taskDay((t as any).updated_at);
         return Boolean(doneDay && doneDay > cp.pointEnd);
-      }).length;
-      const basePct = openAtPoint * 20;
+      });
+      const basePct = workloadCapacityPercent(openAtPoint, cp.pointEnd);
       return Math.min(140, basePct);
     });
 
@@ -844,7 +845,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
         const late = overdueList.length;
         const total = done + doing + todo + late;
         const completionPct = total > 0 ? Math.round((done / total) * 100) : 0;
-        const capacityPercentage = openList.length * 20;
+        const capacityPercentage = workloadCapacityPercent(openList, today);
         const deliverableCount = memberAllTasks.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
         const completedDeliverables = doneList.reduce((sum, t) => sum + computeTaskDeliverableQty(t), 0);
         const remainingDeliverables = Math.max(0, deliverableCount - completedDeliverables);
