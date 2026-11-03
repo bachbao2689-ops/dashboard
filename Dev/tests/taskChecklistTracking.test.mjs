@@ -4,12 +4,31 @@ import {mapWorkspaceTasks} from '../src/lib/workspaceTaskMapping.ts';
 import {computeDeliverableQuantity} from '../src/lib/taskDeliverables.ts';
 import {checklistTaskKey,deliverableHistory,patchChecklistItem} from '../src/lib/taskChecklist.ts';
 import {reportPeriodTasks,reportTaskTotals} from '../src/lib/reportTaskTracking.ts';
-import {taskTarget,taskDone} from '../src/lib/taskTracking.ts';
+import {taskTarget,taskDone,phaseLinkableTasks,phaseLinkTarget} from '../src/lib/taskTracking.ts';
 import {taskProgress,parentTasks} from '../src/lib/workflowHub.ts';
 
 const project={id:'project',name:'Project',department_id:'design',workspace_id:'workspace',status:'active'};
 const sub={id:'sub',project_id:'project',assignee_id:7,status:'todo',created_at:'2026-10-01T00:00:00Z',projects:project};
 const item=(id,quantity,completed=false)=>({id,title:id,quantity,completed,created_at:'2026-10-20T00:00:00Z',completed_at:completed?'2026-10-21T00:00:00Z':null});
+
+test('phase picker links only persisted task/subtask UUIDs, never checklist item keys',()=>{
+ const projectId='6f410d17-cf67-4d93-8f7a-2ca549a63845';
+ const campaignId='d36ee113-b126-4ce3-a0cc-ed707efee9b7';
+ const taskId='e4859579-c478-4439-bbb3-41737f728aa1';
+ const rows=[
+  {id:`ps-${projectId}`,workflow_phase_id:null},
+  {id:checklistTaskKey(`ps-${projectId}`,'item-1793438610827-wx0s'),workflow_phase_id:null},
+  {id:`cs-${campaignId}`,workflow_phase_id:null},
+  {id:taskId,workflow_phase_id:null},
+  {id:'6de6735c-c1c2-44a4-8732-b4a42661ad1d',workflow_phase_id:'phase'},
+ ];
+ assert.deepEqual(phaseLinkableTasks(rows).map(row=>row.id),[`ps-${projectId}`,`cs-${campaignId}`,taskId]);
+ assert.deepEqual(phaseLinkTarget(rows[0].id),{kind:'project_subtask',id:projectId});
+ assert.deepEqual(phaseLinkTarget(rows[2].id),{kind:'campaign_subtask',id:campaignId});
+ assert.deepEqual(phaseLinkTarget(rows[3].id),{kind:'task',id:taskId});
+ assert.throws(()=>phaseLinkTarget(rows[1].id),/task\/subtask mẹ/);
+ assert.throws(()=>phaseLinkTarget(`${projectId}::item:bad`),/task\/subtask mẹ/);
+});
 
 test('each completed Workflow phase task is one completed work unit, with no invented file quantity',()=>{
  const rows=mapWorkspaceTasks([{id:'phase-task',workflow_phase_id:'phase',status:'todo',workflow_status:'completed'}],[],[]);
