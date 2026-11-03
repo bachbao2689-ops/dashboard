@@ -129,7 +129,7 @@ export function WorkflowUnplannedTasks({
                     onDragEnd={() => {
                       setDraggingTaskId?.(null);
                     }}
-                    className={`rounded-[8px] p-3.5 transition-all select-none relative group border ${
+                    className={`rounded-[8px] p-2.5 sm:p-3 transition-all select-none relative group border ${
                       isDragging
                         ? 'opacity-40 scale-[0.98] border-dashed border-primary bg-primary/5'
                         : 'bg-white border-gray-200/90 shadow-2xs hover:shadow-md hover:border-primary/40 dark:bg-[#0a192f] dark:border-slate-800 dark:hover:border-slate-700 dark:hover:bg-[#0f1e36]'
@@ -157,14 +157,18 @@ export function WorkflowUnplannedTasks({
                           setSelectedTask(task);
                         }
                       }}
-                      className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 my-2 leading-snug cursor-pointer hover:text-primary dark:hover:text-sky-300 transition-colors"
+                      className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 my-1.5 leading-snug cursor-pointer hover:text-primary dark:hover:text-sky-300 transition-colors"
                       title={task.title}
                     >
                       {task.title}
                     </h4>
 
-                    {/* Bottom Row: Calendar + due date on left, Avatar + Assignee on right */}
-                    <div className="grid grid-cols-[auto_1fr] items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-slate-800/80">
+                    {/* Bottom Row: Calendar + due date on left, Avatar + Assignee on right (fades out smoothly on hover) */}
+                    <div
+                      className={`grid grid-cols-[auto_1fr] items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-slate-800/80 transition-opacity duration-150 ${
+                        isMenuOpen ? 'opacity-0 pointer-events-none' : 'group-hover:opacity-0'
+                      }`}
+                    >
                       <div className="grid grid-flow-col items-center gap-1 text-[11px] text-gray-500 dark:text-slate-400">
                         <Calendar size={12} className="shrink-0 text-gray-400" />
                         <span className="truncate">{displayDate(task.due_date)}</span>
@@ -185,73 +189,73 @@ export function WorkflowUnplannedTasks({
                       </div>
                     </div>
 
-                    {/* Function 1: "Chọn phase" / "Gắn phase" hover button & Popover */}
+                    {/* Function 1: "Chọn phase" hover button & Popover (overlay smoothly over bottom row) */}
                     {isRoot && (
-                    <div
-                      className="relative mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-800/80"
-                      data-unplanned-menu
-                    >
-                      <button
-                        type="button"
-                        disabled={hub.busy}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuTaskId((prev) => (prev === task.id ? null : task.id));
-                        }}
-                        className={`w-full py-1.5 px-2.5 rounded-[6px] text-[11px] font-bold grid grid-flow-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      <div
+                        className={`absolute inset-x-2.5 bottom-2.5 z-10 transition-all duration-200 ${
                           isMenuOpen
-                            ? 'bg-primary text-white shadow-xs'
-                            : 'bg-primary/10 text-primary dark:bg-sky-500/20 dark:text-sky-300 hover:bg-primary/20 dark:hover:bg-sky-500/30 border border-primary/25 dark:border-sky-500/30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'
+                            ? 'opacity-100 pointer-events-auto translate-y-0'
+                            : 'opacity-0 pointer-events-none translate-y-1 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0'
                         }`}
-                        title={isEn ? 'Assign phase' : 'Chọn phase'}
+                        data-unplanned-menu
                       >
-                        <Layers size={13} className="shrink-0" />
-                        <span>{isEn ? 'Assign phase' : 'Chọn phase'}</span>
-                        <ChevronDown
-                          size={12}
-                          className={`shrink-0 transition-transform duration-200 ${
-                            isMenuOpen ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
-
-                      {/* Popover list of phases */}
-                      {isMenuOpen && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute left-0 right-0 bottom-[calc(100%+6px)] z-50 p-1.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700 shadow-xl max-h-52 overflow-y-auto custom-scrollbar space-y-1"
+                        <button
+                          type="button"
+                          disabled={hub.busy}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuTaskId((prev) => (prev === task.id ? null : task.id));
+                          }}
+                          className="w-full py-1.5 px-2.5 rounded-[6px] text-[11px] font-bold grid grid-flow-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-primary text-white shadow-xs hover:bg-primary/90 dark:bg-[#002e6d] dark:text-white dark:border dark:border-sky-500/40 dark:hover:bg-[#003882]"
+                          title={isEn ? 'Assign phase' : 'Chọn phase'}
                         >
-                          <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-400 border-b border-gray-100 dark:border-slate-800">
-                            {isEn ? 'Select phase' : 'Chọn chặng'}
-                          </div>
-                          {availablePhases.length === 0 ? (
-                            <div className="px-2 py-2 text-xs text-gray-400 text-center">
-                              {isEn ? 'No active phases available' : 'Chưa có chặng khả dụng'}
+                          <Layers size={13} className="shrink-0" />
+                          <span>{isEn ? 'Assign phase' : 'Chọn phase'}</span>
+                          <ChevronDown
+                            size={12}
+                            className={`shrink-0 transition-transform duration-200 ${
+                              isMenuOpen ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+
+                        {/* Popover list of phases */}
+                        {isMenuOpen && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-0 right-0 bottom-[calc(100%+6px)] z-50 p-1.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700 shadow-xl max-h-48 overflow-y-auto custom-scrollbar space-y-1"
+                          >
+                            <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-400 border-b border-gray-100 dark:border-slate-800">
+                              {isEn ? 'Select phase' : 'Chọn chặng'}
                             </div>
-                          ) : (
-                            availablePhases.map((phase) => (
-                              <button
-                                key={phase.id}
-                                type="button"
-                                disabled={hub.busy}
-                                onClick={() => {
-                                  linkTask(task, phase.id);
-                                  setOpenMenuTaskId(null);
-                                }}
-                                className="w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-primary/10 hover:text-primary dark:hover:bg-[#002e6d]/30 dark:hover:text-sky-300 transition-colors grid grid-cols-[auto_1fr] items-center gap-2 cursor-pointer"
-                              >
-                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-[4px] bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300">
-                                  P{phase.position}
-                                </span>
-                                <span className="truncate" title={phase.name || phase.title}>
-                                  {phase.name || phase.title}
-                                </span>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
+                            {availablePhases.length === 0 ? (
+                              <div className="px-2 py-2 text-xs text-gray-400 text-center">
+                                {isEn ? 'No active phases available' : 'Chưa có chặng khả dụng'}
+                              </div>
+                            ) : (
+                              availablePhases.map((phase) => (
+                                <button
+                                  key={phase.id}
+                                  type="button"
+                                  disabled={hub.busy}
+                                  onClick={() => {
+                                    linkTask(task, phase.id);
+                                    setOpenMenuTaskId(null);
+                                  }}
+                                  className="w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-primary/10 hover:text-primary dark:hover:bg-[#002e6d]/30 dark:hover:text-sky-300 transition-colors grid grid-cols-[auto_1fr] items-center gap-2 cursor-pointer"
+                                >
+                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-[4px] bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300">
+                                    P{phase.position}
+                                  </span>
+                                  <span className="truncate" title={phase.name || phase.title}>
+                                    {phase.name || phase.title}
+                                  </span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
