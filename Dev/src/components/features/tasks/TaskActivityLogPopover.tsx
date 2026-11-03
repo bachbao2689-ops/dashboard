@@ -26,15 +26,32 @@ interface TaskActivityLogPopoverProps {
   entityId?: string | null;
   workspaceId?: string;
   className?: string;
+  customTrigger?: (isOpen: boolean, toggle: () => void) => React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const TaskActivityLogPopover: React.FC<TaskActivityLogPopoverProps> = ({
   entityType,
   entityId,
   className = '',
+  customTrigger,
+  isOpen: controlledIsOpen,
+  onOpenChange,
 }) => {
   const { t, lang } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isControlled = typeof controlledIsOpen === 'boolean';
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const setIsOpen = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof next === 'function' ? next(isOpen) : next;
+    if (!isControlled) {
+      setInternalIsOpen(nextVal);
+    }
+    onOpenChange?.(nextVal);
+  }, [isControlled, isOpen, onOpenChange]);
+
   const [logs, setLogs] = useState<TaskActivityLogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,11 +60,24 @@ export const TaskActivityLogPopover: React.FC<TaskActivityLogPopoverProps> = ({
     if (!entityType || !entityId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('activity_log')
         .select('id, user_id, action, entity_type, entity_id, old_value, new_value, metadata, created_at, user:user_id(name, avatar_url)')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
+        .eq('entity_id', entityId);
+
+      if (entityType === 'task') {
+        query = query.eq('entity_type', 'task');
+      } else if (entityType === 'project_subtask' || entityType === 'campaign_subtask') {
+        query = query.in('entity_type', [entityType, 'subtask', 'task']);
+      } else if (entityType === 'project') {
+        query = query.eq('entity_type', 'project');
+      } else if (entityType === 'campaign') {
+        query = query.eq('entity_type', 'campaign');
+      } else {
+        query = query.eq('entity_type', entityType);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(50);
       if (!error && data) {
@@ -118,7 +148,7 @@ export const TaskActivityLogPopover: React.FC<TaskActivityLogPopoverProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   if (!entityId || !entityType) return null;
 
@@ -311,29 +341,33 @@ export const TaskActivityLogPopover: React.FC<TaskActivityLogPopoverProps> = ({
 
   return (
     <div ref={containerRef} className={`relative inline-block ${className}`}>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
-        title={lang === 'en' ? 'Activity Log' : 'Nhật ký hoạt động'}
-        aria-label={lang === 'en' ? 'Activity Log' : 'Nhật ký hoạt động'}
-        aria-expanded={isOpen}
-        className={`min-h-[44px] min-w-[44px] grid place-items-center rounded-xl transition-colors shrink-0 cursor-pointer ${
-          isOpen
-            ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-slate-700'
-            : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'
-        }`}
-      >
-        <History size={16} />
-      </button>
+      {customTrigger ? (
+        customTrigger(isOpen, () => setIsOpen(prev => !prev))
+      ) : !isControlled ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen((prev) => !prev);
+          }}
+          title={lang === 'en' ? 'Activity Log' : 'Nhật ký hoạt động'}
+          aria-label={lang === 'en' ? 'Activity Log' : 'Nhật ký hoạt động'}
+          aria-expanded={isOpen}
+          className={`min-h-[44px] min-w-[44px] grid place-items-center rounded-[6px] transition-colors shrink-0 cursor-pointer ${
+            isOpen
+              ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-slate-700'
+              : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <History size={16} />
+        </button>
+      ) : null}
 
       {isOpen && (
         <div
           role="dialog"
           aria-label={lang === 'en' ? 'Activity Log' : 'Nhật ký hoạt động'}
-          className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-[-80px] sm:top-full sm:mt-2 w-auto sm:w-[350px] max-w-[calc(100vw-24px)] z-[100] rounded-2xl border border-gray-200/90 bg-white/95 backdrop-blur-2xl shadow-2xl dark:border-slate-700/80 dark:bg-slate-900/95 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] max-w-[calc(100vw-24px)] z-[100] rounded-[8px] border border-gray-200/90 bg-white/95 backdrop-blur-2xl shadow-2xl dark:border-slate-700/80 dark:bg-[#071325] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         >
           {/* Header */}
           <div className="grid grid-cols-[1fr_auto] items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800">

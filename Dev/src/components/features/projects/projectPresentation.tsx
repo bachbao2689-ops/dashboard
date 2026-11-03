@@ -12,9 +12,15 @@ export const strictFormatVN = (dateStr?: string | null) => {
   return displayDate(dateStr);
 };
 
-export const dateValue = strictFormatVN;
+export const dateValue = (d?: string | null) => d ? strictFormatVN(d) : '—';
 
-export const priorityClass = (value: string) => value === 'urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' : value === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' : value === 'low' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300';
+export const priorityClass = (value: string) => {
+  const v = (value || '').toLowerCase();
+  if (v === 'urgent') return 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
+  if (v === 'high') return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800';
+  if (v === 'low') return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700';
+  return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+};
 
 export const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
   if (!endDateStr) return 'border-transparent';

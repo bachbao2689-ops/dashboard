@@ -250,7 +250,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
             top: isBottomHalf ? `${Math.max(10, pos.y - 420)}px` : `${Math.min(window.innerHeight - 440, pos.y)}px`,
             zIndex: 9550,
           }}
-          className="w-[330px] rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white/98 dark:bg-[#0c192c]/98 p-4 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100"
+          className="dashboard-frosted-glass w-[330px] rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100"
         >
           {/* Header */}
           <div className="grid grid-cols-[1fr_auto] items-center pb-3 border-b border-slate-200 dark:border-slate-800/80">
@@ -275,7 +275,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           </div>
 
           {/* Current Active User Info */}
-          <div className="my-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 grid gap-1 text-xs">
+          <div className="my-3 p-2.5 rounded-xl bg-white/55 dark:bg-slate-900/45 backdrop-blur-md border border-white/50 dark:border-slate-700/50 grid gap-1 text-xs">
             <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="font-semibold text-slate-900 dark:text-white truncate">
                 {currentProfile?.name || 'Dev User'}
@@ -293,7 +293,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           </div>
 
           {/* Tab Selector */}
-          <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900/80 mb-3 text-xs font-semibold">
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-200/60 dark:bg-slate-950/55 backdrop-blur-md border border-white/30 dark:border-slate-800/60 mb-3 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setActiveTab('roles')}
@@ -328,7 +328,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('admin', 'Admin')
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 grid place-items-center">
@@ -348,7 +348,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('manager', 'Manager')
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 grid place-items-center">
@@ -368,7 +368,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('leader', 'Leader', designDept?.id)
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 grid place-items-center">
@@ -390,7 +390,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('leader', 'Leader', marketingDept?.id)
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 grid place-items-center">
@@ -412,7 +412,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('member', 'Staff', designDept?.id)
                     ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 grid place-items-center">
@@ -436,7 +436,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('member', 'Staff', marketingDept?.id)
                     ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/40'
+                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                 }`}
               >
                 <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 grid place-items-center">

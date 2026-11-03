@@ -13,7 +13,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
-import { getCampaignPriority } from './projectPresentation';
+import { getCampaignPriority, priorityClass } from './projectPresentation';
 import { displayDate, type HubTrack } from '../../../lib/workflowHub';
 
 export interface CampaignFilters {
@@ -103,7 +103,6 @@ const strictFormatVN = (dateStr?: string | null) => {
   return displayDate(dateStr);
 };
 const formatDate = strictFormatVN;
-const priorityClass = (value: string) => value === 'high' ? 'bg-red-100 text-red-700' : value === 'low' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
 const campaignPriority = getCampaignPriority;
 
 
@@ -1004,7 +1003,7 @@ export const CampaignPanel: React.FC<{
           <td className="p-4 overflow-hidden text-center">
             <div className="grid place-content-center">
               <div className="truncate">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(campaignPriority(c))}`}>
+                <span className={`px-2 py-1 rounded-[6px] text-xs font-semibold capitalize truncate ${priorityClass(campaignPriority(c))}`}>
                   {campaignPriority(c)}
                 </span>
               </div>
@@ -1180,7 +1179,7 @@ export const CampaignPanel: React.FC<{
                     {/* Cột 4: PRIORITY */}
                     <td className="p-3 overflow-hidden text-center">
                       <div className="grid place-content-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize truncate ${priorityClass(st.priority || 'medium')}`}>
+                        <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold capitalize truncate ${priorityClass(st.priority || 'medium')}`}>
                           {st.priority || 'medium'}
                         </span>
                       </div>
@@ -1318,7 +1317,7 @@ export const CampaignPanel: React.FC<{
                           {/* Cột 4: PRIORITY */}
                           <td className="py-2 px-4 overflow-hidden text-center">
                             <div className="grid place-content-center">
-                              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold capitalize truncate ${priorityClass(item.priority || 'medium')}`}>
+                              <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-semibold capitalize truncate ${priorityClass(item.priority || 'medium')}`}>
                                 {item.priority || 'medium'}
                               </span>
                             </div>

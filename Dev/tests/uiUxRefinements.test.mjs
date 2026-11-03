@@ -218,18 +218,25 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   const css = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportProfiles.css'), 'utf-8');
   const tsx = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportAnalytics.tsx'), 'utf-8');
 
-  // Verify label order: Tổng task -> Hoàn thành -> Số lượng -> Quá hạn -> Tồn đọng
+  // Verify label presence & order in new layout:
+  // Top right alerts: Quá hạn -> Tồn đọng
+  // Bottom performance: Tổng task -> Hoàn thành -> Số lượng Hình/File
+  const lateIdx = tsx.indexOf('report-profile-badge--late');
+  const backlogIdx = tsx.indexOf('report-profile-badge--backlog');
   const taskIdx = tsx.indexOf('report-profile-pill--task');
   const doneIdx = tsx.indexOf('report-profile-badge--done');
   const outputIdx = tsx.indexOf('report-profile-pill--output');
-  const lateIdx = tsx.indexOf('report-profile-badge--late');
-  const backlogIdx = tsx.indexOf('report-profile-badge--backlog');
 
-  assert.equal(taskIdx !== -1 && doneIdx !== -1 && outputIdx !== -1 && lateIdx !== -1 && backlogIdx !== -1, true);
-  assert.equal(taskIdx < doneIdx, true, 'Tổng task must appear before Hoàn thành');
-  assert.equal(doneIdx < outputIdx, true, 'Hoàn thành must appear before Số lượng');
-  assert.equal(outputIdx < lateIdx, true, 'Số lượng must appear before Quá hạn');
-  assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng');
+  assert.equal(lateIdx !== -1 && backlogIdx !== -1 && taskIdx !== -1 && doneIdx !== -1 && outputIdx !== -1, true);
+  assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng in alerts row');
+  assert.equal(taskIdx < doneIdx, true, 'Tổng task must appear before Hoàn thành in performance grid');
+  assert.equal(doneIdx < outputIdx, true, 'Hoàn thành must appear before Số lượng in performance grid');
+
+  // Verify new layout elements: floating circular avatar, divider, performance labels
+  assert.equal(tsx.includes('report-profile-avatar-wrap'), true);
+  assert.equal(tsx.includes('report-profile-divider'), true);
+  assert.equal(tsx.includes('report-profile-perf-grid'), true);
+  assert.equal(tsx.includes('report-profile-perf-label'), true);
 
   // Verify role styling classes in CSS & helper in TSX
   assert.equal(tsx.includes('getStaffRoleKey'), true);
@@ -260,33 +267,91 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   assert.equal(css.includes('color: #cbd5e1 !important;'), true);
   assert.equal(css.includes('color: #475569 !important;'), true);
 
-  // Verify 2-row metrics structure (primary row and alerts row)
-  assert.equal(tsx.includes('report-profile-metrics-row--primary'), true);
-  assert.equal(tsx.includes('report-profile-metrics-row--alerts'), true);
-  assert.equal(css.includes('.report-profile-metrics-row--primary'), true);
-  assert.equal(css.includes('.report-profile-metrics-row--alerts'), true);
+  // Verify layout structure (alerts wrap and performance grid)
+  assert.equal(tsx.includes('report-profile-alerts-wrap'), true);
+  assert.equal(tsx.includes('report-profile-perf-grid'), true);
+  assert.equal(css.includes('.report-profile-alerts-wrap'), true);
+  assert.equal(css.includes('.report-profile-perf-grid'), true);
 
-  // Verify Glass height
-  assert.equal(css.includes('height: clamp(82px, 9vh, 94px);'), true);
-  assert.equal(css.includes('height: clamp(98px, 11.5vh, 112px) !important;'), true);
+  // Verify floating avatar styling & role-tracked avatar rings in CSS
+  assert.equal(css.includes('.report-profile-avatar-wrap'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring'), true);
+  assert.equal(tsx.includes('report-profile-avatar-ring--'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring--leader'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring--member'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring--manager'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring--admin'), true);
+  assert.equal(css.includes('.report-profile-avatar-ring--viewer'), true);
+
+  // Verify 1px thin border strokes
+  assert.equal(css.includes('border: 1px solid rgba(186, 220, 245'), true);
+  assert.equal(css.includes('border: 1px solid rgba(78, 182, 72'), true);
+
+  // Verify popup detail removed from cards view
+  assert.equal(tsx.includes('setSelectedStaffId(member.id)'), false);
 
   // Verify complete removal of CTA button & card interaction preserved
   assert.equal(css.includes('.report-profile-cta'), false);
   assert.equal(tsx.includes('report-profile-cta'), false);
-  assert.equal(css.includes('cursor: pointer;'), true);
-  assert.equal(tsx.includes('role="button"'), true);
-  assert.equal(tsx.includes('onClick={onDetails}'), true);
 
-  // Verify Default Desktop & 2K macOS base layout: 1-row name+subtitle and 1-row 5 labels
-  assert.equal(css.includes('font-size: clamp(14px, 1.05vw, 16px) !important;'), true);
-  assert.equal(css.includes('font-size: 8.8px;'), true);
-  assert.equal(css.includes('padding: 1.2px 5.5px;'), true);
-  assert.equal(css.includes('display: contents !important;'), true);
-  assert.equal(css.includes('padding: 2px 5.5px;'), true);
-
-  // Verify State 2 compact scaling on Desktop/Tablet (<= 205px) and develop mobile coverflow (< 640px)
-  assert.equal(css.includes('@container (max-width: 205px)'), true);
+  // Verify mobile coverflow (< 640px) & scaled elongated portrait card layout
   assert.equal(css.includes('@media (max-width: 639px)'), true);
+  assert.equal(css.includes('top: -58px !important;'), true);
+  assert.equal(css.includes('left: 50% !important;'), true);
+  assert.equal(css.includes('transform: translateX(-50%) !important;'), true);
+  assert.equal(css.includes('width: 116px !important;'), true);
+  assert.equal(css.includes('padding: 78px 18px 34px !important;'), true);
+  assert.equal(css.includes('min-height: 390px !important;'), true);
+  assert.equal(css.includes('grid-auto-columns: clamp(250px, 68vw, 280px) !important;'), true);
+
+  // Verify alert labels (Quá hạn & Tồn đọng) with alert-col structure
+  assert.equal(tsx.includes('report-profile-alert-col'), true);
+  assert.equal(tsx.includes('report-profile-alert-label'), true);
+  assert.equal(css.includes('.report-profile-alert-col'), true);
+  assert.equal(css.includes('.report-profile-alert-label'), true);
+
+  // Verify text changed to 'Quantity' / 'Số lượng' (no longer 'Số lượng Hình/File')
+  assert.equal(tsx.includes("lang === 'en' ? 'Quantity' : 'Số lượng'"), true);
+  assert.equal(tsx.includes('Số lượng Hình/File'), false);
 });
 
+// Test 10: MobileNav removes mobile-liquid-glass and enforces transparent search input
+test('MobileNav: removes mobile-liquid-glass wrapper and makes search input background transparent', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const navSource = fs.readFileSync(path.resolve(__dirname, '../src/components/layouts/MobileNav.tsx'), 'utf-8');
 
+  // Verify mobile-liquid-glass wrapper removed from container
+  assert.equal(navSource.includes('mobile-nav-container mobile-liquid-glass'), false);
+  assert.equal(navSource.includes('"xl:hidden fixed left-3 right-3 z-[99] mobile-nav-container transition-all"'), true);
+
+  // Verify search input background-color transparent override
+  assert.equal(navSource.includes('background-color: transparent !important;'), true);
+  assert.equal(navSource.includes('!bg-transparent'), true);
+  assert.equal(navSource.includes('#0d1a2c'), false);
+});
+
+// Test 11: Task & Subtask UX/UI: subtask creation priority, settings gear menu, collapsible checklist, borderless edit
+test('Detail & Entity UX/UI: subtask creation priority, settings gear menu, collapsible checklist, borderless edit', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const projectsSource = fs.readFileSync(path.resolve(__dirname, '../src/pages/Projects.tsx'), 'utf-8');
+  const entityBadgesSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/projects/EntityActionBadges.tsx'), 'utf-8');
+  const taskDetailSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/tasks/TaskDetailPanel.tsx'), 'utf-8');
+  const subtaskDetailSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/projects/SubtaskDetailPanel.tsx'), 'utf-8');
+
+  // 1. Subtask creation priority selector (low/medium/high, default medium)
+  assert.equal(projectsSource.includes('subtaskPriority'), true);
+  assert.equal(projectsSource.includes('value="medium"'), true);
+
+  // 2. EntityActionBadges: settings gear button consolidating edit, activity log, and pin
+  assert.equal(entityBadgesSource.includes('Settings size={14}'), true);
+  assert.equal(entityBadgesSource.includes('TaskActivityLogPopover'), true);
+  assert.equal(entityBadgesSource.includes('handleTogglePin'), true);
+
+  // 3. Collapsible checklist with completion counts
+  assert.equal(taskDetailSource.includes('checklistCollapsed'), true);
+  assert.equal(subtaskDetailSource.includes('checklistCollapsed'), true);
+
+  // 4. Borderless description edit pencil icon
+  assert.equal(taskDetailSource.includes('Edit3 size={14}'), true);
+  assert.equal(subtaskDetailSource.includes('Edit3 size={14}'), true);
+});
