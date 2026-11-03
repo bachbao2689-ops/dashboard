@@ -1,14 +1,23 @@
 import {ActionButton} from '../../common/ActionButton';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import React from 'react';
+import React, { useState } from 'react';
 import {Plus, ChevronUp, ChevronLeft, ChevronRight, Trash2, Pencil, Eye, Check, Circle, Pause, CircleX, ScanEye} from 'lucide-react';
 import {workflowPhaseContributors} from '../../../lib/workflowCalendar';
 import {WorkflowPeopleRows} from '../../features/projects/WorkflowPeopleRows';
 import {WorkflowPhaseDates} from '../../features/projects/WorkflowPhaseDates';
 import {taskProgress} from '../../../lib/workflowHub';
 
-export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
+export function WorkflowStageTimeline({
+  model,
+  draggingTaskId,
+  setDraggingTaskId,
+}: {
+  model: WorkflowModel;
+  draggingTaskId?: string | null;
+  setDraggingTaskId?: (id: string | null) => void;
+}) {
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, unplanned, linkTask, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
+  const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   if (!currentEntity) return null;
   return (<>
 <div className="relative group/timeline pt-2 pb-2">
@@ -47,6 +56,7 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
               const isSelected = idx === activePhaseIndex;
               const isCompleted = p.displayStatus === 'completed';
               const isActive = p.displayStatus === 'active';
+              const isDropTargetActive = Boolean(draggingTaskId) && dragOverPhaseId === p.id;
 
               return (
                 <React.Fragment key={p.id}>
@@ -58,8 +68,42 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                     aria-pressed={isSelected}
                     onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handlePhaseClick(idx); } }}
                     onClick={() => handlePhaseClick(idx)}
+                    onDragOver={(e) => {
+                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dragOverPhaseId !== p.id) {
+                        setDragOverPhaseId(p.id);
+                      }
+                    }}
+                    onDragEnter={(e) => {
+                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      e.preventDefault();
+                      setDragOverPhaseId(p.id);
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        if (dragOverPhaseId === p.id) {
+                          setDragOverPhaseId(null);
+                        }
+                      }
+                    }}
+                    onDrop={(e) => {
+                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      e.preventDefault();
+                      setDragOverPhaseId(null);
+                      const taskId = e.dataTransfer.getData('text/plain') || draggingTaskId;
+                      if (!taskId) return;
+                      const task = unplanned.find(t => t.id === taskId) || allTasks.find(t => t.id === taskId);
+                      if (task) {
+                        linkTask(task, p.id);
+                      }
+                      setDraggingTaskId?.(null);
+                    }}
                     className={`w-48 sm:w-56 p-3.5 rounded-[8px] border transition-all cursor-pointer relative flex flex-col items-center text-center shrink-0 group ${
-                      isSelected
+                      isDropTargetActive
+                        ? 'ring-2 ring-primary border-primary bg-primary/10 scale-[1.03]'
+                        : isSelected
                         ? isCampaign
                           ? 'border-amber-500 ring-2 ring-amber-500/25 bg-amber-50/10 dark:bg-amber-950/15 shadow-md -translate-y-0.5'
                           : 'border-violet-600 ring-2 ring-violet-600/25 bg-violet-50/10 dark:bg-violet-950/15 shadow-md -translate-y-0.5'
@@ -68,6 +112,13 @@ export function WorkflowStageTimeline({model}: {model: WorkflowModel}) {
                         : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60 hover:border-gray-300 dark:hover:border-slate-600'
                     }`}
                   >
+                    {isDropTargetActive && (
+                      <div className="absolute inset-0 z-30 rounded-[8px] bg-primary/15 backdrop-blur-[1px] border-2 border-primary border-dashed grid items-center justify-center p-2 text-center pointer-events-none transition-all">
+                        <span className="text-[11px] font-extrabold text-primary dark:text-sky-300 bg-white/95 dark:bg-[#0a192f]/95 px-2.5 py-1.5 rounded-[6px] shadow-md border border-primary/30">
+                          {isEn ? '+ Drop to assign to phase' : '+ Thả để gắn vào chặng'}
+                        </span>
+                      </div>
+                    )}
                     {/* Header Row: Chặng order & Edit / Delete action buttons on hover */}
                     <div className="w-full flex items-center justify-between mb-1">
                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${

@@ -1,10 +1,13 @@
+import {useState} from 'react';
 import {WorkflowTimelineToolbar} from './WorkflowTimelineToolbar';
 import {WorkflowStageTimeline} from './WorkflowStageTimeline';
 import {WorkflowPhaseDetails} from './WorkflowPhaseDetails';
+import {WorkflowUnplannedTasks} from './WorkflowUnplannedTasks';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 
 export function WorkflowTimeline({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, setSelectedTask, activeTooltip, phases, unplanned, linkTask} = model;
+  const {isEn, currentEntity, activeTooltip, phases} = model;
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   if (!currentEntity) return null;
   return (<>
 <div className={`card-hub p-5 rounded-[8px] space-y-5 transition-all relative ${
@@ -24,9 +27,18 @@ export function WorkflowTimeline({model}: {model: WorkflowModel}) {
         ) : (
           <>
             {/* Timeline Connected Stepper Nodes with Slide Navigation Buttons (Requirement 1) */}
-            <WorkflowStageTimeline model={model}/>
+            <WorkflowStageTimeline
+              model={model}
+              draggingTaskId={draggingTaskId}
+              setDraggingTaskId={setDraggingTaskId}
+            />
 
-            {currentEntity.root && unplanned.length>0 && <section className="border-t border-gray-100 dark:border-slate-700 pt-3"><details><summary className="text-xs font-semibold cursor-pointer">{isEn ? `Unplanned tasks (${unplanned.length})` : `Task chưa gắn phase (${unplanned.length})`}</summary><div className="space-y-2 mt-3">{unplanned.map(t=><div key={t.id} className="flex flex-wrap items-center gap-2 text-xs"><button onClick={()=>setSelectedTask(t)} className="flex-1 min-w-0 text-left truncate">{t.title}</button><select aria-label={isEn ? 'Assign phase for '+t.title : 'Gắn phase cho '+t.title} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 max-w-full" disabled={hub.busy} value="" onChange={e=>linkTask(t,e.target.value)}><option value="">{isEn ? 'Select phase...' : 'Chọn phase...'}</option>{phases.filter(p=>!['completed','cancelled'].includes(p.status)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>)}</div></details></section>}
+            {/* Dropdown & Lưới thẻ "Task chưa gắn phase" */}
+            <WorkflowUnplannedTasks
+              model={model}
+              draggingTaskId={draggingTaskId}
+              setDraggingTaskId={setDraggingTaskId}
+            />
           </>
         )}
 
