@@ -10,6 +10,16 @@ export const taskTarget = (key:string): {kind:TaskKind;id:string;table:string;ch
   const target = parentKey.startsWith('ps-') ? {kind:'project_subtask' as const,id:parentKey.slice(3),table:'project_subtasks'} : parentKey.startsWith('cs-') ? {kind:'campaign_subtask' as const,id:parentKey.slice(3),table:'campaign_subtasks'} : {kind:'task' as const,id:parentKey,table:'tasks'};
   return checklistItemId ? {...target, checklistItemId} : target;
 };
+// Checklist items are JSON children of a task/subtask, not rows accepted by workflow_link_task(uuid).
+export const phaseLinkableTasks = <T extends {id:string;workflow_phase_id?:string|null}>(tasks:T[]):T[] =>
+  tasks.filter(task=>!task.workflow_phase_id&&!taskTarget(task.id).checklistItemId);
+export const phaseLinkTarget = (key:string):{kind:TaskKind;id:string} => {
+  const {kind,id,checklistItemId}=taskTarget(key);
+  if(checklistItemId)throw new Error('Đầu việc nằm trong task/subtask. Hãy gắn task/subtask mẹ vào phase.');
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+    throw new Error('Mã task/subtask không hợp lệ. Vui lòng tải lại trang.');
+  return {kind,id};
+};
 export const taskKey = (kind:string,id:string) => kind==='project_subtask'?`ps-${id}`:kind==='campaign_subtask'?`cs-${id}`:id;
 export const taskIdentity = taskTarget;
 export const taskUIId = taskKey;
