@@ -113,9 +113,10 @@ export function ReportProfileCard({
       className={`report-profile report-profile--role-${roleKey}${hasImage ? '' : ' report-profile--initials'}${isCoverflow ? ' report-profile--coverflow-active' : ''}`}
     >
       <div className="report-profile-surface">
-        {/* Vòng tròn Avatar nổi phía trên-trái (Floating Circular Avatar) */}
-        <div className="report-profile-avatar-wrap">
-          <div className={`report-profile-avatar-ring report-profile-avatar-ring--${roleKey}`}>
+        {/* Top Header: Frame art hình vuông bo góc đặt ngang Tên staff và Chức vụ */}
+        <div className="report-profile-header">
+          {/* Cột trái: Frame art hình vuông bo góc chuẩn Dashboard */}
+          <div className={`report-profile-avatar-frame report-profile-avatar-wrap report-profile-avatar-frame--${roleKey} report-profile-avatar-ring--${roleKey}`}>
             {hasImage ? (
               <img
                 className="report-profile-avatar-img"
@@ -130,11 +131,8 @@ export function ReportProfileCard({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Top Header: Tên + Subtitle */}
-        <div className="report-profile-header">
-          {/* Cụm Tên Staff & Subtitle chức vụ ở DƯỚI tên staff */}
+          {/* Cột phải: Cụm Tên Staff & Subtitle chức vụ ở DƯỚI tên staff */}
           <div className="report-profile-identity">
             <h3>{member.name}</h3>
             <p className={`report-profile-subtitle report-profile-subtitle--${roleKey}`}>
@@ -146,42 +144,26 @@ export function ReportProfileCard({
         {/* Đường kẻ phân cách mảnh mờ dần hai đầu */}
         <div className="report-profile-divider" aria-hidden="true" />
 
-        {/* Layout 3 cụm Performance ở phần dưới: căn giữa trong box, canh trái nội dung mỗi cột */}
+        {/* Layout các cụm Performance ở phần dưới: Cùng 1 hàng ngang cân đối dưới divider */}
         <div className="report-profile-perf-grid" aria-label={lang === 'en' ? 'Performance status' : 'Trạng thái hiệu suất'}>
-          {/* Cụm 1: Tổng Task */}
+          {/* Cụm 1: Tổng task/Hoàn thành (gom chung 1 bó, dùng icon Tổng task ClipboardList) */}
           <div className="report-profile-perf-col">
             <span
               className="report-profile-pill report-profile-pill--task"
-              title={totalTasksTooltip}
-              aria-label={totalTasksTooltip}
-              data-profile-tooltip={totalTasksTooltip}
+              title={`${totalTasksTooltip} / ${doneTooltip}`}
+              aria-label={`${totalTasksTooltip} / ${doneTooltip}`}
+              data-profile-tooltip={`${totalTasksTooltip} / ${doneTooltip}`}
               data-profile-tooltip-pos="left"
             >
               <ClipboardList size={12} aria-hidden="true" />
-              <strong>{member.tasks?.length || 0}</strong>
+              <strong>{member.tasks?.length || 0}/{member.done}</strong>
             </span>
             <span className="report-profile-perf-label">
-              {lang === 'en' ? 'Total Tasks' : 'Tổng Task'}
+              {lang === 'en' ? 'Tasks/Done' : 'Tổng task/Hoàn thành'}
             </span>
           </div>
 
-          {/* Cụm 2: Hoàn thành */}
-          <div className="report-profile-perf-col">
-            <span
-              className="report-profile-badge report-profile-badge--done"
-              title={doneTooltip}
-              aria-label={doneTooltip}
-              data-profile-tooltip={doneTooltip}
-            >
-              <CheckCircle2 size={12} aria-hidden="true" />
-              <strong>{member.done}</strong>
-            </span>
-            <span className="report-profile-perf-label">
-              {lang === 'en' ? 'Completed' : 'Hoàn thành'}
-            </span>
-          </div>
-
-          {/* Cụm 3: Số lượng */}
+          {/* Cụm 2: Số lượng */}
           <div className="report-profile-perf-col">
             <span
               className="report-profile-pill report-profile-pill--output"
@@ -196,44 +178,40 @@ export function ReportProfileCard({
               {lang === 'en' ? 'Quantity' : 'Số lượng'}
             </span>
           </div>
-        </div>
 
-        {/* Cụm 2 Badge Cảnh Báo: Quá hạn & Tồn đọng (Desktop: góc trên phải / Mobile: hàng dưới cùng) */}
-        <div className="report-profile-alerts-wrap">
-          {(member.late > 0 || member.profileBacklogCount > 0) && (
-            <div className="report-profile-alerts-group report-profile-metrics-row--alerts">
-              {member.late > 0 && (
-                <div className="report-profile-alert-col">
-                  <span
-                    className="report-profile-badge report-profile-badge--late"
-                    title={lateTooltip}
-                    aria-label={lateTooltip}
-                    data-profile-tooltip={lateTooltip}
-                  >
-                    <Clock size={11} aria-hidden="true" />
-                    <strong>{member.late}</strong>
-                  </span>
-                  <span className="report-profile-alert-label">
-                    {lang === 'en' ? 'Overdue' : 'Quá hạn'}
-                  </span>
-                </div>
-              )}
-              {member.profileBacklogCount > 0 && (
-                <div className="report-profile-alert-col">
-                  <span
-                    className="report-profile-badge report-profile-badge--backlog"
-                    title={backlogTooltip}
-                    aria-label={backlogTooltip}
-                    data-profile-tooltip={backlogTooltip}
-                  >
-                    <AlertTriangle size={11} aria-hidden="true" />
-                    <strong>{member.profileBacklogCount}</strong>
-                  </span>
-                  <span className="report-profile-alert-label">
-                    {lang === 'en' ? 'Backlog' : 'Tồn đọng'}
-                  </span>
-                </div>
-              )}
+          {/* Cụm 3: Quá hạn (nằm cùng 1 hàng ngang ở perf-grid dưới cùng) */}
+          {member.late > 0 && (
+            <div className="report-profile-perf-col report-profile-alert-col">
+              <span
+                className="report-profile-badge report-profile-badge--late"
+                title={lateTooltip}
+                aria-label={lateTooltip}
+                data-profile-tooltip={lateTooltip}
+              >
+                <Clock size={11} aria-hidden="true" />
+                <strong>{member.late}</strong>
+              </span>
+              <span className="report-profile-perf-label report-profile-alert-label">
+                {lang === 'en' ? 'Overdue' : 'Quá hạn'}
+              </span>
+            </div>
+          )}
+
+          {/* Cụm 4: Tồn đọng (nằm cùng 1 hàng ngang ở perf-grid dưới cùng) */}
+          {member.profileBacklogCount > 0 && (
+            <div className="report-profile-perf-col report-profile-alert-col">
+              <span
+                className="report-profile-badge report-profile-badge--backlog"
+                title={backlogTooltip}
+                aria-label={backlogTooltip}
+                data-profile-tooltip={backlogTooltip}
+              >
+                <AlertTriangle size={11} aria-hidden="true" />
+                <strong>{member.profileBacklogCount}</strong>
+              </span>
+              <span className="report-profile-perf-label report-profile-alert-label">
+                {lang === 'en' ? 'Backlog' : 'Tồn đọng'}
+              </span>
             </div>
           )}
         </div>

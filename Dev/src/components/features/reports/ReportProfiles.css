@@ -9,8 +9,8 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
   column-gap: clamp(8px, 1vw, 14px);
-  row-gap: clamp(34px, 3vw, 42px);
-  padding: clamp(32px, 2.6vw, 40px) 4px 10px;
+  row-gap: clamp(14px, 1.8vw, 22px);
+  padding: 6px 4px 12px;
   width: 100%;
   overflow: visible;
 }
@@ -69,7 +69,7 @@
   position: relative;
   isolation: isolate;
   overflow: visible !important;
-  padding: clamp(8px, 4.8cqi, 14px) clamp(8px, 5.2cqi, 16px) clamp(9px, 5.2cqi, 16px);
+  padding: clamp(10px, 4.8cqi, 14px) clamp(10px, 5cqi, 16px);
   border-radius: clamp(11px, 5.5cqi, 16px);
   min-height: 0 !important;
   height: auto !important;
@@ -82,44 +82,49 @@
   background: transparent;
 }
 
-/* Floating Circular Avatar: scales smoothly with cqi */
+/* Frame art hình vuông bo góc chuẩn Dashboard: aspect-ratio 1:1, bo góc, đặt ngang hàng Tên & Chức vụ */
+.report-profile-avatar-frame,
 .report-profile-avatar-wrap {
-  position: absolute;
-  top: clamp(-28px, -9.5cqi, -15px);
-  left: clamp(8px, 4.8cqi, 16px);
-  width: clamp(46px, 26cqi, 84px);
-  height: clamp(46px, 26cqi, 84px);
-  z-index: 10;
-  border-radius: 50%;
-  pointer-events: none;
+  position: relative;
+  top: auto;
+  left: auto;
+  width: clamp(38px, 18cqi, 46px);
+  height: clamp(38px, 18cqi, 46px);
+  aspect-ratio: 1;
+  z-index: 2;
+  border-radius: clamp(8px, 4cqi, 12px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(186, 220, 245, 0.75);
+  box-shadow: 0 2px 8px rgba(0, 46, 109, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.report-profile:hover .report-profile-avatar-frame,
+.report-profile:hover .report-profile-avatar-wrap {
+  transform: scale(1.03);
+  border-color: #002e6d;
+  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.16);
 }
 
 .report-profile-avatar-ring {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  padding: 0;
-  box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 46, 109, 0.25);
-  box-shadow: 0 0 8px rgba(0, 46, 109, 0.10);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-radius: inherit;
   overflow: hidden;
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+  display: contents;
 }
 
-.report-profile:hover .report-profile-avatar-ring {
-  transform: scale(1.03);
-  border-color: #002e6d;
-  box-shadow: 0 0 14px rgba(0, 46, 109, 0.22);
-}
-
-/* Avatar Ring track theo màu Label chức vụ (Light mode) */
+/* Avatar Frame track theo màu Label chức vụ (Light mode) */
+.report-profile-avatar-frame--member,
 .report-profile-avatar-ring--member {
   border: 1px solid #6ee7b7;
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
 }
+.report-profile:hover .report-profile-avatar-frame--member,
 .report-profile:hover .report-profile-avatar-ring--member {
   border-color: #10b981;
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.22);
@@ -129,10 +134,12 @@
   background: radial-gradient(circle at 40% 30%, #ffffff, #ecfdf5);
 }
 
+.report-profile-avatar-frame--leader,
 .report-profile-avatar-ring--leader {
   border: 1px solid #fdba74;
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.15);
 }
+.report-profile:hover .report-profile-avatar-frame--leader,
 .report-profile:hover .report-profile-avatar-ring--leader {
   border-color: #f97316;
   box-shadow: 0 0 10px rgba(249, 115, 22, 0.22);
@@ -142,10 +149,12 @@
   background: radial-gradient(circle at 40% 30%, #ffffff, #ffedd5);
 }
 
+.report-profile-avatar-frame--manager,
 .report-profile-avatar-ring--manager {
   border: 1px solid #93c5fd;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
 }
+.report-profile:hover .report-profile-avatar-frame--manager,
 .report-profile:hover .report-profile-avatar-ring--manager {
   border-color: #3b82f6;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.22);
@@ -155,10 +164,12 @@
   background: radial-gradient(circle at 40% 30%, #ffffff, #dbeafe);
 }
 
+.report-profile-avatar-frame--admin,
 .report-profile-avatar-ring--admin {
   border: 1px solid #d8b4fe;
   box-shadow: 0 0 8px rgba(168, 85, 247, 0.15);
 }
+.report-profile:hover .report-profile-avatar-frame--admin,
 .report-profile:hover .report-profile-avatar-ring--admin {
   border-color: #a855f7;
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.22);
@@ -168,10 +179,12 @@
   background: radial-gradient(circle at 40% 30%, #ffffff, #f3e8ff);
 }
 
+.report-profile-avatar-frame--viewer,
 .report-profile-avatar-ring--viewer {
   border: 1px solid #cbd5e1;
   box-shadow: 0 0 8px rgba(100, 116, 139, 0.12);
 }
+.report-profile:hover .report-profile-avatar-frame--viewer,
 .report-profile:hover .report-profile-avatar-ring--viewer {
   border-color: #64748b;
   box-shadow: 0 0 10px rgba(100, 116, 139, 0.20);
@@ -184,7 +197,7 @@
 .report-profile-avatar-img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: inherit;
   object-fit: cover;
   object-position: center top;
   display: block;
@@ -193,21 +206,23 @@
 .report-profile-avatar-fallback {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: inherit;
   display: grid;
   place-items: center;
   background: radial-gradient(circle at 40% 30%, #ffffff, #d5e9f7);
   color: #002e6d;
-  font-size: clamp(14px, 8.5cqi, 26px);
+  font-size: clamp(14px, 7cqi, 18px);
   font-weight: 700;
 }
 
-/* Top Header: Identity on left, Alerts pinned to top-right */
+/* Top Header: CSS Grid 2 cột: Cột trái là Frame art hình vuông, Cột phải là Cụm Tên & Chức vụ */
 .report-profile-header {
-  padding-left: clamp(50px, 29.5cqi, 96px);
-  padding-top: 2px;
-  min-height: clamp(32px, 18cqi, 52px);
-  display: block;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: clamp(8px, 4.2cqi, 12px);
+  padding: 0;
+  min-height: clamp(38px, 18cqi, 46px);
   width: 100%;
   box-sizing: border-box;
 }
@@ -218,15 +233,15 @@
   grid-template-rows: auto auto;
   justify-items: start;
   align-items: start;
-  gap: clamp(3px, 1.8cqi, 6px);
+  gap: clamp(2px, 1.2cqi, 4px);
   min-width: 0;
   padding-right: 0;
 }
 
 .report-profile-identity h3 {
-  font-size: clamp(11.5px, 6.2cqi, 19px) !important;
-  font-weight: 800;
-  line-height: 1.15;
+  font-size: clamp(12px, 5.8cqi, 15px) !important;
+  font-weight: 700;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -234,59 +249,25 @@
   max-width: 100%;
   color: #002e6d;
   margin: 0;
-  padding-right: clamp(40px, 23cqi, 66px);
+  padding-right: 0;
 }
 
-/* Cụm 2 Badge Cảnh Báo: Quá hạn & Tồn đọng nằm sát góc trên cùng bên phải, BẮT BUỘC cùng 1 hàng ngang */
+/* Cụm 2 Badge Cảnh Báo: Quá hạn & Tồn đọng nằm cùng 1 hàng ngang trong .report-profile-perf-grid */
 .report-profile-alerts-wrap {
-  position: absolute;
-  top: clamp(7px, 4.2cqi, 13px);
-  right: clamp(7px, 4.2cqi, 13px);
-  z-index: 5;
-  display: inline-grid !important;
-  grid-auto-flow: column !important;
-  grid-auto-columns: max-content !important;
-  align-items: center !important;
-  gap: clamp(2.5px, 1.5cqi, 5px) !important;
+  display: contents;
 }
 
 .report-profile-alerts-group,
 .report-profile-alerts-group.report-profile-metrics-row--alerts {
-  display: inline-grid !important;
-  grid-auto-flow: column !important;
-  grid-auto-columns: max-content !important;
-  align-items: center !important;
-  gap: clamp(2.5px, 1.5cqi, 5px) !important;
-}
-
-.report-profile-alerts-wrap .report-profile-badge {
-  border-radius: clamp(4px, 2cqi, 6px);
-  padding: clamp(1.5px, 0.8cqi, 2.5px) clamp(4px, 2.2cqi, 6.5px);
-  height: clamp(15px, 6.8cqi, 20px);
-  min-height: clamp(15px, 6.8cqi, 20px);
-  font-size: clamp(8.5px, 3.8cqi, 11px);
-  font-weight: 700;
-  gap: clamp(2px, 1.1cqi, 3.5px);
-  display: inline-grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
-  align-items: center;
-  box-sizing: border-box;
-  cursor: default;
-}
-
-.report-profile-alerts-wrap .report-profile-badge svg {
-  width: clamp(8px, 3.4cqi, 10px);
-  height: clamp(8px, 3.4cqi, 10px);
-  stroke-width: 2.2;
-}
-
-.report-profile-alert-col {
   display: contents;
 }
 
+.report-profile-alert-col {
+  display: grid;
+}
+
 .report-profile-alert-label {
-  display: none;
+  display: block;
 }
 
 /* Divider Line: scales smoothly with cqi */
@@ -294,18 +275,18 @@
   display: block;
   width: 100%;
   height: 1px;
-  margin: clamp(7px, 4.2cqi, 13px) 0 clamp(6px, 3.8cqi, 11px);
+  margin: clamp(8px, 4cqi, 12px) 0 clamp(8px, 4cqi, 12px);
   background: linear-gradient(90deg, transparent 0%, rgba(0, 46, 109, 0.08) 20%, rgba(0, 46, 109, 0.16) 50%, rgba(0, 46, 109, 0.08) 80%, transparent 100%);
 }
 
-/* 3 Performance columns: Gom gọn lại giữa box, trong mỗi cột badge và text canh trái */
+/* Performance columns: Cả 4 cụm label xếp thẳng hàng ngang đẹp mắt và cân đối dưới đường kẻ divider */
 .report-profile-perf-grid {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   justify-content: center;
   align-items: start;
-  column-gap: clamp(6px, 5.5cqi, 22px);
+  column-gap: clamp(5px, 3.8cqi, 14px);
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -314,7 +295,7 @@
 .report-profile-perf-col {
   display: grid;
   grid-template-rows: auto auto;
-  gap: clamp(3px, 1.8cqi, 5.5px);
+  gap: clamp(2.5px, 1.5cqi, 4.5px);
   justify-items: start;
   text-align: left;
   width: max-content;
@@ -901,13 +882,15 @@
   max-height: none !important;
 }
 
-/* Thin avatar ring in dark mode: 1px clean border, soft outer glow, no thick inset */
+/* Thin avatar ring & frame in dark mode: 1px clean border, soft outer glow, no thick inset */
+.dark .report-profile-avatar-frame,
 .dark .report-profile-avatar-ring {
   background: #081324;
   border: 1px solid rgba(78, 182, 72, 0.65);
   box-shadow: 0 0 10px rgba(78, 182, 72, 0.25);
 }
 
+.dark .report-profile:hover .report-profile-avatar-frame,
 .dark .report-profile:hover .report-profile-avatar-ring {
   border-color: #5cd655;
   box-shadow: 0 0 16px rgba(78, 182, 72, 0.45);
@@ -919,11 +902,13 @@
   text-shadow: 0 0 8px rgba(78, 182, 72, 0.4);
 }
 
-/* Avatar Ring track theo màu Label chức vụ (Dark mode) */
+/* Avatar Frame track theo màu Label chức vụ (Dark mode) */
+.dark .report-profile-avatar-frame--member,
 .dark .report-profile-avatar-ring--member {
   border: 1px solid rgba(78, 182, 72, 0.65);
   box-shadow: 0 0 10px rgba(78, 182, 72, 0.30);
 }
+.dark .report-profile:hover .report-profile-avatar-frame--member,
 .dark .report-profile:hover .report-profile-avatar-ring--member {
   border-color: #4eb648;
   box-shadow: 0 0 14px rgba(78, 182, 72, 0.45);
@@ -933,10 +918,12 @@
   background: radial-gradient(circle at 40% 30%, #1e293b, rgba(19, 31, 49, 0.95));
 }
 
+.dark .report-profile-avatar-frame--leader,
 .dark .report-profile-avatar-ring--leader {
   border: 1px solid rgba(249, 115, 22, 0.65);
   box-shadow: 0 0 10px rgba(249, 115, 22, 0.30);
 }
+.dark .report-profile:hover .report-profile-avatar-frame--leader,
 .dark .report-profile:hover .report-profile-avatar-ring--leader {
   border-color: #fb923c;
   box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
@@ -946,10 +933,12 @@
   background: radial-gradient(circle at 40% 30%, #1e293b, rgba(67, 20, 7, 0.85));
 }
 
+.dark .report-profile-avatar-frame--manager,
 .dark .report-profile-avatar-ring--manager {
   border: 1px solid rgba(59, 130, 246, 0.65);
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.30);
 }
+.dark .report-profile:hover .report-profile-avatar-frame--manager,
 .dark .report-profile:hover .report-profile-avatar-ring--manager {
   border-color: #60a5fa;
   box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
@@ -959,10 +948,12 @@
   background: radial-gradient(circle at 40% 30%, #1e293b, rgba(23, 37, 84, 0.85));
 }
 
+.dark .report-profile-avatar-frame--admin,
 .dark .report-profile-avatar-ring--admin {
   border: 1px solid rgba(168, 85, 247, 0.65);
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.30);
 }
+.dark .report-profile:hover .report-profile-avatar-frame--admin,
 .dark .report-profile:hover .report-profile-avatar-ring--admin {
   border-color: #c084fc;
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.45);
@@ -972,10 +963,12 @@
   background: radial-gradient(circle at 40% 30%, #1e293b, rgba(59, 7, 100, 0.85));
 }
 
+.dark .report-profile-avatar-frame--viewer,
 .dark .report-profile-avatar-ring--viewer {
   border: 1px solid rgba(148, 163, 184, 0.55);
   box-shadow: 0 0 10px rgba(148, 163, 184, 0.25);
 }
+.dark .report-profile:hover .report-profile-avatar-frame--viewer,
 .dark .report-profile:hover .report-profile-avatar-ring--viewer {
   border-color: #cbd5e1;
   box-shadow: 0 0 14px rgba(148, 163, 184, 0.35);

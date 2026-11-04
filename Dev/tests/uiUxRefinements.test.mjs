@@ -219,21 +219,23 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   const tsx = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportAnalytics.tsx'), 'utf-8');
 
   // Verify label presence & order in new layout:
-  // Top right alerts: Quá hạn -> Tồn đọng
-  // Bottom performance: Tổng task -> Hoàn thành -> Số lượng Hình/File
+  // Bottom performance: Tổng task/Hoàn thành -> Số lượng -> Quá hạn -> Tồn đọng
+  const taskIdx = tsx.indexOf('report-profile-pill--task');
+  const outputIdx = tsx.indexOf('report-profile-pill--output');
   const lateIdx = tsx.indexOf('report-profile-badge--late');
   const backlogIdx = tsx.indexOf('report-profile-badge--backlog');
-  const taskIdx = tsx.indexOf('report-profile-pill--task');
-  const doneIdx = tsx.indexOf('report-profile-badge--done');
-  const outputIdx = tsx.indexOf('report-profile-pill--output');
 
-  assert.equal(lateIdx !== -1 && backlogIdx !== -1 && taskIdx !== -1 && doneIdx !== -1 && outputIdx !== -1, true);
-  assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng in alerts row');
-  assert.equal(taskIdx < doneIdx, true, 'Tổng task must appear before Hoàn thành in performance grid');
-  assert.equal(doneIdx < outputIdx, true, 'Hoàn thành must appear before Số lượng in performance grid');
+  assert.equal(taskIdx !== -1 && outputIdx !== -1 && lateIdx !== -1 && backlogIdx !== -1, true);
+  assert.equal(taskIdx < outputIdx, true, 'Tổng task/Hoàn thành must appear before Số lượng in performance grid');
+  assert.equal(outputIdx < lateIdx, true, 'Số lượng must appear before Quá hạn in performance grid');
+  assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng in alerts');
 
-  // Verify new layout elements: floating circular avatar, divider, performance labels
-  assert.equal(tsx.includes('report-profile-avatar-wrap'), true);
+  // Verify merged Tasks/Done box: uses ClipboardList icon and displays total/done
+  assert.equal(tsx.includes('member.tasks?.length || 0}/{member.done}'), true);
+  assert.equal(tsx.includes("lang === 'en' ? 'Tasks/Done' : 'Tổng task/Hoàn thành'"), true);
+
+  // Verify layout elements: square avatar frame, divider, performance labels
+  assert.equal(tsx.includes('report-profile-avatar-frame'), true);
   assert.equal(tsx.includes('report-profile-divider'), true);
   assert.equal(tsx.includes('report-profile-perf-grid'), true);
   assert.equal(tsx.includes('report-profile-perf-label'), true);
@@ -267,21 +269,18 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   assert.equal(css.includes('color: #cbd5e1 !important;'), true);
   assert.equal(css.includes('color: #475569 !important;'), true);
 
-  // Verify layout structure (alerts wrap and performance grid)
-  assert.equal(tsx.includes('report-profile-alerts-wrap'), true);
+  // Verify layout structure (performance grid contains labels on 1 row)
   assert.equal(tsx.includes('report-profile-perf-grid'), true);
-  assert.equal(css.includes('.report-profile-alerts-wrap'), true);
   assert.equal(css.includes('.report-profile-perf-grid'), true);
 
-  // Verify floating avatar styling & role-tracked avatar rings in CSS
-  assert.equal(css.includes('.report-profile-avatar-wrap'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring'), true);
-  assert.equal(tsx.includes('report-profile-avatar-ring--'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring--leader'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring--member'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring--manager'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring--admin'), true);
-  assert.equal(css.includes('.report-profile-avatar-ring--viewer'), true);
+  // Verify square avatar frame styling & role-tracked avatar frames in CSS
+  assert.equal(css.includes('.report-profile-avatar-frame'), true);
+  assert.equal(tsx.includes('report-profile-avatar-frame--'), true);
+  assert.equal(css.includes('.report-profile-avatar-frame--leader'), true);
+  assert.equal(css.includes('.report-profile-avatar-frame--member'), true);
+  assert.equal(css.includes('.report-profile-avatar-frame--manager'), true);
+  assert.equal(css.includes('.report-profile-avatar-frame--admin'), true);
+  assert.equal(css.includes('.report-profile-avatar-frame--viewer'), true);
 
   // Verify 1px thin border strokes
   assert.equal(css.includes('border: 1px solid rgba(186, 220, 245'), true);
@@ -294,14 +293,8 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   assert.equal(css.includes('.report-profile-cta'), false);
   assert.equal(tsx.includes('report-profile-cta'), false);
 
-  // Verify mobile coverflow (< 640px) & scaled elongated portrait card layout
+  // Verify mobile coverflow (< 640px)
   assert.equal(css.includes('@media (max-width: 639px)'), true);
-  assert.equal(css.includes('top: -58px !important;'), true);
-  assert.equal(css.includes('left: 50% !important;'), true);
-  assert.equal(css.includes('transform: translateX(-50%) !important;'), true);
-  assert.equal(css.includes('width: 116px !important;'), true);
-  assert.equal(css.includes('padding: 78px 18px 34px !important;'), true);
-  assert.equal(css.includes('min-height: 390px !important;'), true);
   assert.equal(css.includes('grid-auto-columns: clamp(250px, 68vw, 280px) !important;'), true);
 
   // Verify alert labels (Quá hạn & Tồn đọng) with alert-col structure
