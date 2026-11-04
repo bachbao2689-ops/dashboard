@@ -74,7 +74,11 @@ export function NotificationPopupStack(){
  const stackTopOffset=updateInfo?'calc(186px + env(safe-area-inset-top,0px))':undefined;
 
  return <>
-  {import.meta.env.DEV&&(
+  {(import.meta.env.DEV || (typeof window !== 'undefined' && (
+    window.location.hostname !== 'dashboard-nu-tan-30.vercel.app' ||
+    window.location.search.includes('dev=1') ||
+    localStorage.getItem('kcoffee_show_dev_tools') === 'true'
+  ))) && (
    <DevFloatingTools
     onTriggerUpdate={()=>void appUpdateService.triggerUpdate()}
     onTriggerDemo={demo}

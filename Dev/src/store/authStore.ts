@@ -185,9 +185,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
       localStorage.setItem('kcoffee_dev_session', 'true');
       localStorage.setItem('kcoffee_auth_remember', rememberMe ? 'true' : 'false');
       sessionStorage.setItem('kcoffee_session_active', 'true');
+      const devProfile: StaffProfile = {
+        id: 999999,
+        auth_id: 'dev-admin-id',
+        email: 'admin@local',
+        name: 'Local Admin',
+        avatar_url: null,
+        role: 'admin',
+        department_id: null,
+        department_name: 'Local',
+        employment_level: 'Manager',
+        job_title: 'Administrator',
+        is_active: true,
+      };
       set({
         user: { id: 'dev-admin-id', email: 'admin@local', user_metadata: { full_name: 'Local Admin', role: 'admin', department_name: 'Local' } } as unknown as User,
-        profile: null, session: { access_token: 'dev-token', refresh_token: 'dev-token' } as Session, loading: false,
+        profile: devProfile, session: { access_token: 'dev-token', refresh_token: 'dev-token' } as Session, loading: false,
       });
     },
 
