@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BarChart2, Layers, CheckSquare, FolderKanban, Megaphone, User, Users, Bot,
+  BarChart2, Layers, CheckSquare, FolderKanban, Megaphone, User, Users,
   Box, History, MessageSquare, AtSign, AlertTriangle,
   Clock, CheckCircle2, ExternalLink
 } from 'lucide-react';
@@ -299,7 +299,7 @@ function buildTaskMenuItem(
 
 export function buildSidebarGroups({
   t,
-  role,
+  role: _role,
   isLeader,
   canManageBorrow,
   canBorrow,
@@ -322,9 +322,7 @@ export function buildSidebarGroups({
   includeProfileInTree?: boolean;
   isDismissed?: (key: string) => boolean;
 }): SidebarGroupModel[] {
-  const roleLower = (role || 'member').toLowerCase();
   const canViewDashboard = isLeader;
-  const canViewDepartments = roleLower === 'admin';
   const canViewReports = true;
 
   // ==========================================
@@ -482,15 +480,6 @@ export function buildSidebarGroups({
     path: '/tasks',
   });
 
-  if (roleLower === 'admin') {
-    tpRootItems.push({
-      id: 'tp:root:agents',
-      label: t('nav.agent'),
-      icon: <Bot size={18} />,
-      path: '/agents',
-    });
-  }
-
   // 2.2 Projects & Campaigns (Drill-down with notifications only)
   const projPriorityTasks = enrichedTasks
     .filter(
@@ -614,16 +603,6 @@ export function buildSidebarGroups({
       label: t('nav.profile'),
       icon: <User size={18} />,
       path: '/my-tasks',
-    });
-  }
-
-  // 2.4 Departments (Plain button, Admin only)
-  if (canViewDepartments) {
-    tpRootItems.push({
-      id: 'tp:root:departments',
-      label: t('nav.departments'),
-      icon: <Users size={18} />,
-      path: '/departments-2',
     });
   }
 

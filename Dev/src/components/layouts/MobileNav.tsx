@@ -21,7 +21,7 @@ import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
-import { canViewTeamManagement, isAdmin } from '../../lib/roleScope';
+import { canViewTeamManagement } from '../../lib/roleScope';
 
 export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden = false }) => {
   const { t, lang } = useTranslation();
@@ -76,7 +76,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
     { name: t('nav.projects'), path: '/projects', icon: <FolderKanban size={20} strokeWidth={1.8} />, badgeCount: badges.projectCount, desc: lang === 'en' ? 'Manage projects and campaigns' : 'Quản lý dự án & chiến dịch' },
     { name: t('nav.home'), path: '/workflow', icon: <Layers size={20} strokeWidth={1.8} />, badgeCount: badges.workflowCount, desc: lang === 'en' ? 'Workflow tracks & gate milestones' : 'Tiến độ luồng công việc & gates' },
     { name: t('nav.tasks'), path: '/tasks', icon: <CheckSquare size={20} strokeWidth={1.8} />, desc: lang === 'en' ? 'All assigned task items' : 'Toàn bộ đầu việc được giao' },
-    { name: t('nav.agent'), path: '/agents', icon: <Bot size={20} strokeWidth={1.8} />, hidden: !isAdmin(profile), desc: lang === 'en' ? 'Ask about work and create task proposals' : 'Hỏi đáp công việc và tạo đề xuất task' },
+    { name: t('nav.agent'), path: '/agents', icon: <Bot size={20} strokeWidth={1.8} />, hidden: true, desc: lang === 'en' ? 'Ask about work and create task proposals' : 'Hỏi đáp công việc và tạo đề xuất task' },
     { name: t('nav.assets'), path: '/assets', icon: <Package size={20} strokeWidth={1.8} />, badgeCount: badges.borrowCount, desc: lang === 'en' ? 'Equipment and inventory items' : 'Thiết bị & mượn trả tài sản' },
     { name: t('nav.team'), path: '/team', icon: <Users size={20} strokeWidth={1.8} />, desc: lang === 'en' ? 'Department members and workloads' : 'Nhân sự & khối lượng công việc' },
     { name: t('nav.profile'), path: '/my-tasks', icon: <User size={20} strokeWidth={1.8} />, desc: lang === 'en' ? 'My profile and personal calendar' : 'Hồ sơ cá nhân & lịch làm việc' },
