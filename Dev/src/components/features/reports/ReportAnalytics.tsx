@@ -113,32 +113,51 @@ export function ReportProfileCard({
       className={`report-profile report-profile--role-${roleKey}${hasImage ? '' : ' report-profile--initials'}${isCoverflow ? ' report-profile--coverflow-active' : ''}`}
     >
       <div className="report-profile-surface">
-        {/* Top Header: Frame art hình vuông bo góc đặt ngang Tên staff và Chức vụ */}
+        {/* Top Header: Cụm Lead căn giữa mặc định, hover trượt trái; nút Chi tiết absolute góc phải */}
         <div className="report-profile-header">
-          {/* Cột trái: Frame art hình vuông bo góc chuẩn Dashboard */}
-          <div className={`report-profile-avatar-frame report-profile-avatar-wrap report-profile-avatar-frame--${roleKey} report-profile-avatar-ring--${roleKey}`}>
-            {hasImage ? (
-              <img
-                className="report-profile-avatar-img"
-                src={member.avatar_url!}
-                alt={member.name}
-                loading="lazy"
-                onError={() => setImageFailed(true)}
-              />
-            ) : (
-              <div className={`report-profile-avatar-fallback report-profile-avatar-fallback--${roleKey}`} aria-hidden="true">
-                <span>{member.initial}</span>
-              </div>
-            )}
+          {/* Cụm Lead: Avatar + Tên + Chức vụ */}
+          <div className="report-profile-lead">
+            {/* Frame art hình vuông bo góc chuẩn Dashboard */}
+            <div className={`report-profile-avatar-frame report-profile-avatar-wrap report-profile-avatar-frame--${roleKey} report-profile-avatar-ring--${roleKey}`}>
+              {hasImage ? (
+                <img
+                  className="report-profile-avatar-img"
+                  src={member.avatar_url!}
+                  alt={member.name}
+                  loading="lazy"
+                  onError={() => setImageFailed(true)}
+                />
+              ) : (
+                <div className={`report-profile-avatar-fallback report-profile-avatar-fallback--${roleKey}`} aria-hidden="true">
+                  <span>{member.initial}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Cụm Tên Staff & Subtitle chức vụ ở DƯỚI tên staff */}
+            <div className="report-profile-identity">
+              <h3>{member.name}</h3>
+              <p className={`report-profile-subtitle report-profile-subtitle--${roleKey}`}>
+                {member.role}
+              </p>
+            </div>
           </div>
 
-          {/* Cột phải: Cụm Tên Staff & Subtitle chức vụ ở DƯỚI tên staff */}
-          <div className="report-profile-identity">
-            <h3>{member.name}</h3>
-            <p className={`report-profile-subtitle report-profile-subtitle--${roleKey}`}>
-              {member.role}
-            </p>
-          </div>
+          {/* Cột phải: Button Chi tiết xuất hiện khi hover ở góc trên bên phải, ngang hàng Tên staff */}
+          {onDetails && (
+            <button
+              type="button"
+              className="report-profile-details-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDetails();
+              }}
+              title={lang === 'en' ? 'View details' : 'Xem chi tiết'}
+              aria-label={lang === 'en' ? `View details: ${member.name}` : `Xem chi tiết: ${member.name}`}
+            >
+              {lang === 'en' ? 'Details' : 'Chi tiết'}
+            </button>
+          )}
         </div>
 
         {/* Đường kẻ phân cách mảnh mờ dần hai đầu */}
@@ -215,6 +234,21 @@ export function ReportProfileCard({
             </div>
           )}
         </div>
+
+        {/* Button xem chi tiết ở dưới cùng cho Mobile */}
+        {onDetails && (
+          <button
+            type="button"
+            className="report-profile-mobile-details-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDetails();
+            }}
+            aria-label={lang === 'en' ? `View details: ${member.name}` : `Xem chi tiết: ${member.name}`}
+          >
+            {lang === 'en' ? 'View details' : 'Xem chi tiết'}
+          </button>
+        )}
       </div>
     </article>
   );
@@ -2513,7 +2547,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
         </section>
 
         {/* TẦNG 2: Staff Performance & Workload */}
-        <section aria-label="Staff Performance Block" className="glass-panel p-3.5 sm:p-4 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm">
+        <section aria-label="Staff Performance Block" className={staffView === 'cards' ? 'w-full' : 'glass-panel p-3.5 sm:p-4 rounded-[8px] border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm'}>
           {/* Section Header (Hidden in Cards view so container wraps tightly around 5 staff cards) */}
           <div className={staffView === 'cards' ? 'hidden' : 'grid grid-cols-1 md:grid-cols-[1fr_auto] items-start md:items-center gap-4 mb-3'}>
             <div className="grid grid-cols-1 gap-1">
@@ -2705,14 +2739,16 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     member={member}
                     lang={lang}
                     isCenter={mIdx === 0}
+                    expanded={selectedStaffId === member.id}
+                    onDetails={() => setSelectedStaffId(selectedStaffId === member.id ? null : member.id)}
                   />
                 ))}
               </div>
             </div>
           )}
 
-          {/* DRILL-DOWN PANEL: Selected Staff Detailed View (Only for staffView === 'list') */}
-          {selectedStaff && staffView === 'list' && (
+          {/* DRILL-DOWN PANEL: Selected Staff Detailed View */}
+          {selectedStaff && (
             <div className="rounded-[8px] p-5 border-2 border-[#38bdf8]/40 bg-white/90 dark:bg-slate-900/90 shadow-lg backdrop-blur-xl space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-start sm:items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
                 <div className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold text-sm shadow-sm">

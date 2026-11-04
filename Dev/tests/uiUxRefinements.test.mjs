@@ -148,7 +148,7 @@ test('Reports Access: Staff role has visibility in navigation and scoped access 
   // 4. Verify useReports hooks enforce locked department for staff
   const useReportsSource = fs.readFileSync(path.resolve('Dev/src/hooks/useReports.ts'), 'utf8');
   assert.equal(useReportsSource.includes('if (!canViewAllDepartments) return;'), true);
-  assert.equal(useReportsSource.includes('if (!canViewAllDepartments && profile?.department_id)'), true);
+  assert.equal(useReportsSource.includes('if (!canViewAllDepartments && (profile?.department_id || enforcedDepartment))'), true);
 });
 
 // Test 6: Mobile navigation hides when detail panels open and restores when closed
@@ -295,7 +295,7 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
 
   // Verify mobile coverflow (< 640px)
   assert.equal(css.includes('@media (max-width: 639px)'), true);
-  assert.equal(css.includes('grid-auto-columns: clamp(250px, 68vw, 280px) !important;'), true);
+  assert.equal(css.includes('grid-auto-columns: clamp(268px, 76vw, 310px) !important;'), true);
 
   // Verify alert labels (Quá hạn & Tồn đọng) with alert-col structure
   assert.equal(tsx.includes('report-profile-alert-col'), true);
@@ -306,6 +306,24 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   // Verify text changed to 'Quantity' / 'Số lượng' (no longer 'Số lượng Hình/File')
   assert.equal(tsx.includes("lang === 'en' ? 'Quantity' : 'Số lượng'"), true);
   assert.equal(tsx.includes('Số lượng Hình/File'), false);
+
+  // Verify Details button on hover & focus-visible in header beside staff name
+  assert.equal(tsx.includes('report-profile-details-btn'), true);
+  assert.equal(css.includes('.report-profile-details-btn'), true);
+  assert.equal(css.includes('.report-profile:hover .report-profile-details-btn'), true);
+  assert.equal(css.includes('.report-profile-details-btn:focus-visible'), true);
+
+  // Verify Lead centering and left-sliding animation on hover
+  assert.equal(tsx.includes('report-profile-lead'), true);
+  assert.equal(css.includes('.report-profile-lead'), true);
+  assert.equal(css.includes('left: 50%;'), true);
+  assert.equal(css.includes('left: 0;'), true);
+  assert.equal(css.includes('transform: translateX(0);'), true);
+
+  // Verify perf columns centered alignment and #bdcadb 9px sub label styling
+  assert.equal(css.includes('justify-items: center;'), true);
+  assert.equal(css.includes('color: #bdcadb !important;'), true);
+  assert.equal(css.includes('font-size: 9px;'), true);
 });
 
 // Test 10: MobileNav removes mobile-liquid-glass and enforces transparent search input

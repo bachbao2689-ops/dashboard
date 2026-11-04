@@ -19,6 +19,7 @@ import {
   type TrackedTask,
 } from '../lib/taskTracking';
 import { scopeTeamWorkload } from '../lib/workloadScope';
+import { isGlobalManager } from '../lib/roleScope';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n/translations';
 import type { AlertLevel, BurndownItem, HeatmapRow } from '../types/department';
@@ -581,7 +582,6 @@ export const useReports = (options?: { standalone?: boolean }) => {
   const timeRange: TimeRange = urlPeriod && validPeriods.includes(urlPeriod) ? urlPeriod : normalizedRemembered;
   const customStart = urlFrom || rememberedCustomStart || defaultMonthStart;
   const customEnd = urlTo || rememberedCustomEnd || defaultToday;
-  const rawDepartmentFilter = urlDept || rememberedDept || 'all';
 
   const setTimeRange = useCallback(
     (nextRange: TimeRange) => {
@@ -753,6 +753,21 @@ export const useReports = (options?: { standalone?: boolean }) => {
     [isStandalone, profile],
   );
 
+  const isGlobal = isGlobalManager(effectiveProfile);
+  const enforcedDepartment = useMemo(() => {
+    if (isGlobal || !effectiveProfile) return null;
+    if (effectiveProfile.department_id) return String(effectiveProfile.department_id);
+    if (effectiveProfile.department_name) {
+      const match = departments.find(
+        (d) => d.name.trim().toLowerCase() === effectiveProfile.department_name?.trim().toLowerCase()
+      );
+      if (match) return String(match.id);
+    }
+    return null;
+  }, [isGlobal, effectiveProfile, departments]);
+
+  const rawDepartmentFilter = enforcedDepartment || urlDept || (isGlobal ? rememberedDept : null) || 'all';
+
   const scope = useMemo(
     () => scopeTeamWorkload(effectiveProfile, rawDepartmentFilter, users, departments, workspaceTasks),
     [effectiveProfile, rawDepartmentFilter, users, departments, workspaceTasks],
@@ -785,8 +800,8 @@ export const useReports = (options?: { standalone?: boolean }) => {
 
   // Fix cứng tầm view cho staff: URL dept luôn tự động khớp với phòng ban của staff
   useEffect(() => {
-    if (!canViewAllDepartments && profile?.department_id) {
-      const targetDept = String(profile.department_id);
+    if (!canViewAllDepartments && (profile?.department_id || enforcedDepartment)) {
+      const targetDept = String(profile?.department_id || enforcedDepartment);
       if (searchParams.get('dept') !== targetDept) {
         setSearchParams(
           (prev) => {
@@ -798,7 +813,7 @@ export const useReports = (options?: { standalone?: boolean }) => {
         );
       }
     }
-  }, [canViewAllDepartments, profile?.department_id, searchParams, setSearchParams]);
+  }, [canViewAllDepartments, profile?.department_id, enforcedDepartment, searchParams, setSearchParams]);
 
   const selectedDepartmentName = useMemo(() => {
     if (effectiveDepartmentFilter === 'all') return t('reports.viz.allTeams');

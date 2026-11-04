@@ -23,6 +23,14 @@ interface DevFloatingToolsProps {
 
 const STORAGE_KEY = 'kcoffee_dev_floating_gear_pos';
 
+const clampToViewport = (x: number, y: number) => {
+  if (typeof window === 'undefined') return { x, y };
+  return {
+    x: Math.max(12, Math.min(window.innerWidth - 60, x)),
+    y: Math.max(12, Math.min(window.innerHeight - 68, y)),
+  };
+};
+
 export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   onTriggerUpdate,
   onTriggerDemo,
@@ -41,14 +49,14 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'roles' | 'popups'>('roles');
 
-  // Position state (bottom-right by default)
+  // Position state (bottom-right by default, always clamped within current viewport)
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
-          return parsed;
+          return clampToViewport(parsed.x, parsed.y);
         }
       }
     } catch {
@@ -77,6 +85,23 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     }
   }, []);
 
+  // Listen to window resize / orientationchange to keep gear button visible
+  useEffect(() => {
+    const handleResize = () => {
+      setPos((prev) => {
+        const clamped = clampToViewport(prev.x, prev.y);
+        savePosition(clamped);
+        return clamped;
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [savePosition]);
+
   // Handle Dragging
   const handleStartDrag = (clientX: number, clientY: number) => {
     isDraggingRef.current = true;
@@ -98,8 +123,8 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
       hasMovedRef.current = true;
     }
 
-    const nextX = Math.max(10, Math.min(window.innerWidth - 64, startDragRef.current.posX + deltaX));
-    const nextY = Math.max(10, Math.min(window.innerHeight - 64, startDragRef.current.posY + deltaY));
+    const nextX = Math.max(10, Math.min(window.innerWidth - 60, startDragRef.current.posX + deltaX));
+    const nextY = Math.max(10, Math.min(window.innerHeight - 68, startDragRef.current.posY + deltaY));
 
     setPos({ x: nextX, y: nextY });
   }, []);
@@ -108,10 +133,14 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
       if (hasMovedRef.current) {
-        savePosition(pos);
+        setPos((current) => {
+          const clamped = clampToViewport(current.x, current.y);
+          savePosition(clamped);
+          return clamped;
+        });
       }
     }
-  }, [pos, savePosition]);
+  }, [savePosition]);
 
   // Window event listeners for mouse & touch
   useEffect(() => {
@@ -166,6 +195,16 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
         department_name: dept ? dept.name : null,
       },
     });
+
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
+      const url = new URL(window.location.href);
+      if (dept?.id) {
+        url.searchParams.set('dept', String(dept.id));
+      } else {
+        url.searchParams.delete('dept');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
   };
 
   const resetOriginal = () => {
@@ -187,6 +226,15 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   // Panel placement relative to gear button
   const isRightHalf = pos.x > (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const isBottomHalf = pos.y > (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
+
+  const panelWidth = typeof window !== 'undefined' ? Math.min(320, window.innerWidth - 20) : 320;
+  const panelHeight = 440;
+  let popoverLeft = isRightHalf ? pos.x - panelWidth : pos.x + 58;
+  let popoverTop = isBottomHalf ? pos.y - panelHeight : pos.y;
+  if (typeof window !== 'undefined') {
+    popoverLeft = Math.max(10, Math.min(window.innerWidth - panelWidth - 10, popoverLeft));
+    popoverTop = Math.max(10, Math.min(window.innerHeight - panelHeight - 10, popoverTop));
+  }
 
   return (
     <>
@@ -246,11 +294,13 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
         <div
           style={{
             position: 'fixed',
-            left: isRightHalf ? `${Math.max(10, pos.x - 330)}px` : `${Math.min(window.innerWidth - 350, pos.x + 58)}px`,
-            top: isBottomHalf ? `${Math.max(10, pos.y - 420)}px` : `${Math.min(window.innerHeight - 440, pos.y)}px`,
+            left: `${popoverLeft}px`,
+            top: `${popoverTop}px`,
+            width: `${panelWidth}px`,
+            maxWidth: 'calc(100vw - 20px)',
             zIndex: 9550,
           }}
-          className="dashboard-frosted-glass w-[330px] rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100"
+          className="dashboard-frosted-glass rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100 max-h-[85vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="grid grid-cols-[1fr_auto] items-center pb-3 border-b border-slate-200 dark:border-slate-800/80">
@@ -284,7 +334,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 {currentProfile?.role} · {currentProfile?.employment_level || 'N/A'}
               </span>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 grid grid-flow-col auto-cols-max items-center gap-1">
               <span>Phòng ban:</span>
               <strong className="text-slate-700 dark:text-slate-200 font-semibold">
                 {currentProfile?.department_name || currentProfile?.department_id || 'Toàn công ty'}

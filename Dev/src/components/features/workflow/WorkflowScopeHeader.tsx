@@ -1,14 +1,24 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {FolderKanban, Megaphone, ChevronDown, Search, User, Clock} from 'lucide-react';
+import {FolderKanban, Megaphone, ChevronDown, Search, User, Clock, ArrowLeft} from 'lucide-react';
 import {Avatar} from '../../common/Avatar';
 
 export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
-  const {isEn, entityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, currentEntity, selectedEntityId, isCampaign, filteredEntities, handleFilterChange, handleSelectEntity, daysRemaining, entityTimeline, subTeamMembers, leadInfo} = model;
+  const {isEn, entityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, currentEntity, selectedEntityId, isCampaign, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, entities, daysRemaining, entityTimeline, subTeamMembers, leadInfo} = model;
   if (!currentEntity) return null;
   return (<>
 <div className="xl:col-span-4 2xl:col-span-4 flex flex-col justify-between space-y-2.5">
           {/* Top Row: Button trên title scale nhỏ 20% (Projects / Campaigns) & Description (Requirement 1) */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Back to All Projects / Campaigns */}
+            <button
+              type="button"
+              onClick={handleBackToHub}
+              className="px-2.5 py-1 rounded-[8px] text-[11px] font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700/80 hover:bg-gray-50 dark:hover:bg-slate-700/60 shadow-2xs transition-all grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer"
+              title={isEn ? "Back to All Projects & Campaigns" : "Quay lại danh sách Tất cả Dự án / Chiến dịch"}
+            >
+              <ArrowLeft size={12} className="text-gray-500 dark:text-slate-400" />
+              <span>{isEn ? `All (${entities.length})` : `Tất cả (${entities.length})`}</span>
+            </button>
             <div className="inline-flex items-center p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
               <button
                 type="button"

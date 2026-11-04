@@ -20,7 +20,12 @@ export function scopeTeamWorkload<Member extends WorkloadMember, Task extends Wo
   tasks: readonly Task[],
 ) {
   const canViewAllDepartments = isGlobalManager(profile);
-  const ownDepartment = profile?.department_id ? String(profile.department_id) : null;
+  const resolvedDeptId = profile?.department_id
+    ? String(profile.department_id)
+    : profile?.department_name
+    ? departments.find((department) => department.name.trim().toLowerCase() === profile.department_name?.trim().toLowerCase())?.id || null
+    : null;
+  const ownDepartment = resolvedDeptId ? String(resolvedDeptId) : null;
   const availableDepartments = canViewAllDepartments
     ? [...departments]
     : ownDepartment

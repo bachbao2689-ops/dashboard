@@ -7,10 +7,10 @@
 .report-profiles {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: start;
-  column-gap: clamp(8px, 1vw, 14px);
-  row-gap: clamp(14px, 1.8vw, 22px);
-  padding: 6px 4px 12px;
+  align-items: stretch;
+  column-gap: clamp(10px, 1vw, 16px);
+  row-gap: 8px;
+  padding: 0;
   width: 100%;
   overflow: visible;
 }
@@ -25,11 +25,11 @@
   min-width: 0;
   padding: 0;
   border: 1px solid rgba(186, 220, 245, 0.75);
-  border-radius: clamp(12px, 5.8cqi, 16px);
+  border-radius: clamp(14px, 5.8cqi, 18px);
   background:
     radial-gradient(120% 95% at 92% 88%, rgba(186, 230, 253, 0.28) 0%, rgba(224, 242, 254, 0.11) 48%, transparent 75%),
-    radial-gradient(90% 70% at 15% 10%, rgba(255, 255, 255, 0.95) 0%, transparent 65%),
-    linear-gradient(155deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 249, 253, 0.88) 62%, rgba(226, 241, 252, 0.92) 100%);
+    radial-gradient(90% 70% at 15% 10%, rgba(255, 255, 255, 0.48) 0%, transparent 65%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.48) 0%, rgba(244, 249, 253, 0.78) 52%, rgba(226, 241, 252, 0.95) 100%);
   box-shadow:
     inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
     inset 0 -1px 2px rgba(14, 116, 144, 0.06),
@@ -37,7 +37,7 @@
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   color: var(--profile-ink);
-  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease;
+  transition: transform 380ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 380ms ease, border-color 380ms ease, background 380ms ease;
   z-index: 1;
   overflow: visible !important;
   cursor: default;
@@ -47,12 +47,12 @@
 }
 
 .report-profile:hover {
-  transform: translateY(-2px);
+  transform: none;
   border-color: #002e6d;
   background:
     radial-gradient(120% 95% at 92% 88%, rgba(186, 230, 253, 0.40) 0%, rgba(224, 242, 254, 0.18) 48%, transparent 75%),
-    radial-gradient(90% 70% at 15% 10%, rgba(255, 255, 255, 0.98) 0%, transparent 65%),
-    linear-gradient(155deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 249, 253, 0.92) 62%, rgba(226, 241, 252, 0.96) 100%);
+    radial-gradient(90% 70% at 15% 10%, rgba(255, 255, 255, 0.50) 0%, transparent 65%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.50) 0%, rgba(244, 249, 253, 0.85) 52%, rgba(226, 241, 252, 0.98) 100%);
   box-shadow:
     inset 0 1.5px 1px #ffffff,
     inset 0 -1px 3px rgba(14, 116, 144, 0.10),
@@ -64,13 +64,14 @@
   outline-offset: 2px;
 }
 
-/* Inner Surface - Box container: clean rectangular proportions, balanced padding */
+/* Inner Surface - Box container: transparent background, clean balanced padding */
 .report-profile-surface {
   position: relative;
   isolation: isolate;
   overflow: visible !important;
-  padding: clamp(10px, 4.8cqi, 14px) clamp(10px, 5cqi, 16px);
-  border-radius: clamp(11px, 5.5cqi, 16px);
+  padding: clamp(15px, 6.2cqi, 21px) clamp(13px, 5.4cqi, 19px) clamp(14px, 5.8cqi, 18px);
+  border-radius: inherit;
+  border: none;
   min-height: 0 !important;
   height: auto !important;
   max-height: none !important;
@@ -88,26 +89,26 @@
   position: relative;
   top: auto;
   left: auto;
-  width: clamp(38px, 18cqi, 46px);
-  height: clamp(38px, 18cqi, 46px);
+  width: clamp(46px, 20cqi, 58px);
+  height: clamp(46px, 20cqi, 58px);
   aspect-ratio: 1;
   z-index: 2;
-  border-radius: clamp(8px, 4cqi, 12px);
+  border-radius: clamp(10px, 4.2cqi, 14px);
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(186, 220, 245, 0.75);
-  box-shadow: 0 2px 8px rgba(0, 46, 109, 0.08);
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   overflow: hidden;
   flex-shrink: 0;
-  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  transition: transform 380ms cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 380ms ease, border-color 380ms ease;
 }
 
 .report-profile:hover .report-profile-avatar-frame,
 .report-profile:hover .report-profile-avatar-wrap {
-  transform: scale(1.03);
-  border-color: #002e6d;
-  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.16);
+  transform: none;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .report-profile-avatar-ring {
@@ -121,13 +122,13 @@
 /* Avatar Frame track theo màu Label chức vụ (Light mode) */
 .report-profile-avatar-frame--member,
 .report-profile-avatar-ring--member {
-  border: 1px solid #6ee7b7;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile:hover .report-profile-avatar-frame--member,
 .report-profile:hover .report-profile-avatar-ring--member {
-  border-color: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.22);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile-avatar-fallback--member {
   color: #047857;
@@ -136,13 +137,13 @@
 
 .report-profile-avatar-frame--leader,
 .report-profile-avatar-ring--leader {
-  border: 1px solid #fdba74;
-  box-shadow: 0 0 8px rgba(249, 115, 22, 0.15);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile:hover .report-profile-avatar-frame--leader,
 .report-profile:hover .report-profile-avatar-ring--leader {
-  border-color: #f97316;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.22);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile-avatar-fallback--leader {
   color: #c2410c;
@@ -151,13 +152,13 @@
 
 .report-profile-avatar-frame--manager,
 .report-profile-avatar-ring--manager {
-  border: 1px solid #93c5fd;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile:hover .report-profile-avatar-frame--manager,
 .report-profile:hover .report-profile-avatar-ring--manager {
-  border-color: #3b82f6;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.22);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile-avatar-fallback--manager {
   color: #1e40af;
@@ -166,13 +167,13 @@
 
 .report-profile-avatar-frame--admin,
 .report-profile-avatar-ring--admin {
-  border: 1px solid #d8b4fe;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.15);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile:hover .report-profile-avatar-frame--admin,
 .report-profile:hover .report-profile-avatar-ring--admin {
-  border-color: #a855f7;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.22);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile-avatar-fallback--admin {
   color: #6b21a8;
@@ -181,13 +182,13 @@
 
 .report-profile-avatar-frame--viewer,
 .report-profile-avatar-ring--viewer {
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 0 8px rgba(100, 116, 139, 0.12);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile:hover .report-profile-avatar-frame--viewer,
 .report-profile:hover .report-profile-avatar-ring--viewer {
-  border-color: #64748b;
-  box-shadow: 0 0 10px rgba(100, 116, 139, 0.20);
+  border: none !important;
+  box-shadow: none;
 }
 .report-profile-avatar-fallback--viewer {
   color: #475569;
@@ -211,20 +212,55 @@
   place-items: center;
   background: radial-gradient(circle at 40% 30%, #ffffff, #d5e9f7);
   color: #002e6d;
-  font-size: clamp(14px, 7cqi, 18px);
+  font-size: clamp(17px, 7.5cqi, 22px);
   font-weight: 700;
 }
 
-/* Top Header: CSS Grid 2 cột: Cột trái là Frame art hình vuông, Cột phải là Cụm Tên & Chức vụ */
+/* Top Header: CSS Grid justify-items: start, Lead căn giữa mặc định bằng left: 50% & -50%, nút Chi tiết absolute ở góc phải */
 .report-profile-header {
+  position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  justify-items: start;
   align-items: center;
-  column-gap: clamp(8px, 4.2cqi, 12px);
-  padding: 0;
-  min-height: clamp(38px, 18cqi, 46px);
   width: 100%;
+  min-height: clamp(46px, 20cqi, 58px);
+  padding: 0;
   box-sizing: border-box;
+}
+
+/* Cụm Lead: Avatar + Tên + Chức vụ, căn giữa mặc định bằng left: 50% + translateX(-50%), trượt về left: 0 khi hover để dóng mép trái Avatar thẳng tắp */
+.report-profile-lead {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: clamp(10px, 4.4cqi, 14px);
+  width: max-content;
+  max-width: 100%;
+  transition: left 520ms cubic-bezier(0.25, 0.8, 0.25, 1), transform 520ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: left, transform;
+}
+
+.report-profile:hover .report-profile-lead {
+  left: 0;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-profile-lead {
+    left: 0 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+@media (hover: none), (max-width: 639px) {
+  .report-profile-lead {
+    left: 0 !important;
+    transform: none !important;
+  }
 }
 
 /* Cụm Tên Staff & Chức vụ: Dòng 1 Tên, Dòng 2 Chức vụ ở DƯỚI tên */
@@ -233,23 +269,99 @@
   grid-template-rows: auto auto;
   justify-items: start;
   align-items: start;
-  gap: clamp(2px, 1.2cqi, 4px);
+  gap: clamp(3px, 1.5cqi, 5px);
   min-width: 0;
   padding-right: 0;
 }
 
 .report-profile-identity h3 {
-  font-size: clamp(12px, 5.8cqi, 15px) !important;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: clamp(15.5px, 7.2cqi, 21px) !important;
+  font-weight: 800;
+  line-height: 1.18;
   letter-spacing: -0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
+  max-width: clamp(105px, 50cqi, 160px);
   color: #002e6d;
   margin: 0;
   padding-right: 0;
+}
+
+.dark .report-profile-identity h3 {
+  color: #ffffff !important;
+}
+
+/* Nút Chi tiết tại góc trên bên phải, ngang hàng Tên staff (Hover / Focus-within mới hiện) */
+.report-profile-details-btn {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  z-index: 5;
+  display: inline-grid;
+  place-items: center;
+  height: 22px;
+  min-height: 22px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 5px;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0) translateX(5px);
+  transition:
+    opacity 440ms cubic-bezier(0.25, 0.8, 0.25, 1),
+    transform 440ms cubic-bezier(0.25, 0.8, 0.25, 1),
+    background 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
+}
+
+.report-profile-details-btn:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.report-profile:hover .report-profile-details-btn,
+.report-profile-details-btn:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) translateX(0);
+  transition-delay: 60ms, 60ms, 0ms, 0ms, 0ms;
+}
+
+.dark .report-profile-details-btn {
+  border: 1px solid rgba(78, 182, 72, 0.45);
+  background: rgba(19, 31, 49, 0.95);
+  color: #90e38a;
+  box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.15);
+}
+
+.dark .report-profile-details-btn:hover {
+  border-color: #5cd655;
+  color: #bbf7d0;
+  background: rgba(22, 45, 32, 0.95);
+  box-shadow: 0 0 8px rgba(78, 182, 72, 0.3);
+}
+
+/* Mobile / touch (hover: none): Giữ hành vi chạm card như hiện tại, không cần hiện nút */
+@media (hover: none) {
+  .report-profile-details-btn {
+    display: none !important;
+  }
+}
+
+/* Button Xem chi tiết trên Mobile: Ẩn hoàn toàn trên Desktop & Tablet */
+.report-profile-mobile-details-btn {
+  display: none;
 }
 
 /* Cụm 2 Badge Cảnh Báo: Quá hạn & Tồn đọng nằm cùng 1 hàng ngang trong .report-profile-perf-grid */
@@ -275,7 +387,7 @@
   display: block;
   width: 100%;
   height: 1px;
-  margin: clamp(8px, 4cqi, 12px) 0 clamp(8px, 4cqi, 12px);
+  margin: clamp(9px, 4.2cqi, 14px) 0 clamp(9px, 4.2cqi, 13px);
   background: linear-gradient(90deg, transparent 0%, rgba(0, 46, 109, 0.08) 20%, rgba(0, 46, 109, 0.16) 50%, rgba(0, 46, 109, 0.08) 80%, transparent 100%);
 }
 
@@ -286,7 +398,7 @@
   grid-auto-columns: max-content;
   justify-content: center;
   align-items: start;
-  column-gap: clamp(5px, 3.8cqi, 14px);
+  column-gap: clamp(6px, 3.4cqi, 12px);
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -295,27 +407,27 @@
 .report-profile-perf-col {
   display: grid;
   grid-template-rows: auto auto;
-  gap: clamp(2.5px, 1.5cqi, 4.5px);
-  justify-items: start;
-  text-align: left;
+  gap: clamp(2.5px, 1.3cqi, 4px);
+  justify-items: center;
+  text-align: center;
   width: max-content;
   max-width: 100%;
 }
 
 .report-profile-perf-col .report-profile-badge,
 .report-profile-perf-col .report-profile-pill {
-  border-radius: clamp(4px, 2cqi, 6px);
-  padding: clamp(1.5px, 0.9cqi, 2.5px) clamp(4.5px, 2.6cqi, 8px);
-  height: clamp(16px, 7.5cqi, 22px);
-  min-height: clamp(16px, 7.5cqi, 22px);
-  font-size: clamp(9px, 4.1cqi, 11.5px);
+  border-radius: clamp(4.5px, 2cqi, 6px);
+  padding: 2px clamp(4.5px, 2.3cqi, 7px);
+  height: clamp(18px, 7.6cqi, 21.5px);
+  min-height: clamp(18px, 7.6cqi, 21.5px);
+  font-size: clamp(9.5px, 4.2cqi, 11.2px);
   font-weight: 700;
-  gap: clamp(2px, 1.3cqi, 4px);
+  gap: clamp(2px, 1.1cqi, 3.5px);
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   align-items: center;
-  justify-self: start;
+  justify-self: center;
   box-sizing: border-box;
   cursor: default;
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
@@ -324,8 +436,8 @@
 .report-profile-perf-col .report-profile-badge svg,
 .report-profile-perf-col .report-profile-pill svg {
   color: #002e6d;
-  width: clamp(8.5px, 3.8cqi, 11.5px);
-  height: clamp(8.5px, 3.8cqi, 11.5px);
+  width: clamp(9px, 3.8cqi, 10.8px);
+  height: clamp(9px, 3.8cqi, 10.8px);
   stroke-width: 2.2;
   flex-shrink: 0;
 }
@@ -337,18 +449,26 @@
   line-height: 1;
 }
 
+/* Sub label căn giữa theo cột, font-size nhỏ hơn ~10% (khoảng 8.1px) sắc nét tương phản cao */
 .report-profile-perf-label {
   display: block;
-  font-size: clamp(7.8px, 3.6cqi, 11px);
+  font-size: 9px;
+  font-size: clamp(7.5px, 3.2cqi, 8.2px);
   font-weight: 500;
-  text-align: left;
-  justify-self: start;
+  text-align: center;
+  justify-self: center;
   line-height: 1.15;
-  color: #64748b;
+  color: #475569;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+.dark .report-profile-perf-label {
+  color: #bdcadb !important;
+  text-align: center;
+  justify-self: center;
 }
 
 .report-profile-subtitle {
@@ -358,14 +478,14 @@
   justify-content: center;
   text-align: center;
   height: auto;
-  min-height: clamp(13px, 6cqi, 17px);
+  min-height: clamp(18px, 7.8cqi, 23px);
   box-sizing: border-box;
-  font-size: clamp(7.5px, 3.6cqi, 9.8px);
+  font-size: clamp(9.5px, 4.2cqi, 11.8px);
   font-weight: 600;
   font-style: normal;
   line-height: 1;
-  padding: clamp(1.5px, 0.8cqi, 2px) clamp(4px, 2.4cqi, 6.5px);
-  border-radius: clamp(4px, 1.8cqi, 5px);
+  padding: 2.5px clamp(7px, 3.2cqi, 11px);
+  border-radius: clamp(5px, 2.2cqi, 6.5px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -841,15 +961,17 @@
   --profile-ink: #f8fafc;
   --profile-muted: #94a3b8;
   border: 1px solid rgba(78, 182, 72, 0.45);
-  border-radius: clamp(12px, 5.8cqi, 16px);
+  border-radius: clamp(14px, 5.8cqi, 18px);
+  padding: 0;
   background:
-    radial-gradient(115% 95% at 92% 88%, rgba(78, 182, 72, 0.10) 0%, rgba(16, 185, 129, 0.045) 45%, transparent 74%),
-    radial-gradient(85% 65% at 88% 16%, rgba(78, 182, 72, 0.055) 0%, transparent 60%),
-    radial-gradient(90% 75% at 12% 10%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
-    linear-gradient(160deg, rgba(16, 33, 56, 0.88) 0%, rgba(10, 22, 39, 0.92) 58%, rgba(9, 24, 34, 0.95) 100%);
+    radial-gradient(120% 95% at 92% 88%, rgba(78, 182, 72, 0.16) 0%, rgba(16, 185, 129, 0.07) 48%, transparent 75%),
+    radial-gradient(85% 65% at 88% 18%, rgba(78, 182, 72, 0.09) 0%, transparent 60%),
+    radial-gradient(90% 70% at 15% 15%, rgba(78, 182, 72, 0.025) 0%, transparent 55%),
+    radial-gradient(90% 75% at 12% 10%, rgba(255, 255, 255, 0.025) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(8, 16, 28, 0.45) 0%, rgba(10, 22, 36, 0.72) 48%, rgba(14, 38, 46, 0.96) 100%);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.14),
-    inset -1px -1px 10px rgba(78, 182, 72, 0.05),
+    inset -1px -1px 12px rgba(78, 182, 72, 0.08),
     0 12px 28px -8px rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(22px) saturate(165%);
   -webkit-backdrop-filter: blur(22px) saturate(165%);
@@ -860,40 +982,42 @@
 }
 
 .dark .report-profile:hover {
-  transform: translateY(-2px);
+  transform: none;
   border-color: #4eb648;
   background:
-    radial-gradient(115% 95% at 92% 88%, rgba(78, 182, 72, 0.16) 0%, rgba(16, 185, 129, 0.07) 45%, transparent 74%),
-    radial-gradient(85% 65% at 88% 16%, rgba(78, 182, 72, 0.09) 0%, transparent 60%),
-    radial-gradient(90% 75% at 12% 10%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
-    linear-gradient(160deg, rgba(20, 40, 68, 0.92) 0%, rgba(12, 26, 46, 0.94) 58%, rgba(11, 29, 41, 0.96) 100%);
+    radial-gradient(120% 95% at 92% 88%, rgba(78, 182, 72, 0.22) 0%, rgba(16, 185, 129, 0.09) 48%, transparent 75%),
+    radial-gradient(85% 65% at 88% 18%, rgba(78, 182, 72, 0.12) 0%, transparent 60%),
+    radial-gradient(90% 70% at 15% 15%, rgba(78, 182, 72, 0.035) 0%, transparent 55%),
+    radial-gradient(90% 75% at 12% 10%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(10, 20, 34, 0.48) 0%, rgba(12, 26, 42, 0.76) 48%, rgba(16, 43, 52, 0.98) 100%);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.22),
-    inset -1px -1px 12px rgba(78, 182, 72, 0.10),
+    inset -1px -1px 14px rgba(78, 182, 72, 0.12),
     0 14px 30px -6px rgba(0, 0, 0, 0.85),
-    0 0 14px rgba(78, 182, 72, 0.18);
+    0 0 14px rgba(78, 182, 72, 0.22);
 }
 
 .dark .report-profile-surface {
   background: transparent;
   border: none;
+  border-radius: inherit;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
 }
 
-/* Thin avatar ring & frame in dark mode: 1px clean border, soft outer glow, no thick inset */
+/* Clean borderless avatar in dark mode */
 .dark .report-profile-avatar-frame,
 .dark .report-profile-avatar-ring {
   background: #081324;
-  border: 1px solid rgba(78, 182, 72, 0.65);
-  box-shadow: 0 0 10px rgba(78, 182, 72, 0.25);
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .dark .report-profile:hover .report-profile-avatar-frame,
 .dark .report-profile:hover .report-profile-avatar-ring {
-  border-color: #5cd655;
-  box-shadow: 0 0 16px rgba(78, 182, 72, 0.45);
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
 .dark .report-profile-avatar-fallback {
@@ -905,13 +1029,13 @@
 /* Avatar Frame track theo màu Label chức vụ (Dark mode) */
 .dark .report-profile-avatar-frame--member,
 .dark .report-profile-avatar-ring--member {
-  border: 1px solid rgba(78, 182, 72, 0.65);
-  box-shadow: 0 0 10px rgba(78, 182, 72, 0.30);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile:hover .report-profile-avatar-frame--member,
 .dark .report-profile:hover .report-profile-avatar-ring--member {
-  border-color: #4eb648;
-  box-shadow: 0 0 14px rgba(78, 182, 72, 0.45);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile-avatar-fallback--member {
   color: #90e38a;
@@ -920,13 +1044,13 @@
 
 .dark .report-profile-avatar-frame--leader,
 .dark .report-profile-avatar-ring--leader {
-  border: 1px solid rgba(249, 115, 22, 0.65);
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.30);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile:hover .report-profile-avatar-frame--leader,
 .dark .report-profile:hover .report-profile-avatar-ring--leader {
-  border-color: #fb923c;
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile-avatar-fallback--leader {
   color: #fb923c;
@@ -935,13 +1059,13 @@
 
 .dark .report-profile-avatar-frame--manager,
 .dark .report-profile-avatar-ring--manager {
-  border: 1px solid rgba(59, 130, 246, 0.65);
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.30);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile:hover .report-profile-avatar-frame--manager,
 .dark .report-profile:hover .report-profile-avatar-ring--manager {
-  border-color: #60a5fa;
-  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile-avatar-fallback--manager {
   color: #93c5fd;
@@ -950,13 +1074,13 @@
 
 .dark .report-profile-avatar-frame--admin,
 .dark .report-profile-avatar-ring--admin {
-  border: 1px solid rgba(168, 85, 247, 0.65);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.30);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile:hover .report-profile-avatar-frame--admin,
 .dark .report-profile:hover .report-profile-avatar-ring--admin {
-  border-color: #c084fc;
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.45);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile-avatar-fallback--admin {
   color: #d8b4fe;
@@ -965,13 +1089,13 @@
 
 .dark .report-profile-avatar-frame--viewer,
 .dark .report-profile-avatar-ring--viewer {
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  box-shadow: 0 0 10px rgba(148, 163, 184, 0.25);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile:hover .report-profile-avatar-frame--viewer,
 .dark .report-profile:hover .report-profile-avatar-ring--viewer {
-  border-color: #cbd5e1;
-  box-shadow: 0 0 14px rgba(148, 163, 184, 0.35);
+  border: none !important;
+  box-shadow: none;
 }
 .dark .report-profile-avatar-fallback--viewer {
   color: #cbd5e1;
@@ -1050,9 +1174,9 @@
 }
 
 .dark .report-profile-perf-label {
-  color: #94a3b8;
-  text-align: left;
-  justify-self: start;
+  color: #bdcadb !important;
+  text-align: center;
+  justify-self: center;
 }
 
 .dark .report-profile:focus-visible {
@@ -1067,20 +1191,21 @@
   .report-profiles {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(6px, 0.8vw, 10px);
-    row-gap: clamp(30px, 2.6vw, 38px);
-    padding: clamp(28px, 2.4vw, 36px) 4px 10px;
+    row-gap: 6px;
+    padding: 0;
     width: 100%;
     overflow: visible;
   }
   .report-profile {
-    border-radius: 18px;
+    border-radius: clamp(14px, 5.8cqi, 18px);
+    padding: 0;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
   }
   .report-profile-surface {
-    border-radius: 16px;
-    padding: 10px 10px 12px;
+    border-radius: inherit;
+    padding: clamp(12px, 5cqi, 16px) clamp(10px, 4.5cqi, 14px) clamp(11px, 4.8cqi, 14px);
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -1091,19 +1216,20 @@
   .report-profiles {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(4px, 0.6vw, 8px);
-    row-gap: clamp(28px, 2.4vw, 34px);
-    padding: clamp(26px, 2.2vw, 32px) 2px 8px;
+    row-gap: 6px;
+    padding: 0;
     overflow: visible;
   }
   .report-profile {
-    border-radius: 16px;
+    border-radius: clamp(12px, 5cqi, 15px);
+    padding: 0;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
   }
   .report-profile-surface {
-    border-radius: 14px;
-    padding: 8px 6px 10px;
+    border-radius: inherit;
+    padding: clamp(10px, 4.2cqi, 13px) clamp(8px, 3.8cqi, 11px) clamp(9px, 4cqi, 12px);
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -1120,7 +1246,7 @@
   .report-profiles {
     display: grid !important;
     grid-auto-flow: column !important;
-    grid-auto-columns: clamp(250px, 68vw, 280px) !important;
+    grid-auto-columns: clamp(268px, 76vw, 310px) !important;
     grid-template-columns: none !important;
     justify-content: start !important;
     gap: 16px !important;
@@ -1128,8 +1254,8 @@
     overflow-y: visible !important;
     scroll-snap-type: x proximity !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 68px calc(50vw - clamp(125px, 34vw, 140px)) 32px !important;
-    scroll-padding: 0 calc(50vw - clamp(125px, 34vw, 140px)) !important;
+    padding: 24px calc(50vw - clamp(134px, 38vw, 155px)) 28px !important;
+    scroll-padding: 0 calc(50vw - clamp(134px, 38vw, 155px)) !important;
     scrollbar-width: none !important;
     touch-action: pan-x pan-y !important;
   }
@@ -1159,21 +1285,21 @@
   }
 
   .report-profile-surface {
-    min-height: 390px !important;
+    min-height: 430px !important;
     height: auto !important;
     position: relative !important;
     overflow: visible !important;
-    padding: 78px 18px 34px !important;
+    padding: 26px 20px 22px !important;
     display: grid !important;
-    grid-template-rows: auto auto auto auto !important;
+    grid-template-rows: auto auto 1fr auto !important;
     align-content: space-between !important;
     justify-items: center !important;
     text-align: center !important;
+    gap: 0 !important;
   }
 
   .report-profile-header {
-    padding-left: 0 !important;
-    padding-top: 4px !important;
+    padding: 0 !important;
     min-height: auto !important;
     width: 100% !important;
     display: grid !important;
@@ -1181,10 +1307,41 @@
     text-align: center !important;
   }
 
+  .report-profile-lead {
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    text-align: center !important;
+    row-gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .report-profile-avatar-frame,
+  .report-profile-avatar-wrap {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 108px !important;
+    height: 108px !important;
+    border-radius: 20px !important;
+    margin: 0 auto !important;
+    justify-self: center !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  .report-profile-avatar-fallback {
+    font-size: 38px !important;
+  }
+
   .report-profile-identity {
     justify-items: center !important;
     text-align: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
     padding-right: 0 !important;
     width: 100% !important;
   }
@@ -1201,52 +1358,57 @@
 
   .report-profile-subtitle {
     justify-self: center !important;
-    font-size: 14px !important;
-    padding: 5px 16px !important;
-    min-height: 28px !important;
-    border-radius: 7px !important;
+    font-size: 12px !important;
+    padding: 4px 13px !important;
+    min-height: 24px !important;
+    border-radius: 6px !important;
+    margin: 0 auto !important;
   }
 
-  .report-profile-avatar-wrap {
-    top: -58px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: 116px !important;
-    height: 116px !important;
-  }
-
-  .report-profile-avatar-fallback {
-    font-size: 36px !important;
+  /* Ẩn nút chi tiết absolute góc trên của Desktop khi trên Mobile */
+  .report-profile-details-btn {
+    display: none !important;
   }
 
   .report-profile-divider {
     width: 88% !important;
-    margin: 24px auto 24px !important;
+    margin: 18px auto !important;
   }
 
+  /* 4 cụm metrics: Hàng trên [Tổng task/Hoàn thành] [Số lượng], Hàng dưới [Quá hạn] [Tồn đọng] */
   .report-profile-perf-grid {
     display: grid !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: max-content !important;
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     justify-content: center !important;
+    justify-items: center !important;
     align-items: start !important;
     column-gap: 16px !important;
+    row-gap: 16px !important;
     width: 100% !important;
+    max-width: 250px !important;
     margin: 0 auto !important;
   }
 
   .report-profile-perf-col {
     justify-items: center !important;
     text-align: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  /* Nếu hàng 2 chỉ có đúng 1 cảnh báo (phần tử thứ 3 là cuối cùng), cho căn giữa */
+  .report-profile-perf-col:nth-child(3):last-child {
+    grid-column: 1 / -1 !important;
+    justify-self: center !important;
   }
 
   .report-profile-perf-col .report-profile-badge,
   .report-profile-perf-col .report-profile-pill {
     justify-self: center !important;
-    height: 34px !important;
-    min-height: 34px !important;
-    font-size: 16px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    font-size: 15px !important;
     padding: 4px 12px !important;
     border-radius: 8px !important;
     gap: 6px !important;
@@ -1254,68 +1416,62 @@
 
   .report-profile-perf-col .report-profile-badge svg,
   .report-profile-perf-col .report-profile-pill svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
 
   .report-profile-perf-label {
     text-align: center !important;
     justify-self: center !important;
-    font-size: 13px !important;
+    font-size: 11.5px !important;
     font-weight: 500 !important;
+    color: #475569 !important;
   }
 
-  .report-profile-alerts-wrap {
-    position: static !important;
-    margin-top: 24px !important;
-    justify-self: center !important;
-    justify-content: center !important;
+  .dark .report-profile-perf-label {
+    color: #bdcadb !important;
+  }
+
+  /* Button Xem chi tiết ở dưới cùng của thẻ trên Mobile */
+  .report-profile-mobile-details-btn {
     display: inline-grid !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: max-content !important;
-    align-items: start !important;
-    gap: 24px !important;
-  }
-
-  .report-profile-alerts-group,
-  .report-profile-alerts-group.report-profile-metrics-row--alerts {
-    display: inline-grid !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: max-content !important;
-    align-items: start !important;
-    gap: 24px !important;
-  }
-
-  .report-profile-alert-col {
-    display: grid !important;
-    grid-template-rows: auto auto !important;
-    justify-items: center !important;
-    text-align: center !important;
-    gap: 8px !important;
-  }
-
-  .report-profile-alerts-wrap .report-profile-badge {
+    place-items: center !important;
     justify-self: center !important;
-    height: 34px !important;
-    min-height: 34px !important;
-    font-size: 16px !important;
-    padding: 4px 12px !important;
-    border-radius: 8px !important;
-    gap: 6px !important;
-  }
-
-  .report-profile-alerts-wrap .report-profile-badge svg {
-    width: 16px !important;
-    height: 16px !important;
-  }
-
-  .report-profile-alert-label {
-    display: block !important;
-    text-align: center !important;
-    justify-self: center !important;
+    width: 100% !important;
+    max-width: 220px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    margin-top: 18px !important;
+    padding: 6px 18px !important;
     font-size: 13px !important;
-    font-weight: 500 !important;
-    color: #64748b !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    border-radius: 9px !important;
+    border: 1px solid #a7f3d0 !important;
+    background: #ecfdf5 !important;
+    color: #047857 !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    transition: background 180ms ease, border-color 180ms ease, color 180ms ease !important;
+  }
+
+  .report-profile-mobile-details-btn:active {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    color: #065f46 !important;
+  }
+
+  .dark .report-profile-mobile-details-btn {
+    border: 1px solid rgba(78, 182, 72, 0.48) !important;
+    background: rgba(19, 31, 49, 0.92) !important;
+    color: #90e38a !important;
+    box-shadow: inset 0 1px 0 rgba(78, 182, 72, 0.18), 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  .dark .report-profile-mobile-details-btn:active {
+    border-color: #5cd655 !important;
+    background: rgba(22, 45, 32, 0.96) !important;
+    color: #bbf7d0 !important;
   }
 
   .dark .report-profile-alert-label {
@@ -1431,9 +1587,10 @@
    ======================================================== */
 @media (min-width: 1920px) {
   .report-profiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(10px, 1vw, 16px);
-    row-gap: clamp(34px, 3vw, 42px);
-    padding: clamp(32px, 2.6vw, 40px) 4px 10px;
+    row-gap: 8px;
+    padding: 0;
   }
   .report-profile-surface {
     height: auto !important;
@@ -1450,12 +1607,13 @@
 
 @media (min-width: 2560px) {
   .report-profiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: clamp(12px, 1.2vw, 18px);
-    row-gap: clamp(36px, 3.2vw, 44px);
-    padding: clamp(34px, 2.8vw, 42px) 4px 12px;
+    row-gap: 8px;
+    padding: 0;
   }
   .report-profile {
-    border-radius: 22px;
+    border-radius: 20px;
     padding: 0;
     height: auto !important;
     min-height: 0 !important;
@@ -1465,7 +1623,7 @@
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    border-radius: 20px;
+    border-radius: inherit;
   }
   .report-profile-expanded {
     width: min(85%, clamp(800px, 40vw, 1040px));
