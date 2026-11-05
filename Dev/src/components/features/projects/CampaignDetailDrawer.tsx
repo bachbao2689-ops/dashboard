@@ -9,7 +9,7 @@ import {Avatar} from '../../common/Avatar';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {CommentMessage} from '../comments/CommentMessage';
 import {MultiSelect} from '../../common/MultiSelect';
-import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCircle2,Edit3,ChevronDown} from 'lucide-react';
+import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCircle2,Edit3,ChevronDown,Layers} from 'lucide-react';
 import {dateValue,priorityClass,getCampaignPriority,setCachedCampaignPriority} from './projectPresentation';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
@@ -228,16 +228,9 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             </section>
             <section>
               {(() => {
-                const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
-                const hasPhases = campaignPhases.length > 0;
-                const unassignedSubtasks = campaignSubtasks.filter(subtask => {
-                  if (subtask.status === 'deleted') return false;
-                  if (!hasPhases) return true;
-                  return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
-                });
-
-                const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
-                const openCount = unassignedSubtasks.filter(s => !isTaskDone(s.status)).length;
+                const validSubtasks = campaignSubtasks.filter(subtask => subtask.status !== 'deleted');
+                const doneCount = validSubtasks.filter(s => isTaskDone(s.status)).length;
+                const openCount = validSubtasks.filter(s => !isTaskDone(s.status)).length;
                 return (
                   <div className="grid grid-flow-col justify-between items-center mb-3">
                     <button
@@ -268,52 +261,35 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 <>
                   {(() => {
                     const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
-                    const hasPhases = campaignPhases.length > 0;
-                    const unassignedSubtasks = campaignSubtasks.filter(subtask => {
-                      if (subtask.status === 'deleted') return false;
-                      if (!hasPhases) return true;
-                      return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
-                    });
-                    const assignedPhaseSubtasks = campaignSubtasks.filter(subtask => {
-                      if (subtask.status === 'deleted') return false;
-                      return workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
-                    });
+                    const validSubtasks = campaignSubtasks.filter(subtask => subtask.status !== 'deleted');
+                    const visibleSubtasks = validSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
-                    const visibleUnassigned = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
-
-                    if (hasPhases && visibleUnassigned.length === 0) {
+                    if (visibleSubtasks.length === 0) {
                       return (
                         <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
-                          <p>{lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}</p>
-                          {assignedPhaseSubtasks.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                document.getElementById('workflow-phases-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }}
-                              className="mt-1.5 text-primary hover:underline font-semibold text-xs grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer not-italic"
-                            >
-                              <span>→ {lang === 'en' ? 'View in Phases' : 'Xem trong Giai đoạn'} ({assignedPhaseSubtasks.length} {lang === 'en' ? 'subtasks' : 'việc phụ'})</span>
-                            </button>
-                          )}
+                          <p>{lang === 'en' ? 'No subtasks yet.' : 'Chưa có việc phụ nào.'}</p>
                         </div>
                       );
                     }
 
                     return (
                       <div className="space-y-2">
-                        {visibleUnassigned.map(s => {
-  const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
-  return (
-    <div
-      key={s.id}
-      onClick={() => setSelectedSubtask(s)}
-      className={`p-3 rounded-[8px] border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${
-        isTaskDone(s.status)
-          ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
-          : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0a192f]/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
-      }`}
-    >
+                        {visibleSubtasks.map(s => {
+                          const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
+                          const matchedTrackTask = workflow.tasks.find(t => (String(t.id) === `cs-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                          const pIdx = matchedTrackTask ? campaignPhases.findIndex(p => p.id === matchedTrackTask.workflow_phase_id) : -1;
+                          const assignedPhase = pIdx >= 0 ? campaignPhases[pIdx] : null;
+
+                          return (
+                            <div
+                              key={s.id}
+                              onClick={() => setSelectedSubtask(s)}
+                              className={`p-3 rounded-[8px] border text-sm group relative transition-all cursor-pointer min-w-0 overflow-hidden ${deletingIds.includes(s.id) ? "animate-fade-out" : ""} ${
+                                isTaskDone(s.status)
+                                  ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
+                                  : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0a192f]/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+                              }`}
+                            >
       {/* Hover action buttons in top-right (REQ-TOT-05 / Slide 4) */}
       <div
         className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
@@ -359,6 +335,14 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold lowercase ${priorityClass(s.priority || (selectedCampaign as any)?.priority || 'medium')}`}>
               {t(`common.${s.priority || (selectedCampaign as any)?.priority || 'medium'}` as any).toLowerCase()}
             </span>
+            {assignedPhase && (
+              <span
+                title={lang === 'en' ? `Assigned to phase: ${assignedPhase.title || pIdx + 1}` : `Giai đoạn: ${assignedPhase.title || pIdx + 1}`}
+                className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-amber-200/80 dark:border-amber-800/60 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+              >
+                <Layers size={11} /> {assignedPhase.title?.trim() ? `${assignedPhase.position || pIdx + 1}. ${assignedPhase.title.trim()}` : `Phase ${assignedPhase.position || pIdx + 1}`}
+              </span>
+            )}
             {Boolean(campaignSubtaskQuantities?.[s.id] || s.quantity) && (
               <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                 SL: {campaignSubtaskQuantities?.[s.id] || s.quantity}

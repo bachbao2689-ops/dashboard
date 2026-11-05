@@ -720,24 +720,30 @@ export const CampaignPanel: React.FC<{
                   </button>
                   {(() => {
                     const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
-                    const phaseCount = (track?.phases || []).length;
-                    const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
-                    const assignedPhaseSubtasks = subtasks.filter(s => s.status !== 'deleted' && Boolean(s.workflow_phase_id));
+                    const phases = track?.phases || [];
+                    const phaseCount = phases.length;
+                    const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
+                    const subtaskCount = validSubtasks.length;
+                    const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                    const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                     return (
                       <>
-                        {unassignedSubtasks.length > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
-                            ({unassignedSubtasks.length})
-                          </span>
-                        )}
-                        {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
-                            ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                        {subtaskCount > 0 && (
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
+                            isAllSubtasksDone
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                          }`}>
+                            ({subtaskCount})
                           </span>
                         )}
                         {phaseCount > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
+                            isAllPhasesDone
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                              : 'bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
+                          }`}>
                             ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
                           </span>
                         )}
@@ -971,24 +977,30 @@ export const CampaignPanel: React.FC<{
               <b className="block truncate text-gray-900 dark:text-white">{c.name}</b>
               {(() => {
                 const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
-                const phaseCount = (track?.phases || []).length;
-                const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
-                const assignedPhaseSubtasks = subtasks.filter(s => s.status !== 'deleted' && Boolean(s.workflow_phase_id));
+                const phases = track?.phases || [];
+                const phaseCount = phases.length;
+                const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
+                const subtaskCount = validSubtasks.length;
+                const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                 return (
                   <>
-                    {unassignedSubtasks.length > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
-                        ({unassignedSubtasks.length} subtask{unassignedSubtasks.length > 1 ? 's' : ''})
-                      </span>
-                    )}
-                    {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
-                        ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                    {subtaskCount > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
+                        isAllSubtasksDone
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
+                      }`}>
+                        ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
                       </span>
                     )}
                     {phaseCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
+                        isAllPhasesDone
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
+                      }`}>
                         ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
                       </span>
                     )}
