@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+import { isGlobalManager } from '../../../lib/roleScope';
+import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
 import { getCampaignPriority, priorityClass } from './projectPresentation';
@@ -167,6 +169,18 @@ export const CampaignPanel: React.FC<{
     minWidth: 95,
   });
   const profile = useAuthStore(s => s.profile);
+  const directory = useWorkspaceDirectory();
+  const departments = useMemo(() => directory.data?.departments || [], [directory.data]);
+  const rawDeptId = profile?.department_id ? String(profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (profile?.department_name && departments.length) {
+      const match = departments.find(d => d.name.trim().toLowerCase() === profile.department_name?.trim().toLowerCase());
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, profile?.department_name, departments]);
+  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
@@ -583,6 +597,16 @@ export const CampaignPanel: React.FC<{
     const term = (searchTerm || '').trim().toLowerCase();
 
     return campaigns.filter(c => {
+      // 0. Giới hạn tầm view phòng ban cho người dùng bị hạn chế
+      if (userIsRestricted) {
+        const inDept = Boolean(resolvedDeptId && c.department_id && String(c.department_id) === String(resolvedDeptId));
+        const myId = profile?.id;
+        const isLead = myId && Number(c.lead_id) === Number(myId);
+        const isCreator = myId && Number(c.creator?.id) === Number(myId);
+        const isSub = myId && (subtaskMap[c.id] || []).some((a: any) => Number(a.id) === Number(myId));
+        if (!inDept && !isLead && !isCreator && !isSub) return false;
+      }
+
       // 1. Search filter
       if (term) {
         const nameMatch = (c.name || '').toLowerCase().includes(term);
@@ -643,7 +667,7 @@ export const CampaignPanel: React.FC<{
 
       return true;
     });
-  }, [campaigns, filters, subtaskMap, profile?.id]);
+  }, [campaigns, filters, subtaskMap, profile?.id, userIsRestricted, resolvedDeptId]);
 
   return (
     <section className="card-hub rounded-[8px] overflow-hidden shrink-0">
@@ -678,13 +702,15 @@ export const CampaignPanel: React.FC<{
                 >
                   <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCampaignExpanded ? 'rotate-90 text-amber-500' : ''}`} />
                 </button>
-                <EntityInfoPopover
-                  entityType="campaign"
-                  entity={c}
-                  track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
-                  leadPerson={leadPerson}
-                  subPersons={subtaskMap[c.id]}
-                />
+                {isTaskDone(c.status) && (
+                  <EntityInfoPopover
+                    entityType="campaign"
+                    entity={c}
+                    track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
+                    leadPerson={leadPerson}
+                    subPersons={subtaskMap[c.id]}
+                  />
+                )}
                 <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
                   <button
                     type="button"
@@ -698,6 +724,15 @@ export const CampaignPanel: React.FC<{
                       ({subtaskCount})
                     </span>
                   )}
+                  {(() => {
+                    const phaseCount = (workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)?.phases || []).length;
+                    if (phaseCount === 0) return null;
+                    return (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                        ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                      </span>
+                    );
+                  })()}
                   {Boolean(campNote && campNote.trim()) && (
                     <button
                       type="button"
@@ -914,19 +949,30 @@ export const CampaignPanel: React.FC<{
               >
                 <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCampaignExpanded ? 'rotate-90 text-amber-500' : ''}`} />
               </button>
-              <EntityInfoPopover
-                entityType="campaign"
-                entity={c}
-                track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
-                leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
-                subPersons={subtaskMap[c.id]}
-              />
+              {isTaskDone(c.status) && (
+                <EntityInfoPopover
+                  entityType="campaign"
+                  entity={c}
+                  track={workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)}
+                  leadPerson={c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null)}
+                  subPersons={subtaskMap[c.id]}
+                />
+              )}
               <b className="block truncate text-gray-900 dark:text-white">{c.name}</b>
               {subtaskCount > 0 && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
                   ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
                 </span>
               )}
+              {(() => {
+                const phaseCount = (workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)?.phases || []).length;
+                if (phaseCount === 0) return null;
+                return (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                    ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                  </span>
+                );
+              })()}
               {hasComments[c.id] && (
                 <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
                   <MessageSquare size={14} className="text-blue-500" />
@@ -936,7 +982,7 @@ export const CampaignPanel: React.FC<{
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 truncate mt-1 pl-6">{c.objective || t('tasks.noDescription')}</p>
+            {c.objective?.trim() ? <p className="text-xs text-gray-500 truncate mt-1 pl-6">{c.objective}</p> : null}
             {canManage(c) && (
               <div 
                 onClick={(e) => e.stopPropagation()}
@@ -1229,7 +1275,7 @@ export const CampaignPanel: React.FC<{
                       {items.map((item: any) => (
                         <tr
                           key={item.id}
-                          onClick={() => onOpenSubtask?.(st)}
+                          onClick={() => onOpenSubtask?.({ ...st, checklist_item_id: item.id })}
                           className="group bg-amber-50/40 dark:bg-[#06101e] hover:bg-amber-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors cursor-pointer"
                         >
                           {/* Cột 1: Title đầu việc thụt lề sâu pl-20, dây nối left-6 & left-14 */}
@@ -1304,14 +1350,28 @@ export const CampaignPanel: React.FC<{
 
                           {/* Cột 2: OWNER / PIC */}
                           <td className="py-2 px-4 overflow-hidden text-center">
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                              {item.created_by_name || '—'}
-                            </span>
+                            <div className="grid place-content-center">
+                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 mx-auto">
+                                <Avatar
+                                  name={item.created_by_name || 'ADMIN'}
+                                  src={item.created_by_avatar || (people || []).find((p: any) => p.id === item.created_by || p.name === item.created_by_name)?.avatar_url}
+                                  className="w-5 h-5 text-[8.5px] border border-white dark:border-slate-900 shadow-2xs"
+                                />
+                                <span className="text-[11px] text-slate-700 dark:text-slate-300 truncate max-w-[110px]">
+                                  {item.created_by_name || 'ADMIN'}
+                                </span>
+                              </div>
+                            </div>
                           </td>
 
                           {/* Cột 3: DATES */}
                           <td className="py-2 px-4 overflow-hidden text-center text-[11px] text-slate-500 dark:text-slate-400">
-                            {item.due_date ? formatDate(item.due_date) : '—'}
+                            <div className="grid place-content-center">
+                              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 truncate mx-auto">
+                                <span>{item.due_date ? formatDate(item.due_date) : (item.created_at ? formatDate(item.created_at) : '—')}</span>
+                                {item.due_date && getDueStatusLabel(item.due_date, item.completed ? 'completed' : 'todo', lang === 'en')}
+                              </div>
+                            </div>
                           </td>
 
                           {/* Cột 4: PRIORITY */}

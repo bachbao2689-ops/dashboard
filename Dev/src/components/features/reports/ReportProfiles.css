@@ -394,11 +394,10 @@
 /* Performance columns: Cả 4 cụm label xếp thẳng hàng ngang đẹp mắt và cân đối dưới đường kẻ divider */
 .report-profile-perf-grid {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   justify-content: center;
   align-items: start;
-  column-gap: clamp(6px, 3.4cqi, 12px);
+  column-gap: clamp(3px, 1.8cqi, 7px);
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -407,20 +406,20 @@
 .report-profile-perf-col {
   display: grid;
   grid-template-rows: auto auto;
-  gap: clamp(2.5px, 1.3cqi, 4px);
+  gap: clamp(2.5px, 1.2cqi, 4px);
   justify-items: center;
   text-align: center;
-  width: max-content;
+  width: 100%;
   max-width: 100%;
 }
 
 .report-profile-perf-col .report-profile-badge,
 .report-profile-perf-col .report-profile-pill {
   border-radius: clamp(4.5px, 2cqi, 6px);
-  padding: 2px clamp(4.5px, 2.3cqi, 7px);
-  height: clamp(18px, 7.6cqi, 21.5px);
-  min-height: clamp(18px, 7.6cqi, 21.5px);
-  font-size: clamp(9.5px, 4.2cqi, 11.2px);
+  padding: 2px clamp(3.5px, 1.8cqi, 6px);
+  height: clamp(19px, 8cqi, 23px);
+  min-height: clamp(19px, 8cqi, 23px);
+  font-size: clamp(9.5px, 4.2cqi, 11.5px);
   font-weight: 700;
   gap: clamp(2px, 1.1cqi, 3.5px);
   display: inline-grid;
@@ -449,11 +448,11 @@
   line-height: 1;
 }
 
-/* Sub label căn giữa theo cột, font-size nhỏ hơn ~10% (khoảng 8.1px) sắc nét tương phản cao */
+/* Sub label căn giữa theo cột, font-size nhỏ hơn ~10% sắc nét tương phản cao */
 .report-profile-perf-label {
   display: block;
   font-size: 9px;
-  font-size: clamp(7.5px, 3.2cqi, 8.2px);
+  font-size: clamp(7.5px, 3.2cqi, 8.8px);
   font-weight: 500;
   text-align: center;
   justify-self: center;

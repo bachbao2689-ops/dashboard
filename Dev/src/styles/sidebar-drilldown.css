@@ -405,31 +405,39 @@ html:not(.dark) .sb-subdrawer-pill-btn.is-open {
 
 /* Bottom Staff Profile Card in Left Sidebar */
 .sb-profile-footer-card {
-  border-radius: 16px;
-  padding: 10px 12px;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html:not(.dark) .sb-profile-footer-card.sidebar-link-idle {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.78));
-  border: 1px solid rgba(191, 219, 254, 0.75);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 8px rgba(15, 23, 42, 0.04);
+html:not(.dark) .sb-profile-footer-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.78)) !important;
+  border: 1px solid rgba(191, 219, 254, 0.75) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+  color: #002e6d !important;
 }
 
-html:not(.dark) .sb-profile-footer-card.sidebar-link-idle:hover {
-  background: rgba(226, 239, 255, 0.75);
-  border-color: rgba(147, 197, 253, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 4px 12px rgba(30, 90, 170, 0.1);
+html:not(.dark) .sb-profile-footer-card:hover,
+html:not(.dark) .sb-profile-footer-card.sidebar-link-active,
+html:not(.dark) .sb-profile-footer-card.is-active {
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70)) !important;
+  border: 1px solid rgba(147, 197, 253, 0.85) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 3px 10px rgba(30, 90, 170, 0.14) !important;
+  color: #002e6d !important;
 }
 
-.dark .sb-profile-footer-card.sidebar-link-idle {
-  background: rgba(22, 35, 52, 0.78);
-  border: 1px solid rgba(52, 75, 101, 0.75);
+.dark .sb-profile-footer-card {
+  background: rgba(22, 35, 52, 0.78) !important;
+  border: 1px solid rgba(52, 75, 101, 0.75) !important;
+  color: #f1f5f9 !important;
 }
 
-.dark .sb-profile-footer-card.sidebar-link-idle:hover {
-  background: #263b53;
-  border-color: rgba(78, 182, 72, 0.45);
+.dark .sb-profile-footer-card:hover,
+.dark .sb-profile-footer-card.sidebar-link-active,
+.dark .sb-profile-footer-card.is-active {
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.22), rgba(78, 182, 72, 0.08)) !important;
+  border: 1px solid rgba(78, 182, 72, 0.45) !important;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.15), 0 3px 10px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* 4. Per-Button In-place Multi-level Drill-down Container (Smooth Height Morphing) */
@@ -1123,19 +1131,19 @@ html:not(.dark) .app-sidebar .sidebar-link-idle svg {
 html:not(.dark) .app-sidebar .sb-root-row:hover,
 html:not(.dark) .app-sidebar .sidebar-link-idle:hover {
   background: rgba(239, 246, 255, 0.6) !important;
-  color: #1d4ed8 !important;
+  color: #002e6d !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row:hover svg,
 html:not(.dark) .app-sidebar .sidebar-link-idle:hover svg {
-  color: #1d4ed8 !important;
+  color: #002e6d !important;
 }
 
 /* Active Button in Light Mode (Blue liquid glass, compact) */
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
   background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.70)) !important;
-  color: #1d4ed8 !important; /* text-blue-700 */
+  color: #002e6d !important;
   font-weight: 600 !important;
   padding: 5px 9px !important;
   min-height: 33px !important;
@@ -1146,14 +1154,14 @@ html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) {
 
 html:not(.dark) .app-sidebar .sb-root-row.sidebar-link-active svg,
 html:not(.dark) .app-sidebar .sidebar-link-active:not(.sb-profile-footer-card) svg {
-  color: #1d4ed8 !important;
+  color: #002e6d !important;
   width: 16px !important;
   height: 16px !important;
 }
 
 html:not(.dark) .app-sidebar .sb-root-row.is-dropdown-open:not(.sidebar-link-active) {
   background: rgba(239, 246, 255, 0.5) !important;
-  color: #1d4ed8 !important;
+  color: #002e6d !important;
   border: 1px solid rgba(191, 219, 254, 0.6) !important;
   font-weight: 500 !important;
   padding: 5px 9px !important;
@@ -1320,33 +1328,7 @@ html:not(.dark) .sb-item-row:hover svg {
   color: #ffffff !important;
 }
 
-/* D. Bottom User Profile Card */
-html:not(.dark) .sb-profile-footer-card {
-  background: #f4f4f5 !important;
-  border-radius: 12px !important;
-  padding: 8px 10px !important;
-  border: 1px solid #e4e4e7 !important;
-  box-shadow: none !important;
-  color: #18181b !important;
-}
 
-html:not(.dark) .sb-profile-footer-card:hover {
-  background: #ebebef !important;
-  border-color: #d4d4d8 !important;
-}
-
-.dark .sb-profile-footer-card {
-  background: rgba(30, 41, 59, 0.6) !important;
-  border-radius: 12px !important;
-  padding: 8px 10px !important;
-  border: 1px solid rgba(51, 65, 85, 0.6) !important;
-  color: #f1f5f9 !important;
-}
-
-.dark .sb-profile-footer-card:hover {
-  background: rgba(51, 65, 85, 0.8) !important;
-  border-color: rgba(71, 85, 105, 0.8) !important;
-}
 
 html:not(.dark) .sb-pinned-pill-item {
   background: #f4f4f5 !important;

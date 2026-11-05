@@ -628,16 +628,18 @@ export const Projects:React.FC=()=>{
             >
               <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
             </button>
-            <EntityInfoPopover
-              entityType="project"
-              entity={project}
-              track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-              leadPerson={leadPerson ? { name: leadPerson.name, avatar_url: (leadPerson as any).avatar_url } : null}
-              subPersons={(subtaskMembers[project.id] || []).map(id => {
-                const p = people.find(x => String(x.id) === String(id));
-                return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-              })}
-            />
+            {isTaskDone(project.status) && (
+              <EntityInfoPopover
+                entityType="project"
+                entity={project}
+                track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
+                leadPerson={leadPerson ? { name: leadPerson.name, avatar_url: (leadPerson as any).avatar_url } : null}
+                subPersons={(subtaskMembers[project.id] || []).map(id => {
+                  const p = people.find(x => String(x.id) === String(id));
+                  return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
+                })}
+              />
+            )}
             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
               <button
                 type="button"
@@ -651,6 +653,15 @@ export const Projects:React.FC=()=>{
                   ({subtaskCount})
                 </span>
               )}
+              {(() => {
+                const phaseCount = (workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)?.phases || []).length;
+                if (phaseCount === 0) return null;
+                return (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
+                    ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                  </span>
+                );
+              })()}
               {Boolean(projectNote && projectNote.trim()) && (
                 <button
                   type="button"
@@ -893,26 +904,37 @@ export const Projects:React.FC=()=>{
                     >
                       <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
                     </button>
-                    <EntityInfoPopover
-                      entityType="project"
-                      entity={project}
-                      track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-                      leadPerson={(() => {
-                        const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
-                        const p = people.find(x => String(x.id) === String(leadId));
-                        return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
-                      })()}
-                      subPersons={(subtaskMembers[project.id] || []).map(id => {
-                        const p = people.find(x => String(x.id) === String(id));
-                        return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-                      })}
-                    />
+                    {isTaskDone(project.status) && (
+                      <EntityInfoPopover
+                        entityType="project"
+                        entity={project}
+                        track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
+                        leadPerson={(() => {
+                          const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
+                          const p = people.find(x => String(x.id) === String(leadId));
+                          return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
+                        })()}
+                        subPersons={(subtaskMembers[project.id] || []).map(id => {
+                          const p = people.find(x => String(x.id) === String(id));
+                          return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
+                        })}
+                      />
+                    )}
                     <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
                     {subtaskCount > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 shrink-0">
                         ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
                       </span>
                     )}
+                    {(() => {
+                      const phaseCount = (workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)?.phases || []).length;
+                      if (phaseCount === 0) return null;
+                      return (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
+                          ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                        </span>
+                      );
+                    })()}
                     {hasComments[project.id] && (
                       <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
                         <MessageSquare size={14} className="text-blue-500" />
@@ -922,7 +944,7 @@ export const Projects:React.FC=()=>{
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 truncate mt-1 pl-6">{project.description || t('tasks.noDescription')}</p>
+                  {project.description?.trim() ? <p className="text-xs text-gray-500 truncate mt-1 pl-6">{project.description}</p> : null}
                   {canManageProject(project) && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
@@ -1218,8 +1240,7 @@ export const Projects:React.FC=()=>{
                                 onClick={() => {
                                   setSelected(project);
                                   setSelectedCampaign(null);
-                                  setSelectedSubtask(st);
-                                  
+                                  setSelectedSubtask({ ...st, checklist_item_id: item.id });
                                 }}
                                 className="group bg-violet-50/40 dark:bg-[#06101e] hover:bg-violet-50/60 dark:hover:bg-[#0a1e38] border-t border-dotted border-slate-200/80 dark:border-slate-800/80 transition-colors cursor-pointer"
                               >
@@ -1295,14 +1316,28 @@ export const Projects:React.FC=()=>{
 
                                 {/* Cột 2: OWNER / PIC */}
                                 <td className="py-2 px-4 overflow-hidden text-center">
-                                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                                    {item.created_by_name || '—'}
-                                  </span>
+                                  <div className="grid place-content-center">
+                                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 mx-auto">
+                                      <Avatar
+                                        name={item.created_by_name || 'ADMIN'}
+                                        src={item.created_by_avatar || (people || []).find((p: any) => p.id === item.created_by || p.name === item.created_by_name)?.avatar_url}
+                                        className="w-5 h-5 text-[8.5px] border border-white dark:border-slate-900 shadow-2xs"
+                                      />
+                                      <span className="text-[11px] text-slate-700 dark:text-slate-300 truncate max-w-[110px]">
+                                        {item.created_by_name || 'ADMIN'}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </td>
 
                                 {/* Cột 3: DATES */}
                                 <td className="py-2 px-4 overflow-hidden text-center text-[11px] text-slate-500 dark:text-slate-400">
-                                  {item.due_date ? dateValue(item.due_date) : '—'}
+                                  <div className="grid place-content-center">
+                                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 truncate mx-auto">
+                                      <span>{item.due_date ? dateValue(item.due_date) : (item.created_at ? dateValue(item.created_at) : '—')}</span>
+                                      {item.due_date && getDueStatusLabel(item.due_date, item.completed ? 'completed' : 'todo', lang === 'en')}
+                                    </div>
+                                  </div>
                                 </td>
 
                                 {/* Cột 4: PRIORITY */}
@@ -1690,7 +1725,23 @@ export const Projects:React.FC=()=>{
                   </div>
                 </div>
               </div>
-              <WorkflowTrackingSummary kind="project" id={selected.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} />
+              <WorkflowTrackingSummary
+                kind="project"
+                id={selected.id}
+                hub={workflow}
+                onOpenTask={(task) => {
+                  if (task.id.startsWith('ps-') || task.id.startsWith('cs-')) {
+                    const rawId = task.id.replace(/^(ps|cs)-/, '');
+                    const found = (subtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
+                    if (found) {
+                      setSelectedSubtask(found);
+                      return;
+                    }
+                  }
+                  setSourceTask(task);
+                }}
+                statusFilter={statusFilter}
+              />
               <section>
                 <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
                   <h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>

@@ -13,6 +13,7 @@ interface DepartmentFilterDropdownProps {
   onToggle: () => void;
   onClose: () => void;
   align?: 'left' | 'right';
+  disabled?: boolean;
 }
 
 export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> = ({
@@ -23,7 +24,8 @@ export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> =
   isOpen,
   onToggle,
   onClose,
-  align = 'right'
+  align = 'right',
+  disabled = false,
 }) => {
   const { t } = useTranslation();
   const defaultLabel = label || t('common.allDepartments');
@@ -50,19 +52,24 @@ export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> =
       <ActionButton icon={<Building2 size={13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
         aria-expanded={isOpen}
+        disabled={disabled}
+        title={disabled ? (selectedDept ? `Cố định: ${selectedDept.name}` : 'Cố định theo phòng ban') : undefined}
         onClick={e => {
+          if (disabled) return;
           e.stopPropagation();
           onToggle();
         }}
-        className={`h-9 px-3 rounded-[8px] border text-xs font-medium flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
-          isFiltered
-            ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
-            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+        className={`h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs ${
+          disabled
+            ? 'border-sky-500/50 bg-sky-50/50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 opacity-90 cursor-default font-semibold'
+            : isFiltered
+            ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold cursor-pointer'
+            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60 cursor-pointer'
         }`}
       >
 
         <span className="max-w-[120px] truncate">{displayLabel}</span>
-        <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        {!disabled && <ChevronDown size={12} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
       </ActionButton>
 
       {isOpen && (

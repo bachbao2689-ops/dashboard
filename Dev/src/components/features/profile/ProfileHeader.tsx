@@ -1,5 +1,6 @@
 import {ActionButton} from '../../common/ActionButton';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Edit3, Shield, Mail, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { Camera } from 'lucide-react';
@@ -12,14 +13,26 @@ import { useTranslation } from '../../../i18n/translations';
 
 export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
   const { t, lang } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const signOut = useAuthStore(state => state.signOut);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [initialEditTab, setInitialEditTab] = useState<'profile' | 'password'>('profile');
   const [isUploading, setIsUploading] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'change-password') {
+      setInitialEditTab('password');
+      setIsEditModalOpen(true);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('action');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -118,7 +131,14 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
         </div>
       </div>
     </div>
-    <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
+    <EditProfileModal
+      isOpen={isEditModalOpen}
+      onClose={() => {
+        setIsEditModalOpen(false);
+        setInitialEditTab('profile');
+      }}
+      initialTab={initialEditTab}
+    />
     {cropImageSrc && (
       <CropModal
         imageSrc={cropImageSrc}

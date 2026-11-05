@@ -5,12 +5,12 @@ import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 
-export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void; initialTab?: 'profile' | 'password' }> = ({ isOpen, onClose, initialTab = 'profile' }) => {
   const user = useAuthStore(state => state.user);
   const profile = useAuthStore(state => state.profile);
   const updateUserMetadata = useAuthStore(state => state.updateUserMetadata);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>(initialTab);
   const [passwords, setPasswords] = useState({ new: '', confirm: '' });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,10 +21,11 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
 
   useEffect(() => {
     if (isOpen) {
+      setActiveTab(initialTab);
       setFormData({ fullName: profile?.name || user?.user_metadata?.full_name || '' });
       setAvatarUrl(profile?.avatar_url || null);
     }
-  }, [isOpen, user?.user_metadata?.full_name, profile?.name, profile?.avatar_url]);
+  }, [isOpen, initialTab, user?.user_metadata?.full_name, profile?.name, profile?.avatar_url]);
 
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 

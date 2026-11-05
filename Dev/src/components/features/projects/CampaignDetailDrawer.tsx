@@ -180,7 +180,23 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 </div>
               </div>
             </div>
-            <WorkflowTrackingSummary kind="campaign" id={selectedCampaign.id} hub={workflow} onOpenTask={setSourceTask} statusFilter={statusFilter} />
+            <WorkflowTrackingSummary
+              kind="campaign"
+              id={selectedCampaign.id}
+              hub={workflow}
+              onOpenTask={(task) => {
+                if (task.id.startsWith('cs-') || task.id.startsWith('ps-')) {
+                  const rawId = task.id.replace(/^(cs|ps)-/, '');
+                  const found = (campaignSubtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
+                  if (found) {
+                    setSelectedSubtask?.(found);
+                    return;
+                  }
+                }
+                setSourceTask(task);
+              }}
+              statusFilter={statusFilter}
+            />
             <section>
               <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>
@@ -204,9 +220,9 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                     <button type="button" disabled={savingDesc} onClick={handleSaveDesc} className="px-3 py-1.5 bg-[#002e6d] text-white rounded-[6px] text-xs font-semibold hover:bg-[#002150] transition-colors disabled:opacity-50">{savingDesc ? (lang === 'en' ? 'Saving...' : 'Đang lưu...') : t('common.save')}</button>
                   </div>
                 </div>
-              ) : (
-                <div className="p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective || t('tasks.noDescription')}</div>
-              )}
+              ) : selectedCampaign.objective?.trim() ? (
+                <div className="p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm text-gray-600 dark:text-gray-300">{selectedCampaign.objective}</div>
+              ) : null}
             </section>
             <section>
               {(() => {

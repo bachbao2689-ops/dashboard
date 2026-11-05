@@ -1102,7 +1102,9 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   key={item.id}
                     id={`checklist-item-${item.id}`}
                   className={`p-3 rounded-[8px] border text-sm group relative transition-all min-w-0 overflow-hidden ${
-                    item.completed
+                    focusChecklistItemId === item.id
+                      ? 'ring-2 ring-violet-500 bg-violet-50/70 dark:bg-violet-950/40 border-violet-400 dark:border-violet-600 shadow-sm'
+                      : item.completed
                       ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
                       : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0a192f]/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
                   }`}

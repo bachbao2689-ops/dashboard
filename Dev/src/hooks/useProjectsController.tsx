@@ -33,6 +33,16 @@ export function useProjectsController(){
   const [projects, setProjects] = useState<Project[]>([]);   const directory=useWorkspaceDirectory();
   const people=useMemo(()=>(directory.data?.users||[]).map(user=>({...user,id:Number(user.id),departments:user.department})),[directory.data]);
   const departments = useMemo(() => directory.data?.departments || [], [directory.data]);
+  const rawDeptId = profile?.department_id ? String(profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (profile?.department_name && departments.length) {
+      const match = departments.find(d => d.name.trim().toLowerCase() === profile.department_name?.trim().toLowerCase());
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, profile?.department_name, departments]);
+  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
   const picMembers = useMemo(() => ({ ...storedPicMembers, ...Object.fromEntries(workflow.tracks.filter(track => track.entity_type === 'project').map(track => [track.entity_id, track.pics.map(p => String(p.id))])) }), [storedPicMembers, workflow.tracks]);
@@ -268,6 +278,18 @@ export function useProjectsController(){
     const term = searchTerm.trim().toLowerCase();
 
     return projects.filter(p => {
+      // 0. Giới hạn tầm view phòng ban cho người dùng bị hạn chế
+      if (userIsRestricted) {
+        const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));
+        const myId = profile?.id;
+        const myIdStr = String(myId);
+        const isLead = myId && (Number(p.lead_id) === Number(myId) || projectPrimaryOwners[p.id] === myId);
+        const isMember = (members[p.id] || []).includes(myIdStr) || (picMembers[p.id] || []).includes(myIdStr);
+        const isSub = (subtaskMembers[p.id] || []).includes(myIdStr);
+        const isCreator = myId && Number(p.created_by) === Number(myId);
+        if (!inDept && !isLead && !isMember && !isSub && !isCreator) return false;
+      }
+
       // 1. Search filter
       if (term) {
         const nameMatch = (p.name || '').toLowerCase().includes(term);
@@ -334,7 +356,7 @@ export function useProjectsController(){
 
       return true;
     });
-  }, [projects, searchTerm, statusFilter, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, members, picMembers, subtaskMembers, projectPrimaryOwners, profile?.id]);
+  }, [projects, searchTerm, statusFilter, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, members, picMembers, subtaskMembers, projectPrimaryOwners, profile?.id, userIsRestricted, resolvedDeptId]);
 
 
   const load = async () => {

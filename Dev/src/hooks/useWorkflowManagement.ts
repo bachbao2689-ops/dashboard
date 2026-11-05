@@ -12,6 +12,7 @@ import {supabase} from '../services/supabase';
 import {completeTrackedTask} from '../services/workspaceTasks';
 import {phaseLinkableTasks,phaseLinkTarget} from '../lib/taskTracking';
 import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
+import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
@@ -28,6 +29,7 @@ const field = 'w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-
 export function useWorkflowManagement() {
 
   const hub = useWorkflowHub();
+  const directory = useWorkspaceDirectory();
   const { lang } = useTranslation();
   const isEn = lang === 'en';
   const [params, setParams] = useSearchParams();
@@ -35,45 +37,71 @@ export function useWorkflowManagement() {
   const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState(false);
   const [searchEntityQuery, setSearchEntityQuery] = useState('');
   const [recentEntities, setRecentEntities] = useRememberedState<Record<string, number>>('workflow.recentEntities', {});
+
+  const rawDeptId = hub.profile?.department_id ? String(hub.profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (hub.profile?.department_name && directory.data?.departments?.length) {
+      const match = directory.data.departments.find(d => d.name.trim().toLowerCase() === hub.profile?.department_name?.trim().toLowerCase());
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, hub.profile?.department_name, directory.data?.departments]);
+  const userIsRestricted = !isGlobalManager(hub.profile) && Boolean(resolvedDeptId || hub.profile?.department_name);
+
   const entities = useMemo(() => {
     const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
-    const mapped = hub.tracks.map(track => {
-      const key = `${track.entity_type}:${track.entity_id}`;
-      const explicitTs = recentEntities[key] || 0;
-      const trackTasks = parentTasks(hub.tasks, track.entity_type, track.entity_id);
-      let actorTaskTs = 0;
-      let anyTaskTs = 0;
-      for (const t of trackTasks) {
-        const ts = Date.parse(t.updated_at || t.completed_at || t.created_at || '') || 0;
-        if (ts > anyTaskTs) anyTaskTs = ts;
-        if (actorId && (String(t.assignee_id) === actorId || String(t.created_by) === actorId) && ts > actorTaskTs) {
-          actorTaskTs = ts;
+    const mapped = hub.tracks
+      .filter(track => {
+        if (!userIsRestricted) return true;
+        const inDept = Boolean(resolvedDeptId && track.department_id && String(track.department_id) === String(resolvedDeptId));
+        const isParticipant = Boolean(
+          actorId && (
+            track.pics.some(p => String(p.id) === actorId) ||
+            (track.sub_pics || []).some(p => String(p.id) === actorId) ||
+            (track.creator && String(track.creator.id) === actorId) ||
+            track.phases.some(ph => ph.members.some(m => String(m.id) === actorId))
+          )
+        );
+        return inDept || isParticipant;
+      })
+      .map(track => {
+        const key = `${track.entity_type}:${track.entity_id}`;
+        const explicitTs = recentEntities[key] || 0;
+        const trackTasks = parentTasks(hub.tasks, track.entity_type, track.entity_id);
+        let actorTaskTs = 0;
+        let anyTaskTs = 0;
+        for (const t of trackTasks) {
+          const ts = Date.parse(t.updated_at || t.completed_at || t.created_at || '') || 0;
+          if (ts > anyTaskTs) anyTaskTs = ts;
+          if (actorId && (String(t.assignee_id) === actorId || String(t.created_by) === actorId) && ts > actorTaskTs) {
+            actorTaskTs = ts;
+          }
         }
-      }
-      const isParticipant = Boolean(
-        actorId && (
-          track.pics.some(p => String(p.id) === actorId) ||
-          (track.sub_pics || []).some(p => String(p.id) === actorId) ||
-          (track.creator && String(track.creator.id) === actorId) ||
-          track.phases.some(ph => ph.members.some(m => String(m.id) === actorId))
-        )
-      );
-      return {
-        ...track,
-        type: track.entity_type,
-        isCompletedEntity: isDone(track.status),
-        recencyScore: Math.max(explicitTs, actorTaskTs),
-        isParticipant,
-        anyTaskTs,
-      };
-    });
+        const isParticipant = Boolean(
+          actorId && (
+            track.pics.some(p => String(p.id) === actorId) ||
+            (track.sub_pics || []).some(p => String(p.id) === actorId) ||
+            (track.creator && String(track.creator.id) === actorId) ||
+            track.phases.some(ph => ph.members.some(m => String(m.id) === actorId))
+          )
+        );
+        return {
+          ...track,
+          type: track.entity_type,
+          isCompletedEntity: isDone(track.status),
+          recencyScore: Math.max(explicitTs, actorTaskTs),
+          isParticipant,
+          anyTaskTs,
+        };
+      });
     return mapped.sort((a, b) => {
       if (b.recencyScore !== a.recencyScore) return b.recencyScore - a.recencyScore;
       if (b.isParticipant !== a.isParticipant) return Number(b.isParticipant) - Number(a.isParticipant);
       if (b.anyTaskTs !== a.anyTaskTs) return b.anyTaskTs - a.anyTaskTs;
       return a.name.localeCompare(b.name, 'vi');
     });
-  }, [hub.tracks, hub.tasks, hub.profile?.id, recentEntities]);
+  }, [hub.tracks, hub.tasks, hub.profile?.id, recentEntities, userIsRestricted, resolvedDeptId]);
   const activeEntities = useMemo(() => entities.filter(e => !e.isCompletedEntity), [entities]);
   const selectedKey = params.get('campaign') || params.get('project');
   const currentEntity = selectedKey
@@ -82,6 +110,12 @@ export function useWorkflowManagement() {
   const handleBackToHub = () => {
     setParams({});
   };
+
+  useEffect(() => {
+    if (selectedKey && !hub.loading && !currentEntity) {
+      handleBackToHub();
+    }
+  }, [selectedKey, hub.loading, currentEntity]);
   const selectedEntityId = currentEntity?.id;
   const isCampaign = currentEntity?.type === 'campaign';
   const isSearchingEntities = searchEntityQuery.trim().length > 0;

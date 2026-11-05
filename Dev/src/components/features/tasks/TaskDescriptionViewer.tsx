@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { parseDescriptionToBlocks } from './taskDescriptionTypes';
 import { RichCommentBody } from '../comments/RichCommentBody';
-import { useTranslation } from '../../../i18n/translations';
 
 interface TaskDescriptionViewerProps {
   description?: string | null;
@@ -14,7 +13,6 @@ export const TaskDescriptionViewer: React.FC<TaskDescriptionViewerProps> = ({
   className = '',
   emptyText,
 }) => {
-  const { t } = useTranslation();
 
   const blocks = useMemo(() => {
     return parseDescriptionToBlocks(description);
@@ -26,11 +24,14 @@ export const TaskDescriptionViewer: React.FC<TaskDescriptionViewerProps> = ({
     (blocks.length === 1 && blocks[0].type === 'text' && !blocks[0].text?.trim());
 
   if (isEmpty) {
-    return (
-      <div className={`p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/50 text-sm text-gray-400 dark:text-gray-500 italic min-h-[72px] flex items-center ${className}`}>
-        {emptyText || t('tasks.noDescription')}
-      </div>
-    );
+    if (emptyText) {
+      return (
+        <div className={`p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-800/50 text-sm text-gray-400 dark:text-gray-500 italic min-h-[72px] flex items-center ${className}`}>
+          {emptyText}
+        </div>
+      );
+    }
+    return null;
   }
 
   return (

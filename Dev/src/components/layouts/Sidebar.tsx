@@ -9,14 +9,19 @@ import {
   Bell,
   Sun,
   Moon,
-  Globe,
   Check,
   X,
   Sparkles,
   RefreshCw,
   User,
+  Pencil,
+  KeyRound,
+  LogOut,
 } from "lucide-react";
 import { useUiStore } from "../../store/uiStore";
+import { useAuthStore } from "../../store/authStore";
+import { supabase } from "../../services/supabase";
+import { CropModal } from "../common/CropModal";
 import { useNotificationCenter } from "../../hooks/useNotificationCenter";
 import { markNotificationsRead } from "../../store/notificationStore";
 import { PushNotificationSettings } from "../features/notifications/PushNotificationSettings";
@@ -895,6 +900,52 @@ export const Sidebar: React.FC = () => {
   const settingsBtnRef = useRef<any>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
+
+  // Avatar upload & crop state for Sidebar
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSidebarAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(lang === 'en' ? 'Please select an image file' : 'Vui lòng chọn file ảnh');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(lang === 'en' ? 'Image must be under 5MB' : 'Ảnh tối đa 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => setCropImageSrc(reader.result?.toString() || null));
+    reader.readAsDataURL(file);
+    if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+  };
+
+  const handleSidebarCropSubmit = async (croppedBlob: Blob) => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+    setCropImageSrc(null);
+    setIsUploadingAvatar(true);
+
+    try {
+      const path = `${user.id}/${Date.now()}.jpg`;
+      const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: 'image/jpeg' });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      await useAuthStore.getState().updateUserMetadata({ avatar_url: data.publicUrl });
+      toast.success(lang === 'en' ? 'Avatar updated successfully' : 'Đã cập nhật ảnh đại diện');
+    } catch (error: any) {
+      toast.error(error.message || (lang === 'en' ? 'Failed to upload avatar' : 'Không thể tải ảnh lên.'));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   useEffect(() => {
     return appUpdateService.subscribe(setUpdateInfo);
@@ -1869,14 +1920,35 @@ export const Sidebar: React.FC = () => {
               title={`${staffName} (${lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"})`}
               onMouseEnter={(e) => showTooltip(`${staffName} · ${lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}`, e)}
               onMouseLeave={hideTooltip}
-              className="group/avatar relative flex items-center justify-center shrink-0 cursor-pointer"
+              className="group/avatar relative grid place-items-center shrink-0 cursor-pointer"
             >
-              <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80 shrink-0">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
-                ) : (
-                  <span>{staffInitials}</span>
-                )}
+              <div className="relative group/avt">
+                <div className="h-9 w-9 rounded-full overflow-hidden grid place-items-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80 shrink-0">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{staffInitials}</span>
+                  )}
+                </div>
+                {/* Pencil overlay on hover */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    avatarFileInputRef.current?.click();
+                  }}
+                  title={lang === 'en' ? 'Click to change avatar' : 'Bấm để đổi ảnh đại diện'}
+                  className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/avt:opacity-100 transition-opacity grid place-items-center cursor-pointer"
+                >
+                  {isUploadingAvatar ? (
+                    <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Pencil size={13} className="text-white" />
+                  )}
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                />
               </div>
               <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/avatar:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
                 {staffName} · {lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}
@@ -1893,19 +1965,35 @@ export const Sidebar: React.FC = () => {
                 setShowSettings(!showSettings);
               }}
               className={cn(
-                'sidebar-link sb-profile-footer-card grid grid-cols-[auto_1fr] items-center gap-2.5 w-full p-2 rounded-[8px] select-none transition-colors border cursor-pointer',
-                showSettings
-                  ? 'bg-blue-50/80 dark:bg-[#002e6d]/30 border-blue-200 dark:border-blue-700/60 shadow-xs'
-                  : 'bg-slate-50 dark:bg-[#0a192f] border-slate-200/80 dark:border-slate-700/80 hover:bg-gray-100 dark:hover:bg-slate-800/60'
+                'sidebar-link sb-profile-footer-card grid grid-cols-[auto_1fr_auto] items-center gap-2.5 w-full p-2 rounded-[12px] select-none transition-colors border cursor-pointer',
+                (location.pathname === '/my-tasks' || showSettings)
+                  ? 'sidebar-link-active is-active'
+                  : 'sidebar-link-idle'
               )}
               title={lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}
             >
-              <div className="relative shrink-0">
-                <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
+              {/* Column 1: Avatar with hover pencil */}
+              <div
+                className="relative shrink-0 group/avt cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  avatarFileInputRef.current?.click();
+                }}
+                title={lang === 'en' ? 'Click to change avatar' : 'Bấm để đổi ảnh đại diện'}
+              >
+                <div className="h-9 w-9 rounded-full overflow-hidden grid place-items-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{staffInitials}</span>
+                  )}
+                </div>
+                {/* Pencil overlay */}
+                <div className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/avt:opacity-100 transition-opacity grid place-items-center">
+                  {isUploadingAvatar ? (
+                    <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Pencil size={13} className="text-white" />
                   )}
                 </div>
                 <span
@@ -1914,13 +2002,50 @@ export const Sidebar: React.FC = () => {
                 />
               </div>
 
+              {/* Column 2: Name & Role */}
               <div className="min-w-0 text-left">
-                <p className="truncate text-xs font-bold leading-tight text-gray-900 dark:text-white">
+                <p className="truncate text-xs font-bold leading-tight text-[#002e6d] dark:text-white">
                   {staffName}
                 </p>
                 <p className="truncate text-[11px] font-medium leading-tight text-gray-500 dark:text-slate-400 mt-0.5">
                   {staffPositionLabel}
                 </p>
+              </div>
+
+              {/* Column 3: Quick switch pill (VIE / ENG + Sun / Moon) */}
+              <div
+                className="shrink-0 p-1 rounded-[8px] bg-slate-200/75 dark:bg-slate-900/70 border border-slate-300/60 dark:border-slate-700/70 grid grid-flow-col auto-cols-max items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Button đổi Song ngữ (VIE / ENG) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLang(lang === 'vi' ? 'en' : 'vi');
+                  }}
+                  className="text-[#002e6d] dark:text-slate-200 font-extrabold text-[10px] px-1.5 py-1 rounded-[6px] hover:bg-white/80 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  title={lang === 'vi' ? 'Chuyển sang Tiếng Anh' : 'Switch to Vietnamese'}
+                >
+                  {lang === 'vi' ? 'VIE' : 'ENG'}
+                </button>
+
+                {/* Button đổi Light / Dark mode */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTheme();
+                  }}
+                  className="w-6 h-6 rounded-[6px] bg-white dark:bg-slate-800 shadow-2xs border border-gray-200/80 dark:border-slate-700 grid place-items-center text-[#002e6d] dark:text-amber-400 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title={theme === 'dark' ? (lang === 'vi' ? 'Chuyển sang chế độ Sáng' : 'Switch to Light mode') : (lang === 'vi' ? 'Chuyển sang chế độ Tối' : 'Switch to Dark mode')}
+                >
+                  {theme === 'dark' ? (
+                    <Moon size={13} strokeWidth={2.2} />
+                  ) : (
+                    <Sun size={13} strokeWidth={2.2} />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -2156,7 +2281,7 @@ export const Sidebar: React.FC = () => {
           )}
 
         {/* ==========================================
-            PORTAL 2: SETTINGS (LANGUAGE + THEME)
+            PORTAL 2: USER PROFILE ACTIONS POPUP
            ========================================== */}
         {showSettings &&
           createPortal(
@@ -2174,113 +2299,86 @@ export const Sidebar: React.FC = () => {
                     : Math.min(Math.max(12, r.left), window.innerWidth - 260),
                 };
               })()}
-              className="fixed z-[9999] w-[240px] p-3 rounded-[8px] bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-3 pointer-events-auto"
+              className="fixed z-[9999] w-[240px] p-2 rounded-[12px] bg-white dark:bg-[#0a192f] border border-gray-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95 duration-150 grid grid-cols-1 gap-1 pointer-events-auto"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
-                <span className="text-xs font-bold text-gray-900 dark:text-white">
-                  {lang === 'en' ? 'Account & Settings' : 'Tài khoản & Cài đặt'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowSettings(false)}
-                  className="p-1 rounded-[6px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  <X size={14} />
-                </button>
+              {/* Header User Info */}
+              <div className="grid grid-cols-[auto_1fr] items-center gap-2.5 p-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700/50">
+                <div className="h-9 w-9 rounded-full overflow-hidden grid place-items-center bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-emerald-500 dark:to-teal-600 text-white font-bold text-xs shadow-xs ring-2 ring-white/80 dark:ring-slate-800/80">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={staffName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{staffInitials}</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 min-w-0">
+                  <span className="font-bold text-xs text-[#002e6d] dark:text-white truncate">{staffName}</span>
+                  <span className="text-[10px] text-gray-400 truncate">{profile?.email || staffPositionLabel || 'User'}</span>
+                </div>
               </div>
 
-              {/* Profile Jump Link */}
+              {/* 1. Trang cá nhân (Personal Profile) */}
               <button
                 type="button"
                 onClick={() => {
                   setShowSettings(false);
                   navigate('/my-tasks');
                 }}
-                className="w-full text-left p-2 rounded-[6px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 flex items-center justify-between transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                className="w-full text-left p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
               >
-                <span className="flex items-center gap-2">
-                  <User size={14} className="text-[#002e6d] dark:text-sky-400" />
-                  <span>{lang === 'en' ? 'Personal Profile' : 'Hồ sơ cá nhân'}</span>
-                </span>
-                <ChevronRight size={13} className="text-gray-400" />
+                <User size={15} className="text-[#002e6d] dark:text-sky-400" />
+                <span>{lang === 'en' ? 'Personal Profile' : 'Hồ sơ cá nhân'}</span>
+                <ChevronRight size={14} className="text-gray-400" />
               </button>
 
-              {/* 1. Language switcher */}
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
-                  <Globe size={13} className="text-primary dark:text-blue-400" />
-                  <span>{lang === 'en' ? 'Language' : 'Ngôn ngữ'}</span>
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/60 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setLang('vi')}
-                    className={cn(
-                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer',
-                      lang === 'vi'
-                        ? 'bg-white dark:bg-[#002e6d] text-[#002e6d] dark:text-white shadow-xs'
-                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                    )}
-                  >
-                    Tiếng Việt
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLang('en')}
-                    className={cn(
-                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer',
-                      lang === 'en'
-                        ? 'bg-white dark:bg-[#002e6d] text-[#002e6d] dark:text-white shadow-xs'
-                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                    )}
-                  >
-                    English
-                  </button>
-                </div>
-              </div>
+              {/* 2. Đổi mật khẩu (Change Password) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettings(false);
+                  navigate('/my-tasks?action=change-password');
+                }}
+                className="w-full text-left p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              >
+                <KeyRound size={15} className="text-[#002e6d] dark:text-amber-400" />
+                <span>{lang === 'en' ? 'Change Password' : 'Đổi mật khẩu'}</span>
+                <ChevronRight size={14} className="text-gray-400" />
+              </button>
 
-              {/* 2. Theme switcher */}
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
-                  {theme === 'dark' ? <Moon size={13} className="text-amber-400" /> : <Sun size={13} className="text-amber-500" />}
-                  <span>{lang === 'en' ? 'Appearance' : 'Giao diện'}</span>
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/60 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (theme !== 'light') toggleTheme();
-                    }}
-                    className={cn(
-                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center justify-center gap-1.5',
-                      theme === 'light'
-                        ? 'bg-white text-gray-900 shadow-xs'
-                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                    )}
-                  >
-                    <Sun size={13} />
-                    <span>{lang === 'en' ? 'Light' : 'Sáng'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (theme !== 'dark') toggleTheme();
-                    }}
-                    className={cn(
-                      'py-1 px-2 text-xs font-bold rounded-[6px] transition-all cursor-pointer flex items-center justify-center gap-1.5',
-                      theme === 'dark'
-                        ? 'bg-[#002e6d] text-white shadow-xs'
-                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                    )}
-                  >
-                    <Moon size={13} />
-                    <span>{lang === 'en' ? 'Dark' : 'Tối'}</span>
-                  </button>
-                </div>
+              {/* 3. Đăng xuất (Sign out) */}
+              <div className="border-t border-gray-100 dark:border-slate-800 pt-1 mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettings(false);
+                    useAuthStore.getState().signOut();
+                  }}
+                  className="w-full text-left p-2 rounded-[8px] hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold text-rose-600 dark:text-rose-400 grid grid-cols-[auto_1fr] items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <LogOut size={15} />
+                  <span>{lang === 'en' ? 'Sign out' : 'Đăng xuất'}</span>
+                </button>
               </div>
             </div>,
             document.body
           )}
+
+        {/* Hidden file input for avatar upload */}
+        <input
+          ref={avatarFileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleSidebarAvatarChange}
+        />
+
+        {/* CropModal for Sidebar Avatar Upload */}
+        {cropImageSrc && (
+          <CropModal
+            imageSrc={cropImageSrc}
+            onClose={() => setCropImageSrc(null)}
+            onCropComplete={handleSidebarCropSubmit}
+          />
+        )}
       </aside>
     </div>
   );

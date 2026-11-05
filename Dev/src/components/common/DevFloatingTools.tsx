@@ -164,15 +164,18 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     };
   }, [handleMoveDrag, handleEndDrag]);
 
-  // Find standard departments
-  const designDept = departments.find((d) => /design|thiết kế/i.test(d.name)) || departments[0];
-  const marketingDept = departments.find((d) => /marketing/i.test(d.name)) || departments[1] || departments[0];
+  // Find standard departments with exact Supabase UUIDs
+  const fallbackDesignDept = { id: '1a9a3e77-2025-41f2-9a07-d4c785dd8135', name: 'Design' };
+  const fallbackMarketingDept = { id: 'dea85847-2e5d-4258-ba6d-900dde8f6ed0', name: 'MARKETING' };
+  const designDept = departments.find((d) => String(d.id) === fallbackDesignDept.id || /design|thiết kế/i.test(d.name)) || fallbackDesignDept;
+  const marketingDept = departments.find((d) => String(d.id) === fallbackMarketingDept.id || /marketing/i.test(d.name)) || fallbackMarketingDept;
 
   const switchRole = (
     role: string,
     employment_level: string,
     dept?: { id: string; name: string } | null,
-    mockName?: string
+    mockName?: string,
+    mockId?: number
   ) => {
     if (!originalProfileRef.current && currentProfile) {
       originalProfileRef.current = { ...currentProfile };
@@ -180,7 +183,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     useAuthStore.setState({
       profile: {
         ...(currentProfile || {
-          id: 99999,
+          id: mockId || 99999,
           name: 'Dev User',
           email: 'dev@kcoffee.com',
           avatar_url: null,
@@ -188,6 +191,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           auth_id: null,
           job_title: null,
         }),
+        id: mockId != null ? mockId : (currentProfile?.id || 99999),
         name: mockName || currentProfile?.name || 'Dev User',
         role,
         employment_level,
@@ -374,7 +378,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 1. ADMIN */}
               <button
                 type="button"
-                onClick={() => switchRole('admin', 'Admin', null, 'ADMIN')}
+                onClick={() => switchRole('admin', 'Admin', null, 'ADMIN', 1)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('admin', 'Admin')
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
@@ -394,7 +398,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 2. MANAGER */}
               <button
                 type="button"
-                onClick={() => switchRole('manager', 'Manager', null, 'Manager Toàn Công Ty')}
+                onClick={() => switchRole('manager', 'Manager', null, 'Manager Toàn Công Ty', 99999)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('manager', 'Manager')
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
@@ -414,7 +418,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 3. LEADER DESIGN */}
               <button
                 type="button"
-                onClick={() => switchRole('leader', 'Leader', designDept, 'Leader Design (Nga Phạm)')}
+                onClick={() => switchRole('leader', 'Leader', designDept, 'Leader Design (Nga Phạm)', 9)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('leader', 'Leader', designDept?.id)
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
@@ -436,7 +440,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 4. LEADER MARKETING */}
               <button
                 type="button"
-                onClick={() => switchRole('leader', 'Leader', marketingDept, 'Leader Marketing')}
+                onClick={() => switchRole('leader', 'Leader', marketingDept, 'Leader Marketing', 13)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('leader', 'Leader', marketingDept?.id)
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
@@ -458,7 +462,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 5. STAFF DESIGN (FIX CỨNG TẦM VIEW REPORT VÀO DESIGN) */}
               <button
                 type="button"
-                onClick={() => switchRole('member', 'Staff', designDept, 'Staff Design (Bách Bảo)')}
+                onClick={() => switchRole('member', 'Staff', designDept, 'Staff Design (Bách Bảo)', 11)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('member', 'Staff', designDept?.id)
                     ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
@@ -482,7 +486,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               {/* 6. STAFF MARKETING (FIX CỨNG TẦM VIEW REPORT VÀO MARKETING) */}
               <button
                 type="button"
-                onClick={() => switchRole('member', 'Staff', marketingDept, 'Staff Marketing')}
+                onClick={() => switchRole('member', 'Staff', marketingDept, 'Staff Marketing', 16)}
                 className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
                   isCurrent('member', 'Staff', marketingDept?.id)
                     ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
