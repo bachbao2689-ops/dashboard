@@ -1916,10 +1916,10 @@ export const Projects:React.FC=()=>{
                   </span>
                   {assignedPhase && (
                     <span
-                      title={lang === 'en' ? `Assigned to phase: ${(assignedPhase as any).title || (assignedPhase as any).name || pIdx + 1}` : `Giai đoạn: ${(assignedPhase as any).title || (assignedPhase as any).name || pIdx + 1}`}
+                      title={lang === 'en' ? `Assigned to phase: ${assignedPhase.title || pIdx + 1}` : `Giai đoạn: ${assignedPhase.title || pIdx + 1}`}
                       className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-purple-200/80 dark:border-purple-800/60 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300"
                     >
-                      <Layers size={11} /> {((assignedPhase as any).title || (assignedPhase as any).name)?.trim() ? `${pIdx + 1}. ${((assignedPhase as any).title || (assignedPhase as any).name).trim()}` : `Phase ${pIdx + 1}`}
+                      <Layers size={11} /> {assignedPhase.title?.trim() ? `${assignedPhase.position || pIdx + 1}. ${assignedPhase.title.trim()}` : `Phase ${assignedPhase.position || pIdx + 1}`}
                     </span>
                   )}
                   {Boolean(subtaskQuantities?.[s.id] || s.quantity) && (
