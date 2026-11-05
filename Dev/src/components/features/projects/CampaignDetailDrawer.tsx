@@ -273,37 +273,10 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                       if (!hasPhases) return true;
                       return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
                     });
-                    const assignedPhaseSubtasks = campaignSubtasks.filter(subtask => {
-                      if (subtask.status === 'deleted') return false;
-                      return workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
-                    });
                     const visibleSubtasks = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
-                    if (hasPhases && visibleSubtasks.length === 0) {
-                      return (
-                        <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
-                          <p>{lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}</p>
-                          {assignedPhaseSubtasks.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                document.getElementById('workflow-phases-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }}
-                              className="mt-1.5 text-primary hover:underline font-semibold text-xs grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer not-italic"
-                            >
-                              <span>→ {lang === 'en' ? 'View in Phases' : 'Xem trong Giai đoạn'} ({assignedPhaseSubtasks.length} {lang === 'en' ? 'subtasks' : 'việc phụ'})</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    if (!hasPhases && visibleSubtasks.length === 0) {
-                      return (
-                        <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
-                          <p>{lang === 'en' ? 'No subtasks yet.' : 'Chưa có việc phụ nào.'}</p>
-                        </div>
-                      );
+                    if (visibleSubtasks.length === 0) {
+                      return null;
                     }
 
                     return (
