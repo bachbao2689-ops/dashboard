@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity, ChevronDown } from 'lucide-react';
+import { ArrowRight, Activity, ChevronDown, Calendar, ListTodo, Clock3, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
 import { parentTasks, taskProgress, workflowLink, displayDate } from '../../../lib/workflowHub';
 import type { useWorkflowHub } from '../../../hooks/useWorkflowHub';
 import type { Task } from '../../../hooks/useTasks';
 import { StatusBadge } from '../../common/StatusBadge';
 import { Avatar } from '../../common/Avatar';
-import { taskDone } from '../../../lib/taskTracking';
+import { taskTarget, isTaskDone, taskDone } from '../../../lib/taskTracking';
+import { priorityClass } from './projectPresentation';
 
 export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpanded = false, statusFilter = 'open' }: {
   kind: 'project' | 'campaign'; id: string; hub: ReturnType<typeof useWorkflowHub>; onOpenTask: (task: Task) => void; defaultExpanded?: boolean; statusFilter?: string;
@@ -16,18 +17,114 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
   const [isUnplannedOpen, setIsUnplannedOpen] = useState(false);
   const navigate = useNavigate();
-  const { lang } = useTranslation();
+  const { lang, t } = useTranslation();
   const en = lang === 'en';
   const track = hub.tracks.find(t => t.entity_type === kind && t.entity_id === id);
-  const tasks = parentTasks(hub.tasks, kind, id);
-  const progress = taskProgress(tasks);
+  const allTasks = parentTasks(hub.tasks, kind, id);
+  
+  // Loại bỏ hoàn toàn checklist items (đầu việc phát sinh là con của subtask) khỏi danh sách task của phase
+  const regularTasks = allTasks.filter(t => !t.checklist_item_id && !taskTarget(t.id).checklistItemId && !t.id.includes('-ci-'));
+  const progress = taskProgress(regularTasks);
   const phaseList = track?.phases || [];
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases(prev => ({ ...prev, [phaseId]: !prev[phaseId] }));
   };
 
-  const unplannedTasks = tasks.filter(t => !t.workflow_phase_id && (statusFilter === 'all' || (statusFilter === 'completed' ? taskDone(t) : !taskDone(t))));
+  const unplannedTasks = regularTasks.filter(t => !t.workflow_phase_id && (statusFilter === 'all' || (statusFilter === 'completed' ? taskDone(t) : !taskDone(t))));
+
+  const getSubtaskChecklistCount = (t: Task) => {
+    if (t.checklist_items && t.checklist_items.length > 0) {
+      const done = t.checklist_items.filter(ci => ci.completed).length;
+      return { done, total: t.checklist_items.length };
+    }
+    const children = hub.tasks.filter(child => child.parent_task_id === t.id || child.id.startsWith(`${t.id}-ci-`));
+    if (children.length > 0) {
+      const done = children.filter(child => isTaskDone(child.status)).length;
+      return { done, total: children.length };
+    }
+    return { done: 0, total: 0 };
+  };
+
+  const renderTaskCard = (task: Task) => {
+    const assigneeName = task.assignee?.name || (en ? 'Unassigned' : 'Chưa giao PIC');
+    const isDoneTask = isTaskDone(task.status);
+    const checklistCount = getSubtaskChecklistCount(task);
+    const qty = task.quantity ?? task.deliverable_quantity ?? task.base_quantity;
+
+    return (
+      <div
+        key={task.id}
+        onClick={() => onOpenTask(task)}
+        className={`w-full rounded-[8px] border p-3 text-left transition-all cursor-pointer min-w-0 overflow-hidden group/task ${
+          isDoneTask
+            ? 'border-emerald-400/70 dark:border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60'
+            : 'border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-gray-100/60 dark:hover:bg-slate-800/70'
+        }`}
+      >
+        <div className="min-w-0 grid grid-cols-1 gap-1.5 select-none">
+          {/* Dòng 1: Tiêu đề + icon CheckCircle2 nếu hoàn thành */}
+          <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${isDoneTask ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+            {task.title}
+            {isDoneTask && (
+              <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
+            )}
+          </span>
+
+          {/* Dòng 2: Hàng badges gồm Priority badge, SL badge, Ngày hạn badge, Checklist count badge */}
+          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+            <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold lowercase ${priorityClass(task.priority || 'medium')}`}>
+              {t(`common.${task.priority || 'medium'}` as any).toLowerCase()}
+            </span>
+            {Boolean(qty) && (
+              <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                SL: {qty}
+              </span>
+            )}
+            {task.due_date && (
+              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-red-200/80 dark:border-red-800/60 bg-red-50/80 text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                <Calendar size={11} /> {displayDate(task.due_date)}
+              </span>
+            )}
+            {checklistCount.total > 0 && (() => {
+              const isAllDone = checklistCount.done === checklistCount.total;
+              return (
+                <span
+                  title={en ? `Checklist: ${checklistCount.done}/${checklistCount.total} completed` : `Việc phát sinh: ${checklistCount.done}/${checklistCount.total} hoàn thành`}
+                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border ${
+                    isAllDone
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
+                      : 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-800/60'
+                  }`}
+                >
+                  <ListTodo size={11} />
+                  <span>{checklistCount.done}/{checklistCount.total}</span>
+                </span>
+              );
+            })()}
+          </div>
+
+          {/* Dòng 3: Avatar PIC + Tên PIC, Thời gian tạo / đã chỉnh sửa */}
+          {(task.assignee || task.created_at) && (
+            <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-xs text-gray-500 dark:text-gray-400 overflow-x-auto scrollbar-none">
+              {task.assignee && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                  <Avatar name={assigneeName} src={task.assignee.avatar_url || undefined} className="w-4 h-4 text-[9px]" />
+                  <span className="line-clamp-1">{assigneeName}</span>
+                </span>
+              )}
+              {task.created_at && (
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-gray-500">
+                  <Clock3 size={11} />
+                  <span>{displayDate(task.created_at)}</span>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="rounded-2xl border border-gray-200/90 dark:border-slate-800 p-4 transition-all bg-white/50 dark:bg-slate-900/40">
@@ -107,8 +204,8 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
               {phaseList.length > 0 ? (
                 <div className="grid gap-2">
                   {phaseList.map(phase => {
-                    const phaseTasks = tasks.filter(t => t.workflow_phase_id === phase.id && (statusFilter === 'all' || (statusFilter === 'completed' ? taskDone(t) : !taskDone(t))));
-                    const totalPhaseTasks = tasks.filter(t => t.workflow_phase_id === phase.id);
+                    const phaseTasks = regularTasks.filter(t => t.workflow_phase_id === phase.id && (statusFilter === 'all' || (statusFilter === 'completed' ? taskDone(t) : !taskDone(t))));
+                    const totalPhaseTasks = regularTasks.filter(t => t.workflow_phase_id === phase.id);
                     const summary = taskProgress(totalPhaseTasks);
                     const isPhaseOpen = Boolean(expandedPhases[phase.id]);
 
@@ -142,32 +239,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                                 {en ? 'No tasks in this phase' : 'Không có công việc nào trong giai đoạn này'}
                               </p>
                             ) : (
-                              phaseTasks.map(task => {
-                                const assigneeName = task.assignee?.name || (en ? 'Unassigned' : 'Chưa giao PIC');
-                                return (
-                                  <div
-                                    key={task.id}
-                                    onClick={() => onOpenTask(task)}
-                                    className="w-full rounded-lg bg-gray-50/80 dark:bg-slate-800/60 hover:bg-primary/10 dark:hover:bg-primary/15 border border-gray-200/60 dark:border-slate-700/60 p-2 text-left grid grid-cols-[1fr_auto] items-center gap-2 transition-all cursor-pointer group/task"
-                                  >
-                                    <div className="min-w-0">
-                                      <span className="block truncate text-xs font-semibold text-gray-800 dark:text-gray-100 group-hover/task:text-primary transition-colors">
-                                        {task.title}
-                                      </span>
-                                      <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1 text-[11px] text-gray-500">
-                                        <span className="grid grid-flow-col auto-cols-max items-center gap-1">
-                                          <Avatar name={assigneeName} src={task.assignee?.avatar_url} className="w-4 h-4 text-[8px]" />
-                                          <span className="truncate max-w-[120px]">{assigneeName}</span>
-                                        </span>
-                                        {task.due_date && (
-                                          <span>· {displayDate(task.due_date)}</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <StatusBadge status={task.status} />
-                                  </div>
-                                );
-                              })
+                              phaseTasks.map(renderTaskCard)
                             )}
                             <button
                               type="button"
@@ -207,30 +279,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                   </button>
                   {isUnplannedOpen && (
                     <div className="border-t border-amber-200/60 dark:border-amber-900/40 p-2.5 grid gap-2 bg-white/70 dark:bg-slate-900/60">
-                      {unplannedTasks.map(task => {
-                        const assigneeName = task.assignee?.name || (en ? 'Unassigned' : 'Chưa giao PIC');
-                        return (
-                          <div
-                            key={task.id}
-                            onClick={() => onOpenTask(task)}
-                            className="w-full rounded-lg bg-gray-50/80 dark:bg-slate-800/60 hover:bg-primary/10 dark:hover:bg-primary/15 border border-gray-200/60 dark:border-slate-700/60 p-2 text-left grid grid-cols-[1fr_auto] items-center gap-2 transition-all cursor-pointer group/task"
-                          >
-                            <div className="min-w-0">
-                              <span className="block truncate text-xs font-semibold text-gray-800 dark:text-gray-100 group-hover/task:text-primary transition-colors">
-                                {task.title}
-                              </span>
-                              <div className="grid grid-flow-col auto-cols-max items-center gap-2 mt-1 text-[11px] text-gray-500">
-                                <span className="grid grid-flow-col auto-cols-max items-center gap-1">
-                                  <Avatar name={assigneeName} src={task.assignee?.avatar_url} className="w-4 h-4 text-[8px]" />
-                                  <span className="truncate max-w-[120px]">{assigneeName}</span>
-                                </span>
-                                {task.due_date && <span>· {displayDate(task.due_date)}</span>}
-                              </div>
-                            </div>
-                            <StatusBadge status={task.status} />
-                          </div>
-                        );
-                      })}
+                      {unplannedTasks.map(renderTaskCard)}
                     </div>
                   )}
                 </div>

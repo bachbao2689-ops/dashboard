@@ -2063,6 +2063,12 @@ export const Sidebar: React.FC = () => {
                 <span className="truncate">Theo dõi Main · Chỉ đọc</span>
               </NavLink>
             )}
+
+            <div className="pt-1.5 pb-0.5 px-2 text-center select-none">
+              <span className="text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                Making by Design Team
+              </span>
+            </div>
           </div>
         )}
 

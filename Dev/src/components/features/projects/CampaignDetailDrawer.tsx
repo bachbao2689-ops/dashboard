@@ -226,9 +226,17 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             </section>
             <section>
               {(() => {
-                const validSubtasks = campaignSubtasks.filter(subtask => subtask.status !== 'deleted');
-                const doneCount = validSubtasks.filter(s => isTaskDone(s.status)).length;
-                const openCount = validSubtasks.filter(s => !isTaskDone(s.status)).length;
+                const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && t.entity_id === selectedCampaign?.id)?.phases || [];
+                const hasPhases = campaignPhases.length > 0;
+                const unassignedSubtasks = campaignSubtasks.filter(subtask => {
+                  if (subtask.status === 'deleted') return false;
+                  if (!hasPhases) return true;
+                  const matchedTask = workflow.tasks.find(t => t.id === `cs-${subtask.id}` || t.id === subtask.id);
+                  return !matchedTask?.workflow_phase_id;
+                });
+
+                const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
+                const openCount = unassignedSubtasks.filter(s => !isTaskDone(s.status)).length;
                 return (
                   <div className="grid grid-flow-col justify-between items-center mb-3">
                     <button
@@ -257,7 +265,29 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               })()}
               {!subtasksCollapsed && (
                 <>
-                  <div className="space-y-2">{campaignSubtasks.filter(subtask => subtask.status !== 'deleted' && (statusFilter === 'completed' ? isTaskDone(subtask.status) : true)).map(s => {
+                  {(() => {
+                    const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && t.entity_id === selectedCampaign?.id)?.phases || [];
+                    const hasPhases = campaignPhases.length > 0;
+                    const unassignedSubtasks = campaignSubtasks.filter(subtask => {
+                      if (subtask.status === 'deleted') return false;
+                      if (!hasPhases) return true;
+                      const matchedTask = workflow.tasks.find(t => t.id === `cs-${subtask.id}` || t.id === subtask.id);
+                      return !matchedTask?.workflow_phase_id;
+                    });
+
+                    const visibleUnassigned = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
+
+                    if (hasPhases && visibleUnassigned.length === 0) {
+                      return (
+                        <div className="py-2.5 text-xs text-gray-400 dark:text-slate-500 italic">
+                          {lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        {visibleUnassigned.map(s => {
   const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
   return (
     <div
@@ -372,10 +402,14 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               )}
             </div>
           )}
+        </div>
       </div>
-    </div>
-  );
-})}</div>{selectedRoot && !showCampaignSubtaskForm && <button onClick={() => setShowCampaignSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
+    );
+  })}
+</div>
+      );
+    })()}
+    {selectedRoot && !showCampaignSubtaskForm && <button onClick={() => setShowCampaignSubtaskForm(true)} className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed"><Plus size={16} className="inline mr-1" /> {t('projects.addSubtask')}</button>}
 {selectedRoot && showCampaignSubtaskForm && (
   <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3">
     <input value={campaignNewSubtask} onChange={e=>setCampaignNewSubtask(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
