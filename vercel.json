@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/design-system",
+      "destination": "/design-system.html"
+    },
+    {
       "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
