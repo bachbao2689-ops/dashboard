@@ -157,6 +157,3 @@ test('Workflow Views: 10 UX/UI refinements, Zero Flexbox, and Spotlight Glow', (
   assert.equal(hubSource.includes('extractCleanPhaseTitle'), true);
   assert.equal(hubSource.includes('<span>Phase {idx + 1}</span>'), true);
 });
-
-
-
