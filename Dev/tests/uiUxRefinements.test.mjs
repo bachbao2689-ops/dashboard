@@ -219,20 +219,32 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
   const tsx = fs.readFileSync(path.resolve(__dirname, '../src/components/features/reports/ReportAnalytics.tsx'), 'utf-8');
 
   // Verify label presence & order in new layout:
-  // Bottom performance: Tổng task/Hoàn thành -> Số lượng -> Quá hạn -> Tồn đọng
+  // Bottom performance: Hoàn thành/Tổng Task -> Quá hạn -> Tồn đọng -> Số lượng
   const taskIdx = tsx.indexOf('report-profile-pill--task');
-  const outputIdx = tsx.indexOf('report-profile-pill--output');
   const lateIdx = tsx.indexOf('report-profile-badge--late');
   const backlogIdx = tsx.indexOf('report-profile-badge--backlog');
+  const outputIdx = tsx.indexOf('report-profile-pill--output');
 
   assert.equal(taskIdx !== -1 && outputIdx !== -1 && lateIdx !== -1 && backlogIdx !== -1, true);
-  assert.equal(taskIdx < outputIdx, true, 'Tổng task/Hoàn thành must appear before Số lượng in performance grid');
-  assert.equal(outputIdx < lateIdx, true, 'Số lượng must appear before Quá hạn in performance grid');
+  assert.equal(taskIdx < lateIdx, true, 'Hoàn thành/Tổng Task must appear before Quá hạn in performance grid');
   assert.equal(lateIdx < backlogIdx, true, 'Quá hạn must appear before Tồn đọng in alerts');
+  assert.equal(backlogIdx < outputIdx, true, 'Tồn đọng must appear before Số lượng in performance grid');
 
-  // Verify merged Tasks/Done box: uses ClipboardList icon and displays total/done
-  assert.equal(tsx.includes('member.tasks?.length || 0}/{member.done}'), true);
-  assert.equal(tsx.includes("lang === 'en' ? 'Tasks/Done' : 'Tổng task/Hoàn thành'"), true);
+  // Verify merged Tasks/Done box: uses ClipboardList icon and displays done/total
+  assert.equal(tsx.includes('member.done}/{member.tasks?.length || 0}'), true);
+  assert.equal(tsx.includes("lang === 'en' ? 'Done/Tasks' : 'Hoàn thành/Tổng Task'"), true);
+
+  // Verify Top 5 KPI Cards order: Card 3 (Project & Campaign) -> Card 1 (Tổng Task) -> Card 2 (Tồn đọng) -> Card 4 (Đang làm) -> Card 5 (Hình ảnh/file)
+  const card3Idx = tsx.indexOf('data-expandable-box="card3"');
+  const card1Idx = tsx.indexOf('data-expandable-box="card1"');
+  const card2Idx = tsx.indexOf('data-expandable-box="card2"');
+  const card4Idx = tsx.indexOf('data-expandable-box="card4"');
+  const card5Idx = tsx.indexOf('data-expandable-box="card5"');
+  assert.equal(card3Idx !== -1 && card1Idx !== -1 && card2Idx !== -1 && card4Idx !== -1 && card5Idx !== -1, true);
+  assert.equal(card3Idx < card1Idx, true, 'Card 3 (Project & Campaign) must be before Card 1 (Tổng việc & Hoàn thành)');
+  assert.equal(card1Idx < card2Idx, true, 'Card 1 (Tổng việc & Hoàn thành) must be before Card 2 (Task tồn đọng)');
+  assert.equal(card2Idx < card4Idx, true, 'Card 2 (Task tồn đọng) must be before Card 4 (Tiếp tục đang làm)');
+  assert.equal(card4Idx < card5Idx, true, 'Card 4 (Tiếp tục đang làm) must be before Card 5 (Số lượng hình ảnh/file)');
 
   // Verify layout elements: square avatar frame, divider, performance labels
   assert.equal(tsx.includes('report-profile-avatar-frame'), true);

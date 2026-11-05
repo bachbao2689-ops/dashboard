@@ -26,16 +26,39 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
   const { isEn, entities, hub, handleSelectEntity } = model;
   const directory = useWorkspaceDirectory();
 
+  // Resolve department ID: check department_id first, then fallback to lookup department_name in directory
+  const rawDeptId = hub.profile?.department_id ? String(hub.profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (hub.profile?.department_name && directory.data?.departments?.length) {
+      const match = directory.data.departments.find(
+        (d) => d.name.trim().toLowerCase() === hub.profile?.department_name?.trim().toLowerCase()
+      );
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, hub.profile?.department_name, directory.data?.departments]);
+
+  // Restricted user: not a Global Manager AND has a department
+  const userIsRestricted = !isGlobalManager(hub.profile) && Boolean(resolvedDeptId || hub.profile?.department_name);
+
   // Filters state
   const [hubTab, setHubTab] = useState<'all' | 'project' | 'campaign'>('all');
   const [hubSearch, setHubSearch] = useState('');
-  const userIsRestricted = !isGlobalManager(hub.profile) && Boolean(hub.profile?.department_id);
-  const [hubDept, setHubDept] = useState<string>(
-    userIsRestricted && hub.profile?.department_id ? String(hub.profile.department_id) : 'all'
-  );
+  const [hubDept, setHubDept] = useState<string>(() => {
+    if (userIsRestricted && resolvedDeptId) return resolvedDeptId;
+    return 'all';
+  });
   const [hubPic, setHubPic] = useState<string>('all');
   const [hubStatus, setHubStatus] = useState<string>('all');
   const [activePopup, setActivePopup] = useState<'search' | 'dept' | 'pic' | 'status' | null>(null);
+
+  // Enforce hubDept lock when user is restricted
+  useEffect(() => {
+    if (userIsRestricted && resolvedDeptId && hubDept !== resolvedDeptId) {
+      setHubDept(resolvedDeptId);
+    }
+  }, [userIsRestricted, resolvedDeptId, hubDept]);
 
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -54,11 +77,19 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
   // Accessible departments
   const availableDepartments = useMemo(() => {
     const rawDepts = directory.data?.departments || [];
-    if (userIsRestricted && hub.profile?.department_id) {
-      return rawDepts.filter((d) => String(d.id) === String(hub.profile?.department_id));
+    if (userIsRestricted) {
+      if (resolvedDeptId) {
+        const found = rawDepts.filter((d) => String(d.id) === resolvedDeptId);
+        if (found.length) return found;
+        return [{ id: resolvedDeptId, name: hub.profile?.department_name || 'Phòng ban của tôi' }];
+      }
+      if (hub.profile?.department_name) {
+        return [{ id: 'user-dept', name: hub.profile.department_name }];
+      }
+      return [];
     }
     return rawDepts;
-  }, [directory.data?.departments, userIsRestricted, hub.profile?.department_id]);
+  }, [directory.data?.departments, userIsRestricted, resolvedDeptId, hub.profile?.department_name]);
 
   // People list for PIC dropdown
   const peopleList = useMemo(() => {
@@ -86,7 +117,12 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
         const q = hubSearch.trim().toLowerCase();
         if (!entity.name.toLowerCase().includes(q)) return false;
       }
-      if (hubDept && hubDept !== 'all') {
+      if (userIsRestricted) {
+        const targetDeptId = resolvedDeptId || hubDept;
+        if (targetDeptId && targetDeptId !== 'all') {
+          if (String(entity.department_id || '') !== String(targetDeptId)) return false;
+        }
+      } else if (hubDept && hubDept !== 'all') {
         if (String(entity.department_id || '') !== String(hubDept)) return false;
       }
       if (hubPic && hubPic !== 'all') {
@@ -109,7 +145,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
 
       return true;
     });
-  }, [entities, hubTab, hubSearch, hubDept, hubPic, hubStatus]);
+  }, [entities, hubTab, hubSearch, hubDept, hubPic, hubStatus, userIsRestricted, resolvedDeptId]);
 
   // Formatted update time (HH:mm)
   const [updateTimeStr] = useState(() => {
@@ -229,17 +265,27 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setActivePopup((prev) => (prev === 'dept' ? null : 'dept'))}
-                title={isEn ? 'Filter by department' : 'Lọc theo phòng ban'}
-                className={`w-9 h-9 rounded-[8px] border grid place-items-center transition-colors cursor-pointer ${
-                  activePopup === 'dept' || (hubDept && hubDept !== 'all')
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shadow-2xs'
-                    : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                onClick={() => {
+                  if (userIsRestricted) return;
+                  setActivePopup((prev) => (prev === 'dept' ? null : 'dept'));
+                }}
+                disabled={userIsRestricted}
+                title={
+                  userIsRestricted
+                    ? (hub.profile?.department_name ? `Cố định: ${hub.profile.department_name}` : 'Cố định theo phòng ban')
+                    : (isEn ? 'Filter by department' : 'Lọc theo phòng ban')
+                }
+                className={`w-9 h-9 rounded-[8px] border grid place-items-center transition-colors ${
+                  userIsRestricted
+                    ? 'border-sky-500/60 bg-sky-50/50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 opacity-90 cursor-default'
+                    : activePopup === 'dept' || (hubDept && hubDept !== 'all')
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shadow-2xs cursor-pointer'
+                    : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer'
                 }`}
               >
                 <Building2 size={15} />
               </button>
-              {activePopup === 'dept' && (
+              {activePopup === 'dept' && !userIsRestricted && (
                 <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-56 p-1.5 rounded-[8px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
                   <button
                     type="button"

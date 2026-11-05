@@ -43,6 +43,7 @@ interface TaskListToolbarProps {
   setActiveDropdown: (dropdown: string | null) => void;
   onCreate: () => void;
   canCreateTask: boolean;
+  isDepartmentDisabled?: boolean;
 }
 
 export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
@@ -55,6 +56,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   departmentFilter,
   onDepartmentChange,
   departments,
+  isDepartmentDisabled = false,
   calendarFilter,
   customStartDate,
   customEndDate,
@@ -117,6 +119,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
           value={departmentFilter}
           onChange={onDepartmentChange}
           departments={departments}
+          disabled={isDepartmentDisabled}
           isOpen={activeDropdown === 'department'}
           onToggle={() => setActiveDropdown(activeDropdown === 'department' ? null : 'department')}
           onClose={() => setActiveDropdown(null)}

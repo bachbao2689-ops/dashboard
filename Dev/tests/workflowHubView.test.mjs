@@ -53,5 +53,37 @@ test('Workflow Hub View: 2-step flow without auto-redirect on null selectedKey',
   assert.equal(hubViewSource.includes('p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs'), true);
   assert.equal(hubViewSource.includes('priorityClass(rawPriority)'), true);
   assert.equal(hubViewSource.includes('getCampaignPriority'), true);
+
+  // 10. Department scope lock and resolvedDeptId fallback
+  assert.equal(hubViewSource.includes('resolvedDeptId'), true);
+  assert.equal(hubViewSource.includes('userIsRestricted'), true);
+  assert.equal(hubViewSource.includes('disabled={userIsRestricted}'), true);
 });
 
+test('Work management tabs: Department scoping for restricted users (Leader/Staff)', () => {
+  const taskListSource = fs.readFileSync('Dev/src/pages/TaskList.tsx', 'utf8');
+  const projectsControllerSource = fs.readFileSync('Dev/src/hooks/useProjectsController.tsx', 'utf8');
+  const campaignPanelSource = fs.readFileSync('Dev/src/components/features/projects/CampaignPanel.tsx', 'utf8');
+  const workflowMgmtSource = fs.readFileSync('Dev/src/hooks/useWorkflowManagement.ts', 'utf8');
+
+  // 1. TaskList department lock & filter
+  assert.equal(taskListSource.includes('resolvedDeptId'), true);
+  assert.equal(taskListSource.includes('userIsRestricted'), true);
+  assert.equal(taskListSource.includes('isDepartmentDisabled={userIsRestricted}'), true);
+  assert.equal(taskListSource.includes('departments={availableDepartments}'), true);
+
+  // 2. Projects controller department filter
+  assert.equal(projectsControllerSource.includes('resolvedDeptId'), true);
+  assert.equal(projectsControllerSource.includes('userIsRestricted'), true);
+  assert.equal(projectsControllerSource.includes('const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));'), true);
+
+  // 3. CampaignPanel department filter
+  assert.equal(campaignPanelSource.includes('resolvedDeptId'), true);
+  assert.equal(campaignPanelSource.includes('userIsRestricted'), true);
+  assert.equal(campaignPanelSource.includes('const inDept = Boolean(resolvedDeptId && c.department_id && String(c.department_id) === String(resolvedDeptId));'), true);
+
+  // 4. WorkflowManagement department filter & redirect
+  assert.equal(workflowMgmtSource.includes('resolvedDeptId'), true);
+  assert.equal(workflowMgmtSource.includes('userIsRestricted'), true);
+  assert.equal(workflowMgmtSource.includes('handleBackToHub()'), true);
+});

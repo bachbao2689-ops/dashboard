@@ -21,6 +21,7 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
 import { useAuthStore } from '../store/authStore';
+import { isGlobalManager } from '../lib/roleScope';
 import {useRememberedState} from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
 
@@ -56,7 +57,31 @@ export const TaskList: React.FC = () => {
   const toggleGroup = (group: string) => setCollapsedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
 
   const {users:people, departments = []}=useWorkspaceData();
+  const rawDeptId = profile?.department_id ? String(profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (profile?.department_name && departments.length) {
+      const match = departments.find(d => d.name.trim().toLowerCase() === profile.department_name?.trim().toLowerCase());
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, profile?.department_name, departments]);
+  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
+
   const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('tasks.departmentFilter', searchParams.get('department_id') || '');
+
+  useEffect(() => {
+    if (userIsRestricted && resolvedDeptId && departmentFilter !== resolvedDeptId) {
+      setDepartmentFilter(resolvedDeptId);
+    }
+  }, [userIsRestricted, resolvedDeptId, departmentFilter]);
+
+  const availableDepartments = useMemo(() => {
+    if (userIsRestricted && resolvedDeptId) {
+      return departments.filter(d => String(d.id) === String(resolvedDeptId));
+    }
+    return departments;
+  }, [departments, userIsRestricted, resolvedDeptId]);
 
   // Merge people with any task assignees not yet in people
   const allPeople = useMemo<FilterPerson[]>(() => {
@@ -184,6 +209,17 @@ export const TaskList: React.FC = () => {
     if(searchParams.get('department_id')&&((t.project?.department_id||t.campaign?.department_id||t.department_id||'unassigned')!==searchParams.get('department_id')))return false;
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
+
+    // Phân quyền tầm view phòng ban cho người dùng bị giới hạn
+    if (userIsRestricted) {
+      const targetDeptId = resolvedDeptId || departmentFilter;
+      const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
+      const assigneeInDept = people.some(p => String(p.id) === String(t.assignee_id) && String((p as any).department_id || '') === String(targetDeptId));
+      const isMyTask = profileId && String(t.assignee_id) === String(profileId);
+      const isCreator = profileId && String(t.created_by) === String(profileId);
+      if (!((taskDept && String(taskDept) === String(targetDeptId)) || assigneeInDept || isMyTask || isCreator)) return false;
+    }
+
     // 1. Status Filter
     const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
     if(departmentFilter && String(taskDept) !== String(departmentFilter)) return false;
@@ -304,7 +340,8 @@ export const TaskList: React.FC = () => {
             onAssigneeChange={setAssigneeFilter}
             departmentFilter={departmentFilter}
             onDepartmentChange={setDepartmentFilter}
-            departments={departments}
+            departments={availableDepartments}
+            isDepartmentDisabled={userIsRestricted}
             calendarFilter={calendarFilter}
             customStartDate={customStartDate}
             customEndDate={customEndDate}

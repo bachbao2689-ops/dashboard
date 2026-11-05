@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
+import { isGlobalManager } from '../../../lib/roleScope';
+import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
 import { getCampaignPriority, priorityClass } from './projectPresentation';
@@ -167,6 +169,18 @@ export const CampaignPanel: React.FC<{
     minWidth: 95,
   });
   const profile = useAuthStore(s => s.profile);
+  const directory = useWorkspaceDirectory();
+  const departments = useMemo(() => directory.data?.departments || [], [directory.data]);
+  const rawDeptId = profile?.department_id ? String(profile.department_id) : null;
+  const resolvedDeptId = useMemo(() => {
+    if (rawDeptId) return rawDeptId;
+    if (profile?.department_name && departments.length) {
+      const match = departments.find(d => d.name.trim().toLowerCase() === profile.department_name?.trim().toLowerCase());
+      if (match?.id) return String(match.id);
+    }
+    return null;
+  }, [rawDeptId, profile?.department_name, departments]);
+  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
@@ -583,6 +597,16 @@ export const CampaignPanel: React.FC<{
     const term = (searchTerm || '').trim().toLowerCase();
 
     return campaigns.filter(c => {
+      // 0. Giới hạn tầm view phòng ban cho người dùng bị hạn chế
+      if (userIsRestricted) {
+        const inDept = Boolean(resolvedDeptId && c.department_id && String(c.department_id) === String(resolvedDeptId));
+        const myId = profile?.id;
+        const isLead = myId && Number(c.lead_id) === Number(myId);
+        const isCreator = myId && Number(c.creator?.id) === Number(myId);
+        const isSub = myId && (subtaskMap[c.id] || []).some((a: any) => Number(a.id) === Number(myId));
+        if (!inDept && !isLead && !isCreator && !isSub) return false;
+      }
+
       // 1. Search filter
       if (term) {
         const nameMatch = (c.name || '').toLowerCase().includes(term);
@@ -643,7 +667,7 @@ export const CampaignPanel: React.FC<{
 
       return true;
     });
-  }, [campaigns, filters, subtaskMap, profile?.id]);
+  }, [campaigns, filters, subtaskMap, profile?.id, userIsRestricted, resolvedDeptId]);
 
   return (
     <section className="card-hub rounded-[8px] overflow-hidden shrink-0">
