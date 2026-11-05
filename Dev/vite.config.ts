@@ -42,12 +42,4 @@ function appVersionPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), appVersionPlugin()],
-  build: {
-    rollupOptions: {
-      input: {
-        dashboard: path.resolve(__dirname, 'index.html'),
-        designSystem: path.resolve(__dirname, 'design-system.html'),
-      },
-    },
-  },
 });
