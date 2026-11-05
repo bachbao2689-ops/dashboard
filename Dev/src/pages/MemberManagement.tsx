@@ -44,13 +44,36 @@ export function MemberManagement() {
   }, [members, profile, searchTerm, roleFilter, statusFilter]);
 
   const memberGroups = useMemo(() => {
+    const isThaiDang = (m: any) => {
+      if (!m) return false;
+      if (Number(m.id) === 8) return true;
+      const email = (m.email || '').toLowerCase();
+      if (email.includes('louisdang') || email.includes('thai.dang') || email.includes('thaidang')) return true;
+      const norm = (m.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return norm.includes('thai dang') || (norm.includes('thai') && norm.includes('dang'));
+    };
+
+    const isLeader = (m: any) => {
+      const r = (m.role || '').toLowerCase();
+      const lvl = (m.employment_level || '').toLowerCase();
+      const job = (m.job_title || '').toLowerCase();
+      return isThaiDang(m) ||
+        ['team_lead', 'leader', 'manager', 'admin'].includes(r) ||
+        ['team_lead', 'leader', 'manager'].includes(lvl) ||
+        job.includes('lead');
+    };
+
     const sortMembers = (a: any, b: any) => {
-      if (a.name?.includes('Thái Đặng') && !b.name?.includes('Thái Đặng')) return -1;
-      if (!a.name?.includes('Thái Đặng') && b.name?.includes('Thái Đặng')) return 1;
-      const isALeader = ['team_lead', 'leader', 'manager'].includes(a.role?.toLowerCase());
-      const isBLeader = ['team_lead', 'leader', 'manager'].includes(b.role?.toLowerCase());
-      if (isALeader && !isBLeader) return -1;
-      if (!isALeader && isBLeader) return 1;
+      const aThai = isThaiDang(a);
+      const bThai = isThaiDang(b);
+      if (aThai && !bThai) return -1;
+      if (!aThai && bThai) return 1;
+
+      const aLeader = isLeader(a);
+      const bLeader = isLeader(b);
+      if (aLeader && !bLeader) return -1;
+      if (!aLeader && bLeader) return 1;
+
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateA - dateB;

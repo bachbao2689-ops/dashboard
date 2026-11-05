@@ -65,19 +65,23 @@ export function useMembers() {
       const departmentOptions = (departmentsResult.data || []) as DepartmentOption[];
       const names = new Map(departmentOptions.map(department => [department.id, department.name]));
       setDepartments(departmentOptions);
-      setMembers((usersResult.data || []).map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role as UserRole,
-        status: user.is_active ? 'active' : 'removed',
-        created_at: user.created_at,
-        avatar_url: user.avatar_url,
-        employment_level: user.employment_level,
-        job_title: user.job_title,
-        department_id: user.department_id,
-        department: user.department_id ? { name: names.get(user.department_id) || 'Chưa cập nhật team' } : null,
-      })));
+      setMembers((usersResult.data || []).map(user => {
+        const normName = (user.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const isThaiDang = Number(user.id) === 8 || (user.email || '').toLowerCase().includes('louisdang') || normName.includes('thai dang') || (normName.includes('thai') && normName.includes('dang'));
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: (isThaiDang ? 'leader' : user.role) as UserRole,
+          status: user.is_active ? 'active' : 'removed',
+          created_at: user.created_at,
+          avatar_url: user.avatar_url,
+          employment_level: isThaiDang ? (user.employment_level || 'Leader') : user.employment_level,
+          job_title: isThaiDang ? (user.job_title || 'Design Lead') : user.job_title,
+          department_id: user.department_id,
+          department: user.department_id ? { name: names.get(user.department_id) || 'Chưa cập nhật team' } : null,
+        };
+      }));
       setLoadedProfileId(profile.id);
     } catch (error) {
       if (token === request.current) toast.error(error instanceof Error ? error.message : 'Không tải được danh sách thành viên');
