@@ -180,23 +180,25 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 </div>
               </div>
             </div>
-            <WorkflowTrackingSummary
-              kind="campaign"
-              id={selectedCampaign.id}
-              hub={workflow}
-              onOpenTask={(task) => {
-                if (task.id.startsWith('cs-') || task.id.startsWith('ps-')) {
-                  const rawId = task.id.replace(/^(cs|ps)-/, '');
-                  const found = (campaignSubtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
-                  if (found) {
-                    setSelectedSubtask?.(found);
-                    return;
+            <div id="workflow-phases-summary">
+              <WorkflowTrackingSummary
+                kind="campaign"
+                id={selectedCampaign.id}
+                hub={workflow}
+                onOpenTask={(task) => {
+                  if (task.id.startsWith('cs-') || task.id.startsWith('ps-')) {
+                    const rawId = task.id.replace(/^(cs|ps)-/, '');
+                    const found = (campaignSubtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
+                    if (found) {
+                      setSelectedSubtask?.(found);
+                      return;
+                    }
                   }
-                }
-                setSourceTask(task);
-              }}
-              statusFilter={statusFilter}
-            />
+                  setSourceTask(task);
+                }}
+                statusFilter={statusFilter}
+              />
+            </div>
             <section>
               <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>
@@ -226,13 +228,12 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
             </section>
             <section>
               {(() => {
-                const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && t.entity_id === selectedCampaign?.id)?.phases || [];
+                const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
                 const hasPhases = campaignPhases.length > 0;
                 const unassignedSubtasks = campaignSubtasks.filter(subtask => {
                   if (subtask.status === 'deleted') return false;
                   if (!hasPhases) return true;
-                  const matchedTask = workflow.tasks.find(t => t.id === `cs-${subtask.id}` || t.id === subtask.id);
-                  return !matchedTask?.workflow_phase_id;
+                  return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
                 });
 
                 const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
@@ -266,21 +267,35 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               {!subtasksCollapsed && (
                 <>
                   {(() => {
-                    const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && t.entity_id === selectedCampaign?.id)?.phases || [];
+                    const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
                     const hasPhases = campaignPhases.length > 0;
                     const unassignedSubtasks = campaignSubtasks.filter(subtask => {
                       if (subtask.status === 'deleted') return false;
                       if (!hasPhases) return true;
-                      const matchedTask = workflow.tasks.find(t => t.id === `cs-${subtask.id}` || t.id === subtask.id);
-                      return !matchedTask?.workflow_phase_id;
+                      return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
+                    });
+                    const assignedPhaseSubtasks = campaignSubtasks.filter(subtask => {
+                      if (subtask.status === 'deleted') return false;
+                      return workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
                     });
 
                     const visibleUnassigned = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
                     if (hasPhases && visibleUnassigned.length === 0) {
                       return (
-                        <div className="py-2.5 text-xs text-gray-400 dark:text-slate-500 italic">
-                          {lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}
+                        <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
+                          <p>{lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}</p>
+                          {assignedPhaseSubtasks.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                document.getElementById('workflow-phases-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }}
+                              className="mt-1.5 text-primary hover:underline font-semibold text-xs grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer not-italic"
+                            >
+                              <span>→ {lang === 'en' ? 'View in Phases' : 'Xem trong Giai đoạn'} ({assignedPhaseSubtasks.length} {lang === 'en' ? 'subtasks' : 'việc phụ'})</span>
+                            </button>
+                          )}
                         </div>
                       );
                     }

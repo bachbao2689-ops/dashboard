@@ -685,7 +685,6 @@ export const CampaignPanel: React.FC<{
         {visibleCampaigns.map(c => {
           const isCampaignExpanded = Boolean(expandedCampaigns[c.id]);
           const subtasks = campaignSubtasksMap[c.id] || [];
-          const subtaskCount = subtasks.length;
           const campNote = getCachedNote('campaign', c.id);
           const isNoteOpen = Boolean(openNoteEntityIds[c.id]);
           const leadPerson = c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null);
@@ -719,18 +718,30 @@ export const CampaignPanel: React.FC<{
                   >
                     {c.name}
                   </button>
-                  {subtaskCount > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
-                      ({subtaskCount})
-                    </span>
-                  )}
                   {(() => {
-                    const phaseCount = (workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)?.phases || []).length;
-                    if (phaseCount === 0) return null;
+                    const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
+                    const phaseCount = (track?.phases || []).length;
+                    const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
+                    const assignedPhaseSubtasks = subtasks.filter(s => s.status !== 'deleted' && Boolean(s.workflow_phase_id));
+
                     return (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
-                        ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
-                      </span>
+                      <>
+                        {unassignedSubtasks.length > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
+                            ({unassignedSubtasks.length})
+                          </span>
+                        )}
+                        {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                            ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                          </span>
+                        )}
+                        {phaseCount > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                            ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                          </span>
+                        )}
+                      </>
                     );
                   })()}
                   {Boolean(campNote && campNote.trim()) && (
@@ -925,7 +936,6 @@ export const CampaignPanel: React.FC<{
   {visibleCampaigns.map(c => {
     const isCampaignExpanded = Boolean(expandedCampaigns[c.id]);
     const subtasks = campaignSubtasksMap[c.id] || [];
-    const subtaskCount = subtasks.length;
 
     return (
       <React.Fragment key={c.id}>
@@ -959,18 +969,30 @@ export const CampaignPanel: React.FC<{
                 />
               )}
               <b className="block truncate text-gray-900 dark:text-white">{c.name}</b>
-              {subtaskCount > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
-                  ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
-                </span>
-              )}
               {(() => {
-                const phaseCount = (workflowTracks?.find(t => t.entity_type === 'campaign' && t.entity_id === c.id)?.phases || []).length;
-                if (phaseCount === 0) return null;
+                const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
+                const phaseCount = (track?.phases || []).length;
+                const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
+                const assignedPhaseSubtasks = subtasks.filter(s => s.status !== 'deleted' && Boolean(s.workflow_phase_id));
+
                 return (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
-                    ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
-                  </span>
+                  <>
+                    {unassignedSubtasks.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
+                        ({unassignedSubtasks.length} subtask{unassignedSubtasks.length > 1 ? 's' : ''})
+                      </span>
+                    )}
+                    {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                        ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                      </span>
+                    )}
+                    {phaseCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                        ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                      </span>
+                    )}
+                  </>
                 );
               })()}
               {hasComments[c.id] && (

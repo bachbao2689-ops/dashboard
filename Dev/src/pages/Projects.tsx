@@ -610,7 +610,6 @@ export const Projects:React.FC=()=>{
     {visibleProjects.map(project => {
       const isProjectExpanded = Boolean(expandedProjects[project.id]);
       const subtasks = projectSubtasksMap[project.id] || [];
-      const subtaskCount = subtasks.length;
       const projectNote = getCachedNote('project', project.id);
       const isNoteOpen = Boolean(openNoteEntityIds[project.id]);
       const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
@@ -648,18 +647,37 @@ export const Projects:React.FC=()=>{
               >
                 {project.name}
               </button>
-              {subtaskCount > 0 && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 shrink-0">
-                  ({subtaskCount})
-                </span>
-              )}
               {(() => {
-                const phaseCount = (workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)?.phases || []).length;
-                if (phaseCount === 0) return null;
+                const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
+                const phaseCount = (track?.phases || []).length;
+                const unassignedSubtasks = subtasks.filter(s => {
+                  if (s.status === 'deleted') return false;
+                  if (phaseCount === 0) return true;
+                  return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                });
+                const assignedPhaseSubtasks = subtasks.filter(s => {
+                  if (s.status === 'deleted') return false;
+                  return workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                });
+
                 return (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
-                    ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
-                  </span>
+                  <>
+                    {unassignedSubtasks.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 shrink-0">
+                        ({unassignedSubtasks.length})
+                      </span>
+                    )}
+                    {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                        ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                      </span>
+                    )}
+                    {phaseCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
+                        ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                      </span>
+                    )}
+                  </>
                 );
               })()}
               {Boolean(projectNote && projectNote.trim()) && (
@@ -880,7 +898,6 @@ export const Projects:React.FC=()=>{
         {visibleProjects.map(project => {
           const isProjectExpanded = Boolean(expandedProjects[project.id]);
           const subtasks = projectSubtasksMap[project.id] || [];
-          const subtaskCount = subtasks.length;
 
           return (
             <React.Fragment key={project.id}>
@@ -921,18 +938,37 @@ export const Projects:React.FC=()=>{
                       />
                     )}
                     <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
-                    {subtaskCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 shrink-0">
-                        ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
-                      </span>
-                    )}
                     {(() => {
-                      const phaseCount = (workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)?.phases || []).length;
-                      if (phaseCount === 0) return null;
+                      const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
+                      const phaseCount = (track?.phases || []).length;
+                      const unassignedSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        if (phaseCount === 0) return true;
+                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
+                      const assignedPhaseSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        return workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
+
                       return (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
-                          ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
-                        </span>
+                        <>
+                          {unassignedSubtasks.length > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 shrink-0">
+                              ({unassignedSubtasks.length} subtask{unassignedSubtasks.length > 1 ? 's' : ''})
+                            </span>
+                          )}
+                          {unassignedSubtasks.length === 0 && assignedPhaseSubtasks.length > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                              ({assignedPhaseSubtasks.length} {lang === 'en' ? 'in phases' : 'trong giai đoạn'})
+                            </span>
+                          )}
+                          {phaseCount > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shrink-0">
+                              ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                            </span>
+                          )}
+                        </>
                       );
                     })()}
                     {hasComments[project.id] && (
@@ -1725,23 +1761,25 @@ export const Projects:React.FC=()=>{
                   </div>
                 </div>
               </div>
-              <WorkflowTrackingSummary
-                kind="project"
-                id={selected.id}
-                hub={workflow}
-                onOpenTask={(task) => {
-                  if (task.id.startsWith('ps-') || task.id.startsWith('cs-')) {
-                    const rawId = task.id.replace(/^(ps|cs)-/, '');
-                    const found = (subtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
-                    if (found) {
-                      setSelectedSubtask(found);
-                      return;
+              <div id="workflow-phases-summary">
+                <WorkflowTrackingSummary
+                  kind="project"
+                  id={selected.id}
+                  hub={workflow}
+                  onOpenTask={(task) => {
+                    if (task.id.startsWith('ps-') || task.id.startsWith('cs-')) {
+                      const rawId = task.id.replace(/^(ps|cs)-/, '');
+                      const found = (subtasks || []).find((s: any) => String(s.id) === rawId || String(s.id) === task.id);
+                      if (found) {
+                        setSelectedSubtask(found);
+                        return;
+                      }
                     }
-                  }
-                  setSourceTask(task);
-                }}
-                statusFilter={statusFilter}
-              />
+                    setSourceTask(task);
+                  }}
+                  statusFilter={statusFilter}
+                />
+              </div>
               <section>
                 <div className="grid grid-flow-col auto-cols-max items-center gap-2 mb-2">
                   <h3 className="font-bold text-sm text-gray-900 dark:text-white">{t('common.description')}</h3>
@@ -1771,13 +1809,12 @@ export const Projects:React.FC=()=>{
               </section>
               <section>
                 {(() => {
-                  const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === selected?.id)?.phases || [];
+                  const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
                   const hasPhases = projectPhases.length > 0;
                   const unassignedSubtasks = subtasks.filter(s => {
                     if (s.status === 'deleted') return false;
                     if (!hasPhases) return true;
-                    const matchedTask = workflow.tasks.find(t => t.id === `ps-${s.id}` || t.id === s.id);
-                    return !matchedTask?.workflow_phase_id;
+                    return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
                   });
 
                   const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
@@ -1811,21 +1848,35 @@ export const Projects:React.FC=()=>{
                 {!projectSubtasksCollapsed && (
                   <>
                     {(() => {
-                      const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === selected?.id)?.phases || [];
+                      const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
                       const hasPhases = projectPhases.length > 0;
                       const unassignedSubtasks = subtasks.filter(s => {
                         if (s.status === 'deleted') return false;
                         if (!hasPhases) return true;
-                        const matchedTask = workflow.tasks.find(t => t.id === `ps-${s.id}` || t.id === s.id);
-                        return !matchedTask?.workflow_phase_id;
+                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
+                      const assignedPhaseSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        return workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
                       });
 
                       const visibleUnassigned = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
                       if (hasPhases && visibleUnassigned.length === 0) {
                         return (
-                          <div className="py-2.5 text-xs text-gray-400 dark:text-slate-500 italic">
-                            {lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}
+                          <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
+                            <p>{lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}</p>
+                            {assignedPhaseSubtasks.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  document.getElementById('workflow-phases-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                                className="mt-1.5 text-primary hover:underline font-semibold text-xs grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer not-italic"
+                              >
+                                <span>→ {lang === 'en' ? 'View in Phases' : 'Xem trong Giai đoạn'} ({assignedPhaseSubtasks.length} {lang === 'en' ? 'subtasks' : 'việc phụ'})</span>
+                              </button>
+                            )}
                           </div>
                         );
                       }
