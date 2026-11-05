@@ -651,20 +651,24 @@ export const Projects:React.FC=()=>{
                 const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
                 const phases = track?.phases || [];
                 const phaseCount = phases.length;
-                const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                const subtaskCount = validSubtasks.length;
-                const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                const unassignedSubtasks = subtasks.filter(s => {
+                  if (s.status === 'deleted') return false;
+                  if (phaseCount === 0) return true;
+                  return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                });
+                const unassignedCount = unassignedSubtasks.length;
+                const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
                 const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                 return (
                   <>
-                    {subtaskCount > 0 && (
+                    {unassignedCount > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
-                        isAllSubtasksDone
+                        isAllUnassignedDone
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                           : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                       }`}>
-                        ({subtaskCount})
+                        ({unassignedCount})
                       </span>
                     )}
                     {phaseCount > 0 && (
@@ -941,20 +945,24 @@ export const Projects:React.FC=()=>{
                       const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
                       const phases = track?.phases || [];
                       const phaseCount = phases.length;
-                      const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                      const subtaskCount = validSubtasks.length;
-                      const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                      const unassignedSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        if (phaseCount === 0) return true;
+                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
+                      const unassignedCount = unassignedSubtasks.length;
+                      const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
                       const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                       return (
                         <>
-                          {subtaskCount > 0 && (
+                          {unassignedCount > 0 && (
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
-                              isAllSubtasksDone
+                              isAllUnassignedDone
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                                 : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/70 dark:border-violet-800/60'
                             }`}>
-                              ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
+                              ({unassignedCount} subtask{unassignedCount > 1 ? 's' : ''})
                             </span>
                           )}
                           {phaseCount > 0 && (
@@ -1807,9 +1815,15 @@ export const Projects:React.FC=()=>{
               </section>
               <section>
                 {(() => {
-                  const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                  const doneCount = validSubtasks.filter(s => isTaskDone(s.status)).length;
-                  const openCount = validSubtasks.filter(s => !isTaskDone(s.status)).length;
+                  const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
+                  const hasPhases = projectPhases.length > 0;
+                  const unassignedSubtasks = subtasks.filter(s => {
+                    if (s.status === 'deleted') return false;
+                    if (!hasPhases) return true;
+                    return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                  });
+                  const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
+                  const openCount = unassignedSubtasks.filter(s => !isTaskDone(s.status)).length;
                   return (
                     <div className="grid grid-flow-col justify-between items-center mb-3">
                       <button
@@ -1840,10 +1854,39 @@ export const Projects:React.FC=()=>{
                   <>
                     {(() => {
                       const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
-                      const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                      const visibleSubtasks = validSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
+                      const hasPhases = projectPhases.length > 0;
+                      const unassignedSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        if (!hasPhases) return true;
+                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
+                      const assignedPhaseSubtasks = subtasks.filter(s => {
+                        if (s.status === 'deleted') return false;
+                        return workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                      });
 
-                      if (visibleSubtasks.length === 0) {
+                      const visibleSubtasks = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
+
+                      if (hasPhases && visibleSubtasks.length === 0) {
+                        return (
+                          <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
+                            <p>{lang === 'en' ? 'All subtasks have been assigned to phases.' : 'Tất cả việc phụ đã được phân bổ vào các giai đoạn.'}</p>
+                            {assignedPhaseSubtasks.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  document.getElementById('workflow-phases-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                                className="mt-1.5 text-primary hover:underline font-semibold text-xs grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer not-italic"
+                              >
+                                <span>→ {lang === 'en' ? 'View in Phases' : 'Xem trong Giai đoạn'} ({assignedPhaseSubtasks.length} {lang === 'en' ? 'subtasks' : 'việc phụ'})</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (!hasPhases && visibleSubtasks.length === 0) {
                         return (
                           <div className="py-2.5 text-xs text-gray-500 dark:text-slate-400 italic">
                             <p>{lang === 'en' ? 'No subtasks yet.' : 'Chưa có việc phụ nào.'}</p>

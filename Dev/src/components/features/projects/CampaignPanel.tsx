@@ -722,20 +722,20 @@ export const CampaignPanel: React.FC<{
                     const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
                     const phases = track?.phases || [];
                     const phaseCount = phases.length;
-                    const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                    const subtaskCount = validSubtasks.length;
-                    const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                    const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
+                    const unassignedCount = unassignedSubtasks.length;
+                    const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
                     const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                     return (
                       <>
-                        {subtaskCount > 0 && (
+                        {unassignedCount > 0 && (
                           <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
-                            isAllSubtasksDone
+                            isAllUnassignedDone
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                               : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                           }`}>
-                            ({subtaskCount})
+                            ({unassignedCount})
                           </span>
                         )}
                         {phaseCount > 0 && (
@@ -979,20 +979,20 @@ export const CampaignPanel: React.FC<{
                 const track = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
                 const phases = track?.phases || [];
                 const phaseCount = phases.length;
-                const validSubtasks = subtasks.filter(s => s.status !== 'deleted');
-                const subtaskCount = validSubtasks.length;
-                const isAllSubtasksDone = subtaskCount > 0 && validSubtasks.every(s => isTaskDone(s.status));
+                const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
+                const unassignedCount = unassignedSubtasks.length;
+                const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
                 const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                 return (
                   <>
-                    {subtaskCount > 0 && (
+                    {unassignedCount > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
-                        isAllSubtasksDone
+                        isAllUnassignedDone
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                           : 'bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
                       }`}>
-                        ({subtaskCount} subtask{subtaskCount > 1 ? 's' : ''})
+                        ({unassignedCount} subtask{unassignedCount > 1 ? 's' : ''})
                       </span>
                     )}
                     {phaseCount > 0 && (
