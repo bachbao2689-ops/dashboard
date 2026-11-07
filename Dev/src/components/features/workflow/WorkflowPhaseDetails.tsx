@@ -1,7 +1,7 @@
 import {useTaskCommentCounts} from '../../../hooks/useTaskCommentCounts';
 import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {Plus, X, Code2, Calendar, User, Edit3, Trash2, MessageSquare, ArrowLeft} from 'lucide-react';
+import {Plus, X, Code2, Calendar, User, Edit3, Trash2, ArrowLeft} from 'lucide-react';
 import {displayDate} from '../../../lib/workflowHub';
 import {WorkflowStatusPicker, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
 import {WorkflowGateChecklist} from './WorkflowGateChecklist';
@@ -9,6 +9,7 @@ import {MultiSelect} from '../../common/MultiSelect';
 import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
 import {Avatar} from '../../common/Avatar';
 import {TaskPinButton} from '../tasks/TaskPinButton';
+import {CommentPreviewPopover} from '../../common/CommentPreviewPopover';
 import {useSidebarPinStore} from '../../../store/sidebarPinStore';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
@@ -116,7 +117,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
                         <Code2 size={15} className={isCampaign ? 'text-amber-500' : 'text-violet-600 dark:text-violet-400'} />
-                        {isEn ? 'Tasks' : 'Việc phát sinh'} ({doneSubtasksCount}/{totalSubtasksCount})
+                        {isEn ? 'Subtasks' : 'Subtask'} ({doneSubtasksCount}/{totalSubtasksCount})
                       </h4>
                       <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
                     </div>
@@ -245,19 +246,14 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                 {s.title}
                               </button>
 
-                              {/* Comment icon button for leader to comment */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openTaskComments(s.record);
-                                }}
-                                className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0 cursor-pointer"
-                                aria-label={`${isEn ? 'Comments' : 'Bình luận'}: ${s.title}`}
-                                title={commentTracking.error ? (isEn ? 'Could not load comment count' : 'Chưa tải được số bình luận') : `${isEn ? 'Comments' : 'Bình luận'}: ${commentTracking.counts[s.id]?.count ?? '…'}${commentTracking.counts[s.id]?.lastAt ? ' · ' + new Date(commentTracking.counts[s.id].lastAt!).toLocaleString(isEn?'en-GB':'vi-VN') : ''}`}
-                              >
-                                <MessageSquare size={13} className="text-gray-400 hover:text-blue-500 transition-colors" /><span className="text-[10px] tabular-nums">{commentTracking.counts[s.id]?.count ?? (commentTracking.error ? '—' : '…')}</span>
-                              </button>
+                              {/* Comment preview popover */}
+                              <CommentPreviewPopover
+                                entityType={isCampaign ? 'campaign_subtask' : 'project_subtask'}
+                                entityId={s.record?.id || s.id}
+                                entityTitle={s.title}
+                                count={commentTracking.counts[s.id]?.count ?? 0}
+                                onOpenFull={() => openTaskComments(s.record)}
+                              />
                             </div>
 
                             {/* Right: Assignee (Avatar + Name), Due date & Actions */}

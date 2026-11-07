@@ -2,21 +2,49 @@ import type { Dispatch, SetStateAction } from 'react';
 import { Search, MoreHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
 import { TableSkeleton } from '../../../common/Skeleton';
 import { StatusBadge } from '../../../common/StatusBadge';
+import { QuickStatusDropdown } from '../../../common/QuickStatusDropdown';
 import { Avatar } from '../../../common/Avatar';
 import type { Task } from '../../../../hooks/useTasks';
 import { useResizableColumns } from '../../../../hooks/useResizableColumns';
 import { mapPriority } from './taskListPresentation';
 import { useTranslation } from '../../../../i18n/translations';
 import { displayDate } from '../../../../lib/workflowHub';
+import { CommentPreviewPopover } from '../../../common/CommentPreviewPopover';
+import { useTaskCommentCounts } from '../../../../hooks/useTaskCommentCounts';
+import { useAuthStore } from '../../../../store/authStore';
 
-type Props = {loading: boolean; filteredTasks: Task[]; groupedTasks: Record<string, Task[]>; groupBy: string; collapsedGroups: string[]; toggleGroup: (group: string) => void; selectedTasks: string[]; setSelectedTasks: Dispatch<SetStateAction<string[]>>; toggleSelectTask: (id: string) => void; onOpenTask: (task: Task) => void; deletingIds: string[]};
-export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds}: Props) {
- const {t} = useTranslation();
+type Props = {
+  loading: boolean;
+  filteredTasks: Task[];
+  groupedTasks: Record<string, Task[]>;
+  groupBy: string;
+  collapsedGroups: string[];
+  toggleGroup: (group: string) => void;
+  selectedTasks: string[];
+  setSelectedTasks: Dispatch<SetStateAction<string[]>>;
+  toggleSelectTask: (id: string) => void;
+  onOpenTask: (task: Task) => void;
+  deletingIds: string[];
+  onStatusChange?: (task: Task, nextStatus: string) => Promise<void> | void;
+};
+export function TaskListCollection({loading, filteredTasks, groupedTasks, groupBy, collapsedGroups, toggleGroup, selectedTasks, setSelectedTasks, toggleSelectTask, onOpenTask, deletingIds, onStatusChange}: Props) {
+ const {lang, t} = useTranslation();
+ const profile = useAuthStore(s => s.profile);
+ const taskCommentCounts = useTaskCommentCounts(filteredTasks.map(t => t.id), profile?.id);
  const { widths: taskColWidths, startResize: startTaskColResize, tableRef: taskTableRef } = useResizableColumns({
    tableKey: 'tasks_table',
    initialWidths: [48, 95, 280, 160, 180, 160, 130, 110, 120, 52],
    minWidth: 40,
  });
+
+ const allTaskStatusOptions = [
+   { value: 'todo', label: lang === 'en' ? 'Todo' : 'Chưa bắt đầu', dotColor: 'bg-slate-400' },
+   { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
+   { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+   { value: 'in_review', label: lang === 'en' ? 'In Review' : 'Chờ duyệt', dotColor: 'bg-indigo-500' },
+   { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+   { value: 'done', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
+ ];
  return (<div className="space-y-6 pb-12 pr-1">
       
 
@@ -51,26 +79,50 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
               {!collapsedGroups.includes(groupName) && (
                 <>
                 <div className="divide-y divide-gray-100 dark:divide-slate-700 xl:hidden">
-                  {groupTasks.map(task => (
+                  {groupTasks.map(task => {
+                    const isSubtask = Boolean((task as any).checklist_item_id || (task as any).parent_task_id || String(task.id).includes('::item:') || String(task.id).includes('-ci-'));
+                    return (
                     <div key={task.id} className="px-3 py-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-2.5 min-w-0">
                         <button type="button" onClick={() => onOpenTask(task)} className="task-list-mobile-title">
+                          {isSubtask && (
+                            <span className="inline-grid grid-flow-col auto-cols-max items-center px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0 mr-1.5">
+                              Subtask
+                            </span>
+                          )}
                           <span className="min-w-0 flex-1 truncate">{task.title}</span>
                           <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-gray-400" />
                         </button>
+                        {(taskCommentCounts.counts[task.id]?.count ?? 0) > 0 && (
+                          <CommentPreviewPopover
+                            entityType={task.id.startsWith('cs-') ? 'campaign_subtask' : task.id.startsWith('ps-') ? 'project_subtask' : 'task'}
+                            entityId={task.id}
+                            entityTitle={task.title}
+                            count={taskCommentCounts.counts[task.id]?.count ?? 0}
+                            onOpenFull={() => onOpenTask(task)}
+                          />
+                        )}
                       </div>
                       <p className="task-list-mobile-meta">
                         <span className="shrink-0">#{task.task_ref || task.id.split('-')[0]}</span>
                         <span aria-hidden="true">·</span>
                         <span className="min-w-0 truncate">{task.assignee?.name || t('common.unassigned')}</span>
                       </p>
-                      <div className="task-list-mobile-status">
-                        <StatusBadge status={task.status} />
+                      <div className="task-list-mobile-status" onClick={(e) => e.stopPropagation()}>
+                        {onStatusChange ? (
+                          <QuickStatusDropdown
+                            currentStatus={task.status}
+                            options={allTaskStatusOptions}
+                            onSelect={(nextStatus) => onStatusChange(task, nextStatus)}
+                          />
+                        ) : (
+                          <StatusBadge status={task.status} />
+                        )}
                         <span className="min-w-0 truncate">{task.due_date ? `${t('common.due')} ${displayDate(task.due_date)}` : t('common.noDueDate')}</span>
                         {['High','Urgent'].includes(mapPriority(task.priority)) && <span className="ml-auto shrink-0 font-semibold text-red-600 dark:text-red-400">{mapPriority(task.priority)}</span>}
                       </div>
                     </div>
-                  ))}
+                  );})}
                 </div>
                 <div className="task-list-table-scroll hidden xl:block" role="region" aria-label={t('tasks.title')} tabIndex={0}>
                 <table ref={taskTableRef} className="w-full task-list-table table-fixed text-left border-collapse">
@@ -136,7 +188,9 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {groupTasks.map((task) => (
+                    {groupTasks.map((task) => {
+                      const isSubtask = Boolean((task as any).checklist_item_id || (task as any).parent_task_id || String(task.id).includes('::item:') || String(task.id).includes('-ci-'));
+                      return (
                       <tr key={task.id} onClick={() => onOpenTask(task)} className={`task-list-row hover-row-effect group ${task.campaign?.name ? 'hover-row-campaign' : task.project?.name ? 'hover-row-project' : ''} ${deletingIds.includes(task.id) ? 'animate-fade-out' : ''}`} data-selected={selectedTasks.includes(task.id)} data-completed={['done', 'complete', 'completed'].includes((task.status || '').toLowerCase())}>
                         <td className="p-4 overflow-hidden">
                           <input 
@@ -149,7 +203,23 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                         </td>
                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-medium overflow-hidden"><span className="truncate block">#{task.task_ref || task.id.split('-')[0]}</span></td>
                         <td className="p-4 overflow-hidden">
-                          <div className="task-list-row-title truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>{task.title}</div>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
+                            {isSubtask && (
+                              <span className="inline-grid grid-flow-col auto-cols-max items-center px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                                Subtask
+                              </span>
+                            )}
+                            <span className="task-list-row-title truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>{task.title}</span>
+                            {(taskCommentCounts.counts[task.id]?.count ?? 0) > 0 && (
+                              <CommentPreviewPopover
+                                entityType={task.id.startsWith('cs-') ? 'campaign_subtask' : task.id.startsWith('ps-') ? 'project_subtask' : 'task'}
+                                entityId={task.id}
+                                entityTitle={task.title}
+                                count={taskCommentCounts.counts[task.id]?.count ?? 0}
+                                onOpenFull={() => onOpenTask(task)}
+                              />
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 text-sm overflow-hidden">
                           {(() => {
@@ -175,7 +245,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                         </td>
                         <td className="p-4 overflow-hidden">
                           {task.assignee ? (
-                            <div className="flex items-center space-x-2 overflow-hidden">
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 overflow-hidden">
                               <Avatar name={task.assignee.name} src={task.assignee.avatar_url} />
                               <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{task.assignee.name}</span>
                             </div>
@@ -183,8 +253,18 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                             <span className="text-sm text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md truncate inline-block">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
-                          <div className="truncate"><StatusBadge status={task.status} /></div>
+                        <td className="p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                          <div className="truncate">
+                            {onStatusChange ? (
+                              <QuickStatusDropdown
+                                currentStatus={task.status}
+                                options={allTaskStatusOptions}
+                                onSelect={(nextStatus) => onStatusChange(task, nextStatus)}
+                              />
+                            ) : (
+                              <StatusBadge status={task.status} />
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); onOpenTask(task); }}>
                           <div className="truncate">
@@ -202,7 +282,7 @@ export function TaskListCollection({loading, filteredTasks, groupedTasks, groupB
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>

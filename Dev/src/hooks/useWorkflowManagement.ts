@@ -47,14 +47,33 @@ export function useWorkflowManagement() {
     }
     return null;
   }, [rawDeptId, hub.profile?.department_name, directory.data?.departments]);
-  const userIsRestricted = !isGlobalManager(hub.profile) && Boolean(resolvedDeptId || hub.profile?.department_name);
+  const isManager = isGlobalManager(hub.profile) || isAdmin(hub.profile);
+  const isLeader = isDepartmentLeader(hub.profile);
+  const isStaff = !isManager && !isLeader;
+  const userIsRestricted = !isManager && Boolean(resolvedDeptId || hub.profile?.department_name);
 
   const entities = useMemo(() => {
     const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
+
+    // Lấy danh sách ID thành viên phòng ban nếu là Leader
+    const deptMemberIds = new Set<string>();
+    if (isLeader) {
+      if (actorId) deptMemberIds.add(actorId);
+      const targetDeptId = resolvedDeptId;
+      const targetDeptName = hub.profile?.department_name?.trim().toLowerCase();
+      (directory.data?.users || []).forEach(u => {
+        const uDept = String(u.department_id || '');
+        const uDeptName = (u.department?.name || '').trim().toLowerCase();
+        if ((targetDeptId && uDept === String(targetDeptId)) || (targetDeptName && uDeptName === targetDeptName)) {
+          deptMemberIds.add(String(u.id));
+        }
+      });
+    }
+
     const mapped = hub.tracks
       .filter(track => {
-        if (!userIsRestricted) return true;
-        const inDept = Boolean(resolvedDeptId && track.department_id && String(track.department_id) === String(resolvedDeptId));
+        if (isManager) return true;
+
         const isParticipant = Boolean(
           actorId && (
             track.pics.some(p => String(p.id) === actorId) ||
@@ -63,7 +82,37 @@ export function useWorkflowManagement() {
             track.phases.some(ph => ph.members.some(m => String(m.id) === actorId))
           )
         );
-        return inDept || isParticipant;
+
+        const trackTasks = parentTasks(hub.tasks, track.entity_type, track.entity_id);
+
+        if (isStaff) {
+          // Staff thường: Chỉ thấy track mà mình được giao việc / tham gia
+          const hasMyTask = Boolean(
+            actorId && trackTasks.some(t => String(t.assignee_id) === actorId || String(t.created_by) === actorId)
+          );
+          return isParticipant || hasMyTask;
+        }
+
+        if (isLeader) {
+          // Leader: Thấy tất cả track thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có task của nhân sự phòng ban
+          const inDept = Boolean(resolvedDeptId && track.department_id && String(track.department_id) === String(resolvedDeptId));
+          const hasDeptParticipant = (
+            track.pics.some(p => deptMemberIds.has(String(p.id))) ||
+            (track.sub_pics || []).some(p => deptMemberIds.has(String(p.id))) ||
+            (track.creator && deptMemberIds.has(String(track.creator.id))) ||
+            track.phases.some(ph => ph.members.some(m => deptMemberIds.has(String(m.id))))
+          );
+          const hasDeptTask = trackTasks.some(t => {
+            if (t.assignee_id && deptMemberIds.has(String(t.assignee_id))) return true;
+            if (t.created_by && deptMemberIds.has(String(t.created_by))) return true;
+            if (resolvedDeptId && String(t.department_id || t.project?.department_id || t.campaign?.department_id) === String(resolvedDeptId)) return true;
+            return false;
+          });
+
+          return inDept || hasDeptParticipant || hasDeptTask || isParticipant;
+        }
+
+        return true;
       })
       .map(track => {
         const key = `${track.entity_type}:${track.entity_id}`;
@@ -101,7 +150,7 @@ export function useWorkflowManagement() {
       if (b.anyTaskTs !== a.anyTaskTs) return b.anyTaskTs - a.anyTaskTs;
       return a.name.localeCompare(b.name, 'vi');
     });
-  }, [hub.tracks, hub.tasks, hub.profile?.id, recentEntities, userIsRestricted, resolvedDeptId]);
+  }, [hub.tracks, hub.tasks, hub.profile?.id, recentEntities, isManager, isLeader, isStaff, resolvedDeptId, userIsRestricted]);
   const activeEntities = useMemo(() => entities.filter(e => !e.isCompletedEntity), [entities]);
   const selectedKey = params.get('campaign') || params.get('project');
   const currentEntity = selectedKey
@@ -165,7 +214,34 @@ export function useWorkflowManagement() {
     document.addEventListener('click', click); window.addEventListener('keydown', key);
     return () => { cancelCloseTooltip(); document.removeEventListener('click', click); window.removeEventListener('keydown', key); };
   }, [pinnedTooltip]);
-  const allTasks = useMemo(() => currentEntity ? parentTasks(hub.tasks, currentEntity.type, currentEntity.entity_id) : [], [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
+  const rawTasks = useMemo(() => currentEntity ? parentTasks(hub.tasks, currentEntity.type, currentEntity.entity_id) : [], [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
+
+  const allTasks = useMemo(() => {
+    if (isManager || isLeader) return rawTasks;
+    const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
+    const isPrimaryLeadOrCreator = Boolean(
+      actorId && (
+        (currentEntity?.creator && String(currentEntity.creator.id) === actorId) ||
+        (currentEntity?.pics?.[0] && String(currentEntity.pics[0].id) === actorId) ||
+        currentEntity?.root
+      )
+    );
+    if (isPrimaryLeadOrCreator) return rawTasks;
+
+    const myPhaseIds = new Set(
+      (currentEntity?.phases || [])
+        .filter(ph => ph.members.some(m => String(m.id) === actorId))
+        .map(ph => ph.id)
+    );
+
+    return rawTasks.filter(t => {
+      if (t.assignee_id && String(t.assignee_id) === actorId) return true;
+      if (t.created_by && String(t.created_by) === actorId) return true;
+      if (t.workflow_phase_id && myPhaseIds.has(t.workflow_phase_id)) return true;
+      if ((t.checklist_items || []).some((ci: any) => String(ci.created_by) === actorId || String(ci.assignee_id) === actorId)) return true;
+      return false;
+    });
+  }, [rawTasks, isManager, isLeader, hub.profile?.id, currentEntity]);
   // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Workflow Management
   const phases: Phase[] = useMemo(() => (currentEntity?.phases || []).map(p => {
     const isLeaderOrCreator = Boolean(

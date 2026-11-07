@@ -14,7 +14,7 @@ import {useAuthStore} from '../store/authStore';
 import {checkDateMatch,type CampaignFilters} from '../components/features/projects/CampaignPanel';
 import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
-import {canViewTeamManagement,isGlobalManager} from '../lib/roleScope';
+import {canViewTeamManagement,isGlobalManager,isAdmin,isDepartmentLeader} from '../lib/roleScope';
 import {isTaskDone} from '../lib/taskTracking';
 import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {editOwnedComment} from '../lib/commentEditing';
@@ -42,7 +42,10 @@ export function useProjectsController(){
     }
     return null;
   }, [rawDeptId, profile?.department_name, departments]);
-  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
+  const isManager = isGlobalManager(profile) || isAdmin(profile);
+  const isLeader = isDepartmentLeader(profile);
+  const isStaff = !isManager && !isLeader;
+  const userIsRestricted = !isManager && Boolean(resolvedDeptId || profile?.department_name);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
   const picMembers = useMemo(() => ({ ...storedPicMembers, ...Object.fromEntries(workflow.tracks.filter(track => track.entity_type === 'project').map(track => [track.entity_id, track.pics.map(p => String(p.id))])) }), [storedPicMembers, workflow.tracks]);
@@ -278,16 +281,40 @@ export function useProjectsController(){
     const term = searchTerm.trim().toLowerCase();
 
     return projects.filter(p => {
-      // 0. Giới hạn tầm view phòng ban cho người dùng bị hạn chế
-      if (userIsRestricted) {
-        const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));
+      // 0. Phân quyền tầm view theo 3 cấp: Manager/Admin -> Leader -> Staff
+      if (!isManager) {
         const myId = profile?.id;
         const myIdStr = String(myId);
         const isLead = myId && (Number(p.lead_id) === Number(myId) || projectPrimaryOwners[p.id] === myId);
         const isMember = (members[p.id] || []).includes(myIdStr) || (picMembers[p.id] || []).includes(myIdStr);
         const isSub = (subtaskMembers[p.id] || []).includes(myIdStr);
         const isCreator = myId && Number(p.created_by) === Number(myId);
-        if (!inDept && !isLead && !isMember && !isSub && !isCreator) return false;
+
+        if (isStaff) {
+          // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
+          if (!isLead && !isMember && !isSub && !isCreator) return false;
+        } else if (isLeader) {
+          // Leader: Thấy hết Project thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia
+          const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));
+          const targetDeptId = resolvedDeptId;
+          const targetDeptName = profile?.department_name?.trim().toLowerCase();
+          const hasDeptMember = (
+            (members[p.id] || []).some(id => {
+              const person = people.find(pe => String(pe.id) === String(id));
+              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
+            }) ||
+            (picMembers[p.id] || []).some(id => {
+              const person = people.find(pe => String(pe.id) === String(id));
+              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
+            }) ||
+            (subtaskMembers[p.id] || []).some(id => {
+              const person = people.find(pe => String(pe.id) === String(id));
+              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
+            }) ||
+            Boolean(p.lead_id && people.some(pe => Number(pe.id) === Number(p.lead_id) && ((targetDeptId && String((pe as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((pe as any).departments?.name || '').trim().toLowerCase() === targetDeptName))))
+          );
+          if (!inDept && !hasDeptMember && !isLead && !isMember && !isSub && !isCreator) return false;
+        }
       }
 
       // 1. Search filter

@@ -26,6 +26,7 @@ import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
+import {isAdmin, isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -165,8 +166,23 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
   const [subtaskFilter, setSubtaskFilter] = useState<'open' | 'completed' | 'all'>('all');
 
+  const isManager = isGlobalManager(profile) || isAdmin(profile);
+  const isLeader = isDepartmentLeader(profile);
+  const myId = profile?.id != null ? Number(profile.id) : null;
+  const isItemLeadOrCreator = Boolean(
+    myId && (
+      (data.lead_id && Number(data.lead_id) === myId) ||
+      (data.created_by && Number(data.created_by) === myId)
+    )
+  );
+
   const visibleSubtasks = subtasks.filter(sub => {
     if (sub.status === 'deleted' || sub.status === 'archived') return false;
+    if (!isManager && !isLeader && !isItemLeadOrCreator) {
+      const isAssigned = sub.assignee_id != null && Number(sub.assignee_id) === myId;
+      const isCreator = sub.created_by != null && Number(sub.created_by) === myId;
+      if (!isAssigned && !isCreator) return false;
+    }
     if (subtaskFilter === 'open') return !isTaskDone(sub.status);
     if (subtaskFilter === 'completed') return isTaskDone(sub.status);
     return true;
@@ -315,10 +331,10 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       onClick={() => setSubtasksCollapsed(v => !v)}
                       className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
                       aria-expanded={!subtasksCollapsed}
-                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtasks') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtasks')}
+                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand tasks' : 'Mở rộng task') : (lang === 'en' ? 'Collapse tasks' : 'Thu gọn task')}
                     >
                       <Users size={16}/>
-                      <span>{t('projects.subtasks')}</span>
+                      <span>{kind === 'campaign' ? t('projects.tasksInCampaign') : t('projects.tasksInProject')}</span>
                       {doneCount > 0 && (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           {doneCount} {lang === 'en' ? 'completed' : 'hoàn thành'}

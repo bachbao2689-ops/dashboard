@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import {WorkflowTrackingSummary} from './WorkflowTrackingSummary';
 
 import {Avatar} from '../../common/Avatar';
+import {CommentPreviewPopover} from '../../common/CommentPreviewPopover';
 import {SmartCommentInput} from '../comments/SmartCommentInput';
 import {CommentMessage} from '../comments/CommentMessage';
 import {MultiSelect} from '../../common/MultiSelect';
@@ -13,7 +14,7 @@ import {MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,ListTodo,Check,CheckCi
 import {dateValue,priorityClass,getCampaignPriority,setCachedCampaignPriority} from './projectPresentation';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../../../lib/taskTracking';
-import {isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
+import {isGlobalManager, isDepartmentLeader, isAdmin} from '../../../lib/roleScope';
 import type {useProjectsController} from '../../../hooks/useProjectsController';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 
@@ -24,6 +25,24 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
   const [isEditingDesc, setIsEditingDesc] = React.useState(false);
   const [descDraft, setDescDraft] = React.useState('');
   const [savingDesc, setSavingDesc] = React.useState(false);
+
+  const isManager = isGlobalManager(profile) || isAdmin(profile);
+  const isLeader = isDepartmentLeader(profile);
+  const myId = profile?.id != null ? Number(profile.id) : null;
+  const isCampaignLeadOrCreator = Boolean(
+    myId && (
+      (selectedCampaign?.lead_id && Number(selectedCampaign.lead_id) === myId) ||
+      (selectedCampaign?.created_by && Number(selectedCampaign.created_by) === myId)
+    )
+  );
+  const visibleCampaignSubtasks = React.useMemo(() => {
+    if (isManager || isLeader || isCampaignLeadOrCreator) return campaignSubtasks || [];
+    return (campaignSubtasks || []).filter((s: any) => {
+      if (s.assignee_id != null && Number(s.assignee_id) === myId) return true;
+      if (s.created_by != null && Number(s.created_by) === myId) return true;
+      return false;
+    });
+  }, [campaignSubtasks, isManager, isLeader, isCampaignLeadOrCreator, myId]);
 
   const handleSaveDesc = async () => {
     if (!selectedCampaign) return;
@@ -230,7 +249,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               {(() => {
                 const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
                 const hasPhases = campaignPhases.length > 0;
-                const unassignedSubtasks = campaignSubtasks.filter(subtask => {
+                const unassignedSubtasks = visibleCampaignSubtasks.filter(subtask => {
                   if (subtask.status === 'deleted') return false;
                   if (!hasPhases) return true;
                   return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
@@ -244,10 +263,10 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                       onClick={() => setSubtasksCollapsed(v => !v)}
                       className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
                       aria-expanded={!subtasksCollapsed}
-                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtasks') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtasks')}
+                      title={subtasksCollapsed ? (lang === 'en' ? 'Expand tasks' : 'Mở rộng task') : (lang === 'en' ? 'Collapse tasks' : 'Thu gọn task')}
                     >
                       <Users size={16}/>
-                      <span>{t('projects.subtasks')}</span>
+                      <span>{t('projects.tasksInCampaign')}</span>
                       {doneCount > 0 && (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           {doneCount} {lang === 'en' ? 'completed' : 'hoàn thành'}
@@ -268,7 +287,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                   {(() => {
                     const campaignPhases = workflow.tracks.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(selectedCampaign?.id).trim())?.phases || [];
                     const hasPhases = campaignPhases.length > 0;
-                    const unassignedSubtasks = campaignSubtasks.filter(subtask => {
+                    const unassignedSubtasks = visibleCampaignSubtasks.filter(subtask => {
                       if (subtask.status === 'deleted') return false;
                       if (!hasPhases) return true;
                       return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
@@ -318,8 +337,8 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
           <button
             type="button"
             onClick={() => removeCampaignSubtask(s.id)}
-            title={lang === 'en' ? 'Delete subtask' : 'Xóa'}
-            aria-label={lang === 'en' ? 'Delete subtask' : 'Xóa'}
+            title={lang === 'en' ? 'Delete task' : 'Xóa task'}
+            aria-label={lang === 'en' ? 'Delete task' : 'Xóa task'}
             className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
           >
             <Trash2 size={13} />
@@ -365,7 +384,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               const isAllDone = done === total && total > 0;
               return (
                 <span
-                  title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
+                  title={lang === 'en' ? `Subtask: ${done}/${total} completed` : `Subtask: ${done}/${total} hoàn thành`}
                   className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border ${
                     isAllDone
                       ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
@@ -378,13 +397,14 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               );
             })()}
             {campaignSubtaskCommentCounts[s.id] > 0 && (
-              <span title={`${campaignSubtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
-                <span className="relative inline-grid place-items-center">
-                  <MessageSquare size={12}/>
-                  {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
-                </span>
-                <span>{campaignSubtaskCommentCounts[s.id]}</span>
-              </span>
+              <CommentPreviewPopover
+                entityType="campaign_subtask"
+                entityId={s.id}
+                entityTitle={s.title}
+                count={campaignSubtaskCommentCounts[s.id]}
+                hasUnreadDot={Boolean(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id])}
+                onOpenFull={() => setSelectedSubtask(s)}
+              />
             )}
           </div>
 

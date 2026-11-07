@@ -15,10 +15,7 @@ export function isAdmin(profile: RoleProfile): boolean {
 export function isGlobalManager(profile: RoleProfile): boolean {
   const role = normalized(profile?.role);
   const level = normalized(profile?.employment_level);
-  const dept = normalized(profile?.department_name);
-  // Theo brief Dashboard (1) Slide 1: Leader của team Design có quyền và tầm view như Manager (tạm thời, dễ hoàn nguyên)
-  const isDesignLeader = (role === 'leader' || level === 'leader') && (dept === 'design' || dept === 'thiết kế');
-  return role === 'admin' || level === 'manager' || (role === 'manager' && level !== 'leader') || isDesignLeader;
+  return role === 'admin' || level === 'manager' || (role === 'manager' && level !== 'leader');
 }
 
 export function isDepartmentLeader(profile: RoleProfile): boolean {

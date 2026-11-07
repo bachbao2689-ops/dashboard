@@ -73,12 +73,19 @@ export function NotificationPopupStack(){
  const extra=stack.length>1?Math.min(stack.length,VISIBLE)-1:0;
  const stackTopOffset=updateInfo?'calc(186px + env(safe-area-inset-top,0px))':undefined;
 
+ const profile = useAuthStore(s => s.profile);
+ const originalProfile = useAuthStore(s => s.originalProfile);
+ const baseAccount = originalProfile || profile;
+ const isAdminAccount = Boolean(
+  baseAccount && (
+   String(baseAccount.role || '').trim().toLowerCase() === 'admin' ||
+   baseAccount.id === 999999
+  )
+ );
+ const showDevFloatingTools = isAdminAccount || (import.meta.env.DEV && (typeof window !== 'undefined' && (window.location.search.includes('dev=1') || localStorage.getItem('kcoffee_show_dev_tools') === 'true')));
+
  return <>
-  {(import.meta.env.DEV || (typeof window !== 'undefined' && (
-    window.location.hostname !== 'dashboard-nu-tan-30.vercel.app' ||
-    window.location.search.includes('dev=1') ||
-    localStorage.getItem('kcoffee_show_dev_tools') === 'true'
-  ))) && (
+  {showDevFloatingTools && (
    <DevFloatingTools
     onTriggerUpdate={()=>void appUpdateService.triggerUpdate()}
     onTriggerDemo={demo}

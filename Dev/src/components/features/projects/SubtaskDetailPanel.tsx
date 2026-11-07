@@ -1071,10 +1071,10 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   onClick={() => setChecklistCollapsed(v => !v)}
                   className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
                   aria-expanded={!checklistCollapsed}
-                  title={checklistCollapsed ? (lang === 'en' ? 'Expand checklist' : 'Mở rộng việc phát sinh') : (lang === 'en' ? 'Collapse checklist' : 'Thu gọn việc phát sinh')}
+                  title={checklistCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtask') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtask')}
                 >
                   <ListTodo size={16} className="text-sky-600 dark:text-sky-400" />
-                  <span>{lang === 'en' ? 'Checklist' : 'Việc phát sinh'}</span>
+                  <span>Subtask</span>
                   {done > 0 && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {done} {lang === 'en' ? 'completed' : 'hoàn thành'}
@@ -1158,7 +1158,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                   {editingItemId === item.id ? (
                     <div className="space-y-3 pt-1">
                       <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
+                        {lang === 'en' ? 'Subtask Title' : 'Tên subtask'} <span className="text-red-500">*</span>
                         <input
                           type="text"
                           value={editItemTitle}
@@ -1310,8 +1310,8 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             !showAddItemForm && (
               <div className="rounded-[8px] border border-dashed border-gray-200 dark:border-slate-700 p-3 text-center text-xs text-gray-400 dark:text-slate-500">
                 {lang === 'en'
-                  ? `No checklist items yet. ${canAddSubtaskItem ? 'Click "Add item" to assign work.' : ''}`
-                  : `Chưa có việc phát sinh nào. ${canAddSubtaskItem ? 'Bấm "Thêm việc phát sinh" để giao thêm việc.' : ''}`}
+                  ? 'No subtasks yet. Click "Add Subtask" to assign work.'
+                  : 'Chưa có subtask nào. Bấm "Thêm Subtask" để giao thêm việc.'}
               </div>
             )
           )}
@@ -1324,7 +1324,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               className="mt-3 px-4 py-2 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-[8px] transition-colors border border-primary/20 w-full text-center border-dashed cursor-pointer"
             >
               <Plus size={16} className="inline mr-1" />
-              <span>{lang === 'en' ? 'Add item' : 'Thêm việc phát sinh'}</span>
+              <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
             </button>
           )}
 
@@ -1332,12 +1332,12 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           {showAddItemForm && (
             <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                {lang === 'en' ? 'Checklist Item Title' : 'Tên đầu việc'} <span className="text-red-500">*</span>
+                {lang === 'en' ? 'Subtask Title' : 'Tên subtask'} <span className="text-red-500">*</span>
                 <input
                   type="text"
                   value={newItemTitle}
                   onChange={(e) => setNewItemTitle(e.target.value)}
-                  placeholder={lang === 'en' ? 'Enter item title...' : 'Nhập tên đầu việc cần giao...'}
+                  placeholder={lang === 'en' ? 'Enter subtask title...' : 'Nhập tên subtask cần giao...'}
                   maxLength={500}
                   className="mt-1 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white outline-none focus:border-primary"
                   autoFocus

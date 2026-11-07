@@ -1,7 +1,6 @@
 import {EntityStatusField} from '../components/features/projects/EntityStatusField';
 import {useReadEntityNotifications} from '../hooks/useReadEntityNotifications';
 import {ActionButton} from '../components/common/ActionButton';
-import {StatusBadge} from '../components/common/StatusBadge';
 import {MultiSelect} from '../components/common/MultiSelect';
 import React from 'react';
 import {Link, useSearchParams} from 'react-router-dom';
@@ -28,13 +27,15 @@ import {supabase} from '../services/supabase';
 import toast from 'react-hot-toast';
 import {CampaignDetailDrawer} from '../components/features/projects/CampaignDetailDrawer';
 import {EntityInfoPopover} from '../components/features/projects/EntityInfoPopover';
+import {CommentPreviewPopover} from '../components/common/CommentPreviewPopover';
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
-import {isGlobalManager, isDepartmentLeader} from '../lib/roleScope';
+import {isGlobalManager, isDepartmentLeader, isAdmin} from '../lib/roleScope';
+import {QuickStatusDropdown} from '../components/common/QuickStatusDropdown';
 export const Projects:React.FC=()=>{
- const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 130, 150, 220], []);
+ const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 150, 220], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
-   tableKey: 'projects_table',
+   tableKey: 'projects_table_v2',
    initialWidths: initialProjectColWidths,
    minWidth: 95,
  });
@@ -147,6 +148,25 @@ export const Projects:React.FC=()=>{
   const [openNoteEntityIds, setOpenNoteEntityIds] = React.useState<Record<string, boolean>>({});
   const setIsScanMode = useUiStore(s => s.setIsScanMode);
   const isDetailActive = Boolean(selected || selectedCampaign || selectedSubtask);
+
+  const filterProjectSubtasksForUser = React.useCallback((items: any[], proj: any) => {
+    if (isGlobalManager(profile) || isAdmin(profile) || isDepartmentLeader(profile)) return items;
+    const myId = profile?.id != null ? Number(profile.id) : null;
+    if (!myId) return items;
+    const isPrimaryLeadOrCreator = Boolean(
+      (proj?.lead_id && Number(proj.lead_id) === myId) ||
+      (proj?.created_by && Number(proj.created_by) === myId) ||
+      (proj?.id && String(projectPrimaryOwners[proj.id]) === String(myId))
+    );
+    if (isPrimaryLeadOrCreator) return items;
+    return items.filter(st => {
+      if (st.assignee_id != null && Number(st.assignee_id) === myId) return true;
+      if (st.created_by != null && Number(st.created_by) === myId) return true;
+      const checklist = projectSubtaskChecklistMap[st.id] || [];
+      if (checklist.some((ci: any) => Number(ci.created_by) === myId || Number(ci.assignee_id) === myId)) return true;
+      return false;
+    });
+  }, [profile, projectPrimaryOwners, projectSubtaskChecklistMap]);
 
   React.useEffect(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1280;
@@ -324,21 +344,46 @@ export const Projects:React.FC=()=>{
     window.dispatchEvent(new Event('tasks:changed'));
   };
 
-  const handleToggleProjectSubtaskStatus = async (subtaskId: string, currentStatus: string) => {
-    const isDone = ['done', 'complete', 'completed'].includes((currentStatus || '').toLowerCase());
-    const nextStatus = isDone ? 'in_progress' : 'completed';
-    const { error } = await supabase.from('project_subtasks').update({ status: nextStatus }).eq('id', subtaskId);
+  const handleQuickChangeProjectStatus = async (projectId: string, nextStatus: string) => {
+    const { error } = await supabase.from('projects').update({ status: nextStatus }).eq('id', projectId);
     if (error) {
-      toast.error('Không thể cập nhật trạng thái');
+      toast.error(lang === 'en' ? 'Failed to update status' : 'Không thể cập nhật trạng thái');
       return;
     }
+    toast.success(lang === 'en' ? 'Status updated' : 'Đã cập nhật trạng thái');
+    await loadProjectTreeData();
+    window.dispatchEvent(new Event('projects:changed'));
+    window.dispatchEvent(new Event('tasks:changed'));
+  };
+
+  const handleQuickChangeProjectSubtaskStatus = async (subtaskId: string, nextStatus: string) => {
+    const { error } = await supabase.from('project_subtasks').update({ status: nextStatus }).eq('id', subtaskId);
+    if (error) {
+      toast.error(lang === 'en' ? 'Failed to update status' : 'Không thể cập nhật trạng thái');
+      return;
+    }
+    toast.success(lang === 'en' ? 'Status updated' : 'Đã cập nhật trạng thái');
     await loadProjectTreeData();
     window.dispatchEvent(new Event('tasks:changed'));
   };
 
+  const projectStatusOptions = React.useMemo(() => [
+    { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
+    { value: 'active', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
+    { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+  ], [lang]);
+
+  const subtaskStatusOptions = React.useMemo(() => [
+    { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
+    { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
+    { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+  ], [lang]);
+
   const handleCreateProjectChecklistItem = async (subtaskId: string) => {
     if (!newItemTitle.trim() || !profile?.id) {
-      toast.error(lang === 'en' ? 'Please enter item title' : 'Vui lòng nhập tên đầu việc');
+      toast.error(lang === 'en' ? 'Please enter subtask title' : 'Vui lòng nhập tên subtask');
       return;
     }
     const currentList = projectSubtaskChecklistMap[subtaskId] || [];
@@ -367,10 +412,10 @@ export const Projects:React.FC=()=>{
       },
     });
     if (error) {
-      toast.error('Không thể lưu đầu việc');
+      toast.error(lang === 'en' ? 'Cannot save subtask' : 'Không thể lưu subtask');
       return;
     }
-    toast.success(lang === 'en' ? 'Checklist item added' : 'Đã thêm đầu việc thành công');
+    toast.success(lang === 'en' ? 'Subtask added' : 'Đã thêm subtask thành công');
     setCreatingItemSubtaskId(null);
     setNewItemTitle('');
     setNewItemDue('');
@@ -383,7 +428,7 @@ export const Projects:React.FC=()=>{
   const handleSaveEditProjectSubtask = async (subtaskId: string) => {
     if (!editingSubtaskTitle.trim()) { setEditingSubtaskId(null); return; }
     const { error } = await supabase.from('project_subtasks').update({ title: editingSubtaskTitle.trim() }).eq('id', subtaskId);
-    if (error) { toast.error('Không thể cập nhật tên subtask'); return; }
+    if (error) { toast.error(lang === 'en' ? 'Cannot update task' : 'Không thể cập nhật tên task'); return; }
     setEditingSubtaskId(null);
     await loadProjectTreeData();
     window.dispatchEvent(new Event('tasks:changed'));
@@ -401,7 +446,7 @@ export const Projects:React.FC=()=>{
       entity_id: subtaskId,
       metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
     });
-    if (error) { toast.error('Không thể cập nhật đầu việc'); return; }
+    if (error) { toast.error(lang === 'en' ? 'Cannot update subtask' : 'Không thể cập nhật subtask'); return; }
     setEditingItemId(null);
     setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
     window.dispatchEvent(new Event('tasks:changed'));
@@ -429,8 +474,8 @@ export const Projects:React.FC=()=>{
       entity_id: subtaskId,
       metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
     });
-    if (error) { toast.error('Không thể lưu đầu việc'); return; }
-    toast.success(lang === 'en' ? 'Checklist item added' : 'Đã thêm đầu việc');
+    if (error) { toast.error(lang === 'en' ? 'Cannot save subtask' : 'Không thể lưu subtask'); return; }
+    toast.success(lang === 'en' ? 'Subtask added' : 'Đã thêm subtask');
     setExpandedProjectSubtasks(prev => ({ ...prev, [subtaskId]: true }));
     setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
     window.dispatchEvent(new Event('tasks:changed'));
@@ -449,7 +494,7 @@ export const Projects:React.FC=()=>{
       metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
     });
     if (error) {
-      toast.error('Không thể cập nhật đầu việc');
+      toast.error(lang === 'en' ? 'Cannot update subtask' : 'Không thể cập nhật subtask');
       return;
     }
     setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
@@ -469,10 +514,10 @@ export const Projects:React.FC=()=>{
       metadata: { checklist_items: nextItems, is_internal_detail_sync: true },
     });
     if (error) {
-      toast.error('Không thể xóa đầu việc');
+      toast.error(lang === 'en' ? 'Cannot delete subtask' : 'Không thể xóa subtask');
       return;
     }
-    toast.success(lang === 'en' ? 'Item deleted' : 'Đã xóa đầu việc');
+    toast.success(lang === 'en' ? 'Subtask deleted' : 'Đã xóa subtask');
     setProjectSubtaskChecklistMap(prev => ({ ...prev, [subtaskId]: nextItems }));
     window.dispatchEvent(new Event('tasks:changed'));
   };
@@ -609,11 +654,14 @@ export const Projects:React.FC=()=>{
   <div className="space-y-3 p-3 xl:hidden">
     {visibleProjects.map(project => {
       const isProjectExpanded = Boolean(expandedProjects[project.id]);
-      const subtasks = projectSubtasksMap[project.id] || [];
+      const rawSubtasks = projectSubtasksMap[project.id] || [];
+      const subtasks = filterProjectSubtasksForUser(rawSubtasks, project);
       const projectNote = getCachedNote('project', project.id);
       const isNoteOpen = Boolean(openNoteEntityIds[project.id]);
       const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
       const leadPerson = people.find(x => String(x.id) === String(leadId));
+      const projectTrack = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
+      const hasPhases = (projectTrack?.phases?.length || 0) > 0;
 
       return (
         <article key={project.id} className={`min-w-0 rounded-[8px] border border-gray-200/90 bg-white/90 p-3 dark:border-slate-800 dark:bg-[#071325]/70 shadow-xs ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
@@ -623,20 +671,29 @@ export const Projects:React.FC=()=>{
               type="button"
               onClick={() => toggleProjectExpand(project.id)}
               className="p-1 -ml-1 text-slate-400 hover:text-violet-500 rounded-[6px] transition-transform cursor-pointer shrink-0"
-              title={isProjectExpanded ? 'Thu gọn subtasks' : 'Mở rộng subtasks'}
+              title={isProjectExpanded ? (lang === 'en' ? 'Collapse tasks' : 'Thu gọn task') : (lang === 'en' ? 'Expand tasks' : 'Mở rộng task')}
             >
               <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
             </button>
-            {isTaskDone(project.status) && (
+            {hasPhases && (
               <EntityInfoPopover
                 entityType="project"
                 entity={project}
-                track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
+                track={projectTrack}
                 leadPerson={leadPerson ? { name: leadPerson.name, avatar_url: (leadPerson as any).avatar_url } : null}
-                subPersons={(subtaskMembers[project.id] || []).map(id => {
-                  const p = people.find(x => String(x.id) === String(id));
-                  return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-                })}
+                subPersons={(() => {
+                  const primaryPicIds = new Set([
+                    ...(picMembers[project.id] || []).map(String),
+                    project.lead_id ? String(project.lead_id) : '',
+                    projectPrimaryOwners[project.id] ? String(projectPrimaryOwners[project.id]) : '',
+                  ].filter(Boolean));
+                  return (subtaskMembers[project.id] || [])
+                    .filter(id => !primaryPicIds.has(String(id)))
+                    .map(id => {
+                      const p = people.find(x => String(x.id) === String(id));
+                      return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
+                    });
+                })()}
               />
             )}
             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
@@ -648,8 +705,7 @@ export const Projects:React.FC=()=>{
                 {project.name}
               </button>
               {(() => {
-                const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
-                const phases = track?.phases || [];
+                const phases = projectTrack?.phases || [];
                 const phaseCount = phases.length;
                 const unassignedSubtasks = subtasks.filter(s => {
                   if (s.status === 'deleted') return false;
@@ -658,7 +714,6 @@ export const Projects:React.FC=()=>{
                 });
                 const unassignedCount = unassignedSubtasks.length;
                 const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
-                const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                 return (
                   <>
@@ -668,21 +723,22 @@ export const Projects:React.FC=()=>{
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                           : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                       }`}>
-                        ({unassignedCount})
-                      </span>
-                    )}
-                    {phaseCount > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
-                        isAllPhasesDone
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
-                          : 'bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60'
-                      }`}>
-                        ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                        ({unassignedCount} Tasks)
                       </span>
                     )}
                   </>
                 );
               })()}
+              {hasComments[project.id] && (
+                <CommentPreviewPopover
+                  entityType="project"
+                  entityId={project.id}
+                  entityTitle={project.name}
+                  hasUnreadDot={Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]}
+                  iconSize={13}
+                  className="shrink-0"
+                />
+              )}
               {Boolean(projectNote && projectNote.trim()) && (
                 <button
                   type="button"
@@ -698,8 +754,13 @@ export const Projects:React.FC=()=>{
               )}
             </div>
             {/* Status badge đưa lên góc phải */}
-            <div className="shrink-0">
-              <StatusBadge status={project.status || 'active'} />
+            <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+              <QuickStatusDropdown
+                currentStatus={project.status || 'active'}
+                options={projectStatusOptions}
+                onSelect={(nextStatus) => handleQuickChangeProjectStatus(project.id, nextStatus)}
+                disabled={!canManageProject(project)}
+              />
             </div>
           </div>
 
@@ -744,7 +805,7 @@ export const Projects:React.FC=()=>{
                         type="button"
                         onClick={() => toggleProjectSubtaskExpand(st.id)}
                         className="p-1 text-slate-400 hover:text-violet-600 rounded transition-transform cursor-pointer"
-                        title={isSubtaskExpanded ? 'Thu gọn đầu việc' : 'Xem các đầu việc'}
+                        title={isSubtaskExpanded ? (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtask') : (lang === 'en' ? 'Expand subtasks' : 'Xem các subtask')}
                       >
                         <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
                       </button>
@@ -759,13 +820,13 @@ export const Projects:React.FC=()=>{
                       >
                         {st.title}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleToggleProjectSubtaskStatus(st.id, st.status)}
-                        className="hover:opacity-85 cursor-pointer"
-                      >
-                        <StatusBadge status={st.status || 'planning'} />
-                      </button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <QuickStatusDropdown
+                          currentStatus={st.status || 'planning'}
+                          options={subtaskStatusOptions}
+                          onSelect={(nextStatus) => handleQuickChangeProjectSubtaskStatus(st.id, nextStatus)}
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-flow-col auto-cols-max items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                       <span>{st.assignee?.name || t('common.unassigned')}</span>
@@ -814,7 +875,7 @@ export const Projects:React.FC=()=>{
                           <button
                             type="button"
                             onClick={() => {
-                              const title = prompt(lang === 'en' ? 'Checklist item title:' : 'Tiêu đề đầu việc:');
+                              const title = prompt(lang === 'en' ? 'Subtask title:' : 'Tiêu đề subtask:');
                               if (title && title.trim()) {
                                 void handleQuickCreateProjectChecklistItem(st.id, title);
                               }
@@ -822,7 +883,7 @@ export const Projects:React.FC=()=>{
                             className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-0.5 rounded-[8px] border border-dashed border-slate-300 dark:border-slate-700 bg-transparent text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
                           >
                             <Plus size={11} />
-                            <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
+                            <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
                           </button>
                         </div>
                       </div>
@@ -830,12 +891,12 @@ export const Projects:React.FC=()=>{
                   </div>
                 );
               })}
-              {/* Quick input to add subtask on mobile */}
+              {/* Quick input to add task on mobile */}
               <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => {
-                    const title = prompt(lang === 'en' ? 'Subtask title:' : 'Tiêu đề subtask:');
+                    const title = prompt(lang === 'en' ? 'Task title:' : 'Tiêu đề task:');
                     if (title && title.trim()) {
                       void handleQuickCreateProjectSubtask(project.id, title);
                     }
@@ -843,7 +904,7 @@ export const Projects:React.FC=()=>{
                   className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300 dark:border-slate-700 bg-transparent text-xs font-semibold text-slate-400 dark:text-slate-500 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                 >
                   <Plus size={13} />
-                  <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
+                  <span>{lang === 'en' ? '+ Add Task' : '+ Thêm Task'}</span>
                 </button>
               </div>
             </div>
@@ -885,12 +946,8 @@ export const Projects:React.FC=()=>{
             <div onMouseDown={(e) => startProjectColResize(3, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
           </th>
           <th className="p-4 relative text-center">
-            <span className="truncate block text-center">{t('projects.col.budget')}</span>
-            <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
-          </th>
-          <th className="p-4 relative text-center">
             <span className="truncate block text-center">{t('projects.col.status')}</span>
-            <div onMouseDown={(e) => startProjectColResize(5, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
+            <div onMouseDown={(e) => startProjectColResize(4, e)} onClick={(e) => e.stopPropagation()} className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-5 grid place-items-center cursor-col-resize z-20 group/handle" title="Kéo để chỉnh độ rộng"><div className="w-[2px] h-3 rounded-full bg-gray-300/90 dark:bg-slate-600 group-hover/handle:bg-primary group-hover/handle:h-4 transition-all" /></div>
           </th>
           <th className="p-4 relative text-center">
             <span className="truncate block text-center">{t('projects.col.notes')}</span>
@@ -900,7 +957,8 @@ export const Projects:React.FC=()=>{
       <tbody>
         {visibleProjects.map(project => {
           const isProjectExpanded = Boolean(expandedProjects[project.id]);
-          const subtasks = projectSubtasksMap[project.id] || [];
+          const rawSubtasks = projectSubtasksMap[project.id] || [];
+          const subtasks = filterProjectSubtasksForUser(rawSubtasks, project);
 
           return (
             <React.Fragment key={project.id}>
@@ -919,27 +977,38 @@ export const Projects:React.FC=()=>{
                         toggleProjectExpand(project.id);
                       }}
                       className="p-1 -ml-1 text-slate-400 hover:text-violet-500 rounded-[6px] transition-transform hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer shrink-0"
-                      title={isProjectExpanded ? (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtask') : (lang === 'en' ? 'Expand subtasks' : 'Xem các subtask')}
-                      aria-label={isProjectExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                      title={isProjectExpanded ? (lang === 'en' ? 'Collapse tasks' : 'Thu gọn task') : (lang === 'en' ? 'Expand tasks' : 'Xem các task')}
+                      aria-label={isProjectExpanded ? 'Collapse tasks' : 'Expand tasks'}
                     >
                       <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isProjectExpanded ? 'rotate-90 text-violet-500' : ''}`} />
                     </button>
-                    {isTaskDone(project.status) && (
-                      <EntityInfoPopover
-                        entityType="project"
-                        entity={project}
-                        track={workflow.tracks.find(t => t.entity_type === 'project' && t.entity_id === project.id)}
-                        leadPerson={(() => {
-                          const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
-                          const p = people.find(x => String(x.id) === String(leadId));
-                          return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
-                        })()}
-                        subPersons={(subtaskMembers[project.id] || []).map(id => {
+                    {(() => {
+                      const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
+                      const primaryPicIds = new Set([
+                        ...(picMembers[project.id] || []).map(String),
+                        project.lead_id ? String(project.lead_id) : '',
+                        projectPrimaryOwners[project.id] ? String(projectPrimaryOwners[project.id]) : '',
+                      ].filter(Boolean));
+                      const filteredSubPersons = (subtaskMembers[project.id] || [])
+                        .filter(id => !primaryPicIds.has(String(id)))
+                        .map(id => {
                           const p = people.find(x => String(x.id) === String(id));
                           return { id, name: p?.name || 'Unknown', avatar_url: (p as any)?.avatar_url };
-                        })}
-                      />
-                    )}
+                        });
+                      return (track?.phases?.length || 0) > 0 ? (
+                        <EntityInfoPopover
+                          entityType="project"
+                          entity={project}
+                          track={track}
+                          leadPerson={(() => {
+                            const leadId = projectPrimaryOwners[project.id] || (picMembers[project.id] || [])[0];
+                            const p = people.find(x => String(x.id) === String(leadId));
+                            return p ? { name: p.name, avatar_url: (p as any).avatar_url } : null;
+                          })()}
+                          subPersons={filteredSubPersons}
+                        />
+                      ) : null;
+                    })()}
                     <b className="block truncate text-gray-900 dark:text-white">{project.name}</b>
                     {(() => {
                       const track = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(project.id).trim());
@@ -952,7 +1021,6 @@ export const Projects:React.FC=()=>{
                       });
                       const unassignedCount = unassignedSubtasks.length;
                       const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
-                      const isAllPhasesDone = phaseCount > 0 && phases.every(p => p.status === 'completed' || Number((p as any).progress) >= 100);
 
                       return (
                         <>
@@ -962,28 +1030,19 @@ export const Projects:React.FC=()=>{
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
                                 : 'bg-violet-100/90 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/70 dark:border-violet-800/60'
                             }`}>
-                              ({unassignedCount} subtask{unassignedCount > 1 ? 's' : ''})
-                            </span>
-                          )}
-                          {phaseCount > 0 && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold shrink-0 ${
-                              isAllPhasesDone
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
-                                : 'bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60'
-                            }`}>
-                              ({phaseCount} {lang === 'en' ? (phaseCount > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'})
+                              ({unassignedCount} Tasks)
                             </span>
                           )}
                         </>
                       );
                     })()}
                     {hasComments[project.id] && (
-                      <span title={t('common.comment')} className="relative inline-grid place-items-center shrink-0">
-                        <MessageSquare size={14} className="text-blue-500" />
-                        {(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]) && (
-                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm"></span>
-                        )}
-                      </span>
+                      <CommentPreviewPopover
+                        entityType="project"
+                        entityId={project.id}
+                        entityTitle={project.name}
+                        hasUnreadDot={Boolean(Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id])}
+                      />
                     )}
                   </div>
                   {project.description?.trim() ? <p className="text-xs text-gray-500 truncate mt-1 pl-6">{project.description}</p> : null}
@@ -1015,17 +1074,26 @@ export const Projects:React.FC=()=>{
                       <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
                         {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
                       </div>
-                      {subtaskMembers[project.id] && subtaskMembers[project.id].length > 0 && (
-                        <>
-                          <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
-                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800 shrink-0">
-                            <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
-                            <div className="grid grid-flow-col auto-cols-max -space-x-2">
-                              {subtaskMembers[project.id].slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
+                      {(() => {
+                        const primaryPicIds = new Set([
+                          ...(picMembers[project.id] || []).map(String),
+                          project.lead_id ? String(project.lead_id) : '',
+                          projectPrimaryOwners[project.id] ? String(projectPrimaryOwners[project.id]) : '',
+                        ].filter(Boolean));
+                        const filteredSubIds = (subtaskMembers[project.id] || []).filter(id => !primaryPicIds.has(String(id)));
+                        if (filteredSubIds.length === 0) return null;
+                        return (
+                          <>
+                            <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-800 shrink-0">
+                              <span className="text-[9px] font-bold text-violet-700 dark:text-violet-400">SUB</span>
+                              <div className="grid grid-flow-col auto-cols-max -space-x-2">
+                                {filteredSubIds.slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'s'+id} name={(p?.name || 'Unknown') + ' (Subtask)'} src={(p as any)?.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" /> })}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </td>
@@ -1054,15 +1122,15 @@ export const Projects:React.FC=()=>{
                   </div>
                 </td>
 
-                {/* Cột 5: BUDGET */}
-                <td className="p-4 overflow-hidden text-sm font-semibold text-gray-800 dark:text-gray-200 truncate text-center">
-                  {(project as any).budget ? `${new Intl.NumberFormat('vi-VN').format(Number((project as any).budget))} VND` : '—'}
-                </td>
-
                 {/* Cột 6: STATUS */}
-                <td className="p-4 overflow-hidden text-center">
+                <td className="p-4 overflow-hidden text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="grid place-items-center">
-                    <StatusBadge status={project.status || 'active'} />
+                    <QuickStatusDropdown
+                      currentStatus={project.status || 'active'}
+                      options={projectStatusOptions}
+                      onSelect={(nextStatus) => handleQuickChangeProjectStatus(project.id, nextStatus)}
+                      disabled={!canManageProject(project)}
+                    />
                   </div>
                 </td>
 
@@ -1109,7 +1177,7 @@ export const Projects:React.FC=()=>{
                                   toggleProjectSubtaskExpand(st.id);
                                 }}
                                 className="p-1 text-slate-400 hover:text-violet-600 rounded-[5px] transition-transform cursor-pointer shrink-0"
-                                title={isSubtaskExpanded ? (lang === 'en' ? 'Collapse items' : 'Thu gọn đầu việc') : (lang === 'en' ? 'Expand items' : 'Xem các đầu việc')}
+                                title={isSubtaskExpanded ? (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtask') : (lang === 'en' ? 'Expand subtasks' : 'Xem các subtask')}
                               >
                                 <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubtaskExpanded ? 'rotate-90 text-violet-600' : ''}`} />
                               </button>
@@ -1149,20 +1217,30 @@ export const Projects:React.FC=()=>{
                                 </>
                               )}
 
+                              {Boolean(st.quantity) && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                  SL: {st.quantity}
+                                </span>
+                              )}
+
                               {items.length > 0 && (
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold ${doneCount === items.length ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-violet-100/90 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'}`}>
-                                  ({doneCount}/{items.length} {lang === 'en' ? 'tasks' : 'việc'})
+                                  ({doneCount}/{items.length} Subtasks)
                                 </span>
                               )}
 
                               {((treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]) || 0) > 0 && (
-                                <span
-                                  title={`${treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]} ${lang === 'en' ? 'comments' : 'bình luận'}`}
-                                  className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-blue-500 font-medium shrink-0 ml-1"
-                                >
-                                  <MessageSquare size={12} />
-                                  <span>{treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]}</span>
-                                </span>
+                                <CommentPreviewPopover
+                                  entityType="project_subtask"
+                                  entityId={st.id}
+                                  entityTitle={st.title}
+                                  count={(treeSubtaskCommentCounts[st.id] ?? subtaskCommentCounts[st.id]) || 0}
+                                  onOpenFull={() => {
+                                    setSelected(project);
+                                    setSelectedCampaign(null);
+                                    setSelectedSubtask(st);
+                                  }}
+                                />
                               )}
 
                               {Array.isArray(st.tags) && st.tags.map((tag: string, tIdx: number) => (
@@ -1198,7 +1276,7 @@ export const Projects:React.FC=()=>{
                                   type="button"
                                   onClick={() => void handleDeleteProjectSubtask(st.id)}
                                   className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
-                                  title={lang === 'en' ? 'Delete subtask' : 'Xóa subtask'}
+                                  title={lang === 'en' ? 'Delete task' : 'Xóa task'}
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -1235,29 +1313,14 @@ export const Projects:React.FC=()=>{
                             </div>
                           </td>
 
-                          {/* Cột 5: BUDGET / SL */}
-                          <td className="p-3 overflow-hidden text-xs font-semibold text-slate-800 dark:text-slate-200 truncate text-center">
-                            {st.quantity ? (
-                              <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                SL: {st.quantity}
-                              </span>
-                            ) : (st.budget ? `${new Intl.NumberFormat('vi-VN').format(Number(st.budget))} VND` : '—')}
-                          </td>
-
                           {/* Cột 6: STATUS */}
                           <td className="p-3 overflow-hidden text-center">
-                            <div className="grid place-content-center">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleToggleProjectSubtaskStatus(st.id, st.status);
-                                }}
-                                title={lang === 'en' ? 'Click to toggle status' : 'Bấm để đổi trạng thái'}
-                                className="cursor-pointer hover:opacity-85 transition-opacity"
-                              >
-                                <StatusBadge status={st.status || 'planning'} />
-                              </button>
+                            <div className="grid place-content-center" onClick={(e) => e.stopPropagation()}>
+                              <QuickStatusDropdown
+                                currentStatus={st.status || 'planning'}
+                                options={subtaskStatusOptions}
+                                onSelect={(nextStatus) => handleQuickChangeProjectSubtaskStatus(st.id, nextStatus)}
+                              />
                             </div>
                           </td>
 
@@ -1326,6 +1389,11 @@ export const Projects:React.FC=()=>{
                                         <span className={`text-xs truncate ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'}`}>
                                           {item.title}
                                         </span>
+                                        {Boolean(item.quantity) && (
+                                          <span className="text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                            SL: {item.quantity}
+                                          </span>
+                                        )}
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -1350,7 +1418,7 @@ export const Projects:React.FC=()=>{
                                       void handleDeleteProjectChecklistItem(st.id, item.id);
                                     }}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-opacity cursor-pointer"
-                                    title={lang === 'en' ? 'Delete item' : 'Xóa đầu việc'}
+                                    title={lang === 'en' ? 'Delete subtask' : 'Xóa subtask'}
                                   >
                                     <Trash2 size={12} />
                                   </button>
@@ -1391,11 +1459,6 @@ export const Projects:React.FC=()=>{
                                   </div>
                                 </td>
 
-                                {/* Cột 5: BUDGET / SL */}
-                                <td className="py-2 px-4 overflow-hidden text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate text-center">
-                                  {item.quantity ? `SL: ${item.quantity}` : '—'}
-                                </td>
-
                                 {/* Cột 6: STATUS */}
                                 <td className="py-2 px-4 overflow-hidden text-center">
                                   <div className="grid place-content-center">
@@ -1420,7 +1483,7 @@ export const Projects:React.FC=()=>{
 
                             {/* Thanh tạo đầu việc mới */}
                             <tr className="bg-violet-50/20 dark:bg-[#06101e] border-t border-dotted border-slate-200/60 dark:border-slate-800/60">
-                              <td colSpan={7} className="py-2 px-4 pl-16 relative">
+                              <td colSpan={6} className="py-2 px-4 pl-16 relative">
                                 
                                 {creatingItemSubtaskId === st.id ? (
                                   <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300/80 dark:border-violet-700/60 shadow-xs">
@@ -1428,7 +1491,7 @@ export const Projects:React.FC=()=>{
                                       type="text"
                                       value={newItemTitle}
                                       onChange={(e) => setNewItemTitle(e.target.value)}
-                                      placeholder={lang === 'en' ? 'New task item title...' : 'Tiêu đề đầu việc mới...'}
+                                      placeholder={lang === 'en' ? 'Subtask title...' : 'Tiêu đề subtask mới...'}
                                       className="px-2.5 py-1 text-xs rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-0"
                                       autoFocus
                                       onKeyDown={(e) => {
@@ -1502,7 +1565,7 @@ export const Projects:React.FC=()=>{
                                     className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-300 hover:border-violet-400 dark:hover:border-violet-500 hover:bg-violet-50/60 dark:hover:bg-violet-950/30 text-[11px] font-semibold transition-all cursor-pointer"
                                   >
                                     <Plus size={12} />
-                                    <span>{lang === 'en' ? '+ Add Task Item' : '+ Thêm Đầu việc'}</span>
+                                    <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
                                   </button>
                                 )}
                               </td>
@@ -1513,16 +1576,16 @@ export const Projects:React.FC=()=>{
                     );
                   })}
 
-                  {/* Thanh tạo subtask mới cho Project */}
+                  {/* Thanh tạo task mới cho Project */}
                   <tr className="bg-violet-50/15 dark:bg-[#071325]/50 border-t border-dashed border-violet-200/50 dark:border-slate-800/80">
-                    <td colSpan={7} className="py-2.5 px-4 pl-10 relative">
+                    <td colSpan={6} className="py-2.5 px-4 pl-10 relative">
                       {creatingSubtaskProjectId === project.id ? (
                         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-2 p-2.5 rounded-[8px] bg-white dark:bg-[#0a192f] border border-violet-300 dark:border-violet-700 shadow-sm">
                           <input
                             type="text"
                             value={newSubtaskTitle}
                             onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                            placeholder={lang === 'en' ? 'Subtask title...' : 'Tiêu đề subtask mới...'}
+                            placeholder={lang === 'en' ? 'Task title...' : 'Tiêu đề task mới...'}
                             className="px-2.5 py-1 text-xs rounded-[6px] border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-0"
                             autoFocus
                             onKeyDown={(e) => {
@@ -1600,7 +1663,7 @@ export const Projects:React.FC=()=>{
                           className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-transparent text-slate-400 dark:text-slate-500 hover:text-violet-600 dark:hover:text-violet-300 hover:border-violet-400 dark:hover:border-violet-500 hover:bg-violet-50/60 dark:hover:bg-violet-950/30 text-xs font-semibold transition-all cursor-pointer"
                         >
                           <Plus size={13} />
-                          <span>{lang === 'en' ? '+ Add Subtask' : '+ Thêm Subtask'}</span>
+                          <span>{lang === 'en' ? '+ Add Task' : '+ Thêm Task'}</span>
                         </button>
                       )}
                     </td>
@@ -1815,9 +1878,10 @@ export const Projects:React.FC=()=>{
               </section>
               <section>
                 {(() => {
+                  const filteredSubtasks = filterProjectSubtasksForUser(subtasks, selected);
                   const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
                   const hasPhases = projectPhases.length > 0;
-                  const unassignedSubtasks = subtasks.filter(s => {
+                  const unassignedSubtasks = filteredSubtasks.filter(s => {
                     if (s.status === 'deleted') return false;
                     if (!hasPhases) return true;
                     return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
@@ -1831,10 +1895,10 @@ export const Projects:React.FC=()=>{
                         onClick={() => setProjectSubtasksCollapsed(v => !v)}
                         className="grid grid-flow-col auto-cols-max items-center gap-2 font-bold text-sm text-gray-900 dark:text-white hover:text-primary transition-colors cursor-pointer select-none"
                         aria-expanded={!projectSubtasksCollapsed}
-                        title={projectSubtasksCollapsed ? (lang === 'en' ? 'Expand subtasks' : 'Mở rộng subtasks') : (lang === 'en' ? 'Collapse subtasks' : 'Thu gọn subtasks')}
+                        title={projectSubtasksCollapsed ? (lang === 'en' ? 'Expand tasks' : 'Mở rộng task') : (lang === 'en' ? 'Collapse tasks' : 'Thu gọn task')}
                       >
                         <Users size={16}/>
-                        <span>{t('projects.subtasks')}</span>
+                        <span>{t('projects.tasksInProject')}</span>
                         {doneCount > 0 && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             {doneCount} {lang === 'en' ? 'completed' : 'hoàn thành'}
@@ -1853,9 +1917,10 @@ export const Projects:React.FC=()=>{
                 {!projectSubtasksCollapsed && (
                   <>
                     {(() => {
+                      const filteredSubtasks = filterProjectSubtasksForUser(subtasks, selected);
                       const projectPhases = workflow.tracks.find(t => t.entity_type === 'project' && String(t.entity_id).trim() === String(selected?.id).trim())?.phases || [];
                       const hasPhases = projectPhases.length > 0;
-                      const unassignedSubtasks = subtasks.filter(s => {
+                      const unassignedSubtasks = filteredSubtasks.filter(s => {
                         if (s.status === 'deleted') return false;
                         if (!hasPhases) return true;
                         return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
@@ -1905,8 +1970,8 @@ export const Projects:React.FC=()=>{
                 <button
                   type="button"
                   onClick={() => removeSubtask(s.id)}
-                  title={lang === 'en' ? 'Delete subtask' : 'Xóa'}
-                  aria-label={lang === 'en' ? 'Delete subtask' : 'Xóa'}
+                  title={lang === 'en' ? 'Delete task' : 'Xóa task'}
+                  aria-label={lang === 'en' ? 'Delete task' : 'Xóa task'}
                   className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   <Trash2 size={13} />
@@ -1952,7 +2017,7 @@ export const Projects:React.FC=()=>{
                     const isAllDone = done === total && total > 0;
                     return (
                       <span
-                        title={lang === 'en' ? `Checklist: ${done}/${total} completed` : `Việc phát sinh: ${done}/${total} hoàn thành`}
+                        title={lang === 'en' ? `Subtask: ${done}/${total} completed` : `Subtask: ${done}/${total} hoàn thành`}
                         className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border ${
                           isAllDone
                             ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60'
@@ -1965,13 +2030,14 @@ export const Projects:React.FC=()=>{
                     );
                   })()}
                   {subtaskCommentCounts[s.id] > 0 && (
-                    <span title={`${subtaskCommentCounts[s.id]} ${t('common.comment').toLowerCase()}`} className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[11px] text-primary">
-                      <span className="relative inline-grid place-items-center">
-                        <MessageSquare size={12}/>
-                        {(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id]) && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full shadow-sm border border-white dark:border-slate-900"></span>}
-                      </span>
-                      <span>{subtaskCommentCounts[s.id]}</span>
-                    </span>
+                    <CommentPreviewPopover
+                      entityType="project_subtask"
+                      entityId={s.id}
+                      entityTitle={s.title}
+                      count={subtaskCommentCounts[s.id]}
+                      hasUnreadDot={Boolean(Number(s.assignee_id) === Number(profile?.id) || hasMentionOrUnread?.[s.id])}
+                      onOpenFull={() => setSelectedSubtask(s)}
+                    />
                   )}
                 </div>
 

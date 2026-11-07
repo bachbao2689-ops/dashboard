@@ -21,20 +21,25 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
 import { useAuthStore } from '../store/authStore';
-import { isGlobalManager } from '../lib/roleScope';
-import {useRememberedState} from '../hooks/useRememberedState';
+import { isGlobalManager, isAdmin, isDepartmentLeader } from '../lib/roleScope';
+import { useRememberedState } from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
+import { updateTrackedTask } from '../services/workspaceTasks';
+import toast from 'react-hot-toast';
 
 export const TaskList: React.FC = () => {
-  const { t } = useTranslation();
+  const { lang, t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useRememberedState('tasks.search', searchParams.get('search') || '');
 
   const profileId = useAuthStore(state => state.profile?.id);
   const profile = useAuthStore(state => state.profile);
+  const isManager = isGlobalManager(profile) || isAdmin(profile);
+  const isLeader = isDepartmentLeader(profile);
+  const isStaff = !isManager && !isLeader;
   const roleStr = (profile?.role || '').toLowerCase();
   const levelStr = (profile?.employment_level || '').toLowerCase();
-  const canCreateTask = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
+  const canCreateTask = isManager || isLeader || ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
 
   // Modular filter states matching Projects.tsx
   const [statusFilter, setStatusFilter] = useRememberedState<string>('tasks.status', searchParams.get('status') || 'open');
@@ -77,14 +82,38 @@ export const TaskList: React.FC = () => {
   }, [userIsRestricted, resolvedDeptId, departmentFilter]);
 
   const availableDepartments = useMemo(() => {
-    if (userIsRestricted && resolvedDeptId) {
+    if (!isManager && resolvedDeptId) {
       return departments.filter(d => String(d.id) === String(resolvedDeptId));
     }
     return departments;
-  }, [departments, userIsRestricted, resolvedDeptId]);
+  }, [departments, isManager, resolvedDeptId]);
 
-  // Merge people with any task assignees not yet in people
+  // Merge people with any task assignees not yet in people, scoped by rank
   const allPeople = useMemo<FilterPerson[]>(() => {
+    if (isStaff) {
+      if (!profile) return [];
+      return [{
+        id: String(profile.id),
+        name: profile.name || 'Me',
+        avatar_url: profile.avatar_url,
+      }];
+    }
+
+    if (isLeader) {
+      const targetDeptId = resolvedDeptId;
+      const targetDeptName = profile?.department_name?.trim().toLowerCase();
+      const list: FilterPerson[] = people.filter(p => {
+        if (String(p.id) === String(profileId)) return true;
+        const pDept = String((p as any).department_id || '');
+        const pDeptName = ((p as any).department_name || '').trim().toLowerCase();
+        return (targetDeptId && pDept === String(targetDeptId)) || (targetDeptName && pDeptName === targetDeptName);
+      });
+      if (profile && !list.some(p => String(p.id) === String(profileId))) {
+        list.push({ id: String(profile.id), name: profile.name || 'Leader', avatar_url: profile.avatar_url });
+      }
+      return list;
+    }
+
     const list = [...people];
     tasks.forEach(t => {
       if (t.assignee_id && t.assignee?.name) {
@@ -98,7 +127,7 @@ export const TaskList: React.FC = () => {
       }
     });
     return list;
-  }, [people, tasks]);
+  }, [people, tasks, isStaff, isLeader, profile, profileId, resolvedDeptId]);
 
   // Click outside to close dropdowns
   const toolbarContainerRef = useRef<HTMLDivElement>(null);
@@ -205,19 +234,48 @@ export const TaskList: React.FC = () => {
   const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);const removed=await actions.remove(visibleSelectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
   const handleSingleDelete=async()=>{if(!taskToDelete)return;const key=taskToDelete.id;setTaskToDelete(null);await actions.remove([key]);};
 
+  const handleTaskStatusChange = async (task: any, nextStatus: string) => {
+    try {
+      await updateTrackedTask(task.id, {
+        status: nextStatus,
+        workflow_status: nextStatus === 'done' ? 'completed' : nextStatus === 'todo' ? 'not_started' : nextStatus,
+      });
+      toast.success(lang === 'en' ? 'Status updated' : 'Đã cập nhật trạng thái');
+      await refetch();
+    } catch (err: any) {
+      toast.error(err?.message || (lang === 'en' ? 'Failed to update status' : 'Không thể cập nhật trạng thái'));
+    }
+  };
+
   const filteredTasks = tasks.filter(t => {
     if(searchParams.get('department_id')&&((t.project?.department_id||t.campaign?.department_id||t.department_id||'unassigned')!==searchParams.get('department_id')))return false;
     if(searchParams.get('project_id')&&t.project_id!==searchParams.get('project_id'))return false;
     if(searchParams.get('campaign_id')&&(t.campaign_id!==searchParams.get('campaign_id')||t.project_id))return false;
 
-    // Phân quyền tầm view phòng ban cho người dùng bị giới hạn
-    if (userIsRestricted) {
-      const targetDeptId = resolvedDeptId || departmentFilter;
-      const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
-      const assigneeInDept = people.some(p => String(p.id) === String(t.assignee_id) && String((p as any).department_id || '') === String(targetDeptId));
-      const isMyTask = profileId && String(t.assignee_id) === String(profileId);
-      const isCreator = profileId && String(t.created_by) === String(profileId);
-      if (!((taskDept && String(taskDept) === String(targetDeptId)) || assigneeInDept || isMyTask || isCreator)) return false;
+    // Phân quyền tầm view theo 3 cấp: Manager/Admin -> Leader -> Staff
+    if (!isManager) {
+      const isMyTask = Boolean(profileId && String(t.assignee_id) === String(profileId));
+      const isCreator = Boolean(profileId && String(t.created_by) === String(profileId));
+      const hasMySubtask = Boolean(profileId && (t.checklist_items || []).some((ci: any) => String(ci.created_by) === String(profileId) || String(ci.assignee_id) === String(profileId)));
+      const isMyParentTask = Boolean(profileId && (t as any).checklist_parent && (String((t as any).checklist_parent.assignee_id) === String(profileId) || String((t as any).checklist_parent.created_by) === String(profileId)));
+
+      if (isStaff) {
+        // Staff thường: Chỉ thấy phạm vi công việc mình được giao / tạo / liên quan trực tiếp
+        if (!(isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
+      } else if (isLeader) {
+        // Leader: Thấy hết công việc của staff thuộc phòng ban mình
+        const targetDeptId = resolvedDeptId || departmentFilter;
+        const targetDeptName = profile?.department_name?.trim().toLowerCase();
+        const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
+        const taskDeptName = (t.department?.name || t.project?.department?.name || t.campaign?.department?.name || '').trim().toLowerCase();
+
+        const assigneeInDept = people.some(p => String(p.id) === String(t.assignee_id) && (String((p as any).department_id || '') === String(targetDeptId) || ((p as any).department_name || '').trim().toLowerCase() === targetDeptName));
+        const creatorInDept = people.some(p => String(p.id) === String(t.created_by) && (String((p as any).department_id || '') === String(targetDeptId) || ((p as any).department_name || '').trim().toLowerCase() === targetDeptName));
+
+        const deptMatch = (targetDeptId && String(taskDept) === String(targetDeptId)) || (targetDeptName && taskDeptName === targetDeptName);
+
+        if (!(deptMatch || assigneeInDept || creatorInDept || isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
+      }
     }
 
     // 1. Status Filter
@@ -410,6 +468,7 @@ export const TaskList: React.FC = () => {
             });
           }}
           deletingIds={deletingIds}
+          onStatusChange={handleTaskStatusChange}
         />
 
         <TaskListBulkActions

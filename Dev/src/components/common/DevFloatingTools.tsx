@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Settings,
   X,
@@ -12,9 +12,11 @@ import {
   Bell,
   RefreshCw,
   Check,
+  Search,
 } from 'lucide-react';
 import { useAuthStore, type StaffProfile } from '../../store/authStore';
-import { useWorkspaceData } from '../../hooks/useWorkspaceData';
+import { useWorkspaceDirectory } from '../../hooks/useWorkspaceData';
+import { Avatar } from './Avatar';
 
 interface DevFloatingToolsProps {
   onTriggerUpdate: () => void;
@@ -36,18 +38,28 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   onTriggerDemo,
 }) => {
   const currentProfile = useAuthStore((s) => s.profile);
-  const { departments } = useWorkspaceData();
+  const storeOriginalProfile = useAuthStore((s) => s.originalProfile);
+  const directory = useWorkspaceDirectory();
+  const allUsers = directory.data?.users || [];
+  const departments = directory.data?.departments || [];
 
   // Snapshot original profile so user can reset anytime
   const originalProfileRef = useRef<StaffProfile | null>(null);
   useEffect(() => {
-    if (currentProfile && !originalProfileRef.current) {
+    if (storeOriginalProfile && !originalProfileRef.current) {
+      originalProfileRef.current = { ...storeOriginalProfile };
+    } else if (currentProfile && !originalProfileRef.current) {
       originalProfileRef.current = { ...currentProfile };
     }
-  }, [currentProfile]);
+  }, [storeOriginalProfile, currentProfile]);
+
+  const originalProfile = originalProfileRef.current || storeOriginalProfile || currentProfile;
+  const isPreviewing = Boolean(originalProfile && currentProfile && Number(currentProfile.id) !== Number(originalProfile.id));
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'roles' | 'popups'>('roles');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
 
   // Position state (bottom-right by default, always clamped within current viewport)
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
@@ -212,10 +224,72 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   };
 
   const resetOriginal = () => {
-    if (originalProfileRef.current) {
-      useAuthStore.setState({ profile: { ...originalProfileRef.current } });
+    if (originalProfile) {
+      useAuthStore.setState({ profile: { ...originalProfile } });
+      if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
+        const url = new URL(window.location.href);
+        if (originalProfile.department_id) {
+          url.searchParams.set('dept', String(originalProfile.department_id));
+        } else {
+          url.searchParams.delete('dept');
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
     }
   };
+
+  const switchToStaff = (user: any) => {
+    if (!originalProfileRef.current && currentProfile) {
+      originalProfileRef.current = { ...currentProfile };
+    }
+    const staffDept = user.departments || user.department || (user.department_id ? departments.find((d: any) => String(d.id) === String(user.department_id)) : null);
+    const deptId = user.department_id ? String(user.department_id) : (staffDept?.id ? String(staffDept.id) : null);
+    const deptName = staffDept?.name || user.department_name || null;
+
+    useAuthStore.setState({
+      profile: {
+        id: Number(user.id),
+        auth_id: user.auth_id || null,
+        email: user.email || null,
+        name: user.name,
+        avatar_url: user.avatar_url || null,
+        role: user.role || 'member',
+        employment_level: user.employment_level || 'Staff',
+        department_id: deptId,
+        department_name: deptName,
+        job_title: user.job_title || null,
+        is_active: true,
+      },
+    });
+
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
+      const url = new URL(window.location.href);
+      if (deptId) {
+        url.searchParams.set('dept', String(deptId));
+      } else {
+        url.searchParams.delete('dept');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const filteredStaffUsers = useMemo(() => {
+    const q = staffSearchQuery.trim().toLowerCase();
+    return allUsers.filter((u: any) => {
+      if (selectedDeptFilter !== 'all') {
+        const uDeptId = String(u.department_id || u.department?.id || '');
+        const uDeptName = (u.department?.name || u.departments?.name || u.department_name || '').toLowerCase();
+        const matchDept = uDeptId === selectedDeptFilter || uDeptName.includes(selectedDeptFilter.toLowerCase());
+        if (!matchDept) return false;
+      }
+      if (!q) return true;
+      const nameMatch = (u.name || '').toLowerCase().includes(q);
+      const emailMatch = (u.email || '').toLowerCase().includes(q);
+      const roleMatch = (u.role || '').toLowerCase().includes(q) || (u.employment_level || '').toLowerCase().includes(q) || (u.job_title || '').toLowerCase().includes(q);
+      const deptMatch = (u.department?.name || u.departments?.name || u.department_name || '').toLowerCase().includes(q);
+      return nameMatch || emailMatch || roleMatch || deptMatch;
+    });
+  }, [allUsers, staffSearchQuery, selectedDeptFilter]);
 
   // Determine current active preview role
   const isCurrent = (role: string, level: string, deptId?: string | null) => {
@@ -231,8 +305,8 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   const isRightHalf = pos.x > (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const isBottomHalf = pos.y > (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
 
-  const panelWidth = typeof window !== 'undefined' ? Math.min(320, window.innerWidth - 20) : 320;
-  const panelHeight = 440;
+  const panelWidth = typeof window !== 'undefined' ? Math.min(360, window.innerWidth - 20) : 360;
+  const panelHeight = 560;
   let popoverLeft = isRightHalf ? pos.x - panelWidth : pos.x + 58;
   let popoverTop = isBottomHalf ? pos.y - panelHeight : pos.y;
   if (typeof window !== 'undefined') {
@@ -374,147 +448,268 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
 
           {/* Tab 1: Role Preview Switcher */}
           {activeTab === 'roles' && (
-            <div className="grid gap-1.5 max-h-[260px] overflow-y-auto pr-0.5">
-              {/* 1. ADMIN */}
-              <button
-                type="button"
-                onClick={() => switchRole('admin', 'Admin', null, 'ADMIN', 1)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('admin', 'Admin')
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 grid place-items-center">
-                  <Shield className="w-3.5 h-3.5" />
+            <div className="grid gap-2.5 max-h-[440px] overflow-y-auto pr-0.5">
+              {/* Preview Alert Banner */}
+              {isPreviewing && (
+                <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 grid gap-1.5 text-xs">
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 font-bold">
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Đang giả lập xem tầm view của:</span>
+                  </div>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
+                    {currentProfile?.name} ({currentProfile?.role} · {currentProfile?.department_name || 'Không rõ phòng'})
+                  </p>
+                  <button
+                    type="button"
+                    onClick={resetOriginal}
+                    className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    Khôi phục tài khoản Admin gốc
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Admin</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Toàn quyền, xem tất cả phòng ban</p>
-                </div>
-                {isCurrent('admin', 'Admin') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
-              </button>
+              )}
 
-              {/* 2. MANAGER */}
-              <button
-                type="button"
-                onClick={() => switchRole('manager', 'Manager', null, 'Manager Toàn Công Ty', 99999)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('manager', 'Manager')
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 grid place-items-center">
-                  <Briefcase className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Manager</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Quản lý toàn bộ, xem tất cả báo cáo</p>
-                </div>
-                {isCurrent('manager', 'Manager') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
-              </button>
+              {/* SECTION A: Quick Presets */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                  Chọn nhanh cấp bậc mẫu
+                </p>
+                <div className="grid gap-1.5">
+                  {/* 1. ADMIN */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('admin', 'Admin', null, 'ADMIN', 1)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('admin', 'Admin')
+                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 grid place-items-center">
+                      <Shield className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Admin</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Toàn quyền, xem tất cả phòng ban</p>
+                    </div>
+                    {isCurrent('admin', 'Admin') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
+                  </button>
 
-              {/* 3. LEADER DESIGN */}
-              <button
-                type="button"
-                onClick={() => switchRole('leader', 'Leader', designDept, 'Leader Design (Nga Phạm)', 9)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('leader', 'Leader', designDept?.id)
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 grid place-items-center">
-                  <Palette className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Leader Design</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Thiết kế, quyền Design</p>
-                </div>
-                {isCurrent('leader', 'Leader', designDept?.id) && (
-                  <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                )}
-              </button>
+                  {/* 2. MANAGER */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('manager', 'Manager', null, 'Manager Toàn Công Ty', 99999)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('manager', 'Manager')
+                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 grid place-items-center">
+                      <Briefcase className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Manager</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Quản lý toàn bộ, xem tất cả báo cáo</p>
+                    </div>
+                    {isCurrent('manager', 'Manager') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
+                  </button>
 
-              {/* 4. LEADER MARKETING */}
-              <button
-                type="button"
-                onClick={() => switchRole('leader', 'Leader', marketingDept, 'Leader Marketing', 13)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('leader', 'Leader', marketingDept?.id)
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 grid place-items-center">
-                  <Megaphone className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Leader Marketing</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Mkt (bị khóa phòng khác)</p>
-                </div>
-                {isCurrent('leader', 'Leader', marketingDept?.id) && (
-                  <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                )}
-              </button>
+                  {/* 3. LEADER DESIGN */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('leader', 'Leader', designDept, 'Leader Design (Nga Phạm)', 9)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('leader', 'Leader', designDept?.id)
+                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 grid place-items-center">
+                      <Palette className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Leader Design</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Thiết kế, quyền Design</p>
+                    </div>
+                    {isCurrent('leader', 'Leader', designDept?.id) && (
+                      <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    )}
+                  </button>
 
-              {/* 5. STAFF DESIGN (FIX CỨNG TẦM VIEW REPORT VÀO DESIGN) */}
-              <button
-                type="button"
-                onClick={() => switchRole('member', 'Staff', designDept, 'Staff Design (Bách Bảo)', 11)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('member', 'Staff', designDept?.id)
-                    ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 grid place-items-center">
-                  <User className="w-3.5 h-3.5" />
+                  {/* 4. LEADER MARKETING */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('leader', 'Leader', marketingDept, 'Leader Marketing', 13)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('leader', 'Leader', marketingDept?.id)
+                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 grid place-items-center">
+                      <Megaphone className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Leader Marketing</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Mkt (bị khóa phòng khác)</p>
+                    </div>
+                    {isCurrent('leader', 'Leader', marketingDept?.id) && (
+                      <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    )}
+                  </button>
+
+                  {/* 5. STAFF DESIGN */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('member', 'Staff', designDept, 'Staff Design (Bách Bảo)', 11)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('member', 'Staff', designDept?.id)
+                        ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 grid place-items-center">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Staff Design (Bách Bảo)</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                        Fix cứng tầm view vào Design
+                      </p>
+                    </div>
+                    {isCurrent('member', 'Staff', designDept?.id) && (
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                  </button>
+
+                  {/* 6. STAFF MARKETING */}
+                  <button
+                    type="button"
+                    onClick={() => switchRole('member', 'Staff', marketingDept, 'Staff Marketing', 16)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      isCurrent('member', 'Staff', marketingDept?.id)
+                        ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/40'
+                        : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                    }`}
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 grid place-items-center">
+                      <Users className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold leading-tight">Staff Marketing</p>
+                      <p className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
+                        Fix cứng tầm view vào Marketing
+                      </p>
+                    </div>
+                    {isCurrent('member', 'Staff', marketingDept?.id) && (
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Staff Design</p>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                    Fix cứng tầm view vào Design
+              </div>
+
+              {/* SECTION B: Full Staff Directory Selector */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80">
+                <div className="grid grid-flow-col justify-between items-center mb-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Xem tầm view của từng Staff ({filteredStaffUsers.length}/{allUsers.length})
                   </p>
                 </div>
-                {isCurrent('member', 'Staff', designDept?.id) && (
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                )}
-              </button>
 
-              {/* 6. STAFF MARKETING (FIX CỨNG TẦM VIEW REPORT VÀO MARKETING) */}
-              <button
-                type="button"
-                onClick={() => switchRole('member', 'Staff', marketingDept, 'Staff Marketing', 16)}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent('member', 'Staff', marketingDept?.id)
-                    ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
-                    : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 grid place-items-center">
-                  <Users className="w-3.5 h-3.5" />
+                {/* Search input */}
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={staffSearchQuery}
+                    onChange={(e) => setStaffSearchQuery(e.target.value)}
+                    placeholder="Tìm tên nhân viên, chức danh, email..."
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-sky-500 transition-colors"
+                  />
                 </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Staff Marketing</p>
-                  <p className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
-                    Fix cứng tầm view vào Marketing
-                  </p>
-                </div>
-                {isCurrent('member', 'Staff', marketingDept?.id) && (
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                )}
-              </button>
 
-              {/* Reset to Original */}
+                {/* Department filter pills */}
+                <div className="grid grid-flow-col auto-cols-max gap-1 overflow-x-auto pb-1 mb-2 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDeptFilter('all')}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors cursor-pointer ${
+                      selectedDeptFilter === 'all'
+                        ? 'bg-sky-500 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Tất cả
+                  </button>
+                  {departments.map((d: any) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setSelectedDeptFilter(String(d.id))}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors cursor-pointer shrink-0 ${
+                        selectedDeptFilter === String(d.id)
+                          ? 'bg-sky-500 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {d.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Scrollable Staff List */}
+                <div className="grid gap-1.5 max-h-[190px] overflow-y-auto pr-0.5">
+                  {filteredStaffUsers.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-slate-400 italic">
+                      Không tìm thấy nhân sự phù hợp
+                    </div>
+                  ) : (
+                    filteredStaffUsers.map((user: any) => {
+                      const isUserActive = currentProfile && Number(currentProfile.id) === Number(user.id);
+                      const deptName = user.departments?.name || user.department?.name || user.department_name || 'Chưa phân phòng';
+                      return (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => switchToStaff(user)}
+                          className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            isUserActive
+                              ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/50'
+                              : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
+                          }`}
+                        >
+                          <Avatar
+                            name={user.name}
+                            src={user.avatar_url || undefined}
+                            className="w-7 h-7 text-[10px] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold leading-tight truncate text-slate-900 dark:text-white">
+                              {user.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              {deptName} · {user.role || 'member'} ({user.employment_level || user.job_title || 'Staff'})
+                            </p>
+                          </div>
+                          {isUserActive && (
+                            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Reset to Original Button */}
               <button
                 type="button"
                 onClick={resetOriginal}
-                className="mt-1 grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 p-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="mt-1 w-full grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 p-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Khôi phục tài khoản gốc</span>
+                <span>Khôi phục tài khoản Admin gốc</span>
               </button>
             </div>
           )}

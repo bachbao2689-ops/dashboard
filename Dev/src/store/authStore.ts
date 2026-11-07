@@ -21,6 +21,7 @@ interface AuthState {
   session: Session | null;
   user: User | null;
   profile: StaffProfile | null;
+  originalProfile: StaffProfile | null;
   loading: boolean;
   initialize: () => void;
   signOut: () => Promise<void>;
@@ -101,20 +102,27 @@ export const useAuthStore = create<AuthState>((set, get) => {
     const epoch=++sessionEpoch;
     const authUser = session?.user || null;
     if (!authUser) {
-      set({ session: null, user: null, profile: null, loading: false });
+      set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
       return;
     }
     if (authUser.id === 'dev-admin-id') return;
+
+    const currentOriginal = get().originalProfile;
+    // Don't overwrite simulated profile if admin is previewing another staff member
+    if (currentOriginal && currentOriginal.role === 'admin' && get().profile && get().profile?.id !== currentOriginal.id) {
+      set({ session, loading: false });
+      return;
+    }
 
     try {
       const profile = await loadStaffProfile(authUser, markSignedIn);
       if(epoch!==sessionEpoch)return;
       if (profile?.is_active === false) {
         await supabase.auth.signOut();
-        set({ session: null, user: null, profile: null, loading: false });
+        set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
         return;
       }
-      set({ session, profile, user: enrichUser(authUser, profile), loading: false });
+      set({ session, profile, originalProfile: currentOriginal || profile, user: enrichUser(authUser, profile), loading: false });
     } catch (error) {
       if(epoch!==sessionEpoch)return;
       console.error('Could not load staff profile:', error);
@@ -128,13 +136,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const profile = fallback ? { ...fallback, department_name: null } as StaffProfile : null;
         if (profile?.is_active === false) {
           await supabase.auth.signOut();
-          set({ session: null, profile: null, user: null, loading: false });
+          set({ session: null, profile: null, originalProfile: null, user: null, loading: false });
           return;
         }
-        set({ session, profile, user: enrichUser(authUser, profile), loading: false });
+        set({ session, profile, originalProfile: currentOriginal || profile, user: enrichUser(authUser, profile), loading: false });
       } catch {
         if(epoch!==sessionEpoch)return;
-        set({ session, profile: null, user: enrichUser(authUser, null), loading: false });
+        set({ session, profile: null, originalProfile: currentOriginal, user: enrichUser(authUser, null), loading: false });
       }
     }
   };
@@ -143,6 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     session: null,
     user: null,
     profile: null,
+    originalProfile: null,
     loading: true,
 
     initialize: async () => {
@@ -166,6 +175,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (!staffValidationStarted) {
           staffValidationStarted = true;
           window.setInterval(() => {
+            const orig = get().originalProfile;
+            if (orig && orig.role === 'admin' && get().profile && get().profile?.id !== orig.id) return;
             if (document.visibilityState==='visible'&&get().session && get().user?.id !== 'dev-admin-id') void applySession(get().session);
           }, 300_000);
         }
@@ -200,7 +211,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       };
       set({
         user: { id: 'dev-admin-id', email: 'admin@local', user_metadata: { full_name: 'Local Admin', role: 'admin', department_name: 'Local' } } as unknown as User,
-        profile: devProfile, session: { access_token: 'dev-token', refresh_token: 'dev-token' } as Session, loading: false,
+        profile: devProfile, originalProfile: devProfile, session: { access_token: 'dev-token', refresh_token: 'dev-token' } as Session, loading: false,
       });
     },
 
@@ -232,7 +243,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         localStorage.removeItem('kcoffee_dev_session');
         localStorage.removeItem('kcoffee_auth_remember');
         sessionStorage.removeItem('kcoffee_session_active');
-        set({ session: null, user: null, profile: null });
+        set({ session: null, user: null, profile: null, originalProfile: null });
       }
     },
   };

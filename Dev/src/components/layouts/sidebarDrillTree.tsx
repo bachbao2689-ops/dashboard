@@ -7,6 +7,7 @@ import {
 import type { EnrichedSidebarTask, EnrichedProjectTrack } from '../../hooks/useSidebarTrackingData';
 import { displayDate } from '../../lib/workflowHub';
 import { StylizedPinIcon } from '../common/StylizedPinIcon';
+import { CommentPreviewPopover } from '../common/CommentPreviewPopover';
 
 export interface DrillMenuItem {
   id: string;
@@ -58,12 +59,18 @@ function SignalBadges({
   hasUnreadMention,
   isCommented,
   hasUnreadComment,
+  entityKind,
+  entityId,
+  label,
 }: {
   isPinned?: boolean;
   isMentioned?: boolean;
   hasUnreadMention?: boolean;
   isCommented?: boolean;
   hasUnreadComment?: boolean;
+  entityKind?: 'task' | 'project' | 'campaign';
+  entityId?: string;
+  label?: string;
 }) {
   if (!isPinned && !isMentioned && !isCommented) return null;
   return (
@@ -82,12 +89,24 @@ function SignalBadges({
         </span>
       )}
       {isCommented && (
-        <span title="Có bình luận" className="relative inline-flex items-center">
-          <MessageSquare size={11.5} className="text-blue-500" />
-          {hasUnreadComment && (
-            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-          )}
-        </span>
+        entityKind && entityId ? (
+          <span onClick={(e) => e.stopPropagation()} className="inline-grid place-items-center">
+            <CommentPreviewPopover
+              entityType={entityKind}
+              entityId={entityId}
+              entityTitle={label}
+              hasUnreadDot={hasUnreadComment}
+              iconSize={11.5}
+            />
+          </span>
+        ) : (
+          <span title="Có bình luận" className="relative inline-grid grid-flow-col auto-cols-max items-center">
+            <MessageSquare size={11.5} className="text-blue-500" />
+            {hasUnreadComment && (
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+            )}
+          </span>
+        )
       )}
     </span>
   );
@@ -291,6 +310,9 @@ function buildTaskMenuItem(
         hasUnreadMention={t.hasUnreadMention}
         isCommented={t.isCommented}
         hasUnreadComment={t.hasUnreadComment}
+        entityKind="task"
+        entityId={t.id}
+        label={t.title}
       />
     ),
     variant: t.isOverdue && !t.isDone ? 'danger' : hasPrioritySignal ? 'priority' : 'default',
@@ -416,6 +438,9 @@ export function buildSidebarGroups({
           hasUnreadMention={tr.hasUnreadMention}
           isCommented={tr.commentCount > 0}
           hasUnreadComment={tr.hasUnreadComment}
+          entityKind={tr.kind}
+          entityId={String(tr.track.entity_id)}
+          label={tr.name}
         />
       ),
       rightBadge: <CountPill count={trackUnreadTasks.length || 1} tone="blue" />,
@@ -554,6 +579,9 @@ export function buildSidebarGroups({
           hasUnreadMention={tr.hasUnreadMention}
           isCommented={tr.commentCount > 0}
           hasUnreadComment={tr.hasUnreadComment}
+          entityKind={tr.kind}
+          entityId={String(tr.track.entity_id)}
+          label={tr.name}
         />
       ),
       rightBadge: <CountPill count={trackUnreadTasks.length || 1} tone="blue" />,
