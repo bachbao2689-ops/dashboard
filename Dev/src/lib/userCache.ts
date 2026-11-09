@@ -12,6 +12,11 @@ const pending = new Map<string, ReturnType<typeof setTimeout>>();
 const validKey = (key: string) => /^[a-z][a-z0-9._:-]{0,79}$/.test(key);
 const ownerKey = (userId: string | number) => String(userId);
 const listenerKey = (userId: string | number, key: string) => `${userId}:${key}`;
+const isOriginalAccount = (userId: string | number) => {
+  const { profile, originalProfile } = useAuthStore.getState();
+  const owner = ownerKey(userId);
+  return ownerKey(profile?.id ?? '') === owner && ownerKey(originalProfile?.id ?? '') === owner;
+};
 
 function isEntry(value: unknown): value is Entry {
   return Boolean(value && typeof value === 'object' && 'value' in value && Number.isFinite((value as Entry).updatedAt));
@@ -69,7 +74,10 @@ function queueRemote(userId: string | number, key: string, entry: Entry, delay =
   if (timer) clearTimeout(timer);
   pending.set(id, setTimeout(async () => {
     pending.delete(id);
-    if (String(useAuthStore.getState().profile?.id ?? '') !== String(userId)) return;
+    // A simulated Admin preview has a different profile id from the real
+    // authenticated account. Keep preview preferences local; never send them
+    // as another staff member or generate rejected ownership RPCs.
+    if (!isOriginalAccount(userId)) return;
     const { error } = await supabase.rpc('dashboard_set_ui_preference', {
       p_user_id: Number(userId), p_key: key, p_value: entry.value, p_changed_ms: entry.updatedAt,
     });
@@ -112,9 +120,9 @@ export const userCache = {
   },
   async sync(userId: string | number): Promise<void> {
     const owner = ownerKey(userId);
-    if (String(useAuthStore.getState().profile?.id ?? '') !== owner) return;
+    if (!isOriginalAccount(userId)) return;
     const { data, error } = await supabase.from('user_preferences').select('ui_state,language').eq('user_id', userId).maybeSingle();
-    if (String(useAuthStore.getState().profile?.id ?? '') !== owner) return;
+    if (!isOriginalAccount(userId)) return;
     if (error) { console.warn('Could not load dashboard preferences:', error.message); return; }
     const remote = data?.ui_state && typeof data.ui_state === 'object' && !Array.isArray(data.ui_state)
       ? Object.fromEntries(Object.entries(data.ui_state).filter(([key, value]) => validKey(key) && isEntry(value))) as Snapshot
