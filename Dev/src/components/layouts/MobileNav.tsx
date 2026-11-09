@@ -16,12 +16,15 @@ import {
   Bot,
   Home,
   LayoutGrid,
+  Bell,
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 import { canViewTeamManagement } from '../../lib/roleScope';
+import { useNotificationCenter } from '../../hooks/useNotificationCenter';
+import { MobileNotificationSheet } from '../mobile/MobileNotificationSheet';
 
 export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden = false }) => {
   const { t, lang } = useTranslation();
@@ -32,8 +35,10 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
   const profile = useAuthStore(s => s.profile);
   const isLeader = canViewTeamManagement(profile);
   const badges = useSidebarBadges();
+  const { unread: unreadCount } = useNotificationCenter();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -46,22 +51,24 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
     if (taskDetailsOpen) {
       setIsDrawerOpen(false);
       setIsSearching(false);
+      setIsNotifsOpen(false);
     }
   }, [taskDetailsOpen]);
 
-  // Close drawer on escape key
+  // Close drawer and notification sheet on escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsDrawerOpen(false);
         setIsSearching(false);
+        setIsNotifsOpen(false);
       }
     };
-    if (isDrawerOpen || isSearching) {
+    if (isDrawerOpen || isSearching || isNotifsOpen) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen, isSearching]);
+  }, [isDrawerOpen, isSearching, isNotifsOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +121,7 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
         }
       `}</style>
 
-      {/* Modern 3-Element Bottom Bar: Menu 3 gạch + Thanh search dài + Nút Home (Feedback #4: xóa viền ngoài) */}
+      {/* Modern 4-Element Bottom Bar: Menu 3 gạch + Thanh search dài + Chuông thông báo + Nút Home */}
       <div 
         inert={isHidden}
         aria-hidden={isHidden}
@@ -124,11 +131,14 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
           taskDetailsOpen && "nav-detail-hidden"
         )}
       >
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 max-w-[440px] mx-auto">
+        <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 max-w-[440px] mx-auto">
           {/* 1. Left: Hamburger Menu Button */}
           <button
             type="button"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            onClick={() => {
+              setIsNotifsOpen(false);
+              setIsDrawerOpen(!isDrawerOpen);
+            }}
             aria-label={lang === 'en' ? 'Open navigation menu' : 'Mở menu điều hướng'}
             aria-expanded={isDrawerOpen}
             className="w-11 h-11 rounded-full grid place-items-center bg-white dark:bg-[#0a192f] border border-gray-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0f1e36] transition-all cursor-pointer shadow-lg shrink-0 active:scale-95"
@@ -165,7 +175,29 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
             )}
           </form>
 
-          {/* 3. Right: Home Button (Feedback #4) */}
+          {/* 3. Notification Bell Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsDrawerOpen(false);
+              setIsNotifsOpen(!isNotifsOpen);
+            }}
+            aria-label={lang === 'en' ? 'Notifications' : 'Thông báo'}
+            title={lang === 'en' ? 'Notifications' : 'Thông báo'}
+            aria-expanded={isNotifsOpen}
+            className="w-11 h-11 relative rounded-full grid place-items-center bg-white dark:bg-[#0a192f] border border-gray-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0f1e36] transition-all cursor-pointer shadow-lg shrink-0 active:scale-95"
+          >
+            <span className={unreadCount > 0 ? "notif-bell" : undefined}>
+              <Bell size={19} strokeWidth={2} />
+            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center ring-2 ring-white dark:ring-[#0a192f]">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* 4. Right: Home Button (Feedback #4) */}
           <button
             type="button"
             onClick={() => navigate('/mobile-home')}
@@ -217,6 +249,26 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
             {/* Scrollable Content: CHỈ HIỂN THỊ CÁC TAB CỦA DASHBOARD (Feedback #3) */}
             <div className="overflow-y-auto px-2 py-1.5 max-h-[calc(75vh-120px)] custom-scrollbar">
               <div className="grid grid-cols-1 gap-1">
+                {/* Mục Thông báo trong drawer */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDrawer();
+                    setIsNotifsOpen(true);
+                  }}
+                  className="w-full grid grid-cols-[auto_1fr_auto] items-center gap-2.5 px-2.5 py-2 rounded-[8px] transition-colors cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-left"
+                >
+                  <span className="w-5 h-5 grid place-items-center text-[#002e6d] dark:text-sky-400 shrink-0">
+                    <Bell size={15} strokeWidth={2} />
+                  </span>
+                  <span className="truncate">{lang === 'en' ? 'Notifications' : 'Thông báo'}</span>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
                 {navTabs.map((tab) => (
                   <NavLink
                     key={tab.name}
@@ -272,6 +324,13 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
           </div>
         </div>
       )}
+
+      {/* Notification Sheet Popup via createPortal */}
+      <MobileNotificationSheet
+        isOpen={isNotifsOpen}
+        onClose={() => setIsNotifsOpen(false)}
+        anchor="bottom"
+      />
     </>
   );
 };

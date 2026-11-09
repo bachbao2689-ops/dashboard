@@ -83,6 +83,7 @@ import {
 } from './sidebarDrillTree';
 import { useSidebarNotificationDismissStore } from '../../store/sidebarNotificationDismissStore';
 import '../../styles/sidebar-drilldown.css';
+import { SidebarUniversalSearch } from './SidebarUniversalSearch';
 
 const DEFAULT_SIDEBAR_WIDTH = 272;
 const MIN_SIDEBAR_WIDTH = 236;
@@ -872,6 +873,8 @@ export const Sidebar: React.FC = () => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
+  const [isExpandedSearchOpen, setIsExpandedSearchOpen] = useState(false);
+  const expandedSearchContainerRef = useRef<HTMLDivElement>(null);
   const [showCollapsedSearch, setShowCollapsedSearch] = useState(false);
   const [floatingTooltip, setFloatingTooltip] = useState<{ text: string; top: number; left: number } | null>(null);
 
@@ -1565,21 +1568,57 @@ export const Sidebar: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-[1fr_auto_auto] items-center gap-1.5 px-3 mb-2.5">
-            <div className="relative min-w-0">
+            <div className="relative min-w-0" ref={expandedSearchContainerRef}>
               <input
                 type="text"
                 value={sidebarSearchQuery}
-                onChange={e => setSidebarSearchQuery(e.target.value)}
+                onFocus={() => setIsExpandedSearchOpen(true)}
+                onChange={e => {
+                  setSidebarSearchQuery(e.target.value);
+                  setIsExpandedSearchOpen(true);
+                }}
                 onKeyDown={e => {
-                  if (e.key === "Enter" && sidebarSearchQuery.trim()) {
+                  if (e.key === "Escape") {
+                    setIsExpandedSearchOpen(false);
+                  } else if (e.key === "Enter" && !isExpandedSearchOpen && sidebarSearchQuery.trim()) {
                     navigate(`/tasks?search=${encodeURIComponent(sidebarSearchQuery.trim())}`);
                   }
                 }}
                 placeholder={lang === "en" ? "Search..." : "Tìm kiếm..."}
-                className="w-full h-8 pl-8 pr-2.5 text-xs rounded-[8px] bg-transparent text-gray-900 dark:text-white border border-slate-200/90 dark:border-slate-700/80 focus:outline-none focus:border-blue-500/60 dark:focus:border-blue-400/60 transition-colors"
+                className="w-full h-8 pl-8 pr-7 text-xs rounded-[8px] bg-transparent text-gray-900 dark:text-white border border-slate-200/90 dark:border-slate-700/80 focus:outline-none focus:border-blue-500/60 dark:focus:border-blue-400/60 transition-colors"
               />
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              {sidebarSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSidebarSearchQuery('');
+                    setIsExpandedSearchOpen(false);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label={lang === 'en' ? 'Clear search' : 'Xóa tìm kiếm'}
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
+            {isExpandedSearchOpen && Boolean(sidebarSearchQuery.trim()) && !isSidebarCollapsed && (
+              <SidebarUniversalSearch
+                query={sidebarSearchQuery}
+                onClose={() => setIsExpandedSearchOpen(false)}
+                onClearQuery={() => {
+                  setSidebarSearchQuery('');
+                  setIsExpandedSearchOpen(false);
+                }}
+                anchorRef={expandedSearchContainerRef}
+                anchorPosition="bottom"
+                enrichedTasks={enrichedTasks}
+                enrichedTracks={enrichedTracks}
+                users={summary.users}
+                assets={[...(summary.availableAssets || []), ...(summary.busyAssets || [])]}
+                navItems={collapsedNavItems}
+              />
+            )}
             {/* Collapse sidebar button (to the left of notification button) */}
             <button
               type="button"
@@ -2079,7 +2118,10 @@ export const Sidebar: React.FC = () => {
               {/* Transparent full-screen backdrop to dismiss on click outside */}
               <div
                 className="fixed inset-0 z-[9998] bg-transparent cursor-default"
-                onClick={() => setShowCollapsedSearch(false)}
+                onClick={() => {
+                  setShowCollapsedSearch(false);
+                  setCollapsedSearchQuery('');
+                }}
               />
               <div
                 ref={collapsedSearchPanelRef}
@@ -2112,7 +2154,10 @@ export const Sidebar: React.FC = () => {
                     value={collapsedSearchQuery}
                     onChange={(e) => setCollapsedSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") setShowCollapsedSearch(false);
+                      if (e.key === "Escape") {
+                        setShowCollapsedSearch(false);
+                        setCollapsedSearchQuery('');
+                      }
                     }}
                     placeholder={lang === "en" ? "Search tasks, projects..." : "Tìm việc, dự án..."}
                     className="w-full text-xs pl-8 pr-7 py-1.5 rounded-[6px] bg-slate-100 dark:bg-[#071325] border border-slate-200/80 dark:border-slate-800 text-gray-900 dark:text-white outline-none focus:border-blue-500"
@@ -2128,6 +2173,23 @@ export const Sidebar: React.FC = () => {
                   )}
                 </form>
               </div>
+              {Boolean(collapsedSearchQuery.trim()) && (
+                <SidebarUniversalSearch
+                  query={collapsedSearchQuery}
+                  onClose={() => {
+                    setShowCollapsedSearch(false);
+                    setCollapsedSearchQuery('');
+                  }}
+                  onClearQuery={() => setCollapsedSearchQuery('')}
+                  anchorRef={collapsedSearchPanelRef}
+                  anchorPosition="bottom"
+                  enrichedTasks={enrichedTasks}
+                  enrichedTracks={enrichedTracks}
+                  users={summary.users}
+                  assets={[...(summary.availableAssets || []), ...(summary.busyAssets || [])]}
+                  navItems={collapsedNavItems}
+                />
+              )}
             </>,
             document.body
           )}

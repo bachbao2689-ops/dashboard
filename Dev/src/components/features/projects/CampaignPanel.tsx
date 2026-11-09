@@ -27,6 +27,7 @@ export interface CampaignFilters {
   customStartDate?: string;
   customEndDate?: string;
   priority: string;
+  departmentId?: string;
 }
 
 export const checkDateMatch = (
@@ -637,7 +638,7 @@ export const CampaignPanel: React.FC<{
   const isCompleted = (c: any) => ['done', 'complete', 'completed'].includes((c.status || '').toLowerCase());
 
   const visibleCampaigns = useMemo(() => {
-    const { searchTerm, status, picId, calendar, customStartDate, customEndDate, priority } = filters || {};
+    const { searchTerm, status, picId, calendar, customStartDate, customEndDate, priority, departmentId } = filters || {};
     const term = (searchTerm || '').trim().toLowerCase();
 
     return campaigns.filter(c => {
@@ -723,6 +724,13 @@ export const CampaignPanel: React.FC<{
         }
       } else if (customStartDate || customEndDate) {
         if (!checkDateMatch(c.start_date, c.end_date, 'custom', customStartDate, customEndDate, isCompleted(c))) {
+          return false;
+        }
+      }
+
+      // 6. Department filter
+      if (departmentId) {
+        if (String(c.department_id || '') !== String(departmentId)) {
           return false;
         }
       }

@@ -21,7 +21,6 @@ import {
   Globe,
   LogOut,
   LayoutGrid,
-  Check,
   Package,
   Users,
   TrendingUp,
@@ -34,8 +33,6 @@ import { useTranslation } from '../../i18n/translations';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
-import { markNotificationsRead } from '../../store/notificationStore';
-import { entityLink } from '../../lib/taskTracking';
 import { useRecentItemsStore } from '../../store/recentItemsStore';
 import { useSidebarPinStore } from '../../store/sidebarPinStore';
 import { useSidebarBadges } from '../../hooks/useSidebarBadges';
@@ -43,6 +40,7 @@ import { useTasks } from '../../hooks/useTasks';
 import { canViewTeamManagement } from '../../lib/roleScope';
 import toast from 'react-hot-toast';
 import { cn } from '../common/KpiCard';
+import { MobileNotificationSheet } from './MobileNotificationSheet';
 
 export interface MobileHomeHubItem {
   id: string;
@@ -80,8 +78,7 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
   const isEn = lang === 'en';
 
   // Live Notification System (Feedback #7)
-  const { unread: unreadCount, items: notifItems, history: notifHistory } = useNotificationCenter();
-  const allNotifs = notifItems.length > 0 ? notifItems : notifHistory.slice(0, 20);
+  const { unread: unreadCount } = useNotificationCenter();
 
   // Live Tasks and Pins (Feedback #2: real data per staff account)
   const { tasks = [] } = useTasks();
@@ -337,94 +334,19 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
                   setNotifsOpen(!notifsOpen);
                 }}
                 title={isEn ? 'Notifications' : 'Thông báo'}
+                aria-label={isEn ? 'Notifications' : 'Thông báo'}
+                aria-expanded={notifsOpen}
                 className="w-9 h-9 relative rounded-full grid place-items-center bg-white dark:bg-[#0a192f] border border-gray-200/80 dark:border-slate-700/80 text-gray-700 dark:text-gray-200 shadow-2xs hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors cursor-pointer active:scale-95"
               >
-                <Bell size={16} strokeWidth={2} />
+                <span className={unreadCount > 0 ? "notif-bell" : undefined}>
+                  <Bell size={16} strokeWidth={2} />
+                </span>
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center ring-2 ring-white dark:ring-[#0a192f]">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold grid place-items-center ring-2 ring-white dark:ring-[#0a192f]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
-
-              {/* Notification Popover Panel (Feedback #7) */}
-              {notifsOpen && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40 bg-black/10 dark:bg-black/25"
-                    onClick={() => setNotifsOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-[min(340px,calc(100vw-24px))] rounded-[14px] bg-white dark:bg-[#0a192f] border border-gray-200/90 dark:border-slate-700 shadow-2xl z-50 overflow-hidden animate-in zoom-in-95 duration-150 grid grid-rows-[auto_1fr]">
-                    <div className="p-3 border-b border-gray-100 dark:border-slate-800 grid grid-cols-[1fr_auto] items-center">
-                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                        <span className="font-bold text-xs text-gray-900 dark:text-white">
-                          {isEn ? 'Notifications' : 'Thông báo'}
-                        </span>
-                        {unreadCount > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-500 text-white">
-                            {unreadCount}
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-flow-col auto-cols-max items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => void markNotificationsRead()}
-                          title={isEn ? 'Mark all as read' : 'Đã đọc tất cả'}
-                          className="p-1 text-slate-500 hover:text-primary dark:hover:text-sky-300 rounded-[6px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNotifsOpen(false)}
-                          aria-label={t('common.close')}
-                          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-[6px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="max-h-[360px] overflow-y-auto p-1.5 space-y-1 custom-scrollbar">
-                      {allNotifs.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-slate-400">
-                          {isEn ? 'No notifications yet' : 'Không có thông báo mới'}
-                        </div>
-                      ) : (
-                        allNotifs.map((n) => (
-                          <button
-                            key={n.id}
-                            type="button"
-                            onClick={() => {
-                              void markNotificationsRead([n.id]);
-                              setNotifsOpen(false);
-                              const href = entityLink(n.entity_type, n.entity_id, n.metadata);
-                              if (href) navigate(href);
-                            }}
-                            className={cn(
-                              "w-full text-left p-2 rounded-[8px] grid grid-cols-[auto_1fr] items-start gap-2.5 transition-colors cursor-pointer",
-                              n.is_read ? "hover:bg-slate-100/80 dark:hover:bg-slate-800/60 opacity-75" : "bg-blue-50/60 dark:bg-blue-950/30 hover:bg-blue-50 dark:hover:bg-blue-950/50"
-                            )}
-                          >
-                            <div className="w-7 h-7 rounded-[6px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 grid place-items-center text-[#002e6d] dark:text-sky-300 shrink-0 mt-0.5">
-                              <Bell size={13} />
-                            </div>
-                            <div className="grid grid-cols-1 min-w-0">
-                              <span className="font-semibold text-xs text-gray-900 dark:text-white truncate">
-                                {n.title}
-                              </span>
-                              <p className="text-[11px] text-gray-600 dark:text-slate-300 line-clamp-2 mt-0.5">
-                                {n.message}
-                              </p>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -681,6 +603,26 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
             {/* Scrollable Content: CHỈ HIỂN THỊ CÁC TAB CỦA DASHBOARD (Feedback #3) */}
             <div className="overflow-y-auto px-2 py-1.5 max-h-[calc(75vh-120px)] custom-scrollbar">
               <div className="grid grid-cols-1 gap-1">
+                {/* Mục Thông báo trong drawer */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNavDrawerOpen(false);
+                    setNotifsOpen(true);
+                  }}
+                  className="w-full grid grid-cols-[auto_1fr_auto] items-center gap-2.5 px-2.5 py-2 rounded-[8px] transition-colors cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-left"
+                >
+                  <span className="w-5 h-5 grid place-items-center text-[#002e6d] dark:text-sky-400 shrink-0">
+                    <Bell size={15} strokeWidth={2} />
+                  </span>
+                  <span className="truncate">{isEn ? 'Notifications' : 'Thông báo'}</span>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
                 {navTabs.map((tab) => (
                   <NavLink
                     key={tab.name}
@@ -733,6 +675,13 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
           </div>
         </div>
       )}
+
+      {/* Mobile Notification Sheet via createPortal (Thoát khỏi bẫy stacking context header) */}
+      <MobileNotificationSheet
+        isOpen={notifsOpen}
+        onClose={() => setNotifsOpen(false)}
+        anchor="top"
+      />
     </div>
   );
 };

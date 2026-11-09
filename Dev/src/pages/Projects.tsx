@@ -16,7 +16,7 @@ import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
 import {CampaignPanel} from '../components/features/projects/CampaignPanel';
 import {SubtaskDetailPanel} from '../components/features/projects/SubtaskDetailPanel';
-import {StatusFilterDropdown,PicFilterDropdown,DateFilterDropdown,PriorityFilterDropdown} from '../components/common/filters';
+import {DepartmentFilterDropdown,StatusFilterDropdown,PicFilterDropdown,DateFilterDropdown,PriorityFilterDropdown} from '../components/common/filters';
 import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../components/features/projects/projectPresentation';
 import {useProjectsController} from '../hooks/useProjectsController';
 import {useResizableColumns} from '../hooks/useResizableColumns';
@@ -54,7 +54,13 @@ export const Projects:React.FC=()=>{
    }
  }, [searchParams]);
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
-    const {departments,departmentId,setDepartmentId,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
+     const {departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
+  const activeDepartments = React.useMemo(() => {
+    return departments.filter(d =>
+      projects.some(p => String(p.department_id) === String(d.id)) ||
+      campaigns.some(c => String(c.department_id) === String(d.id))
+    );
+  }, [departments, projects, campaigns]);
   const [projectSubtasksCollapsed, setProjectSubtasksCollapsed] = React.useState(false);
   const [isEditingProjectDesc, setIsEditingProjectDesc] = React.useState(false);
   const [projectDescDraft, setProjectDescDraft] = React.useState('');
@@ -541,8 +547,19 @@ export const Projects:React.FC=()=>{
           </h1>
         </div>
 
-        {/* Function Toolbar: Status, PIC, Calendar, Priority, Clear Filters, Add New */}
-        <div ref={toolbarRef} className="mobile-actions-row flex flex-wrap items-center gap-2">
+        {/* Function Toolbar: Department, Status, PIC, Calendar, Priority, Clear Filters, Add New */}
+        <div ref={toolbarRef} className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center gap-2">
+          {/* 1. Department Filter Button */}
+          <DepartmentFilterDropdown
+            value={departmentFilter}
+            onChange={setDepartmentFilter}
+            departments={activeDepartments}
+            isOpen={activeDropdown === 'department'}
+            onToggle={() => setActiveDropdown(activeDropdown === 'department' ? null : 'department')}
+            onClose={() => setActiveDropdown(null)}
+            compact={panelOpen}
+          />
+
           {/* 2. Status Filter Button */}
           <StatusFilterDropdown
             value={statusFilter}
@@ -560,6 +577,7 @@ export const Projects:React.FC=()=>{
             isOpen={activeDropdown === 'status'}
             onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
             onClose={() => setActiveDropdown(null)}
+            compact={panelOpen}
           />
 
           {/* 3. PIC Filter Button */}
@@ -573,6 +591,7 @@ export const Projects:React.FC=()=>{
             isOpen={activeDropdown === 'pic'}
             onToggle={() => setActiveDropdown(activeDropdown === 'pic' ? null : 'pic')}
             onClose={() => setActiveDropdown(null)}
+            compact={panelOpen}
           />
 
           {/* 4. Calendar Filter Button (Fixed Custom Calendar, no native picker) */}
@@ -598,6 +617,7 @@ export const Projects:React.FC=()=>{
             isOpen={activeDropdown === 'calendar'}
             onToggle={() => setActiveDropdown(activeDropdown === 'calendar' ? null : 'calendar')}
             onClose={() => setActiveDropdown(null)}
+            compact={panelOpen}
           />
 
           {/* 5. Priority Filter Button */}
@@ -607,6 +627,7 @@ export const Projects:React.FC=()=>{
             isOpen={activeDropdown === 'priority'}
             onToggle={() => setActiveDropdown(activeDropdown === 'priority' ? null : 'priority')}
             onClose={() => setActiveDropdown(null)}
+            compact={panelOpen}
           />
 
           {/* 6. Reset Filters Button */}
@@ -615,21 +636,23 @@ export const Projects:React.FC=()=>{
               type="button"
               onClick={handleResetFilters}
               title={t('projects.clearFilters')}
-              className="h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+              className={
+                panelOpen
+                  ? "w-9 h-9 p-0 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold grid place-items-center transition-all shadow-2xs cursor-pointer"
+                  : "h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-2xs cursor-pointer"
+              }
             >
-
-              <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
+              {!panelOpen && <span className="hidden sm:inline">{t('projects.clearFilters')}</span>}
             </ActionButton>
           )}
 
           {/* 7. Add New Button */}
-          {officialReadEnabled && <Link to="/main-view" aria-label="Theo dõi Main chỉ đọc" title="Theo dõi Main chỉ đọc" className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-950/30 dark:text-blue-200"><Eye size={16}/><span className="hidden sm:inline">Xem Main</span></Link>}
+          {officialReadEnabled && <Link to="/main-view" aria-label="Theo dõi Main chỉ đọc" title="Theo dõi Main chỉ đọc" className="inline-grid grid-flow-col auto-cols-max h-9 items-center gap-1.5 rounded-[8px] border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-950/30 dark:text-blue-200"><Eye size={16}/><span className="hidden sm:inline">Xem Main</span></Link>}
           {canCreate && (
             <ActionButton icon={<FolderKanban className="w-4 h-4" />}
               onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
-              className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+              className="btn-add-new h-9 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
             >
-
               <span>{t('projects.add')}</span>
             </ActionButton>
           )}

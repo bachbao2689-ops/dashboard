@@ -416,3 +416,127 @@ test('Sidebar Left & Profile: Quick switch pill, Avatar CropModal, Phone-like Us
   assert.equal(sidebarCss.includes('.sb-profile-footer-card'), true);
   assert.equal(sidebarCss.includes('color: #002e6d !important;'), true);
 });
+
+// Test 13: Mobile Notification Bell & Sheet on MobileNav and MobileHomeHub
+test('Mobile Navigation & Home Hub: Bell button, drawer notification item, and portal notification sheet', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const mobileNavSource = fs.readFileSync(path.resolve(__dirname, '../src/components/layouts/MobileNav.tsx'), 'utf-8');
+  const mobileHomeHubSource = fs.readFileSync(path.resolve(__dirname, '../src/components/mobile/MobileHomeHub.tsx'), 'utf-8');
+  const notificationSheetSource = fs.readFileSync(path.resolve(__dirname, '../src/components/mobile/MobileNotificationSheet.tsx'), 'utf-8');
+
+  // 1. MobileNav Bottom Bar & Drawer
+  assert.equal(mobileNavSource.includes('grid-cols-[auto_1fr_auto_auto]'), true, 'MobileNav bottom bar must use 4-column grid layout');
+  assert.equal(mobileNavSource.includes('<Bell size={19}'), true, 'MobileNav bottom bar must include Bell icon button');
+  assert.equal(mobileNavSource.includes('unreadCount > 0'), true, 'MobileNav must track unreadCount badge');
+  assert.equal(mobileNavSource.includes('notif-bell'), true, 'MobileNav Bell must pulse when unread > 0');
+  assert.equal(mobileNavSource.includes('<MobileNotificationSheet'), true, 'MobileNav must mount MobileNotificationSheet');
+
+  // 2. MobileHomeHub Header & Drawer
+  assert.equal(mobileHomeHubSource.includes('<MobileNotificationSheet'), true, 'MobileHomeHub must mount MobileNotificationSheet');
+  assert.equal(mobileHomeHubSource.includes('anchor="top"'), true, 'MobileHomeHub mounts notification sheet with anchor="top"');
+  assert.equal(mobileHomeHubSource.includes('notif-bell'), true, 'MobileHomeHub Bell must pulse when unread > 0');
+
+  // 3. MobileNotificationSheet Features & Zero Flexbox
+  assert.equal(notificationSheetSource.includes('createPortal'), true, 'MobileNotificationSheet must render with createPortal to escape stacking contexts');
+  assert.equal(notificationSheetSource.includes('<PushNotificationSettings hideWhenEnabled />'), true, 'MobileNotificationSheet must include PushNotificationSettings');
+  assert.equal(notificationSheetSource.includes('NotificationIcon'), true, 'MobileNotificationSheet must render PIC avatar with NotificationIcon');
+  assert.equal(notificationSheetSource.includes('PicText'), true, 'MobileNotificationSheet must bold PIC name with PicText');
+  assert.equal(notificationSheetSource.includes('TONES'), true, 'MobileNotificationSheet must display tone chips');
+  assert.equal(notificationSheetSource.includes('formatNotificationTimestamp'), true, 'MobileNotificationSheet must format timestamps');
+
+  // 4. PushNotificationSettings & push-notifications.css Design System
+  const pushSettingsSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/notifications/PushNotificationSettings.tsx'), 'utf-8');
+  const pushCssSource = fs.readFileSync(path.resolve(__dirname, '../src/styles/push-notifications.css'), 'utf-8');
+  assert.equal(pushSettingsSource.includes('toast.success'), true, 'PushNotificationSettings must provide toast feedback');
+  assert.equal(pushSettingsSource.includes('isLocal'), true, 'PushNotificationSettings must support local dev origin mapping');
+  assert.equal(pushCssSource.includes('border-radius: 8px !important;'), true, 'push-notifications.css buttons must use 8px border radius');
+
+  // Ensure Zero Flexbox in MobileNotificationSheet markup
+  const sheetLines = notificationSheetSource.split('\n');
+  for (const line of sheetLines) {
+    if (line.includes('className=') && (line.includes('flex ') || line.includes('inline-flex') || line.includes('"flex"') || line.includes('flex-row') || line.includes('flex-col'))) {
+      assert.fail(`Flexbox detected in MobileNotificationSheet line: ${line}`);
+    }
+  }
+});
+
+// Test 14: Sidebar Universal Instant Search (All entities search from Left Sidebar)
+test('Sidebar Universal Search: searches tasks, projects, staff, assets, pages with Zero Flexbox', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const sidebarSource = fs.readFileSync(path.resolve(__dirname, '../src/components/layouts/Sidebar.tsx'), 'utf-8');
+  const searchSource = fs.readFileSync(path.resolve(__dirname, '../src/components/layouts/SidebarUniversalSearch.tsx'), 'utf-8');
+
+  // 1. Sidebar.tsx integrates SidebarUniversalSearch in both expanded & collapsed modes
+  assert.equal(sidebarSource.includes('import { SidebarUniversalSearch }'), true, 'Sidebar must import SidebarUniversalSearch');
+  assert.equal(sidebarSource.includes('<SidebarUniversalSearch'), true, 'Sidebar must mount SidebarUniversalSearch');
+  assert.equal(sidebarSource.includes('expandedSearchContainerRef'), true, 'Sidebar must anchor expanded search dropdown');
+  assert.equal(sidebarSource.includes('collapsedSearchPanelRef'), true, 'Sidebar must anchor collapsed search dropdown');
+  assert.equal(sidebarSource.includes('setIsExpandedSearchOpen'), true, 'Sidebar must manage expanded search open state');
+
+  // 2. Multi-category entity search capabilities in SidebarUniversalSearch
+  assert.equal(searchSource.includes('category: \'nav\''), true, 'Must support Pages/Navigation category');
+  assert.equal(searchSource.includes('category: \'track\''), true, 'Must support Projects & Campaigns category');
+  assert.equal(searchSource.includes('category: \'task\''), true, 'Must support Tasks & Subtasks category');
+  assert.equal(searchSource.includes('category: \'user\''), true, 'Must support Team Members/Staff category');
+  assert.equal(searchSource.includes('category: \'asset\''), true, 'Must support Equipment & Assets category');
+
+  // 3. UX Keyboard navigation & portal positioning
+  assert.equal(searchSource.includes('createPortal'), true, 'Must render in portal to break out of sidebar overflow/stacking');
+  assert.equal(searchSource.includes('ArrowDown'), true, 'Must support ArrowDown keyboard navigation');
+  assert.equal(searchSource.includes('ArrowUp'), true, 'Must support ArrowUp keyboard navigation');
+  assert.equal(searchSource.includes('Escape'), true, 'Must support Escape dismissal');
+  assert.equal(searchSource.includes('Enter'), true, 'Must support Enter selection');
+  assert.equal(searchSource.includes('handleClickOutside'), true, 'Must support click outside dismissal');
+
+  // 4. Zero Flexbox verification in SidebarUniversalSearch
+  const searchLines = searchSource.split('\n');
+  for (const line of searchLines) {
+    if (line.includes('className=') && (line.includes('flex ') || line.includes('inline-flex') || line.includes('"flex"') || line.includes('flex-row') || line.includes('flex-col'))) {
+      assert.fail(`Flexbox detected in SidebarUniversalSearch line: ${line}`);
+    }
+  }
+});
+
+// Test 15: Projects/Campaigns Department Filter & Compact Toolbar Filters on Detail Open
+test('Projects Toolbar: Department Filter with search & compact icon-only filters on detail open', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const projectsSource = fs.readFileSync(path.resolve(__dirname, '../src/pages/Projects.tsx'), 'utf-8');
+  const controllerSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useProjectsController.tsx'), 'utf-8');
+  const deptFilterSource = fs.readFileSync(path.resolve(__dirname, '../src/components/common/filters/DepartmentFilterDropdown.tsx'), 'utf-8');
+  const statusFilterSource = fs.readFileSync(path.resolve(__dirname, '../src/components/common/filters/StatusFilterDropdown.tsx'), 'utf-8');
+  const picFilterSource = fs.readFileSync(path.resolve(__dirname, '../src/components/common/filters/PicFilterDropdown.tsx'), 'utf-8');
+  const dateFilterSource = fs.readFileSync(path.resolve(__dirname, '../src/components/common/filters/DateFilterDropdown.tsx'), 'utf-8');
+  const priorityFilterSource = fs.readFileSync(path.resolve(__dirname, '../src/components/common/filters/PriorityFilterDropdown.tsx'), 'utf-8');
+
+  // 1. DepartmentFilterDropdown integration in Projects.tsx toolbar
+  assert.equal(projectsSource.includes('<DepartmentFilterDropdown'), true, 'Projects must mount DepartmentFilterDropdown');
+  assert.equal(projectsSource.includes('departments={activeDepartments}'), true, 'Projects must pass activeDepartments only');
+  assert.equal(projectsSource.includes('compact={panelOpen}'), true, 'Projects toolbar must pass compact={panelOpen}');
+  assert.equal(projectsSource.includes('activeDepartments = React.useMemo'), true, 'Projects must compute activeDepartments');
+
+  // 2. All 5 filters support compact mode
+  assert.equal(deptFilterSource.includes('compact = false'), true, 'DepartmentFilterDropdown must support compact prop');
+  assert.equal(statusFilterSource.includes('compact = false'), true, 'StatusFilterDropdown must support compact prop');
+  assert.equal(picFilterSource.includes('compact = false'), true, 'PicFilterDropdown must support compact prop');
+  assert.equal(dateFilterSource.includes('compact = false'), true, 'DateFilterDropdown must support compact prop');
+  assert.equal(priorityFilterSource.includes('compact = false'), true, 'PriorityFilterDropdown must support compact prop');
+
+  // 3. DepartmentFilterDropdown includes search input
+  assert.equal(deptFilterSource.includes('searchQuery'), true, 'DepartmentFilterDropdown must maintain searchQuery state');
+  assert.equal(deptFilterSource.includes('filteredDepartments'), true, 'DepartmentFilterDropdown must filter departments by search');
+
+  // 4. useProjectsController handles departmentFilter & resets correctly
+  assert.equal(controllerSource.includes('departmentFilter'), true, 'useProjectsController must define departmentFilter state');
+  assert.equal(controllerSource.includes('setDepartmentFilter(\'\')'), true, 'handleResetFilters must clear departmentFilter');
+  assert.equal(controllerSource.includes('p.department_id'), true, 'visibleProjects must check p.department_id against departmentFilter');
+
+  // 5. Zero Flexbox verification in DepartmentFilterDropdown
+  const deptLines = deptFilterSource.split('\n');
+  for (const line of deptLines) {
+    if (line.includes('className=') && (line.includes('flex ') || line.includes('inline-flex') || line.includes('"flex"') || line.includes('flex-row') || line.includes('flex-col'))) {
+      assert.fail(`Flexbox detected in DepartmentFilterDropdown line: ${line}`);
+    }
+  }
+});
+
+
