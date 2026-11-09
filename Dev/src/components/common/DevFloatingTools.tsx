@@ -14,9 +14,10 @@ import {
   Check,
   Search,
 } from 'lucide-react';
-import { useAuthStore, type StaffProfile } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 import { useWorkspaceDirectory } from '../../hooks/useWorkspaceData';
 import { Avatar } from './Avatar';
+import {previewProfile,reconcileAccountPreview,resolvePreviewAccount,type DirectoryPerson,type PreviewRank} from '../../lib/accountPreview';
 
 interface DevFloatingToolsProps {
   onTriggerUpdate: () => void;
@@ -43,17 +44,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   const allUsers = directory.data?.users || [];
   const departments = directory.data?.departments || [];
 
-  // Snapshot original profile so user can reset anytime
-  const originalProfileRef = useRef<StaffProfile | null>(null);
-  useEffect(() => {
-    if (storeOriginalProfile && !originalProfileRef.current) {
-      originalProfileRef.current = { ...storeOriginalProfile };
-    } else if (currentProfile && !originalProfileRef.current) {
-      originalProfileRef.current = { ...currentProfile };
-    }
-  }, [storeOriginalProfile, currentProfile]);
-
-  const originalProfile = originalProfileRef.current || storeOriginalProfile || currentProfile;
+  const originalProfile = storeOriginalProfile || currentProfile;
   const isPreviewing = Boolean(originalProfile && currentProfile && Number(currentProfile.id) !== Number(originalProfile.id));
 
   const [isOpen, setIsOpen] = useState(false);
@@ -176,51 +167,32 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     };
   }, [handleMoveDrag, handleEndDrag]);
 
-  // Find standard departments with exact Supabase UUIDs
-  const fallbackDesignDept = { id: '1a9a3e77-2025-41f2-9a07-d4c785dd8135', name: 'Design' };
-  const fallbackMarketingDept = { id: 'dea85847-2e5d-4258-ba6d-900dde8f6ed0', name: 'MARKETING' };
-  const designDept = departments.find((d) => String(d.id) === fallbackDesignDept.id || /design|thiết kế/i.test(d.name)) || fallbackDesignDept;
-  const marketingDept = departments.find((d) => String(d.id) === fallbackMarketingDept.id || /marketing/i.test(d.name)) || fallbackMarketingDept;
+  const designDept = departments.find(d => /^(design|thiết kế)$/i.test(d.name.trim()));
+  const marketingDept = departments.find(d => /^marketing$/i.test(d.name.trim()));
+  const preset = (rank: PreviewRank, deptId?: string | null) =>
+    resolvePreviewAccount(allUsers, rank, deptId, originalProfile?.id);
+  const switchPreset = (rank: PreviewRank, deptId?: string | null) => {
+    const person = preset(rank, deptId);
+    if (person) switchToStaff(person);
+  };
 
-  const switchRole = (
-    role: string,
-    employment_level: string,
-    dept?: { id: string; name: string } | null,
-    mockName?: string,
-    mockId?: number
-  ) => {
-    if (!originalProfileRef.current && currentProfile) {
-      originalProfileRef.current = { ...currentProfile };
+  useEffect(() => {
+    // A scope transition clears the directory while loading; do not treat that
+    // intermediate snapshot (or a network error) as a deletion.
+    if (!directory.data || directory.loading || directory.error || !currentProfile || !originalProfile) return;
+    const next = reconcileAccountPreview(currentProfile, originalProfile, allUsers, departments);
+    if (next !== currentProfile) {
+      useAuthStore.setState({profile: next});
+      syncReportDepartment(next.department_id);
     }
-    useAuthStore.setState({
-      profile: {
-        ...(currentProfile || {
-          id: mockId || 99999,
-          name: 'Dev User',
-          email: 'dev@kcoffee.com',
-          avatar_url: null,
-          is_active: true,
-          auth_id: null,
-          job_title: null,
-        }),
-        id: mockId != null ? mockId : (currentProfile?.id || 99999),
-        name: mockName || currentProfile?.name || 'Dev User',
-        role,
-        employment_level,
-        department_id: dept ? String(dept.id) : null,
-        department_name: dept ? dept.name : null,
-      },
-    });
+  }, [directory.data, directory.loading, directory.error, currentProfile, originalProfile]);
 
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
-      const url = new URL(window.location.href);
-      if (dept?.id) {
-        url.searchParams.set('dept', String(dept.id));
-      } else {
-        url.searchParams.delete('dept');
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
+  const syncReportDepartment = (departmentId: string | null) => {
+    if (typeof window === 'undefined' || !window.location.pathname.includes('/reports')) return;
+    const url = new URL(window.location.href);
+    if (departmentId) url.searchParams.set('dept', departmentId);
+    else url.searchParams.delete('dept');
+    window.history.replaceState({}, '', url.toString());
   };
 
   const resetOriginal = () => {
@@ -238,39 +210,12 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     }
   };
 
-  const switchToStaff = (user: any) => {
-    if (!originalProfileRef.current && currentProfile) {
-      originalProfileRef.current = { ...currentProfile };
-    }
-    const staffDept = user.departments || user.department || (user.department_id ? departments.find((d: any) => String(d.id) === String(user.department_id)) : null);
-    const deptId = user.department_id ? String(user.department_id) : (staffDept?.id ? String(staffDept.id) : null);
-    const deptName = staffDept?.name || user.department_name || null;
-
-    useAuthStore.setState({
-      profile: {
-        id: Number(user.id),
-        auth_id: user.auth_id || null,
-        email: user.email || null,
-        name: user.name,
-        avatar_url: user.avatar_url || null,
-        role: user.role || 'member',
-        employment_level: user.employment_level || 'Staff',
-        department_id: deptId,
-        department_name: deptName,
-        job_title: user.job_title || null,
-        is_active: true,
-      },
-    });
-
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
-      const url = new URL(window.location.href);
-      if (deptId) {
-        url.searchParams.set('dept', String(deptId));
-      } else {
-        url.searchParams.delete('dept');
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
+  const switchToStaff = (user: DirectoryPerson) => {
+    if (user.is_active === false) return;
+    const next = Number(user.id) === originalProfile?.id
+      ? originalProfile : previewProfile(user, departments);
+    useAuthStore.setState({profile: next});
+    syncReportDepartment(next.department_id);
   };
 
   const filteredStaffUsers = useMemo(() => {
@@ -291,14 +236,9 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     });
   }, [allUsers, staffSearchQuery, selectedDeptFilter]);
 
-  // Determine current active preview role
-  const isCurrent = (role: string, level: string, deptId?: string | null) => {
-    if (!currentProfile) return false;
-    const sameRole = currentProfile.role === role;
-    const sameLevel = (currentProfile.employment_level || '').toLowerCase() === level.toLowerCase();
-    if (deptId === undefined) return sameRole && sameLevel;
-    const sameDept = String(currentProfile.department_id || '') === String(deptId || '');
-    return sameRole && sameLevel && sameDept;
+  const isCurrent = (rank: PreviewRank, deptId?: string | null) => {
+    const person = preset(rank, deptId);
+    return Boolean(person && currentProfile && Number(person.id) === currentProfile.id);
   };
 
   // Panel placement relative to gear button
@@ -425,7 +365,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('roles')}
-              className={`py-1.5 rounded-md transition-all cursor-pointer ${
+              className={`py-1.5 rounded-md transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 activeTab === 'roles'
                   ? 'bg-white dark:bg-[#132338] text-sky-600 dark:text-sky-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -436,7 +376,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('popups')}
-              className={`py-1.5 rounded-md transition-all cursor-pointer ${
+              className={`py-1.5 rounded-md transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 activeTab === 'popups'
                   ? 'bg-white dark:bg-[#132338] text-sky-600 dark:text-sky-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -478,9 +418,10 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                   {/* 1. ADMIN */}
                   <button
                     type="button"
-                    onClick={() => switchRole('admin', 'Admin', null, 'ADMIN', 1)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('admin', 'Admin')
+                    disabled={!preset('admin')}
+                    onClick={() => switchPreset('admin')}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('admin')
                         ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -492,15 +433,16 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                       <p className="text-xs font-bold leading-tight">Admin</p>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400">Toàn quyền, xem tất cả phòng ban</p>
                     </div>
-                    {isCurrent('admin', 'Admin') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
+                    {isCurrent('admin') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
                   </button>
 
                   {/* 2. MANAGER */}
                   <button
                     type="button"
-                    onClick={() => switchRole('manager', 'Manager', null, 'Manager Toàn Công Ty', 99999)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('manager', 'Manager')
+                    disabled={!preset('manager')}
+                    onClick={() => switchPreset('manager')}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('manager')
                         ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -512,15 +454,16 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                       <p className="text-xs font-bold leading-tight">Manager</p>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400">Quản lý toàn bộ, xem tất cả báo cáo</p>
                     </div>
-                    {isCurrent('manager', 'Manager') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
+                    {isCurrent('manager') && <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
                   </button>
 
                   {/* 3. LEADER DESIGN */}
                   <button
                     type="button"
-                    onClick={() => switchRole('leader', 'Leader', designDept, 'Leader Design (Nga Phạm)', 9)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('leader', 'Leader', designDept?.id)
+                    disabled={!preset('leader', designDept?.id)}
+                    onClick={() => switchPreset('leader', designDept?.id)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('leader', designDept?.id)
                         ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -532,7 +475,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                       <p className="text-xs font-bold leading-tight">Leader Design</p>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Thiết kế, quyền Design</p>
                     </div>
-                    {isCurrent('leader', 'Leader', designDept?.id) && (
+                    {isCurrent('leader', designDept?.id) && (
                       <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     )}
                   </button>
@@ -540,9 +483,10 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                   {/* 4. LEADER MARKETING */}
                   <button
                     type="button"
-                    onClick={() => switchRole('leader', 'Leader', marketingDept, 'Leader Marketing', 13)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('leader', 'Leader', marketingDept?.id)
+                    disabled={!preset('leader', marketingDept?.id)}
+                    onClick={() => switchPreset('leader', marketingDept?.id)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('leader', marketingDept?.id)
                         ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -554,7 +498,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                       <p className="text-xs font-bold leading-tight">Leader Marketing</p>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Mkt (bị khóa phòng khác)</p>
                     </div>
-                    {isCurrent('leader', 'Leader', marketingDept?.id) && (
+                    {isCurrent('leader', marketingDept?.id) && (
                       <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     )}
                   </button>
@@ -562,9 +506,10 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                   {/* 5. STAFF DESIGN */}
                   <button
                     type="button"
-                    onClick={() => switchRole('member', 'Staff', designDept, 'Staff Design (Bách Bảo)', 11)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('member', 'Staff', designDept?.id)
+                    disabled={!preset('staff', designDept?.id)}
+                    onClick={() => switchPreset('staff', designDept?.id)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('staff', designDept?.id)
                         ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -573,12 +518,12 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                       <User className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold leading-tight">Staff Design (Bách Bảo)</p>
+                      <p className="text-xs font-bold leading-tight">Staff Design</p>
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                        Fix cứng tầm view vào Design
+                        Tài khoản Staff thuộc Design
                       </p>
                     </div>
-                    {isCurrent('member', 'Staff', designDept?.id) && (
+                    {isCurrent('staff', designDept?.id) && (
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     )}
                   </button>
@@ -586,9 +531,10 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                   {/* 6. STAFF MARKETING */}
                   <button
                     type="button"
-                    onClick={() => switchRole('member', 'Staff', marketingDept, 'Staff Marketing', 16)}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent('member', 'Staff', marketingDept?.id)
+                    disabled={!preset('staff', marketingDept?.id)}
+                    onClick={() => switchPreset('staff', marketingDept?.id)}
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent('staff', marketingDept?.id)
                         ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/40'
                         : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'
                     }`}
@@ -599,10 +545,10 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                     <div>
                       <p className="text-xs font-bold leading-tight">Staff Marketing</p>
                       <p className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
-                        Fix cứng tầm view vào Marketing
+                        Tài khoản Staff thuộc Marketing
                       </p>
                     </div>
-                    {isCurrent('member', 'Staff', marketingDept?.id) && (
+                    {isCurrent('staff', marketingDept?.id) && (
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     )}
                   </button>
@@ -673,7 +619,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                           key={user.id}
                           type="button"
                           onClick={() => switchToStaff(user)}
-                          className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                             isUserActive
                               ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/50'
                               : 'border-white/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500/70 bg-white/55 dark:bg-slate-900/35 backdrop-blur-sm'

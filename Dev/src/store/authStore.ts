@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import {disablePush} from '../services/pushNotifications';
+import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
 
 export interface StaffProfile {
   id: number;
@@ -108,12 +109,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     if (authUser.id === 'dev-admin-id') return;
 
     const currentOriginal = get().originalProfile;
-    // Don't overwrite simulated profile if admin is previewing another staff member
-    if (currentOriginal && currentOriginal.role === 'admin' && get().profile && get().profile?.id !== currentOriginal.id) {
-      set({ session, loading: false });
-      return;
-    }
-
+    const preview = currentOriginal?.auth_id === authUser.id && get().profile?.id !== currentOriginal.id
+      ? get().profile : null;
     try {
       const profile = await loadStaffProfile(authUser, markSignedIn);
       if(epoch!==sessionEpoch)return;
@@ -122,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
         return;
       }
-      set({ session, profile, originalProfile: currentOriginal || profile, user: enrichUser(authUser, profile), loading: false });
+      set({ session, profile: profile?.role === 'admin' ? preview || profile : profile, originalProfile: profile, user: enrichUser(authUser, profile), loading: false });
     } catch (error) {
       if(epoch!==sessionEpoch)return;
       console.error('Could not load staff profile:', error);
@@ -139,10 +136,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
           set({ session: null, profile: null, originalProfile: null, user: null, loading: false });
           return;
         }
-        set({ session, profile, originalProfile: currentOriginal || profile, user: enrichUser(authUser, profile), loading: false });
+        set({ session, profile: profile?.role === 'admin' ? preview || profile : profile, originalProfile: profile, user: enrichUser(authUser, profile), loading: false });
       } catch {
         if(epoch!==sessionEpoch)return;
-        set({ session, profile: null, originalProfile: currentOriginal, user: enrichUser(authUser, null), loading: false });
+        set({ session, profile: null, originalProfile: null, user: enrichUser(authUser, null), loading: false });
       }
     }
   };
@@ -167,18 +164,32 @@ export const useAuthStore = create<AuthState>((set, get) => {
           authListenerStarted = true;
           supabase.auth.onAuthStateChange((event, nextSession) => {
             if (get().user?.id === 'dev-admin-id')return;
-            if(nextSession&&get().profile&&get().user?.id===nextSession.user.id){set({session:nextSession,user:enrichUser(nextSession.user,get().profile)});return;}
+            if(nextSession&&get().profile&&get().user?.id===nextSession.user.id){set({session:nextSession,user:enrichUser(nextSession.user,get().originalProfile || get().profile)});return;}
             // Database calls must run outside the Auth callback's internal lock.
             setTimeout(()=>void applySession(nextSession,event==='SIGNED_IN'),0);
           });
         }
         if (!staffValidationStarted) {
           staffValidationStarted = true;
-          window.setInterval(() => {
-            const orig = get().originalProfile;
-            if (orig && orig.role === 'admin' && get().profile && get().profile?.id !== orig.id) return;
-            if (document.visibilityState==='visible'&&get().session && get().user?.id !== 'dev-admin-id') void applySession(get().session);
-          }, 300_000);
+          let release: (() => void) | undefined;
+          let actor: number | undefined;
+          const refreshIdentity = () => {
+            if (document.visibilityState === 'visible' && get().session && get().user?.id !== 'dev-admin-id') {
+              return applySession(get().session);
+            }
+          };
+          const bindIdentity = () => {
+            const next = get().session && get().user?.id !== 'dev-admin-id'
+              ? get().originalProfile?.id : undefined;
+            if (next === actor) return;
+            release?.(); actor = next;
+            release = next ? retainWorkspaceRealtime(next, ['users','departments'], refreshIdentity, () => {}, change =>
+              !change.table || change.table === 'departments' || !change.new?.id && !change.old?.id
+                || Number(change.new?.id || change.old?.id) === next) : undefined;
+          };
+          useAuthStore.subscribe(bindIdentity);
+          bindIdentity();
+
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -216,7 +227,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     updateUserMetadata: async (data) => {
-      const { user, profile } = get();
+      const { user, profile, originalProfile } = get();
+      if (originalProfile && profile?.id !== originalProfile.id) throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ.');
       const fullName = data.full_name?.trim() || profile?.name;
       if (!user || !fullName) throw new Error('Full name is required');
       if (user.id === 'dev-admin-id') {
@@ -231,7 +243,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         .update({ name: fullName, initials: initialsFromName(fullName), ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
       const nextProfile = updatedProfile ? { ...updatedProfile, department_name: profile?.department_name || null } as StaffProfile : profile;
-      set({ profile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });
+      set({ profile: nextProfile, originalProfile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });
     },
 
     signOut: async () => {

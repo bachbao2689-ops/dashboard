@@ -23,7 +23,7 @@ function scopedResource<T>(load:()=>Promise<T>,tables:string[],ttl=15000,filter?
 export const taskResource=scopedResource(readWorkspaceTasks,['tasks','project_subtasks','campaign_subtasks','projects','campaigns','project_members','campaign_members','workflow_phase_members','comments','activity_log'],15000,change=>workspaceChangeRelevant('tasks',change,useAuthStore.getState().profile));
 export const directoryResource=scopedResource(async()=>{
  const [users,departments]=await Promise.all([
-  readAll(supabase.from('users').select('id,name,avatar_url,role,employment_level,job_title,department_id').eq('is_active',true).order('name').order('id')),
+  readAll(supabase.from('users').select('id,name,avatar_url,role,employment_level,job_title,department_id,is_active').eq('is_active',true).order('name').order('id')),
   readAll(supabase.from('departments').select('id,name').order('name').order('id')),
  ]);
  const names=new Map(departments.map(department=>[department.id,department.name]));
