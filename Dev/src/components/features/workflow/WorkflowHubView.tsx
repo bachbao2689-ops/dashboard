@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
-import { isAdmin, isGlobalManager } from '../../../lib/roleScope';
+import { isAdmin, isGlobalManager, isDepartmentLeader } from '../../../lib/roleScope';
 import { displayDate, daysUntil, isDone, taskProgress } from '../../../lib/workflowHub';
 import { priorityClass, getCampaignPriority } from '../projects/projectPresentation';
 import { checkDateMatch } from '../projects/CampaignPanel';
@@ -58,8 +58,10 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
     return null;
   }, [rawDeptId, hub.profile?.department_name, directory.data?.departments]);
 
-  // Restricted user: not a Global Manager AND has a department
-  const userIsRestricted = !isGlobalManager(hub.profile) && Boolean(resolvedDeptId || hub.profile?.department_name);
+  const isLeader = isDepartmentLeader(hub.profile);
+  const isStaff = !isGlobalManager(hub.profile) && !isLeader;
+  // Restricted user: only Staff is restricted to their own department
+  const userIsRestricted = isStaff && Boolean(resolvedDeptId || hub.profile?.department_name);
 
   // Filters state
   const [hubTab, setHubTab] = useState<'all' | 'project' | 'campaign'>('all');

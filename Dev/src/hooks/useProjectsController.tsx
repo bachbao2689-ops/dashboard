@@ -14,7 +14,7 @@ import {useAuthStore} from '../store/authStore';
 import {checkDateMatch,type CampaignFilters} from '../components/features/projects/CampaignPanel';
 import {recordTaskDeletion} from '../services/taskDeletionLog';
 import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
-import {canViewTeamManagement,isGlobalManager,isAdmin,isDepartmentLeader} from '../lib/roleScope';
+import {canViewTeamManagement,isGlobalManager,isAdmin,isDepartmentLeader,isPersonLeader} from '../lib/roleScope';
 import {isTaskDone} from '../lib/taskTracking';
 import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {editOwnedComment} from '../lib/commentEditing';
@@ -45,7 +45,7 @@ export function useProjectsController(){
   const isManager = isGlobalManager(profile) || isAdmin(profile);
   const isLeader = isDepartmentLeader(profile);
   const isStaff = !isManager && !isLeader;
-  const userIsRestricted = !isManager && Boolean(resolvedDeptId || profile?.department_name);
+  const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
   const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
   const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
   const picMembers = useMemo(() => ({ ...storedPicMembers, ...Object.fromEntries(workflow.tracks.filter(track => track.entity_type === 'project').map(track => [track.entity_id, track.pics.map(p => String(p.id))])) }), [storedPicMembers, workflow.tracks]);
@@ -298,7 +298,7 @@ export function useProjectsController(){
           // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
           if (!isLead && !isMember && !isSub && !isCreator) return false;
         } else if (isLeader) {
-          // Leader: Thấy hết Project thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia
+          // Leader: Thấy hết Project thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có Leader đồng cấp tham gia
           const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));
           const targetDeptId = resolvedDeptId;
           const targetDeptName = profile?.department_name?.trim().toLowerCase();
@@ -317,7 +317,18 @@ export function useProjectsController(){
             }) ||
             Boolean(p.lead_id && people.some(pe => Number(pe.id) === Number(p.lead_id) && ((targetDeptId && String((pe as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((pe as any).departments?.name || '').trim().toLowerCase() === targetDeptName))))
           );
-          if (!inDept && !hasDeptMember && !isLead && !isMember && !isSub && !isCreator) return false;
+
+          // Đồng cấp: Project có Leader làm lead_id, primary owner, creator hoặc tham gia (member/pic/subtask)
+          const isPeerLeaderProject = (
+            Boolean(p.lead_id && people.some(pe => Number(pe.id) === Number(p.lead_id) && isPersonLeader(pe as any))) ||
+            Boolean(projectPrimaryOwners[p.id] && people.some(pe => String(pe.id) === String(projectPrimaryOwners[p.id]) && isPersonLeader(pe as any))) ||
+            Boolean(p.created_by && people.some(pe => Number(pe.id) === Number(p.created_by) && isPersonLeader(pe as any))) ||
+            (members[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any))) ||
+            (picMembers[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any))) ||
+            (subtaskMembers[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any)))
+          );
+
+          if (!inDept && !hasDeptMember && !isPeerLeaderProject && !isLead && !isMember && !isSub && !isCreator) return false;
         }
       }
 

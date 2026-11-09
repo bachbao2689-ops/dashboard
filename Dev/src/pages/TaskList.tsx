@@ -21,7 +21,7 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
 import { useAuthStore } from '../store/authStore';
-import { isGlobalManager, isAdmin, isDepartmentLeader } from '../lib/roleScope';
+import { isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader } from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
 import { updateTrackedTask } from '../services/workspaceTasks';
@@ -71,7 +71,7 @@ export const TaskList: React.FC = () => {
     }
     return null;
   }, [rawDeptId, profile?.department_name, departments]);
-  const userIsRestricted = !isGlobalManager(profile) && Boolean(resolvedDeptId || profile?.department_name);
+  const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
 
   const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('tasks.departmentFilter', searchParams.get('department_id') || '');
 
@@ -82,11 +82,11 @@ export const TaskList: React.FC = () => {
   }, [userIsRestricted, resolvedDeptId, departmentFilter]);
 
   const availableDepartments = useMemo(() => {
-    if (!isManager && resolvedDeptId) {
+    if (isStaff && resolvedDeptId) {
       return departments.filter(d => String(d.id) === String(resolvedDeptId));
     }
     return departments;
-  }, [departments, isManager, resolvedDeptId]);
+  }, [departments, isStaff, resolvedDeptId]);
 
   // Merge people with any task assignees not yet in people, scoped by rank
   const allPeople = useMemo<FilterPerson[]>(() => {
@@ -104,6 +104,7 @@ export const TaskList: React.FC = () => {
       const targetDeptName = profile?.department_name?.trim().toLowerCase();
       const list: FilterPerson[] = people.filter(p => {
         if (String(p.id) === String(profileId)) return true;
+        if (isPersonLeader(p as any)) return true;
         const pDept = String((p as any).department_id || '');
         const pDeptName = ((p as any).department_name || '').trim().toLowerCase();
         return (targetDeptId && pDept === String(targetDeptId)) || (targetDeptName && pDeptName === targetDeptName);
@@ -263,7 +264,7 @@ export const TaskList: React.FC = () => {
         // Staff thường: Chỉ thấy phạm vi công việc mình được giao / tạo / liên quan trực tiếp
         if (!(isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
       } else if (isLeader) {
-        // Leader: Thấy hết công việc của staff thuộc phòng ban mình
+        // Leader: Thấy hết công việc của staff thuộc phòng ban mình HOẶC của các Leader đồng cấp trên toàn hệ thống
         const targetDeptId = resolvedDeptId || departmentFilter;
         const targetDeptName = profile?.department_name?.trim().toLowerCase();
         const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
@@ -274,7 +275,17 @@ export const TaskList: React.FC = () => {
 
         const deptMatch = (targetDeptId && String(taskDept) === String(targetDeptId)) || (targetDeptName && taskDeptName === targetDeptName);
 
-        if (!(deptMatch || assigneeInDept || creatorInDept || isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
+        // Leader đồng cấp: assignee là Leader, creator là Leader, hoặc checklist/subtask có Leader tham gia
+        const isPeerLeaderTask = (
+          isPersonLeader(t.assignee as any) ||
+          people.some(p => isPersonLeader(p as any) && (
+            String(p.id) === String(t.assignee_id) ||
+            String(p.id) === String(t.created_by) ||
+            (t.checklist_items || []).some((ci: any) => String(p.id) === String(ci.assignee_id) || String(p.id) === String(ci.created_by))
+          ))
+        );
+
+        if (!(deptMatch || assigneeInDept || creatorInDept || isMyTask || isCreator || hasMySubtask || isMyParentTask || isPeerLeaderTask)) return false;
       }
     }
 

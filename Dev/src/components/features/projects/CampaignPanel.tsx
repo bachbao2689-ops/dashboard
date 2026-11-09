@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
-import { isGlobalManager, isAdmin, isDepartmentLeader } from '../../../lib/roleScope';
+import { isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader } from '../../../lib/roleScope';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import {isTaskDone} from '../../../lib/taskTracking';
 import { EntityInfoPopover } from './EntityInfoPopover';
@@ -653,7 +653,7 @@ export const CampaignPanel: React.FC<{
           // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
           if (!isLead && !isCreator && !isSub) return false;
         } else if (isLeader) {
-          // Leader: Thấy hết Campaign thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia
+          // Leader: Thấy hết Campaign thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có Leader đồng cấp tham gia
           const inDept = Boolean(resolvedDeptId && c.department_id && String(c.department_id) === String(resolvedDeptId));
           const targetDeptId = resolvedDeptId;
           const targetDeptName = profile?.department_name?.trim().toLowerCase();
@@ -664,7 +664,12 @@ export const CampaignPanel: React.FC<{
               return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
             })
           );
-          if (!inDept && !hasDeptMember && !isLead && !isCreator && !isSub) return false;
+          const isPeerLeaderCampaign = (
+            Boolean(c.lead_id && people.some(pe => Number(pe.id) === Number(c.lead_id) && isPersonLeader(pe as any))) ||
+            Boolean(c.creator?.id && people.some(pe => Number(pe.id) === Number(c.creator.id) && isPersonLeader(pe as any))) ||
+            (subtaskMap[c.id] || []).some((a: any) => people.some(pe => Number(pe.id) === Number(a.id) && isPersonLeader(pe as any)))
+          );
+          if (!inDept && !hasDeptMember && !isPeerLeaderCampaign && !isLead && !isCreator && !isSub) return false;
         }
       }
 

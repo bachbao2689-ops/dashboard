@@ -31,14 +31,26 @@ export function canSubmitAssetRequest(profile: RoleProfile): boolean {
   return Boolean(profile && ((normalized(profile.role) === 'member' && !isDepartmentLeader(profile) && !isGlobalManager(profile)) || isAssetApprover(profile)));
 }
 
+export function isPersonLeader(person: { role?: string | null; employment_level?: string | null } | null | undefined): boolean {
+  if (!person) return false;
+  const r = normalized(person.role);
+  const l = normalized(person.employment_level);
+  return r === 'leader' || l === 'leader';
+}
+
 export function canViewTeamManagement(profile: RoleProfile): boolean {
   return isGlobalManager(profile) || isDepartmentLeader(profile);
 }
 
-export function canViewPersonInTeam(profile: RoleProfile, person: { id: string | number; department_id?: string | null }): boolean {
+export function canViewPersonInTeam(
+  profile: RoleProfile,
+  person: { id: string | number; department_id?: string | null; role?: string | null; employment_level?: string | null }
+): boolean {
   if (isGlobalManager(profile)) return true;
   // Theo brief Dashboard (1) Slide 1: Phần member mở view hết cho các staff
   if (normalized(profile?.role) === 'member') return true;
+  // Leader có thể thấy thành viên cùng phòng ban HOẶC các Leader đồng cấp trên toàn hệ thống
+  if (isDepartmentLeader(profile) && isPersonLeader(person)) return true;
   return Boolean(profile?.department_id && person.department_id === profile.department_id);
 }
 

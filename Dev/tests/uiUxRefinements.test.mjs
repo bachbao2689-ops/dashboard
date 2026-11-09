@@ -539,4 +539,36 @@ test('Projects Toolbar: Department Filter with search & compact icon-only filter
   }
 });
 
+// Test 16: Leader peer view (đồng cấp) across tasks, projects, campaigns and workflow tracks
+test('Leader Peer View: Leaders can see tasks, projects, campaigns, and workflow of peer leaders & team members', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const roleScopeSource = fs.readFileSync(path.resolve(__dirname, '../src/lib/roleScope.ts'), 'utf-8');
+  const taskListSource = fs.readFileSync(path.resolve(__dirname, '../src/pages/TaskList.tsx'), 'utf-8');
+  const controllerSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useProjectsController.tsx'), 'utf-8');
+  const campaignPanelSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/projects/CampaignPanel.tsx'), 'utf-8');
+  const workflowHookSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useWorkflowManagement.ts'), 'utf-8');
+  const workflowHubViewSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/workflow/WorkflowHubView.tsx'), 'utf-8');
+
+  // 1. roleScope: isPersonLeader & canViewPersonInTeam
+  assert.equal(roleScopeSource.includes('export function isPersonLeader('), true, 'roleScope must export isPersonLeader helper');
+  assert.equal(roleScopeSource.includes('isDepartmentLeader(profile) && isPersonLeader(person)'), true, 'canViewPersonInTeam must allow Leader to view peer leaders');
+
+  // 2. TaskList: userIsRestricted isStaff-only, allPeople includes peer leaders, filteredTasks includes isPeerLeaderTask
+  assert.equal(taskListSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'TaskList userIsRestricted must be scoped to isStaff');
+  assert.equal(taskListSource.includes('if (isPersonLeader(p as any)) return true;'), true, 'TaskList allPeople must include peer leaders for Leader');
+  assert.equal(taskListSource.includes('isPeerLeaderTask'), true, 'TaskList filteredTasks must include isPeerLeaderTask');
+
+  // 3. useProjectsController: userIsRestricted isStaff-only, visibleProjects includes isPeerLeaderProject
+  assert.equal(controllerSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'useProjectsController userIsRestricted must be scoped to isStaff');
+  assert.equal(controllerSource.includes('isPeerLeaderProject'), true, 'visibleProjects must include isPeerLeaderProject');
+
+  // 4. CampaignPanel: visibleCampaigns includes isPeerLeaderCampaign
+  assert.equal(campaignPanelSource.includes('isPeerLeaderCampaign'), true, 'visibleCampaigns must include isPeerLeaderCampaign');
+
+  // 5. useWorkflowManagement & WorkflowHubView: userIsRestricted isStaff-only, entities includes allLeaderIds
+  assert.equal(workflowHookSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'useWorkflowManagement userIsRestricted must be scoped to isStaff');
+  assert.equal(workflowHookSource.includes('hasLeaderParticipant || hasLeaderTask'), true, 'useWorkflowManagement entities must allow peer leader tracks');
+  assert.equal(workflowHubViewSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'WorkflowHubView userIsRestricted must be scoped to isStaff');
+});
+
 
