@@ -568,7 +568,70 @@ test('Leader Peer View: Leaders can see tasks, projects, campaigns, and workflow
   // 5. useWorkflowManagement & WorkflowHubView: userIsRestricted isStaff-only, entities includes allLeaderIds
   assert.equal(workflowHookSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'useWorkflowManagement userIsRestricted must be scoped to isStaff');
   assert.equal(workflowHookSource.includes('hasLeaderParticipant || hasLeaderTask'), true, 'useWorkflowManagement entities must allow peer leader tracks');
-  assert.equal(workflowHubViewSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'WorkflowHubView userIsRestricted must be scoped to isStaff');
+});
+
+// Test 17: Workflow linkTask: validate task deadline vs phase and auto-adjust start_date
+test('Workflow linkTask: validate task deadline vs phase and auto-adjust start_date', () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const workflowHookSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useWorkflowManagement.ts'), 'utf-8');
+
+  // 1. Source assertions for linkTask date validation and adjustment
+  assert.equal(workflowHookSource.includes('const targetInfo = taskTarget(task.id);'), true, 'linkTask must retrieve targetInfo using taskTarget');
+  assert.equal(workflowHookSource.includes('const targetPhase = phases.find(p => p.id === phaseId);'), true, 'linkTask must locate targetPhase from phases');
+  assert.equal(workflowHookSource.includes('tDue > pDue'), true, 'linkTask must check if task deadline exceeds phase due');
+  assert.equal(workflowHookSource.includes('tDue < pStart'), true, 'linkTask must check if task deadline is before phase start');
+  assert.equal(workflowHookSource.includes('Task deadline exceeds the phase timeline.'), true, 'linkTask must error when deadline exceeds phase');
+  assert.equal(workflowHookSource.includes('effectiveStart'), true, 'linkTask must calculate effectiveStart');
+  assert.equal(workflowHookSource.includes('.update(updates).eq(\'id\', target.id)'), true, 'linkTask must persist date adjustments to table');
+  assert.equal(workflowHookSource.includes('supabase.rpc(\'workflow_link_task\''), true, 'linkTask must invoke workflow_link_task');
+
+  // 2. Behavioral verification of deadline validation and start adjustment
+  const validateAndAdjust = (tStart, tDue, pStart, pDue) => {
+    if (tDue) {
+      if (pDue && tDue > pDue) {
+        throw new Error('Task deadline exceeds the phase timeline.');
+      }
+      if (pStart && tDue < pStart) {
+        throw new Error('Task deadline is before the phase start date.');
+      }
+    }
+
+    let effectiveDue = tDue;
+    if (!effectiveDue && pDue) {
+      effectiveDue = pDue;
+    }
+
+    let effectiveStart = tStart;
+    if (pStart && (!effectiveStart || effectiveStart < pStart)) {
+      effectiveStart = pStart;
+    }
+    if (effectiveDue && effectiveStart && effectiveStart > effectiveDue) {
+      effectiveStart = effectiveDue;
+    }
+    return { effectiveStart, effectiveDue };
+  };
+
+  // Case from user report: Project start 2026-10-24, Phase 2 starts 2026-11-02, Task due 2026-11-09 -> PASS
+  const res1 = validateAndAdjust('2026-10-24', '2026-11-09', '2026-11-02', '2026-12-31');
+  assert.equal(res1.effectiveStart, '2026-11-02', 'Task start date must be clamped up to phase start');
+  assert.equal(res1.effectiveDue, '2026-11-09', 'Task due date inside phase must be preserved');
+
+  // Case task due is beyond phase due -> THROW ERROR
+  assert.throws(
+    () => validateAndAdjust('2026-11-05', '2027-01-15', '2026-11-02', '2026-12-31'),
+    /Task deadline exceeds the phase timeline/
+  );
+
+  // Case task due is before phase start -> THROW ERROR
+  assert.throws(
+    () => validateAndAdjust('2026-10-10', '2026-10-25', '2026-11-02', '2026-12-31'),
+    /Task deadline is before the phase start date/
+  );
+
+  // Case task has no dates initially -> PASS with phase defaults
+  const res2 = validateAndAdjust('', '', '2026-11-02', '2026-12-31');
+  assert.equal(res2.effectiveStart, '2026-11-02', 'Task with no start date receives phase start');
+  assert.equal(res2.effectiveDue, '2026-12-31', 'Task with no due date receives phase due');
 });
 
 

@@ -10,7 +10,7 @@ import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/
 import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 import {supabase} from '../services/supabase';
 import {completeTrackedTask} from '../services/workspaceTasks';
-import {phaseLinkableTasks,phaseLinkTarget} from '../lib/taskTracking';
+import {phaseLinkableTasks,phaseLinkTarget,taskTarget} from '../lib/taskTracking';
 import {isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader} from '../lib/roleScope';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
@@ -517,9 +517,57 @@ export function useWorkflowManagement() {
     await attempt(async () => { const id = await hub.mutate(() => supabase.rpc('workflow_advance_phase',{p_phase:activePhase.id,p_expected:activePhase.version})); if (id) { setActivePhaseId(id); setParams({ [currentEntity!.type]: currentEntity!.entity_id, phase: id }); } }, 'Đã duyệt Gate và cập nhật phase');
   };
   const handlePhaseClick = (index: number) => { setSelectedTask(null); setIsDetailOpen(true); const id = phases[index]?.id; if (id && currentEntity) { setActivePhaseId(id); setParams({ [currentEntity.type]: currentEntity.entity_id, phase: id }, { replace: true }); } setShowAddTask(false); };
-  const linkTask = (task: Task, phaseId: string) => void attempt(() => {
+  const linkTask = (task: Task, phaseId: string) => void attempt(async () => {
     const target = phaseLinkTarget(task.id);
-    return hub.mutate(() => supabase.rpc('workflow_link_task',{p_phase:phaseId,p_task:target.id,p_kind:target.kind}));
+    const targetInfo = taskTarget(task.id);
+    const targetPhase = phases.find(p => p.id === phaseId);
+
+    if (targetPhase) {
+      const pStart = targetPhase.start_date ? targetPhase.start_date.slice(0, 10) : '';
+      const pDue = targetPhase.due_date ? targetPhase.due_date.slice(0, 10) : '';
+      const tStart = task.start_date ? task.start_date.slice(0, 10) : '';
+      const tDue = task.due_date ? task.due_date.slice(0, 10) : '';
+
+      // 1. Kiểm tra Deadline của task so với Phase: chỉ chặn khi quá hạn / ngoài chặng
+      if (tDue) {
+        if (pDue && tDue > pDue) {
+          throw new Error(isEn ? 'Task deadline exceeds the phase timeline.' : 'Hạn chót của công việc vượt quá thời gian của chặng.');
+        }
+        if (pStart && tDue < pStart) {
+          throw new Error(isEn ? 'Task deadline is before the phase start date.' : 'Hạn chót của công việc trước ngày bắt đầu của chặng.');
+        }
+      }
+
+      // 2. Khi Deadline hợp lệ: tự động điều chỉnh start_date (nếu start_date cũ < pStart do dính ngày bắt đầu của dự án cha)
+      let effectiveDue = tDue;
+      if (!effectiveDue && pDue) {
+        effectiveDue = pDue;
+      }
+
+      let effectiveStart = tStart;
+      if (pStart && (!effectiveStart || effectiveStart < pStart)) {
+        effectiveStart = pStart;
+      }
+      if (effectiveDue && effectiveStart && effectiveStart > effectiveDue) {
+        effectiveStart = effectiveDue;
+      }
+
+      const updates: Record<string, string | null> = {};
+      if (effectiveStart && effectiveStart !== tStart) {
+        updates.start_date = effectiveStart;
+      }
+      if (effectiveDue && effectiveDue !== tDue) {
+        updates.due_date = effectiveDue;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const table = targetInfo.table || (target.kind === 'project_subtask' ? 'project_subtasks' : target.kind === 'campaign_subtask' ? 'campaign_subtasks' : 'tasks');
+        const { error: updateError } = await supabase.from(table).update(updates).eq('id', target.id);
+        if (updateError) throw updateError;
+      }
+    }
+
+    return hub.mutate(() => supabase.rpc('workflow_link_task', { p_phase: phaseId, p_task: target.id, p_kind: target.kind }));
   }, isEn ? 'Task assigned to phase' : 'Đã gắn task vào chặng');
 
   return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
