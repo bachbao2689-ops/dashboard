@@ -1,4 +1,5 @@
--- Run after the member directory migration, inside a rollback transaction.
+begin;
+-- Run after the member directory migration. All test changes roll back.
 -- Reuses existing identities only as SQL claims, never creates login accounts.
 create temp table account_checks(name text, passed boolean);
 grant insert, select on account_checks to authenticated, anon;
@@ -101,3 +102,5 @@ select pg_temp.assert_account('missing account sees no directory',(select count(
 select pg_temp.denied_account('missing Auth identity cannot insert Staff','insert into users(id,auth_id,email,name,role,is_active) values(-900002,auth.uid(),''unknown@example.invalid'',''Fixture'',''member'',true)');
 reset role;
 select jsonb_build_object('passed',count(*),'checks',jsonb_agg(name)) as account_permission_verification from account_checks;
+
+rollback;
