@@ -185,21 +185,23 @@ export function useWorkflowManagement() {
   }, [pinnedTooltip]);
   const rawTasks = useMemo(() => currentEntity ? parentTasks(hub.tasks, currentEntity.type, currentEntity.entity_id) : [], [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
 
+  const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
+  const isManagerOrAdmin = Boolean(isAdmin(hub.profile) || isGlobalManager(hub.profile));
+  const isRoot = Boolean(
+    currentEntity?.root ||
+    (actorId && (
+      (currentEntity?.creator && String(currentEntity.creator.id) === actorId) ||
+      (currentEntity?.pics?.[0] && String(currentEntity.pics[0].id) === actorId)
+    ))
+  );
+  const isFullAccess = isManagerOrAdmin || isRoot;
+
   const allTasks = useMemo(() => {
-    if (isManager || isLeader) return rawTasks;
-    const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
-    const isPrimaryLeadOrCreator = Boolean(
-      actorId && (
-        (currentEntity?.creator && String(currentEntity.creator.id) === actorId) ||
-        (currentEntity?.pics?.[0] && String(currentEntity.pics[0].id) === actorId) ||
-        currentEntity?.root
-      )
-    );
-    if (isPrimaryLeadOrCreator) return rawTasks;
+    if (isFullAccess) return rawTasks;
 
     const myPhaseIds = new Set(
       (currentEntity?.phases || [])
-        .filter(ph => ph.members.some(m => String(m.id) === actorId))
+        .filter(ph => (ph.members || []).some(m => String(m.id) === actorId))
         .map(ph => ph.id)
     );
 
@@ -210,39 +212,51 @@ export function useWorkflowManagement() {
       if ((t.checklist_items || []).some((ci: any) => String(ci.created_by) === actorId || String(ci.assignee_id) === actorId)) return true;
       return false;
     });
-  }, [rawTasks, isManager, isLeader, hub.profile?.id, currentEntity]);
-  // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Workflow Management
-  const phases: Phase[] = useMemo(() => (currentEntity?.phases || []).map(p => {
-    const isLeaderOrCreator = Boolean(
-      isAdmin(hub.profile) ||
-      isGlobalManager(hub.profile) ||
-      isDepartmentLeader(hub.profile) ||
-      currentEntity?.root
-    );
-    const canEditPhaseTasks = isLeaderOrCreator || p.can_edit_tasks;
-    const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
-    const progress = canEditPhaseTasks ? taskProgress(rows).percent : null;
-    const score = gateScore(p.gate_criteria || []);
-    return { ...p, can_edit_tasks: canEditPhaseTasks, name: p.position + '. ' + p.title, desc: p.description || '', progress,
-      gateChance: p.opportunity ?? (score != null && progress != null ? Math.round(score * .65 + progress * .35) : null),
-      displayStatus: p.status === 'completed' ? 'completed' : ['in_progress','in_review'].includes(p.status) ? 'active' : 'locked' };
-  }), [currentEntity, allTasks, hub.profile]);
+  }, [rawTasks, isFullAccess, actorId, currentEntity?.phases]);
+
+  // Phân quyền lộ trình giai đoạn (Phases):
+  // - Manager/Admin & Root: Thấy hết tất cả các phase và full quyền
+  // - PIC/Sub được gắn vào phase nào thì thấy và toàn quyền ở phase đó (can_edit_tasks = true)
+  // - Staff & Leader không phải Root chỉ thấy những phase mà mình được gắn
+  const phases: Phase[] = useMemo(() => {
+    const rawPhases = currentEntity?.phases || [];
+    const visiblePhases = isFullAccess
+      ? rawPhases
+      : rawPhases.filter(p => actorId && (p.members || []).some(m => String(m.id) === actorId));
+
+    return visiblePhases.map(p => {
+      const isMemberOfPhase = Boolean(actorId && (p.members || []).some(m => String(m.id) === actorId));
+      const canEditPhaseTasks = isFullAccess || isMemberOfPhase || p.can_edit_tasks;
+      const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
+      const progress = canEditPhaseTasks ? taskProgress(rows).percent : null;
+      const score = gateScore(p.gate_criteria || []);
+      return {
+        ...p,
+        can_edit_tasks: canEditPhaseTasks,
+        name: p.position + '. ' + p.title,
+        desc: p.description || '',
+        progress,
+        gateChance: p.opportunity ?? (score != null && progress != null ? Math.round(score * .65 + progress * .35) : null),
+        displayStatus: p.status === 'completed' ? 'completed' : ['in_progress','in_review'].includes(p.status) ? 'active' : 'locked'
+      };
+    });
+  }, [currentEntity?.phases, allTasks, isFullAccess, actorId]);
+
   const requestedPhaseIndex = phases.findIndex(p => p.id === activePhaseId);
   const activePhaseIndex = requestedPhaseIndex >= 0 ? requestedPhaseIndex : Math.max(0, phases.findIndex(p => p.status === 'in_progress' || p.status === 'in_review'));
   const activePhase = phases[activePhaseIndex];
+
   // Shared business data comes from the phase, never per-user UI preferences.
   const criteria = activePhase?.gate_criteria || [];
   const subtasks: WorkflowSubtask[] = allTasks.filter(t => t.workflow_phase_id).map(t => ({
     id: t.id, phaseId: t.workflow_phase_id, title: t.title, assignee: t.assignee?.name || 'Chưa giao PIC',
     assignee_id: t.assignee_id, status: toWorkflowStage(t), due_date: t.due_date, record: t,
-    canEdit: Boolean(phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
-      || (hub.profile?.id != null && (String(t.assignee_id) === String(hub.profile.id)
-        || (t.created_by != null && String(t.created_by) === String(hub.profile.id))))),
-    canComplete: Boolean(isGlobalManager(hub.profile)
+    canEdit: Boolean(isFullAccess
       || phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
-      || (hub.profile?.id != null && (String(t.assignee_id) === String(hub.profile.id)
-        || (t.created_by != null && String(t.created_by) === String(hub.profile.id))))
-      || currentEntity?.root),
+      || (actorId && (String(t.assignee_id) === actorId || (t.created_by != null && String(t.created_by) === actorId)))),
+    canComplete: Boolean(isFullAccess
+      || phases.find(p => p.id === t.workflow_phase_id)?.can_edit_tasks
+      || (actorId && (String(t.assignee_id) === actorId || (t.created_by != null && String(t.created_by) === actorId)))),
   }));
   const currentPhaseSubtasks = subtasks.filter(t => t.phaseId === activePhase?.id);
   const doneSubtasksCount = currentPhaseSubtasks.filter(t => t.status === 'completed').length;
@@ -328,9 +342,9 @@ export function useWorkflowManagement() {
   useEffect(() => {
     if (activePhaseId && !phases.some(p => p.id === activePhaseId)) { setActivePhaseId(''); setIsDetailOpen(false); }
     if (selectedTask && !hub.tasks.some(t => t.id === selectedTask.id)) setSelectedTask(null);
-    if (!currentEntity?.root) setShowAddPhaseModal(false);
+    if (!isFullAccess) setShowAddPhaseModal(false);
     if (!activePhase?.can_edit_tasks) { setShowAddTask(false); setShowAddCriteria(false); }
-  }, [hub.tasks, phases, currentEntity?.root]);
+  }, [hub.tasks, phases, isFullAccess]);
   const attempt = async (action: () => Promise<unknown>, success: string) => {
     try { await action(); toast.success(success); return true; }
     catch (e: any) { toast.error(e.message || 'Không thể lưu thay đổi'); return false; }
@@ -395,7 +409,7 @@ export function useWorkflowManagement() {
     return row?.canEdit ? hub.updateTask(row.record, stageValues(status)).catch(e => {toast.error(e.message); throw e;}) : Promise.reject(new Error('Task không còn trong phạm vi chỉnh sửa'));
   };
   const handleOpenAddPhaseModal = (index: number, e?: React.MouseEvent, phase?: Phase) => {
-    e?.stopPropagation(); if (!currentEntity?.root) return;
+    e?.stopPropagation(); if (!isFullAccess) return;
     setEditingPhaseId(phase?.id || null); setInsertPhaseIndex(index);
     setNewPhaseName(phase?.title || ''); setNewPhaseDesc(phase?.description || '');
     setPhasePicIds(phase?.members.filter(p => p.role === 'pic').map(p => String(p.id)) || [String(hub.profile?.id)]);
@@ -448,7 +462,7 @@ export function useWorkflowManagement() {
   const handleDeletePhase = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     const phase = phases[index];
-    if (currentEntity?.root && phase) {
+    if (isFullAccess && phase) {
       setPhaseToDelete({ index, phase });
     }
   };

@@ -7,10 +7,9 @@ export function workAssignmentPeople<T extends Person>(actor:Actor,people:T[]):T
  if(isGlobalManager(actor)||!isDepartmentLeader(actor))return people.filter(p=>p.is_active!==false);
  return people.filter(p=>p.is_active!==false&&(String(p.id)===String(actor.id)||sameWorkDepartment(actor,p.department_id)||isDepartmentLeader(p)));
 }
-export function leaderParentVisible(actor:Actor,departmentId:unknown,invitedIds:(string|number)[]=[]){
+export function leaderParentVisible(actor:Actor,_departmentId?:unknown,_invitedIds:(string|number)[]=[]){
  if(!actor || actor.is_active===false)return false;
- if(!isDepartmentLeader(actor))return true;
- return sameWorkDepartment(actor,departmentId)||invitedIds.some(id=>String(id)===String(actor.id));
+ return true;
 }
 export function leaderTaskVisible(actor:Actor,task:{assignee_id?:unknown;created_by?:unknown;department_id?:unknown;parent_pic_ids?:(string|number)[]},people:Person[]=[]){
  if(!actor||actor.is_active===false)return false;

@@ -8,16 +8,17 @@ test('Leader picker contains own staff, own peer leaders and foreign departmenta
  assert.equal(workAssignmentPeople(null,people).length,0);
  assert.equal(workAssignmentPeople(admin,people).length,8);
 });
-test('Parent scope depends on actor own department or explicit parent PIC/Sub-PIC, never a peer invitation',()=>{
+test('Parent scope allows active Leader to view all Projects and Campaigns across departments',()=>{
  assert.equal(leaderParentVisible(leader,'D'),true);
- assert.equal(leaderParentVisible(leader,'M'),false);
+ assert.equal(leaderParentVisible(leader,'M'),true);
  assert.equal(leaderParentVisible(leader,'M',[1]),true);
- assert.equal(leaderParentVisible(leader,'M',[2,4]),false);
- assert.equal(leaderParentVisible({...leader,department_id:null},null),false);
+ assert.equal(leaderParentVisible(leader,'M',[2,4]),true);
  assert.equal(leaderParentVisible({...leader,is_active:false},'D',[1]),false);
+ assert.equal(leaderParentVisible(null,'D'),false);
  assert.equal(leaderParentVisible(admin,'M'),true);
  assert.equal(trackLeaderVisible(leader,{department_id:'M',pics:[],sub_pics:[{id:'1'}]}),true);
- assert.equal(trackLeaderVisible(leader,{department_id:'M',pics:[foreignLeader]}),false);
+ assert.equal(trackLeaderVisible(leader,{department_id:'M',pics:[foreignLeader]}),true);
+ assert.equal(trackLeaderVisible({...leader,is_active:false},{department_id:'M',pics:[]}),false);
 });
 test('Task scope includes own team work and explicit parent invites but excludes foreign unrelated work',()=>{
  for(const p of [leader,peer,staff])assert.equal(leaderTaskVisible(leader,{assignee_id:p.id},people),true);

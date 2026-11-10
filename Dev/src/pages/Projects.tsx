@@ -2378,8 +2378,6 @@ export const Projects:React.FC=()=>{
 
         <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">{t('projects.primaryOwner')} <span className="text-red-500">*</span></label>
           <MultiSelect options={creationPeople.map(p=>({value:String(p.id),label:p.name + (p.departments?.name ? ` · ${p.departments.name}` : '')}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} />
-          <p className="text-xs text-gray-500">PIC ở đây được xem toàn bộ lộ trình. Người chỉ tham gia một phase cần được tag trong Workflow của phase đó.</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('projects.primaryOwnerNote')}</p>
         </div>
 
         <div>
@@ -2388,7 +2386,6 @@ export const Projects:React.FC=()=>{
           </label>
           <select
             value={departmentId}
-            disabled={isDepartmentLeader(profile)}
             onChange={e => setDepartmentId(e.target.value)}
             className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
           >

@@ -162,10 +162,9 @@ export function useProjectsController(){
 
 
   // Selecting another department's PIC is an explicit invitation, not a global
-  // read grant. The database limits their workflow scope to parent or phase.
   const visiblePeople = people;
   const creationPeople=useMemo(()=>workAssignmentPeople(profile,people),[profile,people]);
-  const creationDepartments=useMemo(()=>isLeader?departments.filter(d=>String(d.id)===String(resolvedDeptId)):departments,[departments,isLeader,resolvedDeptId]);
+  const creationDepartments=departments;
   const parentInvites=(kind:'project'|'campaign',id:string)=>workflow.tracks.filter(t=>t.entity_type===kind&&t.entity_id===id).flatMap(t=>[...t.pics,...(t.sub_pics||[])].map(p=>p.id));
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);
   const projectMentionQuery = useMemo(() => comment.match(/(?:^|\s)@([^\s@]*)$/)?.[1]?.toLowerCase() || null, [comment]);
@@ -766,7 +765,6 @@ export function useProjectsController(){
     const allowed = new Set(creationPeople.map(person => String(person.id)));
     const selectedPeople = [primaryOwnerId, ...ownerIds, ...(creationType === 'project' ? executionMemberIds : [])];
     if (selectedPeople.some(id => !allowed.has(id))) return toast.error('PIC nằm ngoài phạm vi được giao việc.');
-    if (isLeader && (!resolvedDeptId || departmentId!==resolvedDeptId)) return toast.error('Leader chỉ tạo Project/Campaign trong phòng ban của mình.');
     const startDate = parseYMD(start), endDate = parseYMD(due);
     if (startDate && endDate && endDate < startDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu trở đi.');
     if (creationType === 'project' && parentCampaignId && !campaigns.some(c => c.id === parentCampaignId)) return toast.error('Chiến dịch không còn khả dụng.');
