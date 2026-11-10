@@ -9,14 +9,14 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
   if (!currentEntity || !activePhase) return null;
 
   const actorId = profile?.id != null ? String(profile.id) : null;
-  const isPhasePic = Boolean(activePhase.members?.some(m => String(m.id) === actorId && m.role === 'pic'));
+  const isPhaseMember = Boolean(activePhase.members?.some(m => String(m.id) === actorId));
   const isParentCreator = Boolean(currentEntity.creator && String(currentEntity.creator.id) === actorId);
   const isParentPic = Boolean(currentEntity.pics?.some(p => String(p.id) === actorId));
   const canApprove = Boolean(
     isAdmin(profile) ||
     isGlobalManager(profile) ||
     currentEntity.root ||
-    isPhasePic ||
+    isPhaseMember ||
     isParentCreator ||
     isParentPic
   );
@@ -176,7 +176,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                 {/* Gate Pass Approval Button */}
                 <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {readyToApprove ? (isEn ? '✓ Tasks completed and checklist ≥80%. Ready to approve Gate.' : '✓ Task đã xong và checklist đạt ≥80%. PIC có thể duyệt Gate.') : (isEn ? 'Complete tasks and achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task và checklist ≥80% trước khi PIC duyệt Gate.')}
+                    {readyToApprove ? (isEn ? '✓ Tasks completed. Phase PIC/Sub can approve advance.' : '✓ Task đã hoàn thành. PIC/Sub Phase có thể duyệt chuyển Phase.') : (isEn ? 'Complete tasks or achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task hoặc checklist đạt ≥80% trước khi PIC/Sub duyệt Gate.')}
                   </p>
 
                   {canApprove && !['completed','cancelled'].includes(activePhase.status) && (

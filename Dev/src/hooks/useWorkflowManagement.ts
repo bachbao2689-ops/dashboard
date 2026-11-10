@@ -15,6 +15,7 @@ import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
 import {trackLeaderVisible,workAssignmentPeople} from '../lib/workAccessScope';
+import {saveTaskDeliverables} from '../lib/taskDeliverables';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
   displayStatus: 'completed' | 'active' | 'locked';
@@ -321,6 +322,7 @@ export function useWorkflowManagement() {
   const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
   const [newTaskDue, setNewTaskDue] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
+  const [newTaskQuantity, setNewTaskQuantity] = useState('');
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [insertPhaseIndex, setInsertPhaseIndex] = useState(0);
@@ -396,8 +398,36 @@ export function useWorkflowManagement() {
     e.preventDefault();
     if (!newTaskTitle.trim() || !newTaskAssignee || !activePhase) return toast.error('Nhập tên và chọn PIC');
     if (workflowDateError(newTaskStart,newTaskDue,taskCalendar)) return toast.error(isEn ? 'Task dates must fit the phase calendar.' : 'Lịch task phải nằm trong lịch của chặng.');
-    if (await attempt(() => hub.mutate(() => supabase.rpc('workflow_create_task', {p_phase:activePhase.id,p_data:{title:newTaskTitle.trim(),assignee_id:Number(newTaskAssignee),start_date:inputDate(newTaskStart),due_date:inputDate(newTaskDue),workflow_status:newTaskStatus,priority:'medium'}})), 'Đã tạo task và đồng bộ All Tasks')) {
-      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskStart(''); setNewTaskDue(''); setNewTaskStatus('planned'); setShowAddTask(false);
+    const parsedQty = newTaskQuantity.trim() ? Number(newTaskQuantity) : null;
+    let createdTaskId: string | null = null;
+    if (await attempt(async () => {
+      const res = await hub.mutate(async () => {
+        const { data, error } = await supabase.rpc('workflow_create_task', {
+          p_phase: activePhase.id,
+          p_data: {
+            title: newTaskTitle.trim(),
+            assignee_id: Number(newTaskAssignee),
+            start_date: inputDate(newTaskStart),
+            due_date: inputDate(newTaskDue),
+            workflow_status: newTaskStatus,
+            priority: 'medium',
+            quantity: parsedQty,
+          }
+        });
+        if (error) throw error;
+        return data;
+      });
+      createdTaskId = res ? String(res) : null;
+      if (createdTaskId && parsedQty != null && parsedQty > 0) {
+        try {
+          await saveTaskDeliverables('task', createdTaskId, { quantity: parsedQty, base_quantity: parsedQty, _notification_initial: true });
+        } catch (saveErr) {
+          console.warn('Could not record initial deliverable quantity:', saveErr);
+        }
+      }
+      return res;
+    }, 'Đã tạo task và đồng bộ All Tasks')) {
+      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskStart(''); setNewTaskDue(''); setNewTaskQuantity(''); setNewTaskStatus('planned'); setShowAddTask(false);
     }
   };
   const handleDeleteTask = (id: string, e: React.MouseEvent) => {
@@ -534,6 +564,6 @@ export function useWorkflowManagement() {
     return hub.mutate(() => supabase.rpc('workflow_link_task', { p_phase: phaseId, p_task: target.id, p_kind: target.kind }));
   }, isEn ? 'Task assigned to phase' : 'Đã gắn task vào chặng');
 
-  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
+  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
 }
 export type WorkflowModel = ReturnType<typeof useWorkflowManagement>;

@@ -37,11 +37,17 @@ test('workflow status is authoritative for staff performance buckets',()=>{
 test('gate readiness uses persisted weights and checks',()=>{
  assert.equal(gateScore([{id:'a',label:'Review',weight:80,checked:true},{id:'b',label:'Delivery',weight:20,checked:false}]),80);
 });
-test('approval requires all active phase tasks and the exact 80 percent checklist threshold',()=>{
- const criteria=[{id:'a',label:'Review',weight:79.6,checked:true},{id:'b',label:'Delivery',weight:20.4,checked:false}];
- assert.equal(gateScore(criteria),80);
- assert.equal(gateReady([{status:'done'}],criteria),false);
- assert.equal(gateReady([{status:'done'},{status:'todo'}],[{id:'a',label:'Passed',weight:100,checked:true}]),false);
- assert.equal(gateReady([],[{id:'a',label:'Passed',weight:100,checked:true}]),false);
- assert.equal(gateReady([{status:'done'},{status:'cancelled'}],[{id:'a',label:'Passed',weight:80,checked:true},{id:'b',label:'Remaining',weight:20,checked:false}]),true);
+test('approval allows when either active tasks are completed or 80 percent checklist is reached',()=>{
+ const below80Criteria=[{id:'a',label:'Review',weight:70,checked:true},{id:'b',label:'Delivery',weight:30,checked:false}];
+ const above80Criteria=[{id:'a',label:'Passed',weight:80,checked:true},{id:'b',label:'Remaining',weight:20,checked:false}];
+ // 1. Tasks completed (1/1) even if criteria < 80%: ready
+ assert.equal(gateReady([{status:'done'}],below80Criteria),true);
+ // 2. Checklist >= 80% even if tasks pending: ready
+ assert.equal(gateReady([{status:'done'},{status:'todo'}],above80Criteria),true);
+ // 3. Checklist >= 80% with no tasks: ready
+ assert.equal(gateReady([],above80Criteria),true);
+ // 4. Both tasks pending AND criteria < 80%: not ready
+ assert.equal(gateReady([{status:'done'},{status:'todo'}],below80Criteria),false);
+ // 5. All active tasks done with cancelled ignored: ready
+ assert.equal(gateReady([{status:'done'},{status:'cancelled'}],above80Criteria),true);
 });

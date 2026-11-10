@@ -37,9 +37,9 @@ try{
  const taskVisible=async id=>Number((await db.query('select count(*) from tasks where id=$1',[id])).rows[0].count);
  await as(peer);eq(await taskVisible(ownTask.id),1,'Own staff task visible to peer Leader');
  await as(a);eq(await taskVisible(foreignTask.id),0,'Foreign task denied');
- await as(a);eq(await visible('project',p.id),1,'Own department parent');eq(await visible('project',q.id),1,'Leader sees peer leader parent');eq((await db.query('select workflow2_global($1) v',[a.id])).rows[0].v,false,'Leader not global');
- // Leader can view projects across departments; staff cannot without explicit invite.
- await as(peer);eq(await visible('project',p.id),1,'Same-team peer');await as(b);eq(await visible('project',p.id),1,'Other Leader can view');
+ await as(a);eq(await visible('project',p.id),1,'Own department parent');eq(await visible('project',q.id),0,'Foreign parent without invite is hidden from Leader');eq((await db.query('select workflow2_global($1) v',[a.id])).rows[0].v,false,'Leader not global');
+ // Leader sees own department projects; foreign leader cannot without explicit invite.
+ await as(peer);eq(await visible('project',p.id),1,'Same-team peer');await as(b);eq(await visible('project',p.id),0,'Foreign Leader without invite cannot view');
  await as(a);
  await db.query("insert into project_members(project_id,user_id,workflow_role) values($1,$2,'pic')",[p.id,a.id]);
  await db.query("insert into campaign_members(campaign_id,user_id,workflow_role) values($1,$2,'pic')",[c.id,a.id]);
@@ -58,7 +58,7 @@ try{
  const hub=await db.query('select workflow_hub_index() v');eq(hub.rows[0].v.some(t=>t.entity_id===p.id),true,'Hub invitation visible');
  await as(other);eq(await visible('project',p.id),0,'Invitation not inherited by foreign Staff');
  await as(a);await db.query('delete from project_members where project_id=$1 and user_id=$2',[p.id,b.id]);await db.query('delete from campaign_members where campaign_id=$1 and user_id=$2',[c.id,b.id]);
- await as(b);eq(await visible('project',p.id),1,'Leader can read projects across departments');eq(await visible('campaign',c.id),1,'Leader can read campaigns across departments');
+ await as(b);eq(await visible('project',p.id),0,'Foreign parent becomes hidden again after invite removed');eq(await visible('campaign',c.id),0,'Foreign campaign becomes hidden again after invite removed');
  await as(admin);eq(await visible('project',p.id),1,'Admin global preserved');eq(await visible('project',q.id),1,'Admin foreign preserved');
  await as(peer);eq(await taskVisible(ownTask.id),1,'Peer own team remains visible after revocation');
  console.log('PASS '+checks+' local role/RLS checks; synthetic fixtures rolled back.');

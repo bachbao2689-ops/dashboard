@@ -358,7 +358,6 @@ export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:s
   const { lang } = useTranslation();
   const isEn = lang === 'en';
   const guides = isEn ? MARKETING_STATUS_GUIDES_EN : MARKETING_STATUS_GUIDES_VI;
-  const subtitleMap = isEn ? STATUS_MARKETING_SUBTITLE_EN : STATUS_MARKETING_SUBTITLE;
   const value=workflowStage(status,stage);
   const [open,setOpen]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -386,8 +385,8 @@ export function WorkflowStatusPicker({status,stage,disabled,onChange}: {status:s
     setOpen(v=>!v);
   };
   return <><button ref={button} disabled={disabled||saving} onClick={toggle} aria-label={isEn ? "Change task status" : "Đổi trạng thái task"} aria-expanded={open} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold transition-colors ${WORKFLOW_STATUS_CONFIG[value].bgLight} ${WORKFLOW_STATUS_CONFIG[value].bgDark} ${WORKFLOW_STATUS_CONFIG[value].textColor} ${WORKFLOW_STATUS_CONFIG[value].borderClass} disabled:cursor-default`}><WorkflowHexagonIcon status={value} size={13}/>{isEn ? WORKFLOW_STATUS_LABELS_EN[value] : WORKFLOW_STATUS_LABELS_VI[value]}{!disabled&&<ChevronDown size={10}/>}</button>
-  {open&&createPortal(<div ref={popup} style={{position:'fixed',left:position.left,top:position.top,maxHeight:position.maxHeight,width:'min(264px,calc(100vw - 24px))'}} className="z-[200] overflow-y-auto p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-xl space-y-1">
-    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5 p-2"><Sparkles size={11}/>{isEn ? 'Change task status' : 'Đổi trạng thái task'}</p>
-    {guides.map(g=><button key={g.status} disabled={saving} title={g.usageRule} onClick={async()=>{setSaving(true);try{await onChange(g.status);setOpen(false);}catch{/* Caller displays the write error; keep the picker open. */}finally{setSaving(false);}}} className="w-full p-2 text-left rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"><span className="flex items-center gap-2 text-xs font-bold"><WorkflowHexagonIcon status={g.status} size={16}/>{isEn ? WORKFLOW_STATUS_LABELS_EN[g.status] : WORKFLOW_STATUS_LABELS_VI[g.status]}{g.status===value&&<Check size={13}/>}</span><span className="block mt-1 text-[10px] text-gray-500">{subtitleMap[g.status]}</span><span className="block mt-1 text-[10px] text-gray-400 leading-relaxed">{g.shortDesc}</span></button>)}
+  {open&&createPortal(<div ref={popup} style={{position:'fixed',left:position.left,top:position.top,maxHeight:position.maxHeight,width:'min(240px,calc(100vw - 24px))'}} className="z-[200] overflow-y-auto p-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-xl space-y-0.5">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-1.5"><Sparkles size={11}/>{isEn ? 'Change task status' : 'Đổi trạng thái task'}</p>
+    {guides.map(g=><button key={g.status} disabled={saving} title={g.usageRule} onClick={async()=>{setSaving(true);try{await onChange(g.status);setOpen(false);}catch{/* Caller displays the write error; keep the picker open. */}finally{setSaving(false);}}} className="w-full px-2.5 py-2 text-left rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"><span className="grid grid-flow-col auto-cols-max items-center justify-between w-full text-xs font-bold"><span className="grid grid-flow-col auto-cols-max items-center gap-2"><WorkflowHexagonIcon status={g.status} size={15}/>{isEn ? WORKFLOW_STATUS_LABELS_EN[g.status] : WORKFLOW_STATUS_LABELS_VI[g.status]}</span>{g.status===value&&<Check size={13} className="text-primary justify-self-end"/>}</span></button>)}
   </div>,document.body)}</>;
 }

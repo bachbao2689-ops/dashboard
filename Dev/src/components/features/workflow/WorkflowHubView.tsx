@@ -770,8 +770,27 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
     );
     const entityTaskProgress = taskProgress(entityTasks);
 
-    const basePct = totalPhases > 0 ? Math.round((donePhases / totalPhases) * 100) : (entityTaskProgress.percent || 0);
-    const progressFillPct = isCompleted ? 76 : Math.min(72, Math.max(45, basePct));
+    const activePhaseIdx = (entity.phases || []).findIndex((p) => p.status !== 'completed' && !isDone(p.status));
+    const activePhase = activePhaseIdx >= 0 ? entity.phases?.[activePhaseIdx] : entity.phases?.[0];
+    const activePhaseTasks = activePhase
+      ? entityTasks.filter((t) => String(t.workflow_phase_id) === String(activePhase.id))
+      : [];
+
+    let progressFillPct = 0;
+    if (isCompleted) {
+      progressFillPct = 100;
+    } else if (totalPhases === 0) {
+      progressFillPct = entityTaskProgress.percent || 0;
+    } else {
+      const activePhaseDoneTasks = activePhaseTasks.filter((t) => isDone(t.status)).length;
+      const activePhaseTaskPct = activePhaseTasks.length > 0 ? (activePhaseDoneTasks / activePhaseTasks.length) : 0;
+      const actualPct = Math.round(((donePhases + (donePhases < totalPhases ? activePhaseTaskPct : 0)) / totalPhases) * 100);
+      progressFillPct = Math.min(100, Math.max(0, actualPct));
+    }
+
+    const activePos = totalPhases > 1 && activePhaseIdx >= 0 ? (6 + (activePhaseIdx / (totalPhases - 1)) * 88) : (totalPhases === 1 ? 50 : 6);
+    const knobPosPct = isCompleted ? 100 : Math.min(95, Math.max(5, progressFillPct > 0 ? progressFillPct : activePos));
+    const knobAlignClass = knobPosPct < 35 ? 'left-[-6px]' : knobPosPct > 65 ? 'right-[-6px]' : 'left-1/2 -translate-x-1/2';
 
     // Lead / PIC Info
     const lead = (entity as any).lead || entity.pics?.[0] || entity.creator;
@@ -800,12 +819,6 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
       entity.type === 'campaign'
         ? getCampaignPriority({ id: entity.entity_id, priority: entity.priority, budget: entity.budget })
         : entity.priority || 'medium';
-
-    const activePhase = (entity.phases || []).find((p) => p.status !== 'completed' && !isDone(p.status)) || entity.phases?.[0];
-    const activePhaseTasks = activePhase
-      ? entityTasks.filter((t) => String(t.workflow_phase_id) === String(activePhase.id))
-      : [];
-    const knobAlignClass = progressFillPct < 35 ? 'left-[-6px]' : progressFillPct > 65 ? 'right-[-6px]' : 'left-1/2 -translate-x-1/2';
 
     return (
       <div
@@ -867,13 +880,10 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
 
           {/* Phase Dots rải đều */}
           {entity.phases && entity.phases.length > 0 && entity.phases.map((phase, idx) => {
-            const beforeCount = totalPhases === 1 ? 1 : Math.max(1, Math.min(totalPhases - 1, donePhases > 0 ? donePhases : Math.ceil(totalPhases / 2)));
-            const afterCount = Math.max(0, totalPhases - beforeCount);
-            const isBeforeKnob = idx < beforeCount;
-            const posPct = isBeforeKnob
-              ? ((idx + 1) / (beforeCount + 1)) * (progressFillPct - 10)
-              : progressFillPct + 10 + ((idx - beforeCount + 1) / (afterCount + 1)) * (92 - (progressFillPct + 10));
+            const isPhaseDone = phase.status === 'completed' || isDone(phase.status);
+            const isPhaseActive = !isCompleted && !isPhaseDone && (phase.id === activePhase?.id || idx === activePhaseIdx || phase.status === 'in_progress');
 
+            const posPct = totalPhases <= 1 ? 50 : 6 + (idx / (totalPhases - 1)) * 88;
             const dotAlignClass = posPct < 35 ? 'left-[-6px]' : posPct > 65 ? 'right-[-6px]' : 'left-1/2 -translate-x-1/2';
             const phaseTasks = entityTasks.filter((t) => String(t.workflow_phase_id) === String(phase.id));
 
@@ -884,16 +894,14 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                 className="group/dot absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 cursor-pointer w-4 h-4 grid place-items-center"
                 style={{ left: `${posPct}%` }}
               >
-                {/* Chấm tròn nhỏ */}
+                {/* Chấm tròn nhỏ theo 3 trạng thái chuẩn */}
                 <span
-                  className={`block w-1 h-1 rounded-full transition-transform duration-150 group-hover/dot:scale-150 ${
-                    isBeforeKnob
-                      ? !isCompleted && daysLeft != null && daysLeft < 0
-                        ? 'bg-[#fecdd3]/95'
-                        : !isCompleted && daysLeft != null && daysLeft <= 3
-                        ? 'bg-[#fde68a]/95'
-                        : 'bg-[#a7f3d0]/95'
-                      : 'bg-slate-400/80 dark:bg-[#64748b]'
+                  className={`block transition-transform duration-150 group-hover/dot:scale-150 ${
+                    isPhaseDone
+                      ? 'w-2 h-2 rounded-full bg-emerald-500 shadow-xs ring-2 ring-emerald-500/25'
+                      : isPhaseActive
+                      ? `w-2.5 h-2.5 rounded-full ${isProject ? 'bg-sky-500 ring-sky-400/60' : 'bg-amber-500 ring-amber-400/60'} ring-2 ring-offset-1 ring-offset-white dark:ring-offset-slate-900 animate-pulse`
+                      : 'w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600'
                   }`}
                 />
 
@@ -907,13 +915,28 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                     <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
                       <span
                         className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[9.5px] font-extrabold uppercase tracking-tight border shrink-0 ${
-                          isBeforeKnob
-                            ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
+                          isPhaseDone
+                            ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
+                            : isPhaseActive
+                            ? isProject
+                              ? 'bg-sky-500/15 text-sky-700 border-sky-500/30 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-400/40'
+                              : 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/40'
                             : 'bg-slate-100 text-slate-700 border-slate-300/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isBeforeKnob ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isPhaseDone
+                              ? 'bg-emerald-500'
+                              : isPhaseActive
+                              ? isProject
+                                ? 'bg-sky-500 animate-pulse'
+                                : 'bg-amber-500 animate-pulse'
+                              : 'bg-slate-400'
+                          }`}
+                        />
                         <span>Phase {idx + 1}</span>
+                        <span className="opacity-75">• {isPhaseDone ? (isEn ? 'Completed' : 'Đã xong') : isPhaseActive ? (isEn ? 'In Progress' : 'Đang chạy') : (isEn ? 'Pending' : 'Chờ bắt đầu')}</span>
                       </span>
                       <span
                         className="text-[11px] font-bold text-slate-900 dark:text-white truncate max-w-[125px] select-text"
@@ -999,19 +1022,18 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
           })}
 
           {/* Knob tròn lớn ở đầu mút tiến độ */}
-          {progressFillPct > 0 && activePhase && (() => {
-            const activePhaseIdx = (entity.phases || []).findIndex((p) => p.id === activePhase.id);
-            return (
+          {(progressFillPct > 0 || isCompleted || (activePhase && totalPhases > 0)) && (
+            <span
+              onClick={(e) => e.stopPropagation()}
+              className="group/knob absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 cursor-pointer"
+              style={{ left: `${knobPosPct}%` }}
+            >
               <span
-                onClick={(e) => e.stopPropagation()}
-                className="group/knob absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 cursor-pointer"
-                style={{ left: `${Math.min(96, Math.max(4, progressFillPct))}%` }}
-              >
-                <span
-                  className={`block w-3.5 h-3.5 rounded-full border-2 border-[#ffffff]/95 dark:border-[#f8fafc]/90 shadow-md transition-transform duration-150 group-hover/knob:scale-125 ${knobColor}`}
-                />
+                className={`block w-3.5 h-3.5 rounded-full border-2 border-[#ffffff]/95 dark:border-[#f8fafc]/90 shadow-md transition-transform duration-150 group-hover/knob:scale-125 ${knobColor}`}
+              />
 
-                {/* Popover chi tiết active phase khi hover knob */}
+              {/* Popover chi tiết active phase khi hover knob */}
+              {activePhase && (
                 <div
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
@@ -1133,10 +1155,10 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                   )}
                 </div>
               </div>
-              </span>
-            );
-          })()}
-        </div>
+            )}
+          </span>
+        )}
+      </div>
 
         {/* Hàng 4: Cụm Lead bên trái | In-Progress/Completed + Priority bên phải */}
         <div className="pt-2.5 border-t border-gray-100 dark:border-slate-800/80 grid grid-cols-[minmax(0,1fr)_auto] items-center justify-between gap-2 min-w-0">

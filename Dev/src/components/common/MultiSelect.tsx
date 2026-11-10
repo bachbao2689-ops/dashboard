@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-export const MultiSelect = ({ options, value, onChange, placeholder, maxSelected = Infinity, primaryValue, onPrimaryChange }: any) => {
+export const MultiSelect = ({ options, value, onChange, placeholder, maxSelected = Infinity, primaryValue, onPrimaryChange, buttonClassName }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = React.useRef<HTMLDivElement>(null);
@@ -14,7 +14,7 @@ export const MultiSelect = ({ options, value, onChange, placeholder, maxSelected
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <button type="button" aria-label={placeholder} aria-expanded={isOpen} onKeyDown={e => { if (e.key === 'Escape') setIsOpen(false); }} onClick={() => setIsOpen(!isOpen)} className="w-full text-left px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium cursor-pointer flex flex-wrap gap-1 min-h-[44px] shadow-sm transition-colors">
+      <button type="button" aria-label={placeholder} aria-expanded={isOpen} onKeyDown={e => { if (e.key === 'Escape') setIsOpen(false); }} onClick={() => setIsOpen(!isOpen)} className={`w-full text-left px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-medium cursor-pointer flex flex-wrap gap-1 min-h-[44px] shadow-sm transition-colors ${buttonClassName || ''}`}>
         {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
         {value.map((v: string) => {
            const opt = options.find((o: any) => o.value === v);

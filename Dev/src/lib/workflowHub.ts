@@ -113,7 +113,9 @@ export function gateReady(tasks: { status: string; workflow_status?: string | nu
   const progress = taskProgress(tasks);
   const total = criteria.reduce((n, c) => n + c.weight, 0);
   const passed = criteria.reduce((n, c) => n + (c.checked ? c.weight : 0), 0);
-  return progress.total > 0 && progress.done === progress.total && total > 0 && passed / total >= .8;
+  const tasksDone = progress.total > 0 && progress.done === progress.total;
+  const checklistPassed = total > 0 && (passed / total) >= 0.8;
+  return tasksDone || checklistPassed;
 }
 export function workflowMetrics(tasks: MetricTask[], now = new Date()) {
   const day = localDay(now), month = day.slice(0, 7);

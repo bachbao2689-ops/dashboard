@@ -13,7 +13,7 @@ import {CommentPreviewPopover} from '../../common/CommentPreviewPopover';
 import {useSidebarPinStore} from '../../../store/sidebarPinStore';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
   const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
 
   const [splitPct, setSplitPct] = useState(58);
@@ -122,58 +122,119 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       <span className="text-[10px] text-gray-400">{isEn ? 'Add, edit, delete, and switch task status' : 'Thêm, sửa, xóa và chuyển đổi trạng thái task'}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-2">
                       <span className="text-xs font-bold text-primary">{pct(phaseProgressPct)}</span>
                       <button
                         type="button"
                         disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                         onClick={() => { if (!showAddTask) { setNewTaskStart(taskCalendar.start); setNewTaskDue(taskCalendar.due); } setShowAddTask(!showAddTask); }}
-                        className={`px-2.5 py-1 rounded-[8px] text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                        className={`px-2.5 py-1.5 rounded-[8px] text-[11px] font-bold grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-xs cursor-pointer ${
                           isCampaign
                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                             : 'bg-violet-600 hover:bg-violet-700 text-white'
                         }`}
-                        title={isEn ? 'Add new task to this phase' : 'Thêm việc phát sinh mới vào chặng này'}
+                        title={isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
                       >
                         <Plus size={12} strokeWidth={2.5} />
-                        <span>{isEn ? 'Add task' : 'Thêm task'}</span>
+                        <span>{isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Inline Add Task Form */}
                   {showAddTask && (
-                    <form onSubmit={handleAddTask} className="p-3 rounded-[8px] border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-2.5 animate-in fade-in zoom-in-95">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                          <Plus size={12} strokeWidth={2.5} /> {isEn ? 'Add new task' : 'Thêm việc phát sinh mới'}
+                    <form onSubmit={handleAddTask} className="p-3.5 rounded-[8px] border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-3 animate-in fade-in zoom-in-95">
+                      <div className="grid grid-flow-col auto-cols-max items-center justify-between w-full">
+                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                          <Plus size={12} strokeWidth={2.5} /> {isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
                         </span>
                         <button
                           type="button"
                           onClick={() => setShowAddTask(false)}
-                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 justify-self-end cursor-pointer"
                         >
                           <X size={13} />
                         </button>
                       </div>
 
+                      {/* Row 1: Task Title Input */}
                       <input
                         type="text"
                         value={newTaskTitle}
                         onChange={e => setNewTaskTitle(e.target.value)}
                         placeholder={isEn ? 'Enter task title...' : 'Nhập tên đầu việc...'}
                         autoFocus
-                        className="w-full text-xs p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                        className="w-full text-xs p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
                       />
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <MultiSelect options={taskOptions} value={newTaskAssignee ? [newTaskAssignee] : []} maxSelected={1} onChange={(ids:string[])=>setNewTaskAssignee(ids[0] || '')} placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'} />
-                        <label className="workflow-field-label">{isEn ? "Start date" : "Ngày bắt đầu"}<WorkflowDateField id="workflow-task-start" value={newTaskStart} onChange={setNewTaskStart} minDate={taskCalendar.start} maxDate={newTaskDue || taskCalendar.due}/></label><label className="workflow-field-label">{isEn ? "Due date" : "Hạn chót"}<WorkflowDateField id="workflow-task-due" value={newTaskDue} onChange={setNewTaskDue} minDate={newTaskStart || taskCalendar.start} maxDate={taskCalendar.due}/></label>
+                      {/* Row 2: 4 Equal Columns (PIC, Start Date, Due Date, Quantity), each 38px height */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 items-end">
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
+                            {isEn ? 'Assignee' : 'Chọn PIC task...'}
+                          </label>
+                          <MultiSelect
+                            options={taskOptions}
+                            value={newTaskAssignee ? [newTaskAssignee] : []}
+                            maxSelected={1}
+                            onChange={(ids: string[]) => setNewTaskAssignee(ids[0] || '')}
+                            placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'}
+                            buttonClassName="!h-[38px] !min-h-[38px] !py-1 !px-2.5 !text-xs !rounded-[8px] !border-gray-200 dark:!border-slate-700"
+                          />
+                        </div>
 
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate" htmlFor="workflow-task-start">
+                            {isEn ? 'Start date' : 'Ngày bắt đầu'}
+                          </label>
+                          <WorkflowDateField
+                            id="workflow-task-start"
+                            value={newTaskStart}
+                            onChange={setNewTaskStart}
+                            minDate={taskCalendar.start}
+                            maxDate={newTaskDue || taskCalendar.due}
+                            className="!h-[38px] !p-2 !rounded-[8px] !text-xs"
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate" htmlFor="workflow-task-due">
+                            {isEn ? 'Due date' : 'Hạn chót'}
+                          </label>
+                          <WorkflowDateField
+                            id="workflow-task-due"
+                            value={newTaskDue}
+                            onChange={setNewTaskDue}
+                            minDate={newTaskStart || taskCalendar.start}
+                            maxDate={taskCalendar.due}
+                            className="!h-[38px] !p-2 !rounded-[8px] !text-xs"
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
+                            {isEn ? 'Quantity' : 'Số lượng'}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={newTaskQuantity}
+                            onChange={e => setNewTaskQuantity(e.target.value)}
+                            placeholder={isEn ? 'Qty / Amount' : 'SL / Số lượng'}
+                            className="w-full h-[38px] text-xs px-2.5 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 3: Task Status */}
+                      <div className="min-w-0">
+                        <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
+                          {isEn ? 'Initial status' : 'Trạng thái ban đầu'}
+                        </label>
                         <select
                           value={newTaskStatus}
                           onChange={e => setNewTaskStatus(e.target.value as WorkflowTaskStatus)}
-                          className="text-xs p-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none"
+                          className="w-full h-[38px] text-xs px-2.5 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500 cursor-pointer"
                         >
                           {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
                             <option key={st} value={st}>
@@ -182,19 +243,22 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                           ))}
                         </select>
                       </div>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-400">{isEn ? 'Dates inherit the phase calendar within the Project/Campaign range.' : 'Lịch tự lấy từ chặng, nằm trong khoảng ngày của Project/Campaign.'}</p>
 
-                      <div className="flex items-center justify-end gap-2 pt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-slate-400">
+                        {isEn ? 'Dates inherit the phase calendar within the Project/Campaign range.' : 'Lịch tự lấy từ chặng, nằm trong khoảng ngày của Project/Campaign.'}
+                      </p>
+
+                      <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-2 pt-1">
                         <button
                           type="button"
                           onClick={() => setShowAddTask(false)}
-                          className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                          className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
                         >
                           {isEn ? 'Cancel' : 'Hủy'}
                         </button>
                         <button
                           type="submit"
-                          className="px-3 py-1 rounded-[8px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                          className="px-3.5 py-1.5 rounded-[8px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
                         >
                           {isEn ? 'Save task' : 'Lưu đầu việc'}
                         </button>
@@ -212,10 +276,13 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       currentPhaseSubtasks.map((s) => {
                         const done = s.status === 'completed';
                         const isPinned = pinnedTaskIds.includes(String(s.id));
+                        const qty = s.record?.quantity ?? s.record?.deliverable_quantity ?? s.record?.base_quantity;
+                        const hasQty = Boolean(qty) && Number(qty) > 0;
+                        const commentCount = commentTracking.counts[s.id]?.count ?? 0;
                         return (
                           <div
                             key={s.id}
-                            className={`p-2.5 rounded-[8px] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group group/task relative ${
+                            className={`p-2.5 rounded-[8px] border transition-all grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-2 group group/task relative ${
                               'z-10'
                             } ${
                               done
@@ -223,8 +290,8 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                 : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400/60 dark:hover:border-blue-500/60'
                             }`}
                           >
-                            {/* Left: Checkbox + Status Hexagon + Title */}
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {/* Left: Checkbox + Status Hexagon + Quantity badge + Title + Comment Preview */}
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
                               <input
                                 type="checkbox"
                                 disabled={(done ? !s.canEdit : !s.canComplete) || hub.busy}
@@ -236,9 +303,16 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                               <WorkflowStatusPicker status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
 
+                              {/* Quantity Badge */}
+                              {hasQty && (
+                                <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shrink-0">
+                                  SL: {qty}
+                                </span>
+                              )}
+
                               {/* Task Title */}
                               <button type="button" onClick={()=>openTaskDetails(s.record)}
-                                className={`text-left text-xs truncate flex-1 min-w-0 hover:text-primary transition-colors cursor-pointer ${
+                                className={`text-left text-xs truncate max-w-[200px] sm:max-w-[260px] md:max-w-[320px] hover:text-primary transition-colors cursor-pointer ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
                                 title={s.title}
@@ -246,24 +320,26 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                 {s.title}
                               </button>
 
-                              {/* Comment preview popover */}
-                              <CommentPreviewPopover
-                                entityType={isCampaign ? 'campaign_subtask' : 'project_subtask'}
-                                entityId={s.record?.id || s.id}
-                                entityTitle={s.title}
-                                count={commentTracking.counts[s.id]?.count ?? 0}
-                                onOpenFull={() => openTaskComments(s.record)}
-                              />
+                              {/* Comment preview popover - only render if comments exist */}
+                              {commentCount > 0 && (
+                                <CommentPreviewPopover
+                                  entityType={isCampaign ? 'campaign_subtask' : 'project_subtask'}
+                                  entityId={s.record?.id || s.id}
+                                  entityTitle={s.title}
+                                  count={commentCount}
+                                  onOpenFull={() => openTaskComments(s.record)}
+                                />
+                              )}
                             </div>
 
                             {/* Right: Assignee (Avatar + Name), Due date & Actions */}
-                            <div className="flex items-center shrink-0 self-end sm:self-auto ml-6 sm:ml-0">
+                            <div className="grid grid-flow-col auto-cols-max items-center shrink-0 self-end sm:self-auto ml-6 sm:ml-0 gap-1.5">
                               {/* Basic Info: PIC Avatar + Name & Due date */}
-                              <div className="flex items-center gap-1.5">
+                              <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
                                 {/* PIC Avatar + Name */}
                                 {s.record.assignee?.name || s.assignee ? (
                                   <span
-                                    className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
+                                    className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
                                     title={`${isEn ? 'Assignee' : 'Người thực hiện'}: ${s.record.assignee?.name || s.assignee}`}
                                   >
                                     <Avatar
@@ -276,14 +352,14 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                     </span>
                                   </span>
                                 ) : (
-                                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
+                                  <span className="grid grid-flow-col auto-cols-max items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
                                     <User size={10} />
                                     <span className="truncate max-w-[80px]">{isEn ? 'Unassigned' : 'Chưa giao PIC'}</span>
                                   </span>
                                 )}
 
                                 {s.due_date && (
-                                  <span className="hidden sm:flex items-center gap-0.5 text-[9px] text-gray-400">
+                                  <span className="hidden sm:grid grid-flow-col auto-cols-max items-center gap-0.5 text-[9px] text-gray-400">
                                     <Calendar size={10} />
                                     <span>{displayDate(s.due_date)}</span>
                                   </span>
@@ -292,13 +368,13 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                               {/* Actions (Pin, Edit, Delete): collapses to 0 width when idle (sitting flush right), expands on hover pushing info left */}
                               <div
-                                className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${
+                                className={`grid grid-flow-col auto-cols-max items-center overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${
                                   isPinned
                                     ? 'max-w-[32px] opacity-100 pl-1.5 group-hover:max-w-[120px] group-hover/task:max-w-[120px] focus-within:max-w-[120px]'
                                     : 'max-w-0 opacity-0 pl-0 group-hover:max-w-[120px] group-hover:opacity-100 group-hover:pl-1.5 group-hover/task:max-w-[120px] group-hover/task:opacity-100 group-hover/task:pl-1.5 focus-within:max-w-[120px] focus-within:opacity-100 focus-within:pl-1.5'
                                 }`}
                               >
-                                <div className="flex items-center gap-0.5 shrink-0">
+                                <div className="grid grid-flow-col auto-cols-max items-center gap-0.5 shrink-0">
                                   <TaskPinButton taskId={s.id} size={12} className="!p-1" />
                                   {/* Edit Action */}
                                   <button
