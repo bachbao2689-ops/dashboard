@@ -117,7 +117,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                   (state as any).setCampaigns((items: any[]) => items.map((item: any) => item.id === selectedCampaign.id ? { ...item, priority: newPriority } : item));
                 }
                 window.dispatchEvent(new Event('campaigns:changed'));
-                void workflow.refresh();
+                void workflow.refreshTracks();
                 toast.success('Đã cập nhật mức ưu tiên');
                 try {
                   await supabase.from('activity_log').insert({
@@ -140,7 +140,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                   (state as any).setCampaigns((items: any[]) => items.map((item: any) => item.id === selectedCampaign.id ? { ...item, status: newStatus } : item));
                 }
                 window.dispatchEvent(new Event('campaigns:changed'));
-                void workflow.refresh();
+                void workflow.refreshTracks();
                 toast.success('Đã cập nhật trạng thái');
               }}
               onEdit={() => {
@@ -246,7 +246,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                 const unassignedSubtasks = visibleCampaignSubtasks.filter(subtask => {
                   if (subtask.status === 'deleted') return false;
                   if (!hasPhases) return true;
-                  return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
+                  return !subtask.workflow_phase_id;
                 });
                 const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
                 const openCount = unassignedSubtasks.filter(s => !isTaskDone(s.status)).length;
@@ -284,7 +284,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                     const unassignedSubtasks = visibleCampaignSubtasks.filter(subtask => {
                       if (subtask.status === 'deleted') return false;
                       if (!hasPhases) return true;
-                      return !workflow.tasks.some(t => (String(t.id) === `cs-${subtask.id}` || String(t.id) === String(subtask.id)) && t.workflow_phase_id);
+                      return !subtask.workflow_phase_id;
                     });
                     const visibleSubtasks = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
@@ -296,8 +296,7 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                       <div className="space-y-2">
                         {visibleSubtasks.map(s => {
                           const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
-                          const matchedTrackTask = workflow.tasks.find(t => (String(t.id) === `cs-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
-                          const pIdx = matchedTrackTask ? campaignPhases.findIndex(p => p.id === matchedTrackTask.workflow_phase_id) : -1;
+                          const pIdx = s.workflow_phase_id ? campaignPhases.findIndex(p => p.id === s.workflow_phase_id) : -1;
                           const assignedPhase = pIdx >= 0 ? campaignPhases[pIdx] : null;
 
                           return (

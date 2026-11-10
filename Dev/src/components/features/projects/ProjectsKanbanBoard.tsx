@@ -46,7 +46,6 @@ export interface ProjectsKanbanBoardProps {
   onDeleteProject?: (project: Project) => void;
   onHideCampaign?: (campaign: any) => void;
   onDeleteCampaign?: (campaign: any) => void;
-  workflow: any;
   profile?: any;
 }
 
@@ -139,7 +138,6 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
   onDeleteProject,
   onHideCampaign,
   onDeleteCampaign,
-  workflow,
   profile
 }) => {
   const { lang, t } = useTranslation();
@@ -507,9 +505,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                         );
                         const unassignedSubtasks = rawSubtasks.filter((s: any) => {
                           if (phaseCount === 0) return true;
-                          return !workflow.tasks.some(
-                            (t: any) => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id
-                          );
+                          return !s.workflow_phase_id;
                         });
                         unassignedCount = unassignedSubtasks.length;
                         isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every((s: any) => isTaskDone(s.status));
@@ -519,9 +515,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                         );
                         const unassignedSubtasks = rawSubtasks.filter((s: any) => {
                           if (phaseCount === 0) return true;
-                          return !workflow.tasks.some(
-                            (t: any) => (String(t.id) === `cs-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id
-                          );
+                          return !s.workflow_phase_id;
                         });
                         unassignedCount = unassignedSubtasks.length;
                         isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every((s: any) => isTaskDone(s.status));

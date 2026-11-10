@@ -9,15 +9,17 @@ import type {HubTrack} from '../lib/workflowHub';
 import {updateTrackedTask} from '../services/workspaceTasks';
 const emptyTracks:HubTrack[]=[];
 
-export function useWorkflowHub() {
+export function useWorkflowHub({includeTasks = true}: {includeTasks?: boolean} = {}) {
   const profile = useAuthStore(s => s.profile);
-  const { tasks, loading: taskLoading, error: taskError, refetch } = useTasks();
+  const { tasks, loading: taskLoading, error: taskError, refetch } = useTasks(includeTasks);
   const state=useSharedResource(workflowResource,workspaceScope(),Boolean(profile));
   const directory=useWorkspaceDirectory();
   const tracks=state.data||emptyTracks,people=useMemo(()=>(directory.data?.users||[]).map(person=>({...person,id:Number(person.id)})),[directory.data]);
   const loading=state.loading,error=state.error||directory.error;
   const [busy,setBusy]=useState(false);const lock=useRef(false);
-  const refresh=state.refetch;
+  const refreshTracks=state.refetch;
+  const refreshTasks = includeTasks ? refetch : () => Promise.resolve();
+  const refresh = async () => { await Promise.all([refreshTracks(), refreshTasks()]); };
   const connected=useWorkspaceRealtime([],()=>{},profile?.id);
   const mutate = async (operation: () => PromiseLike<any>) => {
     if (lock.current) throw new Error('Đang lưu. Vui lòng chờ.');
@@ -25,7 +27,7 @@ export function useWorkflowHub() {
     try {
       const { data, error: failure } = await operation();
       if (failure) throw failure;
-      await Promise.all([refresh(), refetch()]);
+      await refresh();
       return data;
     } finally { lock.current = false; setBusy(false); }
   };
@@ -33,5 +35,5 @@ export function useWorkflowHub() {
     await updateTrackedTask(task.id, values);
     return {data: true, error: null};
   });
-  return { tracks, tasks, people, profile, connected, loading: loading || (taskLoading && !tasks.length), error: error || taskError, busy, refresh: async () => { await Promise.all([refresh(), refetch()]); }, mutate, updateTask };
+  return { tracks, tasks, people, profile, connected, loading: loading || (includeTasks && taskLoading && !tasks.length), error: error || (includeTasks ? taskError : null), busy, refreshTracks, refresh, mutate, updateTask };
 }

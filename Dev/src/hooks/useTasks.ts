@@ -25,8 +25,8 @@ export interface Task {
   checklist_items?: Array<{ id: string; title: string; quantity?: number | null; completed?: boolean; [key: string]: any }>;
 }
 const emptyTasks:Task[]=[];
-export function useTasks(){
+export function useTasks(enabled = true){
  const profile=useAuthStore(state=>state.profile);
- const state=useSharedResource(taskResource,workspaceScope(),Boolean(profile));
+ const state=useSharedResource(taskResource,workspaceScope(),Boolean(profile)&&enabled);
  return {tasks:state.data||emptyTasks,loading:state.loading,error:state.error,refetch:state.refetch};
 }

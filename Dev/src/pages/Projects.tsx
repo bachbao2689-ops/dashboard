@@ -36,6 +36,7 @@ import {QuickStatusDropdown} from '../components/common/QuickStatusDropdown';
 import {ProjectViewModeDropdown} from '../components/features/projects/ProjectViewModeDropdown';
 import {ProjectsKanbanBoard} from '../components/features/projects/ProjectsKanbanBoard';
 import {SlidingToolbarGroup} from '../components/common/SlidingToolbarGroup';
+import {useTasks} from '../hooks/useTasks';
 export const Projects:React.FC=()=>{
  const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 150, 220], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
@@ -45,6 +46,7 @@ export const Projects:React.FC=()=>{
  });
  const [searchParams, setSearchParams] = useSearchParams();
  const state=useProjectsController();
+ const sourceTaskResource=useTasks(Boolean(state.sourceTask));
  React.useEffect(() => {
    if (searchParams.get("action") === "new") {
      state.resetCreateForm();
@@ -161,6 +163,8 @@ export const Projects:React.FC=()=>{
   const [campaignSubtaskAssigneesMap, setCampaignSubtaskAssigneesMap] = React.useState<Record<string, any[]>>({});
   const [projectSubtaskChecklistMap, setProjectSubtaskChecklistMap] = React.useState<Record<string, any[]>>({});
   const [treeSubtaskCommentCounts, setTreeSubtaskCommentCounts] = React.useState<Record<string, number>>({});
+  const projectTreeIds = React.useMemo(() => projects.map(project => String(project.id)).sort().join(','), [projects]);
+  const campaignTreeIds = React.useMemo(() => campaigns.map(campaign => String(campaign.id)).sort().join(','), [campaigns]);
   const [openNoteEntityIds, setOpenNoteEntityIds] = React.useState<Record<string, boolean>>({});
   const setIsScanMode = useUiStore(s => s.setIsScanMode);
   const isDetailActive = Boolean(selected || selectedCampaign || selectedSubtask);
@@ -253,26 +257,39 @@ export const Projects:React.FC=()=>{
   };
 
   const loadProjectTreeData = React.useCallback(async () => {
+    const projectIds = projectTreeIds ? projectTreeIds.split(',') : [];
+    const campaignIds = campaignTreeIds ? campaignTreeIds.split(',') : [];
+    if (!projectIds.length && !campaignIds.length) {
+      setProjectSubtasksMap({});
+      setCampaignSubtasksMap({});
+      setCampaignSubtaskAssigneesMap({});
+      setProjectSubtaskChecklistMap({});
+      setTreeSubtaskCommentCounts({});
+      return;
+    }
     const [{ data: allProjectSubtasks }, { data: allCampaignSubtasks }, { data: canonicalTasks }] = await Promise.all([
-      supabase
+      projectIds.length ? supabase
         .from('project_subtasks')
         .select('*, assignee:assignee_id(id,name,avatar_url)')
+        .in('project_id', projectIds)
         .neq('status', 'deleted')
         .neq('status', 'archived')
-        .order('created_at', { ascending: true }),
-      supabase
+        .order('created_at', { ascending: true }) : Promise.resolve({data:[],error:null} as any),
+      campaignIds.length ? supabase
         .from('campaign_subtasks')
         .select('*, assignee:assignee_id(id,name,avatar_url)')
+        .in('campaign_id', campaignIds)
         .neq('status', 'deleted')
         .neq('status', 'archived')
-        .order('created_at', { ascending: true }),
-      supabase
+        .order('created_at', { ascending: true }) : Promise.resolve({data:[],error:null} as any),
+      campaignIds.length ? supabase
         .from('tasks')
         .select('campaign_id, assignee:assignee_id(id,name,avatar_url)')
+        .in('campaign_id', campaignIds)
         .not('campaign_id', 'is', null)
         .is('project_id', null)
         .neq('status', 'deleted')
-        .neq('status', 'archived')
+        .neq('status', 'archived') : Promise.resolve({data:[],error:null} as any)
     ]);
 
     const pSubMap: Record<string, any[]> = {};
@@ -330,11 +347,17 @@ export const Projects:React.FC=()=>{
         }
       });
       setProjectSubtaskChecklistMap(chkMap);
+    } else {
+      setTreeSubtaskCommentCounts({});
+      setProjectSubtaskChecklistMap({});
     }
-  }, []);
+  }, [projectTreeIds, campaignTreeIds]);
 
   React.useEffect(() => {
     void loadProjectTreeData();
+    const handleTreeChanged = () => { void loadProjectTreeData(); };
+    window.addEventListener('project-tree:changed', handleTreeChanged);
+    return () => window.removeEventListener('project-tree:changed', handleTreeChanged);
   }, [loadProjectTreeData]);
 
   const handleCreateProjectSubtask = async (projectId: string) => {
@@ -811,7 +834,6 @@ export const Projects:React.FC=()=>{
           onUpdateCampaignStatus={handleUpdateCampaignStatus}
           onHideProject={archiveProject}
           onDeleteProject={removeProject}
-          workflow={workflow}
           profile={profile}
         />
       ) : (
@@ -892,7 +914,7 @@ export const Projects:React.FC=()=>{
                 const unassignedSubtasks = subtasks.filter(s => {
                   if (s.status === 'deleted') return false;
                   if (phaseCount === 0) return true;
-                  return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                  return !s.workflow_phase_id;
                 });
                 const unassignedCount = unassignedSubtasks.length;
                 const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
@@ -1204,7 +1226,7 @@ export const Projects:React.FC=()=>{
                       const unassignedSubtasks = subtasks.filter(s => {
                         if (s.status === 'deleted') return false;
                         if (phaseCount === 0) return true;
-                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                        return !s.workflow_phase_id;
                       });
                       const unassignedCount = unassignedSubtasks.length;
                       const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
@@ -1865,7 +1887,7 @@ export const Projects:React.FC=()=>{
   
     </div>)}</div>
 
-    {sourceTask && <TaskDetailPanel task={workflow.tasks.find(task => task.id === sourceTask.id) || sourceTask} isOpen onClose={() => setSourceTask(null)} onTaskUpdated={() => void workflow.refresh()} />}
+    {sourceTask && <TaskDetailPanel task={sourceTaskResource.tasks.find(task => task.id === sourceTask.id) || sourceTask} isOpen onClose={() => setSourceTask(null)} onTaskUpdated={() => void workflow.refresh()} />}
 
     {/* Right Side: Detail Panel */}
     <div
@@ -1955,7 +1977,7 @@ export const Projects:React.FC=()=>{
                   setPriority(newPriority);
                   setProjects(items => items.map(p => p.id === selected.id ? { ...p, priority: newPriority } : p));
                   window.dispatchEvent(new Event('projects:changed'));
-                  void workflow.refresh();
+                  void workflow.refreshTracks();
                   toast.success('Đã cập nhật mức ưu tiên');
                 }}
                 onStatusChange={async (newStatus) => {
@@ -1967,7 +1989,7 @@ export const Projects:React.FC=()=>{
                   setEditStatus(newStatus);
                   setProjects(items => items.map(p => p.id === selected.id ? { ...p, status: newStatus } : p));
                   window.dispatchEvent(new Event('projects:changed'));
-                  void workflow.refresh();
+                  void workflow.refreshTracks();
                   toast.success('Đã cập nhật trạng thái');
                 }}
                 onEdit={() => {
@@ -2077,7 +2099,7 @@ export const Projects:React.FC=()=>{
                   const unassignedSubtasks = filteredSubtasks.filter(s => {
                     if (s.status === 'deleted') return false;
                     if (!hasPhases) return true;
-                    return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                    return !s.workflow_phase_id;
                   });
                   const doneCount = unassignedSubtasks.filter(s => isTaskDone(s.status)).length;
                   const openCount = unassignedSubtasks.filter(s => !isTaskDone(s.status)).length;
@@ -2116,7 +2138,7 @@ export const Projects:React.FC=()=>{
                       const unassignedSubtasks = filteredSubtasks.filter(s => {
                         if (s.status === 'deleted') return false;
                         if (!hasPhases) return true;
-                        return !workflow.tasks.some(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
+                        return !s.workflow_phase_id;
                       });
                       const visibleSubtasks = unassignedSubtasks.filter(s => statusFilter === 'completed' ? isTaskDone(s.status) : true);
 
@@ -2128,8 +2150,7 @@ export const Projects:React.FC=()=>{
                         <div className="space-y-2">
                           {visibleSubtasks.map(s => {
                             const canToggle = selectedRoot || isGlobalManager(profile) || Number(s.assignee_id) === Number(profile?.id);
-                            const matchedTrackTask = workflow.tasks.find(t => (String(t.id) === `ps-${s.id}` || String(t.id) === String(s.id)) && t.workflow_phase_id);
-                            const pIdx = matchedTrackTask ? projectPhases.findIndex(p => p.id === matchedTrackTask.workflow_phase_id) : -1;
+                            const pIdx = s.workflow_phase_id ? projectPhases.findIndex(p => p.id === s.workflow_phase_id) : -1;
                             const assignedPhase = pIdx >= 0 ? projectPhases[pIdx] : null;
 
                             return (

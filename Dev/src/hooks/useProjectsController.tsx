@@ -26,8 +26,14 @@ import {parentCreationError} from '../lib/parentCreationError';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
-  const workflow = useWorkflowHub();
   const [sourceTask, setSourceTask] = useState<Task | null>(null);
+  const [selected, setSelected] = useState<Project | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
+  // The Projects route reads its own project/campaign subtasks. Loading the
+  // complete All Tasks workspace on list entry duplicates six table reads and
+  // their activity-history lookups. Load it only when a detail panel needs its
+  // workflow summary; the list uses the scoped subtask queries below.
+  const workflow = useWorkflowHub({includeTasks:Boolean(selected || selectedCampaign)});
   const loadRequest = useRef(0);
   const profile = useAuthStore(s => s.profile);
   const canCreate = canViewTeamManagement(profile) && (isGlobalManager(profile) || Boolean(profile?.department_id));
@@ -48,10 +54,9 @@ export function useProjectsController(){
   const isLeader = isDepartmentLeader(profile);
   const isStaff = !isManager && !isLeader;
   const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
-  const [members, setMembers] = useState<Record<string, string[]>>({}); const [selected, setSelected] = useState<Project | null>(null);
+  const [members, setMembers] = useState<Record<string, string[]>>({});
   const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
   const picMembers = useMemo(() => ({ ...storedPicMembers, ...Object.fromEntries(workflow.tracks.filter(track => track.entity_type === 'project').map(track => [track.entity_id, track.pics.map(p => String(p.id))])) }), [storedPicMembers, workflow.tracks]);
-  const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [selectedRoot, setSelectedRoot] = useState(false);
   useEffect(() => {
     setSelectedRoot(false);
@@ -219,10 +224,29 @@ export function useProjectsController(){
   const [legacySubtaskMembers, setSubtaskMembers] = useState<Record<string, string[]>>({});
   const subtaskMembers = useMemo(() => {
     const result = Object.fromEntries(Object.entries(legacySubtaskMembers).map(([id, ids]) => [id, new Set(ids)]));
-    for (const task of workflow.tasks) if (task.project_id && task.assignee_id) (result[task.project_id] ||= new Set()).add(String(task.assignee_id));
     for (const track of workflow.tracks) if (track.entity_type === 'project') for (const member of track.sub_pics || []) (result[track.entity_id] ||= new Set()).add(String(member.id));
     return Object.fromEntries(Object.entries(result).map(([id, ids]) => [id, [...ids]]));
-  }, [legacySubtaskMembers, workflow.tasks, workflow.tracks]);
+  }, [legacySubtaskMembers, workflow.tracks]);
+
+  const refreshSubtaskMembers = React.useCallback(async () => {
+    const [projectResult, campaignResult] = await Promise.all([
+      supabase.from('project_subtasks').select('project_id,assignee_id').not('status','in','(deleted,archived)'),
+      supabase.from('campaign_subtasks').select('campaign_id,assignee_id').not('status','in','(deleted,archived)'),
+    ]);
+    if (projectResult.error || campaignResult.error) return;
+    const groupAssignees = (rows: any[], parentKey: 'project_id' | 'campaign_id') => {
+      const grouped: Record<string, Set<string>> = {};
+      (rows || []).forEach(row => {
+        if (!row.assignee_id) return;
+        const parentId = String(row[parentKey]);
+        (grouped[parentId] ||= new Set()).add(String(row.assignee_id));
+      });
+      return Object.fromEntries(Object.entries(grouped).map(([id, ids]) => [id, [...ids]]));
+    };
+    setSubtaskMembers(groupAssignees(projectResult.data || [], 'project_id'));
+    setCampaignSubtaskMembers(groupAssignees(campaignResult.data || [], 'campaign_id'));
+    window.dispatchEvent(new Event('project-tree:changed'));
+  }, []);
 
   // View mode & Filter states
   const [viewMode, setViewMode] = useRememberedState<'list' | 'board'>('projects.viewMode', 'list');
@@ -548,10 +572,27 @@ export function useProjectsController(){
       window.removeEventListener('projects:changed', handleChanged);
       window.removeEventListener('campaigns:changed', handleChanged);
     };
-  }, [profile?.id, profile?.department_id,profile?.role,profile?.employment_level,workflow.tracks]);
+  }, [profile?.id, profile?.department_id,profile?.role,profile?.employment_level]);
   useWorkspaceRealtime(['projects','campaigns','project_subtasks','campaign_subtasks','project_members','campaign_members','project_comments','activity_log'], change => {
-    if(!change?.table||change.table!=='activity_log'||change.new?.action==='creation_details'||change.eventType==='DELETE')void load();
     const row=change?.new||change?.old;
+    const table=change?.table;
+    if (!table) void load();
+    else if (['projects','campaigns','project_members','campaign_members'].includes(table)) void load();
+    else if (table==='project_subtasks'||table==='campaign_subtasks') void refreshSubtaskMembers();
+    else if (table==='activity_log' && row?.action==='creation_details') void load();
+    else if (table==='project_comments' && row?.project_id) {
+      const projectId=String(row.project_id);
+      if (change.eventType==='DELETE') {
+        void supabase.from('project_comments').select('id',{count:'exact',head:true}).eq('project_id',projectId)
+          .then(({count,error})=>{if(!error)setHasComments(current=>({...current,[projectId]:Boolean(count)}));});
+      } else setHasComments(current=>({...current,[projectId]:true}));
+    } else if (table==='activity_log' && row?.entity_type==='campaign' && row?.action==='comment') {
+      const campaignId=String(row.entity_id);
+      if (change.eventType==='DELETE') {
+        void supabase.from('activity_log').select('id',{count:'exact',head:true}).eq('entity_type','campaign').eq('entity_id',campaignId).eq('action','comment')
+          .then(({count,error})=>{if(!error)setHasCampaignComments(current=>({...current,[campaignId]:Boolean(count)}));});
+      } else setHasCampaignComments(current=>({...current,[campaignId]:true}));
+    }
     if(!change?.table||change.eventType==='DELETE'||Boolean(selected&&(row?.project_id===selected.id||row?.entity_id===selected.id||(change.table==='projects'&&row?.id===selected.id)))||Boolean(selectedCampaign&&(row?.campaign_id===selectedCampaign.id||row?.entity_id===selectedCampaign.id||(change.table==='campaigns'&&row?.id===selectedCampaign.id)))||subtasks.some(item=>item.id===row?.entity_id)||campaignSubtasks.some(item=>item.id===row?.entity_id))setRefreshDetailTrigger(v=>v+1);
   }, profile?.id);
 
