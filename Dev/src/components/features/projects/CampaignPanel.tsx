@@ -2,6 +2,7 @@ import { QuickStatusDropdown } from '../../common/QuickStatusDropdown';
 import { EntityNoteCell, getCachedNote } from './EntityNoteCell';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspaceRealtime } from '../../../hooks/useWorkspaceRealtime';
+import {workspaceChangeRelevant} from '../../../lib/workspaceInvalidation';
 import { useResizableColumns } from '../../../hooks/useResizableColumns';
 import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, ListTodo, Plus, X, Eye, Pencil, Check, FileText } from 'lucide-react';
@@ -14,7 +15,6 @@ import { useTranslation } from '../../../i18n/translations';
 import { isGlobalManager, isAdmin, isDepartmentLeader } from '../../../lib/roleScope';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import {isTaskDone} from '../../../lib/taskTracking';
-import {leaderParentVisible} from '../../../lib/workAccessScope';
 import { EntityInfoPopover } from './EntityInfoPopover';
 import { CommentPreviewPopover } from '../../common/CommentPreviewPopover';
 import { getCampaignPriority, priorityClass } from './projectPresentation';
@@ -186,7 +186,7 @@ export const CampaignPanel: React.FC<{
   const isManager = isGlobalManager(profile) || isAdmin(profile);
   const isLeader = isDepartmentLeader(profile);
   const isStaff = !isManager && !isLeader;
-  const userIsRestricted = !isManager && Boolean(resolvedDeptId || profile?.department_name);
+    const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
 
   const filterCampaignSubtasksForUser = React.useCallback((items: any[], camp: any) => {
     if (isManager || isLeader) return items;
@@ -332,23 +332,8 @@ export const CampaignPanel: React.FC<{
     (unreadData || []).forEach((n: any) => { if (n.entity_id) unreadMap[n.entity_id] = true; });
     setHasUnread(unreadMap);
     
-    // Do not re-filter by department: RLS already scopes explicit cross-team invites.
-    const invited=await supabase.from('campaign_members').select('campaign_id,user_id,workflow_role');
-    if(invited.error){toast.error(invited.error.message);setCampaigns([]);return;}
-    const activePeople = peopleData?.length ? peopleData : people;
-    setCampaigns((data || []).filter(c => {
-      const cAssignees = [
-        ...((allSubtasks || []).filter((s: any) => s.campaign_id === c.id && s.assignee_id).map((s: any) => s.assignee_id)),
-        ...((canonicalTasks || []).filter((t: any) => t.campaign_id === c.id && t.assignee_id).map((t: any) => t.assignee_id))
-      ];
-      const cInvited = [
-        c.created_by,
-        c.lead_id,
-        ...(invited.data || []).filter(m => m.campaign_id === c.id && ['pic', 'sub_pic'].includes(m.workflow_role)).map(m => m.user_id),
-        ...cAssignees
-      ];
-      return leaderParentVisible(profile, c.department_id, cInvited, activePeople);
-    }));
+    // RLS owns read scope; the directory is for labels and assignment pickers.
+    setCampaigns(data || []);
   };
 
   const handleQuickCreateSubtask = async (campaignId: string, customTitle: string) => {
@@ -603,7 +588,8 @@ export const CampaignPanel: React.FC<{
       window.removeEventListener('tasks:changed', handleChanged);
     };
   }, [profile?.id, profile?.department_id]);
-  useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members', 'activity_log', 'notifications'], load, profile?.id);
+  useWorkspaceRealtime(['campaigns', 'campaign_members', 'campaign_subtasks', 'tasks', 'workflow_phase_members', 'activity_log', 'notifications', 'users'], load, profile?.id,
+    change => change.table !== 'users' || workspaceChangeRelevant('workflow',change,profile));
 
   
   
@@ -670,10 +656,6 @@ export const CampaignPanel: React.FC<{
         if (isStaff) {
           // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
           if (!isLead && !isCreator && !isSub) return false;
-        } else if (isLeader) {
-          // Parent rows were scoped by exact department/PIC membership in load().
-          // Never widen access through other staff or peer Leaders.
-
         }
       }
 

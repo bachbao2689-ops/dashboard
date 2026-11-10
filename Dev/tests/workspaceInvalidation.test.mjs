@@ -24,3 +24,14 @@ test('task details and Workflow assets invalidate only their corresponding snaps
   assert.equal(relevant('workflow', change('attachment_added'), actor), true);
   assert.equal(relevant('tasks', change('attachment_added'), actor), false);
 });
+test('team ownership and account scope changes invalidate cached reads, while avatar changes do not', () => {
+  const before={department_id:'D',role:'leader',employment_level:'Leader',is_active:true,auth_id:'actor-auth',avatar_url:'old'};
+  for(const resource of ['tasks','workflow']){
+    assert.equal(relevant(resource,{table:'users',eventType:'UPDATE',old:before,new:{...before,avatar_url:'new'}},actor),false);
+    for(const [field,value] of [['department_id','M'],['role','member'],['employment_level','Staff'],['is_active',false],['auth_id','new-auth']]){
+      assert.equal(relevant(resource,{table:'users',eventType:'UPDATE',old:before,new:{...before,[field]:value}},actor),true,field);
+    }
+    assert.equal(relevant(resource,{table:'users',eventType:'UPDATE',old:{id:7},new:before},actor),true);
+    assert.equal(relevant(resource,{table:'users',eventType:'DELETE'},actor),true);
+  }
+});

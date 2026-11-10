@@ -26,7 +26,6 @@ import { useRememberedState } from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
 import { updateTrackedTask } from '../services/workspaceTasks';
 import toast from 'react-hot-toast';
-import {leaderTaskVisible} from '../lib/workAccessScope';
 
 export const TaskList: React.FC = () => {
   const { lang, t } = useTranslation();
@@ -256,8 +255,6 @@ export const TaskList: React.FC = () => {
       if (isStaff) {
         // Staff thường: Chỉ thấy phạm vi công việc mình được giao / tạo / liên quan trực tiếp
         if (!(isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
-      } else if (isLeader) {
-        if (!leaderTaskVisible(profile,t,people)) return false;
       }
     }
 

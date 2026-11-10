@@ -21,8 +21,9 @@ import {editOwnedComment} from '../lib/commentEditing';
 import {useRememberedState} from './useRememberedState';
 import {completeTrackedTask} from '../services/workspaceTasks';
 import {saveTaskDeliverables, computeDeliverableQuantity} from '../lib/taskDeliverables';
-import {leaderParentVisible,workAssignmentPeople} from '../lib/workAccessScope';
+import {workAssignmentPeople} from '../lib/workAccessScope';
 import {parentCreationError} from '../lib/parentCreationError';
+import {workspaceChangeRelevant} from '../lib/workspaceInvalidation';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -170,7 +171,6 @@ export function useProjectsController(){
   const visiblePeople = people;
   const creationPeople=useMemo(()=>workAssignmentPeople(profile,people),[profile,people]);
   const creationDepartments=departments;
-  const parentInvites=(kind:'project'|'campaign',id:string)=>workflow.tracks.filter(t=>t.entity_type===kind&&t.entity_id===id).flatMap(t=>[...t.pics,...(t.sub_pics||[])].map(p=>p.id));
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);
   const projectMentionQuery = useMemo(() => comment.match(/(?:^|\s)@([^\s@]*)$/)?.[1]?.toLowerCase() || null, [comment]);
   const projectMentionOptions = useMemo(() => projectMentionQuery === null ? [] : visiblePeople.filter(person => person.name.toLowerCase().includes(projectMentionQuery)).slice(0, 5), [projectMentionQuery, visiblePeople]);
@@ -501,7 +501,7 @@ export function useProjectsController(){
   const load = async () => {
     const token = ++loadRequest.current;
     if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
-    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes, campSubtaskRes, campMemberRes] = await Promise.all([
+    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes, campSubtaskRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('project_members').select('project_id,user_id,workflow_role'),
       supabase.from('project_comments').select('project_id'),
@@ -512,21 +512,11 @@ export function useProjectsController(){
       profile?.id
         ? supabase.from('notifications').select('entity_type, entity_id').eq('user_id', profile.id).eq('is_read', false).in('entity_type', ['project', 'campaign'])
         : Promise.resolve({ data: [] } as any),
-      supabase.from('campaign_subtasks').select('campaign_id,assignee_id').not('status','in','(deleted,archived)'),
-      supabase.from('campaign_members').select('campaign_id,user_id,workflow_role')
+      supabase.from('campaign_subtasks').select('campaign_id,assignee_id').not('status','in','(deleted,archived)')
     ]);
     if (token !== loadRequest.current) return;
     if (projectRes.error) return toast.error('Không thể tải Project');
-    const projectData=(projectRes.data||[]).filter(p=>{
-      const pAssignees = (subtaskRes.data||[]).filter(s=>s.project_id===p.id&&s.assignee_id).map(s=>s.assignee_id);
-      const pInvited = [
-        p.created_by,
-        ...(memberRes.data||[]).filter(m=>m.project_id===p.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id),
-        ...parentInvites('project',p.id),
-        ...pAssignees
-      ];
-      return leaderParentVisible(profile,p.department_id,pInvited,people);
-    });
+    const projectData=projectRes.data||[];
     setProjects(projectData);
     setSelected(current => current ? projectData.find(p => p.id === current.id) || null : null);
     setMembers((memberRes.data || []).reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
@@ -546,17 +536,7 @@ export function useProjectsController(){
     });
     setHasMentionOrUnread(unreadMap);
     if(campaignRes.error||creationRes.error)return toast.error('Chưa đồng bộ đầy đủ Project/Campaign.');
-    const campaignData=(campaignRes.data||[]).filter(c=>{
-      const cAssignees = (campSubtaskRes?.data||[]).filter((s:any)=>s.campaign_id===c.id&&s.assignee_id).map((s:any)=>s.assignee_id);
-      const cInvited = [
-        c.created_by,
-        c.lead_id,
-        ...(campMemberRes?.data||[]).filter((m:any)=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map((m:any)=>m.user_id),
-        ...parentInvites('campaign',c.id),
-        ...cAssignees
-      ];
-      return leaderParentVisible(profile,c.department_id,cInvited,people);
-    });
+    const campaignData=campaignRes.data||[];
     setCampaigns(campaignData);
     setSelectedCampaign((current:any)=>current?campaignData.find(c=>c.id===current.id)||null:null);
     setProjectPrimaryOwners(Object.fromEntries((creationRes.data||[]).map(row=>[row.entity_id,row.metadata?.primary_owner_id])));
@@ -592,10 +572,11 @@ export function useProjectsController(){
       window.removeEventListener('campaigns:changed', handleChanged);
     };
   }, [profile?.id, profile?.department_id,profile?.role,profile?.employment_level]);
-  useWorkspaceRealtime(['projects','campaigns','project_subtasks','campaign_subtasks','project_members','campaign_members','project_comments','activity_log'], change => {
+  useWorkspaceRealtime(['projects','campaigns','project_subtasks','campaign_subtasks','project_members','campaign_members','project_comments','activity_log','users'], change => {
     const row=change?.new||change?.old;
     const table=change?.table;
     if (!table) void load();
+    else if (table==='users') { if(workspaceChangeRelevant('workflow',change,profile))void load(); }
     else if (['projects','campaigns','project_members','campaign_members'].includes(table)) void load();
     else if (table==='project_subtasks'||table==='campaign_subtasks') void refreshSubtaskMembers();
     else if (table==='activity_log' && row?.action==='creation_details') void load();

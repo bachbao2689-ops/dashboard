@@ -14,7 +14,7 @@ import {phaseLinkableTasks,phaseLinkTarget,taskTarget} from '../lib/taskTracking
 import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
-import {trackLeaderVisible,workAssignmentPeople} from '../lib/workAccessScope';
+import {workAssignmentPeople} from '../lib/workAccessScope';
 import {saveTaskDeliverables} from '../lib/taskDeliverables';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
@@ -59,7 +59,7 @@ export function useWorkflowManagement() {
 
     const mapped = hub.tracks
       .filter(track => {
-        if (isManager) return true;
+        if (isManager || isLeader) return true;
 
         const isParticipant = Boolean(
           actorId && (
@@ -78,17 +78,6 @@ export function useWorkflowManagement() {
             actorId && trackTasks.some(t => String(t.assignee_id) === actorId || String(t.created_by) === actorId)
           );
           return isParticipant || hasMyTask;
-        }
-
-        if (isLeader) {
-          const trackTasks = parentTasks(hub.tasks, track.entity_type, track.entity_id);
-          const taskAssigneeIds = trackTasks.map(t => t.assignee_id).filter(Boolean);
-          const phaseMemberIds = (track.phases || []).flatMap(s => (s.members || []).map(m => m.id)).filter(Boolean);
-          return trackLeaderVisible(hub.profile, {
-            ...track,
-            member_ids: phaseMemberIds,
-            task_assignee_ids: taskAssigneeIds as (string | number)[],
-          }, hub.people);
         }
 
         return true;
@@ -207,7 +196,9 @@ export function useWorkflowManagement() {
   const isFullAccess = isManagerOrAdmin || isRoot;
 
   const allTasks = useMemo(() => {
-    if (isFullAccess) return rawTasks;
+    // Leader read scope is already enforced for each task by RLS. Read access
+    // to a peer's workflow must not be confused with parent editing rights.
+    if (isFullAccess || isLeader) return rawTasks;
 
     const myPhaseIds = new Set(
       (currentEntity?.phases || [])
@@ -222,15 +213,16 @@ export function useWorkflowManagement() {
       if ((t.checklist_items || []).some((ci: any) => String(ci.created_by) === actorId || String(ci.assignee_id) === actorId)) return true;
       return false;
     });
-  }, [rawTasks, isFullAccess, actorId, currentEntity?.phases]);
+  }, [rawTasks, isFullAccess, isLeader, actorId, currentEntity?.phases]);
 
   // Phân quyền lộ trình giai đoạn (Phases):
   // - Manager/Admin & Root: Thấy hết tất cả các phase và full quyền
   // - PIC/Sub được gắn vào phase nào thì thấy và toàn quyền ở phase đó (can_edit_tasks = true)
-  // - Staff & Leader không phải Root chỉ thấy những phase mà mình được gắn
+  // - Leader reads every phase returned by the server, without gaining edit rights.
+  // - Staff không phải Root chỉ thấy những phase mà mình được gắn
   const phases: Phase[] = useMemo(() => {
     const rawPhases = currentEntity?.phases || [];
-    const visiblePhases = isFullAccess
+    const visiblePhases = isFullAccess || isLeader
       ? rawPhases
       : rawPhases.filter(p => actorId && (p.members || []).some(m => String(m.id) === actorId));
 
@@ -238,7 +230,7 @@ export function useWorkflowManagement() {
       const isMemberOfPhase = Boolean(actorId && (p.members || []).some(m => String(m.id) === actorId));
       const canEditPhaseTasks = isFullAccess || isMemberOfPhase || p.can_edit_tasks;
       const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
-      const progress = canEditPhaseTasks ? taskProgress(rows).percent : null;
+      const progress = taskProgress(rows).percent;
       const score = gateScore(p.gate_criteria || []);
       return {
         ...p,
@@ -250,7 +242,7 @@ export function useWorkflowManagement() {
         displayStatus: p.status === 'completed' ? 'completed' : ['in_progress','in_review'].includes(p.status) ? 'active' : 'locked'
       };
     });
-  }, [currentEntity?.phases, allTasks, isFullAccess, actorId]);
+  }, [currentEntity?.phases, allTasks, isFullAccess, isLeader, actorId]);
 
   const requestedPhaseIndex = phases.findIndex(p => p.id === activePhaseId);
   const activePhaseIndex = requestedPhaseIndex >= 0 ? requestedPhaseIndex : Math.max(0, phases.findIndex(p => p.status === 'in_progress' || p.status === 'in_review'));

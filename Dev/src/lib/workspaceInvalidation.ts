@@ -2,6 +2,7 @@ type Change = {
   table?: string;
   eventType?: string;
   new?: Record<string, any>;
+  old?: Record<string, any>;
 };
 type Actor = { id?: string | number; name?: string } | null | undefined;
 
@@ -11,6 +12,13 @@ function mentionsActor(ids: unknown, actor: Actor): boolean {
 
 /** Comment inserts only change task/workflow visibility for the mentioned actor. */
 export function workspaceChangeRelevant(resource: 'tasks' | 'workflow', change: Change, actor: Actor): boolean {
+  if (change.table === 'users') {
+    if (change.eventType !== 'UPDATE' || !change.old || !change.new) return true;
+    const scopeFields = ['department_id', 'role', 'employment_level', 'is_active', 'auth_id'];
+    // Missing old values (non-FULL replica identity) require a conservative reload.
+    if (scopeFields.some(field => !Object.hasOwn(change.old!, field) || !Object.hasOwn(change.new!, field))) return true;
+    return scopeFields.some(field => change.old![field] !== change.new![field]);
+  }
   if (change.table === 'comments' && change.eventType === 'INSERT') {
     return mentionsActor(change.new?.mentions, actor);
   }
