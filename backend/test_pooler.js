@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: require('node:path').join(__dirname, '.env'), quiet: true });
 
 const connectionString = require('./devDbGuard')(process.env.DATABASE_URL);
 if (!connectionString) {
@@ -9,7 +9,7 @@ if (!connectionString) {
 async function migrate() {
   const client = new Client({
     connectionString,
-    ssl: { rejectUnauthorized: false }
+    ssl: false
   });
 
   try {

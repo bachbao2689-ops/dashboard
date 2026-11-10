@@ -17,7 +17,16 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useWorkspaceDirectory } from '../../hooks/useWorkspaceData';
 import { Avatar } from './Avatar';
-import {previewProfile,reconcileAccountPreview,resolvePreviewAccount,type DirectoryPerson,type PreviewRank} from '../../lib/accountPreview';
+import { previewProfile, reconcileAccountPreview, resolvePreviewAccount, type DirectoryPerson, type PreviewRank } from '../../lib/accountPreview';
+import { userCache } from '../../lib/userCache';
+import { isGlobalManager, isAdmin, isDepartmentLeader } from '../../lib/roleScope';
+
+const getRankLabel = (p: any): string => {
+  if (isAdmin(p)) return 'Admin';
+  if (isGlobalManager(p)) return 'Manager';
+  if (isDepartmentLeader(p)) return 'Leader';
+  return 'Staff';
+};
 
 interface DevFloatingToolsProps {
   onTriggerUpdate: () => void;
@@ -183,39 +192,50 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     const next = reconcileAccountPreview(currentProfile, originalProfile, allUsers, departments);
     if (next !== currentProfile) {
       useAuthStore.setState({profile: next});
-      syncReportDepartment(next.department_id);
+      syncDepartmentScope(next);
     }
   }, [directory.data, directory.loading, directory.error, currentProfile, originalProfile]);
 
-  const syncReportDepartment = (departmentId: string | null) => {
-    if (typeof window === 'undefined' || !window.location.pathname.includes('/reports')) return;
-    const url = new URL(window.location.href);
-    if (departmentId) url.searchParams.set('dept', departmentId);
-    else url.searchParams.delete('dept');
-    window.history.replaceState({}, '', url.toString());
+  const syncDepartmentScope = (targetProfile: any) => {
+    if (typeof window === 'undefined') return;
+    const deptId = targetProfile?.department_id ? String(targetProfile.department_id) : '';
+    const isMgr = isGlobalManager(targetProfile) || isAdmin(targetProfile);
+    if (!isMgr && deptId && targetProfile?.id) {
+      userCache.set(targetProfile.id, 'projects.departmentFilter.v2', '');
+      userCache.set(targetProfile.id, 'tasks.departmentFilter.v2', '');
+      userCache.set(targetProfile.id, 'projects.departmentFilter', deptId);
+      userCache.set(targetProfile.id, 'tasks.departmentFilter', deptId);
+      userCache.set(targetProfile.id, 'reports.departmentFilter', deptId);
+    } else if (isMgr && targetProfile?.id) {
+      userCache.set(targetProfile.id, 'projects.departmentFilter.v2', '');
+      userCache.set(targetProfile.id, 'tasks.departmentFilter.v2', '');
+      userCache.set(targetProfile.id, 'projects.departmentFilter', '');
+      userCache.set(targetProfile.id, 'tasks.departmentFilter', '');
+      userCache.set(targetProfile.id, 'reports.departmentFilter', '');
+    }
+    if (window.location.pathname.includes('/reports')) {
+      const url = new URL(window.location.href);
+      if (deptId) url.searchParams.set('dept', deptId);
+      else url.searchParams.delete('dept');
+      window.history.replaceState({}, '', url.toString());
+    }
+    window.dispatchEvent(new Event('projects:changed'));
+    window.dispatchEvent(new Event('campaigns:changed'));
+    window.dispatchEvent(new Event('tasks:changed'));
   };
 
   const resetOriginal = () => {
     if (originalProfile) {
       useAuthStore.setState({ profile: { ...originalProfile } });
-      if (typeof window !== 'undefined' && window.location.pathname.includes('/reports')) {
-        const url = new URL(window.location.href);
-        if (originalProfile.department_id) {
-          url.searchParams.set('dept', String(originalProfile.department_id));
-        } else {
-          url.searchParams.delete('dept');
-        }
-        window.history.replaceState({}, '', url.toString());
-      }
+      syncDepartmentScope(originalProfile);
     }
   };
-
   const switchToStaff = (user: DirectoryPerson) => {
     if (user.is_active === false) return;
     const next = Number(user.id) === originalProfile?.id
       ? originalProfile : previewProfile(user, departments);
     useAuthStore.setState({profile: next});
-    syncReportDepartment(next.department_id);
+    syncDepartmentScope(next);
   };
 
   const filteredStaffUsers = useMemo(() => {
@@ -296,13 +316,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           />
           {/* Mini role indicator badge */}
           <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500 text-white shadow-sm uppercase tracking-wider">
-            {currentProfile?.role === 'admin'
-              ? 'ADM'
-              : currentProfile?.role === 'manager'
-              ? 'MGR'
-              : currentProfile?.role === 'leader'
-              ? 'LDR'
-              : 'STF'}
+            {getRankLabel(currentProfile).slice(0, 3).toUpperCase()}
           </span>
         </button>
       </div>
@@ -349,7 +363,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 {currentProfile?.name || 'Dev User'}
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300">
-                {currentProfile?.role} · {currentProfile?.employment_level || 'N/A'}
+                {getRankLabel(currentProfile)} · {currentProfile?.department_name || 'Toàn công ty'}
               </span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 grid grid-flow-col auto-cols-max items-center gap-1">
@@ -397,7 +411,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                     <span>Đang giả lập xem tầm view của:</span>
                   </div>
                   <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
-                    {currentProfile?.name} ({currentProfile?.role} · {currentProfile?.department_name || 'Không rõ phòng'})
+                    {currentProfile?.name} ({getRankLabel(currentProfile)} · {currentProfile?.department_name || 'Toàn công ty'})
                   </p>
                   <button
                     type="button"

@@ -1,12 +1,14 @@
 import {ActionButton} from '../components/common/ActionButton';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import {useSearchParams} from 'react-router-dom';
+import {memberPermissionId} from '../services/memberAccounts';
 import { useMembers } from '../hooks/useMembers';
 import type { Member } from '../hooks/useMembers';
 import { useAuthStore } from '../store/authStore';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import { InviteMemberModal } from '../components/features/members/InviteMemberModal';
 import { useTranslation } from '../i18n/translations';
-import {canViewPersonInTeam,isGlobalManager,isAdmin} from '../lib/roleScope';
+import {isGlobalManager,isAdmin} from '../lib/roleScope';
 import { Plus, User, ChevronDown, ChevronRight, Trash2, RotateCcw, Shield } from 'lucide-react';
 import { StatusFilterDropdown } from '../components/common/filters';
 import { displayDate } from '../lib/workflowHub';
@@ -19,7 +21,7 @@ export function MemberManagement() {
     initialWidths: initialMemberColWidths,
     minWidth: 80,
   });
-  const { members, departments, loading, addMember, setMemberRemoved } = useMembers();
+  const { members, departments, loading, addMember, updateMemberAccess, setMemberRemoved } = useMembers();
   const profile = useAuthStore(state => state.profile);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,17 +33,25 @@ export function MemberManagement() {
   const [savingMember, setSavingMember] = useState(false);
   const canManageAll = isGlobalManager(profile);
   const canDeleteMember = isAdmin(profile);
+  const [searchParams,setSearchParams]=useSearchParams();
+  const originalProfile=useAuthStore(state=>state.originalProfile);
+  const canEditAccess=canManageAll && (!originalProfile || originalProfile.id===profile?.id);
+  const permissionId=memberPermissionId(searchParams.get('permissions'));
+  const permissionMember=canEditAccess ? members.find(member=>member.id===permissionId && member.id!==profile?.id && (member.role!=='admin' || isAdmin(profile))) : undefined;
+  const closePermissions=useCallback(()=>setSearchParams(current=>{const next=new URLSearchParams(current);next.delete('permissions');return next;},{replace:true}),[setSearchParams]);
+  const closeInvite=useCallback(()=>setIsInviteModalOpen(false),[]);
+  const openPermissions=(id:number)=>setSearchParams(current=>{const next=new URLSearchParams(current);next.set('permissions',String(id));return next;});
+
 
   const filteredMembers = useMemo(() => {
     return members.filter(member => {
-      if (!canViewPersonInTeam(profile, member)) return false;
       const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             member.email?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter ? member.role === roleFilter : true;
       const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [members, profile, searchTerm, roleFilter, statusFilter]);
+  }, [members, searchTerm, roleFilter, statusFilter]);
 
   const memberGroups = useMemo(() => {
     const isThaiDang = (m: any) => {
@@ -176,6 +186,7 @@ export function MemberManagement() {
         </div>
       </div>
 
+      {searchParams.has('permissions') && !loading && !permissionMember && <p role="alert" className="mb-4 rounded-[8px] border border-gray-200 p-3 text-sm text-gray-700 dark:border-slate-700 dark:text-gray-300">Không tìm thấy tài khoản hoặc bạn không có quyền phân quyền tài khoản này. <button type="button" onClick={closePermissions} className="font-semibold text-primary dark:text-blue-300">Đóng</button></p>}
       <div className="glass-panel rounded-[8px] border border-white/20 bg-white/50 dark:bg-black/20 backdrop-blur-md overflow-hidden">
         <div className="overflow-x-auto">
           <table ref={memberTableRef} className="w-full table-fixed text-left border-collapse">
@@ -252,11 +263,9 @@ export function MemberManagement() {
                     <td className="px-6 py-4 text-gray-900 dark:text-white overflow-hidden"><span className="truncate block">{member.job_title || '—'}</span></td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 overflow-hidden"><span className="truncate block">{member.employment_level || '—'}</span></td>
                     <td className="px-6 py-4 overflow-hidden">
-                      <div className="truncate">
-                        <span className={`px-3 py-1 rounded-[6px] text-xs font-medium truncate inline-block ${getRoleColor(member.role)}`}>
-                          {member.role?.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
+                      {canEditAccess && member.id!==profile?.id && (member.role!=='admin' || isAdmin(profile)) ? <button type="button" onClick={()=>openPermissions(member.id)} aria-label={`Phân quyền ${member.name}`} title="Phân quyền tài khoản" className={`inline-grid grid-flow-col items-center gap-1 max-w-full px-2 py-1 rounded-[6px] text-xs font-medium ${getRoleColor(member.role)}`}>
+                        <Shield size={12} /><span className="truncate">{member.role?.replace('_',' ').toUpperCase()}</span>
+                      </button> : <span className={`px-3 py-1 rounded-[6px] text-xs font-medium truncate inline-block ${getRoleColor(member.role)}`}>{member.role?.replace('_',' ').toUpperCase()}</span>}
                     </td>
                     <td className="px-6 py-4 overflow-hidden">
                       <div className="truncate">
@@ -306,11 +315,26 @@ export function MemberManagement() {
 
       <InviteMemberModal
         isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
-        onInvite={addMember}
+        onClose={closeInvite}
+        onInvite={async input=>{
+          const id=await addMember(input);
+          if (!id) return false;
+          setIsInviteModalOpen(false);
+          openPermissions(id);
+          return true;
+        }}
         departments={departments}
         canAddAdmin={profile?.role === 'admin'}
       />
+      {permissionMember && <InviteMemberModal
+        key={`permissions-${permissionMember.id}`}
+        isOpen={true}
+        member={permissionMember}
+        onClose={closePermissions}
+        onSaveAccess={access=>updateMemberAccess(permissionMember,access)}
+        departments={departments}
+        canAddAdmin={isAdmin(profile)}
+      />}
       {memberToRemove && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => !savingMember && setMemberToRemove(null)}>
         <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-[8px] bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
           <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">{t('members.removeTitle')}</h2>

@@ -11,9 +11,10 @@ import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type Workfl
 import {supabase} from '../services/supabase';
 import {completeTrackedTask} from '../services/workspaceTasks';
 import {phaseLinkableTasks,phaseLinkTarget,taskTarget} from '../lib/taskTracking';
-import {isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader} from '../lib/roleScope';
+import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
+import {trackLeaderVisible,workAssignmentPeople} from '../lib/workAccessScope';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
   displayStatus: 'completed' | 'active' | 'locked';
@@ -55,29 +56,6 @@ export function useWorkflowManagement() {
   const entities = useMemo(() => {
     const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
 
-    // Lấy danh sách ID thành viên phòng ban và các Leader đồng cấp nếu là Leader
-    const deptMemberIds = new Set<string>();
-    const allLeaderIds = new Set<string>();
-    if (isLeader) {
-      if (actorId) {
-        deptMemberIds.add(actorId);
-        allLeaderIds.add(actorId);
-      }
-      const targetDeptId = resolvedDeptId;
-      const targetDeptName = hub.profile?.department_name?.trim().toLowerCase();
-      (directory.data?.users || []).forEach(u => {
-        const uId = String(u.id);
-        if (isPersonLeader(u as any)) {
-          allLeaderIds.add(uId);
-        }
-        const uDept = String(u.department_id || '');
-        const uDeptName = (u.department?.name || '').trim().toLowerCase();
-        if ((targetDeptId && uDept === String(targetDeptId)) || (targetDeptName && uDeptName === targetDeptName)) {
-          deptMemberIds.add(uId);
-        }
-      });
-    }
-
     const mapped = hub.tracks
       .filter(track => {
         if (isManager) return true;
@@ -101,35 +79,7 @@ export function useWorkflowManagement() {
           return isParticipant || hasMyTask;
         }
 
-        if (isLeader) {
-          // Leader: Thấy tất cả track thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có Leader đồng cấp tham gia
-          const inDept = Boolean(resolvedDeptId && track.department_id && String(track.department_id) === String(resolvedDeptId));
-          const hasDeptParticipant = (
-            track.pics.some(p => deptMemberIds.has(String(p.id))) ||
-            (track.sub_pics || []).some(p => deptMemberIds.has(String(p.id))) ||
-            (track.creator && deptMemberIds.has(String(track.creator.id))) ||
-            track.phases.some(ph => ph.members.some(m => deptMemberIds.has(String(m.id))))
-          );
-          const hasLeaderParticipant = (
-            track.pics.some(p => allLeaderIds.has(String(p.id))) ||
-            (track.sub_pics || []).some(p => allLeaderIds.has(String(p.id))) ||
-            (track.creator && allLeaderIds.has(String(track.creator.id))) ||
-            track.phases.some(ph => ph.members.some(m => allLeaderIds.has(String(m.id))))
-          );
-          const hasDeptTask = trackTasks.some(t => {
-            if (t.assignee_id && deptMemberIds.has(String(t.assignee_id))) return true;
-            if (t.created_by && deptMemberIds.has(String(t.created_by))) return true;
-            if (resolvedDeptId && String(t.department_id || t.project?.department_id || t.campaign?.department_id) === String(resolvedDeptId)) return true;
-            return false;
-          });
-          const hasLeaderTask = trackTasks.some(t => {
-            if (t.assignee_id && allLeaderIds.has(String(t.assignee_id))) return true;
-            if (t.created_by && allLeaderIds.has(String(t.created_by))) return true;
-            return false;
-          });
-
-          return inDept || hasDeptParticipant || hasDeptTask || hasLeaderParticipant || hasLeaderTask || isParticipant;
-        }
+        if (isLeader) return trackLeaderVisible(hub.profile,track);
 
         return true;
       })
@@ -371,7 +321,7 @@ export function useWorkflowManagement() {
   const [phaseReason, setPhaseReason] = useState('');
   const editingPhase = phases.find(p => p.id === editingPhaseId);
   const taskPeople = workflowTaskPeople(currentEntity, activePhase, hub.profile);
-  const personOptions = hub.people.map(p => ({value:String(p.id),label:p.name}));
+  const personOptions = workAssignmentPeople(hub.profile,hub.people).map(p => ({value:String(p.id),label:p.name}));
   const taskOptions = taskPeople.map(p => ({value:String(p.id),label:p.name}));
   useEffect(() => { setIsDetailOpen(false); setActivePhaseId(params.get('phase') || ''); setShowAddTask(false); setShowAddPhaseModal(false); setSelectedTask(null); }, [currentEntity?.id, hub.profile?.id]);
   useEffect(() => { setActivePhaseId(params.get('phase') || ''); }, [params.get('phase')]);

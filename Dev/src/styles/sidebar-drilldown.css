@@ -1354,3 +1354,238 @@ html:not(.dark) .sb-pinned-pill-item:hover {
   background: rgba(51, 65, 85, 0.8) !important;
 }
 
+/* ========================================================
+   Sliding Pill Indicator (Active & Hover) for Sidebar Left
+   Follows Design System & UI Specification (09/11/2026)
+   ======================================================== */
+
+.has-sliding-pill {
+  position: relative;
+}
+
+/* Base Active Sliding Pill */
+.sb-sliding-active-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 9px;
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.22s ease;
+  will-change: transform, width, height, opacity;
+}
+
+.sb-sliding-active-pill.is-instant {
+  transition: none !important;
+}
+
+.sb-sliding-active-pill.is-collapsed-pill {
+  border-radius: 8px;
+}
+
+/* Light Mode Active Pill: Blue Liquid Glass */
+html:not(.dark) .sb-sliding-active-pill {
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.96), rgba(191, 219, 254, 0.75)) !important;
+  border: 1px solid rgba(147, 197, 253, 0.85) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92),
+              0 3px 10px rgba(30, 90, 170, 0.18) !important;
+}
+
+/* Dark Mode Active Pill: Emerald Green Liquid Glass */
+.dark .sb-sliding-active-pill {
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.24), rgba(78, 182, 72, 0.10)) !important;
+  border: 1px solid rgba(78, 182, 72, 0.48) !important;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.16),
+              0 3px 12px rgba(0, 0, 0, 0.28) !important;
+}
+
+.dark .sb-sliding-active-pill::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 4px;
+  background: #4eb648;
+  box-shadow: 0 0 8px rgba(78, 182, 72, 0.55);
+}
+
+.dark .sb-sliding-active-pill.is-collapsed-pill::before {
+  top: 18%;
+  bottom: 18%;
+}
+
+/* Base Hover Sliding Pill */
+.sb-sliding-hover-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 9px;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.20s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.20s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.18s ease;
+  will-change: transform, width, height, opacity;
+}
+
+.sb-sliding-hover-pill.is-instant {
+  transition: none !important;
+}
+
+.sb-sliding-hover-pill.is-collapsed-pill {
+  border-radius: 8px;
+}
+
+html:not(.dark) .sb-sliding-hover-pill {
+  background: rgba(239, 246, 255, 0.72) !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+}
+
+.dark .sb-sliding-hover-pill {
+  background: rgba(51, 65, 85, 0.42) !important;
+  border: 1px solid rgba(71, 85, 105, 0.32) !important;
+}
+
+/* Suppression of static active background & border when inside .has-sliding-pill */
+.has-sliding-pill .sidebar-link-active {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  position: relative;
+  z-index: 1;
+}
+
+.has-sliding-pill .sidebar-link-active::before {
+  display: none !important;
+}
+
+.has-sliding-pill .sidebar-link-active::after {
+  display: none !important;
+}
+
+.has-sliding-pill .sidebar-link-idle {
+  position: relative;
+  z-index: 1;
+}
+
+.has-sliding-pill .sidebar-link-idle:hover {
+  background: transparent !important;
+}
+
+/* Smooth text & icon color transition on links */
+.app-sidebar .sidebar-link,
+.app-sidebar .sb-root-row {
+  transition: color 0.22s ease, font-weight 0.22s ease !important;
+}
+
+.app-sidebar .sidebar-link svg,
+.app-sidebar .sb-root-row svg {
+  transition: color 0.22s ease !important;
+}
+
+/* ========================================================
+   7. Universal Continuous Sliding Button Motion & Liquid Glass Toolbar
+   ======================================================== */
+.sliding-active-pill,
+.sliding-hover-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  will-change: transform, width, height, opacity;
+}
+
+.sliding-active-pill {
+  z-index: 0;
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.30s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.30s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.22s ease;
+}
+
+.sliding-hover-pill {
+  z-index: 0;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.20s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.20s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.18s ease;
+}
+
+.sliding-active-pill.is-instant,
+.sliding-hover-pill.is-instant {
+  transition: none !important;
+}
+
+html:not(.dark) .sliding-active-pill {
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.96), rgba(191, 219, 254, 0.75)) !important;
+  border: 1px solid rgba(147, 197, 253, 0.85) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92),
+              0 3px 10px rgba(30, 90, 170, 0.18) !important;
+}
+
+.dark .sliding-active-pill {
+  background: linear-gradient(105deg, rgba(78, 182, 72, 0.24), rgba(78, 182, 72, 0.10)) !important;
+  border: 1px solid rgba(78, 182, 72, 0.48) !important;
+  box-shadow: inset 0 1px 0 rgba(173, 241, 166, 0.16),
+              0 3px 12px rgba(0, 0, 0, 0.28) !important;
+}
+
+html:not(.dark) .sliding-hover-pill {
+  background: rgba(239, 246, 255, 0.72) !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+}
+
+.dark .sliding-hover-pill {
+  background: rgba(51, 65, 85, 0.42) !important;
+  border: 1px solid rgba(71, 85, 105, 0.32) !important;
+}
+
+/* Ensure button z-index is above sliding pills */
+.has-sliding-pill > button,
+.has-sliding-pill > a,
+.has-sliding-pill > [role="button"],
+.has-sliding-pill > .mobile-filter-control > button,
+.has-sliding-pill > div > button {
+  position: relative;
+  z-index: 1;
+}
+
+/* Suppress static hover backgrounds inside .has-sliding-pill so .sliding-hover-pill glides visibly */
+.has-sliding-pill button:not([class*="bg-gradient"]):not([class*="bg-primary"]):not([class*="bg-slate-200"]):not([class*="bg-amber-100"]):not([class*="bg-violet-100"]):hover {
+  background-color: transparent !important;
+}
+
+/* Universal Button Motion standard across Dashboard (smooth cubic-bezier & active feedback) */
+button:not(.is-instant):not([disabled]),
+.btn-motion {
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:not([disabled]):active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sliding-active-pill,
+  .sliding-hover-pill,
+  .sb-sliding-active-pill,
+  .sb-sliding-hover-pill,
+  button {
+    transition: none !important;
+  }
+}
+
+
+

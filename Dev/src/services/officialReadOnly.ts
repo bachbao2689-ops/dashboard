@@ -1,10 +1,13 @@
 import {createClient} from '@supabase/supabase-js';
+import {backendMode} from './supabase';
+import {isLoopbackHost, MAIN_BACKEND_ORIGIN} from '../lib/backendTarget';
 
 const url=import.meta.env.VITE_OFFICIAL_VIEW_URL || '';
 const key=import.meta.env.VITE_OFFICIAL_VIEW_KEY || '';
 
 export const officialReadEnabled=Boolean(
-  url.includes('jxrwphjriuqbpdpwpqcn.supabase.co') &&
+  backendMode === 'main' && !isLoopbackHost(window.location.hostname) &&
+  url === MAIN_BACKEND_ORIGIN &&
   key.startsWith('sb_publishable_') &&
   !/^(dashboard-nu-tan-30\.vercel\.app)$/.test(window.location.hostname)
 );

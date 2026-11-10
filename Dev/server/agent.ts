@@ -2,6 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { experimental_transcribe as transcribeAudio, stepCountIs, tool, ToolLoopAgent, type LanguageModel, type TranscriptionModel } from 'ai';
 import { z } from 'zod';
+import {resolveBackendMode, validateBackendTarget} from '../src/lib/backendTarget.ts';
 
 type Actor = {
   id: number;
@@ -824,6 +825,11 @@ export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   const config = supabaseConfig();
   if (!config.url || !config.key) return json({ code: 'SUPABASE_NOT_CONFIGURED', error: 'Agent chưa có cấu hình Supabase trên server.' }, 503);
+  try {
+    validateBackendTarget(new URL(request.url).hostname, config.url, resolveBackendMode(process.env));
+  } catch {
+    return json({ code: 'BACKEND_TARGET_BLOCKED', error: 'Dev/test chỉ dùng Supabase local; cloud chỉ dành cho Production nhánh main.' }, 503);
+  }
   const { origin } = new URL(request.url);
   const requestOrigin = request.headers.get('origin');
   if (requestOrigin) {

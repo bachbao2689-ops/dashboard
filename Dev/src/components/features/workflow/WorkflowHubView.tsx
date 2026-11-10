@@ -1356,20 +1356,20 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (userIsRestricted) return;
+                  if (!availableDepartments.length) return;
                   setActiveHubBoxPopup(null);
                   setActiveInfoBox(null);
                   setActivePopup((prev) => (prev === 'dept' ? null : 'dept'));
                 }}
-                disabled={userIsRestricted}
+                disabled={!availableDepartments.length}
                 title={
-                  userIsRestricted
+                  !availableDepartments.length
                     ? (hub.profile?.department_name ? `Cố định: ${hub.profile.department_name}` : 'Cố định theo phòng ban')
                     : (isEn ? 'Filter by department' : 'Lọc theo phòng ban')
                 }
                 className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors ${
-                  userIsRestricted
-                    ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 opacity-90 cursor-default'
+                  !availableDepartments.length
+                    ? 'opacity-50 cursor-default'
                     : activePopup === 'dept' || (hubDept && hubDept !== 'all')
                     ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 cursor-pointer'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50 cursor-pointer'

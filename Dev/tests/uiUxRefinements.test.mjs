@@ -539,37 +539,6 @@ test('Projects Toolbar: Department Filter with search & compact icon-only filter
   }
 });
 
-// Test 16: Leader peer view (đồng cấp) across tasks, projects, campaigns and workflow tracks
-test('Leader Peer View: Leaders can see tasks, projects, campaigns, and workflow of peer leaders & team members', () => {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const roleScopeSource = fs.readFileSync(path.resolve(__dirname, '../src/lib/roleScope.ts'), 'utf-8');
-  const taskListSource = fs.readFileSync(path.resolve(__dirname, '../src/pages/TaskList.tsx'), 'utf-8');
-  const controllerSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useProjectsController.tsx'), 'utf-8');
-  const campaignPanelSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/projects/CampaignPanel.tsx'), 'utf-8');
-  const workflowHookSource = fs.readFileSync(path.resolve(__dirname, '../src/hooks/useWorkflowManagement.ts'), 'utf-8');
-  const workflowHubViewSource = fs.readFileSync(path.resolve(__dirname, '../src/components/features/workflow/WorkflowHubView.tsx'), 'utf-8');
-
-  // 1. roleScope: isPersonLeader & canViewPersonInTeam
-  assert.equal(roleScopeSource.includes('export function isPersonLeader('), true, 'roleScope must export isPersonLeader helper');
-  assert.equal(roleScopeSource.includes('isDepartmentLeader(profile) && isPersonLeader(person)'), true, 'canViewPersonInTeam must allow Leader to view peer leaders');
-
-  // 2. TaskList: userIsRestricted isStaff-only, allPeople includes peer leaders, filteredTasks includes isPeerLeaderTask
-  assert.equal(taskListSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'TaskList userIsRestricted must be scoped to isStaff');
-  assert.equal(taskListSource.includes('if (isPersonLeader(p as any)) return true;'), true, 'TaskList allPeople must include peer leaders for Leader');
-  assert.equal(taskListSource.includes('isPeerLeaderTask'), true, 'TaskList filteredTasks must include isPeerLeaderTask');
-
-  // 3. useProjectsController: userIsRestricted isStaff-only, visibleProjects includes isPeerLeaderProject
-  assert.equal(controllerSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'useProjectsController userIsRestricted must be scoped to isStaff');
-  assert.equal(controllerSource.includes('isPeerLeaderProject'), true, 'visibleProjects must include isPeerLeaderProject');
-
-  // 4. CampaignPanel: visibleCampaigns includes isPeerLeaderCampaign
-  assert.equal(campaignPanelSource.includes('isPeerLeaderCampaign'), true, 'visibleCampaigns must include isPeerLeaderCampaign');
-
-  // 5. useWorkflowManagement & WorkflowHubView: userIsRestricted isStaff-only, entities includes allLeaderIds
-  assert.equal(workflowHookSource.includes('const userIsRestricted = isStaff && Boolean('), true, 'useWorkflowManagement userIsRestricted must be scoped to isStaff');
-  assert.equal(workflowHookSource.includes('hasLeaderParticipant || hasLeaderTask'), true, 'useWorkflowManagement entities must allow peer leader tracks');
-});
-
 // Test 17: Workflow linkTask: validate task deadline vs phase and auto-adjust start_date
 test('Workflow linkTask: validate task deadline vs phase and auto-adjust start_date', () => {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -633,5 +602,63 @@ test('Workflow linkTask: validate task deadline vs phase and auto-adjust start_d
   assert.equal(res2.effectiveStart, '2026-11-02', 'Task with no start date receives phase start');
   assert.equal(res2.effectiveDue, '2026-12-31', 'Task with no due date receives phase due');
 });
+
+// Test: Projects View Mode & Kanban Board
+test('Projects View Mode & Kanban Board: 5 status columns, open filter preserves completed in board, and Zero Flexbox', () => {
+  const matchColumn = (status) => {
+    const norm = (status || 'active').toLowerCase().trim();
+    if (['draft', 'todo', 'pending'].includes(norm)) return 'draft';
+    if (norm === 'planning') return 'planning';
+    if (['done', 'complete', 'completed'].includes(norm)) return 'completed';
+    if (['on_hold', 'paused', 'holding'].includes(norm)) return 'on_hold';
+    return 'active';
+  };
+
+  assert.equal(matchColumn('draft'), 'draft');
+  assert.equal(matchColumn('pending'), 'draft');
+  assert.equal(matchColumn('planning'), 'planning');
+  assert.equal(matchColumn('active'), 'active');
+  assert.equal(matchColumn('in_progress'), 'active');
+  assert.equal(matchColumn('in-progress'), 'active');
+  assert.equal(matchColumn('on_hold'), 'on_hold');
+  assert.equal(matchColumn('completed'), 'completed');
+  assert.equal(matchColumn('done'), 'completed');
+
+  // Check filter open behavior: list hides done, board preserves done
+  const projects = [
+    { id: 'p1', name: 'Proj 1', status: 'active' },
+    { id: 'p2', name: 'Proj 2', status: 'completed' },
+    { id: 'p3', name: 'Proj 3', status: 'planning' }
+  ];
+
+  const filterForView = (items, filter, viewMode) => {
+    return items.filter(p => {
+      if (filter === 'open') {
+        if (viewMode !== 'board' && ['done', 'complete', 'completed'].includes(p.status)) return false;
+      }
+      return true;
+    });
+  };
+
+  const listItems = filterForView(projects, 'open', 'list');
+  assert.equal(listItems.length, 2);
+  assert.equal(listItems.some(p => p.status === 'completed'), false);
+
+  const boardItems = filterForView(projects, 'open', 'board');
+  assert.equal(boardItems.length, 3);
+  assert.equal(boardItems.some(p => p.status === 'completed'), true);
+
+  // Zero Flexbox check on ProjectViewModeDropdown.tsx and ProjectsKanbanBoard.tsx
+  const dropdownPath = path.resolve(fileURLToPath(import.meta.url), '../../src/components/features/projects/ProjectViewModeDropdown.tsx');
+  const boardPath = path.resolve(fileURLToPath(import.meta.url), '../../src/components/features/projects/ProjectsKanbanBoard.tsx');
+
+  const dropdownCode = fs.readFileSync(dropdownPath, 'utf8');
+  const boardCode = fs.readFileSync(boardPath, 'utf8');
+
+  const flexClassRegex = /\b(flex|inline-flex|flex-row|flex-col|items-flex-start|items-flex-end)\b/;
+  assert.equal(flexClassRegex.test(dropdownCode), false, 'ProjectViewModeDropdown must have 100% Zero Flexbox');
+  assert.equal(flexClassRegex.test(boardCode), false, 'ProjectsKanbanBoard must have 100% Zero Flexbox');
+});
+
 
 

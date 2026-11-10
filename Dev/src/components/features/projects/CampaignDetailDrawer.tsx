@@ -160,12 +160,12 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
               entityName={selectedCampaign.name}
             >
               {Boolean(departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name) && (
-                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs truncate max-w-full">
                   {lang === 'en' ? 'Department' : 'Phòng ban'}: {departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name}
                 </span>
               )}
             </EntityActionBadges>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
               <div>
                 <p className="text-[10px] uppercase text-gray-400">{t('common.owner')}</p>
                 <div className="mt-1 flex flex-wrap gap-2">
@@ -185,17 +185,11 @@ export function CampaignDetailDrawer({state}:{state:ReturnType<typeof useProject
                   <span className="font-bold text-red-600 dark:text-red-400">{dateValue(selectedCampaign.end_date || '')}</span>
                 </div>
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p>
                 <div className="mt-1 font-semibold flex items-center gap-2">
                   <Avatar name={(selectedCampaign as any)?.creator?.name || '---'} src={(selectedCampaign as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" />
                   <span className="line-clamp-1">{(selectedCampaign as any)?.creator?.name || '---'}</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase text-gray-400">{lang === 'en' ? 'Department' : 'Phòng ban'}</p>
-                <div className="mt-1 font-semibold text-xs text-gray-700 dark:text-gray-300 line-clamp-1">
-                  {departments.find(d => String(d.id) === String(selectedCampaign.department_id))?.name || (lang === 'en' ? 'Unassigned' : 'Chưa phân')}
                 </div>
               </div>
             </div>

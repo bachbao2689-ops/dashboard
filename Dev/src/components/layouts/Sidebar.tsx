@@ -150,7 +150,7 @@ export const ButtonDrilldownDrawer: React.FC<{
       observer.observe(el);
       return () => observer.disconnect();
     }
-  }, [currentNode, isOpen, stack.length]);
+  }, [currentEntry.nodeId, isOpen, stack.length]);
 
   // Focus restoration when drilling forward or backward
   useEffect(() => {
@@ -1330,6 +1330,334 @@ export const Sidebar: React.FC = () => {
     return () => clearTimeout(timer);
   }, [activeGroupId, openGroupIds, openDropdownItemId, updateSpineIndicator]);
 
+  // ========================================================
+  // SLIDING PILL INDICATOR (ACTIVE & HOVER)
+  // Continuous fluid motion across navigation items (09/11/2026)
+  // ========================================================
+  const expandedNavSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const [expandedActivePill, setExpandedActivePill] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    visible: boolean;
+  }>({ x: 0, y: 0, width: 0, height: 0, visible: false });
+  const [isExpandedInstant, setIsExpandedInstant] = useState(true);
+  const hasExpandedInitRef = useRef(false);
+
+  const [expandedHoverPill, setExpandedHoverPill] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    visible: boolean;
+  }>({ x: 0, y: 0, width: 0, height: 0, visible: false });
+  const [isExpandedHoverInstant, setIsExpandedHoverInstant] = useState(true);
+  const hadExpandedHoverRef = useRef(false);
+
+  // Collapsed Sidebar sliding pill
+  const collapsedNavSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const [collapsedActivePill, setCollapsedActivePill] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    visible: boolean;
+  }>({ x: 0, y: 0, width: 0, height: 0, visible: false });
+  const [isCollapsedInstant, setIsCollapsedInstant] = useState(true);
+  const hasCollapsedInitRef = useRef(false);
+
+  const [collapsedHoverPill, setCollapsedHoverPill] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    visible: boolean;
+  }>({ x: 0, y: 0, width: 0, height: 0, visible: false });
+  const [isCollapsedHoverInstant, setIsCollapsedHoverInstant] = useState(true);
+  const hadCollapsedHoverRef = useRef(false);
+
+  const updateExpandedPill = useCallback(() => {
+    const container = expandedNavSurfaceRef.current;
+    if (!container) return;
+    const activeEl = container.querySelector<HTMLElement>('.sidebar-link-active');
+    if (!activeEl) {
+      setExpandedActivePill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = activeEl.getBoundingClientRect();
+
+    if (targetRect.width === 0 || targetRect.height === 0) {
+      setExpandedActivePill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const x = Math.round(targetRect.left - containerRect.left);
+    const y = Math.round(targetRect.top - containerRect.top);
+    const width = Math.round(targetRect.width);
+    const height = Math.round(targetRect.height);
+
+    if (!hasExpandedInitRef.current) {
+      hasExpandedInitRef.current = true;
+      setIsExpandedInstant(prev => (prev ? prev : true));
+      setExpandedActivePill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+      requestAnimationFrame(() => {
+        setIsExpandedInstant(prev => (prev ? false : prev));
+      });
+    } else {
+      setIsExpandedInstant(prev => (prev ? false : prev));
+      setExpandedActivePill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+    }
+  }, []);
+
+  const updateCollapsedPill = useCallback(() => {
+    const container = collapsedNavSurfaceRef.current;
+    if (!container) return;
+    const activeEl = container.querySelector<HTMLElement>('.sidebar-link-active');
+    if (!activeEl) {
+      setCollapsedActivePill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = activeEl.getBoundingClientRect();
+
+    if (targetRect.width === 0 || targetRect.height === 0) {
+      setCollapsedActivePill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const x = Math.round(targetRect.left - containerRect.left);
+    const y = Math.round(targetRect.top - containerRect.top);
+    const width = Math.round(targetRect.width);
+    const height = Math.round(targetRect.height);
+
+    if (!hasCollapsedInitRef.current) {
+      hasCollapsedInitRef.current = true;
+      setIsCollapsedInstant(prev => (prev ? prev : true));
+      setCollapsedActivePill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+      requestAnimationFrame(() => {
+        setIsCollapsedInstant(prev => (prev ? false : prev));
+      });
+    } else {
+      setIsCollapsedInstant(prev => (prev ? false : prev));
+      setCollapsedActivePill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+    }
+  }, []);
+
+  const handleExpandedPointerOver = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('.sidebar-link-idle, .sb-root-row:not(.sidebar-link-active)');
+    const container = expandedNavSurfaceRef.current;
+    if (!target || !container || target.classList.contains('sidebar-link-active')) {
+      setExpandedHoverPill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    const x = Math.round(targetRect.left - containerRect.left);
+    const y = Math.round(targetRect.top - containerRect.top);
+    const width = Math.round(targetRect.width);
+    const height = Math.round(targetRect.height);
+
+    if (!hadExpandedHoverRef.current) {
+      setIsExpandedHoverInstant(prev => (prev ? prev : true));
+      hadExpandedHoverRef.current = true;
+      setExpandedHoverPill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+      requestAnimationFrame(() => {
+        setIsExpandedHoverInstant(prev => (prev ? false : prev));
+      });
+    } else {
+      setIsExpandedHoverInstant(prev => (prev ? false : prev));
+      setExpandedHoverPill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+    }
+  }, []);
+
+  const handleExpandedPointerLeave = useCallback(() => {
+    hadExpandedHoverRef.current = false;
+    setIsExpandedHoverInstant(prev => (prev ? prev : true));
+    setExpandedHoverPill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+  }, []);
+
+  const handleCollapsedPointerOver = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('.sidebar-link-idle');
+    const container = collapsedNavSurfaceRef.current;
+    if (!target || !container || target.classList.contains('sidebar-link-active')) {
+      setCollapsedHoverPill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    const x = Math.round(targetRect.left - containerRect.left);
+    const y = Math.round(targetRect.top - containerRect.top);
+    const width = Math.round(targetRect.width);
+    const height = Math.round(targetRect.height);
+
+    if (!hadCollapsedHoverRef.current) {
+      setIsCollapsedHoverInstant(prev => (prev ? prev : true));
+      hadCollapsedHoverRef.current = true;
+      setCollapsedHoverPill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+      requestAnimationFrame(() => {
+        setIsCollapsedHoverInstant(prev => (prev ? false : prev));
+      });
+    } else {
+      setIsCollapsedHoverInstant(prev => (prev ? false : prev));
+      setCollapsedHoverPill(prev =>
+        prev.visible && prev.x === x && prev.y === y && prev.width === width && prev.height === height
+          ? prev
+          : { x, y, width, height, visible: true }
+      );
+    }
+  }, []);
+
+  const handleCollapsedPointerLeave = useCallback(() => {
+    hadCollapsedHoverRef.current = false;
+    setIsCollapsedHoverInstant(prev => (prev ? prev : true));
+    setCollapsedHoverPill(prev => (prev.visible ? { ...prev, visible: false } : prev));
+  }, []);
+
+  useEffect(() => {
+    hasExpandedInitRef.current = false;
+    hasCollapsedInitRef.current = false;
+    setIsExpandedInstant(true);
+    setIsCollapsedInstant(true);
+  }, [isSidebarCollapsed]);
+
+  const openGroupsKey = openGroupIds.join(',');
+  const pinnedNavKey = pinnedNavIds.join(',');
+  const pinnedEntitiesCount = pinnedEntities.length;
+  const pinnedTaskCount = pinnedTaskItems.length;
+
+  // Measure Expanded Active Pill on navigation, route, accordion or pin changes
+  useLayoutEffect(() => {
+    if (isSidebarCollapsed) return;
+
+    updateExpandedPill();
+
+    const animId = requestAnimationFrame(() => {
+      updateExpandedPill();
+    });
+
+    const container = expandedNavSurfaceRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return () => cancelAnimationFrame(animId);
+    }
+
+    let roFrame: number | null = null;
+    const ro = new ResizeObserver(() => {
+      if (roFrame !== null) cancelAnimationFrame(roFrame);
+      roFrame = requestAnimationFrame(() => {
+        updateExpandedPill();
+      });
+    });
+    ro.observe(container);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      if (roFrame !== null) cancelAnimationFrame(roFrame);
+      ro.disconnect();
+    };
+  }, [
+    isSidebarCollapsed,
+    location.pathname,
+    location.search,
+    openGroupsKey,
+    openDropdownItemId,
+    pinnedNavKey,
+    pinnedEntitiesCount,
+    pinnedTaskCount,
+    updateExpandedPill,
+  ]);
+
+  // Handle accordion animation smoothly by tracking RAF for ~360ms
+  useEffect(() => {
+    if (isSidebarCollapsed) return;
+    let start: number | null = null;
+    let frameId: number;
+
+    const animate = (time: number) => {
+      if (start === null) start = time;
+      updateExpandedPill();
+      if (time - start < 360) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [openGroupsKey, isSidebarCollapsed, updateExpandedPill]);
+
+  // Measure Collapsed Active Pill on navigation or pin changes
+  useLayoutEffect(() => {
+    if (!isSidebarCollapsed) return;
+
+    updateCollapsedPill();
+
+    const animId = requestAnimationFrame(() => {
+      updateCollapsedPill();
+    });
+
+    const container = collapsedNavSurfaceRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return () => cancelAnimationFrame(animId);
+    }
+
+    let roFrame: number | null = null;
+    const ro = new ResizeObserver(() => {
+      if (roFrame !== null) cancelAnimationFrame(roFrame);
+      roFrame = requestAnimationFrame(() => {
+        updateCollapsedPill();
+      });
+    });
+    ro.observe(container);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      if (roFrame !== null) cancelAnimationFrame(roFrame);
+      ro.disconnect();
+    };
+  }, [
+    isSidebarCollapsed,
+    location.pathname,
+    location.search,
+    pinnedEntitiesCount,
+    pinnedTaskCount,
+    updateCollapsedPill,
+  ]);
+
   const handleSelectGroup = useCallback(
     (group: SidebarGroupModel) => {
       setOpenGroupIds(prev => {
@@ -1657,7 +1985,41 @@ export const Sidebar: React.FC = () => {
             MIDDLE NAVIGATION: COLLAPSED OR FULL DND
            ========================================== */}
         {isSidebarCollapsed ? (
-          <div className="flex-1 w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col items-center gap-1.5 py-1">
+          <div
+            ref={collapsedNavSurfaceRef}
+            onPointerOver={handleCollapsedPointerOver}
+            onPointerLeave={handleCollapsedPointerLeave}
+            className="min-h-0 w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden grid grid-flow-row justify-items-center content-start gap-1.5 py-1 relative has-sliding-pill"
+          >
+            {/* Collapsed Active Sliding Pill */}
+            <div
+              aria-hidden="true"
+              className={cn(
+                'sb-sliding-active-pill is-collapsed-pill',
+                isCollapsedInstant && 'is-instant'
+              )}
+              style={{
+                transform: `translate3d(${collapsedActivePill.x}px, ${collapsedActivePill.y}px, 0)`,
+                width: `${collapsedActivePill.width}px`,
+                height: `${collapsedActivePill.height}px`,
+                opacity: collapsedActivePill.visible ? 1 : 0,
+              }}
+            />
+
+            {/* Collapsed Hover Sliding Pill */}
+            <div
+              aria-hidden="true"
+              className={cn(
+                'sb-sliding-hover-pill is-collapsed-pill',
+                isCollapsedHoverInstant && 'is-instant'
+              )}
+              style={{
+                transform: `translate3d(${collapsedHoverPill.x}px, ${collapsedHoverPill.y}px, 0)`,
+                width: `${collapsedHoverPill.width}px`,
+                height: `${collapsedHoverPill.height}px`,
+                opacity: collapsedHoverPill.visible ? 1 : 0,
+              }}
+            />
             {/* Pinned Tasks and Entities when Sidebar is Collapsed / Cropped */}
             {(pinnedTaskItems.length > 0 || pinnedEntities.length > 0) && (
               <div className="w-full flex flex-col items-center gap-1.5 pb-1.5 border-b border-gray-200/80 dark:border-slate-800/80 mb-1 shrink-0">
@@ -1768,7 +2130,43 @@ export const Sidebar: React.FC = () => {
             onDragCancel={() => setActiveDrag(null)}
           >
             <div className="flex-1 overflow-y-auto px-3.5 custom-scrollbar">
-              {/* ZONE 1: PINNED (ĐÃ GHIM - Sortable & Drop-to-Pin) */}
+              <div
+                ref={expandedNavSurfaceRef}
+                onPointerOver={handleExpandedPointerOver}
+                onPointerLeave={handleExpandedPointerLeave}
+                className="relative min-h-full has-sliding-pill pb-2"
+              >
+                {/* Expanded Active Sliding Pill */}
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'sb-sliding-active-pill',
+                    isExpandedInstant && 'is-instant'
+                  )}
+                  style={{
+                    transform: `translate3d(${expandedActivePill.x}px, ${expandedActivePill.y}px, 0)`,
+                    width: `${expandedActivePill.width}px`,
+                    height: `${expandedActivePill.height}px`,
+                    opacity: expandedActivePill.visible ? 1 : 0,
+                  }}
+                />
+
+                {/* Expanded Hover Sliding Pill */}
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'sb-sliding-hover-pill',
+                    isExpandedHoverInstant && 'is-instant'
+                  )}
+                  style={{
+                    transform: `translate3d(${expandedHoverPill.x}px, ${expandedHoverPill.y}px, 0)`,
+                    width: `${expandedHoverPill.width}px`,
+                    height: `${expandedHoverPill.height}px`,
+                    opacity: expandedHoverPill.visible ? 1 : 0,
+                  }}
+                />
+
+                {/* ZONE 1: PINNED (ĐÃ GHIM - Sortable & Drop-to-Pin) */}
               {(totalPinnedCount > 0 || activeDrag?.source === 'workspace-nav') && (
                 <div className="mb-3">
                   <div className="sb-section-divider">
@@ -1919,6 +2317,7 @@ export const Sidebar: React.FC = () => {
                     onItemCheck={handleItemCheck}
                   />
                 ))}
+              </div>
               </div>
             </div>
 

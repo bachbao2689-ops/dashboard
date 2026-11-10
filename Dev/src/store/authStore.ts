@@ -109,8 +109,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
     if (authUser.id === 'dev-admin-id') return;
 
     const currentOriginal = get().originalProfile;
-    const preview = currentOriginal?.auth_id === authUser.id && get().profile?.id !== currentOriginal.id
+    const clientPreview = currentOriginal?.auth_id === authUser.id && get().profile?.id !== currentOriginal.id
       ? get().profile : null;
+
     try {
       const profile = await loadStaffProfile(authUser, markSignedIn);
       if(epoch!==sessionEpoch)return;
@@ -119,7 +120,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
         return;
       }
-      set({ session, profile: profile?.role === 'admin' ? preview || profile : profile, originalProfile: profile, user: enrichUser(authUser, profile), loading: false });
+      set({session,profile:profile?.role==='admin'?clientPreview||profile:profile,originalProfile:profile,user:enrichUser(authUser,profile),loading:false});
     } catch (error) {
       if(epoch!==sessionEpoch)return;
       console.error('Could not load staff profile:', error);
@@ -136,7 +137,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           set({ session: null, profile: null, originalProfile: null, user: null, loading: false });
           return;
         }
-        set({ session, profile: profile?.role === 'admin' ? preview || profile : profile, originalProfile: profile, user: enrichUser(authUser, profile), loading: false });
+        set({session,profile:profile?.role==='admin'?clientPreview||profile:profile,originalProfile:profile,user:enrichUser(authUser,profile),loading:false});
       } catch {
         if(epoch!==sessionEpoch)return;
         set({ session, profile: null, originalProfile: null, user: enrichUser(authUser, null), loading: false });
@@ -228,7 +229,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     updateUserMetadata: async (data) => {
       const { user, profile, originalProfile } = get();
-      if (originalProfile && profile?.id !== originalProfile.id) throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ.');
+      if (originalProfile && profile && profile.id !== originalProfile.id) {
+        throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ.');
+      }
       const fullName = data.full_name?.trim() || profile?.name;
       if (!user || !fullName) throw new Error('Full name is required');
       if (user.id === 'dev-admin-id') {

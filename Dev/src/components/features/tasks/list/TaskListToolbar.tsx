@@ -1,4 +1,5 @@
 import {ActionButton} from '../../../common/ActionButton';
+import { SlidingToolbarGroup } from '../../../common/SlidingToolbarGroup';
 import React from 'react';
 import {useMobileReadOnly} from '../../../../hooks/useMobileReadOnly';
 import { Plus, X, ListTodo } from 'lucide-react';
@@ -102,7 +103,11 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
         </h1>
       </div>
 
-      <div className="mobile-actions-row flex flex-wrap items-center justify-start lg:justify-end lg:justify-self-end gap-2">
+      <SlidingToolbarGroup
+        className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center justify-start lg:justify-end lg:justify-self-end gap-2 overflow-x-auto max-w-full no-scrollbar"
+        showHoverPill={true}
+        showActivePill={false}
+      >
         {/* 2. Status Filter */}
         <StatusFilterDropdown
           value={statusFilter}
@@ -175,9 +180,8 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
             type="button"
             onClick={onResetFilters}
             title={t('projects.clearFilters')}
-            className="h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+            className="h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-2xs cursor-pointer z-10"
           >
-
             <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
           </ActionButton>
         )}
@@ -187,13 +191,12 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
           <ActionButton icon={<Plus className="w-4 h-4" />}
             type="button"
             onClick={onCreate}
-            className="btn-add-new h-9 flex items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+            className="btn-add-new h-9 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1 z-10"
           >
-
             <span>{t('tasks.createBtn')}</span>
           </ActionButton>
         )}
-      </div>
+      </SlidingToolbarGroup>
     </div>
   );
 };

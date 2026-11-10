@@ -30,3 +30,7 @@ Dev/supabase/functions/dashboard-push
 **/coverage
 **/*.log
 **/*.map
+
+# Private local backend/archive (never deploy)
+.local-supabase/
+log-ingestion-supabase/

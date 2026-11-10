@@ -342,6 +342,8 @@ interface EntityNoteCellProps {
   canEdit?: boolean;
   className?: string;
   alignCenter?: boolean;
+  compactBoardMode?: boolean;
+  externalOpenRequestId?: number;
 }
 
 export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
@@ -351,6 +353,8 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
   canEdit = true,
   className = '',
   alignCenter = true,
+  compactBoardMode = false,
+  externalOpenRequestId = 0,
 }) => {
   const { t } = useTranslation();
   const profile = useAuthStore((s) => s.profile);
@@ -404,8 +408,8 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
 
   // When opening edit mode: parse current markdown note into plain text and spans
   const handleStartEdit = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
       if (!canEdit) return;
 
       const { plainText: parsedPlain, spans: parsedSpans } = parseMarkdownToTextAndSpans(rawNote);
@@ -424,6 +428,12 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
     },
     [canEdit, rawNote]
   );
+
+  useEffect(() => {
+    if (externalOpenRequestId && externalOpenRequestId > 0 && !isEditing && canEdit) {
+      handleStartEdit();
+    }
+  }, [externalOpenRequestId, isEditing, canEdit, handleStartEdit]);
 
   const handleSave = useCallback(async () => {
     if (isSavingRef.current) return;
@@ -775,6 +785,10 @@ export const EntityNoteCell: React.FC<EntityNoteCellProps> = ({
   }
 
   // Non-editing view mode: click to type directly
+  if (compactBoardMode && !rawNote) {
+    return null;
+  }
+
   return (
     <div
       onClick={(e) => {

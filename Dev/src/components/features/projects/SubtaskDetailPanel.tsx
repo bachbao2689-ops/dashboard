@@ -638,8 +638,8 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       updated_at: nowIso,
     };
     try {
-      await updateTrackedTask(taskKey(entityType, subtask.id), values, currentUpdatedAt || subtask.updated_at);
-      setCurrentUpdatedAt(nowIso);
+      const mutation = await updateTrackedTask(taskKey(entityType, subtask.id), values, currentUpdatedAt || subtask.updated_at);
+      setCurrentUpdatedAt(mutation?.updated_at || nowIso);
       const assignee = (assignablePeople || []).find(person => String(person.id) === editAssigneeId)
         || people.find(person => String(person.id) === editAssigneeId);
 
@@ -742,6 +742,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         entityType,
         subtask.id,
         {
+          _notification_core_version: mutation?.updated_at,
           quantity: effectiveQuantity,
           base_quantity: baseQuantityValue,
             description,
@@ -906,14 +907,14 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   return (
     <>
       {!embedded && <div
-        className="fixed inset-0 bg-slate-900/30 dark:bg-[#071325]/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />}
       <aside 
         ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask border border-blue-500/20 z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">

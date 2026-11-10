@@ -136,14 +136,6 @@ export async function changeDevicePush(action: 'enable' | 'disable' | 'test', ow
     }
 
     if (action === 'test') {
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        try {
-          new Notification('K COFFEE Dashboard', {
-            body: 'Thông báo thử nghiệm hoạt động tốt!',
-            icon: '/app-icon.svg',
-          });
-        } catch {}
-      }
       try {
         await testPush();
       } catch (err) {

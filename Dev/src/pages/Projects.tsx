@@ -11,7 +11,7 @@ import {TaskDescriptionViewer} from '../components/features/tasks/TaskDescriptio
 import {Avatar} from '../components/common/Avatar';
 import {SmartCommentInput} from '../components/features/comments/SmartCommentInput';
 import {CommentMessage} from '../components/features/comments/CommentMessage';
-import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2,Pencil,FileText,Edit3,Layers} from 'lucide-react';
+import {ChevronDown,ChevronRight,FolderKanban,MessageSquare,Plus,Users,X,Trash2,Calendar,Clock3,Eye,EyeOff,ListTodo,Check,CheckCircle2,Pencil,FileText,Edit3,Layers,Megaphone} from 'lucide-react';
 import {ConfirmDeleteModal} from '../components/common/ConfirmDeleteModal';
 import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
 import {CampaignPanel} from '../components/features/projects/CampaignPanel';
@@ -20,6 +20,7 @@ import {DepartmentFilterDropdown,StatusFilterDropdown,PicFilterDropdown,DateFilt
 import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../components/features/projects/projectPresentation';
 import {useProjectsController} from '../hooks/useProjectsController';
 import {useResizableColumns} from '../hooks/useResizableColumns';
+import {useRememberedState} from '../hooks/useRememberedState';
 import {EntityActionBadges} from '../components/features/projects/EntityActionBadges';
 import {EntityNoteCell, getCachedNote} from '../components/features/projects/EntityNoteCell';
 import {useUiStore} from '../store/uiStore';
@@ -32,6 +33,9 @@ import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager, isDepartmentLeader, isAdmin} from '../lib/roleScope';
 import {QuickStatusDropdown} from '../components/common/QuickStatusDropdown';
+import {ProjectViewModeDropdown} from '../components/features/projects/ProjectViewModeDropdown';
+import {ProjectsKanbanBoard} from '../components/features/projects/ProjectsKanbanBoard';
+import {SlidingToolbarGroup} from '../components/common/SlidingToolbarGroup';
 export const Projects:React.FC=()=>{
  const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 150, 220], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
@@ -54,13 +58,17 @@ export const Projects:React.FC=()=>{
    }
  }, [searchParams]);
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
-     const {departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
+         const {creationPeople,creationDepartments,userIsRestricted: _userIsRestricted,resolvedDeptId: _resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,hasCampaignComments,departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
   const activeDepartments = React.useMemo(() => {
     return departments.filter(d =>
       projects.some(p => String(p.department_id) === String(d.id)) ||
       campaigns.some(c => String(c.department_id) === String(d.id))
     );
   }, [departments, projects, campaigns]);
+  const [entityFilter, setEntityFilter] = useRememberedState<'all' | 'campaign' | 'project'>('projects.boardEntityFilter', 'all');
+  const totalCampaigns = visibleCampaigns.length;
+  const totalProjects = visibleProjects.length;
+  const totalItems = totalCampaigns + totalProjects;
   const [projectSubtasksCollapsed, setProjectSubtasksCollapsed] = React.useState(false);
   const [isEditingProjectDesc, setIsEditingProjectDesc] = React.useState(false);
   const [projectDescDraft, setProjectDescDraft] = React.useState('');
@@ -149,6 +157,8 @@ export const Projects:React.FC=()=>{
   const [expandedProjects, setExpandedProjects] = React.useState<Record<string, boolean>>({});
   const [expandedProjectSubtasks, setExpandedProjectSubtasks] = React.useState<Record<string, boolean>>({});
   const [projectSubtasksMap, setProjectSubtasksMap] = React.useState<Record<string, any[]>>({});
+  const [campaignSubtasksMap, setCampaignSubtasksMap] = React.useState<Record<string, any[]>>({});
+  const [campaignSubtaskAssigneesMap, setCampaignSubtaskAssigneesMap] = React.useState<Record<string, any[]>>({});
   const [projectSubtaskChecklistMap, setProjectSubtaskChecklistMap] = React.useState<Record<string, any[]>>({});
   const [treeSubtaskCommentCounts, setTreeSubtaskCommentCounts] = React.useState<Record<string, number>>({});
   const [openNoteEntityIds, setOpenNoteEntityIds] = React.useState<Record<string, boolean>>({});
@@ -195,7 +205,7 @@ export const Projects:React.FC=()=>{
       if (target.closest('.dashboard-detail-drawer, [data-filter-popover], .tw-calendar-modal, .vanilla-calendar, [role="dialog"], [role="listbox"], .smart-mention-popup, .modal-backdrop')) {
         return;
       }
-      if (target.closest('.hover-row-campaign, .hover-row-project')) {
+      if (target.closest('.hover-row-campaign, .hover-row-project, [data-board-card]')) {
         return;
       }
       setSelected(null);
@@ -243,12 +253,27 @@ export const Projects:React.FC=()=>{
   };
 
   const loadProjectTreeData = React.useCallback(async () => {
-    const { data: allProjectSubtasks } = await supabase
-      .from('project_subtasks')
-      .select('*, assignee:assignee_id(id,name,avatar_url)')
-      .neq('status', 'deleted')
-      .neq('status', 'archived')
-      .order('created_at', { ascending: true });
+    const [{ data: allProjectSubtasks }, { data: allCampaignSubtasks }, { data: canonicalTasks }] = await Promise.all([
+      supabase
+        .from('project_subtasks')
+        .select('*, assignee:assignee_id(id,name,avatar_url)')
+        .neq('status', 'deleted')
+        .neq('status', 'archived')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('campaign_subtasks')
+        .select('*, assignee:assignee_id(id,name,avatar_url)')
+        .neq('status', 'deleted')
+        .neq('status', 'archived')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('tasks')
+        .select('campaign_id, assignee:assignee_id(id,name,avatar_url)')
+        .not('campaign_id', 'is', null)
+        .is('project_id', null)
+        .neq('status', 'deleted')
+        .neq('status', 'archived')
+    ]);
 
     const pSubMap: Record<string, any[]> = {};
     (allProjectSubtasks || []).forEach((st: any) => {
@@ -256,6 +281,23 @@ export const Projects:React.FC=()=>{
       pSubMap[st.project_id].push(st);
     });
     setProjectSubtasksMap(pSubMap);
+
+    const cSubMap: Record<string, any[]> = {};
+    (allCampaignSubtasks || []).forEach((st: any) => {
+      if (!cSubMap[st.campaign_id]) cSubMap[st.campaign_id] = [];
+      cSubMap[st.campaign_id].push(st);
+    });
+    setCampaignSubtasksMap(cSubMap);
+
+    const cAssignees: Record<string, any[]> = {};
+    [...(allCampaignSubtasks || []), ...(canonicalTasks || [])].forEach((st: any) => {
+      if (!st.assignee || !st.campaign_id) return;
+      if (!cAssignees[st.campaign_id]) cAssignees[st.campaign_id] = [];
+      if (!cAssignees[st.campaign_id].find((x: any) => x.id === st.assignee.id)) {
+        cAssignees[st.campaign_id].push(st.assignee);
+      }
+    });
+    setCampaignSubtaskAssigneesMap(cAssignees);
 
     const subtaskIds = (allProjectSubtasks || []).map((s: any) => s.id);
     if (subtaskIds.length > 0) {
@@ -374,17 +416,19 @@ export const Projects:React.FC=()=>{
   };
 
   const projectStatusOptions = React.useMemo(() => [
+    { value: 'draft', label: lang === 'en' ? 'Draft / To-do' : 'Bản nháp', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'active', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
-    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
 
   const subtaskStatusOptions = React.useMemo(() => [
+    { value: 'todo', label: lang === 'en' ? 'Draft / To-do' : 'Chưa bắt đầu', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
-    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
 
   const handleCreateProjectChecklistItem = async (subtaskId: string) => {
@@ -533,146 +577,261 @@ export const Projects:React.FC=()=>{
     {/* Mobile/Tablet Backdrop when Detail Drawer is open */}
     {panelOpen && (
       <div 
-        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[55] xl:hidden backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={() => { setSelected(null); setSelectedCampaign(null); setSelectedSubtask(null); }}
       />
     )}
 
     {/* Left Side: Projects List */}
-    <div className={`flex min-w-0 flex-1 flex-col p-1 transition-all duration-300 ${panelOpen ? 'hidden xl:flex xl:mr-[calc(var(--panel-width)+16px)] pr-2' : 'pr-1'}`}>
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 py-2 sm:py-2.5 mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 leading-none">
-            <FolderKanban className="text-primary"/> {t('projects.title')}
-          </h1>
-        </div>
+    <div className={`grid grid-cols-1 min-w-0 max-w-full w-full content-start p-1 transition-all duration-300 ${panelOpen ? 'hidden xl:grid xl:mr-[calc(var(--panel-width)+16px)] pr-2' : 'pr-1'}`}>
+      {/* Hàng trên: H1 Projects/Campaigns đứng riêng làm tiêu đề trang */}
+      <div className="py-2 shrink-0">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white inline-grid grid-flow-col auto-cols-max items-center gap-2 leading-none">
+          <FolderKanban className="text-primary"/> {t('projects.title')}
+        </h1>
+      </div>
 
-        {/* Function Toolbar: Department, Status, PIC, Calendar, Priority, Clear Filters, Add New */}
-        <div ref={toolbarRef} className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center gap-2">
-          {/* 1. Department Filter Button */}
-          <DepartmentFilterDropdown
-            value={departmentFilter}
-            onChange={setDepartmentFilter}
-            departments={activeDepartments}
-            isOpen={activeDropdown === 'department'}
-            onToggle={() => setActiveDropdown(activeDropdown === 'department' ? null : 'department')}
-            onClose={() => setActiveDropdown(null)}
-            compact={panelOpen}
-          />
+      {/* Hàng 2: Cụm 3 nút All, Projects, Campaigns bên trái + Cạnh bên phải là Xem Main & + Add New */}
+      <div className="inline-grid grid-flow-col auto-cols-max items-center justify-start gap-2.5 py-1.5 mb-1.5 shrink-0 max-w-full overflow-x-auto no-scrollbar">
+        {/* All, Projects, Campaigns với sliding pill */}
+        <SlidingToolbarGroup
+          className="p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs inline-grid grid-flow-col auto-cols-max items-center gap-0.5 shrink-0"
+          activeKey={entityFilter}
+          showHoverPill={true}
+          showActivePill={false}
+        >
+          {/* Nút Tất cả */}
+          <button
+            type="button"
+            onClick={() => setEntityFilter('all')}
+            className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
+              entityFilter === 'all'
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-sky-500/35 dark:to-blue-500/20 dark:!text-sky-100 dark:ring-sky-400/40'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            <span>{lang === 'en' ? 'All' : 'Tất cả'}</span>
+            <span className="text-[10.5px] font-bold opacity-80">({totalItems})</span>
+          </button>
 
-          {/* 2. Status Filter Button */}
-          <StatusFilterDropdown
-            value={statusFilter}
-            onChange={setStatusFilter}
-            allKey="open"
-            options={[
-              { key: 'open', label: lang === 'en' ? 'Incomplete' : 'Chưa hoàn thành', dot: 'bg-blue-500' },
-              { key: 'all', label: t('projects.allStatuses'), dot: 'bg-gray-400' },
-              { key: 'planning', label: t('projects.statusPlanning'), dot: 'bg-amber-400' },
-              { key: 'in_progress', label: t('projects.statusInProgress'), dot: 'bg-sky-400' },
-              { key: 'completed', label: t('projects.statusCompleted'), dot: 'bg-emerald-500' },
-              { key: 'draft', label: t('projects.statusDraft'), dot: 'bg-slate-400' },
-              { key: 'on_hold', label: t('projects.statusOnHold'), dot: 'bg-rose-400' }
-            ]}
-            isOpen={activeDropdown === 'status'}
-            onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
-            onClose={() => setActiveDropdown(null)}
-            compact={panelOpen}
-          />
+          {/* Nút Projects */}
+          <button
+            type="button"
+            onClick={() => setEntityFilter('project')}
+            className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
+              entityFilter === 'project'
+                ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            <FolderKanban
+              size={13}
+              className={entityFilter === 'project' ? 'text-violet-600 dark:text-violet-300' : ''}
+            />
+            <span>{lang === 'en' ? 'Projects' : 'Dự án'}</span>
+            <span className="text-[10.5px] font-bold opacity-80">({totalProjects})</span>
+          </button>
 
-          {/* 3. PIC Filter Button */}
-          <PicFilterDropdown
-            value={picFilter}
-            onChange={setPicFilter}
-            people={people}
-            currentUserId={profile?.id}
-            currentUserName={profile?.name || 'Me'}
-            currentUserAvatar={profile?.avatar_url}
-            isOpen={activeDropdown === 'pic'}
-            onToggle={() => setActiveDropdown(activeDropdown === 'pic' ? null : 'pic')}
-            onClose={() => setActiveDropdown(null)}
-            compact={panelOpen}
-          />
+          {/* Nút Campaigns */}
+          <button
+            type="button"
+            onClick={() => setEntityFilter('campaign')}
+            className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
+              entityFilter === 'campaign'
+                ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            <Megaphone
+              size={13}
+              className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''}
+            />
+            <span>{lang === 'en' ? 'Campaigns' : 'Chiến dịch'}</span>
+            <span className="text-[10.5px] font-bold opacity-80">({totalCampaigns})</span>
+          </button>
+        </SlidingToolbarGroup>
 
-          {/* 4. Calendar Filter Button (Fixed Custom Calendar, no native picker) */}
-          <DateFilterDropdown
-            calendarFilter={calendarFilter}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
-            onSelectPreset={(preset) => {
-              setCalendarFilter(preset);
-              setCustomStartDate('');
-              setCustomEndDate('');
-            }}
-            onApplyCustomRange={(start, end) => {
-              setCalendarFilter('custom');
-              setCustomStartDate(start);
-              setCustomEndDate(end);
-            }}
-            onClear={() => {
-              setCalendarFilter('all');
-              setCustomStartDate('');
-              setCustomEndDate('');
-            }}
-            isOpen={activeDropdown === 'calendar'}
-            onToggle={() => setActiveDropdown(activeDropdown === 'calendar' ? null : 'calendar')}
-            onClose={() => setActiveDropdown(null)}
-            compact={panelOpen}
-          />
-
-          {/* 5. Priority Filter Button */}
-          <PriorityFilterDropdown
-            value={priorityFilter}
-            onChange={setPriorityFilter}
-            isOpen={activeDropdown === 'priority'}
-            onToggle={() => setActiveDropdown(activeDropdown === 'priority' ? null : 'priority')}
-            onClose={() => setActiveDropdown(null)}
-            compact={panelOpen}
-          />
-
-          {/* 6. Reset Filters Button */}
-          {hasActiveFilters && (
-            <ActionButton icon={<X size={12} />}
-              type="button"
-              onClick={handleResetFilters}
-              title={t('projects.clearFilters')}
-              className={
-                panelOpen
-                  ? "w-9 h-9 p-0 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold grid place-items-center transition-all shadow-2xs cursor-pointer"
-                  : "h-9 px-2.5 rounded-[8px] border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-2xs cursor-pointer"
-              }
-            >
-              {!panelOpen && <span className="hidden sm:inline">{t('projects.clearFilters')}</span>}
-            </ActionButton>
+        {/* Cạnh bên phải: Button Xem Main và + Add New / + Thêm mới */}
+        <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2">
+          {officialReadEnabled && (
+            <Link to="/main-view" aria-label="Theo dõi Main chỉ đọc" title="Theo dõi Main chỉ đọc" className="inline-grid grid-flow-col auto-cols-max h-[32px] items-center gap-1.5 rounded-[8px] border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-950/30 dark:text-blue-200">
+              <Eye size={16}/>
+              <span className="hidden sm:inline">Xem Main</span>
+            </Link>
           )}
-
-          {/* 7. Add New Button */}
-          {officialReadEnabled && <Link to="/main-view" aria-label="Theo dõi Main chỉ đọc" title="Theo dõi Main chỉ đọc" className="inline-grid grid-flow-col auto-cols-max h-9 items-center gap-1.5 rounded-[8px] border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-950/30 dark:text-blue-200"><Eye size={16}/><span className="hidden sm:inline">Xem Main</span></Link>}
           {canCreate && (
             <ActionButton icon={<FolderKanban className="w-4 h-4" />}
               onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
-              className="btn-add-new h-9 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1"
+              className="btn-add-new h-[32px] inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 rounded-[8px] text-[12px] font-semibold transition-all shadow-sm cursor-pointer"
             >
               <span>{t('projects.add')}</span>
             </ActionButton>
           )}
         </div>
       </div>
+
+      {/* Hàng 3: Di chuyển hàng icon filter xuống dưới, xóa box xung quanh, scale nhỏ lại 10% (w-[34px] h-[34px]) kèm Sliding Motion */}
+      <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 py-1 mb-3 shrink-0">
+        <div ref={toolbarRef} className="inline-grid grid-flow-col auto-cols-max items-center gap-1">
+          <SlidingToolbarGroup className="mobile-actions-row gap-1" showHoverPill={true} showActivePill={false}>
+            {/* 0. View Mode Dropdown (1-click toggle giữa List và Board) */}
+            <ProjectViewModeDropdown
+              viewMode={viewMode}
+              onChange={setViewMode}
+              compact={true}
+            />
+
+            {/* Accessible invitation departments are already scoped; keep this filter available to invited Leaders. */}
+            <DepartmentFilterDropdown
+              value={departmentFilter}
+              onChange={setDepartmentFilter}
+              departments={activeDepartments}
+              isOpen={activeDropdown === 'department'}
+              onToggle={() => setActiveDropdown(activeDropdown === 'department' ? null : 'department')}
+              onClose={() => setActiveDropdown(null)}
+              compact={true /* compact={panelOpen} */}
+              disabled={activeDepartments.length === 0}
+            />
+
+            {/* 2. Status Filter Button */}
+            <StatusFilterDropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              allKey="open"
+              options={[
+                { key: 'open', label: lang === 'en' ? 'Incomplete' : 'Chưa hoàn thành', dot: 'bg-blue-500' },
+                { key: 'all', label: t('projects.allStatuses'), dot: 'bg-gray-400' },
+                { key: 'planning', label: t('projects.statusPlanning'), dot: 'bg-amber-400' },
+                { key: 'in_progress', label: t('projects.statusInProgress'), dot: 'bg-sky-400' },
+                { key: 'completed', label: t('projects.statusCompleted'), dot: 'bg-emerald-500' },
+                { key: 'draft', label: t('projects.statusDraft'), dot: 'bg-slate-400' },
+                { key: 'on_hold', label: t('projects.statusOnHold'), dot: 'bg-rose-400' }
+              ]}
+              isOpen={activeDropdown === 'status'}
+              onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+              onClose={() => setActiveDropdown(null)}
+              compact={true /* compact={panelOpen} */}
+            />
+
+            {/* 3. PIC Filter Button */}
+            <PicFilterDropdown
+              value={picFilter}
+              onChange={setPicFilter}
+              people={people}
+              currentUserId={profile?.id}
+              currentUserName={profile?.name || 'Me'}
+              currentUserAvatar={profile?.avatar_url}
+              isOpen={activeDropdown === 'pic'}
+              onToggle={() => setActiveDropdown(activeDropdown === 'pic' ? null : 'pic')}
+              onClose={() => setActiveDropdown(null)}
+              compact={true /* compact={panelOpen} */}
+            />
+
+            {/* 4. Calendar Filter Button (Fixed Custom Calendar, no native picker) */}
+            <DateFilterDropdown
+              calendarFilter={calendarFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onSelectPreset={(preset) => {
+                setCalendarFilter(preset);
+                setCustomStartDate('');
+                setCustomEndDate('');
+              }}
+              onApplyCustomRange={(start, end) => {
+                setCalendarFilter('custom');
+                setCustomStartDate(start);
+                setCustomEndDate(end);
+              }}
+              onClear={() => {
+                setCalendarFilter('all');
+                setCustomStartDate('');
+                setCustomEndDate('');
+              }}
+              isOpen={activeDropdown === 'calendar'}
+              onToggle={() => setActiveDropdown(activeDropdown === 'calendar' ? null : 'calendar')}
+              onClose={() => setActiveDropdown(null)}
+              compact={true /* compact={panelOpen} */}
+            />
+
+            {/* 5. Priority Filter Button */}
+            <PriorityFilterDropdown
+              value={priorityFilter}
+              onChange={setPriorityFilter}
+              isOpen={activeDropdown === 'priority'}
+              onToggle={() => setActiveDropdown(activeDropdown === 'priority' ? null : 'priority')}
+              onClose={() => setActiveDropdown(null)}
+              compact={true /* compact={panelOpen} */}
+            />
+
+            {/* 6. Reset Filters Button (Compact icon-only) */}
+            {hasActiveFilters && (
+              <ActionButton icon={<X size={14} />}
+                type="button"
+                onClick={handleResetFilters}
+                title={t('projects.clearFilters')}
+                aria-label={t('projects.clearFilters')}
+                className="w-[34px] h-[34px] p-0 rounded-[8px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold grid place-items-center transition-colors cursor-pointer"
+              />
+            )}
+          </SlidingToolbarGroup>
+        </div>
+      </div>
       
-      <div className="space-y-6 pb-20 pr-1">
-        <CampaignPanel
-          onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}
-          filters={campaignFilters}
-          rootCampaignIds={rootCampaignIds}
+      {viewMode === 'board' ? (
+        <ProjectsKanbanBoard
+          projects={visibleProjects}
+          campaigns={visibleCampaigns}
+          entityFilter={entityFilter}
           workflowTracks={workflow.tracks}
           people={people}
-          onOpenSubtask={(st) => {
+          picMembers={picMembers}
+          subtaskMembers={subtaskMembers}
+          projectPrimaryOwners={projectPrimaryOwners}
+          projectSubtasksMap={projectSubtasksMap}
+          campaignSubtasksMap={campaignSubtasksMap}
+          campaignSubtaskAssigneesMap={campaignSubtaskAssigneesMap}
+          hasComments={hasComments}
+          hasCampaignComments={hasCampaignComments}
+          hasMentionOrUnread={hasMentionOrUnread}
+          canCreate={canCreate}
+          canManageProject={canManageProject}
+          canManageCampaign={(c) => Boolean(profile && (isGlobalManager(profile) || isDepartmentLeader(profile) || c.created_by === profile.id || rootCampaignIds.has(c.id)))}
+          onSelectProject={(project) => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }}
+          onSelectCampaign={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}
+          onCreateItem={(statusKey, defaultKind) => {
+            resetCreateForm();
+            setCreationType(defaultKind || 'project');
+            setEditStatus(statusKey);
+            setCampaignStatus(statusKey);
             setSelected(null);
-            setSelectedCampaign(campaigns.find(c => c.id === st.campaign_id) || null);
-            setSelectedSubtask(st);
+            setSelectedCampaign(null);
+            setCreateOpen(true);
           }}
+          onUpdateProjectStatus={handleUpdateProjectStatus}
+          onUpdateCampaignStatus={handleUpdateCampaignStatus}
+          onHideProject={archiveProject}
+          onDeleteProject={removeProject}
+          workflow={workflow}
+          profile={profile}
         />
-        <section className="card-hub rounded-[8px] overflow-hidden shrink-0"><div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <>
+      ) : (
+        <div className="grid grid-cols-1 min-w-0 max-w-full space-y-6 pb-20 pr-1">
+        {entityFilter !== 'project' && (
+          <CampaignPanel
+            onSelect={(campaign) => { setSelected(null); setCreateOpen(false); setSelectedCampaign(campaign); }}
+            filters={campaignFilters}
+            rootCampaignIds={rootCampaignIds}
+            workflowTracks={workflow.tracks}
+            people={people}
+            onOpenSubtask={(st) => {
+              setSelected(null);
+              setSelectedCampaign(campaigns.find(c => c.id === st.campaign_id) || null);
+              setSelectedSubtask(st);
+            }}
+          />
+        )}
+        {entityFilter !== 'campaign' && (
+          <section className="card-hub rounded-[8px] overflow-hidden shrink-0 min-w-0 max-w-full"><div className="grid grid-cols-[1fr_auto] items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <>
   {/* Mobile Cards (xl:hidden) with 3-tier tree view */}
   <div className="space-y-3 p-3 xl:hidden">
     {visibleProjects.map(project => {
@@ -943,13 +1102,18 @@ export const Projects:React.FC=()=>{
   </div>
 
   {/* Desktop Table (hidden xl:block) with 3-tier tree view */}
-  <div className="hidden overflow-x-auto xl:block">
+  <div className="hidden overflow-x-auto xl:block min-w-0 max-w-full">
     <table ref={projectTableRef} className="w-full table-fixed text-left border-collapse">
-      <colgroup>
-        {projectColWidths.map((w, idx) => (
-          <col key={idx} style={{ width: `${w}px` }} />
-        ))}
-      </colgroup>
+      {(() => {
+        const totalProjectColWidth = projectColWidths.reduce((sum, w) => sum + w, 0) || 1;
+        return (
+          <colgroup>
+            {projectColWidths.map((w, idx) => (
+              <col key={idx} style={{ width: `${((w / totalProjectColWidth) * 100).toFixed(3)}%` }} />
+            ))}
+          </colgroup>
+        );
+      })()}
       <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
         <tr>
           <th className="p-4 relative text-left">
@@ -1696,15 +1860,27 @@ export const Projects:React.FC=()=>{
             </React.Fragment>
           );
         })}
-      </tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>
+      </tbody></table>{!visibleProjects.length && <div className="p-12 text-center text-gray-500">{projects.length > 0 ? (lang === 'en' ? 'No projects match current filters.' : 'Không có dự án phù hợp bộ lọc.') : t('projects.noProjects')}</div>}</div></>}</section>)}
   
   
-    </div></div>
+    </div>)}</div>
 
     {sourceTask && <TaskDetailPanel task={workflow.tasks.find(task => task.id === sourceTask.id) || sourceTask} isOpen onClose={() => setSourceTask(null)} onTaskUpdated={() => void workflow.refresh()} />}
 
     {/* Right Side: Detail Panel */}
-    <div ref={detailDrawerRef} style={{ '--panel-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${panelOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto ' + (selectedCampaign ? 'shadow-drawer-campaign' : 'shadow-drawer-project') : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[60] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
+    <div
+      ref={detailDrawerRef}
+      key={selected?.id || selectedCampaign?.id || 'empty'}
+      style={{ '--panel-width': `${width}px` } as React.CSSProperties}
+      className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${
+        panelOpen
+          ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto drawer-slide-in border ' +
+            (selectedCampaign
+              ? 'shadow-drawer-campaign border-amber-500/20'
+              : 'shadow-drawer-project border-violet-500/20')
+          : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'
+      } z-[70] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
+    >
       {panelOpen && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       {selectedSubtask ? (
         <SubtaskDetailPanel
@@ -1811,12 +1987,12 @@ export const Projects:React.FC=()=>{
                 entityName={selected.name}
               >
                 {Boolean(departments.find(d => String(d.id) === String(selected.department_id))?.name) && (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs">
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs truncate max-w-full">
                     {lang === 'en' ? 'Department' : 'Phòng ban'}: {departments.find(d => String(d.id) === String(selected.department_id))?.name}
                   </span>
                 )}
               </EntityActionBadges>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-[8px] bg-slate-50 dark:bg-[#071325]/50 border border-blue-100 dark:border-slate-700 text-sm">
                 <div>
                   <p className="text-[10px] uppercase text-gray-400 mb-1">{t('common.owner')}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
@@ -1839,17 +2015,11 @@ export const Projects:React.FC=()=>{
                     <span className="font-bold text-red-600 dark:text-red-400">{dateValue(selected?.due_date || '')}</span>
                   </div>
                 </div>
-                <div>
+                <div className="col-span-2 sm:col-span-1">
                   <p className="text-[10px] uppercase text-gray-400">{t('common.creator')}</p>
                   <div className="mt-1 font-semibold flex items-center gap-2">
                     <Avatar name={(selected as any)?.creator?.name || '---'} src={(selected as any)?.creator?.avatar_url} className="w-5 h-5 text-[10px] shadow-sm" />
                     <span className="line-clamp-1">{(selected as any)?.creator?.name || '---'}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase text-gray-400 mb-1">{lang === 'en' ? 'Department' : 'Phòng ban'}</p>
-                  <div className="mt-1 font-semibold text-xs text-gray-700 dark:text-gray-300 line-clamp-1">
-                    {departments.find(d => String(d.id) === String(selected.department_id))?.name || (lang === 'en' ? 'Unassigned' : 'Chưa phân')}
                   </div>
                 </div>
               </div>
@@ -2147,9 +2317,54 @@ export const Projects:React.FC=()=>{
       <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
         <fieldset disabled={creating} className="min-w-0 space-y-4">
         <div className="grid grid-cols-2 gap-1 rounded-[8px] bg-gray-100 dark:bg-slate-900 p-1" role="tablist" aria-label="Loại khởi tạo">
-          <button type="button" role="tab" aria-selected={creationType === 'campaign'} onClick={() => { setCreationType('campaign'); if (!campaignObjective) setCampaignObjective(description); }} className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>{t('projects.typeCampaign')}</button>
-          <button type="button" role="tab" aria-selected={creationType === 'project'} onClick={() => { setCreationType('project'); if (!description) setDescription(campaignObjective); if (primaryOwnerId) setOwnerIds(ids => Array.from(new Set([...ids, primaryOwnerId]))); }} className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}>{t('projects.typeProject')}</button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={creationType === 'campaign'}
+            onClick={() => {
+              const currentStatus = creationType === 'campaign' ? campaignStatus : editStatus;
+              setCreationType('campaign');
+              if (!campaignObjective) setCampaignObjective(description);
+              if (viewMode === 'board') {
+                setCampaignStatus(currentStatus);
+                setEditStatus(currentStatus);
+              }
+            }}
+            className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}
+          >
+            {t('projects.typeCampaign')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={creationType === 'project'}
+            onClick={() => {
+              const currentStatus = creationType === 'campaign' ? campaignStatus : editStatus;
+              setCreationType('project');
+              if (!description) setDescription(campaignObjective);
+              if (primaryOwnerId) setOwnerIds(ids => Array.from(new Set([...ids, primaryOwnerId])));
+              if (viewMode === 'board') {
+                setEditStatus(currentStatus);
+                setCampaignStatus(currentStatus);
+              }
+            }}
+            className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}
+          >
+            {t('projects.typeProject')}
+          </button>
         </div>
+
+        {viewMode === 'board' && (
+          <div>
+            <EntityStatusField
+              value={creationType === 'campaign' ? campaignStatus : editStatus}
+              onChange={(newStatus) => {
+                setEditStatus(newStatus);
+                setCampaignStatus(newStatus);
+              }}
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.nameLabel')} <span className="text-red-500">*</span></label>
@@ -2162,7 +2377,7 @@ export const Projects:React.FC=()=>{
         </div>
 
         <div className="space-y-3"><label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">{t('projects.primaryOwner')} <span className="text-red-500">*</span></label>
-          <MultiSelect options={visiblePeople.map(p=>({value:String(p.id),label:p.name + (p.departments?.name ? ` · ${p.departments.name}` : '')}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} />
+          <MultiSelect options={creationPeople.map(p=>({value:String(p.id),label:p.name + (p.departments?.name ? ` · ${p.departments.name}` : '')}))} value={ownerIds} primaryValue={primaryOwnerId} onPrimaryChange={setPrimaryOwnerId} onChange={(ids: string[]) => { setOwnerIds(ids); if (!ids.includes(primaryOwnerId)) setPrimaryOwnerId(ids[0] || ''); }} placeholder={t('projects.tagMembers')} />
           <p className="text-xs text-gray-500">PIC ở đây được xem toàn bộ lộ trình. Người chỉ tham gia một phase cần được tag trong Workflow của phase đó.</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('projects.primaryOwnerNote')}</p>
         </div>
@@ -2173,11 +2388,12 @@ export const Projects:React.FC=()=>{
           </label>
           <select
             value={departmentId}
+            disabled={isDepartmentLeader(profile)}
             onChange={e => setDepartmentId(e.target.value)}
             className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
           >
             <option value="">{lang === 'en' ? 'Select department...' : 'Chọn phòng ban...'}</option>
-            {departments.map((d: any) => (
+            {creationDepartments.map((d: any) => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>
@@ -2189,7 +2405,7 @@ export const Projects:React.FC=()=>{
         {showAdvanced && (creationType === 'project' ? <div className="space-y-4 rounded-[8px] border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-[#071325]/40 p-4">
           <div><label className="block text-sm font-semibold mb-1">{t('projects.belongsToCampaign')}</label><select value={parentCampaignId} onChange={e=>selectParentCampaign(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]"><option value="">{t('projects.standalone')}</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div><label className="block text-sm font-semibold mb-1">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]"><option value="high">{t('common.high')}</option><option value="medium">{t('common.medium')}</option><option value="low">{t('common.low')}</option></select></div>
-          <div><label className="block text-sm font-semibold mb-1">{t('projects.executingMembers')}</label><MultiSelect options={visiblePeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder={t('projects.tagMembers')} /></div>
+          <div><label className="block text-sm font-semibold mb-1">{t('projects.executingMembers')}</label><MultiSelect options={creationPeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder={t('projects.tagMembers')} /></div>
           <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-[8px] border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
         </div> : <div className="space-y-4 rounded-[8px] border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-[#071325]/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><div className="relative"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 pr-14 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" placeholder={t('projects.budgetPlaceholder')} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="grid grid-flow-col auto-cols-max items-center gap-2 rounded-[6px] bg-white dark:bg-[#0a192f] px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-[8px] border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
 

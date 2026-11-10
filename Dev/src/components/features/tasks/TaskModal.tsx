@@ -134,6 +134,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
           'task',
           insertedTask.id,
           {
+            _notification_initial: true,
             quantity: Number.isFinite(numQuantity) && numQuantity > 0 ? numQuantity : null,
             target_department_id: targetDepartmentId || null,
             target_department_name: targetDept ? targetDept.name : null,

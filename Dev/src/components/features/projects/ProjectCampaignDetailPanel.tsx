@@ -151,7 +151,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
         await saveTaskDeliverables(
           kind === 'project' ? 'project_subtask' : 'campaign_subtask',
           res.data.id,
-          { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+          { _notification_initial: true, quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
           profile?.id,
           data.workspace_id,
         ).catch((error: any) => {
@@ -244,14 +244,14 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
   return (
     <>
       <div 
-        className="fixed inset-0 bg-slate-900/30 dark:bg-[#071325]/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
       <aside 
         ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} ${kind === 'project' ? 'border border-violet-500/20' : 'border border-amber-500/20'} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
       >
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">

@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 import toast from 'react-hot-toast';
 import {isGlobalManager} from '../lib/roleScope';
+import {createMemberProfile, saveMemberAccess, type MemberAccess} from '../services/memberAccounts';
 
 export type UserRole = 'admin' | 'member' | 'manager' | 'leader';
 export type UserStatus = 'active' | 'removed';
@@ -27,12 +28,8 @@ export interface Member {
 export interface NewMember {
   email: string;
   name: string;
-  role: UserRole;
-  department_id: string;
-  job_title: string;
 }
 
-const initialsFromName = (name: string) => name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
 
 export function useMembers() {
   const profile = useAuthStore(state => state.profile);
@@ -47,13 +44,8 @@ export function useMembers() {
     setLoading(true);
     try {
       if (!profile) { setMembers([]); setDepartments([]); setLoadedProfileId(null); return; }
-      const globalScope = isGlobalManager(profile);
-      let usersQuery = supabase.from('users').select('id,name,email,role,is_active,created_at,avatar_url,employment_level,job_title,department_id').order('created_at', { ascending: false });
-      let departmentsQuery = supabase.from('departments').select('id,name').order('name');
-      if (!globalScope) {
-        usersQuery = profile.department_id ? usersQuery.eq('department_id', profile.department_id) : usersQuery.eq('id', profile.id);
-        if (profile.department_id) departmentsQuery = departmentsQuery.eq('id', profile.department_id);
-      }
+      const usersQuery = supabase.from('users').select('id,name,email,role,is_active,created_at,avatar_url,employment_level,job_title,department_id').order('created_at', { ascending: false });
+      const departmentsQuery = supabase.from('departments').select('id,name').order('name');
       const [usersResult, departmentsResult] = await Promise.all([
         usersQuery,
         departmentsQuery,
@@ -82,38 +74,36 @@ export function useMembers() {
 
   const requireManager = () => {
     const profile = useAuthStore.getState().profile;
-    if (!profile || !isGlobalManager(profile)) {
+    const original=useAuthStore.getState().originalProfile;
+    if (original && original.id!==profile?.id) throw new Error('Khôi phục tài khoản gốc trước khi quản lý thành viên');
+    if (!profile || !profile.is_active || !isGlobalManager(profile)) {
       throw new Error('Bạn không có quyền quản lý thành viên');
     }
     return profile;
   };
 
-  const addMember = async (memberData: NewMember) => {
+  const addMember = async (memberData: NewMember): Promise<number | null> => {
     try {
-      const profile = requireManager();
-      const name = memberData.name.trim();
-      const email = memberData.email.trim().toLowerCase();
-      if (!name || !email || !memberData.department_id) throw new Error('Vui lòng nhập tên, email và phòng ban');
-      if (!departments.some(department => department.id === memberData.department_id)) throw new Error('Phòng ban không hợp lệ');
-      if (memberData.role === 'admin' && profile.role !== 'admin') throw new Error('Chỉ Admin được thêm Admin');
-
-      const { data: existing, error: lookupError } = await supabase.from('users').select('id,is_active').ilike('email', email).maybeSingle();
-      if (lookupError) throw lookupError;
-      if (existing) throw new Error(existing.is_active ? 'Email này đã có trong danh sách thành viên' : 'Email này đã bị xóa. Hãy khôi phục thành viên trong bộ lọc Đã xóa.');
-
-      const { data, error } = await supabase.from('users').insert({
-        name, email, role: memberData.role, department_id: memberData.department_id,
-        job_title: memberData.job_title.trim() || null,
-        employment_level: memberData.role === 'member' ? 'Nhân viên' : memberData.role === 'admin' ? 'ADMIN' : memberData.role === 'manager' ? 'Manager' : 'Leader',
-        initials: initialsFromName(name), is_active: true,
-      }).select('id').single();
-      if (error) throw error;
-      if (!data) throw new Error('Không xác nhận được hồ sơ đã tạo');
+      requireManager();
+      const id=await createMemberProfile(supabase,memberData);
       await fetchMembers();
-      toast.success('Đã thêm thành viên');
-      return true;
+      toast.success('Đã tạo hồ sơ. Tiếp tục phân quyền.');
+      return id;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thêm được thành viên');
+      return null;
+    }
+  };
+
+  const updateMemberAccess = async (member: Member, access: MemberAccess): Promise<boolean> => {
+    try {
+      const actor=requireManager();
+      await saveMemberAccess(supabase,actor,member,access,departments.map(department=>department.id));
+      await fetchMembers();
+      toast.success('Đã lưu phân quyền');
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không lưu được phân quyền');
       return false;
     }
   };
@@ -143,5 +133,5 @@ export function useMembers() {
   const actor=useAuthStore(state=>state.profile?.id);
   useWorkspaceRealtime(['users','departments'],fetchMembers,actor);
 
-  return { members: loadedProfileId === profile?.id ? members : [], departments: loadedProfileId === profile?.id ? departments : [], loading: loading || loadedProfileId !== profile?.id, refetch: fetchMembers, addMember, setMemberRemoved };
+  return { members: loadedProfileId === profile?.id ? members : [], departments: loadedProfileId === profile?.id ? departments : [], loading: loading || loadedProfileId !== profile?.id, refetch: fetchMembers, addMember, updateMemberAccess, setMemberRemoved };
 }

@@ -195,7 +195,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   return (
     <div ref={containerRef} className="mobile-filter-control relative inline-block text-left">
       <ActionButton
-        icon={<CalendarIcon size={compact ? 15 : 13} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
+        icon={<CalendarIcon size={14} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
         aria-expanded={isOpen}
         title={isFiltered ? `${t('projects.filterCalendar')}: ${triggerLabel}` : t('projects.filterCalendar')}
@@ -206,10 +206,10 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
         }}
         className={
           compact
-            ? `w-9 h-9 p-0 rounded-[8px] border text-xs font-medium grid place-items-center transition-all shadow-2xs relative cursor-pointer ${
+            ? `w-[34px] h-[34px] p-0 rounded-[8px] text-xs font-medium grid place-items-center transition-colors relative cursor-pointer ${
                 isFiltered
-                  ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
-                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+                  ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400 font-semibold'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-slate-800/60'
               }`
             : `h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
                 isFiltered
@@ -220,7 +220,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
       >
         {compact ? (
           isFiltered && (
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 ring-1 ring-white dark:ring-slate-900 pointer-events-none" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-500 ring-1 ring-white dark:ring-slate-900 pointer-events-none" />
           )
         ) : (
           <>

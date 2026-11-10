@@ -5,15 +5,19 @@ import {taskActive,taskKey,taskTarget} from '../lib/taskTracking';
 import {deliverableHistory, patchChecklistItem} from '../lib/taskChecklist';
 import {fetchTaskDeliverableMeta, saveTaskDeliverables} from '../lib/taskDeliverables';
 import {useAuthStore} from '../store/authStore';
+import {leaderTaskVisible} from '../lib/workAccessScope';
 export async function readAll(query:any):Promise<any[]> {
   const rows:any[]=[];
   for(let offset=0;;offset+=500){const {data,error}=await query.range(offset,offset+499);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<500)return rows;}
 }
 export async function readWorkspaceTasks():Promise<Task[]> {
-  const [real,projects,campaigns]=await Promise.all([
+  const [real,projects,campaigns,projectMembers,campaignMembers,people]=await Promise.all([
     readAll(supabase.from('tasks').select('id,workspace_id,task_ref,title,status,priority,due_date,start_date,completed_at,updated_at,created_at,created_by,description,assignee_id,project_id,campaign_id,department_id,workflow_phase_id,workflow_status,project:project_id(id,name,status,department_id,department:department_id(name)),campaign:campaign_id(id,name,status,department_id,department:department_id(name)),assignee:assignee_id(id,name,avatar_url),department:department_id(id,name),column:column_id(name)').order('created_at',{ascending:false}).order('id')),
     readAll(supabase.from('project_subtasks').select('*,projects:project_id(id,name,status,priority,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),
-    readAll(supabase.from('campaign_subtasks').select('*,campaigns:campaign_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id'))
+    readAll(supabase.from('campaign_subtasks').select('*,campaigns:campaign_id(id,name,status,department_id,workspace_id,department:department_id(id,name)),assignee:assignee_id(id,name,avatar_url)').order('created_at',{ascending:false}).order('id')),
+    readAll(supabase.from('project_members').select('project_id,user_id,workflow_role')),
+    readAll(supabase.from('campaign_members').select('campaign_id,user_id,workflow_role')),
+    readAll(supabase.from('users').select('id,department_id').eq('is_active',true))
   ]);
   const details = new Map<string, any>();
   const history = new Map<string, any[]>();
@@ -58,7 +62,11 @@ export async function readWorkspaceTasks():Promise<Task[]> {
   history.forEach((rows, key) => details.set(key, deliverableHistory(rows)));
   // Archived/deleted parents disappear consistently across the lists and analytics.
   // Cancelled work stays in lists/history; metrics exclude it with taskActive().
-  return mapWorkspaceTasks(real, projects, campaigns, details);
+  const actor=useAuthStore.getState().profile;
+  return mapWorkspaceTasks(real, projects, campaigns, details).map(task=>({
+    ...task,parent_pic_ids:(task.project_id?projectMembers.filter(m=>m.project_id===task.project_id):task.campaign_id?campaignMembers.filter(m=>m.campaign_id===task.campaign_id):[])
+      .filter(m=>['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id),
+  })).filter(task=>leaderTaskVisible(actor,task,people));
 }
 export async function updateTrackedTask(key:string,values:Record<string,unknown>, expectedUpdatedAt?: string | null) {
   const target=taskTarget(key);
@@ -77,7 +85,7 @@ export async function updateTrackedTask(key:string,values:Record<string,unknown>
   if (expectedUpdatedAt) {
     query = query.eq('updated_at', expectedUpdatedAt);
   }
-  const {data,error}=await query.select('id').maybeSingle();
+  const {data,error}=await query.select('id,updated_at').maybeSingle();
   if(error)throw error;
   if(!data) {
     if (expectedUpdatedAt) {
@@ -86,6 +94,7 @@ export async function updateTrackedTask(key:string,values:Record<string,unknown>
     throw new Error('Không có quyền cập nhật công việc này.');
   }
   window.dispatchEvent(new Event('tasks:changed'));
+  return data;
 }
 export async function canCompleteTrackedTask(key:string) {
  const target=taskTarget(key);

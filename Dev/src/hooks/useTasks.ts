@@ -10,6 +10,7 @@ export interface Task {
   workflow_status?: string | null;
   project?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; campaign?: { id?: string; name: string; department_id?: string | null; department?: {name:string} | null }; assignee_id?: string;
   assignee?: { id?: string; name: string; avatar_url: string }; department?: { id?: string; name: string }; column?: { name: string };
+  parent_pic_ids?: (string | number)[];
   quantity?: number | null;
   base_quantity?: number | null;
   tracking_quantity?: number;

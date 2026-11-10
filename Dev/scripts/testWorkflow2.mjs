@@ -1,18 +1,7 @@
-import fs from "node:fs";
-import pg from "pg";
+import { workflowDbClient } from './workflowDbClient.mjs';
 import assert from "node:assert/strict";
 import { makeWorkflow } from "../src/lib/workflow2.ts";
-const line = fs
-  .readFileSync(
-    process.argv[2] || new URL("../../backend/.env", import.meta.url),
-    "utf8",
-  )
-  .split(/\r?\n/)
-  .find((x) => x.startsWith("DATABASE_URL="));
-const client = new pg.Client({
-  connectionString: line.slice(13).replace(/^"|"$/g, ""),
-  ssl: { rejectUnauthorized: false },
-});
+const client = workflowDbClient(process.argv[2]);
 try {
   await client.connect();
   await client.query("begin");

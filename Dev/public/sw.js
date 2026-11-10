@@ -1,15 +1,40 @@
 /* No page/data cache: deployment updates cannot retain a stale Dashboard shell. */
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
-self.addEventListener('push',event=>{
- let payload={};try{payload=event.data?.json()||{};}catch{payload={body:'Bạn có thông báo mới.'};}
- const raw=typeof payload.url==='string'?payload.url:'/my-tasks';
- const target=new URL(raw,self.location.origin);
+// Receipt cache holds notification IDs only, never page or task content.
+const RECEIPTS='dashboard-push-receipts-v1', RECEIPT_TTL=24*60*60*1000;
+let pushFlight=Promise.resolve();
+async function displayPush(event){
+ let payload={};try{payload=event.data?.json()||{};}catch{payload={};}
+ if(!payload||typeof payload!=='object')payload={};
+ let target;try{target=new URL(typeof payload.url==='string'?payload.url:'/my-tasks',self.location.origin);}catch{target=new URL('/my-tasks',self.location.origin);}
  const url=target.origin===self.location.origin?target.href:self.location.origin+'/my-tasks';
- event.waitUntil(self.registration.showNotification(payload.title||'Phuc Sinh Consumers',{
+ const id=typeof payload.notificationId==='string'?payload.notificationId:'';
+ const tag=id?`notification-${id}`:payload.tag||'dashboard-notification';
+ let receipts,key;
+ try{
+  if(id){
+   receipts=await caches.open(RECEIPTS);
+   key=new URL('/__push_receipts__/'+encodeURIComponent(id),self.location.origin).href;
+   const receipt=await receipts.match(key);
+   if(receipt&&Date.now()-Number(await receipt.text())<RECEIPT_TTL)return;
+  }
+ }catch{receipts=undefined;}
+ // Also protects an already displayed notification if receipt storage is unavailable.
+ if(id&&(await self.registration.getNotifications({tag})).length)return;
+ await self.registration.showNotification('Phuc Sinh Consumers',{
   body:payload.body||'Bạn có thông báo mới.',icon:'/pwa-192.png',badge:'/pwa-192.png',
-  tag:payload.tag||'dashboard-notification',data:{url,notificationId:payload.notificationId},
- }));
+  tag,renotify:false,data:{url,notificationId:id},
+ });
+ if(receipts&&key)try{
+  await receipts.put(key,new Response(String(Date.now())));
+  const keys=await receipts.keys();
+  for(const old of keys.slice(0,Math.max(0,keys.length-256)))await receipts.delete(old);
+ }catch{/* A successful display must not fail because local storage is full. */}
+}
+self.addEventListener('push',event=>{
+ pushFlight=pushFlight.catch(()=>{}).then(()=>displayPush(event));
+ event.waitUntil(pushFlight);
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();

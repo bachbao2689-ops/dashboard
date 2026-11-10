@@ -22,3 +22,7 @@
 /coverage/
 **/*.log
 **/*.map
+
+# Private local backend/archive (never deploy)
+.env.local
+.env.*.local

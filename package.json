@@ -3,7 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build --prefix Dev"
+    "build": "npm run build --prefix Dev",
+    "local:backend": "node scripts/local-backend.mjs",
+    "dev:local": "npm run dev --prefix Dev -- --host 127.0.0.1 --port 5174 --strictPort",
+    "local:migrate": "node scripts/local-migrate.mjs",
+    "dev": "npm run dev:local",
+    "local:check": "node scripts/check-local-backend.mjs"
   },
   "engines": {
     "node": ">=22"

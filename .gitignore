@@ -93,3 +93,7 @@ KCOFFEE-Report-Profile-local-*/
 
 # Local Dashboard design standard
 Design_System/
+
+# Private local backend and Develop archives
+.local-supabase/
+log-ingestion-supabase/

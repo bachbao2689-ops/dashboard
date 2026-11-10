@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: require('node:path').join(__dirname, '.env'), quiet: true });
 
 // Import records are private local inputs and must not be committed.
 for (const filename of ['inventory.json', 'tasks.json']) {
@@ -16,7 +16,7 @@ if (!connectionString) {
 }
 
 async function seed() {
-  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  const client = new Client({ connectionString, ssl: false });
   
   try {
     await client.connect();

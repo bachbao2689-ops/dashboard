@@ -120,10 +120,11 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   ];
 
   const defaultStatusOptions: StatusOption[] = [
-    { value: 'planning', label: isEn ? 'Planning' : 'Lên kế hoạch', dotClass: 'bg-amber-400' },
-    { value: 'active', label: isEn ? 'In Progress' : 'Đang thực hiện', dotClass: 'bg-sky-400' },
+    { value: 'draft', label: isEn ? 'Draft / To-do' : 'Bản nháp', dotClass: 'bg-slate-400' },
+    { value: 'planning', label: isEn ? 'Planning' : 'Lên kế hoạch', dotClass: 'bg-purple-500' },
+    { value: 'active', label: isEn ? 'In Progress' : 'Đang thực hiện', dotClass: 'bg-sky-500' },
+    { value: 'on_hold', label: isEn ? 'On Hold' : 'Tạm dừng', dotClass: 'bg-amber-500' },
     { value: 'completed', label: isEn ? 'Completed' : 'Hoàn thành', dotClass: 'bg-emerald-500' },
-    { value: 'on_hold', label: isEn ? 'On Hold' : 'Tạm dừng', dotClass: 'bg-slate-400' },
   ];
   const statusOptions = statusOptionsProp || defaultStatusOptions;
 
@@ -140,22 +141,56 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     'Đang thực hiện': 'In Progress',
     'Chờ duyệt': 'In Review',
     'Lên kế hoạch': 'Planning',
-    'Bản nháp': 'Draft',
+    'Bản nháp': 'Draft / To-do',
     'Tạm dừng': 'On Hold',
     'Đang chờ': 'Pending',
     'Quá hạn': 'Overdue',
     'Từ chối': 'Rejected',
     'Đã hủy': 'Canceled',
-    'Chưa bắt đầu': 'Todo',
+    'Chưa bắt đầu': 'Draft / To-do',
   };
   const currentStatusLabel = isEn ? (enStatusMap[meta.label] || meta.label) : meta.label;
+
+  const getStatusButtonVisual = (statusVal: string) => {
+    const s = statusVal.toLowerCase().trim().replace(/[ _]+/g, '-');
+    if (['completed', 'complete', 'done', 'hoàn-thành'].includes(s)) {
+      return {
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/70',
+        dotClass: 'bg-emerald-500',
+      };
+    }
+    if (['on-hold', 'on_hold', 'paused', 'tạm-dừng'].includes(s)) {
+      return {
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/70',
+        dotClass: 'bg-amber-500',
+      };
+    }
+    if (['active', 'in-progress', 'in_progress', 'doing', 'đang-làm', 'đang-thực-hiện'].includes(s)) {
+      return {
+        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/70',
+        dotClass: 'bg-sky-500',
+      };
+    }
+    if (['planning', 'lên-kế-hoạch', 'planned', 'backlog'].includes(s)) {
+      return {
+        badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/70',
+        dotClass: 'bg-purple-500',
+      };
+    }
+    return {
+      badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700',
+      dotClass: 'bg-slate-400',
+    };
+  };
+  const statusVisual = getStatusButtonVisual(currentStatus);
 
   return (
     <div
       ref={containerRef}
-      className="relative grid grid-flow-col items-center gap-2 w-full justify-between"
+      className="relative grid grid-cols-[1fr_auto] items-start sm:items-center gap-2 w-full"
     >
-      <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+      <div className="grid grid-flow-row sm:grid-flow-col auto-cols-max items-start sm:items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 sm:gap-2">
       {/* 1. Priority Dropdown Button */}
       <div className="relative inline-block">
         <button
@@ -223,17 +258,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
             setPriorityOpen(false);
             setStatusOpen((v) => !v);
           }}
-          className={`inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all ${
-            meta.tone === 'success'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-              : meta.tone === 'info'
-              ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800'
-              : meta.tone === 'warning'
-              ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
-              : meta.tone === 'danger'
-              ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
-              : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700'
-          } ${
+          className={`inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all ${statusVisual.badgeClass} ${
             canManage && onStatusChange
               ? 'cursor-pointer hover:shadow-xs hover:border-black/10 dark:hover:border-white/10'
               : 'cursor-default'
@@ -242,7 +267,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
           aria-haspopup="listbox"
           title={isEn ? 'Change status' : 'Đổi trạng thái'}
         >
-          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+          <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusVisual.dotClass}`} />
           <span>{currentStatusLabel}</span>
           {canManage && onStatusChange && (
             <ChevronDown
@@ -260,8 +285,10 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
             {statusOptions.map((opt) => {
               const isSelected =
                 currentStatus === opt.value ||
+                (opt.value === 'draft' && (currentStatus === 'todo' || currentStatus === 'not_started' || currentStatus === 'chưa bắt đầu')) ||
                 (opt.value === 'active' && (currentStatus === 'in_progress' || currentStatus === 'doing')) ||
-                (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog' || currentStatus === 'todo')) ||
+                (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog')) ||
+                (opt.value === 'on_hold' && (currentStatus === 'paused' || currentStatus === 'on-hold')) ||
                 (opt.value === 'completed' && (currentStatus === 'done' || currentStatus === 'complete'));
               return (
                 <button
@@ -287,14 +314,19 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
           </div>
         )}
       </div>
-
-        {/* Children (e.g. SL badge) */}
-        {children}
       </div>
+
+      {/* Children (e.g. Department badge or SL badge) */}
+      {children && (
+        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0 max-w-full">
+          {children}
+        </div>
+      )}
+    </div>
 
       {/* 2. Action Setting Button on the far right */}
       {((canManage && onEdit) || (entityType && entityId)) && (
-        <div className="ml-auto justify-self-end grid grid-flow-col auto-cols-max items-center gap-1.5">
+        <div className="justify-self-end grid grid-flow-col auto-cols-max items-center gap-1.5">
           {/* Setting Button (Gear) - Borderless */}
           <div className="relative inline-block" ref={settingsRef}>
             <button

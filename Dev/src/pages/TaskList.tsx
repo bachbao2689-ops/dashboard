@@ -21,11 +21,12 @@ import { SubtaskDetailPanel } from '../components/features/projects/SubtaskDetai
 import { checkDateMatch } from '../components/features/projects/CampaignPanel';
 import type { FilterPerson } from '../components/common/filters';
 import { useAuthStore } from '../store/authStore';
-import { isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader } from '../lib/roleScope';
+import { isGlobalManager, isAdmin, isDepartmentLeader } from '../lib/roleScope';
 import { useRememberedState } from '../hooks/useRememberedState';
 import { useTranslation } from '../i18n/translations';
 import { updateTrackedTask } from '../services/workspaceTasks';
 import toast from 'react-hot-toast';
+import {leaderTaskVisible} from '../lib/workAccessScope';
 
 export const TaskList: React.FC = () => {
   const { lang, t } = useTranslation();
@@ -71,22 +72,13 @@ export const TaskList: React.FC = () => {
     }
     return null;
   }, [rawDeptId, profile?.department_name, departments]);
-  const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
 
-  const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('tasks.departmentFilter', searchParams.get('department_id') || '');
-
-  useEffect(() => {
-    if (userIsRestricted && resolvedDeptId && departmentFilter !== resolvedDeptId) {
-      setDepartmentFilter(resolvedDeptId);
-    }
-  }, [userIsRestricted, resolvedDeptId, departmentFilter]);
+  const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('tasks.departmentFilter.v2', searchParams.get('department_id') || '');
 
   const availableDepartments = useMemo(() => {
-    if (isStaff && resolvedDeptId) {
-      return departments.filter(d => String(d.id) === String(resolvedDeptId));
-    }
-    return departments;
-  }, [departments, isStaff, resolvedDeptId]);
+    const ids=new Set([resolvedDeptId,...tasks.map(t=>t.department_id)]);
+    return departments.filter(d=>isManager||ids.has(String(d.id)));
+  }, [departments,isManager,resolvedDeptId,tasks]);
 
   // Merge people with any task assignees not yet in people, scoped by rank
   const allPeople = useMemo<FilterPerson[]>(() => {
@@ -104,10 +96,10 @@ export const TaskList: React.FC = () => {
       const targetDeptName = profile?.department_name?.trim().toLowerCase();
       const list: FilterPerson[] = people.filter(p => {
         if (String(p.id) === String(profileId)) return true;
-        if (isPersonLeader(p as any)) return true;
+
         const pDept = String((p as any).department_id || '');
         const pDeptName = ((p as any).department_name || '').trim().toLowerCase();
-        return (targetDeptId && pDept === String(targetDeptId)) || (targetDeptName && pDeptName === targetDeptName);
+        return (targetDeptId && pDept === String(targetDeptId)) || (targetDeptName && pDeptName === targetDeptName) || tasks.some(t=>String(t.assignee_id)===String(p.id));
       });
       if (profile && !list.some(p => String(p.id) === String(profileId))) {
         list.push({ id: String(profile.id), name: profile.name || 'Leader', avatar_url: profile.avatar_url });
@@ -264,28 +256,7 @@ export const TaskList: React.FC = () => {
         // Staff thường: Chỉ thấy phạm vi công việc mình được giao / tạo / liên quan trực tiếp
         if (!(isMyTask || isCreator || hasMySubtask || isMyParentTask)) return false;
       } else if (isLeader) {
-        // Leader: Thấy hết công việc của staff thuộc phòng ban mình HOẶC của các Leader đồng cấp trên toàn hệ thống
-        const targetDeptId = resolvedDeptId || departmentFilter;
-        const targetDeptName = profile?.department_name?.trim().toLowerCase();
-        const taskDept = t.department_id || t.department?.id || t.project?.department_id || t.campaign?.department_id;
-        const taskDeptName = (t.department?.name || t.project?.department?.name || t.campaign?.department?.name || '').trim().toLowerCase();
-
-        const assigneeInDept = people.some(p => String(p.id) === String(t.assignee_id) && (String((p as any).department_id || '') === String(targetDeptId) || ((p as any).department_name || '').trim().toLowerCase() === targetDeptName));
-        const creatorInDept = people.some(p => String(p.id) === String(t.created_by) && (String((p as any).department_id || '') === String(targetDeptId) || ((p as any).department_name || '').trim().toLowerCase() === targetDeptName));
-
-        const deptMatch = (targetDeptId && String(taskDept) === String(targetDeptId)) || (targetDeptName && taskDeptName === targetDeptName);
-
-        // Leader đồng cấp: assignee là Leader, creator là Leader, hoặc checklist/subtask có Leader tham gia
-        const isPeerLeaderTask = (
-          isPersonLeader(t.assignee as any) ||
-          people.some(p => isPersonLeader(p as any) && (
-            String(p.id) === String(t.assignee_id) ||
-            String(p.id) === String(t.created_by) ||
-            (t.checklist_items || []).some((ci: any) => String(p.id) === String(ci.assignee_id) || String(p.id) === String(ci.created_by))
-          ))
-        );
-
-        if (!(deptMatch || assigneeInDept || creatorInDept || isMyTask || isCreator || hasMySubtask || isMyParentTask || isPeerLeaderTask)) return false;
+        if (!leaderTaskVisible(profile,t,people)) return false;
       }
     }
 
@@ -326,6 +297,10 @@ export const TaskList: React.FC = () => {
     // 4. Department
     if (departmentParam && t.department?.name !== departmentParam) {
       return false;
+    }
+    if (departmentFilter) {
+      const taskDept = String(t.project?.department_id || t.campaign?.department_id || t.department_id || '');
+      if (taskDept !== String(departmentFilter)) return false;
     }
 
     // 5. Calendar Filter (Custom inline calendar & presets)
@@ -410,7 +385,7 @@ export const TaskList: React.FC = () => {
             departmentFilter={departmentFilter}
             onDepartmentChange={setDepartmentFilter}
             departments={availableDepartments}
-            isDepartmentDisabled={userIsRestricted}
+            isDepartmentDisabled={availableDepartments.length===0}
             calendarFilter={calendarFilter}
             customStartDate={customStartDate}
             customEndDate={customEndDate}

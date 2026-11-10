@@ -11,9 +11,10 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
-import { isGlobalManager, isAdmin, isDepartmentLeader, isPersonLeader } from '../../../lib/roleScope';
+import { isGlobalManager, isAdmin, isDepartmentLeader } from '../../../lib/roleScope';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import {isTaskDone} from '../../../lib/taskTracking';
+import {leaderParentVisible} from '../../../lib/workAccessScope';
 import { EntityInfoPopover } from './EntityInfoPopover';
 import { CommentPreviewPopover } from '../../common/CommentPreviewPopover';
 import { getCampaignPriority, priorityClass } from './projectPresentation';
@@ -332,7 +333,9 @@ export const CampaignPanel: React.FC<{
     setHasUnread(unreadMap);
     
     // Do not re-filter by department: RLS already scopes explicit cross-team invites.
-    setCampaigns(data || []);
+    const invited=await supabase.from('campaign_members').select('campaign_id,user_id,workflow_role');
+    if(invited.error){toast.error(invited.error.message);setCampaigns([]);return;}
+    setCampaigns((data || []).filter(c=>leaderParentVisible(profile,c.department_id,[c.lead_id,...(invited.data||[]).filter(m=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id)])));
   };
 
   const handleQuickCreateSubtask = async (campaignId: string, customTitle: string) => {
@@ -469,17 +472,19 @@ export const CampaignPanel: React.FC<{
   };
 
   const campaignStatusOptions = useMemo(() => [
+    { value: 'draft', label: lang === 'en' ? 'Draft / To-do' : 'Bản nháp', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'active', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
-    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
 
   const campaignSubtaskStatusOptions = useMemo(() => [
+    { value: 'todo', label: lang === 'en' ? 'Draft / To-do' : 'Chưa bắt đầu', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
-    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
+    { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
 
   const handleCreateChecklistItem = async (subtaskId: string) => {
@@ -653,23 +658,9 @@ export const CampaignPanel: React.FC<{
           // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
           if (!isLead && !isCreator && !isSub) return false;
         } else if (isLeader) {
-          // Leader: Thấy hết Campaign thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có Leader đồng cấp tham gia
-          const inDept = Boolean(resolvedDeptId && c.department_id && String(c.department_id) === String(resolvedDeptId));
-          const targetDeptId = resolvedDeptId;
-          const targetDeptName = profile?.department_name?.trim().toLowerCase();
-          const hasDeptMember = (
-            Boolean(c.lead_id && people.some(pe => Number(pe.id) === Number(c.lead_id) && ((targetDeptId && String((pe as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((pe as any).departments?.name || '').trim().toLowerCase() === targetDeptName)))) ||
-            (subtaskMap[c.id] || []).some((a: any) => {
-              const person = people.find(pe => Number(pe.id) === Number(a.id));
-              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
-            })
-          );
-          const isPeerLeaderCampaign = (
-            Boolean(c.lead_id && people.some(pe => Number(pe.id) === Number(c.lead_id) && isPersonLeader(pe as any))) ||
-            Boolean(c.creator?.id && people.some(pe => Number(pe.id) === Number(c.creator.id) && isPersonLeader(pe as any))) ||
-            (subtaskMap[c.id] || []).some((a: any) => people.some(pe => Number(pe.id) === Number(a.id) && isPersonLeader(pe as any)))
-          );
-          if (!inDept && !hasDeptMember && !isPeerLeaderCampaign && !isLead && !isCreator && !isSub) return false;
+          // Parent rows were scoped by exact department/PIC membership in load().
+          // Never widen access through other staff or peer Leaders.
+
         }
       }
 
@@ -745,9 +736,9 @@ export const CampaignPanel: React.FC<{
   }, [campaigns, filters, subtaskMap, profile?.id, profile?.department_name, isManager, isLeader, isStaff, resolvedDeptId, people, userIsRestricted]);
 
   return (
-    <section className="card-hub rounded-[8px] overflow-hidden shrink-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-        <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+    <section className="card-hub rounded-[8px] overflow-hidden shrink-0 min-w-0 max-w-full">
+      <div className="grid grid-cols-[1fr_auto] items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+        <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
           <Megaphone className="text-amber-500" size={16} /> {t('projects.campaignsAccordion')}
           <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
@@ -994,13 +985,18 @@ export const CampaignPanel: React.FC<{
           </p>
         )}
       </div>
-      <div className="hidden overflow-x-auto xl:block">
+      <div className="hidden overflow-x-auto xl:block min-w-0 max-w-full">
         <table ref={campaignTableRef} className="w-full table-fixed text-left border-collapse">
-          <colgroup>
-            {campaignColWidths.map((w, idx) => (
-              <col key={idx} style={{ width: `${w}px` }} />
-            ))}
-          </colgroup>
+          {(() => {
+            const totalCampaignColWidth = campaignColWidths.reduce((sum, w) => sum + w, 0) || 1;
+            return (
+              <colgroup>
+                {campaignColWidths.map((w, idx) => (
+                  <col key={idx} style={{ width: `${((w / totalCampaignColWidth) * 100).toFixed(3)}%` }} />
+                ))}
+              </colgroup>
+            );
+          })()}
           <thead className="bg-gray-50 dark:bg-slate-800 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="p-4 relative text-left">

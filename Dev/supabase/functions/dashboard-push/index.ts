@@ -1,4 +1,4 @@
-import {notificationLink} from '../_shared/notificationLink.ts';
+import {notificationPayload} from '../_shared/notificationPayload.ts';
 // Deployed with verify_jwt=false: drain uses a private webhook secret; test uses
 // Supabase Auth.getUser and derives the recipient, never a client-supplied ID.
 import {createClient} from 'npm:@supabase/supabase-js@2.117.2';
@@ -29,7 +29,7 @@ Deno.serve(async request=>{
    const {count,error:countError}=await db.from('notifications').select('id',{head:true,count:'exact'}).eq('user_id',staff.id).eq('type','push_test').gte('created_at',new Date(Date.now()-60000).toISOString());
    if(countError)throw countError;
    if(count)return reply(429,{error:'Vui lòng chờ một phút rồi thử lại.'});
-   const {error:insertError}=await db.from('notifications').insert({user_id:staff.id,type:'push_test',entity_type:'profile',message:'Điện thoại đã kết nối thông báo K COFFEE. Bấm để mở Dashboard.'});
+   const {error:insertError}=await db.from('notifications').insert({user_id:staff.id,type:'push_test',entity_type:'profile',message:'Thiết bị đã kết nối thông báo Phuc Sinh Consumers. Bấm để mở Dashboard.'});
    if(insertError)throw insertError;
    return reply(200,{queued:true});
   }
@@ -44,7 +44,7 @@ Deno.serve(async request=>{
     if(allowedEndpoint(item.subscription.endpoint)&&cfg.allowed_origins.includes(item.origin)){
      const notification=item.notification;
      try{
-      const response=await webpush.sendNotification(item.subscription,JSON.stringify({title:'K COFFEE',body:String(notification.message||'Bạn có thông báo mới').slice(0,240),tag:`notification-${notification.id}`,notificationId:notification.id,url:notificationLink(notification.entity_type,notification.entity_id,notification.metadata)||'/my-tasks'}),{TTL:3600,urgency:'normal',timeout:10000});
+      const response=await webpush.sendNotification(item.subscription,JSON.stringify(notificationPayload(notification)),{TTL:3600,urgency:'normal',timeout:10000});
       status=response.statusCode;sent++;
      }catch(error:any){status=Number(error.statusCode)||503;}
     }

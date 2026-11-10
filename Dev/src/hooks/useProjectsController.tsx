@@ -13,14 +13,16 @@ import {readAll} from '../services/workspaceTasks';
 import {useAuthStore} from '../store/authStore';
 import {checkDateMatch,type CampaignFilters} from '../components/features/projects/CampaignPanel';
 import {recordTaskDeletion} from '../services/taskDeletionLog';
-import {type Project,type Person,strictFormatVN} from '../components/features/projects/projectPresentation';
-import {canViewTeamManagement,isGlobalManager,isAdmin,isDepartmentLeader,isPersonLeader} from '../lib/roleScope';
+import {type Project,type Person,strictFormatVN,getCampaignPriority} from '../components/features/projects/projectPresentation';
+import {canViewTeamManagement,isGlobalManager,isAdmin,isDepartmentLeader} from '../lib/roleScope';
 import {isTaskDone} from '../lib/taskTracking';
 import {deleteOwnedComment,ownsComment} from '../lib/commentDeletion';
 import {editOwnedComment} from '../lib/commentEditing';
 import {useRememberedState} from './useRememberedState';
 import {completeTrackedTask} from '../services/workspaceTasks';
 import {saveTaskDeliverables, computeDeliverableQuantity} from '../lib/taskDeliverables';
+import {leaderParentVisible,workAssignmentPeople} from '../lib/workAccessScope';
+import {parentCreationError} from '../lib/parentCreationError';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -162,6 +164,9 @@ export function useProjectsController(){
   // Selecting another department's PIC is an explicit invitation, not a global
   // read grant. The database limits their workflow scope to parent or phase.
   const visiblePeople = people;
+  const creationPeople=useMemo(()=>workAssignmentPeople(profile,people),[profile,people]);
+  const creationDepartments=useMemo(()=>isLeader?departments.filter(d=>String(d.id)===String(resolvedDeptId)):departments,[departments,isLeader,resolvedDeptId]);
+  const parentInvites=(kind:'project'|'campaign',id:string)=>workflow.tracks.filter(t=>t.entity_type===kind&&t.entity_id===id).flatMap(t=>[...t.pics,...(t.sub_pics||[])].map(p=>p.id));
   const projectCommentInput = React.useRef<HTMLTextAreaElement>(null);
   const projectMentionQuery = useMemo(() => comment.match(/(?:^|\s)@([^\s@]*)$/)?.[1]?.toLowerCase() || null, [comment]);
   const projectMentionOptions = useMemo(() => projectMentionQuery === null ? [] : visiblePeople.filter(person => person.name.toLowerCase().includes(projectMentionQuery)).slice(0, 5), [projectMentionQuery, visiblePeople]);
@@ -220,7 +225,8 @@ export function useProjectsController(){
     return Object.fromEntries(Object.entries(result).map(([id, ids]) => [id, [...ids]]));
   }, [legacySubtaskMembers, workflow.tasks, workflow.tracks]);
 
-  // Filter states
+  // View mode & Filter states
+  const [viewMode, setViewMode] = useRememberedState<'list' | 'board'>('projects.viewMode', 'list');
   const [searchTerm, setSearchTerm] = useRememberedState('projects.search', '');
   const [statusFilter, setStatusFilter] = useRememberedState<string>('projects.status', 'open');
   const [picFilter, setPicFilter] = useRememberedState<string>('projects.pic', 'all');
@@ -228,10 +234,12 @@ export function useProjectsController(){
   const [customStartDate, setCustomStartDate] = useRememberedState<string>('projects.startDate', '');
   const [customEndDate, setCustomEndDate] = useRememberedState<string>('projects.endDate', '');
   const [priorityFilter, setPriorityFilter] = useRememberedState<string>('projects.priority', 'all');
-  const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('projects.departmentFilter', '');
+  const [departmentFilter, setDepartmentFilter] = useRememberedState<string>('projects.departmentFilter.v2', '');
+  const effectiveDepartmentFilter = departmentFilter;
+  const [campaignSubtaskMembers, setCampaignSubtaskMembers] = useState<Record<string, string[]>>({});
 
   // Dropdown open state
-  const [activeDropdown, setActiveDropdown] = useState<'status' | 'pic' | 'calendar' | 'priority' | 'department' | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<'status' | 'pic' | 'calendar' | 'priority' | 'department' | 'view' | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -297,38 +305,6 @@ export function useProjectsController(){
         if (isStaff) {
           // Staff thường: KHÔNG dùng inDept, chỉ thấy khi được giao / tham gia
           if (!isLead && !isMember && !isSub && !isCreator) return false;
-        } else if (isLeader) {
-          // Leader: Thấy hết Project thuộc phòng ban mình HOẶC có nhân sự phòng ban tham gia HOẶC có Leader đồng cấp tham gia
-          const inDept = Boolean(resolvedDeptId && p.department_id && String(p.department_id) === String(resolvedDeptId));
-          const targetDeptId = resolvedDeptId;
-          const targetDeptName = profile?.department_name?.trim().toLowerCase();
-          const hasDeptMember = (
-            (members[p.id] || []).some(id => {
-              const person = people.find(pe => String(pe.id) === String(id));
-              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
-            }) ||
-            (picMembers[p.id] || []).some(id => {
-              const person = people.find(pe => String(pe.id) === String(id));
-              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
-            }) ||
-            (subtaskMembers[p.id] || []).some(id => {
-              const person = people.find(pe => String(pe.id) === String(id));
-              return person && ((targetDeptId && String((person as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((person as any).departments?.name || '').trim().toLowerCase() === targetDeptName));
-            }) ||
-            Boolean(p.lead_id && people.some(pe => Number(pe.id) === Number(p.lead_id) && ((targetDeptId && String((pe as any).department_id || '') === String(targetDeptId)) || (targetDeptName && ((pe as any).departments?.name || '').trim().toLowerCase() === targetDeptName))))
-          );
-
-          // Đồng cấp: Project có Leader làm lead_id, primary owner, creator hoặc tham gia (member/pic/subtask)
-          const isPeerLeaderProject = (
-            Boolean(p.lead_id && people.some(pe => Number(pe.id) === Number(p.lead_id) && isPersonLeader(pe as any))) ||
-            Boolean(projectPrimaryOwners[p.id] && people.some(pe => String(pe.id) === String(projectPrimaryOwners[p.id]) && isPersonLeader(pe as any))) ||
-            Boolean(p.created_by && people.some(pe => Number(pe.id) === Number(p.created_by) && isPersonLeader(pe as any))) ||
-            (members[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any))) ||
-            (picMembers[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any))) ||
-            (subtaskMembers[p.id] || []).some(id => people.some(pe => String(pe.id) === String(id) && isPersonLeader(pe as any)))
-          );
-
-          if (!inDept && !hasDeptMember && !isPeerLeaderProject && !isLead && !isMember && !isSub && !isCreator) return false;
         }
       }
 
@@ -340,8 +316,9 @@ export function useProjectsController(){
       }
 
       // 2. Status filter
-      if (statusFilter === 'open' && isTaskDone(p.status)) return false;
-      if (statusFilter !== 'all' && statusFilter !== 'open') {
+      if (statusFilter === 'open') {
+        if (viewMode !== 'board' && isTaskDone(p.status)) return false;
+      } else if (statusFilter !== 'all') {
         const norm = (p.status || 'active').toLowerCase();
         if (statusFilter === 'in_progress') {
           if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;
@@ -405,13 +382,103 @@ export function useProjectsController(){
 
       return true;
     });
-  }, [projects, searchTerm, statusFilter, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, departmentFilter, members, picMembers, subtaskMembers, projectPrimaryOwners, profile?.id, userIsRestricted, resolvedDeptId]);
+  }, [workflow.tracks, profile?.role, profile?.employment_level, projects, searchTerm, statusFilter, viewMode, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, departmentFilter, members, picMembers, subtaskMembers, projectPrimaryOwners, profile?.id, userIsRestricted, resolvedDeptId]);
+
+  const visibleCampaigns = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return campaigns.filter(c => {
+      // 0. Phân quyền tầm view theo 3 cấp: Manager/Admin -> Leader -> Staff
+      if (!isManager) {
+        const myId = profile?.id != null ? Number(profile.id) : null;
+        const myIdStr = String(myId);
+        const isLead = myId && Number(c.lead_id) === myId;
+        const isCreator = myId && Number(c.creator?.id || c.created_by) === myId;
+        const isSub = (campaignSubtaskMembers[c.id] || []).includes(myIdStr);
+
+        if (isStaff) {
+          if (!isLead && !isCreator && !isSub) return false;
+        }
+      }
+
+      // 1. Search filter
+      if (term) {
+        const nameMatch = (c.name || '').toLowerCase().includes(term);
+        const objMatch = (c.objective || '').toLowerCase().includes(term);
+        if (!nameMatch && !objMatch) return false;
+      }
+
+      // 2. Status filter
+      if (statusFilter === 'open') {
+        if (viewMode !== 'board' && isTaskDone(c.status)) return false;
+      } else if (statusFilter !== 'all') {
+        const norm = (c.status || 'planning').toLowerCase();
+        if (statusFilter === 'in_progress') {
+          if (!['active', 'in_progress', 'in-progress'].includes(norm)) return false;
+        } else if (statusFilter === 'completed') {
+          if (!['done', 'complete', 'completed'].includes(norm)) return false;
+        } else if (statusFilter === 'planning') {
+          if (!['planning', 'draft', 'pending'].includes(norm)) return false;
+        } else if (statusFilter !== norm) {
+          return false;
+        }
+      }
+
+      // 3. PIC filter
+      if (picFilter !== 'all') {
+        if (picFilter === 'me') {
+          const myId = profile?.id != null ? Number(profile.id) : null;
+          const myIdStr = String(myId);
+          const isLead = myId && Number(c.lead_id) === myId;
+          const isCreator = myId && Number(c.creator?.id || c.created_by) === myId;
+          const isSub = (campaignSubtaskMembers[c.id] || []).includes(myIdStr);
+          if (!isLead && !isCreator && !isSub) return false;
+        } else if (picFilter === 'unassigned') {
+          if (c.lead_id || c.lead?.name) return false;
+        } else {
+          const targetId = Number(picFilter);
+          const targetStr = String(picFilter);
+          const isLead = Number(c.lead_id) === targetId;
+          const isCreator = Number(c.created_by) === targetId;
+          const isSub = (campaignSubtaskMembers[c.id] || []).includes(targetStr);
+          if (!isLead && !isCreator && !isSub) return false;
+        }
+      }
+
+      // 4. Priority filter
+      if (priorityFilter !== 'all') {
+        const pPriority = getCampaignPriority(c).toLowerCase();
+        if (pPriority !== priorityFilter.toLowerCase()) return false;
+      }
+
+      // 5. Calendar filter
+      const isCompleted = ['done', 'complete', 'completed'].includes((c.status || '').toLowerCase());
+      if (calendarFilter !== 'all') {
+        if (!checkDateMatch(c.start_date, c.end_date, calendarFilter, customStartDate, customEndDate, isCompleted)) {
+          return false;
+        }
+      } else if (customStartDate || customEndDate) {
+        if (!checkDateMatch(c.start_date, c.end_date, 'custom', customStartDate, customEndDate, isCompleted)) {
+          return false;
+        }
+      }
+
+      // 6. Department filter
+      if (departmentFilter) {
+        if (String(c.department_id || '') !== String(departmentFilter)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [workflow.tracks, profile?.role, profile?.employment_level, campaigns, searchTerm, statusFilter, viewMode, picFilter, calendarFilter, customStartDate, customEndDate, priorityFilter, departmentFilter, campaignSubtaskMembers, profile?.id, userIsRestricted, resolvedDeptId]);
 
 
   const load = async () => {
     const token = ++loadRequest.current;
     if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
-    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes] = await Promise.all([
+    const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes, campSubtaskRes, campMemberRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('project_members').select('project_id,user_id,workflow_role'),
       supabase.from('project_comments').select('project_id'),
@@ -421,12 +488,15 @@ export function useProjectsController(){
       supabase.from('activity_log').select('entity_id').eq('entity_type', 'campaign').eq('action', 'comment'),
       profile?.id
         ? supabase.from('notifications').select('entity_type, entity_id').eq('user_id', profile.id).eq('is_read', false).in('entity_type', ['project', 'campaign'])
-        : Promise.resolve({ data: [] } as any)
+        : Promise.resolve({ data: [] } as any),
+      supabase.from('campaign_subtasks').select('campaign_id,assignee_id').not('status','in','(deleted,archived)'),
+      supabase.from('campaign_members').select('campaign_id,user_id,workflow_role')
     ]);
     if (token !== loadRequest.current) return;
     if (projectRes.error) return toast.error('Không thể tải Project');
-    setProjects(projectRes.data || []);
-    setSelected(current => current ? (projectRes.data || []).find(p => p.id === current.id) || null : null);
+    const projectData=(projectRes.data||[]).filter(p=>leaderParentVisible(profile,p.department_id,[...(memberRes.data||[]).filter(m=>m.project_id===p.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id),...parentInvites('project',p.id)]));
+    setProjects(projectData);
+    setSelected(current => current ? projectData.find(p => p.id === current.id) || null : null);
     setMembers((memberRes.data || []).reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
     setPicMembers((memberRes.data || []).filter(item => item.workflow_role === 'pic').reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
 
@@ -444,7 +514,7 @@ export function useProjectsController(){
     });
     setHasMentionOrUnread(unreadMap);
     if(campaignRes.error||creationRes.error)return toast.error('Chưa đồng bộ đầy đủ Project/Campaign.');
-    const campaignData=campaignRes.data||[];
+    const campaignData=(campaignRes.data||[]).filter(c=>leaderParentVisible(profile,c.department_id,[c.lead_id,...(campMemberRes?.data||[]).filter((m:any)=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map((m:any)=>m.user_id),...parentInvites('campaign',c.id)]));
     setCampaigns(campaignData);
     setSelectedCampaign((current:any)=>current?campaignData.find(c=>c.id===current.id)||null:null);
     setProjectPrimaryOwners(Object.fromEntries((creationRes.data||[]).map(row=>[row.entity_id,row.metadata?.primary_owner_id])));
@@ -458,6 +528,16 @@ export function useProjectsController(){
     const subtaskMembersRecord: Record<string, string[]> = {};
     for (const pid in stMap) subtaskMembersRecord[pid] = Array.from(stMap[pid]);
     setSubtaskMembers(subtaskMembersRecord);
+
+    const cStMap: Record<string, Set<string>> = {};
+    (campSubtaskRes?.data || []).forEach((s: any) => {
+       if (!s.assignee_id) return;
+       if (!cStMap[s.campaign_id]) cStMap[s.campaign_id] = new Set();
+       cStMap[s.campaign_id].add(String(s.assignee_id));
+    });
+    const campSubtaskMembersRecord: Record<string, string[]> = {};
+    for (const cid in cStMap) campSubtaskMembersRecord[cid] = Array.from(cStMap[cid]);
+    setCampaignSubtaskMembers(campSubtaskMembersRecord);
   };
   useEffect(() => {
     void load();
@@ -469,7 +549,7 @@ export function useProjectsController(){
       window.removeEventListener('projects:changed', handleChanged);
       window.removeEventListener('campaigns:changed', handleChanged);
     };
-  }, [profile?.id, profile?.department_id,profile?.role,profile?.employment_level]);
+  }, [profile?.id, profile?.department_id,profile?.role,profile?.employment_level,workflow.tracks]);
   useWorkspaceRealtime(['projects','campaigns','project_subtasks','campaign_subtasks','project_members','campaign_members','project_comments','activity_log'], change => {
     if(!change?.table||change.table!=='activity_log'||change.new?.action==='creation_details'||change.eventType==='DELETE')void load();
     const row=change?.new||change?.old;
@@ -653,7 +733,7 @@ export function useProjectsController(){
   const resetCreateForm = () => {
     setExecutionMemberIds([]);
     setTitle(''); setDescription(''); setStart(new Date().toLocaleDateString('en-GB')); setDue(''); setPriority('medium'); setOwnerIds([]); setPrimaryOwnerId('');
-    setParentCampaignId(''); setDepartmentId(profile?.department_id || ''); setCampaignObjective(''); setCampaignBudget(''); setCampaignStatus('planning'); setCampaignChannels([]); setAttachmentUrl(''); setAttachmentFile(null); setShowAdvanced(false);
+    setParentCampaignId(''); setDepartmentId(profile?.department_id || ''); setCampaignObjective(''); setCampaignBudget(''); setCampaignStatus('planning'); setEditStatus('active'); setCampaignChannels([]); setAttachmentUrl(''); setAttachmentFile(null); setShowAdvanced(false);
   };
 
   const selectParentCampaign = (id: string) => {
@@ -683,9 +763,10 @@ export function useProjectsController(){
     if (creationLock.current) return;
     if (!canCreate || !profile?.id) return toast.error('Bạn không có quyền tạo mới.');
     if (!title.trim() || !primaryOwnerId) return toast.error('Nhập tên và chọn người phụ trách chính.');
-    const allowed = new Set(visiblePeople.map(person => String(person.id)));
+    const allowed = new Set(creationPeople.map(person => String(person.id)));
     const selectedPeople = [primaryOwnerId, ...ownerIds, ...(creationType === 'project' ? executionMemberIds : [])];
     if (selectedPeople.some(id => !allowed.has(id))) return toast.error('PIC nằm ngoài phạm vi được giao việc.');
+    if (isLeader && (!resolvedDeptId || departmentId!==resolvedDeptId)) return toast.error('Leader chỉ tạo Project/Campaign trong phòng ban của mình.');
     const startDate = parseYMD(start), endDate = parseYMD(due);
     if (startDate && endDate && endDate < startDate) return toast.error('Ngày kết thúc phải từ ngày bắt đầu trở đi.');
     if (creationType === 'project' && parentCampaignId && !campaigns.some(c => c.id === parentCampaignId)) return toast.error('Chiến dịch không còn khả dụng.');
@@ -702,7 +783,7 @@ export function useProjectsController(){
         const { data: campaign, error } = await supabase.from('campaigns').insert({
           name: title.trim(), objective: campaignObjective || null, start_date: startDate, end_date: endDate,
           budget: campaignBudget ? Number(campaignBudget) : null, channels: campaignChannels,
-          lead_id: Number(primaryOwnerId), status: campaignStatus,
+          lead_id: Number(primaryOwnerId), status: campaignStatus || 'planning',
           department_id: departmentId || profile.department_id || people.find(p => p.id === Number(primaryOwnerId))?.department_id || null,
           workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile.id
         }).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single();
@@ -723,7 +804,7 @@ export function useProjectsController(){
         const participantIds = Array.from(new Set([...picIds, ...executionMemberIds]));
         const { data: project, error } = await supabase.from('projects').insert({
           name: title.trim(), description: description || null, start_date: startDate, due_date: endDate, priority,
-          status: 'active', campaign_id: parentCampaignId || null,
+          status: editStatus || 'active', campaign_id: parentCampaignId || null,
           department_id: departmentId || profile.department_id || people.find(p => p.id === Number(primaryOwnerId))?.department_id || null,
           assets_url: asset, workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', created_by: profile.id
         }).select('*, creator:created_by(name,avatar_url)').single();
@@ -747,7 +828,7 @@ export function useProjectsController(){
       }
       await load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể tạo mới. Kiểm tra kết nối và thử lại.');
+      toast.error(parentCreationError(error),{id:'parent-create-error'});
     } finally { creationLock.current = false; setCreating(false); }
   };
 const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
@@ -876,7 +957,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       await saveTaskDeliverables(
         'project_subtask',
         insertedSubtask.id,
-        { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+        { _notification_initial: true, quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
         profile?.id,
         (selected as any).workspace_id,
       ).catch((error: any) => {
@@ -963,7 +1044,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
       await saveTaskDeliverables(
         'campaign_subtask',
         insertedCampSubtask.id,
-        { quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
+        { _notification_initial: true, quantity: Number.isFinite(numQ) && numQ > 0 ? numQ : null },
         profile?.id,
         selectedCampaign.workspace_id,
       ).catch((error: any) => {
@@ -995,10 +1076,38 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     setRefreshDetailTrigger(v=>v+1);
     supabase.from('activity_log').select('*, user:user_id(name,avatar_url)').eq('entity_type', 'campaign').eq('entity_id', selectedCampaign.id).eq('action', 'comment').order('created_at').then(res => setCampaignComments(res.data || []));
   };
+  const handleUpdateProjectStatus = async (projectId: string, newStatus: string) => {
+    setProjects(current => current.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+    if (selected?.id === projectId) setSelected(current => current ? { ...current, status: newStatus } : null);
+    const { error } = await supabase.from('projects').update({ status: newStatus }).eq('id', projectId);
+    if (error) {
+      toast.error(lang === 'en' ? 'Failed to update project status' : 'Lỗi cập nhật trạng thái dự án');
+      void load();
+      return;
+    }
+    window.dispatchEvent(new Event('projects:changed'));
+    window.dispatchEvent(new Event('tasks:changed'));
+    toast.success(lang === 'en' ? 'Project status updated' : 'Đã cập nhật trạng thái dự án');
+  };
+
+  const handleUpdateCampaignStatus = async (campaignId: string, newStatus: string) => {
+    setCampaigns(current => current.map(c => c.id === campaignId ? { ...c, status: newStatus } : c));
+    if (selectedCampaign?.id === campaignId) setSelectedCampaign((current: any) => current ? { ...current, status: newStatus } : null);
+    const { error } = await supabase.from('campaigns').update({ status: newStatus }).eq('id', campaignId);
+    if (error) {
+      toast.error(lang === 'en' ? 'Failed to update campaign status' : 'Lỗi cập nhật trạng thái chiến dịch');
+      void load();
+      return;
+    }
+    window.dispatchEvent(new Event('campaigns:changed'));
+    window.dispatchEvent(new Event('tasks:changed'));
+    toast.success(lang === 'en' ? 'Campaign status updated' : 'Đã cập nhật trạng thái chiến dịch');
+  };
+
   const completeCampaign = async () => { if (!selectedCampaign) return; const { error } = await supabase.from('campaigns').update({ status: 'completed' }).eq('id', selectedCampaign.id); if (error) return toast.error('Không thể hoàn thành Campaign'); const updated = { ...selectedCampaign, status: 'completed' }; setSelectedCampaign(updated); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã hoàn thành Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã đánh dấu hoàn thành chiến dịch: ' + selectedCampaign.name); };
   const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim() || !selectedRoot) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), status: editStatus, objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null, department_id: (typeof departmentId !== 'undefined' && departmentId) ? departmentId : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaigns(items => items.map(item => item.id === data.id ? data : item)); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
 
- return {departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,setCampaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,campaignSubtaskPriority,setCampaignSubtaskPriority,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,toggleSubtask,toggleCampaignSubtask,hasCampaignComments,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
+ return {creationPeople,creationDepartments,userIsRestricted,resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,departments,departmentId,setDepartmentId,departmentFilter,effectiveDepartmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,setCampaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,campaignSubtaskPriority,setCampaignSubtaskPriority,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,toggleSubtask,toggleCampaignSubtask,hasCampaignComments,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
 }

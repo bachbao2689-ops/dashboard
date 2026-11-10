@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 const connectionString = require('./devDbGuard')(process.env.DATABASE_URL);
 if (!connectionString) throw new Error('DATABASE_URL is required in backend/.env.');
@@ -40,7 +40,7 @@ const initialsFor = name => name.split(/\s+/).map(word => word[0]).join('').slic
 const emailFor = name => `imported+${Buffer.from(name).toString('hex')}@kcoffee.local`;
 
 async function main() {
-  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  const client = new Client({ connectionString, ssl: false });
   await client.connect();
   try {
     await client.query('BEGIN');

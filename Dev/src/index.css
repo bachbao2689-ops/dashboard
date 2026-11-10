@@ -748,6 +748,8 @@ html.dark .hover-magnetic-btn.is-magnetic-active {
 .hover-magnetic.magnetic-emerald, .hover-magnetic-card.magnetic-emerald { --glow-color: 34, 197, 94; }
 .hover-magnetic.magnetic-green, .hover-magnetic-card.magnetic-green { --glow-color: 78, 182, 72; }
 .hover-magnetic.magnetic-violet, .hover-magnetic-card.magnetic-violet { --glow-color: 139, 92, 246; }
+.hover-magnetic.magnetic-purple, .hover-magnetic-card.magnetic-purple { --glow-color: 168, 85, 247; }
+.hover-magnetic.magnetic-slate, .hover-magnetic-card.magnetic-slate { --glow-color: 148, 163, 184; }
 .hover-magnetic.magnetic-primary, .hover-magnetic-card.magnetic-primary { --glow-color: 0, 46, 109; }
 
 .hover-magnetic::before,
@@ -848,6 +850,38 @@ html.dark .hover-row-effect.is-magnetic-active {
   box-shadow: 0 8px 30px -10px rgba(var(--row-glow-color), 0.3), 0 -8px 30px -10px rgba(var(--row-glow-color), 0.3) !important;
   position: relative;
   z-index: 10;
+}
+
+/* 4. KANBAN BOARD CARDS (.hover-board-card) - Dark mode spotlight glow only */
+.hover-board-card {
+  --board-glow-color: 56, 189, 248;
+  position: relative;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.hover-board-card.board-glow-slate { --board-glow-color: 148, 163, 184; }
+.hover-board-card.board-glow-purple { --board-glow-color: 168, 85, 247; }
+.hover-board-card.board-glow-sky { --board-glow-color: 56, 189, 248; }
+.hover-board-card.board-glow-amber { --board-glow-color: 245, 158, 11; }
+.hover-board-card.board-glow-emerald { --board-glow-color: 34, 197, 94; }
+
+/* Light mode: giữ nguyên 100% như ver trước, không glow, không scale, không radial gradient */
+html:not(.dark) .hover-board-card {
+  transform: none !important;
+}
+
+/* Dark mode: spotlight radial-gradient theo chuột + viền sáng mềm mại, tuyệt đối không scale để không bị crop */
+html.dark .hover-board-card:hover {
+  background-color: #0b192e !important;
+  background-image: radial-gradient(
+    circle 220px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--board-glow-color), 0.22) 0%,
+    rgba(var(--board-glow-color), 0.05) 55%,
+    rgba(var(--board-glow-color), 0) 100%
+  ) !important;
+  border-color: rgba(var(--board-glow-color), 0.65) !important;
+  box-shadow: 0 0 18px -2px rgba(var(--board-glow-color), 0.28),
+              inset 0 0 0 1px rgba(var(--board-glow-color), 0.25) !important;
 }
 
 @keyframes bounce-short {

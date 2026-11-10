@@ -36,13 +36,26 @@ try {
   delete process.env.SUPABASE_URL; delete process.env.VITE_SUPABASE_URL;
   delete process.env.SUPABASE_ANON_KEY; delete process.env.VITE_SUPABASE_ANON_KEY;
   assert.equal((await (await endpoint.POST(request({ message: 'Hello' }))).json()).code, 'SUPABASE_NOT_CONFIGURED');
-  process.env.SUPABASE_URL = 'https://fixture.invalid';
+  process.env.SUPABASE_URL = 'http://127.0.0.1:29130';
+  delete process.env.VERCEL; delete process.env.VERCEL_ENV; delete process.env.VERCEL_GIT_COMMIT_REF;
   process.env.SUPABASE_ANON_KEY = 'fixture-publishable';
+  const localBackend=process.env.SUPABASE_URL;
+  let unexpectedNetwork=0;
+  globalThis.fetch=async()=>{unexpectedNetwork++;throw Error('Blocked target must never reach the network');};
+  for(const target of ['https://jxrwphjriuqbpdpwpqcn.supabase.co','https://samuuyxxtocqmtujnnhe.supabase.co']) {
+    process.env.SUPABASE_URL=target;
+    assert.equal((await (await endpoint.POST(request({message:'Blocked cloud'}))).json()).code,'BACKEND_TARGET_BLOCKED');
+  }
+  process.env.SUPABASE_URL=localBackend;
+  process.env.VERCEL='1';process.env.VERCEL_ENV='preview';process.env.VERCEL_GIT_COMMIT_REF='main';
+  assert.equal((await (await endpoint.POST(request({message:'Blocked preview'}))).json()).code,'BACKEND_TARGET_BLOCKED');
+  assert.equal(unexpectedNetwork,0,'Blocked local/Preview configurations cannot call cloud before authentication');
+  delete process.env.VERCEL;delete process.env.VERCEL_ENV;delete process.env.VERCEL_GIT_COMMIT_REF;
   process.env.AI_AGENT_MODEL = 'fixture/model';
   process.env.AI_AGENT_APPROVAL_SECRET = 'fixture-only-secret-with-more-than-32-characters';
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
-    assert.equal(url.origin, 'https://fixture.invalid', 'No external calls');
+    assert.equal(url.origin, 'http://127.0.0.1:29130', 'No external calls');
     if (url.pathname === '/auth/v1/user') return json({ id: actor.auth_id });
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer fixture-session', 'Tools keep caller JWT');
     if (url.pathname === '/rest/v1/users') return json(actor);

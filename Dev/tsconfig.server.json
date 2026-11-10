@@ -19,6 +19,7 @@
   },
   "include": [
     "api/**/*.ts",
-    "server/**/*.ts"
+    "server/**/*.ts",
+    "src/lib/backendTarget.ts"
   ]
 }
