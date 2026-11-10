@@ -517,7 +517,16 @@ export function useProjectsController(){
     ]);
     if (token !== loadRequest.current) return;
     if (projectRes.error) return toast.error('Không thể tải Project');
-    const projectData=(projectRes.data||[]).filter(p=>leaderParentVisible(profile,p.department_id,[p.created_by,...(memberRes.data||[]).filter(m=>m.project_id===p.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id),...parentInvites('project',p.id)]));
+    const projectData=(projectRes.data||[]).filter(p=>{
+      const pAssignees = (subtaskRes.data||[]).filter(s=>s.project_id===p.id&&s.assignee_id).map(s=>s.assignee_id);
+      const pInvited = [
+        p.created_by,
+        ...(memberRes.data||[]).filter(m=>m.project_id===p.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id),
+        ...parentInvites('project',p.id),
+        ...pAssignees
+      ];
+      return leaderParentVisible(profile,p.department_id,pInvited,people);
+    });
     setProjects(projectData);
     setSelected(current => current ? projectData.find(p => p.id === current.id) || null : null);
     setMembers((memberRes.data || []).reduce((acc: Record<string, string[]>, item: any) => ({ ...acc, [item.project_id]: [...(acc[item.project_id] || []), String(item.user_id)] }), {}));
@@ -537,7 +546,17 @@ export function useProjectsController(){
     });
     setHasMentionOrUnread(unreadMap);
     if(campaignRes.error||creationRes.error)return toast.error('Chưa đồng bộ đầy đủ Project/Campaign.');
-    const campaignData=(campaignRes.data||[]).filter(c=>leaderParentVisible(profile,c.department_id,[c.created_by,c.lead_id,...(campMemberRes?.data||[]).filter((m:any)=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map((m:any)=>m.user_id),...parentInvites('campaign',c.id)]));
+    const campaignData=(campaignRes.data||[]).filter(c=>{
+      const cAssignees = (campSubtaskRes?.data||[]).filter((s:any)=>s.campaign_id===c.id&&s.assignee_id).map((s:any)=>s.assignee_id);
+      const cInvited = [
+        c.created_by,
+        c.lead_id,
+        ...(campMemberRes?.data||[]).filter((m:any)=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map((m:any)=>m.user_id),
+        ...parentInvites('campaign',c.id),
+        ...cAssignees
+      ];
+      return leaderParentVisible(profile,c.department_id,cInvited,people);
+    });
     setCampaigns(campaignData);
     setSelectedCampaign((current:any)=>current?campaignData.find(c=>c.id===current.id)||null:null);
     setProjectPrimaryOwners(Object.fromEntries((creationRes.data||[]).map(row=>[row.entity_id,row.metadata?.primary_owner_id])));

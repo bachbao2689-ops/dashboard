@@ -80,7 +80,16 @@ export function useWorkflowManagement() {
           return isParticipant || hasMyTask;
         }
 
-        if (isLeader) return trackLeaderVisible(hub.profile,track);
+        if (isLeader) {
+          const trackTasks = parentTasks(hub.tasks, track.entity_type, track.entity_id);
+          const taskAssigneeIds = trackTasks.map(t => t.assignee_id).filter(Boolean);
+          const phaseMemberIds = (track.phases || []).flatMap(s => (s.members || []).map(m => m.id)).filter(Boolean);
+          return trackLeaderVisible(hub.profile, {
+            ...track,
+            member_ids: phaseMemberIds,
+            task_assignee_ids: taskAssigneeIds as (string | number)[],
+          }, hub.people);
+        }
 
         return true;
       })
@@ -272,16 +281,35 @@ export function useWorkflowManagement() {
   const daysRemaining = daysUntil(currentEntity?.due_date);
   const entityTimeline = displayDate(currentEntity?.start_date) + ' – ' + displayDate(currentEntity?.due_date);
   const subTeamMembers = useMemo(() => {
-    const fromTasks = taskContributors(allTasks);
-    if (fromTasks.length > 0) return fromTasks;
-    const existing = [
-      ...(currentEntity?.pics?.slice(1) || []),
-      ...(currentEntity?.sub_pics || [])
-    ];
-    if (existing.length > 0) {
-      return existing.map(p => ({ id: p.id, name: p.name, avatar_url: p.avatar_url }));
+    const memberMap = new Map<string, { id: string | number; name: string; avatar_url?: string | null }>();
+    const lead = (currentEntity as any)?.lead || currentEntity?.pics?.[0];
+    const isLead = (id: string | number) => Boolean(lead && String(id) === String(lead.id));
+
+    // 1. Entity Sub-PICs
+    for (const p of currentEntity?.sub_pics || []) {
+      if (!isLead(p.id)) memberMap.set(String(p.id), { id: p.id, name: p.name, avatar_url: p.avatar_url });
     }
-    return [];
+    // 2. Phase Sub-PICs from all phases
+    for (const phase of currentEntity?.phases || []) {
+      for (const m of phase.members || []) {
+        if (m.role === 'sub_pic' && !isLead(m.id)) {
+          memberMap.set(String(m.id), { id: m.id, name: m.name, avatar_url: m.avatar_url });
+        }
+      }
+    }
+    // 3. Task contributors
+    for (const p of taskContributors(allTasks)) {
+      if (!isLead(p.id) && !memberMap.has(String(p.id))) {
+        memberMap.set(String(p.id), p);
+      }
+    }
+    // 4. Secondary PICs
+    for (const p of currentEntity?.pics?.slice(1) || []) {
+      if (!isLead(p.id) && !memberMap.has(String(p.id))) {
+        memberMap.set(String(p.id), { id: p.id, name: p.name, avatar_url: p.avatar_url });
+      }
+    }
+    return Array.from(memberMap.values());
   }, [allTasks, currentEntity]);
   const parentCalendar = workflowCalendarWindow(currentEntity);
   const taskCalendar = workflowCalendarWindow(currentEntity, activePhase);
@@ -318,7 +346,12 @@ export function useWorkflowManagement() {
   const [newCriteriaWeight, setNewCriteriaWeight] = useState('20');
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('');
+  const [newTaskAssignees, setNewTaskAssignees] = useState<string[]>([]);
+  const newTaskAssignee = newTaskAssignees[0] || '';
+  const setNewTaskAssignee = (val: string | string[]) => {
+    if (Array.isArray(val)) setNewTaskAssignees(val.slice(0, 2));
+    else setNewTaskAssignees(val ? [val] : []);
+  };
   const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
   const [newTaskDue, setNewTaskDue] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
@@ -406,7 +439,7 @@ export function useWorkflowManagement() {
           p_phase: activePhase.id,
           p_data: {
             title: newTaskTitle.trim(),
-            assignee_id: Number(newTaskAssignee),
+            assignee_id: Number(newTaskAssignees[0] || newTaskAssignee),
             start_date: inputDate(newTaskStart),
             due_date: inputDate(newTaskDue),
             workflow_status: newTaskStatus,
@@ -427,7 +460,7 @@ export function useWorkflowManagement() {
       }
       return res;
     }, 'Đã tạo task và đồng bộ All Tasks')) {
-      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskStart(''); setNewTaskDue(''); setNewTaskQuantity(''); setNewTaskStatus('planned'); setShowAddTask(false);
+      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskAssignees([]); setNewTaskStart(''); setNewTaskDue(''); setNewTaskQuantity(''); setNewTaskStatus('planned'); setShowAddTask(false);
     }
   };
   const handleDeleteTask = (id: string, e: React.MouseEvent) => {
@@ -564,6 +597,6 @@ export function useWorkflowManagement() {
     return hub.mutate(() => supabase.rpc('workflow_link_task', { p_phase: phaseId, p_task: target.id, p_kind: target.kind }));
   }, isEn ? 'Task assigned to phase' : 'Đã gắn task vào chặng');
 
-  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
+  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
 }
 export type WorkflowModel = ReturnType<typeof useWorkflowManagement>;

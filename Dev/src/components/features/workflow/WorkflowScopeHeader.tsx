@@ -232,7 +232,7 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
                   title={`${sub.name} ${isEn ? '(Team member)' : '(Thành viên tham gia)'}`}
                   className={`w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-600 border-2 border-white dark:border-slate-900 grid place-items-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
                 >
-                  <Avatar name={sub.name} src={sub.avatar_url} className="w-full h-full text-[8px]" />
+                  <Avatar name={sub.name} src={sub.avatar_url || undefined} className="w-full h-full text-[8px]" />
                 </div>
               ))}
             </div>

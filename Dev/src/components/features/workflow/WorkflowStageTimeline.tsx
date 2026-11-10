@@ -18,6 +18,33 @@ export function WorkflowStageTimeline({
 }) {
   const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, unplanned, linkTask, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollStart, setScrollStart] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button, input, a, select, [data-interactive="true"]')) return;
+    if (!timelineScrollRef.current) return;
+    setIsMouseDown(true);
+    setHasDragged(false);
+    setStartX(e.pageX - timelineScrollRef.current.offsetLeft);
+    setScrollStart(timelineScrollRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMouseDown || !timelineScrollRef.current) return;
+    const x = e.pageX - timelineScrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    if (Math.abs(walk) > 4) {
+      setHasDragged(true);
+    }
+    timelineScrollRef.current.scrollLeft = scrollStart - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsMouseDown(false);
+  };
 
   const handleMagneticMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -34,8 +61,8 @@ export function WorkflowStageTimeline({
           type="button"
           onClick={() => scrollTimeline('left')}
           aria-label={isEn ? 'Scroll left' : 'Trượt sang trái'}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl grid place-items-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -ml-2 sm:-ml-3"
-          title={isEn ? 'Scroll left to view previous phases' : 'Trượt sang trái để xem các phase trước'}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl grid place-items-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer ring-1 ring-black/5 dark:ring-white/10"
+          title={isEn ? 'Scroll left' : 'Trượt sang trái'}
         >
           <ChevronLeft size={18} strokeWidth={2.5} />
         </button>
@@ -47,8 +74,8 @@ export function WorkflowStageTimeline({
           type="button"
           onClick={() => scrollTimeline('right')}
           aria-label={isEn ? 'Scroll right' : 'Trượt sang phải'}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl grid place-items-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer -mr-2 sm:-mr-3"
-          title={isEn ? 'Scroll right to view more phases' : 'Trượt sang phải để xem thêm các phase sau'}
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-xl grid place-items-center text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-cyan-400 hover:scale-110 active:scale-95 transition-all cursor-pointer ring-1 ring-black/5 dark:ring-white/10"
+          title={isEn ? 'Scroll right' : 'Trượt sang phải'}
         >
           <ChevronRight size={18} strokeWidth={2.5} />
         </button>
@@ -56,7 +83,11 @@ export function WorkflowStageTimeline({
 
       <div
         ref={timelineScrollRef}
-        className="overflow-x-auto custom-scrollbar scroll-smooth"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        className={`overflow-x-auto scrollbar-thin custom-scrollbar scroll-smooth select-none ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <div className="grid grid-flow-col auto-cols-max items-center min-w-max pb-2 pt-1 px-1">
             {phases.map((p, idx) => {
@@ -74,7 +105,7 @@ export function WorkflowStageTimeline({
                     aria-label={`${isEn ? 'Select phase' : 'Chọn chặng'}: ${p.title}`}
                     aria-pressed={isSelected}
                     onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handlePhaseClick(idx); } }}
-                    onClick={() => handlePhaseClick(idx)}
+                    onClick={() => { if (!hasDragged) handlePhaseClick(idx); }}
                     onDragOver={(e) => {
                       if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
                       e.preventDefault();

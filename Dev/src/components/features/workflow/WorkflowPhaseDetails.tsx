@@ -13,7 +13,7 @@ import {CommentPreviewPopover} from '../../common/CommentPreviewPopover';
 import {useSidebarPinStore} from '../../../store/sidebarPinStore';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
   const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
 
   const [splitPct, setSplitPct] = useState(58);
@@ -175,10 +175,10 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                           </label>
                           <MultiSelect
                             options={taskOptions}
-                            value={newTaskAssignee ? [newTaskAssignee] : []}
-                            maxSelected={1}
-                            onChange={(ids: string[]) => setNewTaskAssignee(ids[0] || '')}
-                            placeholder={isEn ? 'Select task PIC...' : 'Chọn PIC task...'}
+                            value={newTaskAssignees}
+                            maxSelected={2}
+                            onChange={(ids: string[]) => setNewTaskAssignees(ids.slice(0, 2))}
+                            placeholder={isEn ? 'Select task PIC (up to 2)...' : 'Chọn PIC task (tối đa 2)...'}
                             buttonClassName="!h-[38px] !min-h-[38px] !py-1 !px-2.5 !text-xs !rounded-[8px] !border-gray-200 dark:!border-slate-700"
                           />
                         </div>

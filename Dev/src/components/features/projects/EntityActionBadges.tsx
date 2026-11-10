@@ -28,6 +28,7 @@ interface EntityActionBadgesProps {
   entityId?: string | number | null;
   entityName?: string | null;
   workspaceId?: string;
+  hideStatus?: boolean;
 }
 
 export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
@@ -43,6 +44,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
   entityId,
   entityName,
   workspaceId,
+  hideStatus = false,
 }) => {
   const { lang, t } = useTranslation();
   const isEn = lang === 'en';
@@ -250,70 +252,72 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
       </div>
 
       {/* 2. Status Dropdown Button */}
-      <div className="relative inline-block">
-        <button
-          type="button"
-          disabled={!canManage || !onStatusChange}
-          onClick={() => {
-            setPriorityOpen(false);
-            setStatusOpen((v) => !v);
-          }}
-          className={`inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all ${statusVisual.badgeClass} ${
-            canManage && onStatusChange
-              ? 'cursor-pointer hover:shadow-xs hover:border-black/10 dark:hover:border-white/10'
-              : 'cursor-default'
-          }`}
-          aria-expanded={statusOpen}
-          aria-haspopup="listbox"
-          title={isEn ? 'Change status' : 'Đổi trạng thái'}
-        >
-          <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusVisual.dotClass}`} />
-          <span>{currentStatusLabel}</span>
-          {canManage && onStatusChange && (
-            <ChevronDown
-              size={12}
-              className={`transition-transform duration-200 ${statusOpen ? 'rotate-180' : ''}`}
-            />
-          )}
-        </button>
-
-        {statusOpen && (
-          <div
-            className="absolute top-full left-0 mt-1.5 z-[100] w-44 rounded-[8px] border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] shadow-xl py-1 backdrop-blur-md"
-            role="listbox"
+      {!hideStatus && (
+        <div className="relative inline-block">
+          <button
+            type="button"
+            disabled={!canManage || !onStatusChange}
+            onClick={() => {
+              setPriorityOpen(false);
+              setStatusOpen((v) => !v);
+            }}
+            className={`inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all ${statusVisual.badgeClass} ${
+              canManage && onStatusChange
+                ? 'cursor-pointer hover:shadow-xs hover:border-black/10 dark:hover:border-white/10'
+                : 'cursor-default'
+            }`}
+            aria-expanded={statusOpen}
+            aria-haspopup="listbox"
+            title={isEn ? 'Change status' : 'Đổi trạng thái'}
           >
-            {statusOptions.map((opt) => {
-              const isSelected =
-                currentStatus === opt.value ||
-                (opt.value === 'draft' && (currentStatus === 'todo' || currentStatus === 'not_started' || currentStatus === 'chưa bắt đầu')) ||
-                (opt.value === 'active' && (currentStatus === 'in_progress' || currentStatus === 'doing')) ||
-                (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog')) ||
-                (opt.value === 'on_hold' && (currentStatus === 'paused' || currentStatus === 'on-hold')) ||
-                (opt.value === 'completed' && (currentStatus === 'done' || currentStatus === 'complete'));
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    setStatusOpen(false);
-                    if (!isSelected) {
-                      onStatusChange?.(opt.value);
-                    }
-                  }}
-                  className={`w-full text-left px-3 py-1.5 text-xs font-medium grid grid-flow-col auto-cols-max items-center gap-2 hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors ${
-                    isSelected
-                      ? 'bg-primary/10 text-primary dark:text-blue-300 dark:bg-blue-950/40 font-bold'
-                      : 'text-gray-700 dark:text-gray-200'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} />
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+            <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusVisual.dotClass}`} />
+            <span>{currentStatusLabel}</span>
+            {canManage && onStatusChange && (
+              <ChevronDown
+                size={12}
+                className={`transition-transform duration-200 ${statusOpen ? 'rotate-180' : ''}`}
+              />
+            )}
+          </button>
+
+          {statusOpen && (
+            <div
+              className="absolute top-full left-0 mt-1.5 z-[100] w-44 rounded-[8px] border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-[#0a192f] shadow-xl py-1 backdrop-blur-md"
+              role="listbox"
+            >
+              {statusOptions.map((opt) => {
+                const isSelected =
+                  currentStatus === opt.value ||
+                  (opt.value === 'draft' && (currentStatus === 'todo' || currentStatus === 'not_started' || currentStatus === 'chưa bắt đầu')) ||
+                  (opt.value === 'active' && (currentStatus === 'in_progress' || currentStatus === 'doing')) ||
+                  (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog')) ||
+                  (opt.value === 'on_hold' && (currentStatus === 'paused' || currentStatus === 'on-hold')) ||
+                  (opt.value === 'completed' && (currentStatus === 'done' || currentStatus === 'complete'));
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setStatusOpen(false);
+                      if (!isSelected) {
+                        onStatusChange?.(opt.value);
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium grid grid-flow-col auto-cols-max items-center gap-2 hover:bg-gray-100 dark:hover:bg-[#0f1e36] transition-colors ${
+                      isSelected
+                        ? 'bg-primary/10 text-primary dark:text-blue-300 dark:bg-blue-950/40 font-bold'
+                        : 'text-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Children (e.g. Department badge or SL badge) */}

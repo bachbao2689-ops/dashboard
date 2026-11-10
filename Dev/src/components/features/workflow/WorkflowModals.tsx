@@ -8,16 +8,16 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
   return (<>
 {showAddPhaseModal && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs grid place-items-center p-4 animate-in fade-in"
           onClick={() => setShowAddPhaseModal(false)}
         >
           <div
             className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-[8px] max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${
+            <div className="grid grid-cols-[1fr_auto] items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
+              <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2">
+                <div className={`w-8 h-8 rounded-[8px] grid place-items-center ${
                   isCampaign ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
                 }`}>
                   <Plus size={16} strokeWidth={2.5} />
@@ -74,7 +74,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
               <label className="block text-xs font-semibold">{isEn ? 'Phase Sub-PIC' : 'Sub-PIC phase'}<MultiSelect options={personOptions.filter(p=>!phasePicIds.includes(p.value))} value={phaseSubIds} onChange={setPhaseSubIds} placeholder={isEn ? 'Select phase Sub-PIC...' : 'Chọn sub-PIC phase...'}/></label>
               <label className="block text-xs font-semibold">{isEn ? 'Status' : 'Trạng thái'}<select className={field} value={phaseStatus} onChange={e=>setPhaseStatus(e.target.value)}>{[['todo', isEn ? 'Todo' : 'Chưa bắt đầu'],['in_progress', isEn ? 'In progress' : 'Đang triển khai'],['in_review', isEn ? 'In review' : 'Đang nghiệm thu'],['on_hold', isEn ? 'On hold' : 'Tạm dừng'],['completed', isEn ? 'Completed' : 'Hoàn thành'],['cancelled', isEn ? 'Canceled' : 'Đã hủy']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
               <div className="space-y-2"><label className="block text-xs font-semibold">{isEn ? 'Gate opportunity · PIC evaluation (optional)' : 'Cơ hội qua phase · PIC đánh giá (tùy chọn)'}<input type="number" min="0" max="100" className={field} value={phaseOpportunity} onChange={e=>setPhaseOpportunity(e.target.value)} placeholder={isEn ? 'Not evaluated' : 'Chưa đánh giá'}/></label><textarea className={field} value={phaseReason} onChange={e=>setPhaseReason(e.target.value)} placeholder={isEn ? 'Evaluation basis · required when entering %' : 'Cơ sở đánh giá · bắt buộc khi nhập %'}/></div>
-              <div className="sticky bottom-0 bg-white dark:bg-slate-900 flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+              <div className="sticky bottom-0 bg-white dark:bg-slate-900 grid grid-flow-col auto-cols-max items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddPhaseModal(false)}
@@ -84,7 +84,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
                 </button>
                 <button
                   type="submit" disabled={hub.busy}
-                  className={`px-4 py-2 rounded-[8px] text-xs font-bold text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-4 py-2 rounded-[8px] text-xs font-bold text-white shadow-sm transition-all inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer ${
                     isCampaign
                       ? 'bg-amber-500 hover:bg-amber-600'
                       : 'bg-violet-600 hover:bg-violet-700'
@@ -100,7 +100,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
       )}
 {phaseToDelete && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs grid place-items-center p-4 animate-in fade-in duration-200"
           onClick={() => !hub.busy && setPhaseToDelete(null)}
         >
           <div
@@ -111,11 +111,11 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
             onClick={e => e.stopPropagation()}
           >
             {/* Header Icon + Title */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-[8px] bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 shadow-xs">
+            <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3.5">
+              <div className="w-11 h-11 rounded-[8px] bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 grid place-items-center shrink-0 shadow-xs">
                 <Trash2 size={20} strokeWidth={2.2} />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0">
                 <h3 id="delete-phase-modal-title" className="text-base font-bold text-gray-900 dark:text-white">
                   {isEn ? 'Delete Phase Confirmation' : 'Xác nhận xóa giai đoạn'}
                 </h3>
@@ -135,7 +135,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
 
             {/* Phase Target Card */}
             <div className="p-3.5 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/80 space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-[auto_auto] justify-between items-center">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
                   {isEn ? `Phase ${phaseToDelete.phase.position}` : `Chặng ${phaseToDelete.phase.position}`}
                 </span>
@@ -158,7 +158,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
               const linkedCount = allTasks.filter(t => t.workflow_phase_id === phaseToDelete.phase.id).length;
               if (linkedCount > 0) {
                 return (
-                  <div className="flex items-start gap-2.5 p-3 rounded-[8px] bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
+                  <div className="grid grid-cols-[auto_1fr] items-start gap-2.5 p-3 rounded-[8px] bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs leading-relaxed">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-500" />
                     <div>
                       <span className="font-bold">{isEn ? 'Preservation Notice: ' : 'Lưu ý bảo toàn dữ liệu: '}</span>
@@ -179,7 +179,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
             })()}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <div className="grid grid-flow-col auto-cols-max justify-end items-center gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-800">
               <button
                 type="button"
                 disabled={hub.busy}
@@ -192,7 +192,7 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
                 type="button"
                 disabled={hub.busy}
                 onClick={confirmDeletePhase}
-                className="px-4 py-2 rounded-[8px] text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-all flex items-center gap-1.5 shadow-sm hover:shadow-red-500/20 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-[8px] text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-all grid grid-flow-col auto-cols-max items-center gap-1.5 shadow-sm hover:shadow-red-500/20 cursor-pointer disabled:opacity-50"
               >
                 <Trash2 size={13} />
                 <span>{hub.busy ? (isEn ? 'Deleting...' : 'Đang xóa...') : (isEn ? 'Confirm Delete' : 'Xác nhận xóa')}</span>

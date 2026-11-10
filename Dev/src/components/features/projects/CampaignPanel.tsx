@@ -335,7 +335,20 @@ export const CampaignPanel: React.FC<{
     // Do not re-filter by department: RLS already scopes explicit cross-team invites.
     const invited=await supabase.from('campaign_members').select('campaign_id,user_id,workflow_role');
     if(invited.error){toast.error(invited.error.message);setCampaigns([]);return;}
-    setCampaigns((data || []).filter(c=>leaderParentVisible(profile,c.department_id,[c.lead_id,...(invited.data||[]).filter(m=>m.campaign_id===c.id&&['pic','sub_pic'].includes(m.workflow_role)).map(m=>m.user_id)])));
+    const activePeople = peopleData?.length ? peopleData : people;
+    setCampaigns((data || []).filter(c => {
+      const cAssignees = [
+        ...((allSubtasks || []).filter((s: any) => s.campaign_id === c.id && s.assignee_id).map((s: any) => s.assignee_id)),
+        ...((canonicalTasks || []).filter((t: any) => t.campaign_id === c.id && t.assignee_id).map((t: any) => t.assignee_id))
+      ];
+      const cInvited = [
+        c.created_by,
+        c.lead_id,
+        ...(invited.data || []).filter(m => m.campaign_id === c.id && ['pic', 'sub_pic'].includes(m.workflow_role)).map(m => m.user_id),
+        ...cAssignees
+      ];
+      return leaderParentVisible(profile, c.department_id, cInvited, activePeople);
+    }));
   };
 
   const handleQuickCreateSubtask = async (campaignId: string, customTitle: string) => {

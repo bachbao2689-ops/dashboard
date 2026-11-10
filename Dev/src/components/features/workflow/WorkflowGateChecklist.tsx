@@ -22,12 +22,12 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
   );
   return (<>
               {/* Left Column: Tiêu chí Gatekeeper & Duyệt Chuyển Phase */}
-              <div className="w-full h-full p-4 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-4 flex flex-col justify-between">
+              <div className="w-full h-full p-4 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 gap-4 grid grid-rows-[auto_1fr_auto]">
 
                 {/* 2 Big Gauge Boxes */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
-                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <div className="grid grid-cols-[1fr_auto] items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                       <span>{isEn ? 'Task progress' : 'Tiến độ công việc'}</span>
                       <span className="font-bold text-primary">{pct(phaseProgressPct)}</span>
                     </div>
@@ -40,7 +40,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                   </div>
 
                   <div className="p-3 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xs">
-                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <div className="grid grid-cols-[1fr_auto] items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                       <span className="font-semibold text-gray-700 dark:text-gray-300">{isEn ? 'Gate Opportunity' : 'Cơ hội qua Phase'}</span>
                       <span className={`font-bold ${(gatePassChancePct ?? -1) >= 80 ? 'text-emerald-500' : (gatePassChancePct ?? -1) >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
                         {pct(gatePassChancePct)}
@@ -174,7 +174,7 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                 </div>
 
                 {/* Gate Pass Approval Button */}
-                <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="pt-2 border-t border-gray-200 dark:border-slate-700/80 grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
                     {readyToApprove ? (isEn ? '✓ Tasks completed. Phase PIC/Sub can approve advance.' : '✓ Task đã hoàn thành. PIC/Sub Phase có thể duyệt chuyển Phase.') : (isEn ? 'Complete tasks or achieve checklist ≥80% before Gate approval.' : 'Hoàn thành task hoặc checklist đạt ≥80% trước khi PIC/Sub duyệt Gate.')}
                   </p>
@@ -184,14 +184,14 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                       type="button"
                       disabled={hub.busy || !readyToApprove}
                       onClick={handleAdvancePhase}
-                      className={`w-full sm:w-auto px-4 py-2 rounded-[8px] text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                        (gatePassChancePct ?? -1) >= 80
-                          ? 'bg-[#002e6d] hover:bg-[#001f4d] text-white cursor-pointer hover:shadow-md'
+                      className={`w-full sm:w-auto px-5 py-2.5 rounded-[8px] text-xs font-bold uppercase tracking-wider inline-grid grid-flow-col auto-cols-max items-center justify-center gap-2 transition-all ${
+                        readyToApprove
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/60 animate-pulse hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
                           : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-70'
                       }`}
                     >
-                      <span>{phases[activePhaseIndex + 1] ? (isEn ? `Approve to ${phases[activePhaseIndex + 1].name}` : 'Phê duyệt qua ' + phases[activePhaseIndex + 1].name) : (isEn ? 'Complete phase' : 'Hoàn thành phase')}</span>
-                      <ArrowRight size={13} />
+                      <span>{phases[activePhaseIndex + 1] ? (isEn ? `Approve to ${phases[activePhaseIndex + 1].name} →` : 'Phê duyệt qua ' + phases[activePhaseIndex + 1].name + ' →') : (isEn ? 'Complete phase' : 'Hoàn thành phase')}</span>
+                      <ArrowRight size={14} />
                     </button>
                   )}
                 </div>

@@ -32,7 +32,12 @@ export const directoryResource=scopedResource(async()=>{
 },['users','departments'],60000);
 export const assetSummaryResource=scopedResource(()=>readAll(supabase.from('assets').select('id,asset_code,name,status,is_available,category:category_id(name)').order('id')),['assets'],30000);
 export const workflowResource=scopedResource(async()=>{
- const {data,error}=await supabase.rpc('workflow_hub_index');if(error)throw error;return ((data||[]) as HubTrack[]).filter(track=>trackLeaderVisible(useAuthStore.getState().profile,track));
+ const {data,error}=await supabase.rpc('workflow_hub_index');if(error)throw error;
+ const profile=useAuthStore.getState().profile;
+ return ((data||[]) as HubTrack[]).filter(track=>{
+  const phaseMemberIds=(track.phases||[]).flatMap(p=>(p.members||[]).map(m=>m.id)).filter(Boolean);
+  return trackLeaderVisible(profile,{...track,member_ids:phaseMemberIds});
+ });
 },['workflow_tracks','workflow_phases','workflow_phase_members','projects','campaigns','project_members','campaign_members','tasks','project_subtasks','campaign_subtasks','comments','activity_log'],15000,change=>workspaceChangeRelevant('workflow',change,useAuthStore.getState().profile));
 let scope=workspaceScope();
 useAuthStore.subscribe(()=>{const next=workspaceScope();if(next!==scope){scope=next;[taskResource,directoryResource,assetSummaryResource,workflowResource].forEach(resource=>resource.reset());}});

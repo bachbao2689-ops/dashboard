@@ -806,6 +806,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <EntityActionBadges
                 priority={task.priority || 'medium'}
                 status={task.status || 'planning'}
+                hideStatus={Boolean(task.workflow_phase_id)}
                 onPriorityChange={canEdit && !readOnly ? handleTaskPriorityChange : undefined}
                 onStatusChange={canEdit && !readOnly ? handleTaskStatusChange : undefined}
                 canManage={canEdit && !readOnly}
@@ -815,9 +816,10 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 entityName={task?.title}
                 workspaceId={task?.workspace_id}
               >
-                {totalChecklistQuantity > 0 && (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
-                    {lang === 'en' ? 'Total Qty' : 'Tổng số lượng'}: {totalChecklistQuantity}
+                {(Number((task as any)?.custom_fields?.quantity) || Number((task as any)?.quantity) || totalChecklistQuantity || (Number(taskQuantity) || 0)) > 0 && (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[6px] text-xs font-bold border border-emerald-400/60 dark:border-emerald-500/60 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                    <span>📦</span>
+                    <span>{lang === 'en' ? 'Quantity' : 'Số lượng'}: {Number((task as any)?.custom_fields?.quantity) || Number((task as any)?.quantity) || totalChecklistQuantity || Number(taskQuantity)}</span>
                   </span>
                 )}
                 {Boolean(targetDepartmentName || (task as any).target_department_name) && (

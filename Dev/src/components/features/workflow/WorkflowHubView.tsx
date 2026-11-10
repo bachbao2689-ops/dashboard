@@ -797,23 +797,36 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
     const leadName = lead?.name || (isEn ? 'Unassigned' : 'Chưa giao');
     const leadAvatar = lead?.avatar_url || undefined;
 
-    // Member Avatar Stack (excluding Lead)
-    const memberMap = new Map<string, { id: string | number; name: string; avatar_url?: string | null }>();
-    for (const p of entity.pics || []) {
-      if (lead && String(p.id) === String(lead.id)) continue;
-      memberMap.set(String(p.id), p);
-    }
+    // Sub-PICs (entity sub_pics + all phase sub_pics)
+    const subPicMap = new Map<string, { id: string | number; name: string; avatar_url?: string | null }>();
     for (const p of entity.sub_pics || []) {
       if (lead && String(p.id) === String(lead.id)) continue;
-      memberMap.set(String(p.id), p);
+      subPicMap.set(String(p.id), p);
+    }
+    for (const phase of entity.phases || []) {
+      for (const m of phase.members || []) {
+        if (m.role === 'sub_pic' && (!lead || String(m.id) !== String(lead.id))) {
+          subPicMap.set(String(m.id), m);
+        }
+      }
+    }
+    const allSubPics = Array.from(subPicMap.values());
+
+    // Other Member Avatar Stack (excluding Lead and Sub-PICs)
+    const otherMemberMap = new Map<string, { id: string | number; name: string; avatar_url?: string | null }>();
+    for (const p of entity.pics || []) {
+      if (lead && String(p.id) === String(lead.id)) continue;
+      if (subPicMap.has(String(p.id))) continue;
+      otherMemberMap.set(String(p.id), p);
     }
     for (const phase of entity.phases || []) {
       for (const m of phase.members || []) {
         if (lead && String(m.id) === String(lead.id)) continue;
-        memberMap.set(String(m.id), m);
+        if (subPicMap.has(String(m.id))) continue;
+        otherMemberMap.set(String(m.id), m);
       }
     }
-    const otherMembers = Array.from(memberMap.values());
+    const otherMembers = Array.from(otherMemberMap.values());
 
     const rawPriority =
       entity.type === 'campaign'
@@ -1162,7 +1175,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
 
         {/* Hàng 4: Cụm Lead bên trái | In-Progress/Completed + Priority bên phải */}
         <div className="pt-2.5 border-t border-gray-100 dark:border-slate-800/80 grid grid-cols-[minmax(0,1fr)_auto] items-center justify-between gap-2 min-w-0">
-          {/* Bên trái: Pill Lead + Avatar Lead + Stack Avatar thành viên */}
+          {/* Bên trái: Pill Lead + Avatar Lead + Pill SUB + Stack Avatar thành viên */}
           <div className="grid grid-flow-col auto-cols-max items-center justify-start gap-1.5 min-w-0 overflow-hidden">
             <div
               className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 pl-2 pr-0.5 py-0.5 rounded-full border w-fit ${
@@ -1178,6 +1191,33 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                 className="w-4 h-4 rounded-full text-[8px]"
               />
             </div>
+
+            {allSubPics.length > 0 && (
+              <div
+                className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 pl-1.5 pr-0.5 py-0.5 rounded-full border w-fit ${
+                  isProject
+                    ? 'border-violet-500/25 bg-violet-500/5 text-violet-700 dark:bg-violet-950/30 dark:border-violet-500/30 dark:text-violet-300'
+                    : 'border-amber-500/25 bg-amber-500/5 text-amber-700 dark:bg-[#1f1610]/60 dark:border-amber-600/30 dark:text-[#fbbf24]'
+                }`}
+              >
+                <span className="text-[9px] font-bold">SUB</span>
+                <div className="grid grid-flow-col auto-cols-max items-center -space-x-1">
+                  {allSubPics.slice(0, 3).map((m, idx) => (
+                    <Avatar
+                      key={`${m.id}-${idx}`}
+                      name={m.name}
+                      src={m.avatar_url || undefined}
+                      className="w-4 h-4 rounded-full text-[7.5px] font-bold"
+                    />
+                  ))}
+                  {allSubPics.length > 3 && (
+                    <span className="w-4 h-4 rounded-full bg-slate-700 text-white text-[7.5px] font-bold grid place-items-center">
+                      +{allSubPics.length - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {otherMembers.length > 0 && (
               <div className="grid grid-flow-col auto-cols-max items-center -space-x-1">
