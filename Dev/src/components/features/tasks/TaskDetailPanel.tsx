@@ -916,7 +916,74 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
             </section>
           ) : (
-            <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#071325]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700"><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><User className="w-3.5 h-3.5 inline mr-1" />{t('common.assignee')}</p>{task.assignee ? <div className="flex items-center gap-2"><Avatar name={task.assignee.name} src={task.assignee.avatar_url || undefined} /><b className="text-sm">{task.assignee.name}</b></div> : <span className="text-sm text-gray-500">{t('common.unassigned')}</span>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>{task.start_date ? <div className="text-sm flex items-center gap-1.5 flex-wrap"><span className="font-normal text-gray-700 dark:text-gray-300">{displayDate(task.start_date)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{task.due_date ? displayDate(task.due_date) : t('common.noDueDate')}</span></div> : <b className="text-sm font-bold text-red-600 dark:text-red-400">{task.due_date ? displayDate(task.due_date) : t('common.noDueDate')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>{task.project?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full"><span className="truncate">{task.project.name}</span></span> : task.campaign?.name ? <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full"><span className="truncate">{task.campaign.name}</span></span> : <b className="text-sm text-gray-400">{t('common.unlinked')}</b>}</div><div className="min-w-0"><p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p><b className="text-sm">{task.department?.name || 'N/A'}</b></div></section>
+            <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#071325]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
+              {(() => {
+                const allAssigneeIds = Array.from(new Set([
+                  ...(task.assignee_id ? [String(task.assignee_id)] : []),
+                  ...(((task.custom_fields as any)?.assignee_ids as any[]) || []).map(String)
+                ]));
+                const peoplePool = assignablePeople || mentionPeople || [];
+                const allAssignees = allAssigneeIds.map((id, idx) => {
+                  const found = peoplePool.find(p => String(p.id) === id);
+                  if (found) return found;
+                  if (idx === 0 && task.assignee) return task.assignee;
+                  return { id, name: `User #${id}`, avatar_url: undefined };
+                });
+                return (
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-500 uppercase mb-2 grid grid-flow-col auto-cols-max items-center gap-1">
+                      <User className="w-3.5 h-3.5" />
+                      <span>{allAssignees.length > 1 ? (lang === 'en' ? 'Assignees' : 'Người thực hiện') : t('common.assignee')}</span>
+                    </p>
+                    {allAssignees.length > 0 ? (
+                      <div className="grid gap-1.5">
+                        {allAssignees.map((person, pIdx) => (
+                          <div key={person.id || pIdx} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-[6px] bg-white dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <Avatar name={person.name} src={person.avatar_url || undefined} className="w-6 h-6 text-[9px] shrink-0" />
+                            <b className="text-xs font-bold text-gray-900 dark:text-white truncate block">{person.name}</b>
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400">
+                              {pIdx === 0 ? (lang === 'en' ? 'Primary' : 'Chính') : (lang === 'en' ? 'Co-PIC' : 'Làm chung')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">{t('common.unassigned')}</span>
+                    )}
+                  </div>
+                );
+              })()}
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>
+                {task.start_date ? (
+                  <div className="text-sm flex items-center gap-1.5 flex-wrap">
+                    <span className="font-normal text-gray-700 dark:text-gray-300">{displayDate(task.start_date)}</span>
+                    <span className="text-gray-400">–</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">{task.due_date ? displayDate(task.due_date) : t('common.noDueDate')}</span>
+                  </div>
+                ) : (
+                  <b className="text-sm font-bold text-red-600 dark:text-red-400">{task.due_date ? displayDate(task.due_date) : t('common.noDueDate')}</b>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>
+                {task.project?.name ? (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
+                    <span className="truncate">{task.project.name}</span>
+                  </span>
+                ) : task.campaign?.name ? (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
+                    <span className="truncate">{task.campaign.name}</span>
+                  </span>
+                ) : (
+                  <b className="text-sm text-gray-400">{t('common.unlinked')}</b>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p>
+                <b className="text-sm">{task.department?.name || 'N/A'}</b>
+              </div>
+            </section>
           )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{displayDateTime(task.created_at)}</span>

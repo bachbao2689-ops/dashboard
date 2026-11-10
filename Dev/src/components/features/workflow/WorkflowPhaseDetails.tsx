@@ -176,9 +176,8 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                           <MultiSelect
                             options={taskOptions}
                             value={newTaskAssignees}
-                            maxSelected={2}
-                            onChange={(ids: string[]) => setNewTaskAssignees(ids.slice(0, 2))}
-                            placeholder={isEn ? 'Select task PIC (up to 2)...' : 'Chọn PIC task (tối đa 2)...'}
+                            onChange={(ids: string[]) => setNewTaskAssignees(ids)}
+                            placeholder={isEn ? 'Select task PICs...' : 'Chọn PIC task...'}
                             buttonClassName="!h-[38px] !min-h-[38px] !py-1 !px-2.5 !text-xs !rounded-[8px] !border-gray-200 dark:!border-slate-700"
                           />
                         </div>
@@ -276,9 +275,25 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       currentPhaseSubtasks.map((s) => {
                         const done = s.status === 'completed';
                         const isPinned = pinnedTaskIds.includes(String(s.id));
-                        const qty = s.record?.quantity ?? s.record?.deliverable_quantity ?? s.record?.base_quantity;
+                        const qty = (s.record as any)?.custom_fields?.quantity 
+                          ?? s.record?.quantity 
+                          ?? (s.record as any)?.custom_fields?.base_quantity 
+                          ?? s.record?.base_quantity 
+                          ?? s.record?.deliverable_quantity;
                         const hasQty = Boolean(qty) && Number(qty) > 0;
                         const commentCount = commentTracking.counts[s.id]?.count ?? 0;
+
+                        const rawAssigneeIds: (string|number)[] = [
+                          ...(s.record?.assignee_id ? [s.record.assignee_id] : []),
+                          ...(((s.record as any)?.custom_fields?.assignee_ids as (string|number)[]) || [])
+                        ];
+                        const uniqueAssigneeIds = Array.from(new Set(rawAssigneeIds.map(String)));
+                        const assignees = uniqueAssigneeIds.map(id => {
+                          const found = (hub.people || []).find((p: any) => String(p.id) === id);
+                          if (found) return found;
+                          if (String(s.record?.assignee_id) === id && s.record?.assignee) return s.record.assignee;
+                          return { id, name: `User #${id}` };
+                        });
                         return (
                           <div
                             key={s.id}
@@ -305,7 +320,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                               {/* Quantity Badge */}
                               {hasQty && (
-                                <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shrink-0">
+                                <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0 shadow-2xs">
                                   SL: {qty}
                                 </span>
                               )}
@@ -332,23 +347,28 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                               )}
                             </div>
 
-                            {/* Right: Assignee (Avatar + Name), Due date & Actions */}
+                            {/* Right: Assignees (Avatar Stack + Name), Due date & Actions */}
                             <div className="grid grid-flow-col auto-cols-max items-center shrink-0 self-end sm:self-auto ml-6 sm:ml-0 gap-1.5">
-                              {/* Basic Info: PIC Avatar + Name & Due date */}
+                              {/* Basic Info: PIC Avatar Stack + Name & Due date */}
                               <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                                {/* PIC Avatar + Name */}
-                                {s.record.assignee?.name || s.assignee ? (
+                                {/* PIC Avatar Stack + Name */}
+                                {assignees.length > 0 ? (
                                   <span
                                     className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
-                                    title={`${isEn ? 'Assignee' : 'Người thực hiện'}: ${s.record.assignee?.name || s.assignee}`}
+                                    title={`${isEn ? 'Assignees' : 'Người thực hiện'}: ${assignees.map(a => a.name).join(', ')}`}
                                   >
-                                    <Avatar
-                                      name={s.record.assignee?.name || s.assignee}
-                                      src={s.record.assignee?.avatar_url}
-                                      className="w-4 h-4 text-[7px] shrink-0"
-                                    />
-                                    <span className="font-semibold truncate max-w-[95px]">
-                                      {s.record.assignee?.name || s.assignee}
+                                    <div className="inline-grid grid-flow-col auto-cols-max -space-x-1.5 items-center">
+                                      {assignees.map((a, aIdx) => (
+                                        <Avatar
+                                          key={a.id || aIdx}
+                                          name={a.name}
+                                          src={a.avatar_url || undefined}
+                                          className="w-4 h-4 text-[7px] shrink-0 border border-white dark:border-slate-800"
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="font-semibold truncate max-w-[110px]">
+                                      {assignees.map(a => a.name).join(', ')}
                                     </span>
                                   </span>
                                 ) : (

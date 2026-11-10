@@ -145,7 +145,10 @@ export const useTeamWorkload = (
     return filteredUsers
       .map((u) => {
         let memberTasks = scopedTasks.filter(
-          (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
+          (t) =>
+            (String(t.assignee_id) === String(u.id) ||
+              ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String).includes(String(u.id))) &&
+            taskActive(t),
         );
         if (calendarFilter !== 'all' || customStartDate || customEndDate) {
           memberTasks = memberTasks.filter((t) =>
@@ -200,7 +203,11 @@ export const useTeamWorkload = (
         workloads.slice(0, 6).map((w) => ({
           id: w.id,
           name: w.name,
-          tasks: scopedTasks.filter((t) => String(t.assignee_id) === String(w.id)),
+          tasks: scopedTasks.filter(
+            (t) =>
+              String(t.assignee_id) === String(w.id) ||
+              ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String).includes(String(w.id)),
+          ),
           memberCount: 1,
         })),
       ),

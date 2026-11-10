@@ -867,7 +867,10 @@ export const useReports = (options?: { standalone?: boolean }) => {
     return scopedUsers
       .map((u) => {
         const memberAllTasks = periodTasks.filter(
-          (t) => String(t.assignee_id) === String(u.id) && taskActive(t),
+          (t) =>
+            (String(t.assignee_id) === String(u.id) ||
+              ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String).includes(String(u.id))) &&
+            taskActive(t),
         );
         const openList = memberAllTasks.filter((t) => taskOpen(t));
         const doneList = memberAllTasks.filter((t) => taskDone(t));

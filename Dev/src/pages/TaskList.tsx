@@ -247,7 +247,8 @@ export const TaskList: React.FC = () => {
 
     // Phân quyền tầm view theo 3 cấp: Manager/Admin -> Leader -> Staff
     if (!isManager) {
-      const isMyTask = Boolean(profileId && String(t.assignee_id) === String(profileId));
+      const coAssigneeIds = ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String);
+      const isMyTask = Boolean(profileId && (String(t.assignee_id) === String(profileId) || coAssigneeIds.includes(String(profileId))));
       const isCreator = Boolean(profileId && String(t.created_by) === String(profileId));
       const hasMySubtask = Boolean(profileId && (t.checklist_items || []).some((ci: any) => String(ci.created_by) === String(profileId) || String(ci.assignee_id) === String(profileId)));
       const isMyParentTask = Boolean(profileId && (t as any).checklist_parent && (String((t as any).checklist_parent.assignee_id) === String(profileId) || String((t as any).checklist_parent.created_by) === String(profileId)));
@@ -284,12 +285,14 @@ export const TaskList: React.FC = () => {
 
     // 3. Assignee Filter
     if (assigneeFilter !== 'all') {
+      const coAssigneeIds = ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String);
       if (assigneeFilter === 'me') {
-        if (String(t.assignee_id) !== String(profileId)) return false;
+        const matchesMe = String(t.assignee_id) === String(profileId) || coAssigneeIds.includes(String(profileId));
+        if (!matchesMe) return false;
       } else if (assigneeFilter === 'unassigned') {
-        if (t.assignee_id || t.assignee) return false;
+        if ((t.assignee_id || t.assignee) || coAssigneeIds.length > 0) return false;
       } else {
-        const match = String(t.assignee_id) === String(assigneeFilter) || String(t.assignee?.id) === String(assigneeFilter);
+        const match = String(t.assignee_id) === String(assigneeFilter) || String(t.assignee?.id) === String(assigneeFilter) || coAssigneeIds.includes(String(assigneeFilter));
         if (!match) return false;
       }
     }

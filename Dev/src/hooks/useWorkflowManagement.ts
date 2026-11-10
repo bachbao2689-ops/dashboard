@@ -349,7 +349,7 @@ export function useWorkflowManagement() {
   const [newTaskAssignees, setNewTaskAssignees] = useState<string[]>([]);
   const newTaskAssignee = newTaskAssignees[0] || '';
   const setNewTaskAssignee = (val: string | string[]) => {
-    if (Array.isArray(val)) setNewTaskAssignees(val.slice(0, 2));
+    if (Array.isArray(val)) setNewTaskAssignees(val);
     else setNewTaskAssignees(val ? [val] : []);
   };
   const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
@@ -445,9 +445,23 @@ export function useWorkflowManagement() {
             workflow_status: newTaskStatus,
             priority: 'medium',
             quantity: parsedQty,
+            assignee_ids: newTaskAssignees.map(id => Number(id) || id),
           }
         });
         if (error) throw error;
+        createdTaskId = data ? String(data) : null;
+        if (createdTaskId) {
+          try {
+            await supabase.from('tasks').update({
+              custom_fields: {
+                ...(parsedQty != null && parsedQty > 0 ? { quantity: parsedQty, base_quantity: parsedQty } : {}),
+                assignee_ids: newTaskAssignees.map(id => Number(id) || id),
+              }
+            }).eq('id', createdTaskId);
+          } catch (customErr) {
+            console.warn('Could not persist custom_fields on task:', customErr);
+          }
+        }
         return data;
       });
       createdTaskId = res ? String(res) : null;

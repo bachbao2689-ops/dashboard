@@ -63,7 +63,8 @@ export function useProfileCalendar(targetUserId?: string | number) {
         if(taskSnapshot.error)throw new Error(taskSnapshot.error);
         const personal=(taskSnapshot.data||[]).filter(row=>{
           const target=taskTarget(row.id);
-          return String(row.assignee_id)===String(profileId)||(target.kind==='task'?mentionedIds.includes(target.id):legacyMentions.some(m=>m.entity_type===target.kind&&m.entity_id===target.id));
+          const coAssigneeIds = ((((row as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String);
+          return String(row.assignee_id)===String(profileId)||coAssigneeIds.includes(String(profileId))||(target.kind==='task'?mentionedIds.includes(target.id):legacyMentions.some(m=>m.entity_type===target.kind&&m.entity_id===target.id));
         });
         const sourceRows=(kind:string)=>personal.filter(row=>taskTarget(row.id).kind===kind).map(row=>({...row,id:row.id.startsWith('ps-')||row.id.startsWith('cs-')?row.id.slice(3):row.id}));
         const tasks=sourceRows('task'),projectSubtasks=sourceRows('project_subtask'),campaignSubtasks=sourceRows('campaign_subtask');

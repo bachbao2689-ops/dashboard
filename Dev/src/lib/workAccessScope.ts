@@ -17,12 +17,15 @@ export function leaderParentVisible(actor:Actor,_departmentId?:unknown,invitedId
  }
  return false;
 }
-export function leaderTaskVisible(actor:Actor,task:{assignee_id?:unknown;created_by?:unknown;department_id?:unknown;parent_pic_ids?:(string|number)[]},people:Person[]=[]){
+export function leaderTaskVisible(actor:Actor,task:{assignee_id?:unknown;created_by?:unknown;department_id?:unknown;parent_pic_ids?:(string|number)[];custom_fields?:any},people:Person[]=[]){
  if(!actor||actor.is_active===false)return false;
  if(!isDepartmentLeader(actor))return true;
  const own=(id:unknown)=>id!=null&&String(id)===String(actor.id);
  const team=(id:unknown)=>people.some(p=>id!=null&&String(p.id)===String(id)&&sameWorkDepartment(actor,p.department_id));
- return sameWorkDepartment(actor,task.department_id)||own(task.assignee_id)||own(task.created_by)||team(task.assignee_id)||team(task.created_by)||(task.parent_pic_ids||[]).some(own);
+ const coAssignees = (((task.custom_fields?.assignee_ids as any[]) || []).map(String));
+ const ownCo = coAssignees.some(own);
+ const teamCo = coAssignees.some(team);
+ return sameWorkDepartment(actor,task.department_id)||own(task.assignee_id)||own(task.created_by)||ownCo||team(task.assignee_id)||team(task.created_by)||teamCo||(task.parent_pic_ids||[]).some(own);
 }
 export function trackLeaderVisible(actor:Actor,track:{department_id?:unknown;created_by?:unknown;pics:{id:string|number}[];sub_pics?:{id:string|number}[];member_ids?:(string|number)[];task_assignee_ids?:(string|number)[]},people:Person[]=[]){
  const allInvited: (string|number)[] = [
