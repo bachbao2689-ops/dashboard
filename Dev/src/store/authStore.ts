@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
+import { resetSupabaseRecoveryCooldown, supabase } from '../services/supabase';
 import {disablePush} from '../services/pushNotifications';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
 import {readAdminPreview,startAdminPreview,stopAdminPreview,authSessionIdentity,hasAdminPreviewHint,rememberAdminPreview} from '../services/adminPreview';
@@ -216,7 +216,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
       await applySession(session,true);
       if(get().authError||!get().profile)throw new Error(get().authError||'Chưa xác nhận được hồ sơ nhân sự.');
     },
-    retrySession: async()=>{await get().initialize();},
+    retrySession: async()=>{
+      // A user-initiated recovery clears only Auth/profile cooldowns. Other
+      // Supabase services keep their own backoff, so their failures cannot
+      // block sign-in and retrying here does not replay any business write.
+      resetSupabaseRecoveryCooldown();
+      await get().initialize();
+    },
 
     initialize: async () => {
       if(initializing)return;initializing=true;

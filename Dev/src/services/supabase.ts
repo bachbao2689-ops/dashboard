@@ -9,4 +9,6 @@ declare const __DASHBOARD_BACKEND_MODE__: 'local' | 'main';
 export const backendMode = __DASHBOARD_BACKEND_MODE__;
 validateBackendTarget(typeof window !== 'undefined' ? window.location.hostname : 'localhost', supabaseUrl, backendMode);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey,{global:{fetch:createBackendFetch()}});
+const backendFetch=createBackendFetch();
+export const resetSupabaseRecoveryCooldown=()=>backendFetch.resetCooldown(['auth','data']);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey,{global:{fetch:backendFetch}});
