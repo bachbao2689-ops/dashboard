@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 import {useWorkspaceRealtime} from './useWorkspaceRealtime';
 import toast from 'react-hot-toast';
-import {isGlobalManager} from '../lib/roleScope';
+import {isAdmin} from '../lib/roleScope';
 import {createMemberProfile, saveMemberAccess, type MemberAccess} from '../services/memberAccounts';
 
 export type UserRole = 'admin' | 'member' | 'manager' | 'leader';
@@ -72,45 +72,54 @@ export function useMembers() {
     }
   }, [profile?.id, profile?.role, profile?.employment_level, profile?.department_id]);
 
-  const requireManager = () => {
+  const requireAdmin = () => {
     const profile = useAuthStore.getState().profile;
     const original=useAuthStore.getState().originalProfile;
-    if (original && original.id!==profile?.id) throw new Error('Khôi phục tài khoản gốc trước khi quản lý thành viên');
-    if (!profile || !profile.is_active || !isGlobalManager(profile)) {
-      throw new Error('Bạn không có quyền quản lý thành viên');
+    if (original && original.id!==profile?.id) throw new Error('Khôi phục tài khoản Admin gốc trước khi quản lý thành viên');
+    if (!profile || !profile.is_active || !isAdmin(profile)) {
+      throw new Error('Chỉ Admin được quản lý tài khoản thành viên');
     }
     return profile;
   };
 
+  const actionError = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) return error.message;
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.trim()) {
+      const code = 'code' in error && typeof error.code === 'string' ? ` (${error.code})` : '';
+      return `${error.message}${code}`;
+    }
+    return fallback;
+  };
+
   const addMember = async (memberData: NewMember): Promise<number | null> => {
     try {
-      requireManager();
+      requireAdmin();
       const id=await createMemberProfile(supabase,memberData);
       await fetchMembers();
       toast.success('Đã tạo hồ sơ. Tiếp tục phân quyền.');
       return id;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thêm được thành viên');
+      toast.error(actionError(error, 'Không thêm được thành viên'));
       return null;
     }
   };
 
   const updateMemberAccess = async (member: Member, access: MemberAccess): Promise<boolean> => {
     try {
-      const actor=requireManager();
+      const actor=requireAdmin();
       await saveMemberAccess(supabase,actor,member,access,departments.map(department=>department.id));
       await fetchMembers();
       toast.success('Đã lưu phân quyền');
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không lưu được phân quyền');
+      toast.error(actionError(error, 'Không lưu được phân quyền'));
       return false;
     }
   };
 
   const setMemberRemoved = async (member: Member, removed: boolean) => {
     try {
-      const profile = requireManager();
+      const profile = requireAdmin();
       if (member.id === profile.id) throw new Error('Bạn không thể xóa tài khoản của mình');
       if (member.role === 'admin' && profile.role !== 'admin') throw new Error('Chỉ Admin được quản lý Admin');
       if (removed && member.role === 'admin' && members.filter(item => item.role === 'admin' && item.status === 'active').length <= 1) {
@@ -124,7 +133,7 @@ export function useMembers() {
       toast.success(removed ? 'Đã xóa thành viên khỏi danh sách' : 'Đã khôi phục thành viên');
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không cập nhật được thành viên');
+      toast.error(actionError(error, 'Không cập nhật được thành viên'));
       return false;
     }
   };

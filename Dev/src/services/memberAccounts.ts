@@ -1,5 +1,5 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {isGlobalManager, isAdmin} from '../lib/roleScope.ts';
+import {isAdmin} from '../lib/roleScope.ts';
 
 type Client = Pick<SupabaseClient, 'from' | 'rpc'>;
 type Actor = {id: number; role: string; employment_level: string | null; is_active: boolean};
@@ -32,10 +32,9 @@ export async function createMemberProfile(client: Client, input: {name: string; 
 }
 
 export async function saveMemberAccess(client: Client, actor: Actor, target: {id: number; role: string}, input: MemberAccess, departmentIds: string[]) {
-  if (!actor.is_active || !isGlobalManager(actor)) throw Error('Bạn không có quyền phân quyền thành viên');
+  if (!actor.is_active || !isAdmin(actor)) throw Error('Chỉ Admin được phân quyền tài khoản');
   if (actor.id===target.id) throw Error('Bạn không thể thay đổi quyền tài khoản của mình');
   if (!['admin','manager','leader','member'].includes(input.role)) throw Error('Vai trò không hợp lệ');
-  if (!isAdmin(actor) && (target.role==='admin' || input.role==='admin')) throw Error('Chỉ Admin được quản lý Admin');
   if ((input.department_id && !departmentIds.includes(input.department_id)) ||
       (!input.department_id && !['admin','manager'].includes(input.role))) throw Error('Vui lòng chọn phòng ban hợp lệ');
   const title=input.job_title.trim();

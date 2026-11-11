@@ -35,7 +35,8 @@ export function MemberManagement() {
   const canDeleteMember = isAdmin(profile);
   const [searchParams,setSearchParams]=useSearchParams();
   const originalProfile=useAuthStore(state=>state.originalProfile);
-  const canEditAccess=canManageAll && (!originalProfile || originalProfile.id===profile?.id);
+  const canAdministerAccounts=isAdmin(profile) && (!originalProfile || originalProfile.id===profile?.id);
+  const canEditAccess=canAdministerAccounts;
   const permissionId=memberPermissionId(searchParams.get('permissions'));
   const permissionMember=canEditAccess ? members.find(member=>member.id===permissionId && member.id!==profile?.id && (member.role!=='admin' || isAdmin(profile))) : undefined;
   const closePermissions=useCallback(()=>setSearchParams(current=>{const next=new URLSearchParams(current);next.delete('permissions');return next;},{replace:true}),[setSearchParams]);
@@ -173,7 +174,7 @@ export function MemberManagement() {
             </ActionButton>
           )}
 
-          {canManageAll && (
+          {canAdministerAccounts && (
             <ActionButton icon={<Plus size={15} />}
               type="button"
               onClick={() => setIsInviteModalOpen(true)}
@@ -324,7 +325,7 @@ export function MemberManagement() {
           return true;
         }}
         departments={departments}
-        canAddAdmin={profile?.role === 'admin'}
+        canAddAdmin={canAdministerAccounts}
       />
       {permissionMember && <InviteMemberModal
         key={`permissions-${permissionMember.id}`}
