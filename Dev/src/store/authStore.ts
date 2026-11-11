@@ -80,15 +80,18 @@ async function loadStaffProfile(authUser: User, markSignedIn = false): Promise<S
     if (created.error) throw created.error;
     row = created.data;
   } else if (markSignedIn) {
-    const { error: signInError } = await supabase.from('users')
-      .update({ last_sign_in_at: new Date().toISOString() }).eq('id', row.id);
-    if (signInError) console.warn('Could not record staff sign-in:', signInError.message);
+    // This audit timestamp is useful, but it must not hold up permission loading.
+    void Promise.resolve(supabase.from('users')
+      .update({ last_sign_in_at: new Date().toISOString() }).eq('id', row.id)
+    ).then(({ error: signInError }) => {
+        if (signInError) console.warn('Could not record staff sign-in:', signInError.message);
+      })
+      .catch(error => console.warn('Could not record staff sign-in:', error));
   }
 
-  const { data: department } = row.department_id
-    ? await supabase.from('departments').select('name').eq('id', row.department_id).maybeSingle()
-    : { data: null };
-  return { ...row, department_name: department?.name || null } as StaffProfile;
+  // department_name is display metadata. The authoritative department_id and
+  // role are already present, so do not serialize login on another REST roundtrip.
+  return { ...row, department_name: null } as StaffProfile;
 }
 
 function enrichUser(authUser: User, profile: StaffProfile | null): User {
@@ -129,14 +132,35 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const original=await withDeadline(loadStaffProfile(authUser,markSignedIn));
       if(epoch!==sessionEpoch)return;
       if(original?.is_active===false){await supabase.auth.signOut();set({session:null,user:null,profile:null,originalProfile:null,previewExpiresAt:null,loading:false});return;}
-      const verifyPreview=original?.role==='admin'||get().originalProfile?.role==='admin'||Boolean(get().previewExpiresAt)||hasAdminPreviewHint(session);
-      set({originalProfile:original});
+      const cachedDepartmentName = original?.department_id && get().originalProfile?.id === original.id
+        ? get().originalProfile?.department_name || null
+        : null;
+      const resolvedOriginal = original && !original.department_name && cachedDepartmentName
+        ? { ...original, department_name: cachedDepartmentName }
+        : original;
+      const verifyPreview=resolvedOriginal?.role==='admin'||get().originalProfile?.role==='admin'||Boolean(get().previewExpiresAt)||hasAdminPreviewHint(session);
+      set({originalProfile:resolvedOriginal});
       // Ordinary Staff/Leader login does not depend on the Dev Tools RPC.
-      const preview=original&&verifyPreview?await withDeadline(readAdminPreview(supabase)):{active:false};
+      const preview=resolvedOriginal&&verifyPreview?await withDeadline(readAdminPreview(supabase)):{active:false};
       if(epoch!==sessionEpoch)return;
       rememberAdminPreview(session,preview.active);
-      const effective=preview.active?preview.actor!:original;
-      set({session,profile:effective,originalProfile:original,previewExpiresAt:preview.active?preview.expires_at!:null,user:enrichUser(authUser,effective),authError:null,loading:false});
+      const effective=preview.active?preview.actor!:resolvedOriginal;
+      set({session,profile:effective,originalProfile:resolvedOriginal,previewExpiresAt:preview.active?preview.expires_at!:null,user:enrichUser(authUser,effective),authError:null,loading:false});
+      if (resolvedOriginal?.department_id && !resolvedOriginal.department_name) {
+        const profileId = resolvedOriginal.id;
+        const departmentId = resolvedOriginal.department_id;
+        const identity = authSessionIdentity(session);
+        void Promise.resolve(supabase.from('departments').select('name').eq('id', departmentId).maybeSingle())
+          .then(({ data, error }) => {
+            const departmentName = data?.name;
+            const current = get();
+            if (error || !departmentName || !identity || authSessionIdentity(current.session) !== identity || current.originalProfile?.id !== profileId) return;
+            const nextOriginal = { ...current.originalProfile, department_name: departmentName };
+            const nextProfile = current.profile?.id === profileId ? { ...current.profile, department_name: departmentName } : current.profile;
+            set({ originalProfile: nextOriginal, profile: nextProfile, user: current.user ? enrichUser(current.user, nextProfile || nextOriginal) : current.user });
+          })
+          .catch(error => console.warn('Could not load department display name:', error));
+      }
     }catch(error){
       if(epoch!==sessionEpoch)return;
       console.error('Could not confirm account/test context:',error);
