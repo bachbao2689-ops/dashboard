@@ -28,3 +28,12 @@ test('an unsuccessful request keeps visible data with an error, never fake rows'
  let fail=false;const resource=createSharedResource(async()=>{if(fail)throw new Error('offline');return ['real'];});
  await resource.refresh('actor');fail=true;await resource.refresh('actor');assert.deepEqual(resource.getSnapshot('actor').data,['real']);assert.equal(resource.getSnapshot('actor').error,'offline');resource.reset();
 });
+test('failed automatic refresh backs off; manual retry can recover immediately',async t=>{
+ let now=100,fail=true,calls=0;t.mock.method(Date,'now',()=>now);
+ const resource=createSharedResource(async()=>{calls++;if(fail)throw new Error('database unavailable');return ['real'];});
+ const stop=resource.subscribe('actor',()=>{});await resource.refresh('actor');assert.equal(calls,1);
+ for(let i=0;i<20;i++)resource.invalidate('actor',i);await flush();assert.equal(calls,1);
+ now=6000;resource.invalidate('actor',21);await flush();assert.equal(calls,2);
+ fail=false;await resource.refresh('actor');assert.equal(calls,3);assert.deepEqual(resource.getSnapshot('actor').data,['real']);
+ stop();resource.reset();
+});

@@ -6,6 +6,13 @@ export function authSessionIdentity(session:{access_token:string;user:{id:string
  if(!session)return null;
  try{const payload=JSON.parse(atob(session.access_token.split('.')[1].replaceAll('-','+').replaceAll('_','/')));return `${session.user.id}:${payload.session_id||''}`;}catch{return session.user.id;}
 }
+const PREVIEW_HINT='kcoffee_admin_test_session';
+export function hasAdminPreviewHint(session:Parameters<typeof authSessionIdentity>[0]):boolean{
+ try{return Boolean(session&&typeof localStorage!=='undefined'&&localStorage.getItem(PREVIEW_HINT)===authSessionIdentity(session));}catch{return false;}
+}
+export function rememberAdminPreview(session:Parameters<typeof authSessionIdentity>[0],active:boolean){
+ try{if(active&&session)localStorage.setItem(PREVIEW_HINT,authSessionIdentity(session)!);else if(hasAdminPreviewHint(session))localStorage.removeItem(PREVIEW_HINT);}catch{/* Only a hint to request server verification; never grants scope. */}
+}
 export type AdminPreview={active:boolean;actor?:StaffProfile;expires_at?:string;started_at?:string;requires_reset?:boolean};
 export async function readAdminPreview(client:Client):Promise<AdminPreview>{
  const {data,error}=await client.rpc('admin_preview_status');

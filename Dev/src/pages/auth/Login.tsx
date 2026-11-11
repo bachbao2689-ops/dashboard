@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import {withDeadline,authFailureMessage} from '../../lib/backendRequest';
 import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import '../../styles/login-carousel.css';
@@ -27,6 +28,9 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state=>state.profile);
+  const authError = useAuthStore(state=>state.authError);
+  const authLoading = useAuthStore(state=>state.loading);
 
   const from =
     typeof location.state?.from === 'string' &&
@@ -36,10 +40,10 @@ export const Login: React.FC = () => {
       : '/';
 
   useEffect(() => {
-    if (user) {
+    if (user && profile && !authLoading && !authError) {
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from]);
+  }, [user,profile,authLoading,authError,navigate,from]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,15 +62,18 @@ export const Login: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const {data,error} = await withDeadline(supabase.auth.signInWithPassword({
+        email:email.trim(),
         password,
-      });
+      }));
 
       if (error) throw error;
+      if(!data.session)throw new Error('Chưa nhận được phiên đăng nhập. Vui lòng thử lại.');
+      await useAuthStore.getState().acceptSession(data.session);
       toast.success('Successfully logged in!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to login');
+      toast.error(authFailureMessage(error));
+    } finally {
       setLoading(false);
     }
   };
@@ -174,6 +181,8 @@ export const Login: React.FC = () => {
                 </label>
               </div>
             </div>
+
+            {authError && <p role="alert" className="text-sm text-white">{authError}</p>}
 
             <button
               type="submit"
