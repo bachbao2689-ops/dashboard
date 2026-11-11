@@ -31,9 +31,9 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
-  const { user,profile,loading,authError } = useAuthStore();
+  const { user,profile,loading,previewBusy,authError } = useAuthStore();
 
-  if (loading) return <AuthLoading message="Đang khởi tạo hệ thống…" />;
+  if (loading||previewBusy) return <AuthLoading message={previewBusy?'Đang xác nhận phạm vi kiểm thử…':'Đang khởi tạo hệ thống…'} />;
 
   const searchParams = new URLSearchParams(location.search);
   const isAssetScanBypass = location.pathname === '/assets' && (searchParams.has('code') || searchParams.has('asset'));

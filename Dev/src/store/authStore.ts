@@ -34,7 +34,7 @@ interface AuthState {
   authError: string | null;
   acceptSession: (session:Session)=>Promise<void>;
   retrySession: ()=>Promise<void>;
-  initialize: () => void;
+  initialize: () => Promise<void>;
   signOut: () => Promise<void>;
   devLogin: (rememberMe?: boolean) => void;
   updateUserMetadata: (data: { full_name?: string; avatar_url?: string | null }) => Promise<void>;
