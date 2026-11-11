@@ -9,9 +9,12 @@ import { MobileNav } from './MobileNav';
 import { useUiStore } from '../../store/uiStore';
 import {PageErrorBoundary} from '../common/PageErrorBoundary';
 import {NotificationPopupStack} from '../features/notifications/NotificationPopupStack';
+import {useAuthStore} from '../../store/authStore';
 
 export const DashboardLayout: React.FC = () => {
   const location = useLocation();
+  const {profile,originalProfile,user,previewBusy,scopeRevision}=useAuthStore();
+  const scopeKey=JSON.stringify([profile?.id,profile?.role,profile?.employment_level,profile?.department_id,profile?.is_active,scopeRevision]);
   const isMobileHome = location.pathname === '/mobile-home';
 
   const mobileChromeHidden = useMobileChrome();
@@ -59,9 +62,11 @@ export const DashboardLayout: React.FC = () => {
                 : "px-3 sm:px-4 pt-[calc(10px+env(safe-area-inset-top,0px))] xl:pt-3 xl:px-4 pb-[calc(100px+env(safe-area-inset-bottom,0px))] xl:pb-8"
             } relative z-0 ${!introFinished ? "cockpit-dock-waiting" : dockingActive ? "cockpit-dock-main" : ""}`}
           >
-            <PageErrorBoundary>
+            <PageErrorBoundary key={scopeKey}>
               <Suspense fallback={<div className="p-8 animate-pulse text-gray-500" role="status">Đang tải…</div>}>
-                <Outlet />
+                {previewBusy || (!profile && Boolean(originalProfile || user))
+                  ? <div className="p-8 text-gray-500 dark:text-gray-400" role="status">{previewBusy ? 'Đang xác nhận scope kiểm thử…' : 'Chưa xác nhận được scope. Khôi phục tài khoản gốc trong Dev Tools hoặc tải lại trang.'}</div>
+                  : <Outlet />}
               </Suspense>
             </PageErrorBoundary>
           </main>

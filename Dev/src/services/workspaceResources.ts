@@ -6,7 +6,7 @@ import {retainWorkspaceRealtime,type WorkspaceChange} from './workspaceRealtime'
 import type {HubTrack} from '../lib/workflowHub';
 import {workspaceChangeRelevant} from '../lib/workspaceInvalidation';
 
-export const workspaceScope=()=>{const {user,profile}=useAuthStore.getState();return JSON.stringify([user?.id,profile?.id,profile?.role,profile?.employment_level,profile?.department_id,profile?.is_active]);};
+export const workspaceScope=()=>{const {user,profile,scopeRevision}=useAuthStore.getState();return JSON.stringify([user?.id,profile?.id,profile?.role,profile?.employment_level,profile?.department_id,profile?.is_active,scopeRevision]);};
 function scopedResource<T>(load:()=>Promise<T>,tables:string[],ttl=15000,filter?:(change:WorkspaceChange)=>boolean){
  const resource=createSharedResource<T>(async key=>{
   if(key!==workspaceScope())throw new Error('Phiên làm việc đã thay đổi.');

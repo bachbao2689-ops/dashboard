@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Lock } from 'lucide-react';
 import { CropModal } from '../../common/CropModal';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthStore, assertOwnAuthAccount } from '../../../store/authStore';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 
@@ -47,6 +47,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void; 
     setIsSaving(true);
     
     try {
+      assertOwnAuthAccount();
       const path = `${user.id}/${Date.now()}.jpg`;
       const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
       
@@ -79,6 +80,7 @@ export const EditProfileModal: React.FC<{ isOpen: boolean; onClose: () => void; 
 
     setIsUpdatingPassword(true);
     try {
+      assertOwnAuthAccount();
       const { error } = await supabase.auth.updateUser({ password: passwords.new });
       if (error) throw error;
       

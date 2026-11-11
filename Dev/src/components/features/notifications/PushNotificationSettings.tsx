@@ -9,13 +9,14 @@ import toast from 'react-hot-toast';
 
 export function PushNotificationSettings({hideWhenEnabled=false}:{hideWhenEnabled?:boolean}){
  const user=useAuthStore(s=>s.user),lang=useUiStore(s=>s.lang);
+ const ownAccount=useAuthStore(s=>Boolean(s.profile && s.profile.id===s.originalProfile?.id && !s.previewBusy));
  const {config,enabled,busy,ready,message}=useDevicePush();
  const vi=lang!=='en',needsInstall=isIOS()&&!isStandalone(),supported=supportsPush();
 
- useEffect(()=>{if(user?.id)void initializeDevicePush(user.id);},[user?.id]);
+ useEffect(()=>{if(user?.id && ownAccount)void initializeDevicePush(user.id);},[user?.id,ownAccount]);
 
  const run=async(action:'enable'|'disable'|'test')=>{
-  if(!user)return;
+  if(!user||!ownAccount)return;
   try{
    await changeDevicePush(action,user.id);
    if(action==='enable'){
@@ -43,6 +44,7 @@ export function PushNotificationSettings({hideWhenEnabled=false}:{hideWhenEnable
  const available=Boolean(ready&&(config?.enabled || isLocal)&&(originMatches || isLocal));
 
  // Avoid flashing the setup card while checking an already registered device, and hide if unavailable or unsupported in popover.
+ if(!ownAccount)return hideWhenEnabled?null:<p className="push-settings-note">{vi?'Khôi phục tài khoản gốc để cài thông báo thiết bị.':'Restore your original account to manage device notifications.'}</p>;
  if(hideWhenEnabled&&(!ready||enabled||!available||!supported))return null;
 
  return <section className="push-settings" aria-label={vi?'Thông báo trên thiết bị':'Device notifications'}>

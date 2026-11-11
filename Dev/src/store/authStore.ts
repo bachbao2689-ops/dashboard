@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import {disablePush} from '../services/pushNotifications';
 import {retainWorkspaceRealtime} from '../services/workspaceRealtime';
+import {readAdminPreview,startAdminPreview,stopAdminPreview,authSessionIdentity} from '../services/adminPreview';
 
 export interface StaffProfile {
   id: number;
@@ -23,6 +24,11 @@ interface AuthState {
   user: User | null;
   profile: StaffProfile | null;
   originalProfile: StaffProfile | null;
+  previewExpiresAt: string | null;
+  previewBusy: boolean;
+  scopeRevision: number;
+  setTestActor: (id:number)=>Promise<void>;
+  restoreAdmin: ()=>Promise<void>;
   loading: boolean;
   initialize: () => void;
   signOut: () => Promise<void>;
@@ -101,47 +107,32 @@ export const useAuthStore = create<AuthState>((set, get) => {
   let sessionEpoch=0;
   const applySession = async (session: Session | null, markSignedIn = false) => {
     const epoch=++sessionEpoch;
-    const authUser = session?.user || null;
-    if (!authUser) {
-      set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
-      return;
-    }
-    if (authUser.id === 'dev-admin-id') return;
-
-    const currentOriginal = get().originalProfile;
-    const clientPreview = currentOriginal?.auth_id === authUser.id && get().profile?.id !== currentOriginal.id
-      ? get().profile : null;
-
-    try {
-      const profile = await loadStaffProfile(authUser, markSignedIn);
-      if(epoch!==sessionEpoch)return;
-      if (profile?.is_active === false) {
-        await supabase.auth.signOut();
-        set({ session: null, user: null, profile: null, originalProfile: null, loading: false });
-        return;
+    const authUser=session?.user||null;
+    if(!authUser){set({session:null,user:null,profile:null,originalProfile:null,previewExpiresAt:null,previewBusy:false,loading:false});return;}
+    if(authUser.id==='dev-admin-id')return;
+    if(get().session&&authSessionIdentity(get().session)!==authSessionIdentity(session))set(s=>({profile:null,originalProfile:null,previewExpiresAt:null,previewBusy:false,scopeRevision:s.scopeRevision+1}));
+    try{
+      let original:StaffProfile|null;
+      try{original=await loadStaffProfile(authUser,markSignedIn);}
+      catch(error){
+        console.error('Could not enrich staff profile:',error);
+        const {data,error:profileError}=await supabase.from('users').select('id,auth_id,email,name,avatar_url,role,department_id,employment_level,job_title,is_active').eq('auth_id',authUser.id).maybeSingle();
+        if(profileError)throw profileError;
+        original=data?{...data,department_name:null} as StaffProfile:null;
       }
-      set({session,profile:profile?.role==='admin'?clientPreview||profile:profile,originalProfile:profile,user:enrichUser(authUser,profile),loading:false});
-    } catch (error) {
       if(epoch!==sessionEpoch)return;
-      console.error('Could not load staff profile:', error);
-      // Keep an existing staff account usable even if an optional profile
-      // enrichment query fails. This direct fallback is especially important
-      // for Admin accounts, which do not belong to a department.
-      try {
-        const fields = 'id, auth_id, email, name, avatar_url, role, department_id, employment_level, job_title, is_active';
-        const { data: fallback } = await supabase.from('users').select(fields).eq('auth_id', authUser.id).maybeSingle();
-        if(epoch!==sessionEpoch)return;
-        const profile = fallback ? { ...fallback, department_name: null } as StaffProfile : null;
-        if (profile?.is_active === false) {
-          await supabase.auth.signOut();
-          set({ session: null, profile: null, originalProfile: null, user: null, loading: false });
-          return;
-        }
-        set({session,profile:profile?.role==='admin'?clientPreview||profile:profile,originalProfile:profile,user:enrichUser(authUser,profile),loading:false});
-      } catch {
-        if(epoch!==sessionEpoch)return;
-        set({ session, profile: null, originalProfile: null, user: enrichUser(authUser, null), loading: false });
-      }
+      if(original?.is_active===false){await supabase.auth.signOut();set({session:null,user:null,profile:null,originalProfile:null,previewExpiresAt:null,loading:false});return;}
+      set({originalProfile:original});
+      const preview=original?await readAdminPreview(supabase):{active:false};
+      if(epoch!==sessionEpoch)return;
+      const effective=preview.active?preview.actor!:original;
+      set({session,profile:effective,originalProfile:original,previewExpiresAt:preview.active?preview.expires_at!:null,user:enrichUser(authUser,effective),loading:false});
+    }catch(error){
+      if(epoch!==sessionEpoch)return;
+      console.error('Could not confirm account/test context:',error);
+      // A failed switch may already be committed server-side. Keep recovery
+      // controls, but never substitute Admin data after a transport failure.
+      set({session,profile:null,previewExpiresAt:null,user:enrichUser(authUser,null),loading:false});
     }
   };
 
@@ -150,6 +141,39 @@ export const useAuthStore = create<AuthState>((set, get) => {
     user: null,
     profile: null,
     originalProfile: null,
+    previewExpiresAt: null,
+    previewBusy: false,
+    scopeRevision: 0,
+    setTestActor: async(id:number)=>{
+      if(get().previewBusy)return;
+      const original=get().originalProfile;
+      if(original?.role!=='admin'||!get().session||get().session?.access_token==='dev-token')throw new Error('Đăng nhập Admin thật để thử thao tác theo cấp bậc.');
+      if(id===original.id)return get().restoreAdmin();
+      const epoch=++sessionEpoch;
+      set(state=>({previewBusy:true,profile:null,scopeRevision:state.scopeRevision+1}));
+      try{
+        const next=await startAdminPreview(supabase,id);
+        if(epoch!==sessionEpoch)throw new Error('Phiên đăng nhập đã thay đổi. Tải lại trước khi thử tiếp.');
+        set({profile:next.actor!,previewExpiresAt:next.expires_at!,user:enrichUser(get().session!.user,next.actor!)});
+      }
+      catch(error){if(get().originalProfile?.auth_id===original.auth_id)set({profile:null});throw error;}
+      finally{set({previewBusy:false});}
+    },
+    restoreAdmin: async()=>{
+      if(get().previewBusy)return;
+      const epoch=++sessionEpoch;const original=get().originalProfile;
+      if(!original||!get().session||get().session?.access_token==='dev-token')throw new Error('Đăng nhập Admin thật để khôi phục phiên.');
+      set(state=>({previewBusy:true,profile:null,scopeRevision:state.scopeRevision+1}));
+      try{
+        await stopAdminPreview(supabase);
+        if(epoch!==sessionEpoch)throw new Error('Phiên đăng nhập đã thay đổi. Tải lại trước khi thử tiếp.');
+        // Reload rank/department rather than resurrecting a stale Admin profile.
+        await applySession(get().session);
+        if(!get().profile)throw new Error('Chưa xác nhận được scope tài khoản gốc. Tải lại để thử lại.');
+      }
+      catch(error){if(get().originalProfile?.auth_id===original?.auth_id)set({profile:null});throw error;}
+      finally{set({previewBusy:false});}
+    },
     loading: true,
 
     initialize: async () => {
@@ -165,28 +189,48 @@ export const useAuthStore = create<AuthState>((set, get) => {
           authListenerStarted = true;
           supabase.auth.onAuthStateChange((event, nextSession) => {
             if (get().user?.id === 'dev-admin-id')return;
-            if(nextSession&&get().profile&&get().user?.id===nextSession.user.id){set({session:nextSession,user:enrichUser(nextSession.user,get().originalProfile || get().profile)});return;}
+            if(nextSession&&authSessionIdentity(get().session)===authSessionIdentity(nextSession)){set({session:nextSession,user:enrichUser(nextSession.user,get().profile)});return;}
             // Database calls must run outside the Auth callback's internal lock.
             setTimeout(()=>void applySession(nextSession,event==='SIGNED_IN'),0);
           });
         }
         if (!staffValidationStarted) {
+          if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+            window.addEventListener('storage',event=>{
+              if(event.key==='kcoffee_admin_test_changed'&&get().session){
+                set(state=>({profile:null,scopeRevision:state.scopeRevision+1}));
+                void applySession(get().session);
+              }
+            });
+          }
           staffValidationStarted = true;
           let release: (() => void) | undefined;
-          let actor: number | undefined;
+          let bindingKey: string | undefined;
+          let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+          let expiry: string | null = null;
           const refreshIdentity = () => {
             if (document.visibilityState === 'visible' && get().session && get().user?.id !== 'dev-admin-id') {
               return applySession(get().session);
             }
           };
           const bindIdentity = () => {
-            const next = get().session && get().user?.id !== 'dev-admin-id'
-              ? get().originalProfile?.id : undefined;
-            if (next === actor) return;
-            release?.(); actor = next;
+            const state=get();
+            if(state.previewExpiresAt!==expiry){
+              clearTimeout(expiryTimer);expiry=state.previewExpiresAt;
+              if(expiry)expiryTimer=setTimeout(()=>{
+                set(s=>({profile:null,scopeRevision:s.scopeRevision+1}));
+                if(get().session)void applySession(get().session);
+              },Math.max(0,Date.parse(expiry)-Date.now())+50);
+            }
+            const next = state.session && state.user?.id !== 'dev-admin-id'
+              ? state.originalProfile?.id : undefined;
+            const effective=state.profile?.id;
+            const key=next?`${next}:${effective}`:undefined;
+            if (key === bindingKey) return;
+            release?.(); bindingKey=key;
             release = next ? retainWorkspaceRealtime(next, ['users','departments'], refreshIdentity, () => {}, change =>
               !change.table || change.table === 'departments' || !change.new?.id && !change.old?.id
-                || Number(change.new?.id || change.old?.id) === next) : undefined;
+                || [next,effective].includes(Number(change.new?.id || change.old?.id))) : undefined;
           };
           useAuthStore.subscribe(bindIdentity);
           bindIdentity();
@@ -228,10 +272,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     updateUserMetadata: async (data) => {
+      const epoch=sessionEpoch;
       const { user, profile, originalProfile } = get();
-      if (originalProfile && profile && profile.id !== originalProfile.id) {
-        throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ.');
-      }
+      if(!profile||get().previewBusy||originalProfile&&profile.id!==originalProfile.id)throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ.');
       const fullName = data.full_name?.trim() || profile?.name;
       if (!user || !fullName) throw new Error('Full name is required');
       if (user.id === 'dev-admin-id') {
@@ -246,11 +289,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
         .update({ name: fullName, initials: initialsFromName(fullName), ...('avatar_url' in data ? { avatar_url: data.avatar_url } : {}) }).eq('auth_id', user.id).select(fields).maybeSingle();
       if (profileError) throw profileError;
       const nextProfile = updatedProfile ? { ...updatedProfile, department_name: profile?.department_name || null } as StaffProfile : profile;
-      set({ profile: nextProfile, originalProfile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });
+      if(epoch===sessionEpoch)set({ profile: nextProfile, originalProfile: nextProfile, user: enrichUser(updatedAuth.user || user, nextProfile) });
     },
 
     signOut: async () => {
       sessionEpoch++;
+      try { if(get().originalProfile?.role==='admin')await stopAdminPreview(supabase); } catch { /* Logout still revokes the real Auth session. */ }
       try { await disablePush(); } catch { /* Auth session revocation also stops queued push. */ }
       try { await supabase.auth.signOut(); }
       catch (error) { console.error('Error signing out:', error); }
@@ -258,8 +302,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
         localStorage.removeItem('kcoffee_dev_session');
         localStorage.removeItem('kcoffee_auth_remember');
         sessionStorage.removeItem('kcoffee_session_active');
-        set({ session: null, user: null, profile: null, originalProfile: null });
+        set({ session: null, user: null, profile: null, originalProfile: null,previewExpiresAt:null,previewBusy:false });
       }
     },
   };
 });
+
+/** Auth/password/avatar operations still belong to the signed-in identity. */
+export function assertOwnAuthAccount(){
+ const {profile,originalProfile,previewBusy,previewExpiresAt}=useAuthStore.getState();
+ if(!profile||!originalProfile||profile.id!==originalProfile.id||previewBusy||previewExpiresAt)throw new Error('Khôi phục tài khoản gốc trước khi chỉnh sửa hồ sơ hoặc mật khẩu.');
+}

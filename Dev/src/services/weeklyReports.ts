@@ -21,8 +21,9 @@ export async function saveWeeklyReports(items:{id:string;metadata:WeeklyMetadata
  const {data,error}=await supabase.rpc('save_task_weekly_reports',{p_items:items.map(item=>{const {kind,id}=taskTarget(item.id);return {...item,id,kind};}),p_week_start:start,p_week_end:end});
  if(error?.code==='PGRST202'){
    if(items.some(item=>item.complete))throw new Error('Chưa thể hoàn thành qua Report. Hãy dùng phần chi tiết công việc.');
-   const {data:auth,error:authError}=await supabase.auth.getUser();if(authError)throw authError;
-   const {data:actor,error:actorError}=await supabase.from('users').select('id').eq('auth_id',auth.user?.id).single();if(actorError)throw actorError;
+   const {data:actorId,error:actorError}=await supabase.rpc('workflow_actor');if(actorError)throw actorError;
+   if(!actorId)throw new Error('Chưa xác nhận được người gửi báo cáo.');
+   const actor={id:actorId};
    for(const item of items){
     const target=taskTarget(item.id);
     const {data:task,error:taskError}=await supabase.from(target.table).select('*').eq('id',target.id).single();if(taskError)throw taskError;

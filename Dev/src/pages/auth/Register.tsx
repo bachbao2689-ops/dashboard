@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
+import {useAuthStore} from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { User, Lock, UserPlus } from 'lucide-react';
 
@@ -22,6 +23,8 @@ export const Register: React.FC = () => {
     setLoading(true);
 
     try {
+      const context=useAuthStore.getState();
+      if(context.previewBusy||context.previewExpiresAt||context.originalProfile&&context.profile?.id!==context.originalProfile.id)throw new Error('Khôi phục tài khoản gốc trước khi thiết lập tài khoản.');
       // Assuming they are logged in via an invite link and need to set their password
       const { error } = await supabase.auth.updateUser({
         password: password,

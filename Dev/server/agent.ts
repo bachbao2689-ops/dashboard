@@ -160,9 +160,11 @@ async function authenticate(request: Request): Promise<{ db: SupabaseClient<any>
   const db = clientForToken(token);
   const { data: { user }, error: authError } = await db.auth.getUser(token);
   if (authError || !user) return null;
+  const {data:actorId,error:actorError}=await db.rpc('workflow_actor');
+  if(actorError||!actorId)return null;
   const { data: actor, error } = await db.from('users')
     .select('id,name,role,employment_level,department_id,is_active')
-    .eq('auth_id', user.id).maybeSingle();
+    .eq('id', actorId).maybeSingle();
   if (error || !actor || actor.is_active === false) return null;
   const { data: department } = actor.department_id
     ? await db.from('departments').select('name').eq('id', actor.department_id).maybeSingle()

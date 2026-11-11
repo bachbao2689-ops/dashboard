@@ -17,7 +17,8 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useWorkspaceDirectory } from '../../hooks/useWorkspaceData';
 import { Avatar } from './Avatar';
-import { previewProfile, reconcileAccountPreview, resolvePreviewAccount, type DirectoryPerson, type PreviewRank } from '../../lib/accountPreview';
+import { resolvePreviewAccount, type DirectoryPerson, type PreviewRank } from '../../lib/accountPreview';
+import toast from 'react-hot-toast';
 import { userCache } from '../../lib/userCache';
 import { isGlobalManager, isAdmin, isDepartmentLeader } from '../../lib/roleScope';
 
@@ -49,12 +50,16 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
 }) => {
   const currentProfile = useAuthStore((s) => s.profile);
   const storeOriginalProfile = useAuthStore((s) => s.originalProfile);
+  const previewBusy = useAuthStore(s=>s.previewBusy);
+  const previewExpiresAt = useAuthStore(s=>s.previewExpiresAt);
+  const session = useAuthStore(s=>s.session);
   const directory = useWorkspaceDirectory();
   const allUsers = directory.data?.users || [];
   const departments = directory.data?.departments || [];
 
   const originalProfile = storeOriginalProfile || currentProfile;
-  const isPreviewing = Boolean(originalProfile && currentProfile && Number(currentProfile.id) !== Number(originalProfile.id));
+  const isPreviewing = Boolean(originalProfile && (!currentProfile || currentProfile.id !== originalProfile.id));
+  const canTest = isAdmin(storeOriginalProfile) && Boolean(session?.user?.id && session.access_token !== 'dev-token');
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'roles' | 'popups'>('roles');
@@ -179,39 +184,23 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   const designDept = departments.find(d => /^(design|thiết kế)$/i.test(d.name.trim()));
   const marketingDept = departments.find(d => /^marketing$/i.test(d.name.trim()));
   const preset = (rank: PreviewRank, deptId?: string | null) =>
-    resolvePreviewAccount(allUsers, rank, deptId, originalProfile?.id);
+    canTest && !previewBusy ? resolvePreviewAccount(allUsers, rank, deptId, originalProfile?.id) : undefined;
   const switchPreset = (rank: PreviewRank, deptId?: string | null) => {
     const person = preset(rank, deptId);
     if (person) switchToStaff(person);
   };
 
-  useEffect(() => {
-    // A scope transition clears the directory while loading; do not treat that
-    // intermediate snapshot (or a network error) as a deletion.
-    if (!directory.data || directory.loading || directory.error || !currentProfile || !originalProfile) return;
-    const next = reconcileAccountPreview(currentProfile, originalProfile, allUsers, departments);
-    if (next !== currentProfile) {
-      useAuthStore.setState({profile: next});
-      syncDepartmentScope(next);
-    }
-  }, [directory.data, directory.loading, directory.error, currentProfile, originalProfile]);
-
   const syncDepartmentScope = (targetProfile: any) => {
     if (typeof window === 'undefined') return;
     const deptId = targetProfile?.department_id ? String(targetProfile.department_id) : '';
-    const isMgr = isGlobalManager(targetProfile) || isAdmin(targetProfile);
-    if (!isMgr && deptId && targetProfile?.id) {
-      userCache.set(targetProfile.id, 'projects.departmentFilter.v2', '');
-      userCache.set(targetProfile.id, 'tasks.departmentFilter.v2', '');
-      userCache.set(targetProfile.id, 'projects.departmentFilter', deptId);
-      userCache.set(targetProfile.id, 'tasks.departmentFilter', deptId);
-      userCache.set(targetProfile.id, 'reports.departmentFilter', deptId);
-    } else if (isMgr && targetProfile?.id) {
+    if (targetProfile?.id) {
+      // These are display filters, never authorization. An execution team can
+      // own work labelled with a different requesting department.
       userCache.set(targetProfile.id, 'projects.departmentFilter.v2', '');
       userCache.set(targetProfile.id, 'tasks.departmentFilter.v2', '');
       userCache.set(targetProfile.id, 'projects.departmentFilter', '');
       userCache.set(targetProfile.id, 'tasks.departmentFilter', '');
-      userCache.set(targetProfile.id, 'reports.departmentFilter', '');
+      userCache.set(targetProfile.id, 'reports.departmentFilter', isGlobalManager(targetProfile) ? '' : deptId);
     }
     if (window.location.pathname.includes('/reports')) {
       const url = new URL(window.location.href);
@@ -224,18 +213,18 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
     window.dispatchEvent(new Event('tasks:changed'));
   };
 
-  const resetOriginal = () => {
-    if (originalProfile) {
-      useAuthStore.setState({ profile: { ...originalProfile } });
-      syncDepartmentScope(originalProfile);
-    }
+  const resetOriginal = async () => {
+    try {
+      await useAuthStore.getState().restoreAdmin();
+      syncDepartmentScope(useAuthStore.getState().profile);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Chưa khôi phục được scope tài khoản gốc.'); }
   };
-  const switchToStaff = (user: DirectoryPerson) => {
-    if (user.is_active === false) return;
-    const next = Number(user.id) === originalProfile?.id
-      ? originalProfile : previewProfile(user, departments);
-    useAuthStore.setState({profile: next});
-    syncDepartmentScope(next);
+  const switchToStaff = async (user: DirectoryPerson) => {
+    if (user.is_active === false || !canTest || previewBusy) return;
+    try {
+      await useAuthStore.getState().setTestActor(Number(user.id));
+      syncDepartmentScope(useAuthStore.getState().profile);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Chưa đổi được scope kiểm thử.'); }
   };
 
   const filteredStaffUsers = useMemo(() => {
@@ -344,7 +333,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                   Dev Tools K COFFEE
                 </h4>
-                <p className="text-[10.5px] text-slate-500 dark:text-slate-400">Tầm view cấp bậc & Popups</p>
+                <p className="text-[10.5px] text-slate-500 dark:text-slate-400">Scope backend & Popups</p>
               </div>
             </div>
             <button
@@ -403,19 +392,23 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           {/* Tab 1: Role Preview Switcher */}
           {activeTab === 'roles' && (
             <div className="grid gap-2.5 max-h-[440px] overflow-y-auto pr-0.5">
+              {!canTest && <p role="status" className="text-xs text-slate-500 dark:text-slate-400">Đăng nhập Admin thật để kiểm thử quyền backend. Phiên demo không cấp quyền dữ liệu.</p>}
               {/* Preview Alert Banner */}
               {isPreviewing && (
                 <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 grid gap-1.5 text-xs">
                   <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 font-bold">
                     <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>Đang giả lập xem tầm view của:</span>
+                    <span>{previewBusy ? 'Đang xác nhận scope…' : 'Đang kiểm thử theo quyền của:'}</span>
                   </div>
                   <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
                     {currentProfile?.name} ({getRankLabel(currentProfile)} · {currentProfile?.department_name || 'Toàn công ty'})
                   </p>
+                  {previewExpiresAt && <p>Phiên kết thúc lúc {new Date(previewExpiresAt).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}. Thao tác sẽ lưu dữ liệu thật.</p>}
+                  <p>Đổi hồ sơ, mật khẩu và cài thông báo thiết bị cần khôi phục tài khoản gốc.</p>
                   <button
                     type="button"
                     onClick={resetOriginal}
+                    disabled={previewBusy}
                     className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
                   >
                     Khôi phục tài khoản Admin gốc
@@ -487,7 +480,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                     </div>
                     <div>
                       <p className="text-xs font-bold leading-tight">Leader Design</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Thiết kế, quyền Design</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Toàn đội Design · ngoài đội theo lời mời</p>
                     </div>
                     {isCurrent('leader', designDept?.id) && (
                       <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -510,7 +503,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                     </div>
                     <div>
                       <p className="text-xs font-bold leading-tight">Leader Marketing</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Trưởng phòng Mkt (bị khóa phòng khác)</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Toàn đội Marketing · ngoài đội theo lời mời</p>
                     </div>
                     {isCurrent('leader', marketingDept?.id) && (
                       <Check className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -632,6 +625,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                         <button
                           key={user.id}
                           type="button"
+                          disabled={!canTest || previewBusy}
                           onClick={() => switchToStaff(user)}
                           className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                             isUserActive

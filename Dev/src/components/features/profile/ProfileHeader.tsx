@@ -2,7 +2,7 @@ import {ActionButton} from '../../common/ActionButton';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Edit3, Shield, Mail, LogOut } from 'lucide-react';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthStore, assertOwnAuthAccount } from '../../../store/authStore';
 import { Camera } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { toast } from 'react-hot-toast';
@@ -52,6 +52,7 @@ export const ProfileHeader: React.FC<{ role: string }> = ({ role }) => {
     setIsUploading(true);
     
     try {
+      assertOwnAuthAccount();
       const path = `${user.id}/${Date.now()}.jpg`;
       const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
       

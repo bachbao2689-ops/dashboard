@@ -19,7 +19,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useUiStore } from "../../store/uiStore";
-import { useAuthStore } from "../../store/authStore";
+import { useAuthStore, assertOwnAuthAccount } from "../../store/authStore";
 import { supabase } from "../../services/supabase";
 import { CropModal } from "../common/CropModal";
 import { useNotificationCenter } from "../../hooks/useNotificationCenter";
@@ -934,6 +934,7 @@ export const Sidebar: React.FC = () => {
     setIsUploadingAvatar(true);
 
     try {
+      assertOwnAuthAccount();
       const path = `${user.id}/${Date.now()}.jpg`;
       const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
 

@@ -72,6 +72,9 @@ function App() {
   const initialize = useAuthStore(state => state.initialize);
   const session = useAuthStore(state => state.session);
   const profileId = useAuthStore(state => state.profile?.id);
+  const originalProfileId = useAuthStore(state=>state.originalProfile?.id);
+  const previewBusy = useAuthStore(state=>state.previewBusy);
+  const ownAccount=Boolean(profileId && profileId===originalProfileId && !previewBusy);
 
 
   useEffect(() => {
@@ -81,10 +84,10 @@ function App() {
 
   useEffect(() => {
     const userId = session?.user?.id;
-    if (userId) {
+    if (userId && ownAccount) {
       void initializeDevicePush(userId,true);
     } else resetDevicePush();
-  }, [session?.user?.id, session?.access_token]);
+  }, [session?.user?.id, session?.access_token, ownAccount]);
 
   useEffect(() => {
     if (profileId == null) return;
