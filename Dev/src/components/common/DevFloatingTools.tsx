@@ -391,11 +391,11 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
 
           {/* Tab 1: Role Preview Switcher */}
           {activeTab === 'roles' && (
-            <div className="grid gap-2.5 max-h-[440px] overflow-y-auto pr-0.5">
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2.5 max-h-[440px] overflow-y-auto pr-0.5">
               {!canTest && <p role="status" className="text-xs text-slate-500 dark:text-slate-400">Đăng nhập Admin thật để kiểm thử quyền backend. Phiên demo không cấp quyền dữ liệu.</p>}
               {/* Preview Alert Banner */}
               {isPreviewing && (
-                <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 grid gap-1.5 text-xs">
+                <div className="min-w-0 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 grid grid-cols-[minmax(0,1fr)] gap-1.5 text-xs">
                   <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 font-bold">
                     <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{previewBusy ? 'Đang xác nhận scope…' : 'Đang kiểm thử theo quyền của:'}</span>
@@ -409,7 +409,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
                     type="button"
                     onClick={resetOriginal}
                     disabled={previewBusy}
-                    className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
+                    className="mt-1 min-h-11 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
                   >
                     Khôi phục tài khoản Admin gốc
                   </button>
@@ -563,7 +563,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               </div>
 
               {/* SECTION B: Full Staff Directory Selector */}
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80">
+              <div className="min-w-0 pt-2 border-t border-slate-200 dark:border-slate-800/80">
                 <div className="grid grid-flow-col justify-between items-center mb-1.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Xem tầm view của từng Staff ({filteredStaffUsers.length}/{allUsers.length})
