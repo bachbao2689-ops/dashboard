@@ -1,13 +1,27 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {FolderKanban, Megaphone, ChevronDown, Search, User, Clock, ArrowLeft, X} from 'lucide-react';
+import {FolderKanban, Megaphone, ChevronDown, ChevronUp, Search, User, Clock, ArrowLeft, X} from 'lucide-react';
 import {Avatar} from '../../common/Avatar';
 
-export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
+export function WorkflowScopeHeader({
+  model,
+  showKpis = true,
+  onToggleKpis,
+}: {
+  model: WorkflowModel;
+  showKpis?: boolean;
+  onToggleKpis?: () => void;
+}) {
   const {isEn, entityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, currentEntity, selectedEntityId, isCampaign, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, entities, daysRemaining, entityTimeline, subTeamMembers, leadInfo} = model;
   if (!currentEntity) return null;
+
+  const primaryLeads = (currentEntity?.pics && currentEntity.pics.length > 1) 
+    ? currentEntity.pics.slice(0, 2) 
+    : (currentEntity?.pics?.[0] ? [currentEntity.pics[0]] : ((currentEntity as any)?.lead ? [(currentEntity as any).lead] : []));
+  const primaryLeadIds = new Set(primaryLeads.map(p => String(p.id)));
+  const otherMembers = subTeamMembers.filter(m => !primaryLeadIds.has(String(m.id)));
   return (
-    <div className="xl:col-span-4 2xl:col-span-4 grid content-between gap-2.5">
-      {/* Top Row: Button trên title scale nhỏ 20% (Projects / Campaigns) & Description (Requirement 1) */}
+    <div className="grid content-between gap-2.5 w-full">
+      {/* Top Row: Button trên title scale nhỏ 20% (Projects / Campaigns) & Toggle KPI (Requirement 1 & 2) */}
       <div className="grid grid-flow-col auto-cols-max items-center gap-2">
             {/* Back to All Projects / Campaigns */}
             <button
@@ -46,9 +60,18 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
           </button>
         </div>
 
-        <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
-          • {isCampaign ? (isEn ? 'Marketing & Media Campaign' : 'Chiến dịch truyền thông & Tiếp thị') : 'Website Development Lifecycle'}
-        </span>
+        {onToggleKpis && (
+          <button
+            type="button"
+            onClick={onToggleKpis}
+            className="px-2 py-1 rounded-[8px] text-[10.5px] font-bold text-gray-600 dark:text-slate-300 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs transition-all grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer"
+            title={isEn ? (showKpis ? 'Collapse Performance cards' : 'Expand Performance cards') : (showKpis ? 'Đóng thẻ Performance' : 'Mở thẻ Performance')}
+            aria-label={isEn ? 'Toggle KPIs' : 'Đóng mở thẻ Performance'}
+          >
+            <span>{isEn ? 'Performance' : 'Performance'}</span>
+            {showKpis ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        )}
       </div>
 
       {/* Main Title as Filter Dropdown */}
@@ -203,39 +226,71 @@ export function WorkflowScopeHeader({model}: {model: WorkflowModel}) {
 
           {/* Lead chính ở dưới time, Sub track avatars, and Project/Campaign status (Requirement 2) */}
           <div className="grid grid-flow-col auto-cols-max items-center gap-2 pt-0.5">
-            {/* Lead chính badge */}
-            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-[6px] border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
-              <div className={`w-4 h-4 rounded-full grid place-items-center text-[9px] font-bold text-white shadow-xs ${
-                isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
-              }`}>
-                {leadInfo.avatar ? (
-                  <img src={leadInfo.avatar} alt={leadInfo.name} className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  <User size={10} />
-                )}
-              </div>
-              <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">
-                {leadInfo.name}
+            {/* Lead chính badge (1 hoặc 2 người) */}
+            <div className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-0.5 rounded-[6px] border shadow-2xs ${
+              isCampaign
+                ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60'
+                : 'bg-violet-50/90 dark:bg-violet-950/40 border-violet-200/80 dark:border-violet-800/60'
+            }`}>
+              {primaryLeads.length > 1 ? (
+                <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
+                  {primaryLeads.map(lead => (
+                    <div key={lead.id} className="w-4 h-4 rounded-full border border-white dark:border-slate-900 overflow-hidden shadow-2xs">
+                      {lead.avatar_url ? (
+                        <img src={lead.avatar_url} alt={lead.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className={`w-full h-full grid place-items-center text-[8px] font-bold text-white ${
+                          isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
+                        }`}>
+                          <User size={8} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`w-4 h-4 rounded-full grid place-items-center text-[9px] font-bold text-white shadow-xs ${
+                  isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
+                }`}>
+                  {leadInfo.avatar || primaryLeads[0]?.avatar_url ? (
+                    <img src={leadInfo.avatar || primaryLeads[0]?.avatar_url} alt={leadInfo.name} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <User size={10} />
+                  )}
+                </div>
+              )}
+              <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate max-w-[150px] sm:max-w-[180px]">
+                {primaryLeads.length > 0 ? primaryLeads.map(p => p.name).join(' · ') : leadInfo.name}
               </span>
-              <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-[6px] ${
+              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-[6px] ${
                 isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
               }`}>
                 {leadInfo.role}
               </span>
             </div>
 
-            {/* Sub track avatars */}
-            <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
-              {subTeamMembers.map(sub => (
-                <div
-                  key={sub.id}
-                  title={`${sub.name} ${isEn ? '(Team member)' : '(Thành viên tham gia)'}`}
-                  className={`w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-600 border-2 border-white dark:border-slate-900 grid place-items-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer`}
-                >
-                  <Avatar name={sub.name} src={sub.avatar_url || undefined} className="w-full h-full text-[8px]" />
-                </div>
-              ))}
-            </div>
+            {/* Sub track members dạng avatar tròn xếp chồng */}
+            {otherMembers.length > 0 && (
+              <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
+                {otherMembers.slice(0, 4).map(sub => (
+                  <div
+                    key={sub.id}
+                    title={`${sub.name} ${isEn ? '(Team member)' : '(Thành viên tham gia)'}`}
+                    className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-600 border-2 border-white dark:border-slate-900 grid place-items-center text-[8px] font-extrabold text-white shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer"
+                  >
+                    <Avatar name={sub.name} src={sub.avatar_url || undefined} className="w-full h-full text-[8px]" />
+                  </div>
+                ))}
+                {otherMembers.length > 4 && (
+                  <div
+                    className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 grid place-items-center text-[8px] font-bold text-slate-700 dark:text-slate-200 shadow-2xs z-10"
+                    title={`${otherMembers.length - 4} ${isEn ? 'more members' : 'thành viên khác'}`}
+                  >
+                    +{otherMembers.length - 4}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Project / Campaign Status Pill */}
             <span className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2.5 py-0.5 rounded-[6px] text-[10px] font-bold border ${

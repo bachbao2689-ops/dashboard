@@ -794,7 +794,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       >
         {isOpen && !embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-          <div><span className="text-xs font-semibold px-3 py-1.5 rounded-[6px] uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span><span className="ml-2 text-xs capitalize text-gray-500">{task?.priority || 'medium'} {t('common.priority').toLowerCase()}</span></div>
+          <div><span className="text-xs font-semibold px-3 py-1.5 rounded-[6px] uppercase tracking-wider border border-gray-200 dark:border-slate-700">{task?.task_ref || 'TASK'}</span></div>
           <div className="flex items-center gap-1"><button aria-label={t('common.closeTaskDetail')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
         </div>
         {task && <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-6 md:px-8 space-y-7">
@@ -818,7 +818,6 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               >
                 {(Number((task as any)?.custom_fields?.quantity) || Number((task as any)?.quantity) || totalChecklistQuantity || (Number(taskQuantity) || 0)) > 0 && (
                   <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[6px] text-xs font-bold border border-emerald-400/60 dark:border-emerald-500/60 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 text-emerald-700 dark:text-emerald-300 shadow-2xs">
-                    <span>📦</span>
                     <span>{lang === 'en' ? 'Quantity' : 'Số lượng'}: {Number((task as any)?.custom_fields?.quantity) || Number((task as any)?.quantity) || totalChecklistQuantity || Number(taskQuantity)}</span>
                   </span>
                 )}
@@ -916,45 +915,95 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
             </section>
           ) : (
-            <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#071325]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
+            <section className="grid grid-cols-2 gap-4 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-[12px] border border-slate-200/80 dark:border-slate-700/70">
               {(() => {
                 const allAssigneeIds = Array.from(new Set([
                   ...(task.assignee_id ? [String(task.assignee_id)] : []),
                   ...(((task.custom_fields as any)?.assignee_ids as any[]) || []).map(String)
                 ]));
-                const peoplePool = assignablePeople || mentionPeople || [];
-                const allAssignees = allAssigneeIds.map((id, idx) => {
-                  const found = peoplePool.find(p => String(p.id) === id);
+                const userMap = new Map<string, any>();
+                [...(mentionPeople || []), ...(assignablePeople || [])].forEach((p: any) => {
+                  if (p && p.id != null) userMap.set(String(p.id), p);
+                });
+                let allAssignees = allAssigneeIds.map((id, idx) => {
+                  const found = userMap.get(id);
                   if (found) return found;
-                  if (idx === 0 && task.assignee) return task.assignee;
+                  if (idx === 0 && task.assignee) {
+                    return typeof task.assignee === 'string'
+                      ? { id, name: task.assignee, avatar_url: undefined }
+                      : { id, name: task.assignee.name || `User #${id}`, avatar_url: task.assignee.avatar_url };
+                  }
                   return { id, name: `User #${id}`, avatar_url: undefined };
                 });
+                if (allAssignees.length === 0 && task.assignee) {
+                  const name = typeof task.assignee === 'string' ? task.assignee : (task.assignee.name || '');
+                  const avatar = typeof task.assignee === 'object' ? task.assignee?.avatar_url : undefined;
+                  if (name) {
+                    allAssignees = [{ id: task.assignee_id || 'primary', name, avatar_url: avatar }];
+                  }
+                }
+                const primaryAssignee = allAssignees[0];
+                const coAssignees = allAssignees.slice(1);
                 return (
                   <div className="min-w-0">
-                    <p className="text-xs text-gray-500 uppercase mb-2 grid grid-flow-col auto-cols-max items-center gap-1">
-                      <User className="w-3.5 h-3.5" />
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       <span>{allAssignees.length > 1 ? (lang === 'en' ? 'Assignees' : 'Người thực hiện') : t('common.assignee')}</span>
                     </p>
-                    {allAssignees.length > 0 ? (
-                      <div className="grid gap-1.5">
-                        {allAssignees.map((person, pIdx) => (
-                          <div key={person.id || pIdx} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-[6px] bg-white dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
-                            <Avatar name={person.name} src={person.avatar_url || undefined} className="w-6 h-6 text-[9px] shrink-0" />
-                            <b className="text-xs font-bold text-gray-900 dark:text-white truncate block">{person.name}</b>
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400">
-                              {pIdx === 0 ? (lang === 'en' ? 'Primary' : 'Chính') : (lang === 'en' ? 'Co-PIC' : 'Làm chung')}
-                            </span>
+                    {primaryAssignee ? (
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                        {/* Avatar người thực hiện chính */}
+                        <div
+                          title={`${primaryAssignee.name || t('common.unassigned')} (${lang === 'en' ? 'Primary' : 'Chính'})`}
+                          className="w-7 h-7 max-w-[28px] max-h-[28px] rounded-full border-2 border-blue-500 shadow-2xs hover:scale-105 transition-transform cursor-pointer overflow-hidden shrink-0 relative group"
+                        >
+                          <Avatar
+                            name={primaryAssignee.name || t('common.unassigned')}
+                            src={primaryAssignee.avatar_url || undefined}
+                            className="w-full h-full text-[10px] rounded-full shrink-0"
+                          />
+                        </div>
+
+                        {/* Avatar stack cho người làm chung (Co-PIC) */}
+                        {coAssignees.length > 0 && (
+                          <div className="inline-grid grid-flow-col auto-cols-max items-center -space-x-1.5 pl-0.5">
+                            {coAssignees.slice(0, 4).map((sub: any, sIdx: number) => (
+                              <div
+                                key={sub.id || sIdx}
+                                title={`${sub.name || `User #${sub.id}`} (${lang === 'en' ? 'Co-PIC' : 'Làm chung'})`}
+                                className="w-6 h-6 max-w-[24px] max-h-[24px] rounded-full border-2 border-white dark:border-slate-800 shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer overflow-hidden shrink-0"
+                              >
+                                <Avatar
+                                  name={sub.name || `User #${sub.id}`}
+                                  src={sub.avatar_url || undefined}
+                                  className="w-full h-full text-[8px] rounded-full shrink-0"
+                                />
+                              </div>
+                            ))}
+                            {coAssignees.length > 4 && (
+                              <span
+                                title={coAssignees.slice(4).map((c: any) => c.name).join(', ')}
+                                className="w-6 h-6 max-w-[24px] max-h-[24px] rounded-full border-2 border-white dark:border-slate-800 bg-slate-200 dark:bg-slate-700 text-[8.5px] font-bold text-slate-700 dark:text-slate-200 grid place-items-center shadow-2xs shrink-0"
+                              >
+                                +{coAssignees.length - 4}
+                              </span>
+                            )}
                           </div>
-                        ))}
+                        )}
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-500">{t('common.unassigned')}</span>
+                      <div className="grid grid-flow-col auto-cols-max items-center gap-2 px-3 py-1.5 rounded-[6px] bg-slate-100/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-xs text-slate-400 dark:text-slate-500 italic">
+                        <span>{t('common.unassigned')}</span>
+                      </div>
                     )}
                   </div>
                 );
               })()}
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{task.start_date ? t('common.timeline') : t('common.dueDate')}</p>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                  <span>{task.start_date ? t('common.timeline') : t('common.dueDate')}</span>
+                </p>
                 {task.start_date ? (
                   <div className="text-sm flex items-center gap-1.5 flex-wrap">
                     <span className="font-normal text-gray-700 dark:text-gray-300">{displayDate(task.start_date)}</span>
@@ -966,22 +1015,30 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 uppercase mb-2">{t('tasks.col.projectCampaign')}</p>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('tasks.col.projectCampaign')}</p>
                 {task.project?.name ? (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
                     <span className="truncate">{task.project.name}</span>
                   </span>
                 ) : task.campaign?.name ? (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
                     <span className="truncate">{task.campaign.name}</span>
+                  </span>
+                ) : (task as any).project_name ? (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
+                    <span className="truncate">{(task as any).project_name}</span>
+                  </span>
+                ) : (task as any).campaign_name ? (
+                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
+                    <span className="truncate">{(task as any).campaign_name}</span>
                   </span>
                 ) : (
                   <b className="text-sm text-gray-400">{t('common.unlinked')}</b>
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p>
-                <b className="text-sm">{task.department?.name || 'N/A'}</b>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('common.department')}</p>
+                <b className="text-sm text-slate-900 dark:text-slate-100">{task.department?.name || (task as any).department_name || targetDepartmentName || 'N/A'}</b>
               </div>
             </section>
           )}

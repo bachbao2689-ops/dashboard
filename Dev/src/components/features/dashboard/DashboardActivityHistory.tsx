@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
 import { useTranslation } from '../../../i18n/translations';
@@ -40,11 +40,26 @@ export const DashboardActivityHistory: React.FC<DashboardActivityHistoryProps> =
 }) => {
   const { t, lang } = useTranslation();
   const profile = useAuthStore(state => state.profile);
+  const scopeRevision = useAuthStore(state => state.scopeRevision);
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<ActivityItem[]>([]);
+  const scopeKey = `${profile?.id ?? ''}:${profile?.role ?? ''}:${profile?.employment_level ?? ''}:${profile?.department_id ?? ''}:${profile?.is_active ?? ''}:${scopeRevision}`;
+  const [logSnapshot, setLogSnapshot] = useState<{ scopeKey: string; items: ActivityItem[] }>({ scopeKey: '', items: [] });
+  const logs = logSnapshot.scopeKey === scopeKey ? logSnapshot.items : [];
   const [loading, setLoading] = useState(true);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const requestGeneration = useRef(0);
+  const isFetching = useRef(false);
+  const refreshPending = useRef(false);
+  const mounted = useRef(false);
+  const activeScopeKey = useRef(scopeKey);
 
   const fetchActivities = useCallback(async () => {
+    if (isFetching.current) {
+      refreshPending.current = true;
+      return;
+    }
+    isFetching.current = true;
+    const generation = requestGeneration.current;
     try {
       const { data, error } = await supabase
         .from('activity_log')
@@ -52,17 +67,28 @@ export const DashboardActivityHistory: React.FC<DashboardActivityHistoryProps> =
         .order('created_at', { ascending: false })
         .limit(80);
 
-      if (!error && data) {
-        setLogs(data as ActivityItem[]);
+      if (!error && data && generation === requestGeneration.current) {
+        setLogSnapshot({ scopeKey: activeScopeKey.current, items: data as ActivityItem[] });
       }
     } catch (err) {
-      console.warn('Failed to load dashboard activities:', err);
+      if (generation === requestGeneration.current) {
+        console.warn('Failed to load dashboard activities:', err);
+      }
     } finally {
-      setLoading(false);
+      isFetching.current = false;
+      if (generation === requestGeneration.current) setLoading(false);
+      if (refreshPending.current && mounted.current) {
+        refreshPending.current = false;
+        void fetchActivities();
+      }
     }
   }, []);
 
   useEffect(() => {
+    mounted.current = true;
+    activeScopeKey.current = scopeKey;
+    requestGeneration.current += 1;
+    setLoading(true);
     void fetchActivities();
 
     const channel = supabase
@@ -71,15 +97,20 @@ export const DashboardActivityHistory: React.FC<DashboardActivityHistoryProps> =
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'activity_log' },
         () => {
-          void fetchActivities();
+          clearTimeout(refreshTimer.current);
+          refreshTimer.current = setTimeout(() => void fetchActivities(), 350);
         }
       )
       .subscribe();
 
     return () => {
+      mounted.current = false;
+      requestGeneration.current += 1;
+      refreshPending.current = false;
+      clearTimeout(refreshTimer.current);
       void supabase.removeChannel(channel);
     };
-  }, [fetchActivities]);
+  }, [fetchActivities, scopeKey]);
 
   const userMap = useMemo(() => {
     const map = new Map<string, (typeof users)[0]>();

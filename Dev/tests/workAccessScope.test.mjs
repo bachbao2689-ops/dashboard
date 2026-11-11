@@ -16,3 +16,8 @@ test('Inactive actors get no picker; inactive and foreign staff cannot be select
 test('Global Manager picker can use every active account',()=>{
  assert.deepEqual(workAssignmentPeople(manager,people),people.filter(person=>person.is_active!==false));
 });
+
+test('Staff PIC picker contains only own department members and self', () => {
+  assert.deepEqual(workAssignmentPeople(staff, people).map(p => p.id), [1, 2, 3]);
+  assert.equal(workAssignmentPeople(staff, people).some(p => p.id === foreignStaff.id || p.id === foreignLeader.id), false);
+});

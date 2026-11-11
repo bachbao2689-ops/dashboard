@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Activity, ChevronDown, Calendar, ListTodo, Clock3, CheckCircle2, Check, Trash2, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -35,6 +35,12 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
   const progress = taskProgress(regularTasks);
   const phaseList = track?.phases || [];
 
+  useEffect(() => {
+    if (phaseList.length === 0) {
+      setIsUnplannedOpen(true);
+    }
+  }, [phaseList.length]);
+
   const togglePhase = (phaseId: string) => {
     setExpandedPhases(prev => ({ ...prev, [phaseId]: !prev[phaseId] }));
   };
@@ -55,14 +61,18 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
   };
 
   const isCampaign = kind === 'campaign';
-  const primaryLead = track?.pics?.[0];
-  const leadName = primaryLead?.name || (en ? 'Unassigned' : 'Chưa giao');
+  const primaryLeads = (track?.pics && track.pics.length > 1)
+    ? track.pics.slice(0, 2)
+    : (track?.pics?.[0] ? [track.pics[0]] : []);
+  const leadName = primaryLeads.length > 0 ? primaryLeads.map(p => p.name).join(' · ') : (en ? 'Unassigned' : 'Chưa giao');
   const leadRole = isCampaign ? (en ? 'Campaign Lead' : 'Lead Chiến dịch') : (en ? 'Project Lead' : 'Lead Dự án');
 
   const subTeamMembers = (() => {
     const list: Array<{ id: string; name: string; avatar_url?: string }> = [];
     const seen = new Set<string>();
-    if (primaryLead?.id != null) seen.add(String(primaryLead.id));
+    primaryLeads.forEach(p => {
+      if (p?.id != null) seen.add(String(p.id));
+    });
 
     (track?.sub_pics || []).forEach(p => {
       const pid = String(p.id);
@@ -72,7 +82,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
       }
     });
 
-    (track?.pics || []).slice(1).forEach(p => {
+    (track?.pics || []).slice(primaryLeads.length).forEach(p => {
       const pid = String(p.id);
       if (pid && !seen.has(pid)) {
         seen.add(pid);
@@ -327,18 +337,40 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
               )}
               {/* Lead chính và Sub-team avatars */}
               <div className="grid grid-flow-col auto-cols-max items-center gap-2 pt-0.5 overflow-x-auto scrollbar-none">
-                {/* Lead chính badge */}
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-gray-100/90 dark:bg-slate-800/90 px-2 py-0.5 rounded-[6px] border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
-                  <div className={`w-4 h-4 rounded-full grid place-items-center text-[9px] font-bold text-white shadow-xs ${
-                    isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
-                  }`}>
-                    {primaryLead?.avatar_url ? (
-                      <img src={primaryLead.avatar_url} alt={leadName} className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <User size={10} />
-                    )}
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">
+                {/* Lead chính badge (1 hoặc 2 người) */}
+                <div className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-0.5 rounded-[6px] border shadow-2xs ${
+                  isCampaign
+                    ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60'
+                    : 'bg-violet-50/90 dark:bg-violet-950/40 border-violet-200/80 dark:border-violet-800/60'
+                }`}>
+                  {primaryLeads.length > 1 ? (
+                    <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
+                      {primaryLeads.map(lead => (
+                        <div key={lead.id} className="w-4 h-4 rounded-full border border-white dark:border-slate-900 overflow-hidden shadow-2xs">
+                          {lead.avatar_url ? (
+                            <img src={lead.avatar_url} alt={lead.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className={`w-full h-full grid place-items-center text-[8px] font-bold text-white ${
+                              isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
+                            }`}>
+                              <User size={8} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={`w-4 h-4 rounded-full grid place-items-center text-[9px] font-bold text-white shadow-xs ${
+                      isCampaign ? 'bg-gradient-to-tr from-amber-500 to-orange-500' : 'bg-gradient-to-tr from-violet-600 to-purple-600'
+                    }`}>
+                      {primaryLeads[0]?.avatar_url ? (
+                        <img src={primaryLeads[0].avatar_url} alt={leadName} className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <User size={10} />
+                      )}
+                    </div>
+                  )}
+                  <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate max-w-[150px] sm:max-w-[180px]">
                     {leadName}
                   </span>
                   <span className={`text-[9px] font-medium px-1.5 py-0.2 rounded-[6px] ${
@@ -348,10 +380,10 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                   </span>
                 </div>
 
-                {/* Sub track avatars */}
+                {/* Sub-team members dạng avatar tròn xếp chồng */}
                 {subTeamMembers.length > 0 && (
                   <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
-                    {subTeamMembers.map(sub => (
+                    {subTeamMembers.slice(0, 4).map(sub => (
                       <div
                         key={sub.id}
                         title={`${sub.name} ${en ? '(Team member)' : '(Thành viên tham gia)'}`}
@@ -360,6 +392,14 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                         <Avatar name={sub.name} src={sub.avatar_url} className="w-full h-full text-[8px]" />
                       </div>
                     ))}
+                    {subTeamMembers.length > 4 && (
+                      <div
+                        className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 grid place-items-center text-[8px] font-bold text-slate-700 dark:text-slate-200 shadow-2xs z-10"
+                        title={`${subTeamMembers.length - 4} ${en ? 'more members' : 'thành viên khác'}`}
+                      >
+                        +{subTeamMembers.length - 4}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -427,6 +467,10 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                     );
                   })}
                 </div>
+              ) : (track?.phases?.length || 0) === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60">
+                  💡 {en ? 'Direct task management (no phases).' : 'Dự án này quản lý theo công việc trực tiếp (không sử dụng giai đoạn).'}
+                </p>
               ) : (
                 <p className="text-xs text-gray-500">{en ? 'No phases in your scope yet.' : 'Chưa có giai đoạn trong phạm vi của bạn.'}</p>
               )}
@@ -440,7 +484,9 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                     className="w-full p-2.5 text-left grid grid-cols-[1fr_auto] items-center gap-2 hover:bg-amber-100/30 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
                   >
                     <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                      {unplannedTasks.length} {en ? 'tasks not assigned to a phase' : 'công việc chưa gắn giai đoạn'}
+                      {phaseList.length === 0
+                        ? (en ? `${unplannedTasks.length} direct project tasks` : `${unplannedTasks.length} công việc trực tiếp của dự án`)
+                        : (en ? `${unplannedTasks.length} tasks not assigned to a phase` : `${unplannedTasks.length} công việc chưa gắn giai đoạn`)}
                     </span>
                     <div className={`p-1 text-amber-500 transition-transform duration-200 ${isUnplannedOpen ? 'rotate-180' : ''}`}>
                       <ChevronDown size={14} />

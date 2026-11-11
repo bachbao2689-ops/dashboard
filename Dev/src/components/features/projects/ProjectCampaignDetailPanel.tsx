@@ -27,6 +27,7 @@ import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
 import {isAdmin, isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
+import {workAssignmentPeople} from '../../../lib/workAccessScope';
 
 const dateValue = (d?: string | null) => d ? d.split('-').reverse().join('/') : '---';
 
@@ -458,7 +459,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3">
                   <input value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} placeholder={t('projects.subtaskPlaceholder')} className="w-full p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"/>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"><option value="">{t('common.selectPic')}</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    <select value={newSubtaskOwner} onChange={e=>setNewSubtaskOwner(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm"><option value="">{t('common.selectPic')}</option>{workAssignmentPeople(profile, people, data?.department_id).map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}</select>
                     <select value={newSubtaskPriority} onChange={e=>setNewSubtaskPriority(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm font-medium">
                       <option value="low">{t('common.low')}</option>
                       <option value="medium">{t('common.medium')}</option>

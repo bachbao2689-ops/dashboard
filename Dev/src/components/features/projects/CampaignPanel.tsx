@@ -751,6 +751,7 @@ export const CampaignPanel: React.FC<{
           const isNoteOpen = Boolean(openNoteEntityIds[c.id]);
           const leadPerson = c.lead || (c.creator ? { name: c.creator.name, avatar_url: c.creator.avatar_url } : null);
           const campaignTrack = workflowTracks?.find(t => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
+          const campaignPics = (campaignTrack?.pics && campaignTrack.pics.length > 0) ? campaignTrack.pics : (leadPerson ? [leadPerson] : []);
           const hasPhases = (campaignTrack?.phases?.length || 0) > 0;
 
           return (
@@ -772,11 +773,11 @@ export const CampaignPanel: React.FC<{
                     track={campaignTrack}
                     leadPerson={leadPerson}
                     subPersons={(() => {
-                      const leadIdStr = c.lead_id ? String(c.lead_id) : '';
-                      const leadName = String(c.lead?.name || '').trim().toLowerCase();
+                      const primaryPicIds = new Set(campaignPics.map((p: any) => String(p.id)));
+                      const primaryPicNames = new Set(campaignPics.map((p: any) => String(p.name || '').trim().toLowerCase()));
                       return (subtaskMap[c.id] || []).filter((assignee: any) => {
-                        if (leadIdStr && String(assignee.id) === leadIdStr) return false;
-                        if (leadName && String(assignee.name || '').trim().toLowerCase() === leadName) return false;
+                        if (primaryPicIds.has(String(assignee.id))) return false;
+                        if (primaryPicNames.has(String(assignee.name || '').trim().toLowerCase())) return false;
                         return true;
                       });
                     })()}
@@ -852,10 +853,16 @@ export const CampaignPanel: React.FC<{
                   </span>
                   {c.end_date && getDueStatusLabel(c.end_date, c.status, lang === 'en')}
                 </div>
-                {leadPerson && (
+                {campaignPics.length > 0 && (
                   <div className="grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
-                    <Avatar name={leadPerson.name} src={leadPerson.avatar_url} className="w-4 h-4 text-[8px]" />
-                    <span className="text-xs text-gray-600 dark:text-gray-300 font-medium truncate max-w-[100px]">{leadPerson.name}</span>
+                    <div className="grid grid-flow-col auto-cols-max -space-x-1.5">
+                      {campaignPics.slice(0, 3).map((pic: any) => (
+                        <Avatar key={pic.id} name={pic.name} src={pic.avatar_url} className="w-4 h-4 text-[8px] border border-white dark:border-slate-900" />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 font-medium truncate max-w-[120px]">
+                      {campaignPics.map((p: any) => p.name).join(', ')}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1128,27 +1135,56 @@ export const CampaignPanel: React.FC<{
           <td className="p-4 overflow-hidden text-center">
             <div className="grid place-content-center">
               <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
-                <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
-                  <Avatar name={c.lead?.name || t('common.unassigned')} src={c.lead?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" />
-                </div>
                 {(() => {
-                  const leadIdStr = c.lead_id ? String(c.lead_id) : '';
-                  const leadName = String(c.lead?.name || '').trim().toLowerCase();
+                  const cTrack = (workflowTracks || []).find((t: any) => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
+                  const campaignPics = (cTrack?.pics && cTrack.pics.length > 0) ? cTrack.pics : (c.lead ? [c.lead] : []);
+                  const primaryPicIds = new Set(campaignPics.map((p: any) => String(p.id)));
+                  const primaryPicNames = new Set(campaignPics.map((p: any) => String(p.name || '').trim().toLowerCase()));
+
                   const filteredSubs = (subtaskMap[c.id] || []).filter((assignee: any) => {
-                    if (leadIdStr && String(assignee.id) === leadIdStr) return false;
-                    if (leadName && String(assignee.name || '').trim().toLowerCase() === leadName) return false;
+                    if (primaryPicIds.has(String(assignee.id))) return false;
+                    if (primaryPicNames.has(String(assignee.name || '').trim().toLowerCase())) return false;
                     return true;
                   });
-                  if (filteredSubs.length === 0) return null;
+
                   return (
                     <>
-                      <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
-                      <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
-                        <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
-                        <div className="grid grid-flow-col auto-cols-max -space-x-2">
-                          {filteredSubs.slice(0,4).map((assignee: any) => <Avatar key={'s'+assignee.id} name={(assignee.name || 'Unknown') + ' (Subtask)'} src={assignee.avatar_url || undefined} className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90" />)}
-                        </div>
+                      <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
+                        {campaignPics.length > 0 ? (
+                          campaignPics.slice(0, 4).map((pic: any) => (
+                            <Avatar
+                              key={pic.id}
+                              name={pic.name || t('common.unassigned')}
+                              src={pic.avatar_url || undefined}
+                              className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10"
+                            />
+                          ))
+                        ) : (
+                          <Avatar
+                            name={t('common.unassigned')}
+                            className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10"
+                          />
+                        )}
                       </div>
+
+                      {filteredSubs.length > 0 && (
+                        <>
+                          <span className="text-gray-300 dark:text-gray-600 px-1 shrink-0">|</span>
+                          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
+                            <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
+                            <div className="grid grid-flow-col auto-cols-max -space-x-2">
+                              {filteredSubs.slice(0, 4).map((assignee: any) => (
+                                <Avatar
+                                  key={'s' + assignee.id}
+                                  name={(assignee.name || 'Unknown') + ' (Subtask)'}
+                                  src={assignee.avatar_url || undefined}
+                                  className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </>
                   );
                 })()}

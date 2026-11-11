@@ -32,6 +32,7 @@ import {CommentPreviewPopover} from '../components/common/CommentPreviewPopover'
 import {TaskPinButton} from '../components/features/tasks/TaskPinButton';
 import {taskKey,isTaskDone} from '../lib/taskTracking';
 import {isGlobalManager, isDepartmentLeader, isAdmin} from '../lib/roleScope';
+import {workAssignmentPeople} from '../lib/workAccessScope';
 import {QuickStatusDropdown} from '../components/common/QuickStatusDropdown';
 import {ProjectViewModeDropdown} from '../components/features/projects/ProjectViewModeDropdown';
 import {ProjectsKanbanBoard} from '../components/features/projects/ProjectsKanbanBoard';
@@ -1911,6 +1912,7 @@ export const Projects:React.FC=()=>{
           entityType={selectedCampaign ? 'campaign_subtask' : 'project_subtask'}
           profile={profile}
           people={people}
+          assignablePeople={workAssignmentPeople(profile, people, selected?.department_id || selectedCampaign?.department_id)}
           parentName={selected?.name || selectedCampaign?.name}
           onClose={() => setSelectedSubtask(null)}
           onUpdated={(updatedSubtask) => {
@@ -1955,7 +1957,7 @@ export const Projects:React.FC=()=>{
                 </div>
                 <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm"><option value="low">{t('common.low')}</option><option value="medium">{t('common.medium')}</option><option value="high">{t('common.high')}</option><option value="urgent">{t('common.urgent')}</option></select></div>
                 <EntityStatusField value={editStatus} onChange={setEditStatus} />
-                <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={visiblePeople.map(p => ({ value: String(p.id), label: p.name + (p.departments?.name ? ' ('+p.departments.name+')' : '') }))} value={ownerIds} onChange={setOwnerIds} placeholder={t('common.selectPic') + '...'} /></div>
+                <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.owner')}</label><MultiSelect options={workAssignmentPeople(profile, people, departmentId || selected?.department_id).map(p => ({ value: String(p.id), label: p.name + (p.departments?.name ? ' ('+p.departments.name+')' : '') }))} value={ownerIds} onChange={setOwnerIds} placeholder={t('common.selectPic') + '...'} /></div>
                 <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.department') || (lang === 'en' ? 'Department' : 'Phòng ban')}</label><select value={departmentId} onChange={e=>setDepartmentId(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm text-gray-900 dark:text-white"><option value="">{lang === 'en' ? 'Select department...' : 'Chọn phòng ban...'}</option>{departments.map((dept: any) => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select></div>
                 <div><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.description')}</label><textarea value={description} onChange={e=>setDescription(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none min-h-24 mt-1 text-sm" placeholder={t('tasks.descPlaceholder')}/></div>
                 <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-700">
@@ -2289,7 +2291,7 @@ export const Projects:React.FC=()=>{
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
       <select value={subtaskOwner} onChange={e=>setSubtaskOwner(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm">
         <option value="">{t('common.selectPic')}</option>
-        {visiblePeople.map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}
+        {workAssignmentPeople(profile, people, selected?.department_id).map(p=><option key={p.id} value={p.id}>{p.name} {p.departments?.name ? '('+p.departments.name+')' : ''}</option>)}
       </select>
       <select value={subtaskPriority} onChange={e=>setSubtaskPriority(e.target.value)} className="p-2 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#071325] text-gray-900 dark:text-white outline-none text-sm font-medium">
         <option value="low">{t('common.low')}</option>

@@ -65,9 +65,9 @@ test('Workflow Hub View: 2-step flow without auto-redirect on null selectedKey',
   assert.equal(hubViewSource.includes('totalPhases === 0'), true);
   assert.equal(hubViewSource.includes('isCompleted = entity.isCompletedEntity || isDone(entity.status)'), true);
 
-  // 12. Phase Dots and Knob hover popovers with tasks and members
+  // 12. Phase Dots (only real phase dots, knob dot removed) hover popovers with tasks and members
   assert.equal(hubViewSource.includes('group/dot'), true);
-  assert.equal(hubViewSource.includes('group/knob'), true);
+  assert.equal(hubViewSource.includes('group/knob'), false);
   assert.equal(hubViewSource.includes('activePhaseTasks'), true);
 
   // 13. Dropdown popovers with origin-top-left and glass backdrop (anchored left to prevent cutoff)

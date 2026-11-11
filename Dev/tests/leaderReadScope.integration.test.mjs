@@ -6,6 +6,7 @@ import pg from 'pg';
 
 const runtimeFile=process.env.DASHBOARD_LOCAL_RUNTIME;
 const migration=new URL('../supabase/migrations/20261110115545_leader_team_read_scope_consistency.sql',import.meta.url);
+const subtaskCreateMigration=new URL('../supabase/migrations/20261111103000_staff_pic_subtask_create.sql',import.meta.url);
 
 test('Leader scope: real local RLS, workflow RPC, all task sources, invite and revoke', {skip:!runtimeFile}, async () => {
   const runtime=JSON.parse(fs.readFileSync(runtimeFile,'utf8')).env;
@@ -20,6 +21,14 @@ test('Leader scope: real local RLS, workflow RPC, all task sources, invite and r
   const taskRows=[];
   let checks=0;
   const eq=(actual,expected,label)=>{assert.deepEqual(actual,expected,label);checks++;};
+  const rejects=async(fn,label)=>{
+    await db.query('savepoint denied_insert');
+    let error;
+    try{await fn();}catch(caught){error=caught;}
+    await db.query('rollback to savepoint denied_insert');
+    assert.ok(error,label);
+    eq(error.code,'42501',label);
+  };
   const ids=rows=>rows.map(row=>String(row.id)).sort();
   const asActor=async (actor,fn) => {
     await db.query('reset role');
@@ -44,6 +53,7 @@ test('Leader scope: real local RLS, workflow RPC, all task sources, invite and r
   try{
     await db.query('begin');
     await db.query(fs.readFileSync(migration,'utf8'));
+    await db.query(fs.readFileSync(subtaskCreateMigration,'utf8'));
     const {rows:[workspace]}=await db.query('select id from public.workspaces limit 1');
     assert.ok(workspace,'local schema/data must be restored before running this test');
     const deptA=randomUUID(),deptB=randomUUID();
@@ -52,7 +62,7 @@ test('Leader scope: real local RLS, workflow RPC, all task sources, invite and r
     for(const [key,role,level,department,active] of [
       ['admin','admin','ADMIN',null,true],['manager','manager','Manager',null,true],
       ['a1','leader','Leader',deptA,true],['a2','leader','Leader',deptA,true],
-      ['staffA','member','Staff',deptA,true],['formerA','member','Staff',deptA,false],
+      ['staffA','member','Staff',deptA,true],['staffPeerA','member','Staff',deptA,true],['formerA','member','Staff',deptA,false],
       ['b1','leader','Leader',deptB,true],['b2','leader','Leader',deptB,true],
       ['legacyB','manager','Leader',deptB,true],['staffB','member','Staff',deptB,true],
       ['noDept','leader','Leader',null,true],['inactive','leader','Leader',deptA,false],
@@ -142,6 +152,27 @@ test('Leader scope: real local RLS, workflow RPC, all task sources, invite and r
     eq((await snapshot(actors.a1)).project.includes(aAdmin.id),true,'Primary A PIC preserves Admin-created project ownership after inviting a foreign PIC');
     eq((await snapshot(actors.b2)).project.includes(aAdmin.id),false,'A foreign secondary PIC does not open an Admin-created project to their peers');
     await db.query('delete from public.project_members where project_id=$1 and user_id=$2',[aAdmin.id,actors.b1.id]);
+    // A Staff account explicitly assigned as a parent PIC must be able to
+    // create legacy Project/Campaign subtasks and receive INSERT ... RETURNING.
+    await db.query("insert into public.campaign_members(campaign_id,user_id,workflow_role) values($1,$2,'pic') on conflict(campaign_id,user_id) do update set workflow_role='pic'",[aCampaign.id,actors.staffA.id]);
+    const picCreated=[];
+    await asActor(actors.staffA,async()=>{
+      const {rows:[projectSubtask]}=await db.query("insert into public.project_subtasks(project_id,title,assignee_id,due_date,priority) values($1,'PIC create regression',$2,current_date,'medium') returning id",[aAdmin.id,actors.staffA.id]);
+      assert.ok(projectSubtask.id,'Staff Project PIC can insert and return the new subtask');checks++;
+      picCreated.push({id:projectSubtask.id,table:'project_subtasks',parent:aAdmin.id});
+      const {rows:[campaignSubtask]}=await db.query("insert into public.campaign_subtasks(campaign_id,title,assignee_id,due_date,priority,status) values($1,'PIC create regression',$2,current_date,'medium','planning') returning id",[aCampaign.id,actors.staffA.id]);
+      assert.ok(campaignSubtask.id,'Staff Campaign PIC can insert and return the new subtask');checks++;
+      picCreated.push({id:campaignSubtask.id,table:'campaign_subtasks',parent:aCampaign.id});
+    });
+    taskRows.push(...picCreated);
+    await asActor(actors.staffPeerA,async()=>{
+      await rejects(()=>db.query("insert into public.project_subtasks(project_id,title,priority) values($1,'Out of scope regression','medium') returning id",[aAdmin.id]),'Unassigned Staff outside the parent department cannot create Project subtask');
+      await rejects(()=>db.query("insert into public.campaign_subtasks(campaign_id,title,priority,status) values($1,'Out of scope regression','medium','planning') returning id",[aCampaign.id]),'Unassigned Staff outside the parent department cannot create Campaign subtask');
+    });
+    await asActor(actors.b1,async()=>{
+      await rejects(()=>db.query("insert into public.project_subtasks(project_id,title,priority) values($1,'Foreign Leader create regression','medium') returning id",[aPeer.id]),'Foreign Leader cannot create by matching a department label alone');
+      await rejects(()=>db.query("insert into public.campaign_subtasks(campaign_id,title,priority,status) values($1,'Foreign Leader create regression','medium','planning') returning id",[aCampaign.id]),'Foreign Leader cannot create Campaign subtask by matching department label alone');
+    });
     const coTask=await task('tasks',bPeer,'staffB',{assignee_ids:[actors.staffA.id,'invalid-user-id']});
     const coSub=await task('project_subtasks',bPeer,'staffB',{assignee_ids:[String(actors.staffA.id)]});
     for(const actor of [actors.a1,actors.a2,actors.staffA]){

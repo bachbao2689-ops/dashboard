@@ -1,7 +1,7 @@
 import {useTaskCommentCounts} from '../../../hooks/useTaskCommentCounts';
 import {useState, useRef, useEffect} from 'react';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {Plus, X, Code2, Calendar, User, Edit3, Trash2, ArrowLeft} from 'lucide-react';
+import {X, Code2, Calendar, User, Edit3, Trash2, ArrowLeft} from 'lucide-react';
 import {displayDate} from '../../../lib/workflowHub';
 import {WorkflowStatusPicker, WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
 import {WorkflowGateChecklist} from './WorkflowGateChecklist';
@@ -135,7 +135,6 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         }`}
                         title={isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
                       >
-                        <Plus size={12} strokeWidth={2.5} />
                         <span>{isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}</span>
                       </button>
                     </div>
@@ -145,8 +144,8 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                   {showAddTask && (
                     <form onSubmit={handleAddTask} className="p-3.5 rounded-[8px] border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-slate-800/90 mb-3 space-y-3 animate-in fade-in zoom-in-95">
                       <div className="grid grid-flow-col auto-cols-max items-center justify-between w-full">
-                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 grid grid-flow-col auto-cols-max items-center gap-1.5">
-                          <Plus size={12} strokeWidth={2.5} /> {isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
+                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">
+                          {isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
                         </span>
                         <button
                           type="button"
@@ -316,7 +315,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                 title={isEn ? 'Mark completed' : 'Đánh dấu hoàn thành'}
                               />
 
-                              <WorkflowStatusPicker status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
+                              <WorkflowStatusPicker iconOnly status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
 
                               {/* Quantity Badge */}
                               {hasQty && (
@@ -327,7 +326,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
 
                               {/* Task Title */}
                               <button type="button" onClick={()=>openTaskDetails(s.record)}
-                                className={`text-left text-xs truncate max-w-[200px] sm:max-w-[260px] md:max-w-[320px] hover:text-primary transition-colors cursor-pointer ${
+                                className={`text-left text-xs truncate max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[400px] hover:text-primary transition-colors cursor-pointer min-w-0 ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
                                 title={s.title}
@@ -347,34 +346,31 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                               )}
                             </div>
 
-                            {/* Right: Assignees (Avatar Stack + Name), Due date & Actions */}
+                            {/* Right: Assignees (Avatar Stack only), Due date & Actions */}
                             <div className="grid grid-flow-col auto-cols-max items-center shrink-0 self-end sm:self-auto ml-6 sm:ml-0 gap-1.5">
-                              {/* Basic Info: PIC Avatar Stack + Name & Due date */}
+                              {/* Basic Info: PIC Avatar Stack & Due date */}
                               <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                                {/* PIC Avatar Stack + Name */}
+                                {/* PIC Avatar Stack (Avatar only, no text label to prevent overflow) */}
                                 {assignees.length > 0 ? (
-                                  <span
-                                    className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-gray-100/90 dark:bg-slate-700/80 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
+                                  <div
+                                    className="inline-grid grid-flow-col auto-cols-max -space-x-1.5 items-center p-0.5 rounded-full bg-gray-100/70 dark:bg-slate-700/60 border border-gray-200/60 dark:border-slate-600/60 shadow-2xs"
                                     title={`${isEn ? 'Assignees' : 'Người thực hiện'}: ${assignees.map(a => a.name).join(', ')}`}
                                   >
-                                    <div className="inline-grid grid-flow-col auto-cols-max -space-x-1.5 items-center">
-                                      {assignees.map((a, aIdx) => (
-                                        <Avatar
-                                          key={a.id || aIdx}
-                                          name={a.name}
-                                          src={a.avatar_url || undefined}
-                                          className="w-4 h-4 text-[7px] shrink-0 border border-white dark:border-slate-800"
-                                        />
-                                      ))}
-                                    </div>
-                                    <span className="font-semibold truncate max-w-[110px]">
-                                      {assignees.map(a => a.name).join(', ')}
-                                    </span>
-                                  </span>
+                                    {assignees.map((a, aIdx) => (
+                                      <Avatar
+                                        key={a.id || aIdx}
+                                        name={a.name}
+                                        src={a.avatar_url || undefined}
+                                        className="w-5 h-5 text-[8px] rounded-full shrink-0 border-2 border-white dark:border-slate-800 shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer"
+                                      />
+                                    ))}
+                                  </div>
                                 ) : (
-                                  <span className="grid grid-flow-col auto-cols-max items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-400">
+                                  <span
+                                    className="w-5 h-5 rounded-full grid place-items-center bg-gray-100 dark:bg-slate-700 text-gray-400 border border-dashed border-gray-300 dark:border-slate-600 shadow-2xs"
+                                    title={isEn ? 'Unassigned' : 'Chưa giao PIC'}
+                                  >
                                     <User size={10} />
-                                    <span className="truncate max-w-[80px]">{isEn ? 'Unassigned' : 'Chưa giao PIC'}</span>
                                   </span>
                                 )}
 

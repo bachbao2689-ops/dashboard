@@ -18,12 +18,13 @@ import { useTranslation } from '../../../i18n/translations';
 import { canonicalWorkflowStatus, workflowStage, type WorkflowTaskStatus } from '../tasks/WorkflowStatusPicker';
 import { logTaskActivity } from '../../../services/taskActivityLogger';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
+import { workAssignmentPeople } from '../../../lib/workAccessScope';
 import { displayDate as formatHubDate, displayDateTime, inputDate } from '../../../lib/workflowHub';
 import { saveTaskDeliverables, computeDeliverableQuantity, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
 import { EntityActionBadges } from './EntityActionBadges';
 
-type Person = { id: number; name: string; avatar_url?: string | null };
+type Person = { id: number; name: string; avatar_url?: string | null; departments?: { name?: string; id?: string | number } | null };
 export interface SubtaskChecklistItem {
   id: string;
   title: string;
@@ -48,11 +49,12 @@ type Subtask = {
   workflow_status?: string | null;
   project_id?: string | number | null;
   campaign_id?: string | number | null;
+  department_id?: string | number | null;
   priority?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
-type ParentDetails = { name: string; priority?: string | null; departmentName?: string | null; start_date?: string | null; due_date?: string | null; end_date?: string | null };
+type ParentDetails = { name: string; priority?: string | null; departmentId?: string | number | null; departmentName?: string | null; start_date?: string | null; due_date?: string | null; end_date?: string | null };
 const workspaceId = '9000eae0-528c-47a2-b6f3-eba019d4edca';
 const isDone = (status?: string | null) => ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
 const displayDate = (date?: string | null) => date ? formatHubDate(date) : '---';
@@ -188,7 +190,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         departmentName = department?.name || null;
       }
       if (active) {
-        setParentDetails({ name: parent.name, priority: 'priority' in parent ? parent.priority as string : null, departmentName, start_date: (parent as any).start_date || null, due_date: (parent as any).due_date || null, end_date: (parent as any).end_date || null });
+        setParentDetails({ name: parent.name, priority: 'priority' in parent ? parent.priority as string : null, departmentId: parent.department_id, departmentName, start_date: (parent as any).start_date || null, due_date: (parent as any).due_date || null, end_date: (parent as any).end_date || null });
         setParentLoading(false);
       }
     };
@@ -930,9 +932,12 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">SUBTASK</span>
-          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold lowercase ${priorityClass(priority)}`}>
-            {t('common.priority')}: {t(`common.${priority}` as any).toLowerCase()}
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg tracking-wide ${
+            entityType === 'campaign_subtask'
+              ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+              : 'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800'
+          }`}>
+            {entityType === 'campaign_subtask' ? 'Task in Campaign' : 'Task in Project'}
           </span>
         </div>
         <div className="flex items-center gap-1"><button aria-label={t('common.close')} onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button></div>
@@ -957,7 +962,6 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             >
               {(Number((subtask as any)?.custom_fields?.quantity) || Number((subtask as any)?.quantity) || totalChecklistQuantity || 0) > 0 && (
                 <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 py-1 rounded-[6px] text-xs font-bold border border-emerald-400/60 dark:border-emerald-500/60 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 text-emerald-700 dark:text-emerald-300 shadow-2xs">
-                  <span>📦</span>
                   <span>{lang === 'en' ? 'Quantity' : 'Số lượng'}: {Number((subtask as any)?.custom_fields?.quantity) || Number((subtask as any)?.quantity) || totalChecklistQuantity}</span>
                 </span>
               )}
@@ -978,8 +982,26 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.assignee')}
               <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white">
                 <option value="">{t('common.unassigned')}</option>
-                {(assignablePeople || []).map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-                {subtask.assignee_id != null && subtask.assignee?.name && !(assignablePeople || []).some(person => String(person.id) === String(subtask.assignee_id)) && <option value={subtask.assignee_id}>{subtask.assignee.name}</option>}
+                {(() => {
+                  const targetDeptId = parentDetails?.departmentId != null
+                    ? String(parentDetails.departmentId)
+                    : (subtask?.department_id != null ? String(subtask.department_id) : undefined);
+                  const effectiveAssignablePeople = (assignablePeople && assignablePeople.length > 0)
+                    ? assignablePeople
+                    : workAssignmentPeople(profile, people, targetDeptId);
+                  return (
+                    <>
+                      {effectiveAssignablePeople.map((person: any) => (
+                        <option key={person.id} value={person.id}>
+                          {person.name}{person.departments?.name ? ` (${person.departments.name})` : ''}
+                        </option>
+                      ))}
+                      {subtask.assignee_id != null && subtask.assignee?.name && !effectiveAssignablePeople.some((person: any) => String(person.id) === String(subtask.assignee_id)) && (
+                        <option value={subtask.assignee_id}>{subtask.assignee.name}</option>
+                      )}
+                    </>
+                  );
+                })()}
               </select>
             </label>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Status' : 'Trạng thái'}
@@ -1049,61 +1071,115 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
           </div>
           <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
         </section> : (
-          <section className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-[#0a192f]/50 p-4 rounded-[8px] border border-gray-200 dark:border-slate-700">
+          <section className="grid grid-cols-2 gap-4 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-[12px] border border-slate-200/80 dark:border-slate-700/70">
             {(() => {
               const allAssigneeIds = Array.from(new Set([
                 ...(subtask.assignee_id ? [String(subtask.assignee_id)] : []),
                 ...((((subtask as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String)
               ]));
-              const peoplePool = assignablePeople || people || [];
-              const allAssignees = allAssigneeIds.map((id, idx) => {
-                const found = peoplePool.find(p => String(p.id) === id);
+              const userMap = new Map<string, any>();
+              [...(people || []), ...(assignablePeople || [])].forEach((p: any) => {
+                if (p && p.id != null) userMap.set(String(p.id), p);
+              });
+              let allAssignees = allAssigneeIds.map((id, idx) => {
+                const found = userMap.get(id);
                 if (found) return found;
-                if (idx === 0 && subtask.assignee) return subtask.assignee;
+                if (idx === 0 && subtask.assignee) {
+                  return typeof subtask.assignee === 'string'
+                    ? { id, name: subtask.assignee, avatar_url: undefined }
+                    : { id, name: subtask.assignee.name || `User #${id}`, avatar_url: subtask.assignee.avatar_url };
+                }
                 return { id, name: `User #${id}`, avatar_url: undefined };
               });
+              if (allAssignees.length === 0 && subtask.assignee) {
+                const name = typeof subtask.assignee === 'string' ? subtask.assignee : (subtask.assignee.name || '');
+                const avatar = typeof subtask.assignee === 'object' ? subtask.assignee?.avatar_url : undefined;
+                if (name) {
+                  allAssignees = [{ id: subtask.assignee_id || 'primary', name, avatar_url: avatar }];
+                }
+              }
+              const primaryAssignee = allAssignees[0];
+              const coAssignees = allAssignees.slice(1);
               return (
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-500 uppercase mb-2 grid grid-flow-col auto-cols-max items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
+                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     <span>{allAssignees.length > 1 ? (lang === 'en' ? 'Assignees' : 'Người thực hiện') : t('common.assignee')}</span>
                   </p>
-                  {allAssignees.length > 0 ? (
-                    <div className="grid gap-1.5">
-                      {allAssignees.map((person: any, pIdx) => (
-                        <div key={person?.id || pIdx} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-[6px] bg-white dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
-                          <Avatar name={person?.name || t('common.unassigned')} src={person?.avatar_url || undefined} className="w-6 h-6 text-[9px] shrink-0" />
-                          <b className="text-xs font-bold text-gray-900 dark:text-white truncate block">{person?.name || t('common.unassigned')}</b>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400">
-                            {pIdx === 0 ? (lang === 'en' ? 'Primary' : 'Chính') : (lang === 'en' ? 'Co-PIC' : 'Làm chung')}
-                          </span>
+                  {primaryAssignee ? (
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                      {/* Avatar người thực hiện chính */}
+                      <div
+                        title={`${primaryAssignee.name || t('common.unassigned')} (${lang === 'en' ? 'Primary' : 'Chính'})`}
+                        className="w-7 h-7 max-w-[28px] max-h-[28px] rounded-full border-2 border-blue-500 shadow-2xs hover:scale-105 transition-transform cursor-pointer overflow-hidden shrink-0 relative group"
+                      >
+                        <Avatar
+                          name={primaryAssignee.name || t('common.unassigned')}
+                          src={primaryAssignee.avatar_url || undefined}
+                          className="w-full h-full text-[10px] rounded-full shrink-0"
+                        />
+                      </div>
+
+                      {/* Avatar stack cho người làm chung (Co-PIC) */}
+                      {coAssignees.length > 0 && (
+                        <div className="inline-grid grid-flow-col auto-cols-max items-center -space-x-1.5 pl-0.5">
+                          {coAssignees.slice(0, 4).map((sub: any, sIdx: number) => (
+                            <div
+                              key={sub.id || sIdx}
+                              title={`${sub.name || `User #${sub.id}`} (${lang === 'en' ? 'Co-PIC' : 'Làm chung'})`}
+                              className="w-6 h-6 max-w-[24px] max-h-[24px] rounded-full border-2 border-white dark:border-slate-800 shadow-2xs hover:scale-110 hover:z-10 transition-transform cursor-pointer overflow-hidden shrink-0"
+                            >
+                              <Avatar
+                                name={sub.name || `User #${sub.id}`}
+                                src={sub.avatar_url || undefined}
+                                className="w-full h-full text-[8px] rounded-full shrink-0"
+                              />
+                            </div>
+                          ))}
+                          {coAssignees.length > 4 && (
+                            <span
+                              title={coAssignees.slice(4).map((c: any) => c.name).join(', ')}
+                              className="w-6 h-6 max-w-[24px] max-h-[24px] rounded-full border-2 border-white dark:border-slate-800 bg-slate-200 dark:bg-slate-700 text-[8.5px] font-bold text-slate-700 dark:text-slate-200 grid place-items-center shadow-2xs shrink-0"
+                            >
+                              +{coAssignees.length - 4}
+                            </span>
+                          )}
                         </div>
-                      ))}
+                      )}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500">{t('common.unassigned')}</span>
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-2 px-3 py-1.5 rounded-[6px] bg-slate-100/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-xs text-slate-400 dark:text-slate-500 italic">
+                      <span>{t('common.unassigned')}</span>
+                    </div>
                   )}
                 </div>
               );
             })()}
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 uppercase mb-2"><Calendar className="w-3.5 h-3.5 inline mr-1" />{t('common.dueDate')}</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                <span>{t('common.dueDate')}</span>
+              </p>
               <b className="text-sm font-bold text-red-600 dark:text-red-400">{subtask.due_date ? displayDate(subtask.due_date) : t('common.noDueDate')}</b>
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 uppercase mb-2">{entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                {entityType === 'campaign_subtask' ? t('projects.col.campaign') : t('projects.col.project')}
+              </p>
               {entityType === 'campaign_subtask' ? (
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>
+                <span className={`inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>
                   <span className="truncate">{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.campaign')}</span>
                 </span>
               ) : (
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>
+                <span className={`inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full ${parentLoading ? 'h-4 w-24 animate-pulse' : ''}`}>
                   <span className="truncate">{parentLoading ? '' : parentDetails?.name || parentName || t('projects.col.project')}</span>
                 </span>
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 uppercase mb-2">{t('common.department')}</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                {t('common.department')}
+              </p>
               <b className={`text-sm truncate block ${parentLoading ? 'inline-block h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-slate-700' : ''}`}>{parentLoading ? '' : parentDetails?.departmentName || t('common.unassigned')}</b>
             </div>
           </section>

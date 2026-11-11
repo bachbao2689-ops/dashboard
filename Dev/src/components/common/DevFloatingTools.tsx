@@ -13,6 +13,9 @@ import {
   RefreshCw,
   Check,
   Search,
+  Database,
+  Globe,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useWorkspaceDirectory } from '../../hooks/useWorkspaceData';
@@ -32,6 +35,14 @@ const getRankLabel = (p: any): string => {
 interface DevFloatingToolsProps {
   onTriggerUpdate: () => void;
   onTriggerDemo: () => void;
+}
+
+interface DatasetStatus {
+  mode: 'local' | 'main';
+  switchedAt?: string;
+  projectCount?: number;
+  campaignCount?: number;
+  taskCount?: number;
 }
 
 const STORAGE_KEY = 'kcoffee_dev_floating_gear_pos';
@@ -65,6 +76,54 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
   const [activeTab, setActiveTab] = useState<'roles' | 'popups'>('roles');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
+  const [datasetStatus, setDatasetStatus] = useState<DatasetStatus | null>(null);
+  const [switchingMode, setSwitchingMode] = useState<'local' | 'main' | null>(null);
+
+  const fetchDatasetStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dev/dataset-status');
+      if (res.ok) {
+        const data = await res.json();
+        setDatasetStatus(data);
+      }
+    } catch {
+      // Keep silent fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      void fetchDatasetStatus();
+    }
+  }, [isOpen, fetchDatasetStatus]);
+
+  const handleSwitchDataset = async (targetMode: 'local' | 'main') => {
+    if (switchingMode || datasetStatus?.mode === targetMode) return;
+    setSwitchingMode(targetMode);
+    try {
+      const res = await fetch('/api/dev/switch-dataset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: targetMode }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Chuyển đổi dữ liệu thất bại');
+      }
+      toast.success(
+        targetMode === 'main'
+          ? 'Đã chuyển sang dữ liệu UI MAIN! Đang tải lại…'
+          : 'Đã chuyển sang dữ liệu Local UI (Quy trình mẫu)! Đang tải lại…',
+        { duration: 1500 }
+      );
+      setTimeout(() => {
+        window.location.reload();
+      }, 350);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Chưa đổi được nguồn dữ liệu.');
+      setSwitchingMode(null);
+    }
+  };
 
   // Position state (bottom-right by default, always clamped within current viewport)
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
@@ -360,6 +419,117 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               <strong className="text-slate-700 dark:text-slate-200 font-semibold">
                 {currentProfile?.department_name || currentProfile?.department_id || 'Toàn công ty'}
               </strong>
+            </div>
+          </div>
+
+          {/* Data Source Switcher: Local UI vs UI MAIN */}
+          <div className="mb-3 p-2.5 rounded-xl bg-white/55 dark:bg-slate-900/45 backdrop-blur-md border border-white/50 dark:border-slate-700/50 grid gap-2">
+            <div className="grid grid-cols-[1fr_auto] items-center">
+              <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Nguồn dữ liệu / Data Source
+                </span>
+              </div>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                {(datasetStatus?.mode ?? 'local') === 'main' ? 'UI MAIN' : 'Local UI'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {/* Button 1: Local UI */}
+              <button
+                type="button"
+                disabled={Boolean(switchingMode)}
+                onClick={() => handleSwitchDataset('local')}
+                className={`group relative grid grid-cols-1 gap-1 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
+                  (datasetStatus?.mode ?? 'local') === 'local'
+                    ? 'border-emerald-500 bg-emerald-500/10 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/40 shadow-sm'
+                    : 'border-white/60 dark:border-slate-800/80 bg-white/40 dark:bg-slate-900/30 hover:border-emerald-300 dark:hover:border-emerald-700/60 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="grid grid-cols-[1fr_auto] items-center">
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                    <div
+                      className={`grid place-items-center w-5 h-5 rounded-md ${
+                        (datasetStatus?.mode ?? 'local') === 'local'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
+                      {switchingMode === 'local' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Database className="w-3 h-3" />
+                      )}
+                    </div>
+                    <span className="text-xs font-bold leading-tight">Local UI</span>
+                  </div>
+                  {(datasetStatus?.mode ?? 'local') === 'local' && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-500 text-white uppercase tracking-wider">
+                      Active
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid gap-0.5 pt-0.5">
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 leading-tight">
+                    Data ảo / Quy trình mẫu
+                  </span>
+                  <span className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {(datasetStatus?.mode ?? 'local') === 'local'
+                      ? `${datasetStatus?.projectCount ?? 7} Dự án · ${datasetStatus?.campaignCount ?? 8} Chiến dịch`
+                      : '7 Dự án · 8 Chiến dịch'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Button 2: UI MAIN */}
+              <button
+                type="button"
+                disabled={Boolean(switchingMode)}
+                onClick={() => handleSwitchDataset('main')}
+                className={`group relative grid grid-cols-1 gap-1 p-2 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
+                  datasetStatus?.mode === 'main'
+                    ? 'border-sky-500 bg-sky-500/10 dark:bg-sky-950/40 text-sky-950 dark:text-sky-100 ring-2 ring-sky-500/40 shadow-sm'
+                    : 'border-white/60 dark:border-slate-800/80 bg-white/40 dark:bg-slate-900/30 hover:border-sky-300 dark:hover:border-sky-700/60 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="grid grid-cols-[1fr_auto] items-center">
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                    <div
+                      className={`grid place-items-center w-5 h-5 rounded-md ${
+                        datasetStatus?.mode === 'main'
+                          ? 'bg-sky-500 text-white'
+                          : 'bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400'
+                      }`}
+                    >
+                      {switchingMode === 'main' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Globe className="w-3 h-3" />
+                      )}
+                    </div>
+                    <span className="text-xs font-bold leading-tight">UI MAIN</span>
+                  </div>
+                  {datasetStatus?.mode === 'main' && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-sky-500 text-white uppercase tracking-wider">
+                      Active
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid gap-0.5 pt-0.5">
+                  <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 leading-tight">
+                    Data nhánh Main
+                  </span>
+                  <span className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {datasetStatus?.mode === 'main'
+                      ? `${datasetStatus?.projectCount ?? 38} Dự án · ${datasetStatus?.campaignCount ?? 11} Chiến dịch`
+                      : '38 dự án · 11 chiến dịch từ Main'}
+                  </span>
+                </div>
+              </button>
             </div>
           </div>
 

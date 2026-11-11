@@ -724,29 +724,24 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
     let daysLeftText = isEn ? 'No deadline' : 'Chưa có hạn';
     let daysLeftBadgeStyle = 'bg-slate-500/10 text-slate-400 border-slate-600/30';
     let gradientStyle = 'bg-gradient-to-r from-emerald-500 to-teal-400';
-    let knobColor = 'bg-emerald-500';
 
     if (isCompleted) {
       daysLeftText = isEn ? 'Completed' : 'Hoàn thành';
       daysLeftBadgeStyle = 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
       gradientStyle = 'bg-gradient-to-r from-emerald-500 to-teal-400';
-      knobColor = 'bg-emerald-500';
     } else if (daysLeft != null) {
       if (daysLeft < 0) {
         daysLeftText = isEn ? `${Math.abs(daysLeft)}d overdue` : `Trễ ${Math.abs(daysLeft)} ngày`;
         daysLeftBadgeStyle = 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/35';
         gradientStyle = 'bg-gradient-to-r from-rose-500 to-red-500';
-        knobColor = 'bg-rose-500';
       } else if (daysLeft <= 3) {
         daysLeftText = daysLeft === 0 ? (isEn ? 'Due today' : 'Hôm nay') : (isEn ? `${daysLeft}d left` : `Còn ${daysLeft} ngày`);
         daysLeftBadgeStyle = 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/35';
         gradientStyle = 'bg-gradient-to-r from-amber-500 to-orange-400';
-        knobColor = 'bg-amber-500';
       } else {
         daysLeftText = isEn ? `${daysLeft}d left` : `Còn ${daysLeft} ngày`;
         daysLeftBadgeStyle = 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
         gradientStyle = 'bg-gradient-to-r from-emerald-500 to-teal-400';
-        knobColor = 'bg-emerald-500';
       }
     }
 
@@ -787,10 +782,6 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
       const actualPct = Math.round(((donePhases + (donePhases < totalPhases ? activePhaseTaskPct : 0)) / totalPhases) * 100);
       progressFillPct = Math.min(100, Math.max(0, actualPct));
     }
-
-    const activePos = totalPhases > 1 && activePhaseIdx >= 0 ? (6 + (activePhaseIdx / (totalPhases - 1)) * 88) : (totalPhases === 1 ? 50 : 6);
-    const knobPosPct = isCompleted ? 100 : Math.min(95, Math.max(5, progressFillPct > 0 ? progressFillPct : activePos));
-    const knobAlignClass = knobPosPct < 35 ? 'left-[-6px]' : knobPosPct > 65 ? 'right-[-6px]' : 'left-1/2 -translate-x-1/2';
 
     // Lead / PIC Info
     const lead = (entity as any).lead || entity.pics?.[0] || entity.creator;
@@ -1033,145 +1024,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
               </span>
             );
           })}
-
-          {/* Knob tròn lớn ở đầu mút tiến độ */}
-          {(progressFillPct > 0 || isCompleted || (activePhase && totalPhases > 0)) && (
-            <span
-              onClick={(e) => e.stopPropagation()}
-              className="group/knob absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 cursor-pointer"
-              style={{ left: `${knobPosPct}%` }}
-            >
-              <span
-                className={`block w-3.5 h-3.5 rounded-full border-2 border-[#ffffff]/95 dark:border-[#f8fafc]/90 shadow-md transition-transform duration-150 group-hover/knob:scale-125 ${knobColor}`}
-              />
-
-              {/* Popover chi tiết active phase khi hover knob */}
-              {activePhase && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  className={`absolute bottom-[calc(100%+8px)] ${knobAlignClass} z-50 w-60 sm:w-64 p-2.5 rounded-[10px] bg-[#ffffff]/95 dark:bg-[#0f172a]/95 text-slate-900 dark:text-slate-100 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xl opacity-0 scale-95 pointer-events-none group-hover/knob:opacity-100 group-hover/knob:scale-100 group-hover/knob:pointer-events-auto hover:opacity-100 hover:scale-100 hover:pointer-events-auto after:content-[''] after:absolute after:top-full after:inset-x-0 after:h-4 transition-all duration-200 ease-out origin-bottom cursor-auto select-text text-left max-w-[260px]`}
-                >
-                  {/* Header */}
-                  <div className="grid grid-cols-[1fr_auto] items-center justify-between gap-1 pb-1.5 border-b border-slate-100 dark:border-slate-800">
-                    <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
-                      <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[9.5px] font-extrabold uppercase tracking-tight bg-sky-500/12 text-sky-700 border border-sky-500/30 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-400/40 shrink-0">
-                        <span className={`w-1.5 h-1.5 rounded-full ${knobColor}`} />
-                        <span>Phase {(activePhaseIdx >= 0 ? activePhaseIdx : 0) + 1}</span>
-                      </span>
-                      <span
-                        className="text-[11.5px] font-bold text-slate-900 dark:text-white truncate max-w-[120px] select-text"
-                        title={extractCleanPhaseTitle(activePhase.title || (activePhase as any).name, activePhaseIdx >= 0 ? activePhaseIdx : 0)}
-                      >
-                        {extractCleanPhaseTitle(activePhase.title || (activePhase as any).name, activePhaseIdx >= 0 ? activePhaseIdx : 0)}
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-semibold text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/40 shrink-0">
-                      {isEn ? 'In Progress' : 'Đang thực hiện'}
-                    </span>
-                  </div>
-
-                {/* Deadline */}
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[10px] text-slate-600 dark:text-slate-300 py-1.5 select-text">
-                  <Clock size={11} className="text-slate-400 dark:text-slate-500" />
-                  <span>
-                    {activePhase.start_date || activePhase.due_date
-                      ? `${displayDate(activePhase.start_date)} - ${displayDate(activePhase.due_date)}`
-                      : (isEn ? 'No deadline' : 'Chưa có hạn')}
-                  </span>
-                </div>
-
-                {/* PIC & Thành viên */}
-                {activePhase.members && activePhase.members.length > 0 && (
-                  <div className="py-1.5 border-t border-slate-100 dark:border-slate-800">
-                    <div className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                      {isEn ? 'Members:' : 'Thành viên:'}
-                    </div>
-                    <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                      {activePhase.members.slice(0, 3).map((m, idx) => {
-                        const mInfo = resolveMemberInfo(m.name, m.id);
-                        const roleClass = getMemberRoleBadgeStyle(mInfo?.role);
-                        return (
-                          <div
-                            key={`${m.id}-${idx}`}
-                            className={`grid grid-flow-col auto-cols-max items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] select-text ${roleClass}`}
-                          >
-                            <Avatar name={m.name} src={m.avatar_url || undefined} className="w-3.5 h-3.5 text-[7px]" />
-                            <span className="truncate max-w-[80px]">{m.name}</span>
-                          </div>
-                        );
-                      })}
-                      {activePhase.members.length > 3 && (
-                        <span className="text-[9px] text-slate-500 dark:text-slate-400">+{activePhase.members.length - 3}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Công việc active phase */}
-                <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-                  <div className="grid grid-cols-[1fr_auto] items-center text-[9.5px] font-semibold text-slate-500 dark:text-slate-400">
-                    <span>{isEn ? `Tasks (${activePhaseTasks.length})` : `Công việc (${activePhaseTasks.length})`}</span>
-                  </div>
-                  {activePhaseTasks.length === 0 ? (
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 italic py-0.5 text-center">
-                      {isEn ? 'No tasks yet' : 'Chưa có công việc nào'}
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto overscroll-contain pr-1">
-                      {activePhaseTasks.map((t) => {
-                        const assigneeInfo =
-                          resolveMemberInfo(t.assignee, t.assignee_id) ||
-                          (activePhase.members?.[0] ? resolveMemberInfo(activePhase.members[0].name, activePhase.members[0].id) : null);
-                        const roleBadgeClass = getMemberRoleBadgeStyle(assigneeInfo?.role);
-                        return (
-                          <div
-                            key={t.id}
-                            className="p-1.5 rounded-[6px] bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1"
-                          >
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 text-[10px]">
-                              <span className="truncate font-medium text-slate-800 dark:text-slate-100 select-text" title={t.title}>
-                                • {t.title}
-                              </span>
-                              <span
-                                className={`px-1 py-0.2 rounded text-[8px] font-semibold shrink-0 uppercase tracking-tight ${
-                                  isDone(t.status)
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-800/40'
-                                    : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-800/40'
-                                }`}
-                              >
-                                {isDone(t.status) ? 'Done' : 'Active'}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center justify-between gap-1 text-[9px] pt-1 border-t border-slate-100/80 dark:border-slate-800/60">
-                              <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-slate-500 dark:text-slate-400 select-text">
-                                <Clock size={9} />
-                                <span>{t.due_date ? displayDate(t.due_date) : (isEn ? 'No due' : 'Chưa hạn')}</span>
-                              </span>
-                              {assigneeInfo ? (
-                                <span
-                                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1 px-1.5 py-0.2 rounded text-[8.5px] justify-self-end select-text ${roleBadgeClass}`}
-                                >
-                                  <Avatar name={assigneeInfo.name} src={assigneeInfo.avatar_url} className="w-3 h-3 text-[6px]" />
-                                  <span className="truncate max-w-[90px]">{assigneeInfo.name}</span>
-                                </span>
-                              ) : (
-                                <span className="text-[8.5px] text-slate-400 italic justify-self-end">
-                                  {isEn ? 'Unassigned' : 'Chưa gán'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </span>
-        )}
-      </div>
+        </div>
 
         {/* Hàng 4: Cụm Lead bên trái | In-Progress/Completed + Priority bên phải */}
         <div className="pt-2.5 border-t border-gray-100 dark:border-slate-800/80 grid grid-cols-[minmax(0,1fr)_auto] items-center justify-between gap-2 min-w-0">

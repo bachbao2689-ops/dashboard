@@ -1077,7 +1077,12 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     if (!selectedCampaign || !campaignNewSubtask.trim()) return;
     const { data: insertedCampSubtask, error } = await supabase.from('campaign_subtasks').insert({ campaign_id: selectedCampaign.id, title: campaignNewSubtask.trim(), assignee_id: campaignSubtaskOwner ? Number(campaignSubtaskOwner) : null, due_date: parseYMD(campaignSubtaskDue), priority: campaignSubtaskPriority || 'medium' }).select('id').single();
     if (!error && campaignSubtaskOwner) await notifyStakeholders('campaign', selectedCampaign.id, 'đã giao subtask mới cho bạn: ' + campaignNewSubtask.trim(), campaignSubtaskOwner);
-    if (error) return toast.error('Không thể tạo Subtask Campaign');
+    if (error) {
+      console.error('Campaign subtask insert failed', { code: error.code, message: error.message });
+      return toast.error(error.message
+        ? `Không thể tạo Subtask Campaign: ${error.message}`
+        : 'Không thể tạo Subtask Campaign. Kiểm tra quyền PIC/phòng ban rồi thử lại.');
+    }
     if (insertedCampSubtask?.id && (campaignSubtaskQuantity || profile?.id)) {
       const numQ = Number(campaignSubtaskQuantity);
       await saveTaskDeliverables(

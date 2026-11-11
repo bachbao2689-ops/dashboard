@@ -270,7 +270,6 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
             aria-haspopup="listbox"
             title={isEn ? 'Change status' : 'Đổi trạng thái'}
           >
-            <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusVisual.dotClass}`} />
             <span>{currentStatusLabel}</span>
             {canManage && onStatusChange && (
               <ChevronDown

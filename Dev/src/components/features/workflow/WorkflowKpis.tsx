@@ -134,7 +134,7 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
   }, [allTasks]);
 
   return (
-    <div ref={containerRef} className="xl:col-span-8 2xl:col-span-8 grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-2.5 w-full relative">
+    <div ref={containerRef} className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-2.5 w-full relative">
       {/* Box 1: Công việc bị nghẽn (Blocked Tasks) - Đỏ */}
       <div
         className={`relative ${activeBoxPopup === 1 || activeInfoBox === 1 ? 'z-[90]' : 'z-10'}`}
