@@ -42,7 +42,7 @@ try {
   const localBackend=process.env.SUPABASE_URL;
   let unexpectedNetwork=0;
   globalThis.fetch=async()=>{unexpectedNetwork++;throw Error('Blocked target must never reach the network');};
-  for(const target of ['https://jxrwphjriuqbpdpwpqcn.supabase.co','https://samuuyxxtocqmtujnnhe.supabase.co']) {
+  for(const target of ['https://pzomoqgycuwfftrblolr.supabase.co','https://jxrwphjriuqbpdpwpqcn.supabase.co','https://samuuyxxtocqmtujnnhe.supabase.co']) {
     process.env.SUPABASE_URL=target;
     assert.equal((await (await endpoint.POST(request({message:'Blocked cloud'}))).json()).code,'BACKEND_TARGET_BLOCKED');
   }
@@ -57,6 +57,7 @@ try {
     const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
     assert.equal(url.origin, 'http://127.0.0.1:29130', 'No external calls');
     if (url.pathname === '/auth/v1/user') return json({ id: actor.auth_id });
+    if (url.pathname === '/rest/v1/rpc/workflow_actor') return json(actor.id);
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer fixture-session', 'Tools keep caller JWT');
     if (url.pathname === '/rest/v1/users') return json(actor);
     if (url.pathname === '/rest/v1/departments') return json({ name: 'Fixture', workspace_id: '00000000-0000-4000-8000-000000000011' });

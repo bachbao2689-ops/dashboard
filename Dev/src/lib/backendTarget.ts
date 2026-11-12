@@ -1,5 +1,5 @@
 export type BackendMode = 'local' | 'main';
-export const MAIN_BACKEND_ORIGIN = 'https://jxrwphjriuqbpdpwpqcn.supabase.co';
+export const MAIN_BACKEND_ORIGIN = 'https://pzomoqgycuwfftrblolr.supabase.co';
 export const isLoopbackHost = (host: string) => ['localhost', '127.0.0.1', '[::1]', '::1'].includes(host.toLowerCase());
 
 /** Only a Production build of main may use the hosted database. Modes/CLI flags cannot opt local into cloud. */

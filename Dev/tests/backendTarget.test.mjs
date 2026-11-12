@@ -29,7 +29,7 @@ test('main accepts only its exact HTTPS origin and cannot run on localhost',()=>
   assert.doesNotThrow(()=>validateBackendTarget('dashboard-bart-c8ff.vercel.app',MAIN_BACKEND_ORIGIN,'main'));
   for(const host of ['localhost','127.0.0.1','[::1]'])
     assert.throws(()=>validateBackendTarget(host,MAIN_BACKEND_ORIGIN,'main'),/Bản Main/);
-  for(const url of ['https://samuuyxxtocqmtujnnhe.supabase.co','http://127.0.0.1:29130',MAIN_BACKEND_ORIGIN+':444','https://evil.test/?jxrwphjriuqbpdpwpqcn.supabase.co'])
+  for(const url of ['https://jxrwphjriuqbpdpwpqcn.supabase.co','https://samuuyxxtocqmtujnnhe.supabase.co','http://127.0.0.1:29130',MAIN_BACKEND_ORIGIN+':444','https://evil.test/?jxrwphjriuqbpdpwpqcn.supabase.co'])
     assert.throws(()=>validateBackendTarget('production.example',url,'main'));
 });
 test('malformed or credential-bearing origins fail before client initialization',()=>{
