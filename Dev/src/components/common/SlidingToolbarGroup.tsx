@@ -9,6 +9,7 @@ export interface SlidingToolbarGroupProps {
   showHoverPill?: boolean;
   showActivePill?: boolean;
   pillRadiusClass?: string;
+  activePillClassName?: string;
 }
 
 export const SlidingToolbarGroup: React.FC<SlidingToolbarGroupProps> = ({
@@ -20,6 +21,7 @@ export const SlidingToolbarGroup: React.FC<SlidingToolbarGroupProps> = ({
   showHoverPill = true,
   showActivePill = false,
   pillRadiusClass = 'rounded-[8px]',
+  activePillClassName = '',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,7 +84,29 @@ export const SlidingToolbarGroup: React.FC<SlidingToolbarGroupProps> = ({
 
   useEffect(() => {
     updateActivePill();
-  }, [updateActivePill, activeKey, children]);
+
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateActivePill);
+      return () => window.removeEventListener('resize', updateActivePill);
+    }
+
+    const ro = new ResizeObserver(() => {
+      updateActivePill();
+    });
+    ro.observe(container);
+
+    const target = container.querySelector<HTMLElement>(activeSelector);
+    if (target) {
+      ro.observe(target);
+    }
+
+    window.addEventListener('resize', updateActivePill);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateActivePill);
+    };
+  }, [updateActivePill, activeKey, children, activeSelector]);
 
   // Handle Mouse Over / Move on container
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -129,18 +153,20 @@ export const SlidingToolbarGroup: React.FC<SlidingToolbarGroupProps> = ({
     setIsHoverInstant(true);
   };
 
+  const isCustomGrid = className.includes('grid-cols-') || className.includes('grid-cols[');
+
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`has-sliding-pill relative inline-grid grid-flow-col auto-cols-max items-center ${className}`}
+      className={`has-sliding-pill relative ${isCustomGrid ? 'grid' : 'inline-grid grid-flow-col auto-cols-max items-center'} ${className}`}
     >
       {/* Active Sliding Pill */}
       {showActivePill && (
         <div
           aria-hidden="true"
-          className={`sliding-active-pill ${pillRadiusClass} ${isActiveInstant ? 'is-instant' : ''}`}
+          className={`sliding-active-pill ${pillRadiusClass} ${activePillClassName} ${isActiveInstant ? 'is-instant' : ''}`}
           style={{
             transform: `translate3d(${activePill.x}px, ${activePill.y}px, 0)`,
             width: activePill.width,

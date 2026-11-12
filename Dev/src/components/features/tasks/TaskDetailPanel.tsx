@@ -20,6 +20,7 @@ import { EntityActionBadges } from '../projects/EntityActionBadges';
 import { saveTaskDeliverables, computeDeliverableQuantity, fetchTaskDeliverableMeta, type DeliverableChecklistItem } from '../../../lib/taskDeliverables';
 import { priorityClass } from '../projects/projectPresentation';
 import { isGlobalManager, isDepartmentLeader, type RoleProfile } from '../../../lib/roleScope';
+import { MultiSelect } from '../../common/MultiSelect';
 
 interface TaskDetailPanelProps {
   task: any | null;
@@ -59,6 +60,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
+  const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editPriority, setEditPriority] = useState('medium');
   const [editStartDate, setEditStartDate] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
@@ -102,7 +104,15 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     const meta = await fetchTaskDeliverableMeta('task', taskId, true);
     const details = meta || {};
     const loadedChecklist = meta?.checklist_items || [];
-    const baseQuantity = computeDeliverableQuantity(meta || {quantity: (task as any)?.quantity}).baseQuantity;
+    const rawFallback = Number((task as any)?.custom_fields?.base_quantity)
+      || Number((task as any)?.custom_fields?.quantity)
+      || Number((task as any)?.quantity)
+      || 0;
+    const baseQuantity = computeDeliverableQuantity(
+      meta?.base_quantity != null || meta?.quantity != null
+        ? meta
+        : { quantity: rawFallback, base_quantity: rawFallback, checklist_items: meta?.checklist_items }
+    ).baseQuantity;
     const rawBase = baseQuantity > 0 ? String(baseQuantity) : '';
     setTaskQuantity(rawBase);
     setEditTaskQuantity(rawBase);
@@ -127,10 +137,31 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     setCommentFocus(0);
     setEditingTask(false);
     setEditTitle(task?.title || '');
-    setEditAssigneeId(task?.assignee_id == null ? '' : String(task.assignee_id));
+    const initialAssigneeIds: string[] = [];
+    if (task?.assignee_id != null && task.assignee_id !== '') {
+      initialAssigneeIds.push(String(task.assignee_id));
+    }
+    const extraIds = Array.isArray(task?.custom_fields?.assignee_ids)
+      ? task.custom_fields.assignee_ids
+      : (Array.isArray(task?.custom_fields?.assignees) ? task.custom_fields.assignees : []);
+    extraIds.forEach((id: any) => {
+      const sId = String(id);
+      if (sId && !initialAssigneeIds.includes(sId)) {
+        initialAssigneeIds.push(sId);
+      }
+    });
+    setEditAssigneeIds(initialAssigneeIds);
+    setEditAssigneeId(initialAssigneeIds[0] || '');
     setEditPriority(task?.priority || 'medium');
     setEditStartDate(task?.start_date?.slice(0, 10) || '');
     setEditDueDate(task?.due_date?.slice(0, 10) || '');
+    const initialQ = Number((task as any)?.custom_fields?.base_quantity)
+      || Number((task as any)?.custom_fields?.quantity)
+      || Number((task as any)?.quantity)
+      || 0;
+    const initialQStr = initialQ > 0 ? String(initialQ) : '';
+    setTaskQuantity(initialQStr);
+    setEditTaskQuantity(initialQStr);
     setEditingItemId(null);
     setEditItemTitle('');
     setEditItemDescription('');
@@ -522,6 +553,24 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     }
   };
 
+  const assigneeOptions = React.useMemo(() => {
+    const list = (assignablePeople && assignablePeople.length > 0) ? assignablePeople : mentionPeople;
+    const opts = (list || []).map((person: any) => {
+      const deptName = person.departments?.name || person.department_name || person.department?.name || '';
+      return {
+        value: String(person.id),
+        label: deptName ? `${person.name} (${deptName})` : person.name,
+      };
+    });
+    if (task?.assignee_id != null && task.assignee?.name && !opts.some(o => o.value === String(task.assignee_id))) {
+      opts.unshift({
+        value: String(task.assignee_id),
+        label: task.assignee.name,
+      });
+    }
+    return opts;
+  }, [assignablePeople, mentionPeople, task?.assignee_id, task?.assignee?.name]);
+
   const saveTaskDetails = async () => {
     if (readOnly || !canEdit || !task || !editTitle.trim()) return;
     if (editStartDate && editDueDate && editStartDate > editDueDate) {
@@ -530,9 +579,22 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     }
     setSaving(true);
     const nowIso = new Date().toISOString();
-    const values = {
+    const primaryAssigneeId = editAssigneeIds.length > 0 ? Number(editAssigneeIds[0]) : (editAssigneeId ? Number(editAssigneeId) : null);
+    const assigneeIdsNum = editAssigneeIds.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    const numQ = Number(editTaskQuantity);
+    const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
+    const effectiveQuantity = (baseQuantityValue || 0) + checklistQuantity;
+
+    const updatedCustomFields = {
+      ...(task.custom_fields || {}),
+      assignee_ids: assigneeIdsNum,
+      quantity: effectiveQuantity,
+      base_quantity: baseQuantityValue,
+    };
+    const values: any = {
       title: editTitle.trim(),
-      assignee_id: editAssigneeId ? Number(editAssigneeId) : null,
+      assignee_id: primaryAssigneeId,
+      custom_fields: updatedCustomFields,
       priority: editPriority,
       start_date: editStartDate || null,
       due_date: editDueDate || null,
@@ -641,10 +703,6 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
       });
     }
 
-    const numQ = Number(editTaskQuantity);
-    const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
-    const effectiveQuantity = (baseQuantityValue || 0) + checklistQuantity;
-
     try {
       await saveTaskDeliverables(
         'task',
@@ -667,8 +725,14 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     setTaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
     setEditTaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
 
-    const person = (assignablePeople || mentionPeople).find(item => String(item.id) === editAssigneeId);
-    const updatedTask = { ...values, assignee: person ? { id: person.id, name: person.name, avatar_url: person.avatar_url } : null };
+    const person = (assignablePeople || mentionPeople).find(item => String(item.id) === (primaryAssigneeId != null ? String(primaryAssigneeId) : ''));
+    const updatedTask = {
+      ...task,
+      ...values,
+      assignee_id: primaryAssigneeId,
+      custom_fields: updatedCustomFields,
+      assignee: person ? { id: person.id, name: person.name, avatar_url: person.avatar_url } : null
+    };
     await notifyTaskParticipants(task, { id: profileId, name: profile?.name, department_id: profile?.department_id }, 'task_updated');
     setEditingTask(false);
     onTaskUpdated?.(updatedTask);
@@ -810,7 +874,11 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 onPriorityChange={canEdit && !readOnly ? handleTaskPriorityChange : undefined}
                 onStatusChange={canEdit && !readOnly ? handleTaskStatusChange : undefined}
                 canManage={canEdit && !readOnly}
-                onEdit={canEdit && !readOnly ? () => setEditingTask(v => !v) : undefined}
+                onEdit={canEdit && !readOnly ? () => {
+                  const q = taskQuantity || String(Number((task as any)?.custom_fields?.base_quantity) || Number((task as any)?.custom_fields?.quantity) || Number((task as any)?.quantity) || '');
+                  if (q) setEditTaskQuantity(q);
+                  setEditingTask(v => !v);
+                } : undefined}
                 entityType="task"
                 entityId={task?.id}
                 entityName={task?.title}
@@ -840,12 +908,23 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                 <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
               </label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.assignee')}
-                  <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <option value="">{t('common.unassigned')}</option>
-                    {(assignablePeople || mentionPeople).map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-                    {task.assignee_id != null && task.assignee?.name && !(assignablePeople || mentionPeople).some(person => String(person.id) === String(task.assignee_id)) && <option value={task.assignee_id}>{task.assignee.name}</option>}
-                  </select>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{editAssigneeIds.length > 1 ? (lang === 'en' ? 'Assignees' : 'Người thực hiện') : t('common.assignee')}
+                  <div className="mt-1.5">
+                    <MultiSelect
+                      options={assigneeOptions}
+                      value={editAssigneeIds}
+                      onChange={(ids: string[]) => {
+                        setEditAssigneeIds(ids);
+                        setEditAssigneeId(ids[0] || '');
+                      }}
+                      primaryValue={editAssigneeIds[0]}
+                      onPrimaryChange={(primaryId: string) => {
+                        setEditAssigneeIds([primaryId, ...editAssigneeIds.filter(id => id !== primaryId)]);
+                        setEditAssigneeId(primaryId);
+                      }}
+                      placeholder={t('common.unassigned')}
+                    />
+                  </div>
                 </label>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.priority')}
                   <select value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
@@ -912,7 +991,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                   />
                 </label>
               </div>
-              <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
+              <div className="grid justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskDetails()} className="inline-grid grid-flow-col auto-cols-max min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50 cursor-pointer"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
             </section>
           ) : (
             <section className="grid grid-cols-2 gap-4 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-[12px] border border-slate-200/80 dark:border-slate-700/70">

@@ -8,8 +8,7 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-700/80 pb-3">
       <div>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white grid grid-flow-col auto-cols-max items-center gap-2">
-          <Sparkles size={16} className="text-primary" />
+        <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
           {isEn ? 'Stage-Gate Stepper Timeline' : 'Lộ trình giai đoạn'}
         </h3>
 

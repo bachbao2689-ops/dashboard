@@ -90,6 +90,18 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
       }
     });
 
+    (allTasks || []).forEach(t => {
+      const allIds = [t.assignee_id, ...((((t as any)?.custom_fields)?.assignee_ids as any[]) || [])].filter(Boolean);
+      allIds.forEach(id => {
+        const pid = String(id);
+        if (pid && !seen.has(pid)) {
+          seen.add(pid);
+          const found = (hub.people || []).find((p: any) => String(p.id) === pid) || (t.assignee && String(t.assignee.id) === pid ? t.assignee : null);
+          if (found) list.push({ id: pid, name: found.name, avatar_url: found.avatar_url });
+        }
+      });
+    });
+
     return list;
   })();
 

@@ -63,11 +63,23 @@ export function mergeDeliverableMetadata(newestFirst: readonly (TaskDeliverableM
 export function computeDeliverableQuantity(taskOrMeta?: {
   quantity?: number | null;
   base_quantity?: number | null;
+  custom_fields?: any;
   checklist_items?: Array<{ quantity?: number | null; completed?: boolean }>;
 }): { baseQuantity: number; checklistQuantity: number; totalQuantity: number } {
   // Current detail snapshots store quantity as the aggregate and base_quantity
   // as the subtask's own output. Older creation events stored only the base.
-  const rawBase = Number(taskOrMeta && 'base_quantity' in taskOrMeta ? taskOrMeta.base_quantity : taskOrMeta?.quantity);
+  const custom = taskOrMeta && (taskOrMeta as any).custom_fields;
+  const rawBase = Number(
+    taskOrMeta && 'base_quantity' in taskOrMeta
+      ? taskOrMeta.base_quantity
+      : custom && 'base_quantity' in custom
+      ? custom.base_quantity
+      : taskOrMeta && 'quantity' in taskOrMeta
+      ? taskOrMeta.quantity
+      : custom && 'quantity' in custom
+      ? custom.quantity
+      : 0
+  );
   const baseQuantity = Number.isFinite(rawBase) && rawBase > 0 ? rawBase : 0;
   const items = Array.isArray(taskOrMeta?.checklist_items) ? taskOrMeta.checklist_items : [];
   const checklistQuantity = items.reduce((sum, item) => {

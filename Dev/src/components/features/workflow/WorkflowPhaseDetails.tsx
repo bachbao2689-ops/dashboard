@@ -11,9 +11,10 @@ import {Avatar} from '../../common/Avatar';
 import {TaskPinButton} from '../tasks/TaskPinButton';
 import {CommentPreviewPopover} from '../../common/CommentPreviewPopover';
 import {useSidebarPinStore} from '../../../store/sidebarPinStore';
+import {priorityClass} from '../projects/projectPresentation';
 
 export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, openTaskComments, openTaskDetails, activePhase, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, taskCalendar, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskPriority, setNewTaskPriority, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, taskOptions, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, pct} = model;
   const pinnedTaskIds = useSidebarPinStore(s => s.pinnedIds);
 
   const [splitPct, setSplitPct] = useState(58);
@@ -225,21 +226,38 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       </div>
 
                       {/* Row 3: Task Status */}
-                      <div className="min-w-0">
-                        <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
-                          {isEn ? 'Initial status' : 'Trạng thái ban đầu'}
-                        </label>
-                        <select
-                          value={newTaskStatus}
-                          onChange={e => setNewTaskStatus(e.target.value as WorkflowTaskStatus)}
-                          className="w-full h-[38px] text-xs px-2.5 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500 cursor-pointer"
-                        >
-                          {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
-                            <option key={st} value={st}>
-                              {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
+                            {isEn ? 'Priority' : 'Độ ưu tiên'}
+                          </label>
+                          <select
+                            value={newTaskPriority}
+                            onChange={e => setNewTaskPriority(e.target.value)}
+                            className="w-full h-[38px] text-xs px-2.5 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500 cursor-pointer"
+                          >
+                            <option value="low">{isEn ? 'Low' : 'Thấp'}</option>
+                            <option value="medium">{isEn ? 'Medium' : 'Trung bình'}</option>
+                            <option value="high">{isEn ? 'High' : 'Cao'}</option>
+                            <option value="urgent">{isEn ? 'Urgent' : 'Khẩn cấp'}</option>
+                          </select>
+                        </div>
+                        <div className="min-w-0">
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-slate-300 mb-1 truncate">
+                            {isEn ? 'Initial status' : 'Trạng thái ban đầu'}
+                          </label>
+                          <select
+                            value={newTaskStatus}
+                            onChange={e => setNewTaskStatus(e.target.value as WorkflowTaskStatus)}
+                            className="w-full h-[38px] text-xs px-2.5 py-1.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-blue-500 cursor-pointer"
+                          >
+                            {(Object.keys(WORKFLOW_STATUS_CONFIG) as WorkflowTaskStatus[]).map(st => (
+                              <option key={st} value={st}>
+                                {isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || WORKFLOW_STATUS_CONFIG[st].label)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       <p className="text-[10px] text-gray-500 dark:text-slate-400">
@@ -337,8 +355,8 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                               {/* Comment preview popover - only render if comments exist */}
                               {commentCount > 0 && (
                                 <CommentPreviewPopover
-                                  entityType={isCampaign ? 'campaign_subtask' : 'project_subtask'}
-                                  entityId={s.record?.id || s.id}
+                                  entityType={s.id.startsWith('cs-') ? 'campaign_subtask' : s.id.startsWith('ps-') ? 'project_subtask' : 'task'}
+                                  entityId={s.id.startsWith('cs-') || s.id.startsWith('ps-') ? s.id.slice(3) : (s.record?.id || s.id)}
                                   entityTitle={s.title}
                                   count={commentCount}
                                   onOpenFull={() => openTaskComments(s.record)}
@@ -373,6 +391,10 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                                     <User size={10} />
                                   </span>
                                 )}
+
+                                <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold capitalize select-none shrink-0 ${priorityClass(s.record?.priority || (s as any).priority || 'medium')}`}>
+                                  {s.record?.priority || (s as any).priority || 'medium'}
+                                </span>
 
                                 {s.due_date && (
                                   <span className="hidden sm:grid grid-flow-col auto-cols-max items-center gap-0.5 text-[9px] text-gray-400">

@@ -38,6 +38,8 @@ import {ProjectViewModeDropdown} from '../components/features/projects/ProjectVi
 import {ProjectsKanbanBoard} from '../components/features/projects/ProjectsKanbanBoard';
 import {SlidingToolbarGroup} from '../components/common/SlidingToolbarGroup';
 import {useTasks} from '../hooks/useTasks';
+import {PhasePermissionToggle} from '../components/features/projects/PhasePermissionToggle';
+import {getEntityPhasePermission, saveEntityPhasePermission} from '../lib/phasePermission';
 export const Projects:React.FC=()=>{
  const initialProjectColWidths = React.useMemo(() => [320, 180, 240, 120, 150, 220], []);
  const { tableRef: projectTableRef, widths: projectColWidths, startResize: startProjectColResize } = useResizableColumns({
@@ -61,7 +63,7 @@ export const Projects:React.FC=()=>{
    }
  }, [searchParams]);
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
-         const {creationPeople,creationDepartments,userIsRestricted: _userIsRestricted,resolvedDeptId: _resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,hasCampaignComments,departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,addComment}=state;
+         const {creationPeople,creationDepartments,userIsRestricted: _userIsRestricted,resolvedDeptId: _resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,hasCampaignComments,departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,canHideOrDeleteParent,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,campaignToDelete,setCampaignToDelete,campaignToHide,setCampaignToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,archiveCampaign,executeHideCampaign,removeCampaign,executeRemoveCampaign,addSubtask,addComment,allowPhaseCreation,setAllowPhaseCreation}=state;
   const activeDepartments = React.useMemo(() => {
     return departments.filter(d =>
       projects.some(p => String(p.department_id) === String(d.id)) ||
@@ -188,6 +190,8 @@ export const Projects:React.FC=()=>{
       return false;
     });
   }, [profile, projectPrimaryOwners, projectSubtaskChecklistMap]);
+
+  const activeProjectsCount = React.useMemo(() => (visibleProjects || []).filter(p => !isTaskDone(p.status) && p.status !== 'deleted').length, [visibleProjects]);
 
   React.useEffect(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1280;
@@ -607,7 +611,7 @@ export const Projects:React.FC=()=>{
     )}
 
     {/* Left Side: Projects List */}
-    <div className={`grid grid-cols-1 min-w-0 max-w-full w-full content-start p-1 transition-all duration-300 ${panelOpen ? 'hidden xl:grid xl:mr-[calc(var(--panel-width)+16px)] pr-2' : 'pr-1'}`}>
+    <div className={`grid grid-cols-1 min-w-0 max-w-full w-full content-start p-1 ${!resizing ? 'transition-all duration-300' : ''} ${(panelOpen || createOpen) ? 'hidden xl:grid xl:mr-[calc(var(--panel-width)+16px)] pr-2' : 'pr-1'}`}>
       {/* Hàng trên: H1 Projects/Campaigns đứng riêng làm tiêu đề trang */}
       <div className="py-2 shrink-0">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white inline-grid grid-flow-col auto-cols-max items-center gap-2 leading-none">
@@ -684,12 +688,13 @@ export const Projects:React.FC=()=>{
             </Link>
           )}
           {canCreate && (
-            <ActionButton icon={<FolderKanban className="w-4 h-4" />}
+            <button
+              type="button"
               onClick={() => { resetCreateForm(); setCreationType('project'); setSelected(null); setSelectedCampaign(null); setCreateOpen(true); }} 
-              className="btn-add-new h-[32px] inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3 rounded-[8px] text-[12px] font-semibold transition-all shadow-sm cursor-pointer"
+              className="btn-add-new !inline-grid place-content-center place-items-center text-center h-[32px] !py-0 !px-4 !rounded-[8px] text-[12px] font-semibold transition-all shadow-2xs hover:shadow-xs cursor-pointer text-white leading-none"
             >
-              <span>{t('projects.add')}</span>
-            </ActionButton>
+              <span className="text-center leading-none">{t('projects.add')}</span>
+            </button>
           )}
         </div>
       </div>
@@ -741,7 +746,7 @@ export const Projects:React.FC=()=>{
             <PicFilterDropdown
               value={picFilter}
               onChange={setPicFilter}
-              people={people}
+              people={creationPeople}
               currentUserId={profile?.id}
               currentUserName={profile?.name || 'Me'}
               currentUserAvatar={profile?.avatar_url}
@@ -835,6 +840,8 @@ export const Projects:React.FC=()=>{
           onUpdateCampaignStatus={handleUpdateCampaignStatus}
           onHideProject={archiveProject}
           onDeleteProject={removeProject}
+          onHideCampaign={archiveCampaign}
+          onDeleteCampaign={removeCampaign}
           profile={profile}
         />
       ) : (
@@ -854,7 +861,7 @@ export const Projects:React.FC=()=>{
           />
         )}
         {entityFilter !== 'campaign' && (
-          <section className="card-hub rounded-[8px] overflow-hidden shrink-0 min-w-0 max-w-full"><div className="grid grid-cols-[1fr_auto] items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{visibleProjects.length}</span></button></div>{projectsExpanded && <>
+          <section className="card-hub rounded-[8px] overflow-hidden shrink-0 min-w-0 max-w-full"><div className="grid grid-cols-[1fr_auto] items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700"><button onClick={() => setProjectsExpanded(value => !value)} aria-expanded={projectsExpanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white cursor-pointer"><ChevronDown className={`text-gray-500 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`} size={17}/><FolderKanban className="text-violet-500" size={16}/> {t('projects.projectsAccordion')} <span className="rounded-full bg-violet-100 dark:bg-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{activeProjectsCount}</span></button></div>{projectsExpanded && <>
   {/* Mobile Cards (xl:hidden) with 3-tier tree view */}
   <div className="space-y-3 p-3 xl:hidden">
     {visibleProjects.map(project => {
@@ -904,7 +911,7 @@ export const Projects:React.FC=()=>{
             <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
               <button
                 type="button"
-                onClick={() => { setSelectedCampaign(null); setCreateOpen(false); setSelected(project); }}
+                onClick={() => { setSelectedCampaign(null); setSelectedSubtask(null); setCreateOpen(false); setSelected(project); }}
                 className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left"
               >
                 {project.name}
@@ -1256,7 +1263,7 @@ export const Projects:React.FC=()=>{
                     )}
                   </div>
                   {project.description?.trim() ? <p className="text-xs text-gray-500 truncate mt-1 pl-6">{project.description}</p> : null}
-                  {canManageProject(project) && (
+                  {canHideOrDeleteParent && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
                       className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
@@ -1904,7 +1911,15 @@ export const Projects:React.FC=()=>{
           : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'
       } z-[70] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
     >
-      {panelOpen && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
+      {panelOpen && (
+        <div
+          onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
+          title={lang === 'en' ? 'Drag to resize panel' : 'Kéo để thay đổi độ rộng bảng'}
+          className="hidden xl:grid place-items-center absolute left-0 inset-y-0 w-3 cursor-col-resize z-30 group/resize select-none"
+        >
+          <div className={`w-1 h-12 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-400/80 h-16' : 'bg-transparent group-hover/resize:bg-slate-400/50 dark:group-hover/resize:bg-slate-500/60'}`} />
+        </div>
+      )}
       {selectedSubtask ? (
         <SubtaskDetailPanel
           embedded
@@ -1949,7 +1964,21 @@ export const Projects:React.FC=()=>{
               <div className="space-y-5 animate-in fade-in duration-200">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase">{t('projects.nameLabel')}</label>
-                  <input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none mt-1" />
+                  <div className="relative mt-1">
+                    <input value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-2.5 pr-16 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold outline-none" />
+                    <PhasePermissionToggle
+                      profile={profile}
+                      checked={allowPhaseCreation}
+                      onChange={(nextChecked) => {
+                        setAllowPhaseCreation(nextChecked);
+                        if (selected?.id) {
+                          void saveEntityPhasePermission(supabase, 'project', selected.id, nextChecked, profile?.id);
+                        }
+                      }}
+                      visible={true}
+                      lang={lang}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="tw-calendar-picker relative"><label className="text-xs font-semibold text-gray-500 uppercase">{t('common.startDate')}</label><input type="text" id="edit-proj-start-input" readOnly onClick={e => (window as any).openCalendar?.({ displayId: 'edit-proj-start-input', mode: 'single' }, e)} value={start} onChange={e=>setStart(e.target.value)} placeholder="dd/mm/yyyy" className="w-full p-2.5 rounded-[8px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none mt-1 text-sm cursor-pointer"/></div>
@@ -2003,6 +2032,7 @@ export const Projects:React.FC=()=>{
                   setEditStatus(selected.status || 'active');
                   setOwnerIds(picMembers[selected.id] || []);
                   setDepartmentId(selected.department_id ? String(selected.department_id) : '');
+                  setAllowPhaseCreation(getEntityPhasePermission('project', selected.id));
                   setEditMode(true);
                 }}
                 canManage={canManageSelectedProject}
@@ -2332,14 +2362,48 @@ export const Projects:React.FC=()=>{
       />
     )}
 
-    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${createOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}>
+    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer relative overflow-hidden bg-white dark:bg-[#0a192f] dark:!bg-none shrink-0 ${createOpen ? `w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] ${creationType === 'campaign' ? 'shadow-drawer-campaign border-amber-500/30' : 'shadow-drawer-project border-violet-500/30'} opacity-100 pointer-events-auto drawer-slide-in` : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity,border-color,box-shadow] duration-500 ease-out' : ''}`}>
+      {/* Dynamic Ambient Background Glow layers at bottom-left (circle at 20% 90%) - Dark mode only, 100% consistent with Dashboard Detail Drawers */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 z-0 hidden dark:block transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+          creationType === 'campaign' ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          background: 'radial-gradient(circle at 20% 90%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 70%)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 z-0 hidden dark:block transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+          creationType === 'project' ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          background: 'radial-gradient(circle at 20% 90%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 70%)',
+        }}
+      />
       {createOpen && <>
-      <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('projects.createTitle')}</h3><ActionButton icon={<X className="w-5 h-5 text-gray-500" />} disabled={creating} aria-label={t('common.close')} onClick={() => setCreateOpen(false)} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700"></ActionButton></div>
-      <form onSubmit={createItem} aria-busy={creating} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+      <div
+        onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
+        title={lang === 'en' ? 'Drag to resize panel' : 'Kéo để thay đổi độ rộng bảng'}
+        className="hidden xl:grid place-items-center absolute left-0 inset-y-0 w-3 cursor-col-resize z-30 group/resize select-none"
+      >
+        <div className={`w-1 h-12 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-400/80 h-16' : 'bg-transparent group-hover/resize:bg-slate-400/50 dark:group-hover/resize:bg-slate-500/60'}`} />
+      </div>
+      <div className="relative z-10 grid grid-cols-[1fr_auto] items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('projects.createTitle')}</h3><ActionButton icon={<X className="w-5 h-5 text-gray-500" />} disabled={creating} aria-label={t('common.close')} onClick={() => setCreateOpen(false)} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700"></ActionButton></div>
+      <form onSubmit={createItem} aria-busy={creating} className="relative z-10 grid grid-rows-[1fr_auto] h-full min-h-0 overflow-hidden">
+      <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar space-y-4">
         <fieldset disabled={creating} className="min-w-0 space-y-4">
-        <div className="grid grid-cols-2 gap-1 rounded-[8px] bg-gray-100 dark:bg-slate-900 p-1" role="tablist" aria-label="Loại khởi tạo">
+        <div className="relative grid grid-cols-2 gap-1 rounded-[8px] bg-gray-100 dark:bg-slate-900 p-1 w-full" role="tablist" aria-label="Loại khởi tạo">
+          {/* Sliding Pill Indicator immune to layout animation and width changes */}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-6px)] rounded-[6px] z-0 transition-[transform,border-color,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              creationType === 'campaign'
+                ? 'translate-x-0 bg-white border border-gray-200/90 shadow-2xs dark:bg-transparent dark:border-amber-400/75 dark:shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                : 'translate-x-[calc(100%+4px)] bg-white border border-gray-200/90 shadow-2xs dark:bg-transparent dark:border-violet-400/75 dark:shadow-[0_0_12px_rgba(139,92,246,0.15)]'
+            }`}
+          />
           <button
             type="button"
             role="tab"
@@ -2353,7 +2417,11 @@ export const Projects:React.FC=()=>{
                 setEditStatus(currentStatus);
               }
             }}
-            className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'campaign' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}
+            className={`relative z-10 rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer text-center bg-transparent ${
+              creationType === 'campaign'
+                ? 'text-primary dark:!text-amber-300'
+                : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white'
+            }`}
           >
             {t('projects.typeCampaign')}
           </button>
@@ -2371,7 +2439,11 @@ export const Projects:React.FC=()=>{
                 setCampaignStatus(currentStatus);
               }
             }}
-            className={`rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors ${creationType === 'project' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500'}`}
+            className={`relative z-10 rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer text-center bg-transparent ${
+              creationType === 'project'
+                ? 'text-primary dark:!text-violet-300'
+                : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white'
+            }`}
           >
             {t('projects.typeProject')}
           </button>
@@ -2391,7 +2463,16 @@ export const Projects:React.FC=()=>{
 
         <div>
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{t('projects.nameLabel')} <span className="text-red-500">*</span></label>
-          <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400 shadow-sm" placeholder={t('projects.namePlaceholder')} />
+          <div className="relative">
+            <input type="text" required value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-4 pr-16 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f] text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400 shadow-sm" placeholder={t('projects.namePlaceholder')} />
+            <PhasePermissionToggle
+              profile={profile}
+              checked={allowPhaseCreation}
+              onChange={setAllowPhaseCreation}
+              visible={Boolean(title.trim() || description.trim() || campaignObjective.trim() || primaryOwnerId || ownerIds.length > 0 || due || departmentId)}
+              lang={lang}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -2426,19 +2507,21 @@ export const Projects:React.FC=()=>{
           <div><label className="block text-sm font-semibold mb-1">{t('projects.belongsToCampaign')}</label><select value={parentCampaignId} onChange={e=>selectParentCampaign(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]"><option value="">{t('projects.standalone')}</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div><label className="block text-sm font-semibold mb-1">{t('common.priority')}</label><select value={priority} onChange={e=>setPriority(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]"><option value="high">{t('common.high')}</option><option value="medium">{t('common.medium')}</option><option value="low">{t('common.low')}</option></select></div>
           <div><label className="block text-sm font-semibold mb-1">{t('projects.executingMembers')}</label><MultiSelect options={creationPeople.filter(p=>String(p.id)!==primaryOwnerId).map(p=>({value:String(p.id),label:p.name}))} value={executionMemberIds} onChange={setExecutionMemberIds} placeholder={t('projects.tagMembers')} /></div>
-          <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" /><label className="mt-2 flex cursor-pointer items-center justify-center rounded-[8px] border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
+          <div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-[8px] border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div>
         </div> : <div className="space-y-4 rounded-[8px] border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-[#071325]/40 p-4"><div><label className="block text-sm font-semibold mb-1">{t('projects.totalBudget')}</label><div className="relative"><input type="number" min="0" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} className="w-full px-3 py-2.5 pr-14 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" placeholder={t('projects.budgetPlaceholder')} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">VND</span></div></div><div><label className="block text-sm font-semibold mb-2">{t('projects.channels')}</label><div className="grid grid-cols-2 gap-2 text-sm">{['Social Media','OOH','In-store','PR','Digital Ads','CRM'].map(channel => <label key={channel} className="grid grid-flow-col auto-cols-max items-center gap-2 rounded-[6px] bg-white dark:bg-[#0a192f] px-3 py-2"><input type="checkbox" checked={campaignChannels.includes(channel)} onChange={() => setCampaignChannels(values => values.includes(channel) ? values.filter(value => value !== channel) : [...values, channel])} />{channel}</label>)}</div></div><div><label className="block text-sm font-semibold mb-1">{t('projects.attachments')}</label><input value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} placeholder={t('projects.pasteLink')} className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] bg-white dark:bg-[#0a192f]" /><label className="mt-2 grid grid-flow-col auto-cols-max items-center justify-center cursor-pointer rounded-[8px] border border-dashed border-primary/30 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><input type="file" className="sr-only" onChange={e=>setAttachmentFile(e.target.files?.[0] || null)} />{attachmentFile ? attachmentFile.name : t('projects.orChooseFile')}</label></div></div>)}
 
         </fieldset>
       </div>
-        <div className="p-5 border-t border-gray-200 dark:border-slate-700 flex gap-3 shrink-0 bg-white dark:bg-[#0a192f]"><button type="button" disabled={creating} onClick={() => setCreateOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700">{t('common.cancel')}</button><button disabled={creating || !title.trim() || !primaryOwnerId} type="submit" className="min-w-0 flex-1 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-[8px]">{creating ? t('projects.creating') : t('projects.createBtn')}</button></div>
+        <div className="p-5 border-t border-gray-200 dark:border-slate-700/80 grid grid-cols-2 gap-3 shrink-0 bg-white dark:bg-transparent"><button type="button" disabled={creating} onClick={() => setCreateOpen(false)} className="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-[8px] font-bold text-sm hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer">{t('common.cancel')}</button><button disabled={creating || !title.trim() || !primaryOwnerId} type="submit" className="w-full min-w-0 disabled:opacity-50 px-4 py-2.5 bg-[#002e6d] hover:bg-[#001f4d] text-white font-bold text-sm rounded-[8px] cursor-pointer">{creating ? t('projects.creating') : t('projects.createBtn')}</button></div>
       </form>
       </>}
     </div>
       <ConfirmDeleteModal isOpen={!!projectToDelete} title="Xóa Dự án" message={`Bạn có chắc muốn xóa dự án "${projectToDelete?.name}"? Tất cả subtask của dự án này cũng sẽ bị xóa.`} onConfirm={executeRemoveProject} onCancel={() => setProjectToDelete(null)} />
+      <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa chiến dịch "${campaignToDelete?.name}"? Tất cả subtask của chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemoveCampaign} onCancel={() => setCampaignToDelete(null)} />
       <ConfirmDeleteModal isOpen={!!subtaskToDelete} title="Xóa Subtask" message="Bạn có chắc muốn xóa subtask này?" onConfirm={executeRemoveSubtask} onCancel={() => setSubtaskToDelete(null)} />
       <ConfirmDeleteModal isOpen={!!campaignSubtaskToDelete} title="Xóa Subtask" message={`Bạn có chắc muốn xóa subtask "${campaignSubtaskToDelete?.title || ''}"?`} onConfirm={executeRemoveCampaignSubtask} onCancel={() => setCampaignSubtaskToDelete(null)} />
     <ConfirmHideModal isOpen={!!projectToHide} title="Ẩn Dự án" message={`Bạn có chắc muốn ẩn dự án "${projectToHide?.name}"? Dự án sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHideProject} onCancel={() => setProjectToHide(null)} />
+    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHideCampaign} onCancel={() => setCampaignToHide(null)} />
   </div>
 );
 };

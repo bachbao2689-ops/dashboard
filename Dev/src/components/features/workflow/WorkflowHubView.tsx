@@ -26,6 +26,8 @@ import { displayDate, daysUntil, isDone, taskProgress } from '../../../lib/workf
 import { priorityClass, getCampaignPriority } from '../projects/projectPresentation';
 import { checkDateMatch } from '../projects/CampaignPanel';
 import { useTranslation } from '../../../i18n/translations';
+import toast from 'react-hot-toast';
+import { getEntityPhasePermission } from '../../../lib/phasePermission';
 
 const handleMagneticMove = (e: React.MouseEvent<HTMLElement>) => {
   const rect = e.currentTarget.getBoundingClientRect();
@@ -59,7 +61,8 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
   }, [rawDeptId, hub.profile?.department_name, directory.data?.departments]);
 
   const isLeader = isDepartmentLeader(hub.profile);
-  const isStaff = !isGlobalManager(hub.profile) && !isLeader;
+  const isStaff = !isGlobalManager(hub.profile) && !isLeader && !isAdmin(hub.profile);
+  const actorId = hub.profile?.id ? String(hub.profile.id) : '';
   // Restricted user: only Staff is restricted to their own department
   const userIsRestricted = isStaff && Boolean(resolvedDeptId || hub.profile?.department_name);
 
@@ -85,6 +88,17 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
   const [unphasedSearchQuery, setUnphasedSearchQuery] = useState('');
   const [activePopup, setActivePopup] = useState<'dept' | 'pic' | 'calendar' | 'status' | 'unphased' | null>(null);
 
+  const [phasePermTick, setPhasePermTick] = useState(0);
+  useEffect(() => {
+    const handlePermChange = () => setPhasePermTick((t) => t + 1);
+    window.addEventListener('phase-permission:changed', handlePermChange);
+    window.addEventListener('storage', handlePermChange);
+    return () => {
+      window.removeEventListener('phase-permission:changed', handlePermChange);
+      window.removeEventListener('storage', handlePermChange);
+    };
+  }, []);
+
   const isAdminUser = isAdmin(hub.profile);
   const isManagerUser = isGlobalManager(hub.profile) && !isAdminUser;
 
@@ -95,6 +109,8 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
 
   const [activeHubBoxPopup, setActiveHubBoxPopup] = useState<number | null>(null);
   const [activeInfoBox, setActiveInfoBox] = useState<number | null>(null);
+  const [showProjectSamplePhases, setShowProjectSamplePhases] = useState(false);
+  const [showCampaignSamplePhases, setShowCampaignSamplePhases] = useState(false);
 
   const formatCalVN = (dateStr?: string | null) => {
     if (!dateStr) return '';
@@ -455,15 +471,48 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
   }, [entities, hubTab, hubSearch, hubDept, hubPic, hubStatus, hubCalendar, hubCustomStart, hubCustomEnd, userIsRestricted, resolvedDeptId]);
 
   // Các dự án & chiến dịch chưa tạo phase (để thêm nhanh phase)
+  const totalStaffAllowedUnphased = useMemo(() => {
+    if (!isStaff) return entities.length;
+    return entities.filter((e) => {
+      const totalPhases = e.phases?.length || 0;
+      const isComp = e.isCompletedEntity || isDone(e.status);
+      if (totalPhases > 0 || isComp) return false;
+      const entityId = e.entity_id || e.id;
+      const isStaffAllowed = getEntityPhasePermission(e.type, entityId);
+      const isUserPic = Boolean(
+        actorId && (
+          e.root ||
+          (e.pics || []).some((p: any) => String(p.id) === actorId) ||
+          ((e as any).lead && String((e as any).lead.id) === actorId) ||
+          ((e as any).creator && String((e as any).creator.id) === actorId)
+        )
+      );
+      return isUserPic && isStaffAllowed;
+    }).length;
+  }, [entities, isStaff, actorId, phasePermTick]);
+
   const unphasedEntities = useMemo(() => {
     return entities.filter((e) => {
       const totalPhases = e.phases?.length || 0;
       const isComp = e.isCompletedEntity || isDone(e.status);
       if (totalPhases > 0 || isComp) return false;
+      if (isStaff) {
+        const entityId = e.entity_id || e.id;
+        const isStaffAllowed = getEntityPhasePermission(e.type, entityId);
+        const isUserPic = Boolean(
+          actorId && (
+            e.root ||
+            (e.pics || []).some((p: any) => String(p.id) === actorId) ||
+            ((e as any).lead && String((e as any).lead.id) === actorId) ||
+            ((e as any).creator && String((e as any).creator.id) === actorId)
+          )
+        );
+        if (!isUserPic || !isStaffAllowed) return false;
+      }
       if (!unphasedSearchQuery.trim()) return true;
       return e.name.toLowerCase().includes(unphasedSearchQuery.trim().toLowerCase());
     });
-  }, [entities, unphasedSearchQuery]);
+  }, [entities, unphasedSearchQuery, phasePermTick, isStaff, actorId]);
 
   const projectEntities = useMemo(
     () => filteredHubEntities.filter((e) => e.type === 'project'),
@@ -1130,6 +1179,410 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
               {isEn ? 'Workflow Management' : 'Quản lý tiến độ'}
             </h1>
+            <div data-workflow-popover="true" className="relative inline-grid place-items-center">
+              <button
+                type="button"
+                onClick={() => setActiveInfoBox(activeInfoBox === 999 ? null : 999)}
+                aria-label={isEn ? 'Phase Mechanism Guide' : 'Cơ chế vận hành Phase'}
+                title={isEn ? 'Phase Mechanism Guide' : 'Cơ chế vận hành Phase'}
+                className={`w-5 h-5 rounded-full grid place-items-center transition-colors cursor-pointer ${
+                  activeInfoBox === 999
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60'
+                }`}
+              >
+                <Info size={13} />
+              </button>
+
+              {activeInfoBox === 999 && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute left-0 top-[calc(100%+8px)] z-[100] w-[92vw] sm:w-[620px] lg:w-[680px] p-4 rounded-[10px] bg-white/98 dark:bg-[#0b1324]/98 backdrop-blur-2xl border border-gray-200/90 dark:border-slate-700/90 shadow-2xl text-xs space-y-4 max-h-[82vh] overflow-y-auto custom-scrollbar"
+                  style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  {/* Header */}
+                  <div className="grid grid-cols-[1fr_auto] items-center justify-between gap-3 pb-3 border-b border-gray-200/80 dark:border-slate-800">
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-2">
+                      <div className="w-6 h-6 rounded-[6px] bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-sky-400 grid place-items-center">
+                        <Info size={14} />
+                      </div>
+                      <h2 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
+                        {isEn ? 'Phase Mechanism Guide (Project & Campaign)' : 'Cơ chế vận hành Phase (Project & Campaign)'}
+                      </h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveInfoBox(null)}
+                      className="p-1 rounded-[6px] text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  {/* Phần 1: Khi nào cần sử dụng Phase? */}
+                  <div className="space-y-2">
+                    <div className="font-bold text-[12px] text-gray-900 dark:text-slate-100">
+                      {isEn ? '1. When to use Phases?' : '1. Khi nào cần sử dụng Phase?'}
+                    </div>
+
+                    <div className="rounded-[8px] border border-gray-200/80 dark:border-slate-800 overflow-hidden bg-gray-50/50 dark:bg-slate-900/40">
+                      {/* Table Header */}
+                      <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-gray-100/70 dark:bg-slate-800/80 text-[11px] font-bold text-gray-700 dark:text-slate-300 border-b border-gray-200/80 dark:border-slate-800">
+                        <div>{isEn ? 'Condition' : 'Điều kiện'}</div>
+                        <div className="text-center w-28">{isEn ? 'Need Phase?' : 'Có cần Phase?'}</div>
+                        <div>{isEn ? 'Reason' : 'Lý do'}</div>
+                      </div>
+
+                      {/* Table Rows */}
+                      <div className="divide-y divide-gray-100 dark:divide-slate-800/80 text-[11.5px] text-gray-700 dark:text-slate-300">
+                        {/* Row 1 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Small project, 3–5 tasks' : 'Project nhỏ, 3–5 task'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-slate-200/90 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600">
+                              {isEn ? 'Not needed' : 'Không cần'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Task management is sufficient' : 'Quản lý Task là đủ'}
+                          </span>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Project spans weeks/months' : 'Project kéo dài nhiều tuần/tháng'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-blue-600/15 dark:bg-blue-500/25 text-blue-700 dark:text-sky-300 border border-blue-400/70 dark:border-sky-500/50 ring-1 ring-blue-500/20">
+                              {isEn ? 'Recommended' : 'Nên có'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Track progress stage-by-stage' : 'Theo dõi tiến độ từng chặng'}
+                          </span>
+                        </div>
+
+                        {/* Row 3 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Multiple departments involved' : 'Nhiều phòng ban tham gia'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-blue-600/15 dark:bg-blue-500/25 text-blue-700 dark:text-sky-300 border border-blue-400/70 dark:border-sky-500/50 ring-1 ring-blue-500/20">
+                              {isEn ? 'Recommended' : 'Nên có'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Define ownership & handoff' : 'Xác định trách nhiệm và bàn giao'}
+                          </span>
+                        </div>
+
+                        {/* Row 4 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Campaign with multiple waves' : 'Campaign có nhiều đợt triển khai'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-blue-600/15 dark:bg-blue-500/25 text-blue-700 dark:text-sky-300 border border-blue-400/70 dark:border-sky-500/50 ring-1 ring-blue-500/20">
+                              {isEn ? 'Recommended' : 'Nên có'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Control each wave & outcome' : 'Kiểm soát từng đợt và kết quả'}
+                          </span>
+                        </div>
+
+                        {/* Row 5 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Short, one-time campaign' : 'Campaign ngắn, triển khai một lần'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-amber-500/15 dark:bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-400/70 dark:border-amber-500/50 ring-1 ring-amber-500/20">
+                              {isEn ? 'Optional' : 'Không bắt buộc'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Avoid over-complicating workflow' : 'Tránh phức tạp hóa workflow'}
+                          </span>
+                        </div>
+
+                        {/* Row 6 */}
+                        <div className="grid grid-cols-[1.3fr_auto_1.3fr] items-center gap-2 px-3 py-2 bg-white/40 dark:bg-transparent">
+                          <span className="font-medium text-gray-900 dark:text-slate-200">
+                            {isEn ? 'Requires approval before proceeding' : 'Có bước phê duyệt trước khi tiếp tục'}
+                          </span>
+                          <div className="w-28 grid place-content-center">
+                            <span className="inline-block px-2.5 py-1 rounded-[6px] text-[10.5px] font-extrabold tracking-tight shadow-xs bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 border border-emerald-700 dark:border-emerald-400 shadow-sm ring-2 ring-emerald-500/25">
+                              {isEn ? 'Highly needed' : 'Rất cần'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-slate-400">
+                            {isEn ? 'Phase acts as a checkpoint' : 'Phase đóng vai trò checkpoint'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phần 2: Cơ chế Phase của Project và Campaign khác nhau thế nào? */}
+                  <div className="space-y-2">
+                    <div className="font-bold text-[12px] text-gray-900 dark:text-slate-100">
+                      {isEn ? '2. How do Project & Campaign Phases differ?' : '2. Cơ chế Phase của Project và Campaign khác nhau thế nào?'}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+                      {/* Card Trái: Mẫu Project */}
+                      <div className="p-3.5 rounded-[8px] border border-gray-200/80 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/40 grid content-between gap-3 transition-all">
+                        <div className="space-y-2.5">
+                          {/* Nút Header Dropdown Mẫu Project */}
+                          <button
+                            type="button"
+                            onClick={() => setShowProjectSamplePhases((prev) => !prev)}
+                            className="w-full grid grid-cols-[1fr_auto] items-center justify-between gap-2 p-1.5 -m-1.5 rounded-[6px] hover:bg-gray-100/70 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-left"
+                            aria-expanded={showProjectSamplePhases}
+                          >
+                            <span className="font-bold text-[12.5px] text-gray-900 dark:text-white">
+                              {isEn ? 'Project Sample' : 'Mẫu Project'}
+                            </span>
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                              <span className="px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-sky-300">
+                                5 Phases
+                              </span>
+                              <ChevronDown
+                                size={14}
+                                className={`text-gray-400 dark:text-slate-500 transition-transform duration-200 ${
+                                  showProjectSamplePhases ? 'rotate-180 text-blue-600 dark:text-sky-400' : ''
+                                }`}
+                              />
+                            </div>
+                          </button>
+
+                          {/* Dòng cơ chế chính in đậm nổi bật cho Staff đọc & hiểu */}
+                          <div
+                            onClick={() => setShowProjectSamplePhases((prev) => !prev)}
+                            className="p-2.5 rounded-[6px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/60 font-bold text-[11.5px] text-gray-900 dark:text-white not-italic leading-relaxed cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors"
+                            title={isEn ? 'Click to toggle sample phases' : 'Bấm để mở/đóng danh sách các chặng mẫu'}
+                          >
+                            {isEn
+                              ? '“Projects typically proceed from requirement definition to completion, with clear checkpoints and handoffs.”'
+                              : '“Project thường đi từ xác định yêu cầu đến hoàn thành sản phẩm, với các điểm kiểm tra và bàn giao.”'}
+                          </div>
+
+                          {/* Danh sách 5 Phases mẫu (Dropdown xổ ra khi click) */}
+                          {showProjectSamplePhases && (
+                            <div className="space-y-1.5 pt-1 border-t border-gray-200/70 dark:border-slate-800 animate-in fade-in duration-200">
+                              {/* Step 1 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center shrink-0">
+                                  <Check size={12} strokeWidth={3} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 dark:text-slate-200 leading-snug">
+                                    Research & Planning
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Requirement analysis, scope definition' : 'Phân tích yêu cầu, xác định scope'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 2 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center shrink-0">
+                                  <Check size={12} strokeWidth={3} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 dark:text-slate-200 leading-snug">
+                                    UI/UX Design
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Wireframe, interface design' : 'Wireframe, thiết kế giao diện'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 3 (Current) */}
+                              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-[7px] bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-800/60">
+                                <div className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] grid place-items-center shrink-0">
+                                  03
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-blue-700 dark:text-sky-300 leading-snug">
+                                    Development
+                                  </div>
+                                  <div className="text-[10.5px] text-blue-600/80 dark:text-sky-400/80">
+                                    {isEn ? 'Frontend, backend, integration' : 'Frontend, backend, tích hợp'}
+                                  </div>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold bg-blue-600 text-white">
+                                  Current
+                                </span>
+                              </div>
+
+                              {/* Step 4 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-400 font-bold text-[10px] grid place-items-center shrink-0">
+                                  04
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-700 dark:text-slate-300 leading-snug">
+                                    Testing & QA
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Testing, bug fixes' : 'Kiểm thử, sửa lỗi'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 5 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-400 font-bold text-[10px] grid place-items-center shrink-0">
+                                  05
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-700 dark:text-slate-300 leading-snug">
+                                    Launch & Handover
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Deployment & handover' : 'Triển khai và bàn giao'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Card Phải: Mẫu Campaign */}
+                      <div className="p-3.5 rounded-[8px] border border-gray-200/80 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/40 grid content-between gap-3 transition-all">
+                        <div className="space-y-2.5">
+                          {/* Nút Header Dropdown Mẫu Campaign */}
+                          <button
+                            type="button"
+                            onClick={() => setShowCampaignSamplePhases((prev) => !prev)}
+                            className="w-full grid grid-cols-[1fr_auto] items-center justify-between gap-2 p-1.5 -m-1.5 rounded-[6px] hover:bg-gray-100/70 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-left"
+                            aria-expanded={showCampaignSamplePhases}
+                          >
+                            <span className="font-bold text-[12.5px] text-gray-900 dark:text-white">
+                              {isEn ? 'Campaign Sample' : 'Mẫu Campaign'}
+                            </span>
+                            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                              <span className="px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-amber-100/80 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                                5 Phases
+                              </span>
+                              <ChevronDown
+                                size={14}
+                                className={`text-gray-400 dark:text-slate-500 transition-transform duration-200 ${
+                                  showCampaignSamplePhases ? 'rotate-180 text-amber-600 dark:text-amber-400' : ''
+                                }`}
+                              />
+                            </div>
+                          </button>
+
+                          {/* Dòng cơ chế chính in đậm nổi bật cho Staff đọc & hiểu */}
+                          <div
+                            onClick={() => setShowCampaignSamplePhases((prev) => !prev)}
+                            className="p-2.5 rounded-[6px] bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 font-bold text-[11.5px] text-gray-900 dark:text-white not-italic leading-relaxed cursor-pointer hover:border-amber-300 dark:hover:border-amber-800 transition-colors"
+                            title={isEn ? 'Click to toggle sample phases' : 'Bấm để mở/đóng danh sách các chặng mẫu'}
+                          >
+                            {isEn
+                              ? '“Campaigns usually have launch milestones, performance optimizations, and recaps. Multiple Phases can run in parallel.”'
+                              : '“Campaign thường có các mốc ra mắt, tối ưu hiệu suất và tổng kết. Nhiều Phase có thể chạy song song.”'}
+                          </div>
+
+                          {/* Danh sách 5 Phases mẫu (Dropdown xổ ra khi click) */}
+                          {showCampaignSamplePhases && (
+                            <div className="space-y-1.5 pt-1 border-t border-gray-200/70 dark:border-slate-800 animate-in fade-in duration-200">
+                              {/* Step 1 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center shrink-0">
+                                  <Check size={12} strokeWidth={3} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 dark:text-slate-200 leading-snug">
+                                    Planning
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'KPI, budget, target audience' : 'KPI, ngân sách, đối tượng mục tiêu'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 2 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center shrink-0">
+                                  <Check size={12} strokeWidth={3} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 dark:text-slate-200 leading-snug">
+                                    Creative & Production
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Key visual, banners, videos' : 'Key visual, banner, video'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 3 (Current) */}
+                              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 p-1.5 rounded-[7px] bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-800/60">
+                                <div className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] grid place-items-center shrink-0">
+                                  03
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-blue-700 dark:text-sky-300 leading-snug">
+                                    Pre-launch
+                                  </div>
+                                  <div className="text-[10.5px] text-blue-600/80 dark:text-sky-400/80">
+                                    {isEn ? 'Setup ads, landing page, products' : 'Setup ads, landing page, sản phẩm'}
+                                  </div>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold bg-blue-600 text-white">
+                                  Current
+                                </span>
+                              </div>
+
+                              {/* Step 4 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-400 font-bold text-[10px] grid place-items-center shrink-0">
+                                  04
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-700 dark:text-slate-300 leading-snug">
+                                    Live & Optimization
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Run ads, optimize conversions' : 'Chạy quảng cáo, tối ưu chuyển đổi'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 5 */}
+                              <div className="grid grid-cols-[auto_1fr] items-start gap-2 p-1.5 rounded-[6px]">
+                                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-400 font-bold text-[10px] grid place-items-center shrink-0">
+                                  05
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-700 dark:text-slate-300 leading-snug">
+                                    Reporting
+                                  </div>
+                                  <div className="text-[10.5px] text-gray-500 dark:text-slate-400">
+                                    {isEn ? 'Audit results & evaluate ROI' : 'Đối soát kết quả và đánh giá ROI'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Hàng 2: Nút Tất cả & Hộp segmented Projects | Campaigns */}
@@ -1204,61 +1657,121 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
               {activePopup === 'unphased' && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute left-0 top-[calc(100%+8px)] z-50 w-72 sm:w-80 p-2.5 rounded-[10px] bg-white/95 dark:bg-[#0b1324]/95 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/80 shadow-2xl origin-top-left transition-all duration-200 ease-out animate-in fade-in zoom-in-95"
+                  className="absolute left-0 top-[calc(100%+8px)] z-50 w-72 sm:w-80 p-3 rounded-[10px] bg-white/95 dark:bg-[#0b1324]/95 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/80 shadow-2xl origin-top-left transition-all duration-200 ease-out animate-in fade-in zoom-in-95"
                 >
-                  <div className="text-[11px] font-bold text-gray-900 dark:text-white mb-2">
-                    {isEn ? 'Add Phase to Project / Campaign' : 'Tạo Phase cho Dự án / Chiến dịch'}
+                  <div className="grid grid-cols-[1fr_auto] items-center justify-between pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
+                    <span className="text-[11px] font-bold text-gray-900 dark:text-white">
+                      {isEn ? 'Add Phase to Project / Campaign' : 'Tạo Phase cho Dự án / Chiến dịch'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActivePopup(null)}
+                      className="p-1 rounded-[6px] text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
-                  <div className="relative mb-2">
-                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={unphasedSearchQuery}
-                      onChange={(e) => setUnphasedSearchQuery(e.target.value)}
-                      placeholder={isEn ? 'Search unphased...' : 'Tìm dự án/chiến dịch chưa có phase...'}
-                      className="w-full h-7.5 pl-7 pr-7 text-xs rounded-[6px] border border-gray-200 dark:border-slate-700 bg-gray-50/90 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-sky-400"
-                    />
-                    {unphasedSearchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setUnphasedSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-60 overflow-y-auto space-y-1">
-                    {unphasedEntities.length === 0 ? (
-                      <div className="py-4 text-center text-[11px] text-gray-400 italic">
-                        {isEn ? 'No unphased project or campaign' : 'Không có dự án/chiến dịch nào chưa có phase'}
+                  {isStaff && totalStaffAllowedUnphased === 0 ? (
+                    <div className="p-4 rounded-[8px] bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-center space-y-1.5">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 grid place-items-center mx-auto">
+                        <Info size={15} />
                       </div>
-                    ) : (
-                      unphasedEntities.map((e) => (
-                        <button
-                          key={`${e.type}-${e.id}`}
-                          type="button"
-                          onClick={() => {
-                            handleSelectEntity(e.id);
-                            setActivePopup(null);
-                          }}
-                          className="w-full text-left p-2 rounded-[6px] text-xs grid grid-cols-[auto_1fr] items-center gap-2 cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200"
-                        >
-                          {e.type === 'project' ? (
-                            <FolderKanban size={14} className="text-violet-500 shrink-0" />
-                          ) : (
-                            <Megaphone size={14} className="text-amber-500 shrink-0" />
-                          )}
-                          <span className="truncate font-medium">
-                            <span className="font-bold text-gray-500 dark:text-slate-400 mr-1">
-                              [{e.type === 'project' ? 'Project' : 'Campaign'}]
-                            </span>
-                            {e.name}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                      <div className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                        {isEn ? 'You are not authorized to create Phases' : 'Bạn không được phân quyền tạo Phase'}
+                      </div>
+                      <div className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed">
+                        {isEn
+                          ? 'Only Managers and Department Leaders can create Phases for Projects / Campaigns.'
+                          : 'Chỉ Quản lý và Trưởng bộ phận mới có quyền tạo Phase cho Dự án / Chiến dịch.'}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative mb-2">
+                        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={unphasedSearchQuery}
+                          onChange={(e) => setUnphasedSearchQuery(e.target.value)}
+                          placeholder={isEn ? 'Search unphased...' : 'Tìm dự án/chiến dịch chưa có phase...'}
+                          className="w-full h-7.5 pl-7 pr-7 text-xs rounded-[6px] border border-gray-200 dark:border-slate-700 bg-gray-50/90 dark:bg-slate-800 text-gray-900 dark:text-white outline-none focus:border-sky-400"
+                        />
+                        {unphasedSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setUnphasedSearchQuery('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-60 overflow-y-auto space-y-1">
+                        {unphasedEntities.length === 0 ? (
+                          <div className="py-4 text-center text-[11px] text-gray-400 italic">
+                            {isEn ? 'No unphased project or campaign' : 'Không có dự án/chiến dịch nào chưa có phase'}
+                          </div>
+                        ) : (
+                          unphasedEntities.map((e) => {
+                            const entityId = e.entity_id || e.id;
+                            const isStaffAllowed = getEntityPhasePermission(e.type, entityId);
+                            const isUserPic = Boolean(
+                              actorId && (
+                                e.root ||
+                                (e.pics || []).some((p: any) => String(p.id) === actorId) ||
+                                ((e as any).lead && String((e as any).lead.id) === actorId) ||
+                                ((e as any).creator && String((e as any).creator.id) === actorId)
+                              )
+                            );
+                            // Leader, Manager, Admin can always manage phases
+                            const canUserCreatePhase = !isStaff || (isUserPic && isStaffAllowed);
+
+                            return (
+                              <button
+                                key={`${e.type}-${entityId}`}
+                                type="button"
+                                disabled={!canUserCreatePhase}
+                                onClick={() => {
+                                  if (!canUserCreatePhase) {
+                                    toast.error(isEn ? 'You are not authorized to create Phases' : 'Bạn không được phân quyền tạo Phase');
+                                    return;
+                                  }
+                                  handleSelectEntity(e.id);
+                                  setActivePopup(null);
+                                }}
+                                className={`w-full text-left p-2 rounded-[6px] text-xs grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-colors ${
+                                  canUserCreatePhase
+                                    ? 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200 cursor-pointer'
+                                    : 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-slate-900/50 text-gray-400 dark:text-slate-500'
+                                }`}
+                              >
+                                {e.type === 'project' ? (
+                                  <FolderKanban size={14} className="text-violet-500 shrink-0" />
+                                ) : (
+                                  <Megaphone size={14} className="text-amber-500 shrink-0" />
+                                )}
+                                <span className="truncate font-medium">
+                                  <span className="font-bold text-gray-500 dark:text-slate-400 mr-1">
+                                    [{e.type === 'project' ? 'Project' : 'Campaign'}]
+                                  </span>
+                                  {e.name}
+                                </span>
+                                {!canUserCreatePhase ? (
+                                  <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-[4px] bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                                    {isEn ? 'No permission' : 'Bạn không được phân quyền tạo Phase'}
+                                  </span>
+                                ) : !isStaffAllowed ? (
+                                  <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-[4px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-400 shrink-0" title={isEn ? 'Staff phase creation is locked' : 'Đang khóa NV tạo Phase'}>
+                                    {isEn ? 'Staff locked' : 'Khóa NV tạo Phase'}
+                                  </span>
+                                ) : null}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

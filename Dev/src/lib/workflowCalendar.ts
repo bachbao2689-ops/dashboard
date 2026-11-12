@@ -13,13 +13,31 @@ export function workflowDateError(start: string, due: string, bounds: { start: s
   if (bounds.due && [start, due].some(value => value && value > bounds.due)) return 'after';
   return null;
 }
-export function taskContributors(tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null }[]): WorkflowPerson[] {
+export function taskContributors(
+  tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null; custom_fields?: any }[],
+  directory: WorkflowPerson[] = []
+): WorkflowPerson[] {
+  const knownPeople = new Map(directory.map(p => [String(p.id), p]));
   const people = new Map<string, WorkflowPerson>();
+
   for (const task of tasks) {
-    if (!task.assignee?.name) continue;
-    const id = task.assignee.id ?? task.assignee_id;
-    if (id == null) continue;
-    people.set(String(id), { id: Number(id), name: task.assignee.name, avatar_url: task.assignee.avatar_url || undefined });
+    const allIds = Array.from(new Set([
+      ...(task.assignee_id != null ? [task.assignee_id] : []),
+      ...(((task.custom_fields as any)?.assignee_ids as (string | number)[]) || [])
+    ])).filter(Boolean);
+
+    for (const rawId of allIds) {
+      const id = String(rawId);
+      if (people.has(id)) continue;
+      if (task.assignee?.name && (task.assignee.id == null || String(task.assignee.id) === id || String(task.assignee_id) === id)) {
+        people.set(id, { id: Number(id), name: task.assignee.name, avatar_url: task.assignee.avatar_url || undefined });
+      } else {
+        const found = knownPeople.get(id);
+        if (found) {
+          people.set(id, { id: Number(id), name: found.name, avatar_url: found.avatar_url || undefined });
+        }
+      }
+    }
   }
   return [...people.values()];
 }
@@ -27,7 +45,7 @@ export function taskContributors(tasks: { assignee_id?: string | number | null; 
 /** Phase cards show explicit Sub-PICs as well as people assigned to phase tasks. */
 export function workflowPhaseContributors(
   members: WorkflowPerson[],
-  tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null }[],
+  tasks: { assignee_id?: string | number | null; assignee?: { id?: string | number; name: string; avatar_url?: string | null } | null; custom_fields?: any }[],
   directory: WorkflowPerson[] = [],
 ): WorkflowPerson[] {
   const knownPeople = new Map(directory.map(person => [String(person.id), person]));
@@ -38,13 +56,19 @@ export function workflowPhaseContributors(
   }
 
   for (const task of tasks) {
-    const id = task.assignee?.id ?? task.assignee_id;
-    if (id == null) continue;
-    const key = String(id);
-    const person = task.assignee?.name
-      ? { id: Number(id), name: task.assignee.name, avatar_url: task.assignee.avatar_url || undefined }
-      : knownPeople.get(key);
-    if (person && !contributors.has(key)) contributors.set(key, person);
+    const allIds = Array.from(new Set([
+      ...(task.assignee_id != null ? [task.assignee_id] : []),
+      ...(((task.custom_fields as any)?.assignee_ids as (string | number)[]) || [])
+    ])).filter(Boolean);
+
+    for (const rawId of allIds) {
+      const key = String(rawId);
+      if (contributors.has(key)) continue;
+      const person = (task.assignee?.name && (task.assignee.id == null || String(task.assignee.id) === key || String(task.assignee_id) === key))
+        ? { id: Number(key), name: task.assignee.name, avatar_url: task.assignee.avatar_url || undefined }
+        : knownPeople.get(key);
+      if (person) contributors.set(key, { id: Number(key), name: person.name, avatar_url: person.avatar_url || undefined });
+    }
   }
 
   return [...contributors.values()];

@@ -204,6 +204,7 @@ export const CampaignPanel: React.FC<{
     });
   }, [isManager, isLeader, profile?.id]);
   const canManage = (campaign: {id: string; created_by?: number | null}) => Boolean(profile && (campaign.created_by === profile.id || rootCampaignIds?.has(campaign.id)));
+  const canHideOrDelete = Boolean(isManager || isLeader);
   const [expanded, setExpanded] = useState(true);
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
@@ -595,7 +596,7 @@ export const CampaignPanel: React.FC<{
   
   const executeHide = async () => {
     if (!campaignToHide) return;
-    if (!canManage(campaignToHide)) { toast.error('Bạn không có quyền ẩn Campaign này.'); setCampaignToHide(null); return; }
+    if (!canHideOrDelete) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Campaign.'); setCampaignToHide(null); return; }
     const { data, error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaignToHide.id).select('id').maybeSingle();
     if (error || !data) {
       toast.error('Không thể ẩn Campaign');
@@ -607,7 +608,7 @@ export const CampaignPanel: React.FC<{
   };
 
   const archive = (campaign: any) => {
-    if (!canManage(campaign)) return toast.error('Bạn không có quyền ẩn Campaign này.');
+    if (!canHideOrDelete) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Campaign.');
     setCampaignToHide(campaign);
   };
 
@@ -615,7 +616,7 @@ export const CampaignPanel: React.FC<{
   
   const executeRemove = async () => {
     if (!campaignToDelete) return;
-    if (!canManage(campaignToDelete)) { toast.error('Bạn không có quyền xóa Campaign này.'); setCampaignToDelete(null); return; }
+    if (!canHideOrDelete) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Campaign.'); setCampaignToDelete(null); return; }
     setDeletingIds(prev => [...prev, campaignToDelete.id]);
     const cached = campaignToDelete;
     setCampaignToDelete(null);
@@ -634,7 +635,7 @@ export const CampaignPanel: React.FC<{
   };
 
   const remove = (campaign: any) => {
-    if (!canManage(campaign)) return toast.error('Bạn không có quyền xóa Campaign này.');
+    if (!canHideOrDelete) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Campaign.');
     setCampaignToDelete(campaign);
   };
 
@@ -730,14 +731,16 @@ export const CampaignPanel: React.FC<{
     });
   }, [campaigns, filters, subtaskMap, profile?.id, profile?.department_name, isManager, isLeader, isStaff, resolvedDeptId, people, userIsRestricted]);
 
+  const activeCampaignsCount = useMemo(() => (visibleCampaigns || []).filter(c => !isTaskDone(c.status) && c.status !== 'deleted').length, [visibleCampaigns]);
+
   return (
     <section className="card-hub rounded-[8px] overflow-hidden shrink-0 min-w-0 max-w-full">
       <div className="grid grid-cols-[1fr_auto] items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-        <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+        <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} className="inline-grid grid-flow-col auto-cols-max items-center gap-2 text-sm font-bold text-gray-900 dark:text-white cursor-pointer">
           <ChevronDown className={`text-gray-500 transition-transform ${expanded ? '' : '-rotate-90'}`} size={17} />
           <Megaphone className="text-amber-500" size={16} /> {t('projects.campaignsAccordion')}
           <span className="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-            {visibleCampaigns.length}{visibleCampaigns.length !== campaigns.length ? ` / ${campaigns.length}` : ''}
+            {activeCampaignsCount}
           </span>
         </button>
       </div>
@@ -1106,7 +1109,7 @@ export const CampaignPanel: React.FC<{
               )}
             </div>
             {c.objective?.trim() ? <p className="text-xs text-gray-500 truncate mt-1 pl-6">{c.objective}</p> : null}
-            {canManage(c) && (
+            {canHideOrDelete && (
               <div 
                 onClick={(e) => e.stopPropagation()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"

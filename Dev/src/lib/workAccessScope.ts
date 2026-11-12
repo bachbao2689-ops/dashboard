@@ -45,3 +45,55 @@ export function workAssignmentPeople<T extends Person>(
 }
 // Read authorization lives in RLS/workflow_hub_index. This module only limits
 // assignment picker options; a directory snapshot must not decide data access.
+
+export function workflowTaskAssigneePeople<T extends Person>(
+  actor: Actor,
+  people: T[],
+  currentEntity?: any,
+  activePhase?: any
+): T[] {
+  if (!actor || actor.is_active === false) return [];
+
+  // 1. Các cấp bậc Manager/admin thì thấy hết các staff
+  if (isGlobalManager(actor)) {
+    return people.filter(p => p.is_active !== false);
+  }
+
+  // 2. Cấp bậc Lead thấy Staff phòng ban mình và các Leader khác (kèm thành viên tham gia)
+  if (isDepartmentLeader(actor)) {
+    const participantIds = new Set<string>();
+    (currentEntity?.pics || []).forEach((p: any) => participantIds.add(String(p.id)));
+    (currentEntity?.sub_pics || []).forEach((p: any) => participantIds.add(String(p.id)));
+    (activePhase?.members || []).forEach((p: any) => participantIds.add(String(p.id)));
+
+    return people.filter(p =>
+      p.is_active !== false &&
+      (String(p.id) === String(actor.id) ||
+        sameWorkDepartment(actor, p.department_id) ||
+        isDepartmentLeader(p) ||
+        participantIds.has(String(p.id)))
+    );
+  }
+
+  // 3. Cấp bậc nhân viên thấy được các thành viên tham gia
+  const participantIds = new Set<string>();
+  if (actor?.id) participantIds.add(String(actor.id));
+  (currentEntity?.pics || []).forEach((p: any) => participantIds.add(String(p.id)));
+  (currentEntity?.sub_pics || []).forEach((p: any) => participantIds.add(String(p.id)));
+  if (currentEntity?.creator?.id) participantIds.add(String(currentEntity.creator.id));
+  (activePhase?.members || []).forEach((p: any) => participantIds.add(String(p.id)));
+
+  const matched = people.filter(p => p.is_active !== false && participantIds.has(String(p.id)));
+  if (matched.length > 0) return matched;
+
+  const fallbackList: any[] = [];
+  participantIds.forEach(id => {
+    const fromPhase = (activePhase?.members || []).find((m: any) => String(m.id) === id);
+    const fromEntity = (currentEntity?.pics || []).find((m: any) => String(m.id) === id)
+      || (currentEntity?.sub_pics || []).find((m: any) => String(m.id) === id);
+    if (fromPhase) fallbackList.push(fromPhase);
+    else if (fromEntity) fallbackList.push(fromEntity);
+    else if (actor && String(actor.id) === id) fallbackList.push(actor);
+  });
+  return fallbackList as T[];
+}

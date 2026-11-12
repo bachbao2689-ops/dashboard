@@ -29,9 +29,10 @@ export const taskTarget = (key:string): {kind:TaskKind;id:string;table:string;ch
   const target = parentKey.startsWith('ps-') ? {kind:'project_subtask' as const,id:parentKey.slice(3),table:'project_subtasks'} : parentKey.startsWith('cs-') ? {kind:'campaign_subtask' as const,id:parentKey.slice(3),table:'campaign_subtasks'} : {kind:'task' as const,id:parentKey,table:'tasks'};
   return checklistItemId ? {...target, checklistItemId} : target;
 };
+export const isTaskClosed = (status?: string | null) => isTaskDone(status) || ['cancelled','canceled','deleted','archived'].includes(normalizeStatus(status));
 // Checklist items are JSON children of a task/subtask, not rows accepted by workflow_link_task(uuid).
-export const phaseLinkableTasks = <T extends {id:string;workflow_phase_id?:string|null}>(tasks:T[]):T[] =>
-  tasks.filter(task=>!task.workflow_phase_id&&!taskTarget(task.id).checklistItemId);
+export const phaseLinkableTasks = <T extends {id:string;workflow_phase_id?:string|null;status?:string|null}>(tasks:T[]):T[] =>
+  tasks.filter(task=>!task.workflow_phase_id&&!taskTarget(task.id).checklistItemId&&!isTaskClosed(task.status));
 export const phaseLinkTarget = (key:string):{kind:TaskKind;id:string} => {
   const {kind,id,checklistItemId}=taskTarget(key);
   if(checklistItemId)throw new Error('Đầu việc nằm trong task/subtask. Hãy gắn task/subtask mẹ vào phase.');
@@ -42,7 +43,6 @@ export const phaseLinkTarget = (key:string):{kind:TaskKind;id:string} => {
 export const taskKey = (kind:string,id:string) => kind==='project_subtask'?`ps-${id}`:kind==='campaign_subtask'?`cs-${id}`:id;
 export const taskIdentity = taskTarget;
 export const taskUIId = taskKey;
-export const isTaskClosed = (status?: string | null) => isTaskDone(status) || ['cancelled','canceled','deleted','archived'].includes(normalizeStatus(status));
 export const taskDay = (value?: string | null) => !value ? '' : /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : Number.isNaN(new Date(value).getTime()) ? '' : localDay(new Date(value));
 export function weeklyActivity<T extends TrackedTask>(tasks: T[], start: string, end: string) {
   const during = (value?: string | null) => { const day = taskDay(value); return !!day && day >= start && day <= end; };

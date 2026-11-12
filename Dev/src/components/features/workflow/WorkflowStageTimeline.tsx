@@ -16,7 +16,7 @@ export function WorkflowStageTimeline({
   draggingTaskId?: string | null;
   setDraggingTaskId?: (id: string | null) => void;
 }) {
-  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, unplanned, linkTask, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct} = model;
+  const {hub, isEn, currentEntity, isCampaign, isDetailOpen, setIsDetailOpen, allTasks, phases, unplanned, linkTask, activePhaseIndex, handleOpenAddPhaseModal, timelineScrollRef, canScrollLeft, canScrollRight, scrollTimeline, handleDeletePhase, handlePhaseClick, pct, canManagePhases} = model;
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -107,7 +107,7 @@ export function WorkflowStageTimeline({
                     onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handlePhaseClick(idx); } }}
                     onClick={() => { if (!hasDragged) handlePhaseClick(idx); }}
                     onDragOver={(e) => {
-                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      if (!canManagePhases || ['completed', 'cancelled'].includes(p.status)) return;
                       e.preventDefault();
                       e.dataTransfer.dropEffect = 'move';
                       if (dragOverPhaseId !== p.id) {
@@ -115,7 +115,7 @@ export function WorkflowStageTimeline({
                       }
                     }}
                     onDragEnter={(e) => {
-                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      if (!canManagePhases || ['completed', 'cancelled'].includes(p.status)) return;
                       e.preventDefault();
                       setDragOverPhaseId(p.id);
                     }}
@@ -127,7 +127,7 @@ export function WorkflowStageTimeline({
                       }
                     }}
                     onDrop={(e) => {
-                      if (!currentEntity.root || ['completed', 'cancelled'].includes(p.status)) return;
+                      if (!canManagePhases || ['completed', 'cancelled'].includes(p.status)) return;
                       e.preventDefault();
                       setDragOverPhaseId(null);
                       const taskId = e.dataTransfer.getData('text/plain') || draggingTaskId;
@@ -169,10 +169,10 @@ export function WorkflowStageTimeline({
                             : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
                           : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
                       }`}>
-                        {isEn ? `Phase ${p.position}` : `Chặng ${p.position}`}{currentEntity.root ? '/' + phases.length : (isEn ? ' · assigned' : ' · được giao')}
+                        {isEn ? `Phase ${p.position}` : `Chặng ${p.position}`}{canManagePhases ? '/' + phases.length : (isEn ? ' · assigned' : ' · được giao')}
                       </span>
 
-                      {currentEntity.root && (
+                      {canManagePhases && (
                         <div className="grid grid-flow-col auto-cols-max items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <button
                             type="button"
@@ -337,7 +337,7 @@ export function WorkflowStageTimeline({
                       {/* Center round shape (+) button */}
                       <button
                         type="button"
-                        disabled={!currentEntity.root}
+                        disabled={!canManagePhases}
                         onClick={(e) => handleOpenAddPhaseModal(p.position, e)}
                         className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-violet-500 dark:hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-slate-700 text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 grid place-items-center transition-all shadow-sm hover:scale-110 z-20 cursor-pointer"
                         title={isEn ? `Insert new phase after phase ${idx + 1}` : `Chèn thêm giai đoạn mới sau chặng ${idx + 1}`}
@@ -351,7 +351,7 @@ export function WorkflowStageTimeline({
             })}
 
             {/* Add Phase End Card */}
-            {currentEntity.root && <div className="grid justify-items-center content-center shrink-0 self-center p-3 ml-2 min-w-[120px]">
+            {canManagePhases && <div className="grid justify-items-center content-center shrink-0 self-center p-3 ml-2 min-w-[120px]">
               <button
                 type="button"
                 onClick={() => handleOpenAddPhaseModal(phases.length)}

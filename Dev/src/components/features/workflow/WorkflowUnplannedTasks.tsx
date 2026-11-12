@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, Calendar, Layers } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import { daysUntil, displayDate } from '../../../lib/workflowHub';
+import { isGlobalManager, isDepartmentLeader } from '../../../lib/roleScope';
 import type { Task } from '../../../hooks/useTasks';
 import type { WorkflowModel } from '../../../hooks/useWorkflowManagement';
 
@@ -55,7 +56,7 @@ export function WorkflowUnplannedTasks({
   setDraggingTaskId,
 }: WorkflowUnplannedTasksProps) {
   const { hub, isEn, currentEntity, phases, unplanned, linkTask, setSelectedTask } = model;
-  const isRoot = Boolean(currentEntity?.root);
+  const isRoot = Boolean(currentEntity?.root || isGlobalManager(hub.profile) || isDepartmentLeader(hub.profile));
   const [isOpen, setIsOpen] = useState(true);
   const [openMenuTaskId, setOpenMenuTaskId] = useState<string | null>(null);
 

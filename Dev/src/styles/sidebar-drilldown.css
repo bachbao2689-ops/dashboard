@@ -1537,6 +1537,25 @@ html:not(.dark) .sliding-active-pill {
               0 3px 12px rgba(0, 0, 0, 0.28) !important;
 }
 
+/* Custom Drawer Tab Switcher Sliding Pill */
+html:not(.dark) .sliding-active-pill.pill-creation-tabs {
+  background: #ffffff !important;
+  border: 1px solid rgba(229, 231, 235, 0.9) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark .sliding-active-pill.pill-creation-campaign {
+  background: transparent !important;
+  border: 1px solid rgba(251, 191, 36, 0.7) !important;
+  box-shadow: none !important;
+}
+
+.dark .sliding-active-pill.pill-creation-project {
+  background: transparent !important;
+  border: 1px solid rgba(167, 139, 250, 0.7) !important;
+  box-shadow: none !important;
+}
+
 html:not(.dark) .sliding-hover-pill {
   background: rgba(239, 246, 255, 0.72) !important;
   border: 1px solid rgba(191, 219, 254, 0.55) !important;

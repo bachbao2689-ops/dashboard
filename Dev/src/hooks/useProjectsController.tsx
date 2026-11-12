@@ -24,6 +24,7 @@ import {saveTaskDeliverables, computeDeliverableQuantity} from '../lib/taskDeliv
 import {workAssignmentPeople} from '../lib/workAccessScope';
 import {parentCreationError} from '../lib/parentCreationError';
 import {workspaceChangeRelevant} from '../lib/workspaceInvalidation';
+import {saveEntityPhasePermission, loadPhasePermissionsFromLogs} from '../lib/phasePermission';
 export function useProjectsController(){
   const { t, lang } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -54,6 +55,7 @@ export function useProjectsController(){
   const isManager = isGlobalManager(profile) || isAdmin(profile);
   const isLeader = isDepartmentLeader(profile);
   const isStaff = !isManager && !isLeader;
+  const canHideOrDeleteParent = Boolean(isManager || isLeader);
   const userIsRestricted = isStaff && Boolean(resolvedDeptId || profile?.department_name);
   const [members, setMembers] = useState<Record<string, string[]>>({});
   const [storedPicMembers, setPicMembers] = useState<Record<string, string[]>>({});
@@ -97,7 +99,10 @@ export function useProjectsController(){
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [projectToHide, setProjectToHide] = useState<Project | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<any | null>(null);
+  const [campaignToHide, setCampaignToHide] = useState<any | null>(null);
   const [subtaskToDelete, setSubtaskToDelete] = useState<string | null>(null); const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
+  const [allowPhaseCreation, setAllowPhaseCreation] = useState(true);
   const [campaignSubtaskToDelete, setCampaignSubtaskToDelete] = useState<any | null>(null);
   const [start, setStart] = useState(''); const [due, setDue] = useState(''); const [priority, setPriority] = useState('medium'); const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [creationType, setCreationType] = useState<'project' | 'campaign'>('project'); const [showAdvanced, setShowAdvanced] = useState(false);
@@ -159,10 +164,19 @@ export function useProjectsController(){
 
   useEffect(() => {
     if (!resizing) return;
-    const move = (e: MouseEvent) => setWidth(Math.max(400, Math.min(window.innerWidth - e.clientX, 800)));
+    const move = (e: MouseEvent) => {
+      const scaleEl = document.querySelector('.dashboard-scale') as HTMLElement | null;
+      const zoom = scaleEl ? parseFloat(getComputedStyle(scaleEl).zoom || '1') || 1 : 1;
+      const rawWidth = (window.innerWidth - e.clientX) / zoom;
+      setWidth(Math.max(400, Math.min(Math.round(rawWidth), 860)));
+    };
     const up = () => setResizing(false);
-    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
-    return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    return () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
   }, [resizing]);
 
 
@@ -501,6 +515,7 @@ export function useProjectsController(){
   const load = async () => {
     const token = ++loadRequest.current;
     if (!profile) { setProjects([]); setSelected(null); setSelectedCampaign(null); return; }
+    void loadPhasePermissionsFromLogs(supabase);
     const [projectRes, memberRes, commentRes, subtaskRes, campaignRes, creationRes, campaignCommentsRes, notificationsRes, campSubtaskRes] = await Promise.all([
       supabase.from('projects').select('*, creator:created_by(name,avatar_url)').neq('status', 'archived').neq('status', 'deleted').order('created_at', { ascending: false }),
       supabase.from('project_members').select('project_id,user_id,workflow_role'),
@@ -774,6 +789,7 @@ export function useProjectsController(){
     setExecutionMemberIds([]);
     setTitle(''); setDescription(''); setStart(new Date().toLocaleDateString('en-GB')); setDue(''); setPriority('medium'); setOwnerIds([]); setPrimaryOwnerId('');
     setParentCampaignId(''); setDepartmentId(profile?.department_id || ''); setCampaignObjective(''); setCampaignBudget(''); setCampaignStatus('planning'); setEditStatus('active'); setCampaignChannels([]); setAttachmentUrl(''); setAttachmentFile(null); setShowAdvanced(false);
+    setAllowPhaseCreation(true);
   };
 
   const selectParentCampaign = (id: string) => {
@@ -834,6 +850,7 @@ export function useProjectsController(){
           const { error: assetError } = await supabase.from('activity_log').insert({ workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id, action: 'attachment_added', entity_type: 'campaign', entity_id: campaign.id, metadata: { strategy_asset: asset } });
           if (assetError) toast.error('Campaign đã tạo nhưng chưa lưu được link tài liệu.');
         }
+        await saveEntityPhasePermission(supabase, 'campaign', campaign.id, allowPhaseCreation, profile.id);
         window.dispatchEvent(new Event('campaigns:changed'));
         toast.success('Đã tạo Campaign');
         const { error: notificationError } = hasCanonicalNotifications() ? {error:null} : await supabase.from('notifications').insert({ user_id: campaign.lead_id, type: 'system', message: profile.name + ' đã giao chiến dịch: ' + campaign.name, entity_type: 'campaign', entity_id: campaign.id });
@@ -855,9 +872,10 @@ export function useProjectsController(){
         const { error: metadataError } = await supabase.from('activity_log').insert({
           workspace_id: '9000eae0-528c-47a2-b6f3-eba019d4edca', user_id: profile.id,
           entity_type: 'project', entity_id: project.id, action: 'creation_details',
-          metadata: { primary_owner_id: Number(primaryOwnerId), owner_ids: picIds.map(Number), member_ids: executionMemberIds.map(Number) }
+          metadata: { primary_owner_id: Number(primaryOwnerId), owner_ids: picIds.map(Number), member_ids: executionMemberIds.map(Number), allow_phase_creation: allowPhaseCreation }
         });
         if (metadataError) toast.error('Project đã tạo nhưng chưa lưu được phân loại PIC chính.');
+        await saveEntityPhasePermission(supabase, 'project', project.id, allowPhaseCreation, profile.id);
         if (!memberError && !hasCanonicalNotifications()) {
           const { error: notificationError } = await supabase.from('notifications').insert(participantIds.map(id => ({ user_id: Number(id), type: 'system', message: profile.name + ' đã giao dự án: ' + project.name, entity_type: 'project', entity_id: project.id })));
           if (notificationError) toast.error('Project đã tạo; thông báo chưa gửi được.');
@@ -922,6 +940,9 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
     if (!title || !selected || !selectedRoot) return;
     const { data, error } = await supabase.from('projects').update({ name: title, description, start_date: parseYMD(start), due_date: parseYMD(due), priority, status: editStatus, department_id: (typeof departmentId !== 'undefined' && departmentId) ? departmentId : null }).eq('id', selected.id).select().single();
     if (error || !data) return toast.error('Lỗi cập nhật');
+    if (typeof saveEntityPhasePermission === 'function') {
+      await saveEntityPhasePermission(supabase, 'project', selected.id, typeof allowPhaseCreation !== 'undefined' ? allowPhaseCreation : true, typeof profile !== 'undefined' ? profile?.id : null);
+    }
     const samePics = [...ownerIds].sort().join(',') === [...(picMembers[selected.id] || [])].sort().join(',');
     if (!samePics) {
       const { error: picError } = await supabase.rpc('workflow_set_parent_pics', { p_kind: 'project', p_parent: data.id, p_ids: ownerIds.map(Number) });
@@ -936,7 +957,7 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 
   const executeHideProject = async () => {
     if (!projectToHide) return;
-    if (!canManageProject(projectToHide)) { toast.error('Bạn không có quyền ẩn Project này.'); setProjectToHide(null); return; }
+    if (!canHideOrDeleteParent) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Project.'); setProjectToHide(null); return; }
     const { data, error } = await supabase.from('projects').update({ status: 'archived' }).eq('id', projectToHide.id).select('id').maybeSingle();
     if (error || !data) {
       toast.error('Không thể ẩn Project');
@@ -949,15 +970,13 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const archiveProject = (project: Project) => {
-    if (!canManageProject(project)) return toast.error('Bạn không có quyền ẩn Project này.');
+    if (!canHideOrDeleteParent) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Project.');
     setProjectToHide(project);
   };
 
-
-
   const executeRemoveProject = async () => {
     if (!projectToDelete) return;
-    if (!canManageProject(projectToDelete)) { toast.error('Bạn không có quyền xóa Project này.'); setProjectToDelete(null); return; }
+    if (!canHideOrDeleteParent) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Project.'); setProjectToDelete(null); return; }
     const { data, error } = await supabase.from('projects').update({ status: 'deleted' }).eq('id', projectToDelete.id).select('id').maybeSingle();
     if (!error && data) {
       await supabase.from('project_subtasks').update({ status: 'deleted' }).eq('project_id', projectToDelete.id);
@@ -972,8 +991,49 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   };
 
   const removeProject = (project: Project) => {
-    if (!canManageProject(project)) return toast.error('Bạn không có quyền xóa Project này.');
+    if (!canHideOrDeleteParent) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Project.');
     setProjectToDelete(project);
+  };
+
+  const executeHideCampaign = async () => {
+    if (!campaignToHide) return;
+    if (!canHideOrDeleteParent) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Campaign.'); setCampaignToHide(null); return; }
+    const { data, error } = await supabase.from('campaigns').update({ status: 'archived' }).eq('id', campaignToHide.id).select('id').maybeSingle();
+    if (error || !data) {
+      toast.error('Không thể ẩn Campaign');
+    } else {
+      if (selectedCampaign?.id === campaignToHide.id) setSelectedCampaign(null);
+      await load();
+      toast.success('Đã ẩn Campaign');
+    }
+    setCampaignToHide(null);
+  };
+
+  const archiveCampaign = (campaign: any) => {
+    if (!canHideOrDeleteParent) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Campaign.');
+    setCampaignToHide(campaign);
+  };
+
+  const executeRemoveCampaign = async () => {
+    if (!campaignToDelete) return;
+    if (!canHideOrDeleteParent) { toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Campaign.'); setCampaignToDelete(null); return; }
+    const cached = campaignToDelete;
+    setCampaignToDelete(null);
+    const { data, error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', cached.id).select('id').maybeSingle();
+    if (!error && data) {
+      await supabase.from('campaign_subtasks').update({ status: 'deleted' }).eq('campaign_id', cached.id);
+      toast.success('Đã chuyển Campaign vào thùng rác');
+      if (selectedCampaign?.id === cached.id) setSelectedCampaign(null);
+      await load();
+      window.dispatchEvent(new Event('tasks:changed'));
+    } else {
+      toast.error('Không thể xóa Campaign');
+    }
+  };
+
+  const removeCampaign = (campaign: any) => {
+    if (!canHideOrDeleteParent) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Campaign.');
+    setCampaignToDelete(campaign);
   };
 
 
@@ -1150,8 +1210,8 @@ const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
 
   const completeCampaign = async () => { if (!selectedCampaign) return; const { error } = await supabase.from('campaigns').update({ status: 'completed' }).eq('id', selectedCampaign.id); if (error) return toast.error('Không thể hoàn thành Campaign'); const updated = { ...selectedCampaign, status: 'completed' }; setSelectedCampaign(updated); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã hoàn thành Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã đánh dấu hoàn thành chiến dịch: ' + selectedCampaign.name); };
-  const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim() || !selectedRoot) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), status: editStatus, objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null, department_id: (typeof departmentId !== 'undefined' && departmentId) ? departmentId : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); setSelectedCampaign(data); setCampaigns(items => items.map(item => item.id === data.id ? data : item)); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
+  const saveCampaignEdit = async () => { if (!selectedCampaign || !title.trim() || !selectedRoot) return; const { data, error } = await supabase.from('campaigns').update({ name: title.trim(), status: editStatus, objective: campaignObjective || null, start_date: parseYMD(start), end_date: parseYMD(due), budget: campaignBudget ? Number(campaignBudget) : null, lead_id: primaryOwnerId ? Number(primaryOwnerId) : null, department_id: (typeof departmentId !== 'undefined' && departmentId) ? departmentId : null }).eq('id', selectedCampaign.id).select('*, lead:lead_id(name,avatar_url), creator:created_by(name,avatar_url)').single(); if (error || !data) return toast.error('Không thể cập nhật Campaign'); if (typeof saveEntityPhasePermission === 'function') { await saveEntityPhasePermission(supabase, 'campaign', selectedCampaign.id, typeof allowPhaseCreation !== 'undefined' ? allowPhaseCreation : true, typeof profile !== 'undefined' ? profile?.id : null); } setSelectedCampaign(data); setCampaigns(items => items.map(item => item.id === data.id ? data : item)); setCampaignEditMode(false); window.dispatchEvent(new Event('campaigns:changed')); toast.success('Đã lưu Campaign');
     await notifyStakeholders('campaign', selectedCampaign.id, 'đã cập nhật thông tin chiến dịch: ' + title); };
 
- return {creationPeople,creationDepartments,userIsRestricted,resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,departments,departmentId,setDepartmentId,departmentFilter,effectiveDepartmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,setCampaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,campaignSubtaskPriority,setCampaignSubtaskPriority,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,toggleSubtask,toggleCampaignSubtask,hasCampaignComments,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit};
+ return {creationPeople,creationDepartments,userIsRestricted,resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,departments,departmentId,setDepartmentId,departmentFilter,effectiveDepartmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,canHideOrDeleteParent,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,campaignToDelete,setCampaignToDelete,campaignToHide,setCampaignToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,setCampaigns,campaignSubtasks,setCampaignSubtasks,campaignComments,campaignNewSubtask,setCampaignNewSubtask,campaignSubtaskOwner,setCampaignSubtaskOwner,campaignSubtaskDue,setCampaignSubtaskDue,campaignSubtaskQuantity,setCampaignSubtaskQuantity,campaignSubtaskPriority,setCampaignSubtaskPriority,showCampaignSubtaskForm,setShowCampaignSubtaskForm,campaignComment,setCampaignComment,campaignEditMode,setCampaignEditMode,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,campaignSubtaskCommentCounts,campaignSubtaskChecklistCounts,campaignSubtaskQuantities,toggleSubtask,toggleCampaignSubtask,hasCampaignComments,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,projectMentionOptions,chooseProjectMention,campaignEditingSubtaskId,setCampaignEditingSubtaskId,campaignEditSubtaskTitle,setCampaignEditSubtaskTitle,campaignEditSubtaskOwner,setCampaignEditSubtaskOwner,campaignEditSubtaskDue,setCampaignEditSubtaskDue,campaignCommentInput,campaignMentionOptions,chooseCampaignMention,removeCampaignSubtask,completeCampaignSubtask,saveEditedCampaignSubtask,removeCampaignComment,saveEditedCampaignComment,hasComments,subtaskMembers,searchTerm,setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,completeProject,resetCreateForm,selectParentCampaign,createItem,editingSubtaskId,setEditingSubtaskId,editSubtaskTitle,setEditSubtaskTitle,editSubtaskOwner,setEditSubtaskOwner,editSubtaskDue,setEditSubtaskDue,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,saveEditedSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,archiveCampaign,executeHideCampaign,removeCampaign,executeRemoveCampaign,addSubtask,completeSubtask,addComment,addCampaignSubtask,addCampaignComment,completeCampaign,saveCampaignEdit,allowPhaseCreation,setAllowPhaseCreation};
 }

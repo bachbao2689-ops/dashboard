@@ -150,11 +150,25 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     'Từ chối': 'Rejected',
     'Đã hủy': 'Canceled',
     'Chưa bắt đầu': 'Draft / To-do',
+    'Đã ẩn / Lưu trữ': 'Archived',
+    'Đã xóa': 'Deleted',
   };
   const currentStatusLabel = isEn ? (enStatusMap[meta.label] || meta.label) : meta.label;
 
   const getStatusButtonVisual = (statusVal: string) => {
     const s = statusVal.toLowerCase().trim().replace(/[ _]+/g, '-');
+    if (['archived', 'hidden', 'đã-ẩn', 'lưu-trữ'].includes(s)) {
+      return {
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700',
+        dotClass: 'bg-slate-500',
+      };
+    }
+    if (['deleted', 'đã-xóa'].includes(s)) {
+      return {
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/70',
+        dotClass: 'bg-rose-500',
+      };
+    }
     if (['completed', 'complete', 'done', 'hoàn-thành'].includes(s)) {
       return {
         badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/70',

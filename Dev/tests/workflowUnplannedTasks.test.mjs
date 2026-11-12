@@ -10,6 +10,9 @@ test('unplanned tasks filter: excludes tasks already assigned to a phase and che
     { id: 'task-2', title: 'Task with phase', workflow_phase_id: 'phase-uuid-1' },
     { id: 'ps-subtask-1', title: 'Subtask without phase', workflow_phase_id: null },
     { id: checklistTaskKey('task-1', 'chk-1'), title: 'Checklist item', workflow_phase_id: null },
+    { id: 'task-done', title: 'Done task', workflow_phase_id: null, status: 'completed' },
+    { id: 'ps-subtask-done', title: 'Done subtask', workflow_phase_id: null, status: 'done' },
+    { id: 'task-cancelled', title: 'Cancelled task', workflow_phase_id: null, status: 'cancelled' },
   ];
 
   const unplanned = phaseLinkableTasks(tasks);

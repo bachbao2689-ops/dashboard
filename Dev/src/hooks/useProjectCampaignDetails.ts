@@ -39,10 +39,10 @@ export function useProjectCampaignDetails(kind: 'project' | 'campaign', id: stri
         supabase.rpc('workflow_root', { k: kind, e: id })
       ]);
       if (p.error) throw p.error;
-      if (!p.data || ['deleted', 'archived'].includes(p.data.status)) throw new Error('Project/Campaign đã được ẩn hoặc xóa.');
+      if (!p.data) throw new Error('Project/Campaign không tồn tại hoặc bạn không có quyền truy cập.');
       if (permission.error) throw permission.error;
       if (token !== request.current || current.current !== key) return;
-      setSnapshot({key, data:p.data, subtasks:rows.filter(row => !['deleted','archived'].includes(row.status)), people, // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Project/Campaign
+      setSnapshot({key, data:p.data, subtasks: ['deleted', 'archived'].includes((p.data.status || '').toLowerCase()) ? rows : rows.filter(row => !['deleted','archived'].includes(row.status)), people, // REQ-TOT-06 / Slide 4: Leader và Creator full toàn quyền ở Project/Campaign
       canManage: Boolean(
         permission.data === true ||
         (profile?.id && (p.data.created_by === profile.id || p.data.owner_id === profile.id || p.data.primary_owner_id === profile.id)) ||

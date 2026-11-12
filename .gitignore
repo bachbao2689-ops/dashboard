@@ -97,3 +97,8 @@ Design_System/
 # Private local backend and Develop archives
 .local-supabase/
 log-ingestion-supabase/
+
+# Local working folders
+Ant System Design Master/
+Bổ sung nội dung cho Agents/
+Dev/supabase/.temp/

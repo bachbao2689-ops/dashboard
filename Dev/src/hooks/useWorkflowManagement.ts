@@ -5,7 +5,7 @@ import {useWorkflowHub} from './useWorkflowHub';
 import {useTranslation} from '../i18n/translations';
 import {useRememberedState} from './useRememberedState';
 import type {Task} from './useTasks';
-import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,parentTasks,daysUntil,isDone,workflowTaskPeople,type HubPhase,type GateCriterion} from '../lib/workflowHub';
+import {gateScore,gateReady,taskProgress,workflowMetrics,displayDate,inputDate,parentTasks,daysUntil,isDone,type HubPhase,type GateCriterion} from '../lib/workflowHub';
 import {workflowCalendarWindow,workflowDateError,taskContributors} from '../lib/workflowCalendar';
 import {canonicalWorkflowStatus,workflowStage,WORKFLOW_STATUS_CONFIG,type WorkflowTaskStatus} from '../components/features/tasks/WorkflowStatusPicker';
 import {supabase} from '../services/supabase';
@@ -14,8 +14,9 @@ import {phaseLinkableTasks,phaseLinkTarget,taskTarget} from '../lib/taskTracking
 import {isGlobalManager, isAdmin, isDepartmentLeader} from '../lib/roleScope';
 import {useWorkspaceDirectory} from './useWorkspaceData';
 import toast from 'react-hot-toast';
-import {workAssignmentPeople} from '../lib/workAccessScope';
+import {workAssignmentPeople, workflowTaskAssigneePeople} from '../lib/workAccessScope';
 import {saveTaskDeliverables} from '../lib/taskDeliverables';
+import {getEntityPhasePermission, loadPhasePermissionsFromLogs} from '../lib/phasePermission';
 interface Phase extends HubPhase {
   name: string; desc: string; progress: number | null; gateChance: number | null;
   displayStatus: 'completed' | 'active' | 'locked';
@@ -39,6 +40,7 @@ export function useWorkflowManagement() {
   const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState(false);
   const [searchEntityQuery, setSearchEntityQuery] = useState('');
   const [recentEntities, setRecentEntities] = useRememberedState<Record<string, number>>('workflow.recentEntities', {});
+  const [phasePermTick, setPhasePermTick] = useState(0);
 
   const rawDeptId = hub.profile?.department_id ? String(hub.profile.department_id) : null;
   const resolvedDeptId = useMemo(() => {
@@ -182,35 +184,69 @@ export function useWorkflowManagement() {
     document.addEventListener('click', click); window.addEventListener('keydown', key);
     return () => { cancelCloseTooltip(); document.removeEventListener('click', click); window.removeEventListener('keydown', key); };
   }, [pinnedTooltip]);
+  useEffect(() => {
+    const onPermChanged = () => setPhasePermTick(t => t + 1);
+    window.addEventListener('phase-permission:changed', onPermChanged);
+    window.addEventListener('storage', onPermChanged);
+    void loadPhasePermissionsFromLogs(supabase);
+    return () => {
+      window.removeEventListener('phase-permission:changed', onPermChanged);
+      window.removeEventListener('storage', onPermChanged);
+    };
+  }, [currentEntity?.entity_id]);
+
   const rawTasks = useMemo(() => currentEntity ? parentTasks(hub.tasks, currentEntity.type, currentEntity.entity_id) : [], [hub.tasks, currentEntity?.entity_id, currentEntity?.type]);
 
   const actorId = hub.profile?.id != null ? String(hub.profile.id) : null;
   const isManagerOrAdmin = Boolean(isAdmin(hub.profile) || isGlobalManager(hub.profile));
-  const isRoot = Boolean(
-    currentEntity?.root ||
-    (actorId && (
+  const isEntityPic = Boolean(
+    actorId && (
+      currentEntity?.root ||
       (currentEntity?.creator && String(currentEntity.creator.id) === actorId) ||
-      (currentEntity?.pics?.[0] && String(currentEntity.pics[0].id) === actorId)
-    ))
+      (currentEntity?.pics || []).some(p => String(p.id) === actorId) ||
+      ((currentEntity as any)?.lead && String((currentEntity as any).lead.id) === actorId)
+    )
   );
+  const isRoot = isEntityPic;
   const isFullAccess = isManagerOrAdmin || isRoot;
+  const entityTargetId = currentEntity?.entity_id || currentEntity?.id;
+  const isPhaseCreationAllowed = useMemo(() => {
+    if (!entityTargetId) return true;
+    return getEntityPhasePermission(isCampaign ? 'campaign' : 'project', entityTargetId);
+  }, [entityTargetId, isCampaign, phasePermTick]);
+  const canManagePhases = Boolean(
+    isManagerOrAdmin ||
+    isLeader ||
+    (isEntityPic && isPhaseCreationAllowed)
+  );
+
+  const isAssignedToTask = (t: Task) => {
+    if (!actorId) return false;
+    if (t.assignee_id && String(t.assignee_id) === actorId) return true;
+    const coIds = ((((t as any).custom_fields as any)?.assignee_ids as any[]) || []).map(String);
+    if (coIds.includes(actorId)) return true;
+    if (t.created_by && String(t.created_by) === actorId) return true;
+    if ((t.checklist_items || []).some((ci: any) => String(ci.created_by) === actorId || String(ci.assignee_id) === actorId)) return true;
+    return false;
+  };
 
   const allTasks = useMemo(() => {
-    // Leader read scope is already enforced for each task by RLS. Read access
-    // to a peer's workflow must not be confused with parent editing rights.
     if (isFullAccess || isLeader) return rawTasks;
 
-    const myPhaseIds = new Set(
-      (currentEntity?.phases || [])
-        .filter(ph => (ph.members || []).some(m => String(m.id) === actorId))
-        .map(ph => ph.id)
+    const myAssignedPhaseIds = new Set(
+      rawTasks.filter(isAssignedToTask).map(t => t.workflow_phase_id).filter(Boolean)
     );
 
+    const myPhaseIds = new Set([
+      ...(currentEntity?.phases || [])
+        .filter(ph => (ph.members || []).some(m => String(m.id) === actorId))
+        .map(ph => ph.id),
+      ...myAssignedPhaseIds
+    ]);
+
     return rawTasks.filter(t => {
-      if (t.assignee_id && String(t.assignee_id) === actorId) return true;
-      if (t.created_by && String(t.created_by) === actorId) return true;
+      if (isAssignedToTask(t)) return true;
       if (t.workflow_phase_id && myPhaseIds.has(t.workflow_phase_id)) return true;
-      if ((t.checklist_items || []).some((ci: any) => String(ci.created_by) === actorId || String(ci.assignee_id) === actorId)) return true;
       return false;
     });
   }, [rawTasks, isFullAccess, isLeader, actorId, currentEntity?.phases]);
@@ -222,13 +258,16 @@ export function useWorkflowManagement() {
   // - Staff không phải Root chỉ thấy những phase mà mình được gắn
   const phases: Phase[] = useMemo(() => {
     const rawPhases = currentEntity?.phases || [];
+    const isPhaseAssigned = (phaseId: string) =>
+      rawTasks.some(t => t.workflow_phase_id === phaseId && isAssignedToTask(t));
+
     const visiblePhases = isFullAccess || isLeader
       ? rawPhases
-      : rawPhases.filter(p => actorId && (p.members || []).some(m => String(m.id) === actorId));
+      : rawPhases.filter(p => actorId && ((p.members || []).some(m => String(m.id) === actorId) || isPhaseAssigned(p.id)));
 
     return visiblePhases.map(p => {
       const isMemberOfPhase = Boolean(actorId && (p.members || []).some(m => String(m.id) === actorId));
-      const canEditPhaseTasks = isFullAccess || isMemberOfPhase || p.can_edit_tasks;
+      const canEditPhaseTasks = isFullAccess || isLeader || isMemberOfPhase || p.can_edit_tasks;
       const rows = allTasks.filter(t => t.workflow_phase_id === p.id);
       const progress = taskProgress(rows).percent;
       const score = gateScore(p.gate_criteria || []);
@@ -290,7 +329,7 @@ export function useWorkflowManagement() {
       }
     }
     // 3. Task contributors
-    for (const p of taskContributors(allTasks)) {
+    for (const p of taskContributors(allTasks, hub.people)) {
       if (!isLead(p.id) && !memberMap.has(String(p.id))) {
         memberMap.set(String(p.id), p);
       }
@@ -302,7 +341,7 @@ export function useWorkflowManagement() {
       }
     }
     return Array.from(memberMap.values());
-  }, [allTasks, currentEntity]);
+  }, [allTasks, currentEntity, hub.people]);
   const parentCalendar = workflowCalendarWindow(currentEntity);
   const taskCalendar = workflowCalendarWindow(currentEntity, activePhase);
   const leadInfo = useMemo(() => {
@@ -345,6 +384,7 @@ export function useWorkflowManagement() {
     else setNewTaskAssignees(val ? [val] : []);
   };
   const [newTaskStatus, setNewTaskStatus] = useState<WorkflowTaskStatus>('planned');
+  const [newTaskPriority, setNewTaskPriority] = useState<string>('medium');
   const [newTaskDue, setNewTaskDue] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskQuantity, setNewTaskQuantity] = useState('');
@@ -361,7 +401,7 @@ export function useWorkflowManagement() {
   const [phaseOpportunity, setPhaseOpportunity] = useState('');
   const [phaseReason, setPhaseReason] = useState('');
   const editingPhase = phases.find(p => p.id === editingPhaseId);
-  const taskPeople = workflowTaskPeople(currentEntity, activePhase, hub.profile);
+  const taskPeople = workflowTaskAssigneePeople(hub.profile, hub.people, currentEntity, activePhase);
   const personOptions = workAssignmentPeople(hub.profile,hub.people).map(p => ({value:String(p.id),label:p.name}));
   const taskOptions = taskPeople.map(p => ({value:String(p.id),label:p.name}));
   useEffect(() => { setIsDetailOpen(false); setActivePhaseId(params.get('phase') || ''); setShowAddTask(false); setShowAddPhaseModal(false); setSelectedTask(null); }, [currentEntity?.id, hub.profile?.id]);
@@ -369,9 +409,9 @@ export function useWorkflowManagement() {
   useEffect(() => {
     if (activePhaseId && !phases.some(p => p.id === activePhaseId)) { setActivePhaseId(''); setIsDetailOpen(false); }
     if (selectedTask && !hub.tasks.some(t => t.id === selectedTask.id)) setSelectedTask(null);
-    if (!isFullAccess) setShowAddPhaseModal(false);
+    if (!canManagePhases) setShowAddPhaseModal(false);
     if (!activePhase?.can_edit_tasks) { setShowAddTask(false); setShowAddCriteria(false); }
-  }, [hub.tasks, phases, isFullAccess]);
+  }, [hub.tasks, phases, isFullAccess, canManagePhases]);
   const attempt = async (action: () => Promise<unknown>, success: string) => {
     try { await action(); toast.success(success); return true; }
     catch (e: any) { toast.error(e.message || 'Không thể lưu thay đổi'); return false; }
@@ -435,7 +475,7 @@ export function useWorkflowManagement() {
             start_date: inputDate(newTaskStart),
             due_date: inputDate(newTaskDue),
             workflow_status: newTaskStatus,
-            priority: 'medium',
+            priority: newTaskPriority || 'medium',
             quantity: parsedQty,
             assignee_ids: newTaskAssignees.map(id => Number(id) || id),
           }
@@ -466,7 +506,7 @@ export function useWorkflowManagement() {
       }
       return res;
     }, 'Đã tạo task và đồng bộ All Tasks')) {
-      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskAssignees([]); setNewTaskStart(''); setNewTaskDue(''); setNewTaskQuantity(''); setNewTaskStatus('planned'); setShowAddTask(false);
+      setNewTaskTitle(''); setNewTaskAssignee(''); setNewTaskAssignees([]); setNewTaskStart(''); setNewTaskDue(''); setNewTaskQuantity(''); setNewTaskStatus('planned'); setNewTaskPriority('medium'); setShowAddTask(false);
     }
   };
   const handleDeleteTask = (id: string, e: React.MouseEvent) => {
@@ -478,7 +518,15 @@ export function useWorkflowManagement() {
     return row?.canEdit ? hub.updateTask(row.record, stageValues(status)).catch(e => {toast.error(e.message); throw e;}) : Promise.reject(new Error('Task không còn trong phạm vi chỉnh sửa'));
   };
   const handleOpenAddPhaseModal = (index: number, e?: React.MouseEvent, phase?: Phase) => {
-    e?.stopPropagation(); if (!isFullAccess) return;
+    e?.stopPropagation();
+    if (!canManagePhases) {
+      if (isStaff && !isEntityPic) {
+        toast.error(isEn ? 'You are not assigned as PIC of this Project/Campaign' : 'Bạn không phải PIC của Dự án / Chiến dịch này');
+      } else {
+        toast.error(isEn ? 'You are not authorized to create Phases' : 'Bạn không được phân quyền tạo Phase');
+      }
+      return;
+    }
     setEditingPhaseId(phase?.id || null); setInsertPhaseIndex(index);
     setNewPhaseName(phase?.title || ''); setNewPhaseDesc(phase?.description || '');
     setPhasePicIds(phase?.members.filter(p => p.role === 'pic').map(p => String(p.id)) || [String(hub.profile?.id)]);
@@ -531,7 +579,7 @@ export function useWorkflowManagement() {
   const handleDeletePhase = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     const phase = phases[index];
-    if (isFullAccess && phase) {
+    if (canManagePhases && phase) {
       setPhaseToDelete({ index, phase });
     }
   };
@@ -603,6 +651,6 @@ export function useWorkflowManagement() {
     return hub.mutate(() => supabase.rpc('workflow_link_task', { p_phase: phaseId, p_task: target.id, p_kind: target.kind }));
   }, isEn ? 'Task assigned to phase' : 'Đã gắn task vào chặng');
 
-  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage };
+  return { hub, lang, isEn, params, setParams, entityFilter, setEntityFilter, isTitleDropdownOpen, setIsTitleDropdownOpen, searchEntityQuery, setSearchEntityQuery, entities, selectedKey, currentEntity, selectedEntityId, isCampaign, activeEntities, isSearchingEntities, filteredEntities, handleFilterChange, handleSelectEntity, handleBackToHub, toggleStarCriterion, activePhaseId, setActivePhaseId, isDetailOpen, setIsDetailOpen, selectedTask, setSelectedTask, commentsFocusToken, openTaskComments, openTaskDetails, activeTooltip, setActiveTooltip, pinnedTooltip, setPinnedTooltip, tooltipTimeoutRef, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, closeAllTooltips, allTasks, phases, requestedPhaseIndex, activePhaseIndex, activePhase, criteria, subtasks, currentPhaseSubtasks, doneSubtasksCount, totalSubtasksCount, phaseProgressPct, gatePassChancePct, criteriaScore, readyToApprove, readinessLabel, metrics, overallProjectProgressPct, daysRemaining, entityTimeline, subTeamMembers, parentCalendar, taskCalendar, leadInfo, taskCountsByStatus, currentMonthTaskStats, totalMonthTasks, performanceTrendData, unplanned, showAddCriteria, setShowAddCriteria, newCriteriaLabel, setNewCriteriaLabel, newCriteriaWeight, setNewCriteriaWeight, showAddTask, setShowAddTask, newTaskTitle, setNewTaskTitle, newTaskAssignee, setNewTaskAssignee, newTaskAssignees, setNewTaskAssignees, newTaskStatus, setNewTaskStatus, newTaskPriority, setNewTaskPriority, newTaskDue, setNewTaskDue, newTaskStart, setNewTaskStart, newTaskQuantity, setNewTaskQuantity, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, setEditingPhaseId, insertPhaseIndex, setInsertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, editingPhase, taskPeople, personOptions, taskOptions, attempt, saveGate, toggleCriterion, handleAddCriteria, stageValues, toggleSubtask, handleAddTask, handleDeleteTask, handleQuickChangeStatus, handleOpenAddPhaseModal, handleCreatePhase, phaseToDelete, setPhaseToDelete, timelineScrollRef, canScrollLeft, setCanScrollLeft, canScrollRight, setCanScrollRight, checkScrollBounds, scrollTimeline, handleDeletePhase, confirmDeletePhase, handleAdvancePhase, handlePhaseClick, linkTask, pct, field, toWorkflowStage, canManagePhases, isPhaseCreationAllowed, isStaff, isEntityPic };
 }
 export type WorkflowModel = ReturnType<typeof useWorkflowManagement>;

@@ -105,7 +105,18 @@ export const CommentPreviewPopover: React.FC<CommentPreviewPopoverProps> = ({
         }));
         setComments(mapped);
       } else {
-        const rows = await readTaskComments({ kind: entityType, id: entityId });
+        let rows = await readTaskComments({ kind: entityType, id: entityId });
+        if (rows.length === 0 && entityType !== 'task') {
+          try {
+            const fallback = await readTaskComments({ kind: 'task', id: entityId });
+            if (fallback.length > 0) rows = fallback;
+          } catch {}
+        } else if (rows.length === 0 && entityType === 'task') {
+          try {
+            const fallback = await readTaskComments({ kind: 'project_subtask', id: entityId });
+            if (fallback.length > 0) rows = fallback;
+          } catch {}
+        }
         const sorted = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         const mapped: LoadedComment[] = sorted.map((row: ThreadComment) => ({
           id: String(row.id),

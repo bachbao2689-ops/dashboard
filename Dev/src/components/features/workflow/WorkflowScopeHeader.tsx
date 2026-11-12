@@ -1,5 +1,5 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
-import {FolderKanban, Megaphone, ChevronDown, ChevronUp, Search, User, Clock, ArrowLeft, X} from 'lucide-react';
+import {FolderKanban, Megaphone, ChevronDown, ChevronUp, Search, User, Clock, ArrowLeft, X, Info} from 'lucide-react';
 import {Avatar} from '../../common/Avatar';
 
 export function WorkflowScopeHeader({
@@ -79,7 +79,7 @@ export function WorkflowScopeHeader({
         <button
           type="button"
           onClick={() => setIsTitleDropdownOpen(!isTitleDropdownOpen)}
-          className={`inline-grid grid-flow-col auto-cols-max max-w-full min-w-0 items-center gap-2.5 px-2.5 py-1.5 -ml-1 rounded-[8px] border transition-all duration-200 group text-left focus:outline-none cursor-pointer ${
+          className={`inline-grid grid-flow-col auto-cols-max max-w-full min-w-0 items-center gap-2.5 px-3 py-2 -ml-1 rounded-[10px] border transition-all duration-200 group text-left focus:outline-none cursor-pointer w-fit shadow-2xs ${
             isTitleDropdownOpen
               ? isCampaign
                 ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-700/60 shadow-xs'
@@ -95,7 +95,7 @@ export function WorkflowScopeHeader({
           }`}>
             {isCampaign ? <Megaphone size={18} /> : <FolderKanban size={18} />}
           </div>
-          <h1 className={`min-w-0 truncate text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors ${
+          <h1 className={`min-w-0 max-w-[min(650px,50vw)] truncate text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors ${
             isCampaign ? 'group-hover:text-amber-600 dark:group-hover:text-amber-300' : 'group-hover:text-violet-600 dark:group-hover:text-violet-300'
           }`}>
             {currentEntity.name.startsWith('[Project]') || currentEntity.name.startsWith('[Campaign]') 
@@ -148,6 +148,13 @@ export function WorkflowScopeHeader({
                   </button>
                 )}
               </div>
+
+              {!model.canManagePhases && (
+                <div className="mb-2 p-2 rounded-[6px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-[11px] font-semibold text-amber-700 dark:text-amber-300 grid grid-flow-col auto-cols-max items-center gap-1.5">
+                  <Info size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{isEn ? 'You are not authorized to create Phases' : 'Bạn không được phân quyền tạo Phase'}</span>
+                </div>
+              )}
 
                   <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
                     <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">
@@ -227,10 +234,10 @@ export function WorkflowScopeHeader({
           {/* Lead chính ở dưới time, Sub track avatars, and Project/Campaign status (Requirement 2) */}
           <div className="grid grid-flow-col auto-cols-max items-center gap-2 pt-0.5">
             {/* Lead chính badge (1 hoặc 2 người) */}
-            <div className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-0.5 rounded-[6px] border shadow-2xs ${
+            <div title={primaryLeads.length > 0 ? primaryLeads.map(p => p.name).join(" · ") : leadInfo.name} className={`grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-0.5 rounded-[6px] border shadow-2xs ${
               isCampaign
-                ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60'
-                : 'bg-violet-50/90 dark:bg-violet-950/40 border-violet-200/80 dark:border-violet-800/60'
+                ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60"
+                : "bg-violet-50/90 dark:bg-violet-950/40 border-violet-200/80 dark:border-violet-800/60"
             }`}>
               {primaryLeads.length > 1 ? (
                 <div className="grid grid-flow-col auto-cols-max items-center -space-x-1.5">
@@ -259,13 +266,10 @@ export function WorkflowScopeHeader({
                   )}
                 </div>
               )}
-              <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate max-w-[150px] sm:max-w-[180px]">
-                {primaryLeads.length > 0 ? primaryLeads.map(p => p.name).join(' · ') : leadInfo.name}
-              </span>
               <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-[6px] ${
-                isCampaign ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
+                isCampaign ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300" : "bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300"
               }`}>
-                {leadInfo.role}
+                Lead
               </span>
             </div>
 

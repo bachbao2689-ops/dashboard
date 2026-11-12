@@ -8,6 +8,8 @@ export const statusMeta = (value: string) => {
   if (['on-hold', 'on_hold', 'tạm-dừng', 'paused'].includes(key)) return { label: 'Tạm dừng', tone: 'neutral', color: '#94a3b8' };
   if (['overdue', 'quá-hạn'].includes(key)) return { label: 'Quá hạn', tone: 'danger', color: '#fb7185' };
   if (['rejected', 'từ-chối'].includes(key)) return { label: 'Từ chối', tone: 'danger', color: '#fb7185' };
+  if (['archived', 'hidden', 'đã-ẩn', 'lưu-trữ'].includes(key)) return { label: 'Đã ẩn / Lưu trữ', tone: 'neutral', color: '#64748b' };
+  if (['deleted', 'đã-xóa'].includes(key)) return { label: 'Đã xóa', tone: 'danger', color: '#94a3b8' };
   if (['cancelled', 'canceled'].includes(key)) return { label: 'Đã hủy', tone: 'neutral', color: '#94a3b8' };
   if (['todo', 'to-do', 'open', 'chưa-làm'].includes(key)) return { label: 'Chưa bắt đầu', tone: 'neutral', color: '#94a3b8' };
   return { label: value, tone: 'neutral', color: '#94a3b8' };

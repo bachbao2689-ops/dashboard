@@ -23,6 +23,7 @@ import { displayDate as formatHubDate, displayDateTime, inputDate } from '../../
 import { saveTaskDeliverables, computeDeliverableQuantity, fetchTaskDeliverableMeta } from '../../../lib/taskDeliverables';
 import { priorityClass } from './projectPresentation';
 import { EntityActionBadges } from './EntityActionBadges';
+import { MultiSelect } from '../../common/MultiSelect';
 
 type Person = { id: number; name: string; avatar_url?: string | null; departments?: { name?: string; id?: string | number } | null };
 export interface SubtaskChecklistItem {
@@ -114,6 +115,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   const [editingTask, setEditingTask] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState('');
+  const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editStartDate, setEditStartDate] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
   const [editStatus, setEditStatus] = useState<WorkflowTaskStatus>('planned');
@@ -235,7 +237,15 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     const meta = await fetchTaskDeliverableMeta(entityType, subtaskId, true);
     const details = meta || {};
     const loadedChecklist = meta?.checklist_items || [];
-    const baseQuantity = computeDeliverableQuantity(meta || {quantity: (subtask as any)?.quantity}).baseQuantity;
+    const rawFallback = Number((subtask as any)?.custom_fields?.base_quantity)
+      || Number((subtask as any)?.custom_fields?.quantity)
+      || Number((subtask as any)?.quantity)
+      || 0;
+    const baseQuantity = computeDeliverableQuantity(
+      meta?.base_quantity != null || meta?.quantity != null
+        ? meta
+        : { quantity: rawFallback, base_quantity: rawFallback, checklist_items: meta?.checklist_items }
+    ).baseQuantity;
     const rawBase = baseQuantity > 0 ? String(baseQuantity) : '';
     setSubtaskQuantity(rawBase);
     setEditSubtaskQuantity(rawBase);
@@ -252,10 +262,31 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     setEditing(false);
     setEditingTask(false);
     setEditTitle(subtask?.title || '');
-    setEditAssigneeId(subtask?.assignee_id == null ? '' : String(subtask.assignee_id));
+    const initialAssigneeIds: string[] = [];
+    if (subtask?.assignee_id != null && subtask.assignee_id !== '') {
+      initialAssigneeIds.push(String(subtask.assignee_id));
+    }
+    const extraIds = Array.isArray((subtask as any)?.custom_fields?.assignee_ids)
+      ? (subtask as any).custom_fields.assignee_ids
+      : (Array.isArray((subtask as any)?.custom_fields?.assignees) ? (subtask as any).custom_fields.assignees : []);
+    extraIds.forEach((id: any) => {
+      const sId = String(id);
+      if (sId && !initialAssigneeIds.includes(sId)) {
+        initialAssigneeIds.push(sId);
+      }
+    });
+    setEditAssigneeIds(initialAssigneeIds);
+    setEditAssigneeId(initialAssigneeIds[0] || '');
     setEditStartDate(subtask?.start_date?.slice(0, 10) || '');
     setEditDueDate(subtask?.due_date?.slice(0, 10) || '');
     setEditStatus(workflowStage(subtask?.status, subtask?.workflow_status));
+    const initialQ = Number((subtask as any)?.custom_fields?.base_quantity)
+      || Number((subtask as any)?.custom_fields?.quantity)
+      || Number((subtask as any)?.quantity)
+      || 0;
+    const initialQStr = initialQ > 0 ? String(initialQ) : '';
+    setSubtaskQuantity(initialQStr);
+    setEditSubtaskQuantity(initialQStr);
     setEditingItemId(null);
     setEditItemTitle('');
     setEditItemDescription('');
@@ -613,6 +644,29 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     }
   };
 
+  const assigneeOptions = React.useMemo(() => {
+    const targetDeptId = parentDetails?.departmentId != null
+      ? String(parentDetails.departmentId)
+      : (subtask?.department_id != null ? String(subtask.department_id) : undefined);
+    const effectiveAssignablePeople = (assignablePeople && assignablePeople.length > 0)
+      ? assignablePeople
+      : workAssignmentPeople(profile, people, targetDeptId);
+    const opts = (effectiveAssignablePeople || []).map((person: any) => {
+      const deptName = person.departments?.name || person.department_name || person.department?.name || '';
+      return {
+        value: String(person.id),
+        label: deptName ? `${person.name} (${deptName})` : person.name,
+      };
+    });
+    if (subtask?.assignee_id != null && subtask.assignee?.name && !opts.some((o: any) => o.value === String(subtask.assignee_id))) {
+      opts.unshift({
+        value: String(subtask.assignee_id),
+        label: subtask.assignee.name,
+      });
+    }
+    return opts;
+  }, [parentDetails?.departmentId, subtask?.department_id, subtask?.assignee_id, subtask?.assignee?.name, assignablePeople, profile, people]);
+
   const saveTaskFields = async () => {
     if (readOnly || !canEdit || !subtask || !editTitle.trim()) return;
     const bounds = {
@@ -630,9 +684,22 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
     }
     setSaving(true);
     const nowIso = new Date().toISOString();
-    const values = {
+    const primaryAssigneeId = editAssigneeIds.length > 0 ? Number(editAssigneeIds[0]) : (editAssigneeId ? Number(editAssigneeId) : null);
+    const assigneeIdsNum = editAssigneeIds.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    const numQ = Number(editSubtaskQuantity);
+    const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
+    const effectiveQuantity = (baseQuantityValue || 0) + checklistQuantity;
+
+    const updatedCustomFields = {
+      ...((subtask as any)?.custom_fields || {}),
+      assignee_ids: assigneeIdsNum,
+      quantity: effectiveQuantity,
+      base_quantity: baseQuantityValue,
+    };
+    const values: any = {
       title: editTitle.trim(),
-      assignee_id: editAssigneeId ? Number(editAssigneeId) : null,
+      assignee_id: primaryAssigneeId,
+      custom_fields: updatedCustomFields,
       start_date: editStartDate || null,
       due_date: editDueDate || null,
       workflow_status: editStatus,
@@ -736,10 +803,6 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
         });
       }
 
-      const numQ = Number(editSubtaskQuantity);
-      const baseQuantityValue = Number.isFinite(numQ) && numQ > 0 ? numQ : null;
-      const effectiveQuantity = (baseQuantityValue || 0) + checklistQuantity;
-
       await saveTaskDeliverables(
         entityType,
         subtask.id,
@@ -759,7 +822,13 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       setEditSubtaskQuantity(baseQuantityValue != null ? String(baseQuantityValue) : '');
 
       setEditingTask(false);
-      onUpdated({ ...subtask, ...values, assignee: assignee ? { name: assignee.name, avatar_url: assignee.avatar_url } : null });
+      onUpdated({
+        ...subtask,
+        ...values,
+        assignee_id: primaryAssigneeId,
+        custom_fields: updatedCustomFields,
+        assignee: assignee ? { name: assignee.name, avatar_url: assignee.avatar_url } : null
+      });
       toast.success(lang === 'en' ? 'Task updated' : 'Đã cập nhật task');
     } catch (error: any) {
       toast.error(error?.message || (lang === 'en' ? 'Could not save task' : 'Không thể lưu task'));
@@ -979,30 +1048,23 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
             <input value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={500} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-[#071325] dark:text-white" />
           </label>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{t('common.assignee')}
-              <select value={editAssigneeId} onChange={event => setEditAssigneeId(event.target.value)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white">
-                <option value="">{t('common.unassigned')}</option>
-                {(() => {
-                  const targetDeptId = parentDetails?.departmentId != null
-                    ? String(parentDetails.departmentId)
-                    : (subtask?.department_id != null ? String(subtask.department_id) : undefined);
-                  const effectiveAssignablePeople = (assignablePeople && assignablePeople.length > 0)
-                    ? assignablePeople
-                    : workAssignmentPeople(profile, people, targetDeptId);
-                  return (
-                    <>
-                      {effectiveAssignablePeople.map((person: any) => (
-                        <option key={person.id} value={person.id}>
-                          {person.name}{person.departments?.name ? ` (${person.departments.name})` : ''}
-                        </option>
-                      ))}
-                      {subtask.assignee_id != null && subtask.assignee?.name && !effectiveAssignablePeople.some((person: any) => String(person.id) === String(subtask.assignee_id)) && (
-                        <option value={subtask.assignee_id}>{subtask.assignee.name}</option>
-                      )}
-                    </>
-                  );
-                })()}
-              </select>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{editAssigneeIds.length > 1 ? (lang === 'en' ? 'Assignees' : 'Người thực hiện') : t('common.assignee')}
+              <div className="mt-1.5">
+                <MultiSelect
+                  options={assigneeOptions}
+                  value={editAssigneeIds}
+                  onChange={(ids: string[]) => {
+                    setEditAssigneeIds(ids);
+                    setEditAssigneeId(ids[0] || '');
+                  }}
+                  primaryValue={editAssigneeIds[0]}
+                  onPrimaryChange={(primaryId: string) => {
+                    setEditAssigneeIds([primaryId, ...editAssigneeIds.filter(id => id !== primaryId)]);
+                    setEditAssigneeId(primaryId);
+                  }}
+                  placeholder={t('common.unassigned')}
+                />
+              </div>
             </label>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">{lang === 'en' ? 'Status' : 'Trạng thái'}
               <select value={editStatus} onChange={event => setEditStatus(event.target.value as WorkflowTaskStatus)} className="mt-1.5 w-full rounded-[8px] border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 dark:border-slate-700 dark:bg-[#071325] dark:text-white">
@@ -1069,7 +1131,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
               />
             </label>
           </div>
-          <div className="flex justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-flex min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
+          <div className="grid justify-end"><button type="button" disabled={saving || !editTitle.trim()} onClick={() => void saveTaskFields()} className="inline-grid grid-flow-col auto-cols-max min-h-10 items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50 cursor-pointer"><Save className="h-4 w-4" />{saving ? (lang === 'en' ? 'Saving…' : 'Đang lưu…') : (lang === 'en' ? 'Save task' : 'Lưu task')}</button></div>
         </section> : (
           <section className="grid grid-cols-2 gap-4 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-[12px] border border-slate-200/80 dark:border-slate-700/70">
             {(() => {

@@ -32,7 +32,17 @@ export function mapWorkspaceTasks(
     .filter(row=>!['deleted','archived'].includes(row.status||''))
     .flatMap(row=>{
       const key = String(row.id);
-      const meta = details.get(key) || {};
+      const cached = details.get(key) || details.get(String(row.raw_id || ''));
+      const rawCustom = (row as any)?.custom_fields;
+      const rowQuantity = Number(rawCustom?.base_quantity) || Number(rawCustom?.quantity) || Number((row as any)?.quantity) || null;
+      const meta = cached
+        ? {
+            ...cached,
+            ...(!('base_quantity' in cached) && !('quantity' in cached) && rowQuantity != null
+              ? { base_quantity: rowQuantity, quantity: rowQuantity }
+              : {})
+          }
+        : { base_quantity: rowQuantity, quantity: rowQuantity };
       const { baseQuantity, checklistQuantity, totalQuantity } = computeDeliverableQuantity(meta);
 
       const parent = {

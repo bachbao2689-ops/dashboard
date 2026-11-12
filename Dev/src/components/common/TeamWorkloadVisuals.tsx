@@ -19,6 +19,8 @@ import {
   AlignLeft,
   Layers3,
   Users,
+  Info,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTeamWorkload } from '../../hooks/useTeamWorkload';
@@ -48,15 +50,35 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
   showHeatmap = true,
   compact = false,
 }) => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const isDark = useUiStore((state) => state.theme === 'dark');
   const { workloads, departments, effectiveDepartmentFilter, burndown, heatmap, summary } = useTeamWorkload(departmentFilter);
   const [internalMemberId, setInternalMemberId] = useState<string | null>(null);
+  const [showCapacityInfo, setShowCapacityInfo] = useState(false);
   const [comparisonChartMode, setComparisonChartMode] = useRememberedState<'horizontal' | 'column'>(
     'workload.comparisonChartMode',
     'horizontal',
   );
+
+  React.useEffect(() => {
+    if (!showCapacityInfo) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-info-popover="capacity"]')) {
+        setShowCapacityInfo(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowCapacityInfo(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showCapacityInfo]);
 
   const activeMemberId = controlledMemberId !== undefined ? controlledMemberId : internalMemberId;
   const handleSelectMember = (id: string) => {
@@ -101,10 +123,10 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-2.5 w-full">
+    <div className="grid grid-cols-1 gap-2.5 w-full">
       {/* Alert / Notification Banner */}
       <div
-        className={`flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium rounded-[8px] border shadow-xs ${
+        className={`grid grid-cols-[auto_1fr_auto] items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium rounded-[8px] border shadow-xs ${
           summary.overloadedCount > 0 || summary.overdueTasks > 0
             ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
             : 'bg-blue-50/80 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200/80 dark:border-blue-800/50'
@@ -117,12 +139,10 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               : 'text-blue-600 dark:text-blue-400'
           }`}
         />
-        <span className="flex-1">
-          {summary.overloadedCount > 0 || summary.overdueTasks > 0
-            ? `${selectedDeptName ? `[${selectedDeptName}] ` : ''}Cảnh báo tải công việc: Có ${summary.overloadedCount} thành viên vượt ngưỡng >100% capacity và ${summary.overdueTasks} công việc quá hạn cần ưu tiên xử lý.`
-            : `${selectedDeptName ? `[${selectedDeptName}] ` : ''}Tải công việc ổn định: ${summary.totalMembers} thành viên đang xử lý ${summary.openTasks} công việc mở (Trung bình ${summary.averageLoad} task/người).`}
+        <span className="min-w-0">
+          {selectedDeptName ? `[${selectedDeptName}] ` : ''}{lang === 'en' ? 'Currently there are no specific KPIs; only tracking tasks calculated by mechanism.' : 'Hiện tại chưa có KPI cụ thể chỉ tracking task tính theo cơ chế'}
         </span>
-        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/80 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-slate-700">
+        <span className="hidden sm:inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/80 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-slate-700">
           {selectedDeptName ? `${selectedDeptName} · Live Tracking` : 'Live Tracking · Team Workload'}
         </span>
       </div>
@@ -323,12 +343,87 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
         </div>
 
         {/* Right Card: Member Workload (% Capacity) with integrated Capacity Breakdown & inline Task Expand */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm flex flex-col h-[280px] justify-between">
-          <div className="flex items-center justify-between mb-1.5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-4 shadow-sm grid grid-rows-[auto_1fr] h-[280px] relative">
+          <div className="grid grid-cols-[1fr_auto] items-center justify-between mb-1.5 gap-2">
             <div>
-              <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-                {t('departments.memberWorkload')}
-              </p>
+              <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
+                  {t('departments.memberWorkload')}
+                </p>
+                <div data-info-popover="capacity" className="relative inline-grid place-items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowCapacityInfo(!showCapacityInfo)}
+                    aria-label={t('reports.viz.infoCapacityTitle')}
+                    className={`w-4 h-4 rounded-full grid place-items-center transition-colors cursor-pointer ${
+                      showCapacityInfo
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 dark:bg-[#0f1e36] text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white border border-transparent dark:border-slate-700/60'
+                    }`}
+                  >
+                    <Info className="w-3 h-3" />
+                  </button>
+                  {showCapacityInfo && (
+                    <div
+                      className="absolute left-0 top-6 z-50 w-80 sm:w-96 p-3.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-2xl border border-blue-400/60 dark:border-blue-500/60 shadow-2xl text-xs space-y-2.5 max-h-[75vh] overflow-y-auto custom-scrollbar"
+                      style={{ WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+                        <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          <h4 className="font-bold text-slate-900 dark:text-white text-xs">{t('reports.viz.infoCapacityTitle')}</h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCapacityInfo(false)}
+                          aria-label={t('common.close')}
+                          className="p-1 rounded-[6px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/70 dark:bg-blue-950/30 p-2 rounded-[6px] border border-blue-100 dark:border-blue-900/50">
+                        {t('reports.viz.infoCapacitySummary')}
+                      </p>
+
+                      <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                        <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">1.</span>
+                          <div>
+                            <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Open Tasks Count:' : 'Cách tính số Task đang ôm:'}</b>{' '}
+                            {lang === 'en' ? 'Counts incomplete open tasks assigned to the member at the tracking time.' : 'Đếm số task đang mở được giao cho nhân sự chưa hoàn thành tại thời điểm theo dõi.'}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-[16px_1fr] items-start gap-1.5">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">2.</span>
+                          <div>
+                            <b className="text-slate-800 dark:text-slate-100">{lang === 'en' ? 'Capacity % Formula:' : 'Công thức quy đổi % Công suất:'}</b>{' '}
+                            {t('reports.viz.infoCapacityDesc')}
+                          </div>
+                        </div>
+
+                        <div className="mt-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
+                          <span className="font-bold text-slate-800 dark:text-slate-100 block">{t('reports.viz.infoCapacityThresholds')}</span>
+                          <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-rose-50/70 dark:bg-rose-950/30 p-1.5 rounded-[6px] border border-rose-200/50 dark:border-rose-800/40">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mt-0.5 inline-block shrink-0"></span>
+                            <span><b className="text-rose-700 dark:text-rose-400">{lang === 'en' ? '> 100% (Red — Overload):' : '> 100% (Đỏ — Quá tải):'}</b> {lang === 'en' ? 'Estimated workload exceeds the standard capacity; rebalance tasks.' : 'Tổng tải ước tính vượt công suất chuẩn; cần cân đối lại công việc.'}</span>
+                          </div>
+                          <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-blue-50/70 dark:bg-blue-950/30 p-1.5 rounded-[6px] border border-blue-200/50 dark:border-blue-800/40">
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-0.5 inline-block shrink-0"></span>
+                            <span><b className="text-blue-700 dark:text-blue-400">{lang === 'en' ? '80% – 100% (Blue — Optimal):' : '80% – 100% (Xanh dương — Chuẩn):'}</b> {lang === 'en' ? 'Estimated workload is within standard capacity.' : 'Tổng tải ước tính đang trong ngưỡng công suất chuẩn.'}</span>
+                          </div>
+                          <div className="grid grid-cols-[14px_1fr] items-start gap-1.5 bg-slate-100/70 dark:bg-slate-800/50 p-1.5 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60">
+                            <span className="w-2.5 h-2.5 rounded-full bg-slate-400 mt-0.5 inline-block shrink-0"></span>
+                            <span><b className="text-slate-700 dark:text-slate-300">{lang === 'en' ? '< 80% (Gray — Available):' : '< 80% (Xám — Trống tải):'}</b> {lang === 'en' ? 'Holding 0 – 3 tasks (0% – 60%) → Has bandwidth to take on more work.' : 'Đang có 0 – 3 task (0% – 60%) → Còn dư công suất để nhận thêm việc.'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <span className="text-[10px] text-blue-600 dark:text-blue-400">
                 Nhấp vào từng PIC để xem danh sách công việc đang mở
               </span>
@@ -337,7 +432,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {t('departments.overloadNotice')}
             </span>
           </div>
-          <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar pr-1 flex-1">
+          <div className="grid grid-cols-1 gap-1.5 overflow-y-auto custom-scrollbar pr-1 content-start min-h-0">
             {workloads.map((m) => {
               const isOverload = m.capacityPercentage > 100;
               const isWarning = m.capacityPercentage >= 80;

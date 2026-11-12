@@ -4,6 +4,7 @@ export type RoleProfile = {
   employment_level?: string | null;
   department_id?: string | null;
   department_name?: string | null;
+  is_active?: boolean | null;
 } | null | undefined;
 
 const normalized = (value?: string | null) => (value || '').trim().toLowerCase();
@@ -28,7 +29,7 @@ export function isAssetApprover(profile: RoleProfile): boolean {
 }
 
 export function canSubmitAssetRequest(profile: RoleProfile): boolean {
-  return Boolean(profile && ((normalized(profile.role) === 'member' && !isDepartmentLeader(profile) && !isGlobalManager(profile)) || isAssetApprover(profile)));
+  return Boolean(profile && profile.is_active !== false);
 }
 
 export function isPersonLeader(person: { role?: string | null; employment_level?: string | null } | null | undefined): boolean {

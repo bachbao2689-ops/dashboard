@@ -682,40 +682,46 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                               )}
 
                               {/* Hover Quick Actions */}
-                              {canManage && (
+                              {(canManage || canApprove) && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
                                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity bg-white/95 dark:bg-[#111e30]/95 shadow-2xs rounded-[6px] px-1 py-0.5 border border-gray-200/80 dark:border-[#2c3e55] grid grid-flow-col auto-cols-max items-center gap-0.5"
                                 >
-                                <ActionButton
-                                  icon={<FileText size={12} />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTriggerNote(`${kind}-${id}`);
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-[4px] transition-colors"
-                                  title={lang === 'en' ? 'Add note' : 'Thêm ghi chú'}
-                                />
-                                <ActionButton
-                                  icon={<EyeOff size={12} />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isCampaign) onHideCampaign?.(raw);
-                                    else onHideProject?.(raw);
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-[4px] transition-colors"
-                                  title={t('common.hide') || 'Ẩn'}
-                                />
-                                <ActionButton
-                                  icon={<Trash2 size={12} />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isCampaign) onDeleteCampaign?.(raw);
-                                    else onDeleteProject?.(raw);
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-[4px] transition-colors"
-                                  title={t('common.delete') || 'Xóa'}
-                                />
+                                {canManage && (
+                                  <ActionButton
+                                    icon={<FileText size={12} />}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTriggerNote(`${kind}-${id}`);
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-[4px] transition-colors"
+                                    title={lang === 'en' ? 'Add note' : 'Thêm ghi chú'}
+                                  />
+                                )}
+                                {canApprove && (
+                                  <>
+                                    <ActionButton
+                                      icon={<EyeOff size={12} />}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (isCampaign) onHideCampaign?.(raw);
+                                        else onHideProject?.(raw);
+                                      }}
+                                      className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-[4px] transition-colors"
+                                      title={t('common.hide') || 'Ẩn'}
+                                    />
+                                    <ActionButton
+                                      icon={<Trash2 size={12} />}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (isCampaign) onDeleteCampaign?.(raw);
+                                        else onDeleteProject?.(raw);
+                                      }}
+                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-[4px] transition-colors"
+                                      title={t('common.delete') || 'Xóa'}
+                                    />
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
@@ -848,7 +854,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                         className="w-full py-2 px-3 rounded-[8px] border border-dashed border-gray-200 dark:border-[#2c3e55] text-xs font-semibold text-gray-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Plus size={13} />
-                        <span>{lang === 'en' ? '+ New Draft' : '+ Thêm mới Draft'}</span>
+                        <span>{lang === 'en' ? 'New Draft' : 'Thêm mới Draft'}</span>
                       </button>
                     ) : colOneSubFilter === 'on_hold' ? (
                       <button
@@ -857,7 +863,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                         className="w-full py-2 px-3 rounded-[8px] border border-dashed border-gray-200 dark:border-[#2c3e55] text-xs font-semibold text-gray-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Plus size={13} />
-                        <span>{lang === 'en' ? '+ New On Hold' : '+ Thêm mới On Hold'}</span>
+                        <span>{lang === 'en' ? 'New On Hold' : 'Thêm mới On Hold'}</span>
                       </button>
                     ) : (
                       <div className="relative" ref={draftBottomPlusRef}>
@@ -867,7 +873,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                           className="w-full py-2 px-3 rounded-[8px] border border-dashed border-gray-200 dark:border-[#2c3e55] text-xs font-semibold text-gray-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Plus size={13} />
-                          <span>{lang === 'en' ? '+ New' : '+ Thêm mới'}</span>
+                          <span>{lang === 'en' ? 'New' : 'Thêm mới'}</span>
                         </button>
                         {draftBottomPlusOpen && (
                           <div
@@ -905,7 +911,7 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                       className="w-full py-2 px-3 rounded-[8px] border border-dashed border-gray-200 dark:border-[#2c3e55] text-xs font-semibold text-gray-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all grid grid-flow-col auto-cols-max items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Plus size={13} />
-                      <span>{lang === 'en' ? '+ New' : '+ Thêm mới'}</span>
+                      <span>{lang === 'en' ? 'New' : 'Thêm mới'}</span>
                     </button>
                   )
                 )}

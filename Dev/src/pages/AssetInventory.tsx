@@ -3,7 +3,7 @@ import {ActionButton} from '../components/common/ActionButton';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Check, Camera, Laptop, HardDrive, Box, ChevronRight } from 'lucide-react';
+import { Plus, Check, Camera, Laptop, HardDrive, Box, ChevronRight, ChevronDown } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
@@ -27,7 +27,7 @@ const getIcon = (cat: string | undefined) => {
 };
 
 export const AssetInventory: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { widths: assetColWidths, startResize: startAssetColResize, tableRef: assetTableRef } = useResizableColumns({
     tableKey: 'assets_table',
     initialWidths: [120, 280, 130, 150, 130, 150, 120, 110],
@@ -39,6 +39,9 @@ export const AssetInventory: React.FC = () => {
   const levelStr = (profile?.employment_level || '').toLowerCase();
   const canAddAsset = ['admin', 'manager', 'leader'].includes(roleStr) || ['admin', 'manager', 'leader'].includes(levelStr);
   const [searchTerm, setSearchTerm] = useRememberedState('assets.search', '');
+  const [categoryFilter, setCategoryFilter] = useRememberedState('assets.categoryFilter', 'all');
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [isScanMode, setIsScanMode] = useState(false);
@@ -49,6 +52,35 @@ export const AssetInventory: React.FC = () => {
   const [cart, setCart] = useState<Asset[]>([]);
   const [isBorrowDrawerOpen, setIsBorrowDrawerOpen] = useState(searchParams.get('borrow') === '1');
   const [bounce, setBounce] = useState(false);
+
+  useEffect(() => {
+    if (!isCategoryDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCategoryDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [isCategoryDropdownOpen]);
+
+  const categoriesWithCounts = React.useMemo(() => {
+    const map = new Map<string, number>();
+    (assets || []).forEach(a => {
+      const cat = a.category?.name || (lang === 'en' ? 'Other' : 'Khác');
+      map.set(cat, (map.get(cat) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [assets, lang]);
 
   useEffect(() => {
     return () => {
@@ -123,10 +155,15 @@ export const AssetInventory: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const filteredAssets = (assets || []).filter(a => 
-    (a.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
-    (a.asset_code || '').toLowerCase().includes((searchTerm || '').toLowerCase())
-  );
+  const filteredAssets = (assets || []).filter(a => {
+    const matchSearch =
+      (a.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+      (a.asset_code || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+    if (!matchSearch) return false;
+    if (categoryFilter === 'all') return true;
+    const cat = a.category?.name || (lang === 'en' ? 'Other' : 'Khác');
+    return cat === categoryFilter;
+  });
 
   return (
     <div className="relative z-10 flex min-h-full min-w-0">
@@ -137,11 +174,72 @@ export const AssetInventory: React.FC = () => {
         onSuccess={refetch} 
       />
       
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('assets.title')}</h2>
         
-        <div className="mobile-actions-row flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center gap-2 sm:gap-3 max-w-full overflow-x-auto">
           <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
+
+          {/* Category Filter Dropdown */}
+          <div className="relative inline-grid" ref={categoryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCategoryDropdownOpen(prev => !prev)}
+              className={`h-10 px-3 rounded-[8px] border text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-2 transition-all cursor-pointer shadow-2xs ${
+                categoryFilter !== 'all'
+                  ? 'border-blue-500 bg-blue-50/80 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-500/50'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700/60'
+              }`}
+              title="Lọc theo loại thiết bị"
+              aria-label="Lọc theo loại thiết bị"
+              aria-expanded={isCategoryDropdownOpen}
+            >
+              <Box size={15} className={categoryFilter !== 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-400'} />
+              <span className="truncate max-w-[130px] sm:max-w-[170px]">
+                {categoryFilter === 'all' ? (lang === 'en' ? 'All categories' : 'Tất cả loại') : categoryFilter}
+              </span>
+              <ChevronDown size={14} className={`text-gray-400 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isCategoryDropdownOpen && (
+              <div
+                className="absolute right-0 sm:left-0 top-full mt-1.5 z-50 w-56 p-1.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-xl grid grid-cols-1 gap-0.5 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar"
+                style={{ WebkitBackdropFilter: 'blur(16px)', backdropFilter: 'blur(16px)' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => { setCategoryFilter('all'); setIsCategoryDropdownOpen(false); }}
+                  className={`w-full text-left px-2.5 py-2 rounded-[6px] text-xs font-semibold grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
+                    categoryFilter === 'all'
+                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>{lang === 'en' ? 'All categories' : 'Tất cả loại'}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 font-bold">
+                    {assets?.length || 0}
+                  </span>
+                </button>
+                {categoriesWithCounts.map(({ name, count }) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => { setCategoryFilter(name); setIsCategoryDropdownOpen(false); }}
+                    className={`w-full text-left px-2.5 py-2 rounded-[6px] text-xs font-semibold grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
+                      categoryFilter === name
+                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="truncate">{name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 font-bold">
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[8px] text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
              <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
@@ -225,7 +323,7 @@ export const AssetInventory: React.FC = () => {
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} onClick={() => { setSelectedAsset(asset); setIsScanMode(false); }} className="hover-row-effect hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer">
                     <td className="p-4 overflow-hidden">
-                      <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-[6px] border border-gray-200 dark:border-slate-600 truncate block">{asset.asset_code}</span>
+                      <span className="inline-block w-fit max-w-full font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-[6px] border border-gray-200 dark:border-slate-600 truncate">{asset.asset_code}</span>
                     </td>
                     <td className="p-4 overflow-hidden">
                       <div className="flex items-center gap-3 overflow-hidden min-w-0">

@@ -55,12 +55,13 @@ export function calendarDates(record: Record<string, any>, kind: CalendarKind) {
 }
 
 export const isCalendarDone = (status?: string | null) => ['done', 'complete', 'completed', 'cancelled', 'canceled'].includes((status || '').toLowerCase());
-export const isCalendarVisible = (status?: string | null) => !['deleted', 'archived'].includes((status || '').toLowerCase());
-export const isCalendarOverdue = (item: CalendarItem, today: string) => Boolean(item.due && item.due < today && !isCalendarDone(item.status));
+export const isCalendarArchivedOrDeleted = (status?: string | null) => ['deleted', 'archived', 'hidden'].includes((status || '').toLowerCase());
+export const isCalendarVisible = (status?: string | null) => !['deleted', 'archived', 'hidden'].includes((status || '').toLowerCase());
+export const isCalendarOverdue = (item: CalendarItem, today: string) => Boolean(item.due && item.due < today && !isCalendarDone(item.status) && !isCalendarArchivedOrDeleted(item.status));
 export const occursOn = (item: CalendarItem, day: string) => Boolean(item.start && item.end && item.start <= day && item.end >= day);
 // Keep unfinished overdue/undated work discoverable during the morning check-in.
 export const occursOnCalendar = (item: CalendarItem, day: string, today: string) => occursOn(item, day)
-  || (day === today && !isCalendarDone(item.status) && Boolean(item.start && item.start <= today) && (!item.due || item.due < today));
+  || (day === today && !isCalendarDone(item.status) && !isCalendarArchivedOrDeleted(item.status) && Boolean(item.start && item.start <= today) && (!item.due || item.due < today));
 
 export function monthDays(year: number, month: number): Date[] {
   const first = new Date(year, month, 1, 12);
