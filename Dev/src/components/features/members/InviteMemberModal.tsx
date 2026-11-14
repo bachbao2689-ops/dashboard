@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { DepartmentOption, Member, NewMember, UserRole } from '../../../hooks/useMembers';
 import type {MemberAccess} from '../../../services/memberAccounts';
@@ -46,7 +47,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite, onSaveAccess, mem
     return ()=>{document.removeEventListener('keydown',keydown);document.body.style.overflow=previousOverflow;if(previous?.isConnected)previous.focus();};
   },[isOpen,onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (submitting.current) return;
@@ -59,9 +60,9 @@ export function InviteMemberModal({ isOpen, onClose, onInvite, onSaveAccess, mem
     } finally {submitting.current=false;setIsSubmitting(false);}
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] grid place-items-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => !isSubmitting && onClose()}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} className="card-hub w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-[8px] bg-white dark:bg-slate-800" onClick={event => event.stopPropagation()}>
+  return createPortal(
+    <div className="fixed inset-0 z-[10050] grid place-items-center p-4 bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm" onClick={() => !isSubmitting && onClose()}>
+      <div ref={dialog} data-modal-surface="true" role="dialog" aria-modal="true" aria-labelledby={titleId} className="modal-liquid-glass w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-2xl border border-white/95 dark:border-slate-700/80" onClick={event => event.stopPropagation()}>
         <div className="grid grid-cols-[1fr_auto] items-center gap-3 mb-5">
           <h2 id={titleId} className="text-xl font-semibold text-primary dark:text-white">{permissions?'Phân quyền tài khoản':'Thêm thành viên'}</h2>
           <button type="button" disabled={isSubmitting} onClick={onClose} aria-label="Đóng" className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full text-gray-500"><X size={20} /></button>
@@ -106,6 +107,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite, onSaveAccess, mem
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

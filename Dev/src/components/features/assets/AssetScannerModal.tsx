@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, QrCode, Camera, CameraOff, ChevronRight } from "lucide-react";
 import type { Asset } from "../../../hooks/useAssets";
 import toast from "react-hot-toast";
@@ -141,7 +142,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
     };
   }, [isOpen, stopCamera]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const trimmedQuery = inputCode.trim().toLowerCase();
   const matchingAssets = trimmedQuery
@@ -160,14 +161,14 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
     handleSelectCode(inputCode);
   };
 
-  return (
-    <div className="fixed inset-0 z-[110] grid place-items-center p-3 sm:p-4 overflow-y-auto">
+  return createPortal(
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[10050] grid place-items-center p-3 sm:p-4 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative bg-white dark:bg-[#1e2330] border border-white/60 dark:border-slate-700/80 rounded-[32px] w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 shadow-2xl z-10 my-auto">
+      <div data-modal-surface="true" onClick={(e) => e.stopPropagation()} className="modal-liquid-glass relative border border-white/95 dark:border-slate-700/80 rounded-[24px] w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10 my-auto">
         {/* Header */}
         <div className="grid grid-cols-[1fr_auto] items-center gap-3 p-4 sm:p-6 border-b border-gray-100 dark:border-slate-700/60">
           <div className="grid grid-cols-[auto_1fr] items-center gap-3 min-w-0">
@@ -175,7 +176,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
               <QrCode size={20} />
             </div>
             <div className="min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight truncate">
+              <h3 className="text-base sm:text-lg font-bold text-[#002e6d] dark:text-white leading-tight truncate">
                 Quét & Tra Cứu Thiết Bị
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
@@ -314,6 +315,7 @@ export const AssetScannerModal: React.FC<AssetScannerModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

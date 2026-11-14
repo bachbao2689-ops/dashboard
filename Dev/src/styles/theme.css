@@ -1,6 +1,10 @@
 /* Theme contract: green = success/brand, sky = progress, amber = waiting,
    rose = overdue/rejected. Only navigation, focus and outer cards get accents. */
 :root {
+  --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-gentle-fast: 320ms;
+  --duration-gentle-base: 420ms;
+  --duration-gentle-slow: 500ms;
   --brand-green: #4eb648;
   --chart-tooltip: #fff;
   --chart-text: #24344b;
@@ -105,7 +109,7 @@ html:not(.dark) .app-sidebar.card-hub {
 /* Light mode navigation links */
 html:not(.dark) .sidebar-link {
   border-radius: 14px;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sidebar-link-idle {
@@ -122,7 +126,7 @@ html:not(.dark) .sidebar-link-idle:hover {
 
 html:not(.dark) .sidebar-link-idle svg {
   color: #6b7280;
-  transition: color 0.2s ease;
+  transition: color 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sidebar-link-idle:hover svg {
@@ -171,7 +175,7 @@ html:not(.dark) .app-sidebar .sidebar-link-active::after {
   background: #4eb648;
 }
 .status-badge { display: inline-grid; grid-auto-flow: column; align-items: center; gap: 6px; white-space: nowrap; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; line-height: 1.5; background: color-mix(in srgb, currentColor 11%, transparent); }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.status-dot { display: none; }
 .status-success { color: var(--status-success); }
 .status-info { color: var(--status-info); }
 .status-warning { color: var(--status-warning); }
@@ -228,3 +232,112 @@ html:not(.dark) .app-sidebar .sidebar-link-active::after {
 .dark .card-status-done { background: radial-gradient(ellipse at 100% 100%, #4eb64812, transparent 60%), #132034 !important; border-color: #4eb64840 !important; }
 
 .dark .card-status-overdue { background: radial-gradient(ellipse at 100% 100%, #fb718512, transparent 60%), #132034 !important; border-color: #fb718540 !important; }
+
+/* ========================================================
+   Light Mode Brand Styling for Filter Dropdown Triggers
+   - Solid brand #002e6d ONLY when expanded or filtered
+   - Idle standalone hover uses frosted ice-blue glass
+   (Strictly Light Mode html:not(.dark), Dark Mode untouched)
+   ======================================================== */
+html:not(.dark) .filter-dropdown-trigger:not(:disabled):is([aria-expanded="true"], [data-filtered="true"]) {
+  background-color: #002e6d !important;
+  border-color: #002e6d !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px -4px rgba(0, 46, 109, 0.28) !important;
+}
+html:not(.dark) .filter-dropdown-trigger:not(:disabled):is([aria-expanded="true"], [data-filtered="true"]) svg {
+  color: #ffffff !important;
+}
+
+/* Standalone idle filter dropdown trigger hover (outside .has-sliding-pill) */
+html:not(.dark) .filter-dropdown-trigger:not(:disabled):not(.has-sliding-pill .filter-dropdown-trigger):not([aria-expanded="true"]):not([data-filtered="true"]):hover {
+  background-color: rgba(239, 246, 255, 0.72) !important;
+  border-color: rgba(191, 219, 254, 0.72) !important;
+  box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.55) !important;
+  color: #002e6d !important;
+}
+html:not(.dark) .filter-dropdown-trigger:not(:disabled):not(.has-sliding-pill .filter-dropdown-trigger):not([aria-expanded="true"]):not([data-filtered="true"]):hover svg {
+  color: #002e6d !important;
+}
+
+/* ========================================================
+   Light Mode — Frosted Ice-Blue Glass Hover Standard
+   (Visual: rgba(239, 246, 255, 0.72), hairline border/inset, #002e6d text & icon)
+   Strictly Light Mode ONLY (html:not(.dark)); Dark Mode is 100% untouched.
+   ======================================================== */
+
+/* Target secondary, ghost, icon, modal/drawer close & cancel, pagination, and popover option buttons */
+html:not(.dark) :is(
+  button[class*="hover:bg-gray-"],
+  button[class*="hover:bg-slate-50"],
+  button[class*="hover:bg-slate-100"],
+  button[class*="hover:bg-slate-200"],
+  button[class*="hover:bg-[#F4F4F5]"],
+  button[class*="hover:bg-primary/5"],
+  button[class*="hover:bg-primary/10"],
+  button[class*="hover:bg-primary/15"],
+  button[class*="hover:bg-primary/20"],
+  button[class*="hover:bg-[#002e6d]/10"],
+  button[class*="hover:bg-blue-50"],
+  button[class*="hover:bg-blue-100"],
+  button[class*="hover:bg-blue-500/10"],
+  button[class*="hover:bg-black/5"],
+  button[class*="hover:bg-white/80"],
+  [data-filter-popover="true"] button,
+  [data-workflow-popover="true"] > div button,
+  button[role="tab"][aria-selected="false"],
+  button[role="option"]
+):not(:disabled):not([aria-disabled="true"]):not(.has-sliding-pill > button):not(.has-sliding-pill > a):not(.has-sliding-pill > [role="button"]):not(.has-sliding-pill > .mobile-filter-control > button):not(.has-sliding-pill > div > button):not(.app-sidebar nav button):not(.app-sidebar nav *):not(.sidebar-link):not(.btn-add-new):not(.btn-new-task):not([type="submit"]):not([class~="bg-primary"]):not([class*="bg-[#002e6d]"]):not([class*="bg-blue-6"]):not([class*="bg-blue-7"]):not([class*="bg-violet-"]):not([class*="bg-amber-"]):not([class*="bg-emerald-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not([class*="bg-gray-9"]):not([class*="bg-slate-9"]):not([class*="bg-gradient-"]):not(.sidebar-link-active):not([aria-selected="true"]):not([aria-current="page"]):not([aria-pressed="true"]):not([data-filtered="true"]):not([aria-expanded="true"]):not([class*="bg-sky-50"]):not([class*="bg-primary/5"]):not([class*="bg-primary/10"]):not([class*="bg-primary/15"]):not([class*="hover:bg-red"]):not([class*="hover:bg-rose"]):not([class*="hover:text-red"]):not([class*="hover:text-rose"]):not([class*="text-red-"]):not([class*="text-rose-"]):not(.hover-magnetic-card):not(.hover-board-card):not([data-board-card="true"]):not(.hover-row-effect):not([class*="card-status-"]):not([role="switch"]):hover {
+  background-color: rgba(239, 246, 255, 0.72) !important;
+  box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.55) !important;
+  color: #002e6d !important;
+}
+
+html:not(.dark) :is(
+  button[class*="hover:bg-gray-"],
+  button[class*="hover:bg-slate-50"],
+  button[class*="hover:bg-slate-100"],
+  button[class*="hover:bg-slate-200"],
+  button[class*="hover:bg-[#F4F4F5]"],
+  button[class*="hover:bg-primary/5"],
+  button[class*="hover:bg-primary/10"],
+  button[class*="hover:bg-primary/15"],
+  button[class*="hover:bg-primary/20"],
+  button[class*="hover:bg-[#002e6d]/10"],
+  button[class*="hover:bg-blue-50"],
+  button[class*="hover:bg-blue-100"],
+  button[class*="hover:bg-blue-500/10"],
+  button[class*="hover:bg-black/5"],
+  button[class*="hover:bg-white/80"],
+  [data-filter-popover="true"] button,
+  [data-workflow-popover="true"] > div button,
+  button[role="tab"][aria-selected="false"],
+  button[role="option"]
+):not(:disabled):not([aria-disabled="true"]):not(.has-sliding-pill > button):not(.has-sliding-pill > a):not(.has-sliding-pill > [role="button"]):not(.has-sliding-pill > .mobile-filter-control > button):not(.has-sliding-pill > div > button):not(.app-sidebar nav button):not(.app-sidebar nav *):not(.sidebar-link):not(.btn-add-new):not(.btn-new-task):not([type="submit"]):not([class~="bg-primary"]):not([class*="bg-[#002e6d]"]):not([class*="bg-blue-6"]):not([class*="bg-blue-7"]):not([class*="bg-violet-"]):not([class*="bg-amber-"]):not([class*="bg-emerald-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not([class*="bg-gray-9"]):not([class*="bg-slate-9"]):not([class*="bg-gradient-"]):not(.sidebar-link-active):not([aria-selected="true"]):not([aria-current="page"]):not([aria-pressed="true"]):not([data-filtered="true"]):not([aria-expanded="true"]):not([class*="bg-sky-50"]):not([class*="bg-primary/5"]):not([class*="bg-primary/10"]):not([class*="bg-primary/15"]):not([class*="hover:bg-red"]):not([class*="hover:bg-rose"]):not([class*="hover:text-red"]):not([class*="hover:text-rose"]):not([class*="text-red-"]):not([class*="text-rose-"]):not(.hover-magnetic-card):not(.hover-board-card):not([data-board-card="true"]):not(.hover-row-effect):not([class*="card-status-"]):not([role="switch"]):hover svg {
+  color: #002e6d !important;
+}
+
+/* For buttons with existing border in Light Mode, harmonize border-color */
+html:not(.dark) :is(
+  button[class*="hover:bg-gray-"],
+  button[class*="hover:bg-slate-50"],
+  button[class*="hover:bg-slate-100"],
+  button[class*="hover:bg-slate-200"],
+  button[class*="hover:bg-[#F4F4F5]"],
+  button[class*="hover:bg-primary/5"],
+  button[class*="hover:bg-primary/10"],
+  button[class*="hover:bg-primary/15"],
+  button[class*="hover:bg-primary/20"],
+  button[class*="hover:bg-[#002e6d]/10"],
+  button[class*="hover:bg-blue-50"],
+  button[class*="hover:bg-blue-100"],
+  button[class*="hover:bg-blue-500/10"],
+  button[class*="hover:bg-black/5"],
+  button[class*="hover:bg-white/80"],
+  [data-filter-popover="true"] button,
+  [data-workflow-popover="true"] > div button,
+  button[role="tab"][aria-selected="false"],
+  button[role="option"]
+):is([class*="border-"], [class~="border"]):not(:disabled):not([aria-disabled="true"]):not(.has-sliding-pill > button):not(.has-sliding-pill > a):not(.has-sliding-pill > [role="button"]):not(.has-sliding-pill > .mobile-filter-control > button):not(.has-sliding-pill > div > button):not(.app-sidebar nav button):not(.app-sidebar nav *):not(.sidebar-link):not(.btn-add-new):not(.btn-new-task):not([type="submit"]):not([class~="bg-primary"]):not([class*="bg-[#002e6d]"]):not([class*="bg-blue-6"]):not([class*="bg-blue-7"]):not([class*="bg-violet-"]):not([class*="bg-amber-"]):not([class*="bg-emerald-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not([class*="bg-gray-9"]):not([class*="bg-slate-9"]):not([class*="bg-gradient-"]):not(.sidebar-link-active):not([aria-selected="true"]):not([aria-current="page"]):not([aria-pressed="true"]):not([data-filtered="true"]):not([aria-expanded="true"]):not([class*="bg-sky-50"]):not([class*="bg-primary/5"]):not([class*="bg-primary/10"]):not([class*="bg-primary/15"]):not([class*="hover:bg-red"]):not([class*="hover:bg-rose"]):not([class*="hover:text-red"]):not([class*="hover:text-rose"]):not([class*="text-red-"]):not([class*="text-rose-"]):not(.hover-magnetic-card):not(.hover-board-card):not([data-board-card="true"]):not(.hover-row-effect):not([class*="card-status-"]):not([role="switch"]):hover {
+  border-color: rgba(191, 219, 254, 0.72) !important;
+}

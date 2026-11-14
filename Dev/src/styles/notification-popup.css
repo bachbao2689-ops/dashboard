@@ -1,5 +1,5 @@
 /* Stacked-depth notification popup. Spring curve follows GUIDELINE/style.md. */
-.notif-stack{position:fixed;z-index:9500;top:calc(68px + env(safe-area-inset-top,0px));right:16px;width:min(360px,calc(100vw - 24px));height:88px;pointer-events:none}
+.notif-stack{position:fixed;z-index:9500;top:calc(12px + env(safe-area-inset-top,0px));right:16px;width:min(360px,calc(100vw - 32px));height:88px;pointer-events:none}
 .notif-card{position:absolute;inset:0 0 auto 0;height:84px;transform-origin:50% 0;pointer-events:auto;cursor:pointer;
  transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .55s cubic-bezier(.22,1,.36,1),filter .55s ease;
  will-change:transform,opacity;animation:notif-in .5s cubic-bezier(.22,1,.36,1) both}
@@ -12,13 +12,15 @@
 /* Track color: --tone is "r,g,b" (Task blue, Project violet, Campaign amber). */
 .notif-card,.notif-row{--tone:100,116,139}
 .notif-card{border-left:3px solid rgba(var(--tone),.85)}
-.notif-chip{color:rgb(var(--tone));background:rgba(var(--tone),.12)}
+.notif-chip{display:inline-grid;place-items:center;color:rgb(var(--tone));background:rgba(var(--tone),.12)}
 .dark .notif-chip{color:rgb(var(--tone));filter:brightness(1.35)}
 
 /* Expanded list: replaces the stack so staff can read every message. */
-.notif-panel{position:fixed;z-index:9500;top:calc(68px + env(safe-area-inset-top,0px));right:16px;width:min(360px,calc(100vw - 24px));overflow:hidden;
+.notif-panel{position:fixed;z-index:9500;top:calc(12px + env(safe-area-inset-top,0px));right:16px;width:min(360px,calc(100vw - 32px));overflow:hidden;
+ display:grid;grid-template-rows:auto minmax(0,1fr);max-height:calc(100dvh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
  box-shadow:0 18px 40px -12px rgba(18,48,94,.2);animation:notif-in .4s cubic-bezier(.22,1,.36,1) both}
-.notif-panel-list{max-height:min(60vh,420px);overflow-y:auto}
+@media (max-width:1279px){.notif-panel{max-height:calc(100dvh - 104px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}}
+.notif-panel-list{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .notif-row{border-left:3px solid rgba(var(--tone),.85)}
 .notif-row+.notif-row{border-top:1px solid rgba(148,163,184,.18)}
 .dark .notif-panel{box-shadow:0 18px 40px -12px rgba(0,0,0,.6)}
@@ -33,14 +35,14 @@
 
 /* Top-right corner: [+N][X]. X is collapsed until hover, then grows in and pushes +N to the left. */
 .notif-corner{position:absolute;top:12px;right:12px}
-.notif-count{display:flex;align-items:center}
-.notif-x{display:flex;align-items:center;justify-content:center;flex:none;width:0;height:22px;overflow:hidden;opacity:0;margin-left:0;border-radius:8px;color:#94a3b8;
+.notif-count{display:inline-grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:center;gap:4px}
+.notif-x{display:inline-grid;place-items:center;width:0;height:22px;overflow:hidden;opacity:0;margin-left:0;border-radius:8px;color:#94a3b8;
  transform:scale(.6);transition:width .35s cubic-bezier(.22,1,.36,1),margin .35s cubic-bezier(.22,1,.36,1),opacity .25s ease,transform .35s cubic-bezier(.22,1,.36,1),background-color .2s}
 .notif-card:hover .notif-x{width:22px;margin-left:4px;opacity:1;transform:scale(1)}
 .notif-x:hover{background:rgba(148,163,184,.2);color:#475569}
 .dark .notif-x:hover{color:#e2e8f0}
 /* Clear all fades up into the lower-right corner on hover. */
-.notif-clear{position:absolute;right:12px;bottom:8px;display:inline-flex;align-items:center;gap:3px;border-radius:9999px;padding:2px 8px;font-size:10px;font-weight:600;color:#64748b;background:rgba(148,163,184,.14);
+.notif-clear{position:absolute;right:12px;bottom:8px;display:inline-grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:center;gap:3px;border-radius:9999px;padding:2px 8px;font-size:10px;font-weight:600;color:#64748b;background:rgba(148,163,184,.14);
  opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .25s ease,transform .35s cubic-bezier(.22,1,.36,1),background-color .2s,color .2s}
 .notif-card:hover .notif-clear{opacity:1;transform:none;pointer-events:auto}
 .notif-clear:hover{background:rgba(239,68,68,.12);color:#dc2626}
@@ -50,17 +52,17 @@
 .notif-x-static{width:22px;opacity:0;transform:none}
 .notif-row:hover .notif-x-static,.notif-x-static:focus-visible{opacity:1}
 @media (hover:none){.notif-x-static{opacity:1}}
-.notif-action{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;color:#64748b;transition:background-color .2s,color .2s}
+.notif-action{display:inline-grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:center;gap:4px;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;color:#64748b;transition:background-color .2s,color .2s}
 .notif-action:hover{background:rgba(148,163,184,.18);color:#0f172a}
 .dark .notif-action:hover{color:#f1f5f9}
 
 /* Header bell glows in the newest unread track color. */
-.notif-bell{display:inline-flex;--tone:100,116,139;filter:drop-shadow(0 0 5px rgba(var(--tone),.75));animation:notif-bell-glow 2.2s ease-in-out infinite alternate}
+.notif-bell{display:inline-grid;place-items:center;--tone:100,116,139;filter:drop-shadow(0 0 5px rgba(var(--tone),.75));animation:notif-bell-glow 2.2s ease-in-out infinite alternate}
 @keyframes notif-bell-glow{from{filter:drop-shadow(0 0 2px rgba(var(--tone),.4))}to{filter:drop-shadow(0 0 7px rgba(var(--tone),.95))}}
 @media (prefers-reduced-motion:reduce){.notif-bell{animation:none}}
 
 /* PIC avatar: 40px, track ring + separation micro-border + glow, bell badge */
-.notif-avatar-wrap{position:relative;flex:none;width:40px;height:40px}
+.notif-avatar-wrap{position:relative;width:40px;height:40px}
 .notif-avatar{
  width:40px;height:40px;border-radius:9999px;
  border:2px solid rgb(var(--tone));
@@ -74,7 +76,7 @@
 }
 .notif-avatar>img{width:100%;height:100%;border-radius:9999px;object-fit:cover;background:#f8fafc}
 .notif-avatar-initial{
- display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:9999px;
+ display:grid;place-items:center;width:100%;height:100%;border-radius:9999px;
  background:linear-gradient(135deg,rgba(var(--tone),.2) 0%,rgba(var(--tone),.09) 100%);
  color:rgb(var(--tone));
  font-size:15px;font-weight:800;letter-spacing:-0.02em;
@@ -82,7 +84,7 @@
 .dark .notif-avatar-initial{background:rgba(var(--tone),.25);color:#ffffff}
 .notif-badge{
  position:absolute;right:-3px;bottom:-3px;z-index:2;
- display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:9999px;
+ display:grid;place-items:center;width:16px;height:16px;border-radius:9999px;
  color:#ffffff;background:rgb(var(--tone));
  box-shadow:0 0 0 2px #ffffff,0 0 0 3px rgba(18,48,94,.12),0 2px 6px rgba(var(--tone),.6);
 }
@@ -92,7 +94,7 @@
 
 /* Standalone notification icon (non-PIC, e.g. system alert) */
 .notif-icon-standalone{
- width:40px;height:40px;border-radius:9999px;flex:none;
+ width:40px;height:40px;border-radius:9999px;
  color:rgb(var(--tone));
  background:linear-gradient(135deg,rgba(var(--tone),.18) 0%,rgba(var(--tone),.08) 100%);
  border:2px solid rgba(var(--tone),.45);

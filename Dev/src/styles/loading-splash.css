@@ -1,29 +1,34 @@
-/* K-Coffee Cinematic Splash & Loading Animation */
+/* Phuc Sinh Consumers Cinematic Splash & Loading Animation */
 
 .k-splash-container {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   overflow: hidden;
   z-index: 99999;
-  background: radial-gradient(circle at 50% 45%, #003882 0%, #002e6d 50%, #00183b 100%);
+  background:
+    radial-gradient(ellipse at 50% 25%, rgba(224, 242, 254, 0.88) 0%, rgba(240, 249, 255, 0.72) 40%, rgba(255, 255, 255, 0.95) 100%),
+    linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+  backdrop-filter: blur(28px) saturate(185%);
+  -webkit-backdrop-filter: blur(28px) saturate(185%);
   user-select: none;
-  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .k-splash-container.k-splash-exit {
   opacity: 0 !important;
-  transform: scale(1.025) !important;
+  transform: scale(1.03) !important;
+  filter: blur(10px) !important;
   pointer-events: none !important;
 }
 
 .dark .k-splash-container {
-  background: radial-gradient(circle at 50% 45%, #152238 0%, #0c1524 55%, #060b13 100%);
+  background: radial-gradient(circle at 50% 45%, #0f1c30 0%, #080e1a 60%, #030710 100%);
+  backdrop-filter: blur(32px) saturate(170%);
+  -webkit-backdrop-filter: blur(32px) saturate(170%);
 }
 
 /* Ambient Radial Glow Aura */
@@ -204,22 +209,39 @@
   right: 24px;
   padding: 6px 16px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 46, 109, 0.16);
+  color: #002e6d;
   font-size: 11.5px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.04em;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 46, 109, 0.08);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 100000;
 }
 
 .k-splash-skip-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #ffffff;
+  color: #001f4d;
+  border-color: rgba(0, 46, 109, 0.28);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 46, 109, 0.12);
+}
+
+.dark .k-splash-skip-btn {
+  background: rgba(15, 28, 48, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: rgba(241, 245, 249, 0.9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.dark .k-splash-skip-btn:hover {
+  background: rgba(21, 38, 65, 0.95);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(56, 189, 248, 0.6);
   transform: translateY(-1px);
 }
 

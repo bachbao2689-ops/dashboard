@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
+import { captureAnchorRect, type AnchorRectSnapshot } from '../../../lib/anchoredPopoverPosition';
 import { Edit3, Trash2, Reply, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar } from '../../common/Avatar';
@@ -36,6 +36,8 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
   const [draft,setDraft] = useState(body);
   const [busy,setBusy] = useState(false);
   const [confirmDelete,setConfirmDelete] = useState(false);
+  const [deleteAnchorRect,setDeleteAnchorRect] = useState<AnchorRectSnapshot | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const lock = useRef(false);
   const mobileReadOnly=useMobileReadOnly(!allowMobileEditing);
   const viewOnly=readOnly||mobileReadOnly;
@@ -91,24 +93,25 @@ export function CommentMessage({id,authorId,authorName,avatarUrl,actorId,body,cr
             </div>
           </form> : <RichCommentBody body={body} isMineBubble={mine} />}
         </div>
-        {!viewOnly && <div className="flex shrink-0 items-center opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 group-focus-within:opacity-100 pb-2">
+        {!viewOnly && <div className={`grid grid-flow-col auto-cols-max shrink-0 items-center transition-opacity ${confirmDelete ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100'} pb-2`}>
           {onReply && <button type="button" onClick={onReply} disabled={busy}
             title={en ? 'Reply' : 'Trả lời'} aria-label={en ? 'Reply' : 'Trả lời'}
-            className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-slate-700"><Reply size={14}/></button>}
+            className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 grid place-items-center text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-slate-700 cursor-pointer"><Reply size={14}/></button>}
           {canManage && <>
             <button type="button" disabled={busy || editing} onClick={()=>{setDraft(body);setEditing(true);}}
               title={en ? 'Edit comment' : 'Chỉnh sửa bình luận'} aria-label={en ? 'Edit comment' : 'Chỉnh sửa bình luận'}
-              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-50"><Edit3 size={14}/></button>
-            <button type="button" disabled={busy} onClick={()=>setConfirmDelete(true)}
+              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 grid place-items-center text-gray-400 hover:text-primary disabled:opacity-50 cursor-pointer"><Edit3 size={14}/></button>
+            <button ref={deleteButtonRef} type="button" disabled={busy} onClick={(e)=>{e.stopPropagation(); setDeleteAnchorRect(captureAnchorRect(e.currentTarget)); setConfirmDelete(true);}}
               title={en ? 'Delete comment' : 'Xóa bình luận'} aria-label={en ? 'Delete comment' : 'Xóa bình luận'}
-              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 hover:text-red-500 disabled:opacity-50"><Trash2 size={14}/></button>
+              className="rounded-lg p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 grid place-items-center text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"><Trash2 size={14}/></button>
           </>}
         </div>}
       </div>
       {mine && avatar}
     </article>
-    {canManage && confirmDelete && createPortal(<ConfirmDeleteModal isOpen title={en ? 'Delete comment' : 'Xóa bình luận'}
+    {canManage && confirmDelete && <ConfirmDeleteModal isOpen title={en ? 'Delete comment' : 'Xóa bình luận'}
       message={en ? 'Delete your comment?' : 'Bạn có chắc muốn xóa bình luận của mình?'}
-      onConfirm={()=>void remove()} onCancel={()=>setConfirmDelete(false)}/>,document.body)}
+      anchorEl={deleteButtonRef.current} anchorRect={deleteAnchorRect}
+      onConfirm={()=>void remove()} onCancel={()=>setConfirmDelete(false)}/>}
   </>);
 }

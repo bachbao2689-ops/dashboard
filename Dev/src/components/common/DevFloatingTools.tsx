@@ -351,7 +351,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
           }}
           title="Kéo thả di chuyển · Bấm để mở Dev Tools & Tầm view"
           aria-label="Dev Tools"
-          className={`group relative grid place-items-center w-12 h-12 rounded-2xl shadow-xl transition-all duration-200 cursor-grab active:cursor-grabbing border ${
+          className={`group relative grid place-items-center w-12 h-12 rounded-2xl shadow-xl transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] cursor-grab active:cursor-grabbing border ${
             isOpen
               ? 'bg-[#002e6d] dark:bg-[#132338] text-white border-sky-400 ring-2 ring-sky-400/50'
               : 'bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700/80 hover:scale-105 hover:border-sky-400 dark:hover:border-sky-500'
@@ -380,7 +380,7 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
             maxWidth: 'calc(100vw - 20px)',
             zIndex: 9550,
           }}
-          className="dashboard-frosted-glass rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100 max-h-[85vh] overflow-y-auto"
+          className="dashboard-frosted-glass rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] text-slate-800 dark:text-slate-100 max-h-[85vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="grid grid-cols-[1fr_auto] items-center pb-3 border-b border-slate-200 dark:border-slate-800/80">
@@ -850,8 +850,8 @@ export const DevFloatingTools: React.FC<DevFloatingToolsProps> = ({
               >
                 <RefreshCw className="w-4 h-4" />
                 <div className="text-left">
-                  <p className="leading-tight">Test update popup</p>
-                  <p className="text-[10px] text-emerald-100 font-normal">Kích hoạt banner bản cập nhật mới</p>
+                  <p className="leading-tight">Test update badge</p>
+                  <p className="text-[10px] text-emerald-100 font-normal">Báo có bản cập nhật ở Software Update</p>
                 </div>
               </button>
 

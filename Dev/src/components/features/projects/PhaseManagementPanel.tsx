@@ -334,7 +334,6 @@ export const PhaseManagementPanel: React.FC<PhaseManagementPanelProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${currentPhase.status === 'completed' ? 'bg-emerald-500' : 'bg-primary animate-ping'}`} />
               <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                 {currentPhase.status === 'completed' ? 'Giai đoạn đã hoàn tất' : 'Chi tiết giai đoạn đang chọn'}
               </span>

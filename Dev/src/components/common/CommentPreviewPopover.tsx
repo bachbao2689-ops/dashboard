@@ -210,6 +210,7 @@ export const CommentPreviewPopover: React.FC<CommentPreviewPopoverProps> = ({
         createPortal(
           <div
             ref={popoverRef}
+            data-anchored-popover="true"
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
@@ -218,7 +219,7 @@ export const CommentPreviewPopover: React.FC<CommentPreviewPopoverProps> = ({
               transform: coords.placeAbove ? 'translateY(-100%)' : 'none',
               zIndex: 9999,
             }}
-            className="w-[360px] max-w-[calc(100vw-24px)] rounded-xl border border-gray-200 dark:border-slate-800 bg-white/95 dark:bg-[#071325]/95 backdrop-blur-md shadow-xl text-xs text-gray-700 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+            className="w-[360px] max-w-[calc(100vw-24px)] rounded-xl border border-gray-200 dark:border-slate-800 bg-white/95 dark:bg-[#071325]/95 backdrop-blur-md shadow-xl text-xs text-gray-700 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden"
           >
             {/* Header */}
             <div className="grid grid-cols-[1fr_auto] items-center p-3 border-b border-gray-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0a192f]/70">

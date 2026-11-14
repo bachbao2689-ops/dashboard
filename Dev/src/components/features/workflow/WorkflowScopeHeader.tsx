@@ -39,11 +39,11 @@ export function WorkflowScopeHeader({
             onClick={() => handleFilterChange('project')}
             className={`px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-bold transition-all duration-200 grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer ${
               entityFilter === 'project'
-                ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
             }`}
           >
-            <FolderKanban size={11} className={entityFilter === 'project' ? 'text-violet-600 dark:text-violet-300' : ''} />
+            <FolderKanban size={11} className={entityFilter === 'project' ? 'text-blue-600 dark:text-violet-300' : ''} />
             <span>Projects</span>
           </button>
           <button
@@ -51,11 +51,11 @@ export function WorkflowScopeHeader({
             onClick={() => handleFilterChange('campaign')}
             className={`px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-bold transition-all duration-200 grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer ${
               entityFilter === 'campaign'
-                ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
             }`}
           >
-            <Megaphone size={11} className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''} />
+            <Megaphone size={11} className={entityFilter === 'campaign' ? 'text-blue-600 dark:text-amber-300' : ''} />
             <span>Campaigns</span>
           </button>
         </div>
@@ -302,10 +302,7 @@ export function WorkflowScopeHeader({
                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                currentEntity.status === 'completed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
-              }`} />
-              <span>{currentEntity.status === 'completed' ? (isEn ? 'Completed' : 'Hoàn thành') : (isEn ? 'In-Progress' : 'Đang thực hiện')}</span>
+              <span>{currentEntity.status === 'completed' ? (isEn ? 'Completed' : 'Hoàn thành') : (isEn ? 'In Progress' : 'Đang thực hiện')}</span>
             </span>
 
           </div>

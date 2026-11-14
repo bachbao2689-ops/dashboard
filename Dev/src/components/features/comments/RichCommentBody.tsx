@@ -53,11 +53,12 @@ export const CommentImagePreviewModal: React.FC<{
       aria-modal="true"
       aria-label={image.name}
       onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[10050] grid place-items-center bg-slate-950/55 dark:bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="relative max-w-3xl w-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl overflow-hidden"
+        data-modal-surface="true"
+        className="modal-liquid-glass relative max-w-3xl w-full rounded-2xl border border-white/95 dark:border-slate-700/80 overflow-hidden"
       >
         {/* Header with Image Info */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-800/60">

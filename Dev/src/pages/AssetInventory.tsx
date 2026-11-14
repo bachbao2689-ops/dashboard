@@ -1,9 +1,10 @@
 import {SearchInput} from '../components/common/filters';
+import {FilterPopover} from '../components/common/filters/FilterPopover';
 import {ActionButton} from '../components/common/ActionButton';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/translations';
-import { Plus, Check, Camera, Laptop, HardDrive, Box, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Check, Camera, Laptop, HardDrive, Box, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import type { Asset } from '../hooks/useAssets';
 import { AssetModal } from '../components/features/assets/AssetModal';
@@ -30,7 +31,7 @@ export const AssetInventory: React.FC = () => {
   const { t, lang } = useTranslation();
   const { widths: assetColWidths, startResize: startAssetColResize, tableRef: assetTableRef } = useResizableColumns({
     tableKey: 'assets_table',
-    initialWidths: [120, 280, 130, 150, 130, 150, 120, 110],
+    initialWidths: [120, 260, 120, 140, 125, 140, 115, 150],
     minWidth: 80,
   });
   const profile = useAuthStore(state => state.profile);
@@ -41,7 +42,9 @@ export const AssetInventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useRememberedState('assets.search', '');
   const [categoryFilter, setCategoryFilter] = useRememberedState('assets.categoryFilter', 'all');
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
+  const categoryPanelRef = React.useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [isScanMode, setIsScanMode] = useState(false);
@@ -54,9 +57,16 @@ export const AssetInventory: React.FC = () => {
   const [bounce, setBounce] = useState(false);
 
   useEffect(() => {
-    if (!isCategoryDropdownOpen) return;
+    if (!isCategoryDropdownOpen) {
+      setCategorySearchQuery('');
+      return;
+    }
     const handleClick = (e: MouseEvent) => {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(e.target as Node) &&
+        !categoryPanelRef.current?.contains(e.target as Node)
+      ) {
         setIsCategoryDropdownOpen(false);
       }
     };
@@ -81,6 +91,12 @@ export const AssetInventory: React.FC = () => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [assets, lang]);
+
+  const filteredCategoryOptions = React.useMemo(() => {
+    const q = categorySearchQuery.trim().toLowerCase();
+    if (!q) return categoriesWithCounts;
+    return categoriesWithCounts.filter(({ name }) => name.toLowerCase().includes(q));
+  }, [categoriesWithCounts, categorySearchQuery]);
 
   useEffect(() => {
     return () => {
@@ -177,24 +193,29 @@ export const AssetInventory: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] items-center justify-between gap-4 py-2 sm:py-2.5 mb-4 px-1 shrink-0 relative z-50">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">{t('assets.title')}</h2>
         
-        <div className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center gap-2 sm:gap-3 max-w-full overflow-x-auto">
-          <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder={t('assets.search')} />
+        <div className="mobile-actions-row grid grid-flow-row sm:grid-flow-col sm:auto-cols-max items-center justify-start sm:justify-end gap-2 max-w-full py-1">
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('assets.search')}
+            className="!h-9 [&>div]:!h-9 [&>div]:!rounded-[8px]"
+          />
 
           {/* Category Filter Dropdown */}
           <div className="relative inline-grid" ref={categoryDropdownRef}>
             <button
               type="button"
               onClick={() => setIsCategoryDropdownOpen(prev => !prev)}
-              className={`h-10 px-3 rounded-[8px] border text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-2 transition-all cursor-pointer shadow-2xs ${
+              className={`h-9 px-3 rounded-[8px] border text-xs font-semibold inline-grid grid-flow-col auto-cols-max items-center gap-2 transition-all cursor-pointer shadow-2xs ${
                 categoryFilter !== 'all'
-                  ? 'border-blue-500 bg-blue-50/80 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-500/50'
+                  ? 'border-blue-500 bg-blue-50/80 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-500/50 font-bold'
                   : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700/60'
               }`}
               title="Lọc theo loại thiết bị"
               aria-label="Lọc theo loại thiết bị"
               aria-expanded={isCategoryDropdownOpen}
             >
-              <Box size={15} className={categoryFilter !== 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-400'} />
+              <Box size={14} className={categoryFilter !== 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-400'} />
               <span className="truncate max-w-[130px] sm:max-w-[170px]">
                 {categoryFilter === 'all' ? (lang === 'en' ? 'All categories' : 'Tất cả loại') : categoryFilter}
               </span>
@@ -202,51 +223,96 @@ export const AssetInventory: React.FC = () => {
             </button>
 
             {isCategoryDropdownOpen && (
-              <div
-                className="absolute right-0 sm:left-0 top-full mt-1.5 z-50 w-56 p-1.5 rounded-[8px] bg-white/95 dark:bg-[#0f1a2c]/95 backdrop-blur-xl border border-gray-200/90 dark:border-slate-700/90 shadow-xl grid grid-cols-1 gap-0.5 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar"
-                style={{ WebkitBackdropFilter: 'blur(16px)', backdropFilter: 'blur(16px)' }}
+              <FilterPopover
+                onClose={() => setIsCategoryDropdownOpen(false)}
+                anchorRef={categoryDropdownRef}
+                panelRef={categoryPanelRef}
+                align="left"
+                className="w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-200 grid grid-rows-[auto_1fr] gap-1.5 max-h-80"
+                onClick={e => e.stopPropagation()}
               >
-                <button
-                  type="button"
-                  onClick={() => { setCategoryFilter('all'); setIsCategoryDropdownOpen(false); }}
-                  className={`w-full text-left px-2.5 py-2 rounded-[6px] text-xs font-semibold grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
-                    categoryFilter === 'all'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <span>{lang === 'en' ? 'All categories' : 'Tất cả loại'}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 font-bold">
-                    {assets?.length || 0}
-                  </span>
-                </button>
-                {categoriesWithCounts.map(({ name, count }) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => { setCategoryFilter(name); setIsCategoryDropdownOpen(false); }}
-                    className={`w-full text-left px-2.5 py-2 rounded-[6px] text-xs font-semibold grid grid-cols-[1fr_auto] items-center gap-2 transition-colors cursor-pointer ${
-                      categoryFilter === name
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
-                        : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="truncate">{name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 font-bold">
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                <div className="relative">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={categorySearchQuery}
+                    onChange={e => setCategorySearchQuery(e.target.value)}
+                    placeholder={lang === 'en' ? 'Search category...' : 'Tìm loại thiết bị...'}
+                    className="w-full text-xs pl-7 pr-6 py-1.5 rounded-[6px] bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/80 text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  {categorySearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setCategorySearchQuery('')}
+                      aria-label={lang === 'en' ? 'Clear search' : 'Xóa tìm kiếm'}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-y-auto custom-scrollbar grid grid-cols-1 gap-0.5 max-h-56">
+                  {(!categorySearchQuery.trim() || (lang === 'en' ? 'all' : 'tất cả').includes(categorySearchQuery.trim().toLowerCase())) && (
+                    <button
+                      type="button"
+                      onClick={() => { setCategoryFilter('all'); setIsCategoryDropdownOpen(false); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs font-semibold transition-colors cursor-pointer ${
+                        categoryFilter === 'all'
+                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold'
+                          : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {lang === 'en' ? 'All' : 'Tất cả'}
+                    </button>
+                  )}
+                  {filteredCategoryOptions.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-gray-400">
+                      {lang === 'en' ? 'No category found' : 'Không tìm thấy loại'}
+                    </div>
+                  ) : (
+                    filteredCategoryOptions.map(({ name }) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => { setCategoryFilter(name); setIsCategoryDropdownOpen(false); }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-xs font-semibold truncate transition-colors cursor-pointer ${
+                          categoryFilter === name
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold'
+                            : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </FilterPopover>
             )}
           </div>
 
-          {canBorrowAsset && <ActionButton badge={cart.length || undefined} icon={<Box size={18} />} onClick={() => setIsBorrowDrawerOpen(true)} aria-label={t('assets.borrowSlip')} className={`hover-magnetic-btn magnetic-emerald flex shrink-0 items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[8px] text-sm font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}>
-             <span className="text-xs sm:text-sm">{t('assets.borrowSlip')}</span>
-          </ActionButton>}
+          {canBorrowAsset && (
+            <ActionButton
+              badge={cart.length || undefined}
+              icon={<Box size={16} />}
+              onClick={() => setIsBorrowDrawerOpen(true)}
+              aria-label={t('assets.borrowSlip')}
+              className={`hover-magnetic-btn magnetic-emerald !inline-grid grid-flow-col auto-cols-max shrink-0 items-center gap-2 h-9 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[8px] text-xs font-semibold transition-all shadow-sm ${bounce ? '-translate-y-1' : ''}`}
+            >
+              <span className="text-xs">{t('assets.borrowSlip')}</span>
+            </ActionButton>
+          )}
           {canAddAsset && (
-            <ActionButton icon={<Plus size={18} />} onClick={handleNewAsset} aria-label={t('assets.addAsset')} className="btn-add-new flex items-center gap-2 h-10 px-4 text-white rounded-[8px] text-sm font-medium transition-all shadow-sm">
-               <span className="text-xs sm:text-sm"><span className="sm:hidden">{t('assets.add')}</span><span className="hidden sm:inline">{t('assets.addAsset')}</span></span>
+            <ActionButton
+              icon={<Plus size={16} />}
+              onClick={handleNewAsset}
+              aria-label={t('assets.addAsset')}
+              className="btn-add-new !inline-grid grid-flow-col auto-cols-max items-center gap-2 h-9 px-3.5 text-white rounded-[8px] text-xs font-semibold transition-all shadow-sm"
+            >
+              <span className="text-xs">
+                <span className="sm:hidden">{t('assets.add')}</span>
+                <span className="hidden sm:inline">{t('assets.addAsset')}</span>
+              </span>
             </ActionButton>
           )}
         </div>
@@ -326,7 +392,7 @@ export const AssetInventory: React.FC = () => {
                       <span className="inline-block w-fit max-w-full font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-[6px] border border-gray-200 dark:border-slate-600 truncate">{asset.asset_code}</span>
                     </td>
                     <td className="p-4 overflow-hidden">
-                      <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 overflow-hidden min-w-0">
                         <div className="p-2 bg-white dark:bg-slate-800 rounded-[6px] shadow-sm border border-gray-100 dark:border-slate-700 shrink-0">
                           {getIcon(asset.category?.name)}
                         </div>
@@ -356,7 +422,7 @@ export const AssetInventory: React.FC = () => {
                         const inCart = cart.find(a => a.id === asset.id);
                         if (canBorrowAsset && inCart) {
                           return (
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 truncate">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 whitespace-nowrap shrink-0">
                               {t('assets.inSlip')}
                             </button>
                           );
@@ -366,14 +432,14 @@ export const AssetInventory: React.FC = () => {
                         }
                         if (asset.status === 'borrowed') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-amber-400 text-black shadow-sm opacity-90 truncate">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-amber-400 text-black shadow-sm opacity-90 whitespace-nowrap shrink-0">
                               {t('assets.statusBorrowed')}
                             </button>
                           );
                         }
                         if (asset.status === 'maintenance' || asset.status === 'broken') {
                           return (
-                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-red-500 text-white shadow-sm opacity-90 truncate">
+                            <button disabled className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-red-500 text-white shadow-sm opacity-90 whitespace-nowrap shrink-0">
                               {t('assets.maintenance')}
                             </button>
                           );
@@ -383,8 +449,8 @@ export const AssetInventory: React.FC = () => {
                         }
                         if (!canBorrowAsset) return <span className="text-xs text-gray-500 truncate inline-block">{t('assets.statusAvailable')}</span>;
                         return (
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all truncate">
+                          <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); toggleCart(asset); }} className="px-3 py-1.5 text-xs font-semibold rounded-[8px] bg-primary text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all whitespace-nowrap shrink-0">
                               {t('assets.addToSlip')}
                             </button>
                           </div>

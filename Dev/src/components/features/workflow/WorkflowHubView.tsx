@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
+import { SlidingToolbarGroup } from '../../common/SlidingToolbarGroup';
 import { useWorkspaceDirectory } from '../../../hooks/useWorkspaceData';
 import { isAdmin, isGlobalManager, isDepartmentLeader } from '../../../lib/roleScope';
 import { displayDate, daysUntil, isDone, taskProgress } from '../../../lib/workflowHub';
@@ -1144,13 +1145,11 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
           <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0 justify-self-end">
             {isCompleted ? (
               <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-bold leading-none border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <span>Completed</span>
               </span>
             ) : (
               <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-bold leading-none border bg-amber-500/10 text-amber-600 dark:text-[#fbbf24] border-amber-500/35 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>In-Progress</span>
+                <span>In Progress</span>
               </span>
             )}
 
@@ -1175,8 +1174,8 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
         <div className="xl:col-span-4 2xl:col-span-4 grid content-between gap-2.5 min-w-0">
           {/* Hàng 1: Tiêu đề */}
           <div className="grid grid-flow-col auto-cols-max items-center gap-2.5">
-            <Layers size={20} className="text-primary dark:text-sky-400 shrink-0" />
-            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
+            <Layers size={24} className="text-primary dark:text-sky-400 shrink-0" />
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
               {isEn ? 'Workflow Management' : 'Quản lý tiến độ'}
             </h1>
             <div data-workflow-popover="true" className="relative inline-grid place-items-center">
@@ -1585,75 +1584,84 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             </div>
           </div>
 
-          {/* Hàng 2: Nút Tất cả & Hộp segmented Projects | Campaigns */}
-          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setHubTab('all')}
-              className={`px-2 py-0.5 rounded-[7px] text-[10.5px] font-bold border border-gray-200/80 dark:border-slate-700/80 shadow-2xs transition-all grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer ${
-                hubTab === 'all'
-                  ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-sky-500/30 dark:to-blue-500/20 dark:!text-sky-100 dark:ring-sky-400/40'
-                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
-              }`}
+          {/* Hàng 2: Segmented Tabs Tất cả | Projects | Campaigns */}
+          <div className="inline-grid grid-flow-col auto-cols-max items-center justify-start gap-2.5 shrink-0 max-w-full">
+            <SlidingToolbarGroup
+              className="p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs inline-grid grid-flow-col auto-cols-max items-center gap-0.5 shrink-0"
+              activeKey={hubTab}
+              showHoverPill={true}
+              showActivePill={false}
             >
-              <span>{isEn ? 'All' : 'Tất cả'}</span>
-            </button>
+              {/* Nút Tất cả */}
+              <button
+                type="button"
+                onClick={() => setHubTab('all')}
+                className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
+                  hubTab === 'all'
+                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-sky-500/35 dark:to-blue-500/20 dark:!text-sky-100 dark:ring-sky-400/40'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                <span>{isEn ? 'All' : 'Tất cả'}</span>
+              </button>
 
-            <div className="inline-grid grid-flow-col auto-cols-max items-center p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs">
+              {/* Nút Projects */}
               <button
                 type="button"
                 onClick={() => setHubTab('project')}
-                className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold transition-all duration-200 grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer ${
+                className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
                   hubTab === 'project'
-                    ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
+                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
                 <FolderKanban
-                  size={11}
-                  className={hubTab === 'project' ? 'text-violet-600 dark:text-violet-300' : ''}
+                  size={13}
+                  className={hubTab === 'project' ? 'text-blue-600 dark:text-violet-300' : ''}
                 />
                 <span>Projects</span>
               </button>
 
+              {/* Nút Campaigns */}
               <button
                 type="button"
                 onClick={() => setHubTab('campaign')}
-                className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold transition-all duration-200 grid grid-flow-col auto-cols-max items-center gap-1 cursor-pointer ${
+                className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
                   hubTab === 'campaign'
-                    ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
+                    ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
                 <Megaphone
-                  size={11}
-                  className={hubTab === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''}
+                  size={13}
+                  className={hubTab === 'campaign' ? 'text-blue-600 dark:text-amber-300' : ''}
                 />
                 <span>Campaigns</span>
               </button>
-            </div>
+            </SlidingToolbarGroup>
           </div>
 
           {/* Hàng 3: Cụm icon buttons (+ Tạo phase, Phòng ban, PIC, Trạng thái, Clear Filter) */}
-          <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 relative">
-            {/* 1. Nút + tìm Projects & Campaigns chưa tạo phase */}
-            <div className={`relative ${activePopup === 'unphased' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveHubBoxPopup(null);
-                  setActiveInfoBox(null);
-                  setActivePopup((prev) => (prev === 'unphased' ? null : 'unphased'));
-                }}
-                title={isEn ? 'Add Phase to Project / Campaign' : 'Tạo Phase cho Dự án / Chiến dịch'}
-                className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
-                  activePopup === 'unphased'
-                    ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 ring-1 ring-sky-400/50'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                <Plus size={16} strokeWidth={2.5} />
-              </button>
+          <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 relative">
+            <SlidingToolbarGroup className="mobile-actions-row gap-1" showHoverPill={true} showActivePill={false}>
+              {/* 1. Nút + tìm Projects & Campaigns chưa tạo phase */}
+              <div className={`relative ${activePopup === 'unphased' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveHubBoxPopup(null);
+                    setActiveInfoBox(null);
+                    setActivePopup((prev) => (prev === 'unphased' ? null : 'unphased'));
+                  }}
+                  title={isEn ? 'Add Phase to Project / Campaign' : 'Tạo Phase cho Dự án / Chiến dịch'}
+                  className={`w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
+                    activePopup === 'unphased'
+                      ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 ring-1 ring-sky-400/50'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
+                  }`}
+                >
+                  <Plus size={16} strokeWidth={2.5} />
+                </button>
               {activePopup === 'unphased' && (
                 <div
                   onClick={(e) => e.stopPropagation()}
@@ -1783,6 +1791,8 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <div className={`relative ${activePopup === 'dept' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
               <button
                 type="button"
+                aria-expanded={activePopup === 'dept'}
+                data-filtered={Boolean(hubDept && hubDept !== 'all') ? 'true' : undefined}
                 onClick={() => {
                   if (!availableDepartments.length) return;
                   setActiveHubBoxPopup(null);
@@ -1795,7 +1805,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                     ? (hub.profile?.department_name ? `Cố định: ${hub.profile.department_name}` : 'Cố định theo phòng ban')
                     : (isEn ? 'Filter by department' : 'Lọc theo phòng ban')
                 }
-                className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors ${
+                className={`filter-dropdown-trigger w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors ${
                   !availableDepartments.length
                     ? 'opacity-50 cursor-default'
                     : activePopup === 'dept' || (hubDept && hubDept !== 'all')
@@ -1851,13 +1861,15 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <div className={`relative ${activePopup === 'pic' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
               <button
                 type="button"
+                aria-expanded={activePopup === 'pic'}
+                data-filtered={Boolean(hubPic && hubPic !== 'all') ? 'true' : undefined}
                 onClick={() => {
                   setActiveHubBoxPopup(null);
                   setActiveInfoBox(null);
                   setActivePopup((prev) => (prev === 'pic' ? null : 'pic'));
                 }}
                 title={isEn ? 'Filter by PIC' : 'Lọc theo PIC'}
-                className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
+                className={`filter-dropdown-trigger w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
                   activePopup === 'pic' || (hubPic && hubPic !== 'all')
                     ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
@@ -1924,6 +1936,8 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <div className={`relative ${activePopup === 'calendar' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
               <button
                 type="button"
+                aria-expanded={activePopup === 'calendar'}
+                data-filtered={Boolean(hubCalendar !== 'all' || hubCustomStart || hubCustomEnd) ? 'true' : undefined}
                 onClick={() => {
                   setActiveHubBoxPopup(null);
                   setActiveInfoBox(null);
@@ -1945,7 +1959,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
                   });
                 }}
                 title={isEn ? 'Filter by calendar' : 'Lọc theo lịch'}
-                className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
+                className={`filter-dropdown-trigger w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
                   activePopup === 'calendar' || hubCalendar !== 'all' || hubCustomStart || hubCustomEnd
                     ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 ring-1 ring-sky-400/40'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
@@ -2155,13 +2169,15 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             <div className={`relative ${activePopup === 'status' ? 'z-[90]' : 'z-10'}`} data-workflow-popover="true">
               <button
                 type="button"
+                aria-expanded={activePopup === 'status'}
+                data-filtered={Boolean(hubStatus && hubStatus !== 'all') ? 'true' : undefined}
                 onClick={() => {
                   setActiveHubBoxPopup(null);
                   setActiveInfoBox(null);
                   setActivePopup((prev) => (prev === 'status' ? null : 'status'));
                 }}
                 title={isEn ? 'Filter by status' : 'Lọc theo trạng thái'}
-                className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
+                className={`filter-dropdown-trigger w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
                   activePopup === 'status' || (hubStatus && hubStatus !== 'all')
                     ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10'
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
@@ -2202,12 +2218,12 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
               )}
             </div>
 
-            {/* 5. Nút Clear Filter (Xóa bộ lọc) */}
+            {/* 6. Nút Clear Filter (Xóa bộ lọc) */}
             <button
               type="button"
               onClick={handleClearAllFilters}
               title={isEn ? 'Clear all filters' : 'Xóa tất cả bộ lọc'}
-              className={`w-8 h-8 rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
+              className={`w-[34px] h-[34px] rounded-[8px] grid place-items-center transition-colors cursor-pointer ${
                 hasActiveFilter
                   ? 'text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/50'
                   : 'text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-100/60 dark:hover:bg-slate-800/50'
@@ -2215,6 +2231,7 @@ export const WorkflowHubView: React.FC<WorkflowHubViewProps> = ({ model }) => {
             >
               <RotateCcw size={14} className={hasActiveFilter ? 'animate-in spin-in-180 duration-200' : ''} />
             </button>
+            </SlidingToolbarGroup>
           </div>
         </div>
 

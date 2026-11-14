@@ -1,5 +1,6 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
+import {useSmartDrawerOutsideClose} from '../../../hooks/useSmartDrawerOutsideClose';
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Clock, User, Calendar, AlignLeft, Edit3, Save, ListTodo, Plus, Trash2, Check, ChevronDown } from 'lucide-react';
 import { TaskComments } from '../comments/TaskComments';
@@ -192,12 +193,25 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
     let active = true;
     setMentionPeople([]);
     if (isOpen) {
-      supabase
-        .from('users')
-        .select('id,name,avatar_url,role,employment_level,job_title,department_id,departments:department_id(id,name)')
-        .eq('is_active', true)
-        .order('name')
-        .then(({ data }) => { if (active) setMentionPeople(data || []); });
+      void Promise.all([
+        supabase
+          .from('users')
+          .select('id,name,avatar_url,role,employment_level,job_title,department_id')
+          .eq('is_active', true)
+          .order('name'),
+        supabase.from('departments').select('id,name'),
+      ]).then(([usersRes, deptsRes]) => {
+        if (!active) return;
+        const deptMap = new Map<string, { id: any; name: string }>();
+        (deptsRes.data || []).forEach((d: any) => {
+          if (d?.id != null) deptMap.set(String(d.id), { id: d.id, name: d.name });
+        });
+        const enriched = (usersRes.data || []).map((u: any) => ({
+          ...u,
+          departments: u.department_id != null ? deptMap.get(String(u.department_id)) || null : null,
+        }));
+        setMentionPeople(enriched);
+      });
     }
     return () => { active = false; };
   }, [isOpen, profileId]);
@@ -808,42 +822,19 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
-  useEffect(() => {
-    if (!isOpen || embedded) return;
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (panelRef.current && panelRef.current.contains(target)) return;
-      if (
-        target.closest('.tw-calendar-popover') ||
-        target.closest('[role="dialog"]') ||
-        target.closest('[role="menu"]') ||
-        target.closest('[role="listbox"]') ||
-        target.closest('.toast') ||
-        target.closest('#headlessui-portal-root')
-      ) {
-        return;
-      }
-      onClose();
-    };
-
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handlePointerDown);
-      document.addEventListener('touchstart', handlePointerDown);
-    }, 60);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-    };
-  }, [isOpen, embedded, onClose]);
+  // Smart auto-close detail drawer: collapse only on empty space clicks; keep open when clicking interactive UI
+  useSmartDrawerOutsideClose({
+    isOpen: isOpen && !embedded,
+    disabled: resizing,
+    drawerRef: panelRef,
+    onClose,
+  });
 
   return (
     <>
       {isOpen && !embedded && (
         <div 
+          data-drawer-backdrop="true"
           className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
           onClick={onClose}
           aria-hidden="true"
@@ -854,7 +845,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
         inert={!isOpen} 
         aria-hidden={!isOpen} 
         style={{ '--task-panel-width': `${width}px` } as React.CSSProperties}
-        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${isOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--task-panel-width)] xl:max-w-[min(var(--task-panel-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} ${floating ? 'z-[110]' : 'z-[70]'} ${!resizing ? 'transition-[width,opacity] duration-300 ease-out' : ''}`}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${isOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--task-panel-width)] xl:max-w-[min(var(--task-panel-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} ${floating ? 'z-[110]' : 'z-[70]'} ${!resizing ? 'transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
       >
         {isOpen && !embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
@@ -1096,20 +1087,20 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('tasks.col.projectCampaign')}</p>
                 {task.project?.name ? (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
-                    <span className="truncate">{task.project.name}</span>
+                  <span className="inline-block max-w-full truncate px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
+                    {task.project.name}
                   </span>
                 ) : task.campaign?.name ? (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
-                    <span className="truncate">{task.campaign.name}</span>
+                  <span className="inline-block max-w-full truncate px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                    {task.campaign.name}
                   </span>
                 ) : (task as any).project_name ? (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 max-w-full">
-                    <span className="truncate">{(task as any).project_name}</span>
+                  <span className="inline-block max-w-full truncate px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">
+                    {(task as any).project_name}
                   </span>
                 ) : (task as any).campaign_name ? (
-                  <span className="inline-grid grid-flow-col auto-cols-max items-center px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 max-w-full">
-                    <span className="truncate">{(task as any).campaign_name}</span>
+                  <span className="inline-block max-w-full truncate px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                    {(task as any).campaign_name}
                   </span>
                 ) : (
                   <b className="text-sm text-gray-400">{t('common.unlinked')}</b>
@@ -1153,7 +1144,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
                         {open} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
                       </span>
                     )}
-                    <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${checklistCollapsed ? '-rotate-90' : ''}`} />
+                    <ChevronDown size={15} className={`text-gray-400 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${checklistCollapsed ? '-rotate-90' : ''}`} />
                   </button>
                 </div>
               );
@@ -1369,7 +1360,7 @@ const TaskDetailPanelContent: React.FC<TaskDetailPanelProps> = ({ task, isOpen, 
 
             {/* Form thêm đầu việc */}
             {showAddItemForm && (
-              <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700/80 space-y-3 animate-in fade-in duration-150">
+              <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700/80 space-y-3 animate-in fade-in duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                   {lang === 'en' ? 'Subtask Title' : 'Tên subtask'} <span className="text-red-500">*</span>
                   <input

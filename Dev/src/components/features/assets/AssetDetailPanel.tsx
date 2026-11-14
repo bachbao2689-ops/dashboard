@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { X, Box, QrCode, Tag, User, Hash, AlertCircle, Maximize2, ChevronsRight, Camera, Laptop, HardDrive, Clock, Building2, Activity, MapPin, ArrowLeft } from 'lucide-react';
@@ -7,6 +7,7 @@ import { isGlobalManager, isAssetApprover } from '../../../lib/roleScope';
 import { useAuthStore } from '../../../store/authStore';
 import { supabase } from '../../../services/supabase';
 import { displayDate } from '../../../lib/workflowHub';
+import { useSmartDrawerOutsideClose } from '../../../hooks/useSmartDrawerOutsideClose';
 
 const getIcon = (cat: string | undefined) => {
   if (!cat) return <Box className="w-5 h-5 text-gray-500" />;
@@ -48,6 +49,14 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
 
   const [width, setWidth] = useState(480);
   const [isResizing, setIsResizing] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useSmartDrawerOutsideClose({
+    isOpen,
+    disabled: isResizing,
+    drawerRef: panelRef,
+    onClose,
+  });
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -189,12 +198,14 @@ export const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({
     <>
       {isOpen && (
         <div 
+          data-drawer-backdrop="true"
           className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
       <div 
+        ref={panelRef}
         style={{ '--drawer-width': `${width}px` } as React.CSSProperties}
         className={`dashboard-detail-drawer bg-white dark:bg-slate-800 shrink-0 ${
           isOpen ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] xl:max-w-[min(var(--drawer-width),50vw)] shadow-drawer-task border border-blue-500/20 opacity-100 pointer-events-auto drawer-slide-in' : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'

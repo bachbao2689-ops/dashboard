@@ -95,7 +95,7 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] items-start lg:items-center justify-between gap-3 mb-4 w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] items-start lg:items-center justify-between gap-3 mb-4 w-full">
       <div className="grid grid-flow-col auto-cols-max items-center gap-2.5">
         <ListTodo className="w-6 h-6 text-[#002e6d] dark:text-sky-400" />
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
@@ -103,11 +103,12 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
         </h1>
       </div>
 
-      <SlidingToolbarGroup
-        className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center justify-start lg:justify-end lg:justify-self-end gap-2 overflow-x-auto max-w-full no-scrollbar"
-        showHoverPill={true}
-        showActivePill={false}
-      >
+      <div className="inline-grid grid-flow-col auto-cols-max items-center justify-start lg:justify-end lg:justify-self-end gap-2 max-w-full min-w-0">
+        <SlidingToolbarGroup
+          className="mobile-actions-row inline-grid grid-flow-col auto-cols-max items-center justify-start gap-2 overflow-x-auto max-w-full min-w-0 no-scrollbar"
+          showHoverPill={true}
+          showActivePill={false}
+        >
         {/* 2. Status Filter */}
         <StatusFilterDropdown
           value={statusFilter}
@@ -185,18 +186,19 @@ export const TaskListToolbar: React.FC<TaskListToolbarProps> = ({
             <span className="hidden sm:inline">{t('projects.clearFilters')}</span>
           </ActionButton>
         )}
-
-        {/* 8. Add New Task Button */}
-        {canCreateTask && !readOnly && (
-          <ActionButton icon={<Plus className="w-4 h-4" />}
-            type="button"
-            onClick={onCreate}
-            className="btn-add-new h-9 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-3.5 rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer ml-1 z-10"
-          >
-            <span>{t('tasks.createBtn')}</span>
-          </ActionButton>
-        )}
       </SlidingToolbarGroup>
+
+      {/* 8. Add New Task Button */}
+      {canCreateTask && !readOnly && (
+        <ActionButton icon={<Plus className="w-4 h-4" />}
+          type="button"
+          onClick={onCreate}
+          className="btn-add-new !inline-grid grid-flow-col auto-cols-max place-content-center place-items-center text-center h-9 !py-0 !px-3.5 !rounded-[8px] text-xs sm:text-sm font-semibold transition-all shadow-sm cursor-pointer text-white leading-none shrink-0"
+        >
+          <span>{t('tasks.createBtn')}</span>
+        </ActionButton>
+      )}
+      </div>
     </div>
   );
 };

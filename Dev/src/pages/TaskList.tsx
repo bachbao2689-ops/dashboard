@@ -8,6 +8,7 @@ import {useTaskListActions} from '../hooks/useTaskListActions';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
+import { captureAnchorRect, type AnchorRectSnapshot } from '../lib/anchoredPopoverPosition';
 import { TaskListToolbar } from '../components/features/tasks/list/TaskListToolbar';
 import { TaskListLayout } from '../components/features/tasks/list/TaskListLayout';
 import { TaskListCollection } from '../components/features/tasks/list/TaskListCollection';
@@ -55,6 +56,7 @@ export const TaskList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteAnchor, setBulkDeleteAnchor] = useState<{ el: HTMLElement | null; rect: AnchorRectSnapshot | null } | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
 
   const { tasks, loading, error, refetch } = useTasks();
@@ -223,7 +225,7 @@ export const TaskList: React.FC = () => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const inSevenDays = new Date(today); inSevenDays.setDate(today.getDate() + 7);
 
-  const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);const removed=await actions.remove(visibleSelectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
+  const handleBulkDelete=async()=>{setIsBulkDeleteModalOpen(false);setBulkDeleteAnchor(null);const removed=await actions.remove(visibleSelectedTasks);setSelectedTasks(current=>current.filter(id=>!removed.includes(id)));};
   const handleSingleDelete=async()=>{if(!taskToDelete)return;const key=taskToDelete.id;setTaskToDelete(null);await actions.remove([key]);};
 
   const handleTaskStatusChange = async (task: any, nextStatus: string) => {
@@ -462,7 +464,7 @@ export const TaskList: React.FC = () => {
           onComplete={handleBulkComplete}
           busy={actions.busy}
           canComplete={canBulkComplete}
-          onDelete={() => setIsBulkDeleteModalOpen(true)}
+          onDelete={(anchorEl) => { setBulkDeleteAnchor(anchorEl ? { el: anchorEl, rect: captureAnchorRect(anchorEl) } : null); setIsBulkDeleteModalOpen(true); }}
           onClear={() => setSelectedTasks([])}
         />
       </div>
@@ -497,8 +499,10 @@ export const TaskList: React.FC = () => {
         isOpen={isBulkDeleteModalOpen}
         title={t('tasks.deleteSelectedTitle')}
         message={t('tasks.deleteSelectedConfirm')}
+        anchorEl={bulkDeleteAnchor?.el}
+        anchorRect={bulkDeleteAnchor?.rect}
         onConfirm={handleBulkDelete}
-        onCancel={() => setIsBulkDeleteModalOpen(false)}
+        onCancel={() => { setIsBulkDeleteModalOpen(false); setBulkDeleteAnchor(null); }}
       />
       <ConfirmDeleteModal
         isOpen={!!taskToDelete}

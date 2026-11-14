@@ -151,24 +151,22 @@ export const Overview: React.FC = () => {
       {/* KPI row – each card is clickable and has a mini visual */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <button onClick={() => navigate('/tasks?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-blue`}>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 motion-bento-inner">
             <p className={LABEL}>{t('overview.myTasks')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.myTasksCount}</p>
-
           </div>
-          <div className="relative grid place-items-center">
+          <div className="relative grid place-items-center motion-bento-inner">
             <Ring pct={donePct} color="#093570" track={ringTrack} />
             <span className={`absolute text-xs font-bold ${INK}`}>{donePct}%</span>
           </div>
         </button>
 
         <button onClick={() => navigate('/tasks?scope=due-soon')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-amber`}>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 motion-bento-inner">
             <p className={LABEL}>{t('overview.dueSoon')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.dueSoonCount}</p>
-
           </div>
-          <div className="flex items-end gap-1 h-[60px]">
+          <div className="grid grid-flow-col auto-cols-max items-end gap-1 h-[60px] motion-bento-inner">
             {weekData.slice(0, 5).map((d, i) => (
               <i key={i} className="w-2 rounded-t bg-amber-400" style={{ height: `${Math.max(d.count, 0.4) / 5 * 100}%`, opacity: 0.4 + i * 0.15 }} />
             ))}
@@ -176,12 +174,11 @@ export const Overview: React.FC = () => {
         </button>
 
         <button onClick={() => navigate('/borrow-requests?scope=mine')} className={`${PANEL} p-4 text-left flex items-center justify-between gap-3 hover-magnetic-card magnetic-violet`}>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 motion-bento-inner">
             <p className={LABEL}>{t('overview.borrowed')}</p>
             <p className={`text-4xl font-bold leading-none ${INK}`}>{data.borrowedCount}</p>
-
           </div>
-          <div className="relative grid place-items-center">
+          <div className="relative grid place-items-center motion-bento-inner">
             <Ring pct={data.recentRequests.length ? data.borrowedCount/data.recentRequests.length*100 : 0} color="#3789f4" track={ringTrack} />
             <span className={`absolute text-xs font-bold ${INK}`}>
               {data.recentRequests.length ? `${Math.round((data.borrowedCount / data.recentRequests.length) * 100)}%` : '0%'}
@@ -197,21 +194,21 @@ export const Overview: React.FC = () => {
               : `bg-white dark:bg-slate-800 ${INNER}`
           }`}
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 motion-bento-inner">
             <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-red-500">{t('overview.overdue')}</p>
             <p className="text-4xl font-bold leading-none text-red-500">{data.overdueCount}</p>
             <span className="inline-flex items-center gap-1 text-xs font-bold text-red-500">
               <AlertCircle size={12} /> {t('overview.actionRequired')}
             </span>
           </div>
-          <ChevronRight size={22} className="text-red-500/60" />
+          <ChevronRight size={22} className="text-red-500/60 motion-bento-inner" />
         </button>
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className={`${PANEL} p-5 xl:col-span-2`}>
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2 mb-3 motion-bento-inner">
             <div>
               <p className={LABEL}>{t('overview.taskStatus')}</p>
               <p className={`text-sm mt-1 ${INK}`}>
@@ -223,7 +220,7 @@ export const Overview: React.FC = () => {
               <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-teal-500" />{t('overview.done')}</span>
             </div>
           </div>
-          <div className="h-56">
+          <div className="h-56 motion-chart-reveal">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={taskStatusData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>

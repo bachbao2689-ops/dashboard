@@ -7,6 +7,7 @@ interface PhasePermissionToggleProps {
   onChange: (checked: boolean) => void;
   visible?: boolean;
   lang?: string;
+  inline?: boolean;
 }
 
 export const PhasePermissionToggle: React.FC<PhasePermissionToggleProps> = ({
@@ -15,6 +16,7 @@ export const PhasePermissionToggle: React.FC<PhasePermissionToggleProps> = ({
   onChange,
   visible = true,
   lang = 'vi',
+  inline = false,
 }) => {
   const canManage = Boolean(
     isAdmin(profile) || isGlobalManager(profile) || isDepartmentLeader(profile)
@@ -33,7 +35,7 @@ export const PhasePermissionToggle: React.FC<PhasePermissionToggleProps> = ({
 
   return (
     <div
-      className={`absolute right-2.5 top-1/2 -translate-y-1/2 z-10 transition-all duration-500 ease-out ${
+      className={`${inline ? 'relative inline-grid place-items-center shrink-0' : 'absolute right-2.5 top-1/2 -translate-y-1/2'} z-10 transition-all duration-500 ease-out ${
         visible
           ? 'opacity-100 scale-100 translate-x-0 pointer-events-auto'
           : 'opacity-0 scale-90 translate-x-2 pointer-events-none'

@@ -1,4 +1,5 @@
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
+import { createPortal } from 'react-dom';
 import {Plus, X, Trash2, AlertTriangle} from 'lucide-react';
 import {MultiSelect} from '../../common/MultiSelect';
 import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
@@ -6,13 +7,16 @@ import {WorkflowDateField} from '../../features/projects/WorkflowDateField';
 export function WorkflowModals({model}: {model: WorkflowModel}) {
   const {hub, isEn, isCampaign, allTasks, parentCalendar, showAddPhaseModal, setShowAddPhaseModal, editingPhaseId, insertPhaseIndex, newPhaseName, setNewPhaseName, newPhaseDesc, setNewPhaseDesc, phasePicIds, setPhasePicIds, phaseSubIds, setPhaseSubIds, phaseStart, setPhaseStart, phaseDue, setPhaseDue, phaseStatus, setPhaseStatus, phaseOpportunity, setPhaseOpportunity, phaseReason, setPhaseReason, personOptions, handleCreatePhase, phaseToDelete, setPhaseToDelete, confirmDeletePhase, field} = model;
   return (<>
-{showAddPhaseModal && (
+{showAddPhaseModal && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs grid place-items-center p-4 animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[10050] bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm grid place-items-center p-3 sm:p-4 animate-in fade-in"
           onClick={() => setShowAddPhaseModal(false)}
         >
           <div
-            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-[8px] max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            data-modal-surface="true"
+            className="modal-liquid-glass border border-white/95 dark:border-slate-700/80 rounded-2xl max-w-lg w-full p-4 sm:p-5 space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto custom-scrollbar"
             onClick={e => e.stopPropagation()}
           >
             <div className="grid grid-cols-[1fr_auto] items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
@@ -96,18 +100,20 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-{phaseToDelete && (
+{phaseToDelete && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs grid place-items-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[10050] bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm grid place-items-center p-3 sm:p-4 animate-in fade-in duration-200"
           onClick={() => !hub.busy && setPhaseToDelete(null)}
         >
           <div
+            data-modal-surface="true"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-phase-modal-title"
-            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-[8px] max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+            className="modal-liquid-glass border border-white/95 dark:border-slate-700/80 rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150"
             onClick={e => e.stopPropagation()}
           >
             {/* Header Icon + Title */}
@@ -199,7 +205,8 @@ export function WorkflowModals({model}: {model: WorkflowModel}) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
   </>);
 }

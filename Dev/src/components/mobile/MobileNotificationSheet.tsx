@@ -140,7 +140,16 @@ export const MobileNotificationSheet: React.FC<MobileNotificationSheetProps> = (
             <div
               role="button"
               tabIndex={0}
-              onClick={() => void appUpdateService.reloadApp()}
+              onClick={() => {
+                onClose();
+                navigate('/software-update');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onClose();
+                  navigate('/software-update');
+                }
+              }}
               className="p-2.5 rounded-[10px] bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 grid grid-cols-[auto_1fr_auto] items-center gap-2.5 cursor-pointer hover:border-blue-500/60 transition-all shadow-2xs mb-1"
             >
               <span className="w-7 h-7 rounded-[8px] bg-blue-500/20 text-blue-600 dark:text-cyan-400 grid place-items-center shrink-0">
@@ -148,22 +157,23 @@ export const MobileNotificationSheet: React.FC<MobileNotificationSheetProps> = (
               </span>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                  {updateInfo.title || 'Cập nhật phiên bản mới'}
+                  {updateInfo.title || (isEn ? 'New update available' : 'Có bản cập nhật mới')}
                 </p>
                 <p className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
-                  {updateInfo.message || 'Bấm để tải lại và trải nghiệm ngay'}
+                  {isEn ? 'Open Software Update to install' : 'Mở Software Update để cập nhật'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  void appUpdateService.reloadApp();
+                  onClose();
+                  navigate('/software-update');
                 }}
-                className="px-2 py-1 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-[6px] shrink-0 grid grid-flow-col auto-cols-max items-center gap-1 transition-colors cursor-pointer"
+                className="px-2 py-1 text-[10px] font-bold bg-[#002e6d] hover:bg-[#001f4d] dark:bg-sky-600 dark:hover:bg-sky-500 text-white rounded-[6px] shrink-0 grid grid-flow-col auto-cols-max items-center gap-1 transition-colors cursor-pointer"
               >
                 <RefreshCw size={10} />
-                <span>{isEn ? 'Reload' : 'Tải lại'}</span>
+                <span>{isEn ? 'Open' : 'Mở'}</span>
               </button>
             </div>
           )}

@@ -178,7 +178,7 @@ export function ReportProfileCard({
               <strong>{member.done}/{member.tasks?.length || 0}</strong>
             </span>
             <span className="report-profile-perf-label">
-              {lang === 'en' ? 'Done/Tasks' : 'Hoàn thành/Tổng Task'}
+              {lang === 'en' ? 'Done' : 'Hoàn thành'}
             </span>
           </div>
 
@@ -2745,7 +2745,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
 
           {/* DRILL-DOWN PANEL: Selected Staff Detailed View */}
           {selectedStaff && (
-            <div className="rounded-[8px] p-5 border-2 border-[#38bdf8]/40 bg-white/90 dark:bg-slate-900/90 shadow-lg backdrop-blur-xl space-y-4">
+            <div className="mt-5 rounded-[8px] p-5 border-2 border-[#38bdf8]/40 bg-white/90 dark:bg-slate-900/90 shadow-lg backdrop-blur-xl space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] items-start sm:items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
                 <div className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#002e6d] to-[#38bdf8] grid place-items-center text-white font-bold text-sm shadow-sm">
                   {selectedStaff.avatar_url ? (
@@ -2790,7 +2790,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
               {/* Drill-down 2 Columns */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Column 1: Active Tasks in Period (with Slide 5c interactive filters) */}
-                <div className="rounded-[8px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                <div className="rounded-[8px] p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 grid grid-rows-[auto_minmax(0,1fr)] gap-3">
                   <div className="grid grid-cols-1 gap-2">
                     <div className="grid grid-flow-col justify-between items-center">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -2799,8 +2799,8 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <span className="text-[11px] text-slate-400">{t('reports.viz.realtimeUpdate')}</span>
                     </div>
 
-                    {/* Track filter pills */}
-                    <div className="grid grid-flow-col auto-cols-max gap-1 pb-1">
+                    {/* Unified Interactive Filters: Track | Status */}
+                    <div className="grid grid-flow-col auto-cols-max items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {(['all', 'project', 'campaign'] as const).map(track => {
                         const active = staffTrackFilter === track;
                         const count = track === 'all' ? selectedStaff.tasks.length : staffTrackCount(selectedStaff.tasks, track);
@@ -2810,7 +2810,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                             key={track}
                             type="button"
                             onClick={() => { setStaffTrackFilter(track); setStaffStatusFilter('all'); }}
-                            className={`px-2 py-0.5 rounded-[5px] text-[10px] font-bold border transition-colors cursor-pointer ${
+                            className={`px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-colors cursor-pointer ${
                               active
                                 ? 'bg-[#002e6d] dark:bg-sky-500 text-white border-transparent'
                                 : 'bg-white/90 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -2820,14 +2820,13 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                           </button>
                         );
                       })}
-                    </div>
 
-                    {/* Interactive Status Filter Buttons (Slide 5c) */}
-                    <div className="grid grid-flow-col auto-cols-max gap-1.5 overflow-x-auto pb-1 text-xs">
+                      <span aria-hidden="true" className="px-1 text-xs font-medium text-slate-300 dark:text-slate-600 select-none">|</span>
+
                       <button
                         type="button"
                         onClick={() => setStaffStatusFilter('all')}
-                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-all cursor-pointer ${
                           staffStatusFilter === 'all'
                             ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 border-transparent shadow-xs'
                             : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -2840,7 +2839,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <button
                         type="button"
                         onClick={() => setStaffStatusFilter('done')}
-                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-all cursor-pointer ${
                           staffStatusFilter === 'done'
                             ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                             : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
@@ -2853,7 +2852,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <button
                         type="button"
                         onClick={() => setStaffStatusFilter('doing')}
-                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-all cursor-pointer ${
                           staffStatusFilter === 'doing'
                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                             : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/60'
@@ -2866,7 +2865,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <button
                         type="button"
                         onClick={() => setStaffStatusFilter('todo')}
-                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-all cursor-pointer ${
                           staffStatusFilter === 'todo'
                             ? 'bg-slate-600 text-white border-slate-600 shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -2879,7 +2878,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                       <button
                         type="button"
                         onClick={() => setStaffStatusFilter('late')}
-                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-semibold border transition-all cursor-pointer ${
+                        className={`grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10.5px] font-semibold border transition-all cursor-pointer ${
                           staffStatusFilter === 'late'
                             ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
                             : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/60'
@@ -2891,7 +2890,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 gap-2 max-h-[360px] min-h-0 overflow-y-auto overscroll-contain content-start pr-1 pb-1">
                     {filteredStaffTasks && filteredStaffTasks.length > 0 ? (
                       filteredStaffTasks.map((task: any, tIdx: number) => {
                         const isCampaign = Boolean(
@@ -2946,31 +2945,31 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                 </div>
 
                 {/* Column 2: Backlog Items reported from Tab Profile */}
-                <div className="rounded-[8px] p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                <div className="rounded-[8px] p-4 bg-white/95 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 grid grid-rows-[auto_minmax(0,1fr)] gap-3">
                   <div className="grid grid-flow-col justify-between items-center">
                     <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         {t('reports.viz.profileBacklogTitle', { count: selectedStaff.profileBacklogItems?.length || 0 })}
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                    <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
                       {t('reports.viz.profileTabBadge')}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 gap-2 max-h-[360px] min-h-0 overflow-y-auto overscroll-contain content-start pr-1 pb-1">
                     {selectedStaff.profileBacklogItems && selectedStaff.profileBacklogItems.length > 0 ? (
                       selectedStaff.profileBacklogItems.map((backlog) => (
                         <div
                           key={backlog.id}
-                          className="p-2.5 rounded-[6px] bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/60 text-xs grid grid-cols-1 gap-1 shadow-xs"
+                          className="p-2.5 rounded-[6px] bg-white dark:bg-slate-900 border border-amber-300/80 dark:border-amber-700/60 text-xs grid grid-cols-1 gap-1 shadow-xs"
                         >
                           <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                             <span className="font-semibold text-slate-900 dark:text-white">
                               {backlog.title}
                             </span>
-                            <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                            <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                               {backlog.projectTag}
                             </span>
                           </div>
@@ -2986,7 +2985,7 @@ export const ReportAnalytics: React.FC<ReportAnalyticsProps> = ({ standalone = f
                               {backlog.entityName || backlog.projectTag}
                             </span>
                           </div>
-                          <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300">
                             <strong>{t('reports.viz.backlogReason')}</strong> {backlog.reason}
                           </p>
                           <span className="text-[10px] text-slate-400">

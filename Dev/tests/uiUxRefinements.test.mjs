@@ -232,7 +232,7 @@ test('ReportProfile: label order & subtitle role tracking (no button, adaptive 2
 
   // Verify merged Tasks/Done box: uses ClipboardList icon and displays done/total
   assert.equal(tsx.includes('member.done}/{member.tasks?.length || 0}'), true);
-  assert.equal(tsx.includes("lang === 'en' ? 'Done/Tasks' : 'Hoàn thành/Tổng Task'"), true);
+  assert.equal(tsx.includes("lang === 'en' ? 'Done' : 'Hoàn thành'"), true);
 
   // Verify Top 5 KPI Cards order: Card 3 (Project & Campaign) -> Card 1 (Tổng Task) -> Card 2 (Tồn đọng) -> Card 4 (Đang làm) -> Card 5 (Hình ảnh/file)
   const card3Idx = tsx.indexOf('data-expandable-box="card3"');
@@ -662,3 +662,91 @@ test('Projects View Mode & Kanban Board: 5 status columns, open filter preserves
 
 
 
+
+test("20. Profile Settings popover box, persisted mute notifications, and Zero Flexbox Header", () => {
+  const resolveSrc = (rel) => path.resolve(fileURLToPath(import.meta.url), "../../src", rel);
+
+  const uiStoreCode = fs.readFileSync(resolveSrc("store/uiStore.ts"), "utf8");
+  assert.equal(uiStoreCode.includes("notificationsMuted: boolean;"), true);
+  assert.equal(uiStoreCode.includes("setNotificationsMuted"), true);
+  assert.equal(uiStoreCode.includes("toggleNotificationsMuted"), true);
+  assert.equal(uiStoreCode.includes("'notificationsMuted'"), true);
+
+  const stackCode = fs.readFileSync(resolveSrc("components/features/notifications/NotificationPopupStack.tsx"), "utf8");
+  assert.equal(stackCode.includes("notificationsMuted=useUiStore(s=>s.notificationsMuted)"), true);
+  assert.equal(stackCode.includes("!notificationsMuted"), true);
+  assert.equal(stackCode.includes("setStack([])"), true);
+
+  for (const rel of [
+    "components/layouts/Sidebar.tsx",
+    "components/layouts/Header.tsx",
+    "components/features/profile/ProfileCalendar.tsx",
+  ]) {
+    const code = fs.readFileSync(resolveSrc(rel), "utf8");
+    assert.equal(code.includes("notificationsMuted"), true, `${rel} must subscribe to notificationsMuted`);
+    assert.equal(code.includes("BellOff"), true, `${rel} must swap Bell to BellOff when muted`);
+  }
+
+  const profileHeaderCode = fs.readFileSync(resolveSrc("components/features/profile/ProfileHeader.tsx"), "utf8");
+  assert.equal(profileHeaderCode.includes("<Settings"), true);
+  assert.equal(profileHeaderCode.includes("createPortal"), true);
+  assert.equal(profileHeaderCode.includes("computeAnchoredPopoverCoords"), true);
+  assert.equal(profileHeaderCode.includes("t('profile.editProfile')"), true);
+  assert.equal(profileHeaderCode.includes("'Tắt thông báo'"), true);
+  assert.equal(profileHeaderCode.includes("'Mute notifications'"), true);
+  assert.equal(profileHeaderCode.includes("role=\"switch\""), true);
+  assert.equal(profileHeaderCode.includes("bg-emerald-500"), true);
+
+  const flexClassRegex = /\b(flex|inline-flex|flex-row|flex-col|flex-wrap)\b/;
+  assert.equal(flexClassRegex.test(profileHeaderCode), false, "ProfileHeader must have 100% Zero Flexbox");
+});
+
+test("21. NotificationPopupStack sits flush in top-right corner, expands all notifications without limits, and uses Zero Flexbox", () => {
+  const resolveSrc = (rel) => path.resolve(fileURLToPath(import.meta.url), "../../src", rel);
+
+  const stackCode = fs.readFileSync(resolveSrc("components/features/notifications/NotificationPopupStack.tsx"), "utf8");
+  const cssCode = fs.readFileSync(resolveSrc("styles/notification-popup.css"), "utf8");
+  const visualCode = fs.readFileSync(resolveSrc("components/features/notifications/notificationVisual.tsx"), "utf8");
+
+  assert.equal(stackCode.includes("HISTORY="), false, "Popup log must not hardcode HISTORY limit");
+  assert.equal(stackCode.includes(".slice(0,HISTORY)"), false, "Popup log must not slice history");
+  assert.equal(stackCode.includes("const totalPopups=Math.max(stack.length,log.length);"), true);
+  assert.equal(stackCode.includes("const extra=totalPopups>1?totalPopups-1:0;"), true);
+  assert.equal(stackCode.includes("data-anchored-popover=\"true\""), true);
+
+  assert.equal(cssCode.includes(".notif-stack{position:fixed;z-index:9500;top:calc(12px + env(safe-area-inset-top,0px));right:16px;"), true);
+  assert.equal(cssCode.includes(".notif-panel{position:fixed;z-index:9500;top:calc(12px + env(safe-area-inset-top,0px));right:16px;"), true);
+  assert.equal(cssCode.includes("max-height:min(60vh,420px)"), false, "Expanded notification panel list must not cap at 420px");
+  assert.equal(cssCode.includes("grid-auto-flow:column;grid-auto-columns:max-content"), true);
+
+  const flexRegex = /\b(flex|inline-flex|flex-row|flex-col|flex-wrap)\b/;
+  assert.equal(flexRegex.test(stackCode), false, "NotificationPopupStack.tsx must have 100% Zero Flexbox");
+  assert.equal(flexRegex.test(cssCode), false, "notification-popup.css must have 100% Zero Flexbox");
+  assert.equal(flexRegex.test(visualCode), false, "notificationVisual.tsx must have 100% Zero Flexbox");
+});
+
+test("22. TeamWorkload ReportAnalytics: short Hoàn thành card label, margin-top separation, single-row Track|Status filters, white/dark backlog box with amber card borders only, and uncropped list", () => {
+  const resolveSrc = (rel) => path.resolve(fileURLToPath(import.meta.url), "../../src", rel);
+  const reportTsx = fs.readFileSync(resolveSrc("components/features/reports/ReportAnalytics.tsx"), "utf8");
+  const reportCss = fs.readFileSync(resolveSrc("components/features/reports/ReportProfiles.css"), "utf8");
+
+  // 1. Short card label Done / Hoàn thành & non-truncating Grid track
+  assert.equal(reportTsx.includes("lang === 'en' ? 'Done' : 'Hoàn thành'"), true);
+  assert.equal(reportCss.includes("grid-template-columns: minmax(max-content, 1.25fr) repeat(3, minmax(0, 1fr));"), true);
+
+  // 2. Margin above drilldown panel
+  assert.equal(reportTsx.includes("className=\"mt-5 rounded-[8px] p-5 border-2"), true);
+
+  // 3. Combined Track | Status filter row with explicit pipe separator
+  assert.equal(reportTsx.includes("Unified Interactive Filters: Track | Status"), true);
+  assert.equal(reportTsx.includes(">|</span>"), true);
+
+  // 4. Right backlog column: white/neutral Light/Dark box & neutral badges, amber border ONLY on task cards
+  assert.equal(reportTsx.includes("bg-white/95 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60"), true);
+  assert.equal(reportTsx.includes("bg-amber-50/50 dark:bg-amber-950/20"), false);
+  assert.equal(reportTsx.includes("bg-amber-200/60 dark:bg-amber-900/60"), false);
+  assert.equal(reportTsx.includes("border-amber-300/80 dark:border-amber-700/60"), true);
+
+  // 5. Fix crop in scrollable lists
+  assert.equal(reportTsx.includes("max-h-[360px] min-h-0 overflow-y-auto overscroll-contain content-start"), true);
+});

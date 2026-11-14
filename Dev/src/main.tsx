@@ -2,8 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/theme.css'
+import './styles/dashboard-motion.css'
 import App from './App.tsx'
 import { initMagneticHover } from './lib/magneticHover'
+import { initEdgeCropBlur } from './lib/edgeCropBlur'
 import {registerPushWorker} from './services/pushNotifications'
 
 // Auto-recover from stale Vite chunks when new version is deployed
@@ -16,6 +18,7 @@ window.addEventListener('vite:preloadError', () => {
 });
 
 initMagneticHover();
+initEdgeCropBlur();
 void registerPushWorker().catch(()=>{});
 
 createRoot(document.getElementById('root')!).render(

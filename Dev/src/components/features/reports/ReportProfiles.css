@@ -394,10 +394,10 @@
 /* Performance columns: Cả 4 cụm label xếp thẳng hàng ngang đẹp mắt và cân đối dưới đường kẻ divider */
 .report-profile-perf-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(max-content, 1.25fr) repeat(3, minmax(0, 1fr));
   justify-content: center;
   align-items: start;
-  column-gap: clamp(3px, 1.8cqi, 7px);
+  column-gap: clamp(2px, 1.4cqi, 6px);
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;

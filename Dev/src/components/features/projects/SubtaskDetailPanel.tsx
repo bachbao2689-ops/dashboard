@@ -1,5 +1,6 @@
 import {useReadEntityNotifications} from '../../../hooks/useReadEntityNotifications';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
+import {useSmartDrawerOutsideClose} from '../../../hooks/useSmartDrawerOutsideClose';
 import {hasCanonicalNotifications} from '../../../store/notificationStore';
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { workflowDateError } from '../../../lib/workflowCalendar';
@@ -938,37 +939,13 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
   const panelRef = useRef<HTMLElement>(null);
 
-  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
-  useEffect(() => {
-    if (embedded) return;
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (panelRef.current && panelRef.current.contains(target)) return;
-      if (
-        target.closest('.tw-calendar-popover') ||
-        target.closest('[role="dialog"]') ||
-        target.closest('[role="menu"]') ||
-        target.closest('[role="listbox"]') ||
-        target.closest('.toast') ||
-        target.closest('#headlessui-portal-root')
-      ) {
-        return;
-      }
-      onClose();
-    };
-
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handlePointerDown);
-      document.addEventListener('touchstart', handlePointerDown);
-    }, 60);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-    };
-  }, [embedded, onClose]);
+  // Smart auto-close detail drawer: collapse only on empty space clicks; keep open when clicking interactive UI
+  useSmartDrawerOutsideClose({
+    isOpen: Boolean(subtask) && !embedded,
+    disabled: resizing,
+    drawerRef: panelRef,
+    onClose,
+  });
 
   if (!subtask) return null;
   const completed = isDone(subtask.status);
@@ -978,6 +955,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
   return (
     <>
       {!embedded && <div
+        data-drawer-backdrop="true"
         className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[85] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
@@ -985,7 +963,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
       <aside 
         ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask border border-blue-500/20 z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={embedded ? 'flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#0a192f]' : `dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] shadow-drawer-subtask border border-blue-500/20 z-[90] drawer-slide-in ${!resizing ? 'transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
       >
       {!embedded && <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
@@ -1279,7 +1257,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
                       {open} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
                     </span>
                   )}
-                  <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${checklistCollapsed ? '-rotate-90' : ''}`} />
+                  <ChevronDown size={15} className={`text-gray-400 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${checklistCollapsed ? '-rotate-90' : ''}`} />
                 </button>
               </div>
             );
@@ -1524,7 +1502,7 @@ const SubtaskDetailPanelContent: React.FC<SubtaskDetailPanelProps> = ({ subtask,
 
           {/* Form thêm đầu việc */}
           {showAddItemForm && (
-            <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
+            <div className="mt-3 p-3.5 bg-gray-50 dark:bg-[#0a192f] rounded-[8px] border border-gray-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                 {lang === 'en' ? 'Subtask Title' : 'Tên subtask'} <span className="text-red-500">*</span>
                 <input

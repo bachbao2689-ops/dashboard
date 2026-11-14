@@ -1,5 +1,5 @@
 import React from 'react';
-import { KCoffeeSproutLogoAnimation } from './KCoffeeSproutLogoAnimation';
+import { PhucSinhLogoMotion } from './PhucSinhLogoMotion';
 import '../../styles/loading-splash.css';
 
 interface LoadingSplashScreenProps {
@@ -22,7 +22,7 @@ export const LoadingSplashScreen: React.FC<LoadingSplashScreenProps> = ({
   className = '',
 }) => {
   const content = (
-    <div className="relative w-full h-full flex flex-col items-center justify-center">
+    <div className="relative w-full h-full grid place-items-center">
       {isIntro && onSkip && (
         <button
           type="button"
@@ -34,16 +34,22 @@ export const LoadingSplashScreen: React.FC<LoadingSplashScreenProps> = ({
         </button>
       )}
 
-      {/* Pure Logo Presentation - No background circles, no card frame, no progress track */}
-      <div className="w-full flex items-center justify-center px-4">
-        <KCoffeeSproutLogoAnimation showReplayButton={showReplay} />
+      {/* Pure Logo Presentation - Vector SVG Phuc Sinh Consumers */}
+      <div className="w-full grid place-items-center px-4">
+        <PhucSinhLogoMotion
+          variant="full"
+          size="hero"
+          durationPreset="intro"
+          showReplayButton={showReplay}
+          replayOnHover
+        />
       </div>
     </div>
   );
 
   if (inline) {
     return (
-      <div className="relative w-full min-h-[360px] flex flex-col items-center justify-center p-6 overflow-hidden bg-[#002e6d] dark:bg-slate-900">
+      <div className="relative w-full min-h-[360px] grid place-items-center p-6 overflow-hidden bg-[#002e6d] dark:bg-slate-900">
         {content}
       </div>
     );
@@ -51,9 +57,10 @@ export const LoadingSplashScreen: React.FC<LoadingSplashScreenProps> = ({
 
   return (
     <div
-      className={`k-splash-container ${isExiting ? 'k-splash-exit' : ''} ${className}`}
+      className={`k-splash-container ${isExiting ? 'k-splash-exit' : ''} ${className} ${isIntro ? 'cursor-pointer' : ''}`}
       role="status"
       aria-live="polite"
+      onClick={isIntro ? onSkip : undefined}
     >
       {content}
     </div>

@@ -271,7 +271,7 @@ export const DashboardActivityHistory: React.FC<DashboardActivityHistoryProps> =
           </p>
         </div>
       ) : (
-        <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
+        <div className="max-h-[185px] [@media(min-height:980px)]:max-h-[320px] overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
           {filteredActivities.slice(0, 15).map(item => {
             const author = userMap.get(String(item.user_id));
             const badge = getActionBadge(item.action);

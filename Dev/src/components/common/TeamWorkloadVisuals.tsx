@@ -150,8 +150,8 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
       {/* Executive KPI Ribbon (Optional) */}
       {showKpiRibbon && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiCompletion')}</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>
@@ -159,12 +159,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.completionRate}%
             </b>
             <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium truncate">
-              {summary.doneTasks}/{summary.totalTasks} công việc
+              {summary.doneTasks}/{summary.totalTasks} {lang === 'en' ? 'tasks' : 'công việc'}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiInProgress')}</span>
               <Layers3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             </div>
@@ -172,12 +172,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.inProgressTasks}
             </b>
             <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              +{summary.todoTasks} chờ thực hiện
+              {lang === 'en' ? `+${summary.todoTasks} pending` : `+${summary.todoTasks} chờ thực hiện`}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('departments.kpiOverdue')}</span>
               <Clock className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
             </div>
@@ -197,12 +197,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              {summary.overdueTasks > 0 ? 'Cần ưu tiên xử lý' : 'Không có task trễ'}
+              {summary.overdueTasks > 0 ? (lang === 'en' ? 'Needs urgent action' : 'Cần ưu tiên xử lý') : (lang === 'en' ? 'No overdue tasks' : 'Không có task trễ')}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.totalMembers')}</span>
               <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             </div>
@@ -210,12 +210,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.totalMembers}
             </b>
             <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              {summary.openTasks} task đang mở
+              {lang === 'en' ? `${summary.openTasks} open tasks` : `${summary.openTasks} task đang mở`}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.avgTasks')}</span>
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
                 {summary.avgCapacity}%
@@ -225,12 +225,12 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.averageLoad}
             </b>
             <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              Công suất tính theo ưu tiên, hạn và loại công việc
+              {lang === 'en' ? 'Capacity weighted by priority & deadline' : 'Công suất tính theo ưu tiên, hạn và loại công việc'}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] p-3 shadow-sm grid grid-flow-row content-between">
+            <div className="grid grid-cols-[1fr_auto] items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('workload.overloaded')}</span>
               <Flame className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
             </div>
@@ -244,7 +244,7 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               {summary.overloadedCount}
             </b>
             <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              {summary.highLoadCount} thành viên ≥80% tải
+              {lang === 'en' ? `${summary.highLoadCount} members ≥80% load` : `${summary.highLoadCount} thành viên ≥80% tải`}
             </span>
           </div>
         </div>
@@ -576,10 +576,10 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <div>
                   <p className="text-xs font-bold tracking-[0.08em] uppercase text-gray-500 dark:text-gray-400">
-                    PHÂN BỔ TRẠNG THÁI CÔNG VIỆC THEO THÀNH VIÊN
+                    {lang === 'en' ? 'WORKLOAD STATUS ALLOCATION BY MEMBER' : 'PHÂN BỔ TRẠNG THÁI CÔNG VIỆC THEO THÀNH VIÊN'}
                   </p>
                   <span className="text-[11px] text-blue-600 dark:text-blue-400">
-                    Nhấp vào từng thanh/cột để xem danh sách công việc đang mở của thành viên
+                    {lang === 'en' ? 'Click on each bar/column to view open tasks of that member' : 'Nhấp vào từng thanh/cột để xem danh sách công việc đang mở của thành viên'}
                   </span>
                 </div>
 
@@ -618,8 +618,8 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
-                      title="Dạng ngang"
-                      aria-label="Dạng ngang"
+                      title={lang === "en" ? "Horizontal mode" : "Dạng ngang"}
+                      aria-label={lang === "en" ? "Horizontal mode" : "Dạng ngang"}
                     >
                       <AlignLeft className="w-3.5 h-3.5" />
                     </button>
@@ -631,8 +631,8 @@ export const TeamWorkloadVisuals: React.FC<TeamWorkloadVisualsProps> = ({
                           ? 'bg-[#093570] text-white shadow-xs dark:bg-blue-600'
                           : 'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
-                      title="Dạng cột"
-                      aria-label="Dạng cột"
+                      title={lang === "en" ? "Column mode" : "Dạng cột"}
+                      aria-label={lang === "en" ? "Column mode" : "Dạng cột"}
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
                     </button>

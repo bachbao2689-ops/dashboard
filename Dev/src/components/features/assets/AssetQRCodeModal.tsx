@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Download, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -146,16 +147,17 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
       `}</style>
 
       {/* Modal Popup hiển thị trên màn hình */}
-      <div className="fixed inset-0 z-[110] grid place-items-center p-4 overflow-y-auto print:hidden">
+      {typeof document !== 'undefined' && createPortal(
+      <div className="fixed inset-0 z-[10050] grid place-items-center p-4 overflow-y-auto print:hidden">
         {/* Backdrop mờ */}
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
 
-        {/* Khung Card Modal chuẩn UI Ref done layout popup.png */}
-        <div role="dialog" aria-modal="true" aria-labelledby="asset-qr-title" className="relative bg-white dark:bg-[#151c2c] border border-slate-100 dark:border-slate-700/80 rounded-[32px] w-full max-w-[360px] sm:max-w-[380px] overflow-hidden shadow-2xl z-10 my-auto p-6 sm:p-7 grid justify-items-center text-center animate-in fade-in zoom-in-95 duration-200">
+        {/* Khung Card Modal chuẩn Light Mode Liquid Glass */}
+        <div data-modal-surface="true" role="dialog" aria-modal="true" aria-labelledby="asset-qr-title" onClick={(e) => e.stopPropagation()} className="modal-liquid-glass relative border border-white/95 dark:border-slate-700/80 rounded-[28px] w-full max-w-[360px] sm:max-w-[380px] overflow-hidden z-10 my-auto p-6 sm:p-7 grid justify-items-center text-center animate-in fade-in zoom-in-95 duration-200">
           
           {/* Nút Đóng X */}
           <button
@@ -231,7 +233,9 @@ export const AssetQRCodeModal: React.FC<AssetQRCodeModalProps> = ({ asset, isOpe
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
 
       {/* Mẫu Template SVG chuẩn 3x4 (width 300, height 400) theo temp tải về.png - Dùng để In & Tải file SVG */}
       <div id="asset-qr-print-sticker" className="hidden print:grid">

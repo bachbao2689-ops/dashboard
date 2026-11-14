@@ -70,9 +70,8 @@ export function WorkflowGateChecklist({model}: {model: WorkflowModel}) {
                       <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
                         <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 truncate">
-                          {isEn ? 'Gate Checklist' : 'Tiêu chí thẩm định Gate'}
+                          {isEn ? 'Phase Criteria' : 'Tiêu chí của Phase'}
                         </span>
-                        <span className="text-[10px] text-gray-400 hidden sm:inline truncate">{isEn ? '(Score ≥ 80% to unlock next phase)' : '(Đạt ≥ 80% để mở khóa chặng sau)'}</span>
                       </div>
                     ) : (
                       <form onSubmit={handleAddCriteria} className="inline-grid grid-cols-[1fr_64px_auto_auto] items-center gap-1.5 w-full animate-in fade-in duration-200">

@@ -1,5 +1,6 @@
 import {ActionButton} from '../components/common/ActionButton';
 import { useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {useSearchParams} from 'react-router-dom';
 import {memberPermissionId} from '../services/memberAccounts';
 import { useMembers } from '../hooks/useMembers';
@@ -336,16 +337,19 @@ export function MemberManagement() {
         departments={departments}
         canAddAdmin={isAdmin(profile)}
       />}
-      {memberToRemove && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => !savingMember && setMemberToRemove(null)}>
-        <div role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="w-full max-w-md rounded-[8px] bg-white p-6 shadow-xl dark:bg-slate-800" onClick={event => event.stopPropagation()}>
-          <h2 id="remove-member-title" className="text-lg font-bold text-gray-900 dark:text-white">{t('members.removeTitle')}</h2>
-          <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{t('members.removeConfirm', { name: memberToRemove.name })}</p>
-          <div className="mt-6 flex justify-end gap-2">
-            <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-[8px] border border-gray-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">{t('common.cancel')}</button>
-            <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-[8px] bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{savingMember ? t('members.removing') : t('members.removeBtn')}</button>
+      {memberToRemove && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[10050] grid place-items-center bg-slate-950/45 dark:bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150" onClick={() => !savingMember && setMemberToRemove(null)}>
+          <div data-modal-surface="true" role="dialog" aria-modal="true" aria-labelledby="remove-member-title" className="modal-liquid-glass w-full max-w-md rounded-2xl border border-white/95 dark:border-slate-700/80 p-6 shadow-xl" onClick={event => event.stopPropagation()}>
+            <h2 id="remove-member-title" className="text-lg font-bold text-[#002e6d] dark:text-white">{t('members.removeTitle')}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{t('members.removeConfirm', { name: memberToRemove.name })}</p>
+            <div className="mt-6 grid grid-flow-col auto-cols-max justify-end gap-2.5">
+              <button type="button" disabled={savingMember} onClick={() => setMemberToRemove(null)} className="rounded-xl border border-slate-200/80 bg-white/90 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">{t('common.cancel')}</button>
+              <button type="button" disabled={savingMember} onClick={async () => { if (!memberToRemove) return; setSavingMember(true); const success = await setMemberRemoved(memberToRemove, true); setSavingMember(false); if (success) setMemberToRemove(null); }} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors cursor-pointer">{savingMember ? t('members.removing') : t('members.removeBtn')}</button>
+            </div>
           </div>
-        </div>
-      </div>}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

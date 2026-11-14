@@ -40,6 +40,15 @@ body {
   overflow: hidden;
 }
 
+html:not(.dark) body,
+html:not(.dark) .liquid-bg-container {
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(219, 234, 254, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 12% 88%, rgba(224, 242, 254, 0.50) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 45%, rgba(238, 242, 255, 0.35) 0%, transparent 65%),
+    #f4f7fb;
+}
+
 html,
 body,
 #root {
@@ -237,7 +246,7 @@ body:has(.report-standalone-mode),
 }
 
 .drawer-slide-in {
-  animation: drawer-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: drawer-slide-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes subtask-complete-pulse {
@@ -250,16 +259,42 @@ body:has(.report-standalone-mode),
   animation: subtask-complete-pulse 760ms ease-out both;
 }
 
-/* Fallback and universal card shape */
+/* Universal iOS 27 Liquid Glass Card Boxes (Light Mode) */
+html:not(.dark) div.bg-white.border:not([data-modal-surface="true"]):not(.modal-liquid-glass):is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl:not(input), .rounded-lg, .rounded-\[8px\], .rounded-\[10px\], .rounded-\[12px\], .rounded-\[14px\], .rounded-\[16px\]),
+html:not(.dark) section.bg-white.border,
+html:not(.dark) article.bg-white.border,
+html:not(.dark) .glass-panel,
+html:not(.dark) .card-hub {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86) 0%, rgba(244, 249, 255, 0.70) 100%) !important;
+  backdrop-filter: blur(20px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
+  border-color: rgba(255, 255, 255, 0.92) !important;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 1px 0 rgba(219, 234, 254, 0.45),
+    inset 0 0 16px 0 rgba(255, 255, 255, 0.45),
+    0 8px 24px -6px rgba(0, 46, 109, 0.07),
+    0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+}
+
+html:not(.dark) .card-hub .card-hub,
+html:not(.dark) .glass-panel .glass-panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78) 0%, rgba(246, 250, 255, 0.62) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 0 12px 0 rgba(255, 255, 255, 0.38),
+    0 4px 14px -4px rgba(0, 46, 109, 0.05) !important;
+}
+
 div.bg-white.border:is(.rounded-2xl, .rounded-3xl, .rounded-xl.shadow-sm, .rounded-xl:not(input)),
 section.bg-white.border,
 .glass-panel,
 .card-hub {
-  background: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%), #ffffff;
-  border-color: #e0eaff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  border-radius: 14px;
 }
+
 .card-hub, .glass-panel {
   border-width: 1px;
   border-style: solid;
@@ -271,6 +306,28 @@ section.bg-white.border,
 .dark .card-hub {
   background: radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0) 50%), #0f172a;
   border-color: rgba(59, 130, 246, 0.15);
+}
+
+/* Top-Layer Modal & Popup Luminous iOS 27 Liquid Glass Surface */
+html:not(.dark) .modal-liquid-glass,
+html:not(.dark) [data-modal-surface="true"] {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(243, 248, 255, 0.93) 100%) !important;
+  backdrop-filter: blur(26px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+  border-color: rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 18px 0 rgba(255, 255, 255, 0.55),
+    0 24px 56px -12px rgba(0, 46, 109, 0.22),
+    0 8px 20px -4px rgba(15, 23, 42, 0.08) !important;
+}
+
+.dark .modal-liquid-glass,
+.dark [data-modal-surface="true"] {
+  background: radial-gradient(ellipse at 100% 0%, rgba(56, 189, 248, 0.09), transparent 56%),
+    linear-gradient(155deg, #16263b 0%, #0d192b 78%) !important;
+  border-color: rgba(56, 189, 248, 0.18) !important;
+  box-shadow: inset 0 1px 0 rgba(195, 231, 255, 0.08), 0 24px 60px -15px rgba(0, 0, 0, 0.85) !important;
 }
 
 /* Liquid Glass Top Header & Depth Mask System (Desktop & Mobile) */
@@ -301,7 +358,7 @@ html:not(.dark) .liquid-glass-top-mask {
               inset 0 0 14px 0 rgba(255, 255, 255, 0.35),
               0 2px 8px -2px rgba(0, 0, 0, 0.03),
               0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: background 0.42s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .liquid-glass-header {
@@ -374,51 +431,81 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
   }
 }
 
-/* Status-tracked shapes */
-.card-status-task {
-  background: radial-gradient(circle at 100% 100%, #eff6ff 0%, rgba(239, 246, 255, 0) 50%), #ffffff !important;
-  border: 1px solid #bfdbfe !important;
+/* Status-tracked shapes (iOS 27 Liquid Glass Light Mode) */
+html:not(.dark) .card-status-task {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(239, 246, 255, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(191, 219, 254, 0.85) !important;
   border-radius: 16px !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px -4px rgba(0, 46, 109, 0.06) !important;
 }
 .dark .card-status-task {
   background: radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0) 50%), #0f172a !important;
   border-color: rgba(59, 130, 246, 0.2) !important;
 }
 
-.card-status-project {
-  background: radial-gradient(ellipse at 100% 110%, #f5f3ff 0%, transparent 60%), #ffffff !important;
-  border: 1px solid #ddd6fe !important;
+html:not(.dark) .card-status-project {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 243, 255, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(221, 214, 254, 0.85) !important;
   border-radius: 16px !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px -4px rgba(109, 40, 217, 0.06) !important;
 }
 .dark .card-status-project {
   background: radial-gradient(ellipse at 100% 110%, rgba(139, 92, 246, 0.15) 0%, transparent 60%), #0f172a !important;
   border-color: rgba(139, 92, 246, 0.2) !important;
 }
 
-.card-status-campaign {
-  background: radial-gradient(ellipse at 100% 110%, #fffbeb 0%, transparent 60%), #ffffff !important;
-  border: 1px solid #fde68a !important;
+html:not(.dark) .card-status-campaign {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(254, 252, 232, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(253, 230, 138, 0.85) !important;
   border-radius: 16px !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px -4px rgba(217, 119, 6, 0.06) !important;
 }
 .dark .card-status-campaign {
   background: radial-gradient(ellipse at 100% 110%, rgba(245, 158, 11, 0.15) 0%, transparent 60%), #0f172a !important;
   border-color: rgba(245, 158, 11, 0.2) !important;
 }
 
-.card-status-done {
-  background: radial-gradient(ellipse at 100% 110%, #ecfdf5 0%, transparent 60%), #ffffff !important;
-  border: 1px solid #a7f3d0 !important;
+html:not(.dark) .card-status-done {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 244, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(167, 243, 208, 0.85) !important;
   border-radius: 16px !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px -4px rgba(16, 185, 129, 0.06) !important;
 }
 .dark .card-status-done {
   background: radial-gradient(ellipse at 100% 110%, rgba(16, 185, 129, 0.15) 0%, transparent 60%), #0f172a !important;
   border-color: rgba(16, 185, 129, 0.2) !important;
 }
 
-.card-status-overdue {
-  background: radial-gradient(ellipse at 100% 110%, #fef2f2 0%, transparent 60%), #ffffff !important;
-  border: 1px solid #fecaca !important;
+html:not(.dark) .card-status-overdue {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(254, 242, 242, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(254, 202, 202, 0.85) !important;
   border-radius: 16px !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px -4px rgba(239, 68, 68, 0.06) !important;
 }
 .dark .card-status-overdue {
   background: radial-gradient(ellipse at 100% 110%, rgba(239, 68, 68, 0.15) 0%, transparent 60%), #0f172a !important;
@@ -539,14 +626,14 @@ html:not(.dark) .liquid-glass-header.is-scrolled {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-up {
-  animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUpFade 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes fadeOutDown {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(10px); }
 }
 .animate-fade-out {
-  animation: fadeOutDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeOutDown 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 
@@ -565,7 +652,7 @@ html:not(.dark)
   background-color: white;
   border-width: 0 1px 1px 1px;
   border-color: #dbeafe;
-  @apply text-primary shadow-md transition-[opacity,transform] duration-300 md:left-[calc(50%+136px)] motion-reduce:transition-none;
+  @apply text-primary shadow-md transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:left-[calc(50%+136px)] motion-reduce:transition-none;
 }
 .btn-header-dropdown-toggle:hover {
   @apply bg-blue-50;
@@ -623,10 +710,10 @@ html.dark .btn-new-task:hover {
   isolation: isolate;
   overflow: hidden;
   will-change: transform, box-shadow;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.35s ease,
-              border-color 0.35s ease,
-              background-color 0.3s ease !important;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 .btn-add-new {
@@ -649,7 +736,7 @@ html.dark .btn-new-task:hover {
   pointer-events: none;
   opacity: 0;
   z-index: 0;
-  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   background: radial-gradient(
     circle 110px at var(--mouse-x, 50%) var(--mouse-y, 50%),
     rgba(var(--glow-color), 0.28) 0%,
@@ -736,10 +823,10 @@ html.dark .hover-magnetic-btn.is-magnetic-active {
   position: relative;
   isolation: isolate;
   will-change: transform, box-shadow;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.35s ease,
-              border-color 0.35s ease,
-              background-color 0.3s ease !important;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 .hover-magnetic.magnetic-rose, .hover-magnetic-card.magnetic-rose { --glow-color: 244, 63, 94; }
@@ -761,7 +848,7 @@ html.dark .hover-magnetic-btn.is-magnetic-active {
   pointer-events: none;
   opacity: 0;
   z-index: 0;
-  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   background: radial-gradient(
     circle 150px at var(--mouse-x, 50%) var(--mouse-y, 50%),
     rgba(var(--glow-color), 0.16) 0%,
@@ -776,16 +863,42 @@ html.dark .hover-magnetic-btn.is-magnetic-active {
   z-index: 1;
 }
 
-/* Light mode card hover */
+/* Interactive Box Cards in Light Mode (iOS 27 Liquid Glass) */
+html:not(.dark) .hover-magnetic,
+html:not(.dark) .hover-magnetic-card,
+html:not(.dark) .hover-board-card,
+html:not(.dark) [data-board-card="true"],
+html:not(.dark) .kpi-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.90) 0%, rgba(245, 250, 255, 0.74) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border-color: rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 1px 0 rgba(191, 219, 254, 0.40),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.50),
+    0 6px 20px -4px rgba(0, 46, 109, 0.06),
+    0 2px 6px -1px rgba(0, 0, 0, 0.025) !important;
+  transition: all 0.42s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Light mode card hover - Fluid Hover Lifting & Specular Rim */
 html:not(.dark) .hover-magnetic:hover,
 html:not(.dark) .hover-magnetic-card:hover,
+html:not(.dark) .hover-board-card:hover,
+html:not(.dark) [data-board-card="true"]:hover,
+html:not(.dark) .kpi-card:hover,
 html:not(.dark) .hover-magnetic.is-magnetic-active,
 html:not(.dark) .hover-magnetic-card.is-magnetic-active {
-  transform: scale(1.02) translate(var(--mag-x, 0px), var(--mag-y, 0px)) !important;
-  border-color: rgba(var(--glow-color), 0.75) !important;
-  box-shadow: 0 10px 28px -6px rgba(var(--glow-color), 0.18),
-              0 4px 12px -2px rgba(0, 0, 0, 0.05),
-              inset 0 0 0 1px rgba(var(--glow-color), 0.25) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 248, 255, 0.84) 100%) !important;
+  border-color: rgba(147, 197, 253, 0.88) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 1px 0 rgba(147, 197, 253, 0.48),
+    inset 0 0 18px 0 rgba(255, 255, 255, 0.65),
+    0 12px 28px -6px rgba(0, 46, 109, 0.12),
+    0 4px 10px -2px rgba(30, 90, 170, 0.06) !important;
+  transform: translateY(-1.5px) !important;
 }
 
 /* Dark mode card hover */
@@ -800,10 +913,17 @@ html.dark .hover-magnetic-card.is-magnetic-active {
               inset 0 0 0 1px rgba(var(--glow-color), 0.3) !important;
 }
 
-.hover-magnetic:hover::before,
-.hover-magnetic-card:hover::before,
-.hover-magnetic.is-magnetic-active::before,
-.hover-magnetic-card.is-magnetic-active::before {
+html:not(.dark) .hover-magnetic:hover::before,
+html:not(.dark) .hover-magnetic-card:hover::before,
+html:not(.dark) .hover-magnetic.is-magnetic-active::before,
+html:not(.dark) .hover-magnetic-card.is-magnetic-active::before {
+  opacity: 0 !important;
+}
+
+html.dark .hover-magnetic:hover::before,
+html.dark .hover-magnetic-card:hover::before,
+html.dark .hover-magnetic.is-magnetic-active::before,
+html.dark .hover-magnetic-card.is-magnetic-active::before {
   opacity: 1;
 }
 
@@ -1067,4 +1187,14 @@ html.dark .dashboard-frosted-glass,
   -webkit-backdrop-filter: blur(24px) saturate(165%);
   border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: 0 24px 60px rgba(2, 6, 23, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Edge Blur/Fade Mask for horizontally cropped inline content */
+/* Edge Blur/Fade Mask: ONLY applied dynamically when element content actually overflows (scrollWidth > clientWidth) */
+.is-edge-cropped {
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+}
+.truncate.is-edge-cropped {
+  text-overflow: clip;
 }

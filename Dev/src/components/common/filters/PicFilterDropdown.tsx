@@ -89,6 +89,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
         icon={<Users size={14} className={isFiltered ? 'text-primary dark:text-blue-400' : 'text-gray-400'} />}
         type="button"
         aria-expanded={isOpen}
+        data-filtered={isFiltered ? 'true' : undefined}
         title={isFiltered ? `${t('projects.filterPic')}: ${displayLabel}` : defaultLabel}
         aria-label={isFiltered ? `${t('projects.filterPic')}: ${displayLabel}` : defaultLabel}
         onClick={e => {
@@ -98,12 +99,12 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
         }}
         className={
           compact
-            ? `w-[34px] h-[34px] p-0 rounded-[8px] text-xs font-medium grid place-items-center transition-colors relative cursor-pointer ${
+            ? `filter-dropdown-trigger w-[34px] h-[34px] p-0 rounded-[8px] text-xs font-medium grid place-items-center transition-colors relative cursor-pointer ${
                 isFiltered
                   ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400 font-semibold'
                   : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-slate-800/60'
               }`
-            : `h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+            : `filter-dropdown-trigger h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
                 isFiltered
                   ? 'border-primary/40 bg-primary/10 text-primary dark:bg-primary/20 dark:border-primary/50 dark:text-blue-400 font-semibold'
                   : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/60'
@@ -124,7 +125,7 @@ export const PicFilterDropdown: React.FC<PicFilterDropdownProps> = ({
 
       {isOpen && (
         <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 grid grid-rows-[auto_1fr] max-h-80`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] grid grid-rows-[auto_1fr] max-h-80`}
           onClick={e => e.stopPropagation()}
         >
           <div className="px-1 pb-2">

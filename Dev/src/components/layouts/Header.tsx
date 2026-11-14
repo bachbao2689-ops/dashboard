@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, X, Search, Sun, Moon, Bell, Sidebar, Globe, RefreshCw, Sparkles } from 'lucide-react';
+import { Check, X, Search, Sun, Moon, Bell, BellOff, Sidebar, Globe, RefreshCw, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../common/KpiCard';
 import { useUiStore } from '../../store/uiStore';
@@ -16,7 +16,7 @@ import { appUpdateService, type UpdateInfo } from '../../services/appUpdateServi
 
 
 export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> = ({mobileHidden=false, entranceClass=''}) => {
-  const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen } = useUiStore();
+  const { theme, toggleTheme, lang, setLang, toggleSidebar, isSidebarOpen, notificationsMuted } = useUiStore();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -370,7 +370,7 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
                     : "hover:bg-[#F4F4F5] dark:hover:bg-slate-700/60 text-gray-600 dark:text-gray-300"
                 )}
               >
-                <span className={unread > 0 ? 'notif-bell' : undefined} style={latestUnread ? toneStyle(latestUnread) : undefined}><Bell size={18} /></span>
+                <span className={!notificationsMuted && unread > 0 ? 'notif-bell' : undefined} style={!notificationsMuted && latestUnread ? toneStyle(latestUnread) : undefined} title={notificationsMuted ? (lang === 'en' ? 'Notifications muted' : 'Thông báo đang tắt') : undefined}>{notificationsMuted ? <BellOff size={18} className="text-gray-400" /> : <Bell size={18} />}</span>
                 {unread > 0 && <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border-2 border-white">{unread > 99 ? "99+" : unread}</span>}
               </button>
             
@@ -406,32 +406,40 @@ export const Header: React.FC<{mobileHidden?:boolean; entranceClass?: string}> =
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => void appUpdateService.reloadApp()}
-                      className="m-3 p-3 rounded-xl bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
+                      onClick={() => {
+                        setShowNotifs(false);
+                        navigate('/software-update');
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          setShowNotifs(false);
+                          navigate('/software-update');
+                        }
+                      }}
+                      className="m-3 p-3 rounded-xl bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 grid grid-cols-[auto_1fr_auto] items-center gap-2.5 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
-                          <Sparkles size={16} className="animate-pulse" />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                            {updateInfo.title || 'Cập nhật phiên bản mới'}
-                          </p>
-                          <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
-                            {updateInfo.message || 'Bấm để tải lại và trải nghiệm ngay'}
-                          </p>
-                        </div>
+                      <span className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-600 dark:text-cyan-400 grid place-items-center shrink-0">
+                        <Sparkles size={16} className="animate-pulse" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                          {updateInfo.title || 'Có bản cập nhật mới'}
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
+                          {lang === 'en' ? 'Open Software Update to install' : 'Mở Software Update để cập nhật'}
+                        </p>
                       </div>
                       <button
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
-                          void appUpdateService.reloadApp();
+                          setShowNotifs(false);
+                          navigate('/software-update');
                         }}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shrink-0 shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 text-[11px] font-bold bg-[#002e6d] hover:bg-[#001f4d] dark:bg-sky-600 dark:hover:bg-sky-500 text-white rounded-lg shrink-0 shadow-xs inline-grid grid-flow-col auto-cols-max items-center gap-1 transition-colors cursor-pointer"
                       >
                         <RefreshCw size={11} />
-                        <span>Tải lại</span>
+                        <span>{lang === 'en' ? 'View' : 'Xem'}</span>
                       </button>
                     </div>
                   )}

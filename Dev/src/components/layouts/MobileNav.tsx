@@ -17,6 +17,7 @@ import {
   Home,
   LayoutGrid,
   Bell,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '../common/KpiCard';
 import { useTranslation } from '../../i18n/translations';
@@ -25,6 +26,7 @@ import { useSidebarBadges } from '../../hooks/useSidebarBadges';
 import { canViewTeamManagement } from '../../lib/roleScope';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 import { MobileNotificationSheet } from '../mobile/MobileNotificationSheet';
+import { appUpdateService, type UpdateInfo } from '../../services/appUpdateService';
 
 export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden = false }) => {
   const { t, lang } = useTranslation();
@@ -42,6 +44,8 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
+  useEffect(() => appUpdateService.subscribe(setUpdateInfo), []);
 
   // Close drawer on overlay click or route change
   const closeDrawer = () => setIsDrawerOpen(false);
@@ -268,6 +272,28 @@ export const MobileNav: React.FC<{ scrollHidden?: boolean }> = ({ scrollHidden =
                     </span>
                   )}
                 </button>
+
+                {/* Mục Software Update trong drawer */}
+                <NavLink
+                  to="/software-update"
+                  onClick={closeDrawer}
+                  className={({ isActive }) => cn(
+                    "grid grid-cols-[auto_1fr_auto] items-center gap-2.5 px-2.5 py-2 rounded-[8px] transition-colors cursor-pointer text-xs font-semibold",
+                    isActive
+                      ? "bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-sky-300 font-bold border border-blue-200/70 dark:border-blue-800/60"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  )}
+                >
+                  <span className="w-5 h-5 grid place-items-center text-[#002e6d] dark:text-sky-400 shrink-0">
+                    <RefreshCw size={15} strokeWidth={2} />
+                  </span>
+                  <span className="truncate">Software Update</span>
+                  {updateInfo && (
+                    <span className="px-1.5 py-px rounded-full text-[9px] font-bold bg-sky-500/15 text-[#002e6d] border border-sky-300/70 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 leading-tight">
+                      {lang === 'en' ? 'New' : 'Mới'}
+                    </span>
+                  )}
+                </NavLink>
 
                 {navTabs.map((tab) => (
                   <NavLink

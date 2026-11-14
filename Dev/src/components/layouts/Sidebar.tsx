@@ -7,6 +7,7 @@ import {
   PanelLeft,
   Search,
   Bell,
+  BellOff,
   Sun,
   Moon,
   Check,
@@ -35,6 +36,7 @@ import {
 } from "../features/notifications/notificationVisual";
 import toast from "react-hot-toast";
 import { appUpdateService, type UpdateInfo } from "../../services/appUpdateService";
+import { PhucSinhLogoMotion } from "../common/PhucSinhLogoMotion";
 
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -867,7 +869,7 @@ export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSidebarCollapsed, toggleSidebarCollapsed, setSidebarCollapsed, theme, toggleTheme, lang, setLang } = useUiStore();
+  const { isSidebarCollapsed, toggleSidebarCollapsed, setSidebarCollapsed, theme, toggleTheme, lang, setLang, notificationsMuted } = useUiStore();
   const { items: notifications, unread } = useNotificationCenter();
   const [markingRead, setMarkingRead] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -1295,6 +1297,12 @@ export const Sidebar: React.FC = () => {
           }
         });
       }
+    });
+    list.push({
+      id: 'software-update',
+      label: 'Software Update',
+      icon: <RefreshCw size={15} />,
+      path: '/software-update',
     });
     return list;
   }, [groups]);
@@ -1801,15 +1809,15 @@ export const Sidebar: React.FC = () => {
             ROW 1 (TOP): LOGO + PHUC SINH CONSUMERS (Centered & scaled +20%)
            ========================================== */}
         {isSidebarCollapsed ? (
-          <div className="w-full flex flex-col items-center gap-1.5 pb-[0.7rem] mb-1.5 shrink-0">
+          <div className="w-full grid justify-items-center gap-1.5 pb-[0.7rem] mb-1.5 shrink-0">
             <NavLink
               to="/"
               onMouseEnter={(e) => showTooltip("Phuc Sinh Consumers", e)}
               onMouseLeave={hideTooltip}
-              className="w-9 h-9 flex items-center justify-center shrink-0 group relative"
+              className="w-9 h-9 grid place-items-center shrink-0 group relative"
               title="Phuc Sinh Consumers"
             >
-              <img src="/logo-ps-square.svg" alt="PS" className="h-6 w-6 object-contain" />
+              <PhucSinhLogoMotion variant="mark" size="compact" replayOnHover />
             </NavLink>
             <button
               type="button"
@@ -1818,23 +1826,19 @@ export const Sidebar: React.FC = () => {
               onMouseLeave={hideTooltip}
               title={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
               aria-label={lang === "en" ? "Expand sidebar" : "Mở rộng thanh bên"}
-              className="w-9 h-9 rounded-[8px] flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer shrink-0"
+              className="w-9 h-9 rounded-[8px] grid place-items-center text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer shrink-0"
             >
               <PanelLeft size={18} />
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full px-3 pt-1 pb-[0.7rem] mb-2.5">
+          <div className="grid place-items-center w-full px-3 pt-1.5 pb-[0.85rem] mb-2.5">
             <NavLink
               to="/"
-              className="flex items-center justify-center min-w-0 group"
+              className="grid place-items-center min-w-0 group"
               title="Phuc Sinh Consumers"
             >
-              <img
-                src="/logo-phuc-sinh-consumer-text.svg"
-                alt="Phuc Sinh Consumers"
-                className="h-[38px] w-auto max-w-[228px] object-contain block dark:brightness-125 transition-transform"
-              />
+              <PhucSinhLogoMotion variant="full" size="sidebar" replayOnHover />
             </NavLink>
           </div>
         )}
@@ -1888,7 +1892,7 @@ export const Sidebar: React.FC = () => {
                     : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70"
                 )}
               >
-                <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
+                <span className={!notificationsMuted && unread > 0 ? "notif-bell" : undefined}>{notificationsMuted ? <BellOff size={16} className="text-slate-400" /> : <Bell size={16} />}</span>
                 {unread > 0 && (
                   <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
@@ -1973,7 +1977,7 @@ export const Sidebar: React.FC = () => {
                     : "text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800/70"
                 )}
               >
-                <span className={unread > 0 ? "notif-bell" : undefined}><Bell size={16} /></span>
+                <span className={!notificationsMuted && unread > 0 ? "notif-bell" : undefined}>{notificationsMuted ? <BellOff size={16} className="text-slate-400" /> : <Bell size={16} />}</span>
                 {unread > 0 && (
                   <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
@@ -2388,6 +2392,12 @@ export const Sidebar: React.FC = () => {
                   aria-hidden="true"
                   className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
                 />
+                {updateInfo && (
+                  <span
+                    aria-label={lang === 'en' ? 'Software update available' : 'Có bản cập nhật mới'}
+                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white dark:ring-slate-900 animate-pulse"
+                  />
+                )}
               </div>
               <div className="pointer-events-none absolute left-full ml-3 z-[9999] hidden group-hover/avatar:flex items-center whitespace-nowrap rounded-[6px] bg-gray-900 dark:bg-[#0a192f] px-2.5 py-1.5 text-xs font-semibold text-white shadow-xl border border-gray-800 dark:border-slate-700">
                 {staffName} · {lang === "en" ? "Account & Settings" : "Tài khoản & Cài đặt"}
@@ -2405,7 +2415,7 @@ export const Sidebar: React.FC = () => {
               }}
               className={cn(
                 'sidebar-link sb-profile-footer-card grid grid-cols-[auto_1fr_auto] items-center gap-2.5 w-full p-2 rounded-[12px] select-none transition-colors border cursor-pointer',
-                (location.pathname === '/my-tasks' || showSettings)
+                (location.pathname === '/my-tasks' || location.pathname === '/software-update' || showSettings)
                   ? 'sidebar-link-active is-active'
                   : 'sidebar-link-idle'
               )}
@@ -2439,6 +2449,12 @@ export const Sidebar: React.FC = () => {
                   aria-hidden="true"
                   className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
                 />
+                {updateInfo && (
+                  <span
+                    aria-label={lang === 'en' ? 'Software update available' : 'Có bản cập nhật mới'}
+                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white dark:ring-slate-900 animate-pulse"
+                  />
+                )}
               </div>
 
               {/* Column 2: Name & Role */}
@@ -2670,32 +2686,40 @@ export const Sidebar: React.FC = () => {
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => void appUpdateService.reloadApp()}
-                    className="m-3 p-3 rounded-[8px] bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
+                    onClick={() => {
+                      setShowNotifs(false);
+                      navigate('/software-update');
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        setShowNotifs(false);
+                        navigate('/software-update');
+                      }
+                    }}
+                    className="m-3 p-3 rounded-[8px] bg-gradient-to-r from-blue-500/12 via-cyan-500/10 to-emerald-500/10 border border-blue-500/30 grid grid-cols-[auto_1fr_auto] items-center gap-2.5 cursor-pointer hover:border-blue-500/60 transition-all shadow-xs"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-8 h-8 rounded-[8px] bg-blue-500/20 text-blue-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
-                        <Sparkles size={16} className="animate-pulse" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                          {updateInfo.title || 'Cập nhật phiên bản mới'}
-                        </p>
-                        <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
-                          {updateInfo.message || 'Bấm để tải lại và trải nghiệm ngay'}
-                        </p>
-                      </div>
+                    <span className="w-8 h-8 rounded-[8px] bg-blue-500/20 text-blue-600 dark:text-cyan-400 grid place-items-center shrink-0">
+                      <Sparkles size={16} className="animate-pulse" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                        {updateInfo.title || (lang === 'en' ? 'New update available' : 'Có bản cập nhật mới')}
+                      </p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
+                        {lang === 'en' ? 'Open Software Update to install' : 'Mở Software Update để cập nhật'}
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={e => {
                         e.stopPropagation();
-                        void appUpdateService.reloadApp();
+                        setShowNotifs(false);
+                        navigate('/software-update');
                       }}
-                      className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-[6px] shrink-0 shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-bold bg-[#002e6d] hover:bg-[#001f4d] dark:bg-sky-600 dark:hover:bg-sky-500 text-white rounded-[6px] shrink-0 shadow-xs inline-grid grid-flow-col auto-cols-max items-center gap-1 transition-colors cursor-pointer"
                     >
                       <RefreshCw size={11} />
-                      <span>{lang === 'en' ? 'Reload' : 'Tải lại'}</span>
+                      <span>{lang === 'en' ? 'Open' : 'Xem'}</span>
                     </button>
                   </div>
                 )}
@@ -2812,7 +2836,28 @@ export const Sidebar: React.FC = () => {
                 <ChevronRight size={14} className="text-gray-400" />
               </button>
 
-              {/* 3. Đăng xuất (Sign out) */}
+              {/* 3. Software Update */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettings(false);
+                  navigate('/software-update');
+                }}
+                className="w-full text-left p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              >
+                <RefreshCw size={15} className={updateInfo ? 'text-sky-600 dark:text-sky-400' : 'text-[#002e6d] dark:text-sky-400'} />
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                  <span className="truncate">Software Update</span>
+                  {updateInfo && (
+                    <span className="px-1.5 py-px rounded-full text-[9px] font-bold bg-sky-500/15 text-[#002e6d] border border-sky-300/70 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 leading-tight">
+                      {lang === 'en' ? 'New' : 'Mới'}
+                    </span>
+                  )}
+                </span>
+                <ChevronRight size={14} className="text-gray-400" />
+              </button>
+
+              {/* 4. Đăng xuất (Sign out) */}
               <div className="border-t border-gray-100 dark:border-slate-800 pt-1 mt-0.5">
                 <button
                   type="button"
@@ -2847,6 +2892,7 @@ export const Sidebar: React.FC = () => {
             onCropComplete={handleSidebarCropSubmit}
           />
         )}
+
       </aside>
     </div>
   );

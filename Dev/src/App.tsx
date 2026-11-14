@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
@@ -6,6 +6,7 @@ import {initializeDevicePush,resetDevicePush} from './store/devicePushStore';
 import { ProtectedRoute, AdminRoute, TeamManagementRoute } from './components/auth/ProtectedRoute';
 import {canViewTeamManagement} from './lib/roleScope';
 import {userCache} from './lib/userCache';
+import { LoadingSplashScreen } from './components/common/LoadingSplashScreen';
 const Login=lazy(()=>import('./pages/auth/Login').then(module=>({default:module.Login})));
 const Register=lazy(()=>import('./pages/auth/Register').then(module=>({default:module.Register})));
 import { DashboardLayout } from './components/layouts/DashboardLayout';
@@ -21,6 +22,7 @@ const Reports=lazy(()=>import('./pages/Reports').then(module=>({default:module.R
 const MemberManagement=lazy(()=>import('./pages/MemberManagement').then(module=>({default:module.MemberManagement})));
 const Projects=lazy(()=>import('./pages/Projects').then(module=>({default:module.Projects})));
 const MainReadOnly=lazy(()=>import('./pages/MainReadOnly'));
+const SoftwareUpdate=lazy(()=>import('./pages/SoftwareUpdate'));
 const MobileHomeHub=lazy(()=>import('./components/mobile/MobileHomeHub'));
 import { useLocation } from 'react-router-dom';
 import { useUiStore } from './store/uiStore';
@@ -75,10 +77,61 @@ function App() {
   const originalProfileId = useAuthStore(state=>state.originalProfile?.id);
   const previewBusy = useAuthStore(state=>state.previewBusy);
   const ownAccount=Boolean(profileId && profileId===originalProfileId && !previewBusy);
+  const setIntroFinished = useUiStore(state => state.setIntroFinished);
 
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isScanFlow =
+      window.location.pathname.includes('/scan') ||
+      window.location.search.includes('code=') ||
+      window.location.search.includes('asset=');
+    const isVisualize = window.location.pathname.includes('/reports/visualize');
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (isScanFlow || isVisualize || prefersReducedMotion) {
+      return false;
+    }
+    return true;
+  });
+  const [isSplashExiting, setIsSplashExiting] = useState(false);
+
+  const handleSkipSplash = useCallback(() => {
+    try {
+      sessionStorage.setItem('ps_intro_played_v1', 'true');
+    } catch {
+      // ignore storage errors
+    }
+    setShowSplash(false);
+    setIntroFinished(true);
+  }, [setIntroFinished]);
 
   useEffect(() => {
-    useUiStore.getState().setIntroFinished(true);
+    if (!showSplash) {
+      setIntroFinished(true);
+      return;
+    }
+    setIntroFinished(false);
+
+    const exitTimer = setTimeout(() => {
+      setIsSplashExiting(true);
+    }, 4300);
+
+    const finishTimer = setTimeout(() => {
+      try {
+        sessionStorage.setItem('ps_intro_played_v1', 'true');
+      } catch {
+        // ignore storage errors
+      }
+      setShowSplash(false);
+      setIntroFinished(true);
+    }, 5000);
+
+    return () => {
+      clearTimeout(exitTimer);
+      clearTimeout(finishTimer);
+    };
+  }, [showSplash, setIntroFinished]);
+
+  useEffect(() => {
     initialize();
   }, [initialize]);
 
@@ -104,6 +157,13 @@ function App() {
 
   return (
     <>
+      {showSplash && (
+        <LoadingSplashScreen
+          isIntro
+          isExiting={isSplashExiting}
+          onSkip={handleSkipSplash}
+        />
+      )}
       <Toaster position="top-right" />
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center text-sm text-gray-500 dark:text-gray-400"><span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />Đang tải…</span></div>}><Routes>
@@ -132,6 +192,7 @@ function App() {
             <Route path="team" element={<TeamWorkload />} />
             <Route path="reports" element={<Reports />} />
             <Route path="members" element={<MemberManagement />} />
+            <Route path="software-update" element={<SoftwareUpdate />} />
             <Route path="*" element={
               <div className="glass-panel p-10 m-8 rounded-3xl text-center flex flex-col items-center justify-center min-h-[300px]">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Module Coming Soon</h2>

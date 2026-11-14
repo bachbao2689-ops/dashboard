@@ -8,6 +8,7 @@ import type {Task} from './useTasks';
 import type {WorkspaceData} from './useWorkspaceData';
 import type {ReportReference} from '../components/features/reports/WeeklyReportDrawer';
 import { displayDate } from '../lib/workflowHub';
+import { isGlobalManager, isPersonLeader } from '../lib/roleScope';
 interface PerfData {
   id: string;
   type: 'staff' | 'department' | 'project';
@@ -143,9 +144,14 @@ export function useDashboardPerformance(tasks:Task[],users:WorkspaceData['users'
   const validUsers = users.filter(user => user.department_id && user.department_id !== 'unassigned');
   const departmentNames = new Map(validUsers.map(user => [user.department_id!, user.department?.name || t('dashboard.unassignedTeam')]));
   const userDepartments = new Map(validUsers.map(user => [`user-${user.id}`, user.department_id!]));
+  const userRank = (user: WorkspaceData['users'][number]) => (isGlobalManager(user) ? 0 : isPersonLeader(user) ? 1 : 2);
+  const rankById = new Map(validUsers.map(user => [`user-${user.id}`, userRank(user)]));
   const teams = [...departmentNames].map(([id,name]) => ({
     name, id:`team-${id}`,
-    members:liveData.filter(member => member.type === 'staff' && userDepartments.get(member.id) === id).map(member => ({i:member.initial,id:member.id,n:member.name,r:member.role,open:member.open,a:member.avatar_url})),
+    members:liveData
+      .filter(member => member.type === 'staff' && userDepartments.get(member.id) === id)
+      .sort((a, b) => (rankById.get(a.id) ?? 2) - (rankById.get(b.id) ?? 2))
+      .map(member => ({i:member.initial,id:member.id,n:member.name,r:member.role,open:member.open,a:member.avatar_url})),
   })).filter(t => t.members.length > 0);
 
  return {s,pct,rangeStart,rangeEnd,selectedTasks,periodTasks,chartData,selectedReferences,filteredDepts,getEyebrow,upcomingProjects,teams};

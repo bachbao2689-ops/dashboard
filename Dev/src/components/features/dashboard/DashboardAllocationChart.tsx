@@ -51,7 +51,7 @@ export function DashboardAllocationChart({name,rangeStart,rangeEnd,range='weekly
               />
               )}
             </div>
-            <div className="w-full mt-2 flex-1 min-h-0 h-full">
+            <div className="w-full mt-2 min-h-0 h-full motion-chart-reveal">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ left: -20, right: 8, top: 4 }}>
                 <defs>

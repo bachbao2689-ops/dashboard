@@ -8,6 +8,7 @@ import { Avatar } from '../../common/Avatar';
 import { ChevronDown, ChevronRight, Megaphone, Trash2, EyeOff, ListTodo, Plus, X, Eye, Pencil, Check, FileText } from 'lucide-react';
 import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
 import { ConfirmHideModal } from '../../common/ConfirmHideModal';
+import { captureAnchorRect, type AnchorRectSnapshot } from '../../../lib/anchoredPopoverPosition';
 import toast from 'react-hot-toast';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../store/authStore';
@@ -110,22 +111,6 @@ const strictFormatVN = (dateStr?: string | null) => {
 const formatDate = strictFormatVN;
 const campaignPriority = getCampaignPriority;
 
-
-const getDueStatusColor = (endDateStr?: string | null, status?: string | null) => {
-  if (!endDateStr) return 'border-transparent';
-  const isDone = ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
-  if (isDone) return 'border-emerald-500';
-  const parts = endDateStr.split('T')[0].split('-').map(Number);
-  if (parts.length !== 3) return 'border-transparent';
-  const end = new Date(parts[0], parts[1] - 1, parts[2]);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays > 3) return 'border-emerald-500';
-  if (diffDays >= 0) return 'border-amber-500';
-  return 'border-red-500';
-};
-
 const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, isEn?: boolean) => {
   if (!endDateStr) return null;
   const isDone = ['done', 'complete', 'completed'].includes((status || '').toLowerCase());
@@ -152,7 +137,7 @@ const getDueStatusLabel = (endDateStr?: string | null, status?: string | null, i
     ? (isEn ? `${Math.abs(diffDays)}d overdue` : `Trễ ${Math.abs(diffDays)} ngày`)
     : diffDays === 0
     ? (isEn ? 'Due today' : 'Hôm nay')
-    : (isEn ? `${diffDays}d left` : `Còn ${diffDays} ngày`);
+    : (isEn ? `${diffDays}d left` : `${diffDays} ngày`);
   
   return <span className={`text-[10px] px-1.5 py-0.5 rounded-[6px] font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };
@@ -209,6 +194,7 @@ export const CampaignPanel: React.FC<{
   const [campaignToDelete, setCampaignToDelete] = useState<any>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [campaignToHide, setCampaignToHide] = useState<any>(null);
+  const [confirmAnchor, setConfirmAnchor] = useState<{ el: HTMLElement | null; rect: AnchorRectSnapshot | null } | null>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [subtaskMap, setSubtaskMap] = useState<Record<string, any[]>>({});
   const [hasComments, setHasComments] = useState<Record<string, boolean>>({});
@@ -474,6 +460,7 @@ export const CampaignPanel: React.FC<{
     { value: 'draft', label: lang === 'en' ? 'Draft / To-do' : 'Bản nháp', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'active', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'pending_approval', label: lang === 'en' ? 'Pending Approval' : 'Chờ duyệt', dotColor: 'bg-amber-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
     { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
@@ -482,6 +469,7 @@ export const CampaignPanel: React.FC<{
     { value: 'todo', label: lang === 'en' ? 'Draft / To-do' : 'Chưa bắt đầu', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'pending_approval', label: lang === 'en' ? 'Pending Approval' : 'Chờ duyệt', dotColor: 'bg-amber-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
     { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
@@ -605,10 +593,12 @@ export const CampaignPanel: React.FC<{
       toast.success('Đã ẩn Campaign');
     }
     setCampaignToHide(null);
+    setConfirmAnchor(null);
   };
 
-  const archive = (campaign: any) => {
+  const archive = (campaign: any, anchorEl?: HTMLElement | null) => {
     if (!canHideOrDelete) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền ẩn Campaign.');
+    setConfirmAnchor(anchorEl ? { el: anchorEl, rect: captureAnchorRect(anchorEl) } : null);
     setCampaignToHide(campaign);
   };
 
@@ -620,6 +610,7 @@ export const CampaignPanel: React.FC<{
     setDeletingIds(prev => [...prev, campaignToDelete.id]);
     const cached = campaignToDelete;
     setCampaignToDelete(null);
+    setConfirmAnchor(null);
     setTimeout(async () => {
       const { data, error } = await supabase.from('campaigns').update({ status: 'deleted' }).eq('id', cached.id).select('id').maybeSingle();
       if (!error && data) {
@@ -634,8 +625,9 @@ export const CampaignPanel: React.FC<{
     }, 300);
   };
 
-  const remove = (campaign: any) => {
+  const remove = (campaign: any, anchorEl?: HTMLElement | null) => {
     if (!canHideOrDelete) return toast.error('Chỉ Quản lý hoặc Trưởng bộ phận mới có quyền xóa Campaign.');
+    setConfirmAnchor(anchorEl ? { el: anchorEl, rect: captureAnchorRect(anchorEl) } : null);
     setCampaignToDelete(campaign);
   };
 
@@ -760,7 +752,7 @@ export const CampaignPanel: React.FC<{
           return (
             <article key={c.id} className={`min-w-0 rounded-[8px] border border-gray-200/90 bg-white/90 p-3 dark:border-slate-800 dark:bg-[#071325]/70 shadow-xs ${deletingIds.includes(c.id) ? 'animate-fade-out' : ''}`}>
               {/* Hàng 1: Expand chevron, (i) icon, Title + subtask count + note icon, Status ở góc phải */}
-              <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
+              <div className={`grid ${hasPhases ? 'grid-cols-[auto_auto_minmax(0,1fr)_auto]' : 'grid-cols-[auto_minmax(0,1fr)_auto]'} items-center gap-1.5`}>
                 <button
                   type="button"
                   onClick={() => toggleCampaignExpand(c.id)}
@@ -786,56 +778,58 @@ export const CampaignPanel: React.FC<{
                     })()}
                   />
                 )}
-                <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 min-w-0 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => onSelect?.(c)}
-                    className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left"
+                    className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left min-w-0"
                   >
                     {c.name}
                   </button>
-                  {(() => {
-                    const phases = campaignTrack?.phases || [];
-                    const phaseCount = phases.length;
-                    const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
-                    const unassignedCount = unassignedSubtasks.length;
-                    const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
+                  <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
+                    {(() => {
+                      const phases = campaignTrack?.phases || [];
+                      const phaseCount = phases.length;
+                      const unassignedSubtasks = subtasks.filter(s => s.status !== 'deleted' && (!phaseCount || !s.workflow_phase_id));
+                      const unassignedCount = unassignedSubtasks.length;
+                      const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
 
-                    return (
-                      <>
-                        {unassignedCount > 0 && (
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
-                            isAllUnassignedDone
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
-                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                          }`}>
-                            ({unassignedCount} Tasks)
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()}
-                  {hasComments[c.id] && (
-                    <CommentPreviewPopover
-                      entityType="campaign"
-                      entityId={c.id}
-                      entityTitle={c.name}
-                      hasUnreadDot={Boolean(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id])}
-                    />
-                  )}
-                  {Boolean(campNote && campNote.trim()) && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenNoteEntityIds(prev => ({ ...prev, [c.id]: !prev[c.id] }));
-                      }}
-                      className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
-                      title="Xem ghi chú"
-                    >
-                      <FileText size={13} />
-                    </button>
-                  )}
+                      return (
+                        <>
+                          {unassignedCount > 0 && (
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
+                              isAllUnassignedDone
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            }`}>
+                              ({unassignedCount} Tasks)
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                    {hasComments[c.id] && (
+                      <CommentPreviewPopover
+                        entityType="campaign"
+                        entityId={c.id}
+                        entityTitle={c.name}
+                        hasUnreadDot={Boolean(Number(c.lead_id) === Number(profile?.id) || hasUnread[c.id])}
+                      />
+                    )}
+                    {Boolean(campNote && campNote.trim()) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenNoteEntityIds(prev => ({ ...prev, [c.id]: !prev[c.id] }));
+                        }}
+                        className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
+                        title="Xem ghi chú"
+                      >
+                        <FileText size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {/* Status badge đưa lên góc phải */}
                 <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -859,8 +853,8 @@ export const CampaignPanel: React.FC<{
                 {campaignPics.length > 0 && (
                   <div className="grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
                     <div className="grid grid-flow-col auto-cols-max -space-x-1.5">
-                      {campaignPics.slice(0, 3).map((pic: any) => (
-                        <Avatar key={pic.id} name={pic.name} src={pic.avatar_url} className="w-4 h-4 text-[8px] border border-white dark:border-slate-900" />
+                      {campaignPics.slice(0, 3).map((pic: any, picIdx: number) => (
+                        <Avatar key={pic.id ? `pic-${pic.id}-${picIdx}` : `pic-${picIdx}`} name={pic.name} src={pic.avatar_url} className="w-4 h-4 text-[8px] border border-white dark:border-slate-900" />
                       ))}
                     </div>
                     <span className="text-xs text-gray-600 dark:text-gray-300 font-medium truncate max-w-[120px]">
@@ -1044,7 +1038,7 @@ export const CampaignPanel: React.FC<{
         >
           {/* Cột 1: Title có icon dropdown trước title */}
           <td className="p-4 relative overflow-hidden">
-            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
+            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden max-w-full crop-blur-edge">
               <button
                 type="button"
                 onClick={(e) => {
@@ -1112,20 +1106,20 @@ export const CampaignPanel: React.FC<{
             {canHideOrDelete && (
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                className={`absolute right-2 top-1/2 -translate-y-1/2 ${(campaignToHide?.id === c.id || campaignToDelete?.id === c.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} focus-within:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5`}
               >
                 <button 
                   type="button" 
-                  onClick={(e) => { e.stopPropagation(); void archive(c); }} 
-                  className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+                  onClick={(e) => { e.stopPropagation(); void archive(c, e.currentTarget); }} 
+                  className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer" 
                   title={t('common.hide')}
                 >
                   <EyeOff size={14}/>
                 </button>
                 <button 
                   type="button" 
-                  onClick={(e) => { e.stopPropagation(); void remove(c); }} 
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+                  onClick={(e) => { e.stopPropagation(); void remove(c, e.currentTarget); }} 
+                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors cursor-pointer" 
                   title={t('common.delete')}
                 >
                   <Trash2 size={14}/>
@@ -1137,7 +1131,7 @@ export const CampaignPanel: React.FC<{
           {/* Cột 2: OWNER / PIC */}
           <td className="p-4 overflow-hidden text-center">
             <div className="grid place-content-center">
-              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+              <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden max-w-full mx-auto crop-blur-edge">
                 {(() => {
                   const cTrack = (workflowTracks || []).find((t: any) => t.entity_type === 'campaign' && String(t.entity_id).trim() === String(c.id).trim());
                   const campaignPics = (cTrack?.pics && cTrack.pics.length > 0) ? cTrack.pics : (c.lead ? [c.lead] : []);
@@ -1154,9 +1148,9 @@ export const CampaignPanel: React.FC<{
                     <>
                       <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
                         {campaignPics.length > 0 ? (
-                          campaignPics.slice(0, 4).map((pic: any) => (
+                          campaignPics.slice(0, 4).map((pic: any, picIdx: number) => (
                             <Avatar
-                              key={pic.id}
+                              key={pic.id ? `pic-${pic.id}-${picIdx}` : `pic-${picIdx}`}
                               name={pic.name || t('common.unassigned')}
                               src={pic.avatar_url || undefined}
                               className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10"
@@ -1176,9 +1170,9 @@ export const CampaignPanel: React.FC<{
                           <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-100 dark:border-amber-800 shrink-0">
                             <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">SUB</span>
                             <div className="grid grid-flow-col auto-cols-max -space-x-2">
-                              {filteredSubs.slice(0, 4).map((assignee: any) => (
+                              {filteredSubs.slice(0, 4).map((assignee: any, subIdx: number) => (
                                 <Avatar
-                                  key={'s' + assignee.id}
+                                  key={`s-${assignee.id || subIdx}-${subIdx}`}
                                   name={(assignee.name || 'Unknown') + ' (Subtask)'}
                                   src={assignee.avatar_url || undefined}
                                   className="w-6 h-6 text-[9px] border-2 border-white dark:border-slate-900 shadow-sm z-10 opacity-90"
@@ -1202,7 +1196,6 @@ export const CampaignPanel: React.FC<{
                 <span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>
                 {c.end_date && (
                   <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
-                    <div className={`w-3 h-3 rounded-full border-[2.5px] ${getDueStatusColor(c.end_date, c.status)}`} title={`${t('common.dueDate')}: ${formatDate(c.end_date)}`} />
                     {getDueStatusLabel(c.end_date, c.status, lang === 'en')}
                   </div>
                 )}
@@ -1212,12 +1205,10 @@ export const CampaignPanel: React.FC<{
 
           {/* Cột 4: PRIORITY */}
           <td className="p-4 overflow-hidden text-center">
-            <div className="grid place-content-center">
-              <div className="truncate">
-                <span className={`px-2 py-1 rounded-[6px] text-xs font-semibold capitalize truncate ${priorityClass(campaignPriority(c))}`}>
-                  {campaignPriority(c)}
-                </span>
-              </div>
+            <div className="grid place-items-center">
+              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${priorityClass(campaignPriority(c))}`}>
+                {campaignPriority(c)}
+              </span>
             </div>
           </td>
 
@@ -1394,7 +1385,7 @@ export const CampaignPanel: React.FC<{
                     {/* Cột 4: PRIORITY */}
                     <td className="p-3 overflow-hidden text-center">
                       <div className="grid place-content-center">
-                        <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-semibold capitalize truncate ${priorityClass(st.priority || 'medium')}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize whitespace-nowrap ${priorityClass(st.priority || 'medium')}`}>
                           {st.priority || 'medium'}
                         </span>
                       </div>
@@ -1536,7 +1527,7 @@ export const CampaignPanel: React.FC<{
                           {/* Cột 4: PRIORITY */}
                           <td className="py-2 px-4 overflow-hidden text-center">
                             <div className="grid place-content-center">
-                              <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-semibold capitalize truncate ${priorityClass(item.priority || 'medium')}`}>
+                              <span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize whitespace-nowrap ${priorityClass(item.priority || 'medium')}`}>
                                 {item.priority || 'medium'}
                               </span>
                             </div>
@@ -1762,8 +1753,8 @@ export const CampaignPanel: React.FC<{
           </p>
         )}
       </div></>}
-    <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemove} onCancel={() => setCampaignToDelete(null)} />
-    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHide} onCancel={() => setCampaignToHide(null)} />
+    <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa "${campaignToDelete?.name}"? Tất cả subtask thuộc chiến dịch này cũng sẽ bị xóa.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeRemove} onCancel={() => { setCampaignToDelete(null); setConfirmAnchor(null); }} />
+    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeHide} onCancel={() => { setCampaignToHide(null); setConfirmAnchor(null); }} />
     </section>
   );
 };

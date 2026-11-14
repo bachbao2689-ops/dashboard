@@ -21,43 +21,50 @@
   }
 }
 
-/* Left Sidebar: Moves out from left with opacity from faint to solid */
+/* Left Sidebar: Moves out from left with opacity and liquid blur resolve */
 @keyframes cockpitDockLeft {
   0% {
     opacity: 0;
-    transform: translateX(-48px);
+    transform: translateX(-36px);
+    filter: blur(6px);
   }
-  60% {
-    opacity: 0.85;
+  34% {
+    filter: blur(0);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+    filter: none;
   }
 }
 
-/* Main Dashboard Surface: Subtly blooms after sidebars have docked */
+/* Main Dashboard Surface: Subtly blooms and rises with liquid blur resolve */
 @keyframes cockpitDockMain {
   0% {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(14px);
+    filter: blur(8px);
+  }
+  34% {
+    filter: blur(0);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+    filter: none;
   }
 }
 
 .cockpit-dock-top {
-  animation: cockpitDockTop 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cockpitDockTop 1.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .cockpit-dock-left {
-  animation: cockpitDockLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cockpitDockLeft 1.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .cockpit-dock-main {
-  animation: cockpitDockMain 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+  animation: cockpitDockMain 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
 }
 
 /* While waiting for intro to finish, keep elements hidden */

@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Phuc Sinh Consumers — Liquid Vector Logo Motion (Intro & Micro-interaction)
+   Reference: Motion/Logo motion intro.mov
+   ========================================================================== */
+
+.ps-logo-motion-root {
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  user-select: none;
+}
+
+/* Sizing presets */
+.ps-logo-motion-root[data-size="sidebar"][data-variant="full"] {
+  height: 38px;
+  width: calc(38px * 240.64 / 72.91);
+  max-width: 100%;
+}
+
+.ps-logo-motion-root[data-size="compact"] {
+  width: 24px;
+  height: 24px;
+}
+
+.ps-logo-motion-root[data-size="hero"] {
+  width: min(540px, 86vw);
+  height: auto;
+}
+
+.ps-logo-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ps-logo-motion-root[data-variant="full"] .ps-logo-svg {
+  aspect-ratio: 240.64 / 72.91;
+}
+
+.ps-logo-motion-root[data-variant="mark"] .ps-logo-svg {
+  aspect-ratio: 1 / 1;
+}
+
+/* Default Colors (Light Mode) */
+.ps-logo-svg .st-cyan {
+  fill: #00a4d8;
+  transition: fill 0.3s ease;
+}
+
+.ps-logo-svg .st-red {
+  fill: #d91f33;
+  transition: fill 0.3s ease;
+}
+
+/* Dark Mode Contrast Optimization: Giữ nét chữ CONSUMER CORP. và PHUC SINH sắc nét 100% */
+html.dark .ps-logo-svg .st-cyan,
+.dark .ps-logo-svg .st-cyan {
+  fill: #22c5f9;
+  filter: none;
+}
+
+html.dark .ps-logo-svg .st-red,
+.dark .ps-logo-svg .st-red {
+  fill: #f43f5e;
+  filter: none;
+}
+
+/* Glow nhẹ chỉ kích hoạt khi is-animating */
+html.dark .ps-logo-motion-root.is-animating .ps-logo-svg .st-cyan,
+.dark .ps-logo-motion-root.is-animating .ps-logo-svg .st-cyan {
+  filter: drop-shadow(0 0 6px rgba(34, 197, 249, 0.45));
+}
+
+html.dark .ps-logo-motion-root.is-animating .ps-logo-svg .st-red,
+.dark .ps-logo-motion-root.is-animating .ps-logo-svg .st-red {
+  filter: drop-shadow(0 0 7px rgba(244, 63, 94, 0.42));
+}
+
+/* ==========================================================================
+   Keyframes: Liquid Blur-to-Focus Emergence & Horizontal Uncompression
+   ========================================================================== */
+
+@keyframes psLiquidEmerge {
+  0% {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(0.84);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(2px);
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: scale(1);
+  }
+}
+
+@keyframes psWingSlideIn {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateX(-16px) scale(0.85);
+  }
+  65% {
+    opacity: 1;
+    filter: blur(1px);
+    transform: translateX(1.5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes psUncompressCenter {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scaleX(0.86) translateY(3px);
+  }
+  70% {
+    opacity: 1;
+    filter: blur(0.5px);
+    transform: scaleX(1.02) translateY(-0.5px);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: scaleX(1) translateY(0);
+  }
+}
+
+@keyframes psWaveGlide {
+  0% {
+    opacity: 0;
+    filter: blur(9px);
+    transform: translateX(-12px) scaleY(0.75);
+  }
+  70% {
+    opacity: 1;
+    filter: blur(0.5px);
+    transform: translateX(1px) scaleY(1.02);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: translateX(0) scaleY(1);
+  }
+}
+
+/* ==========================================================================
+   Micro Preset (Default cho Sidebar Hover - Mượt mà ~1.5s)
+   ========================================================================== */
+.ps-logo-motion-root.is-animating .ps-wing-red {
+  animation: psWingSlideIn 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ps-logo-motion-root.is-animating .ps-diamond-blue {
+  animation: psLiquidEmerge 560ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-word-phuc {
+  animation: psUncompressCenter 600ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-word-sinh {
+  animation: psUncompressCenter 600ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-wave-blue {
+  animation: psWaveGlide 660ms cubic-bezier(0.16, 1, 0.3, 1) 280ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-sub-consumer {
+  animation: psUncompressCenter 560ms cubic-bezier(0.16, 1, 0.3, 1) 340ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-title-phucsinh {
+  animation: psUncompressCenter 660ms cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
+}
+
+.ps-logo-motion-root.is-animating .ps-title-consumers {
+  animation: psUncompressCenter 660ms cubic-bezier(0.16, 1, 0.3, 1) 360ms both;
+}
+
+/* ==========================================================================
+   Intro Preset (Load / Reload Trang - Chậm & Mượt ~4.4s theo video)
+   ========================================================================== */
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-wing-red {
+  animation: psWingSlideIn 1550ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-diamond-blue {
+  animation: psLiquidEmerge 1300ms cubic-bezier(0.16, 1, 0.3, 1) 550ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-word-phuc {
+  animation: psUncompressCenter 1450ms cubic-bezier(0.16, 1, 0.3, 1) 750ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-word-sinh {
+  animation: psUncompressCenter 1450ms cubic-bezier(0.16, 1, 0.3, 1) 1050ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-wave-blue {
+  animation: psWaveGlide 1600ms cubic-bezier(0.16, 1, 0.3, 1) 1300ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-sub-consumer {
+  animation: psUncompressCenter 1350ms cubic-bezier(0.16, 1, 0.3, 1) 1550ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-title-phucsinh {
+  animation: psUncompressCenter 1700ms cubic-bezier(0.16, 1, 0.3, 1) 1150ms both;
+}
+
+.ps-logo-motion-root[data-motion-preset="intro"].is-animating .ps-title-consumers {
+  animation: psUncompressCenter 1700ms cubic-bezier(0.16, 1, 0.3, 1) 1550ms both;
+}
+
+/* Hover trigger */
+.ps-logo-motion-root.has-hover:hover {
+  cursor: pointer;
+}
+
+/* Replay Button Overlay (cho Splash / Demo) */
+.ps-logo-replay-btn {
+  display: inline-grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #002e6d;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 46, 109, 0.08);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ps-logo-replay-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(0, 46, 109, 0.14);
+}
+
+html.dark .ps-logo-replay-btn,
+.dark .ps-logo-replay-btn {
+  color: #7dd3fc;
+  background: rgba(15, 28, 48, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .ps-logo-replay-btn:hover,
+.dark .ps-logo-replay-btn:hover {
+  background: rgba(21, 38, 65, 0.95);
+  border-color: rgba(56, 189, 248, 0.6);
+}
+
+/* Accessibility: Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .ps-logo-motion-root.is-animating * {
+    animation: none !important;
+    filter: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

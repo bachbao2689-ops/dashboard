@@ -33,6 +33,7 @@ export const QuickStatusDropdown: React.FC<QuickStatusDropdownProps> = ({
   const defaultOptions: QuickStatusOption[] = [
     { value: 'planning', label: isEn ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'in_progress', label: isEn ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'pending_approval', label: isEn ? 'Pending Approval' : 'Chờ duyệt', dotColor: 'bg-amber-500' },
     { value: 'completed', label: isEn ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
     { value: 'on_hold', label: isEn ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
   ];
@@ -131,7 +132,7 @@ export const QuickStatusDropdown: React.FC<QuickStatusDropdownProps> = ({
         {!disabled && (
           <ChevronDown
             size={12}
-            className={`text-gray-400 group-hover/status:text-gray-600 dark:group-hover/status:text-gray-200 transition-transform duration-150 ${
+            className={`text-gray-400 group-hover/status:text-gray-600 dark:group-hover/status:text-gray-200 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               isOpen ? 'rotate-180 text-primary' : ''
             }`}
           />
@@ -142,6 +143,7 @@ export const QuickStatusDropdown: React.FC<QuickStatusDropdownProps> = ({
         createPortal(
           <div
             ref={dropdownRef}
+            data-anchored-popover="true"
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
@@ -150,12 +152,20 @@ export const QuickStatusDropdown: React.FC<QuickStatusDropdownProps> = ({
               transform: coords.placeAbove ? 'translateY(-100%)' : 'none',
               zIndex: 9999,
             }}
-            className="w-[165px] rounded-[6px] border border-gray-200 dark:border-slate-800 bg-white/95 dark:bg-[#071325]/95 backdrop-blur-md shadow-xl p-1 z-[9999] animate-in fade-in zoom-in-95 duration-100"
+            className="w-[165px] rounded-[6px] border border-gray-200 dark:border-slate-800 bg-white/95 dark:bg-[#071325]/95 backdrop-blur-md shadow-xl p-1 z-[9999] animate-in fade-in zoom-in-95 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             role="listbox"
           >
             <div className="grid gap-0.5">
               {activeOptions.map((opt) => {
-                const isActive = (currentStatus || '').toLowerCase() === opt.value.toLowerCase();
+                const normCurrent = (currentStatus || '').toLowerCase().trim().replace(/[ _]+/g, '-');
+                const normOpt = opt.value.toLowerCase().trim().replace(/[ _]+/g, '-');
+                const isActive =
+                  normCurrent === normOpt ||
+                  (normOpt === 'pending-approval' && ['pending-approval', 'in-qa', 'in-review', 'review', 'chờ-duyệt'].includes(normCurrent)) ||
+                  (normOpt === 'in-progress' && ['in-progress', 'active', 'doing', 'đang-làm', 'đang-thực-hiện'].includes(normCurrent)) ||
+                  (normOpt === 'draft' && ['draft', 'todo', 'to-do', 'chưa-bắt-đầu'].includes(normCurrent)) ||
+                  (normOpt === 'on-hold' && ['on-hold', 'paused', 'holding', 'tạm-dừng'].includes(normCurrent)) ||
+                  (normOpt === 'completed' && ['completed', 'done', 'complete', 'hoàn-thành'].includes(normCurrent));
                 return (
                   <button
                     key={opt.value}

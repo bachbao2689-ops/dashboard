@@ -1,15 +1,16 @@
 import {useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {ArrowUp,Check,ChevronUp,RefreshCw,Sparkles,Trash2,X} from 'lucide-react';
+import {Check,ChevronUp,Trash2,X} from 'lucide-react';
 import {useAuthStore} from '../../../store/authStore';
+import {useUiStore} from '../../../store/uiStore';
 import {markNotificationsRead,type NotificationItem} from '../../../store/notificationStore';
 import {useNotificationCenter} from '../../../hooks/useNotificationCenter';
 import {entityLink} from '../../../lib/taskTracking';
 import {NotificationIcon,TONES,toneOf,toneStyle,PicText,formatNotificationTimestamp} from './notificationVisual';
-import {appUpdateService,type UpdateInfo} from '../../../services/appUpdateService';
+import {appUpdateService} from '../../../services/appUpdateService';
 import {DevFloatingTools} from '../../common/DevFloatingTools';
 
-const VISIBLE=4,EXIT_MS=550,HISTORY=12;
+const VISIBLE=4,EXIT_MS=550;
 // Per-depth visual targets: scale down, dim and sink with each layer; last layer fades to 0.
 const LAYERS=[{y:0,s:1,o:1},{y:11,s:.95,o:.78},{y:21,s:.9,o:.5},{y:30,s:.85,o:.26},{y:36,s:.8,o:0}];
 // Local UI preview samples (only used by the dev-only test button).
@@ -22,24 +23,13 @@ const DEMO:[string,string,string][]=[
 let demoCount=0;
 
 export function NotificationPopupStack(){
- const {items}=useNotificationCenter(),actor=useAuthStore(s=>s.profile?.id),navigate=useNavigate();
+ const {items}=useNotificationCenter(),actor=useAuthStore(s=>s.profile?.id),notificationsMuted=useUiStore(s=>s.notificationsMuted),navigate=useNavigate();
  const [stack,setStack]=useState<NotificationItem[]>([]),[log,setLog]=useState<NotificationItem[]>([]),[expanded,setExpanded]=useState(false);
- const [updateInfo,setUpdateInfo]=useState<UpdateInfo|null>(()=>appUpdateService.getUpdateInfo());
- const [isReloading,setIsReloading]=useState(false);
  const seen=useRef<Set<string>|null>(null),owner=useRef<number|undefined>(undefined);
-
- useEffect(()=>{
-  return appUpdateService.subscribe(setUpdateInfo);
- },[]);
-
- const handleReload=async()=>{
-  setIsReloading(true);
-  await appUpdateService.reloadApp();
- };
 
  const push=(fresh:NotificationItem[])=>{
   setStack(cur=>[...fresh,...cur].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i).slice(0,VISIBLE+1));
-  setLog(cur=>[...fresh,...cur].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i).slice(0,HISTORY));
+  setLog(cur=>[...fresh,...cur].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i));
  };
  useEffect(()=>{
   if(owner.current!==actor){owner.current=actor;seen.current=new Set();setStack([]);setLog([]);setExpanded(false);}
@@ -47,12 +37,14 @@ export function NotificationPopupStack(){
   // Existing history never pops up; only unread items that arrived in the last 30s do (covers an empty first snapshot).
   const fresh=items.filter(i=>!i.is_read&&!seen.current!.has(i.id)&&Date.now()-new Date(i.created_at).getTime()<30000);
   items.forEach(i=>seen.current!.add(i.id));
-  if(fresh.length)push(fresh);
- },[items,actor]);
+  if(fresh.length && !notificationsMuted)push(fresh);
+ },[items,actor,notificationsMuted]);
+ useEffect(()=>{if(notificationsMuted){setStack([]);setLog([]);setExpanded(false);}},[notificationsMuted]);
  // Drop notifications already read elsewhere (bell, another tab).
  useEffect(()=>{const read=new Set(items.filter(i=>i.is_read).map(i=>i.id));const strip=(cur:NotificationItem[])=>cur.some(i=>read.has(i.id))?cur.filter(i=>!read.has(i.id)):cur;setStack(strip);setLog(strip);},[items]);
  // Layer beyond the limit has faded to 0: remove it from the DOM.
  useEffect(()=>{if(stack.length<=VISIBLE)return;const t=setTimeout(()=>setStack(cur=>cur.slice(0,VISIBLE)),EXIT_MS);return()=>clearTimeout(t);},[stack.length]);
+ useEffect(()=>{if(stack.length>=VISIBLE||log.length<=stack.length)return;const ids=new Set(stack.map(i=>i.id));const fill=log.filter(i=>!ids.has(i.id)).slice(0,VISIBLE-stack.length);if(fill.length)setStack(cur=>[...cur,...fill]);},[log,stack]);
  // Visible cards stay until opened, dismissed, cleared, or marked read elsewhere.
  useEffect(()=>{if(!expanded)return;if(!log.length){setExpanded(false);return;}const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')setExpanded(false);};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[expanded,log.length]);
  const demo=()=>{const n=++demoCount,[title,message,entity_type]=DEMO[n%DEMO.length];push([{id:`demo-${n}`,type:'task_assigned',title,message,entity_type,entity_id:null,is_read:false,created_at:new Date().toISOString()}]);};
@@ -70,9 +62,9 @@ export function NotificationPopupStack(){
   void markNotificationsRead([n.id]).catch(()=>{});
   const href=entityLink(n.entity_type,n.entity_id,n.metadata);if(href)navigate(href);
  };
- const extra=stack.length>1?Math.min(stack.length,VISIBLE)-1:0;
- const stackTopOffset=updateInfo?'calc(186px + env(safe-area-inset-top,0px))':undefined;
-
+ const totalPopups=Math.max(stack.length,log.length);
+ const extra=totalPopups>1?totalPopups-1:0;
+ 
  const profile = useAuthStore(s => s.profile);
  const originalProfile = useAuthStore(s => s.originalProfile);
  const baseAccount = originalProfile || profile;
@@ -92,102 +84,24 @@ export function NotificationPopupStack(){
    />
   )}
 
-  {/* ========================================================
-      APP UPDATE NOTIFICATION POPUP
-      Appears at the top of the stack when a new update is ready
-     ======================================================== */}
-  {updateInfo&&(
-   <div
-    role="alert"
-    aria-live="assertive"
-    style={{['--tone' as string]:'14,165,233'}}
-    onClick={()=>void handleReload()}
-    className="fixed z-[9600] top-[calc(68px+env(safe-area-inset-top,0px))] right-4 w-[min(360px,calc(100vw-24px))] notif-card notif-glass group rounded-2xl border border-sky-400/40 bg-white/95 p-3.5 backdrop-blur-2xl shadow-2xl dark:border-sky-500/30 dark:bg-slate-900/95 transition-all animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto cursor-pointer"
-   >
-    <div className="flex items-start gap-3">
-     {/* Glowing update icon with badge */}
-     <div className="relative flex-none">
-      <span className="notif-icon notif-icon-standalone flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sky-600 dark:text-sky-300 bg-sky-500/15 border-2 border-sky-500/40 shadow-md">
-       <Sparkles size={18} className="animate-pulse"/>
-      </span>
-      <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs">
-       <ArrowUp size={10} strokeWidth={3}/>
-      </span>
-     </div>
-
-     {/* Update info & action buttons */}
-     <div className="min-w-0 flex-1 pr-6">
-      <div className="flex items-center gap-1.5">
-       <b className="truncate text-xs font-bold text-gray-900 dark:text-white">
-        {updateInfo.title||'Cập nhật phiên bản mới'}
-       </b>
-       <span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-bold">
-        Bản mới
-       </span>
-      </div>
-      <p className="notif-msg mt-0.5 line-clamp-2 text-xs leading-4 text-gray-600 dark:text-slate-300">
-       {updateInfo.message||'Đã có bản cập nhật mới cho Dashboard. Bấm vào đây để tải lại và trải nghiệm ngay!'}
-      </p>
-
-      <div className="mt-2.5 flex items-center gap-2">
-       <button
-        type="button"
-        onClick={e=>{
-         e.stopPropagation();
-         void handleReload();
-        }}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
-       >
-        <RefreshCw size={12} className={isReloading?'animate-spin':''}/>
-        <span>{isReloading?'Đang tải lại...':'Tải lại ngay'}</span>
-       </button>
-       <button
-        type="button"
-        onClick={e=>{
-         e.stopPropagation();
-         appUpdateService.dismissUpdate();
-        }}
-        className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
-       >
-        Để sau
-       </button>
-      </div>
-     </div>
-
-     {/* Dismiss X button */}
-     <button
-      type="button"
-      aria-label="Đóng"
-      onClick={e=>{
-       e.stopPropagation();
-       appUpdateService.dismissUpdate();
-      }}
-      className="p-1 rounded-lg text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer -mr-1 -mt-1"
-     >
-      <X size={14}/>
-     </button>
-    </div>
-   </div>
-  )}
-
-  {expanded&&log.length>0&&<div style={{top:stackTopOffset}} className="notif-panel notif-glass rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/90" role="dialog" aria-label="Tất cả thông báo mới">
-   <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-slate-700/80"><b className="text-xs font-semibold text-gray-900 dark:text-gray-100">Thông báo mới · {log.length}</b><span className="flex items-center gap-1.5"><button type="button" onClick={()=>void markAllRead()} title="Đã đọc tất cả" aria-label="Đã đọc tất cả" className="notif-action p-1.5 rounded-lg text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 transition-colors"><Check size={15} strokeWidth={2.5}/></button><button type="button" onClick={clearAll} title="Xoá tất cả" aria-label="Xoá tất cả" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"><Trash2 size={13}/><span>Xoá tất cả</span></button><button type="button" onClick={()=>setExpanded(false)} title="Thu gọn" aria-label="Thu gọn" className="notif-action inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><ChevronUp size={14}/><span>Thu gọn</span></button></span></div>
+  {expanded&&log.length>0&&<div className="notif-panel notif-glass rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/90" role="dialog" data-anchored-popover="true" aria-label="Tất cả thông báo mới">
+   <div className="grid grid-cols-[1fr_auto] items-center border-b border-gray-100 px-4 py-3 dark:border-slate-700/80"><b className="text-xs font-semibold text-gray-900 dark:text-gray-100">Thông báo mới · {log.length}</b><span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5"><button type="button" onClick={()=>void markAllRead()} title="Đã đọc tất cả" aria-label="Đã đọc tất cả" className="notif-action p-1.5 rounded-lg text-primary hover:bg-primary/10 dark:text-blue-400 dark:hover:bg-slate-700/60 transition-colors"><Check size={15} strokeWidth={2.5}/></button><button type="button" onClick={clearAll} title="Xoá tất cả" aria-label="Xoá tất cả" className="notif-action inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-lg text-xs hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"><Trash2 size={13}/><span>Xoá tất cả</span></button><button type="button" onClick={()=>setExpanded(false)} title="Thu gọn" aria-label="Thu gọn" className="notif-action inline-grid grid-flow-col auto-cols-max items-center gap-1 px-2 py-1 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"><ChevronUp size={14}/><span>Thu gọn</span></button></span></div>
    <div className="notif-panel-list">{log.map(n=>{const tone=TONES[toneOf(n)];
-    return <div key={n.id} role="button" tabIndex={0} onClick={()=>void open(n)} onKeyDown={e=>{if(e.key==='Enter')void open(n);}} style={toneStyle(n)} className="notif-row group flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60">
+    return <div key={n.id} role="button" tabIndex={0} onClick={()=>void open(n)} onKeyDown={e=>{if(e.key==='Enter')void open(n);}} style={toneStyle(n)} className="notif-row group grid grid-cols-[auto_minmax(0,1fr)_auto] cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60">
      <NotificationIcon message={n.message} metadata={n.metadata}/>
-     <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{tone.label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span><time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={n.created_at}>{formatNotificationTimestamp(n.created_at)}</time></span>
+     <span className="min-w-0"><span className="grid grid-cols-[minmax(0,auto)_auto] justify-start items-center gap-2"><b className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-semibold">{tone.label}</span></span><span className="notif-msg mt-0.5 block text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span><time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={n.created_at}>{formatNotificationTimestamp(n.created_at)}</time></span>
      <button type="button" aria-label="Bỏ qua" onClick={e=>{e.stopPropagation();dismiss(n.id);}} className="notif-x notif-x-static"><X size={13}/></button>
     </div>;})}</div>
   </div>}
-  {!expanded&&stack.length>0&&<div style={{top:stackTopOffset}} className="notif-stack" role="region" aria-live="polite" aria-label="Thông báo mới">
+  {!expanded&&stack.length>0&&<div className="notif-stack" role="region" aria-live="polite" aria-label="Thông báo mới">
    {stack.map((n,depth)=>{const l=LAYERS[Math.min(depth,LAYERS.length-1)];
     // With several popups, tapping the stack opens the full readable list instead of jumping to one item.
-    const activate=()=>{if(depth===0&&stack.length>1)setExpanded(true);else void open(n);};
-    return <div key={n.id} data-depth={depth} role="button" tabIndex={depth===0?0:-1} aria-hidden={depth>0} aria-label={depth===0&&extra?`Xem tất cả ${stack.length} thông báo`:undefined} onClick={activate} onKeyDown={e=>{if(e.key==='Enter')activate();}}
+    const activate=()=>{if(depth===0&&totalPopups>1)setExpanded(true);else void open(n);};
+    return <div key={n.id} data-depth={depth} role="button" tabIndex={depth===0?0:-1} aria-hidden={depth>0} aria-label={depth===0&&extra?`Xem tất cả ${totalPopups} thông báo`:undefined} onClick={activate} onKeyDown={e=>{if(e.key==='Enter')activate();}}
      style={{...toneStyle(n),transform:`translateY(${l.y}px) scale(${l.s})`,opacity:l.o,zIndex:100-depth}}
-     className="notif-card notif-glass group flex items-start gap-3 rounded-2xl border border-gray-200/80 bg-white/85 p-3.5 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/85">
+     className="notif-card notif-glass group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-gray-200/80 bg-white/85 p-3.5 backdrop-blur-2xl dark:border-slate-700/80 dark:bg-slate-900/85">
      <NotificationIcon message={n.message} metadata={n.metadata}/>
-     <span className="min-w-0 flex-1 pr-14"><b className="block truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-msg mt-0.5 line-clamp-2 text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span><time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={n.created_at}>{formatNotificationTimestamp(n.created_at)}</time></span>
+     <span className="min-w-0 pr-[72px]"><b className="block truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{n.title}</b><span className="notif-msg mt-0.5 line-clamp-2 text-xs leading-4">{<PicText message={n.message} metadata={n.metadata}/>}</span><time className="mt-1 block text-[10px] text-gray-400 dark:text-slate-500" dateTime={n.created_at}>{formatNotificationTimestamp(n.created_at)}</time></span>
      {depth===0&&<>
       {/* Count chip is permanent; on hover the X grows in and pushes it left. */}
       <span className="notif-corner"><span className="notif-count">{extra>0&&<span className="notif-chip rounded-full px-1.5 py-px text-[10px] font-bold">+{extra}</span>}<button type="button" aria-label="Đóng" onClick={e=>{e.stopPropagation();dismiss(n.id);}} className="notif-x"><X size={13}/></button></span></span>

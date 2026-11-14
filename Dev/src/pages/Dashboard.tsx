@@ -2,7 +2,7 @@ import {ActionButton} from '../components/common/ActionButton';
 import {DashboardAllocationChart} from '../components/features/dashboard/DashboardAllocationChart';
 import {DashboardActivityHistory} from '../components/features/dashboard/DashboardActivityHistory';
 import {taskOwningDepartment,useDashboardPerformance} from '../hooks/useDashboardPerformance';
-import {isDepartmentLeader} from '../lib/roleScope';
+import {isGlobalManager, isDepartmentLeader} from '../lib/roleScope';
 import {useAuthStore} from '../store/authStore';
 import {taskActive} from '../lib/taskTracking';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -81,6 +81,20 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   const {s,pct,rangeStart,rangeEnd,selectedTasks,chartData,filteredDepts,getEyebrow,upcomingProjects,teams}=useDashboardPerformance(tasks,scopedUsers,activeId,range,customStart,customEnd,search);
+
+  const teamsKey = teams.map(d => d.id).join(',');
+  useEffect(() => {
+    if (!teamsKey) return;
+    const deptIds = teamsKey.split(',').filter(Boolean);
+    if (isGlobalManager(profile)) {
+      setOpenDept(null);
+    } else if (profile?.department_id) {
+      const ownTeamId = `team-${profile.department_id}`;
+      setOpenDept(deptIds.includes(ownTeamId) ? ownTeamId : null);
+    } else {
+      setOpenDept(null);
+    }
+  }, [profile?.id, profile?.role, profile?.employment_level, profile?.department_id, teamsKey]);
   const trackRing=isDark?'#334155':'#edf3f8';const trackOrbit=isDark?'#334155':'#e8eff8';
   const openFilteredTasks=(statusParam?: string)=>{
     if(!s)return;const query=new URLSearchParams({start:rangeStart,end:rangeEnd});
@@ -96,7 +110,7 @@ export const Dashboard: React.FC = () => {
   if (!s) return <div className="p-8 text-center text-gray-500">{t('dashboard.noHistoryDesc')}</div>;
 
   return (
-    <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch min-h-full">
+    <div className="relative grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_256px] 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4 w-full xl:items-stretch min-h-full xl:h-full">
       {/* ============ LEFT: PERFORMANCE PANEL ============ */}
       <section className={`${PANEL} p-3 sm:p-4 flex flex-col`}>
         <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 border-b border-gray-200 dark:border-slate-700 pb-2.5">
@@ -155,7 +169,7 @@ export const Dashboard: React.FC = () => {
               <Eyebrow className="!text-xs !tracking-[1.5px]">{getEyebrow()}</Eyebrow>
             </div>
 
-            <div className="flex flex-col items-center my-auto py-3">
+            <div className="grid justify-items-center my-auto py-3 motion-bento-inner">
               <div className="flex items-center justify-center w-full my-3">
                 <div
                   className="relative w-[120px] h-[120px] xl:w-[138px] xl:h-[138px] 2xl:w-[160px] 2xl:h-[160px] rounded-full grid place-items-center p-[5px]"
@@ -294,7 +308,7 @@ export const Dashboard: React.FC = () => {
       </section>
 
       {/* ============ RIGHT STACK (compact) ============ */}
-      <div className="flex flex-col gap-4 min-w-0">
+      <div className="grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] gap-4 min-w-0 xl:h-full min-h-0">
 
         {/* Activity History with Role Permission */}
         <DashboardActivityHistory users={users} />
@@ -331,22 +345,25 @@ export const Dashboard: React.FC = () => {
         </section>
 
         {/* TEAM accordion (OLD UI restored) */}
-        <section className={`${PANEL} px-[14px] py-[16px]`}>
+        <section className={`${PANEL} px-[14px] py-[16px] grid grid-rows-[auto_minmax(0,1fr)] min-h-0 overflow-hidden`}>
             <div className="flex items-center justify-between mb-[6px]">
               <h2 className={`text-sm font-bold ${INK}`}>{t('dashboard.team')}</h2>
               <Eyebrow className="!text-xs !tracking-[.5px]">{scopedUsers.filter(u => u.department_id && u.department_id !== "unassigned").length} PIC</Eyebrow>
             </div>
-            <div>
+            <div className="min-h-0 overflow-y-auto custom-scrollbar pr-0.5">
               {teams.map(d => {
                 const open = openDept === d.id;
                 return (
                   <div key={d.id} className="border-b border-gray-200 dark:border-slate-700 last:border-0">
-                    <button onClick={() => setOpenDept(open ? null : d.id)} className="w-full flex items-center justify-between py-2">
+                    <button
+                      onClick={() => setOpenDept(open ? null : d.id)}
+                      className={`w-full grid grid-cols-[1fr_auto] items-center py-2 cursor-pointer ${isGlobalManager(profile) ? 'text-left' : 'text-center'}`}
+                    >
                       <span className={`text-xs font-bold ${INK}`}>{d.name} <span className={`font-normal ${MUTED}`}>{t('dashboard.picsCount', { count: d.members.length })}</span></span>
-                      <ChevronDown size={13} className={`${MUTED} transition-transform duration-300 ${open ? 'rotate-180' : '-rotate-90'}`} />
+                      <ChevronDown size={13} className={`${MUTED} transition-transform duration-500 ${open ? 'rotate-180' : '-rotate-90'}`} />
                     </button>
-                    <div className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                      <div className="overflow-hidden max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                    <div className={`grid transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                      <div className="overflow-hidden pr-1">
                         {d.members.map(m => (
                           <button key={m.id} onClick={() => setActiveId(m.id)} className="w-full text-left flex items-center gap-2 p-1.5 rounded-lg hover-magnetic-btn magnetic-blue transition-all">
                             <Avatar name={m.n} src={m.a || undefined} className="w-[24px] h-[24px] rounded-full text-[#2a6fc1] dark:text-sky-300 text-[10px]" />

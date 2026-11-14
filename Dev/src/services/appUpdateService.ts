@@ -2,6 +2,8 @@
  * App Update Detection & Notification Service
  */
 
+export const SOFTWARE_RELEASE_LABEL = 'Ver 1.02';
+
 export interface UpdateInfo {
   version: string;
   builtAt?: string;
@@ -14,6 +16,8 @@ type UpdateListener = (info: UpdateInfo | null) => void;
 class AppUpdateService {
   private currentVersion: string =
     typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+  private buildTime: string | null =
+    typeof __APP_BUILD_TIME__ !== 'undefined' ? __APP_BUILD_TIME__ : null;
   private updateInfo: UpdateInfo | null = null;
   private listeners: Set<UpdateListener> = new Set();
   private isChecking = false;
@@ -24,6 +28,18 @@ class AppUpdateService {
     this.initServiceWorker();
     this.startPolling();
     this.initVisibilityListeners();
+  }
+
+  public getCurrentVersion(): string {
+    return this.currentVersion;
+  }
+
+  public getBuildTime(): string | null {
+    return this.buildTime;
+  }
+
+  public getReleaseLabel(): string {
+    return SOFTWARE_RELEASE_LABEL;
   }
 
   public getUpdateInfo(): UpdateInfo | null {
@@ -41,28 +57,44 @@ class AppUpdateService {
   }
 
   /**
-   * Triggers the update notification popup manually or programmatically
+   * Marks an update as available so staff are notified politely via menu badges
+   * without blocking their workspace with forced popups.
    */
   public triggerUpdate(info?: Partial<UpdateInfo>) {
     this.isDismissedForSession = false;
     this.updateInfo = {
       version: info?.version || `v${Date.now().toString().slice(-4)}`,
       builtAt: info?.builtAt || new Date().toISOString(),
-      title: info?.title || 'Bản cập nhật mới có sẵn',
+      title: info?.title || 'Có bản cập nhật mới',
       message:
         info?.message ||
-        'Đã có bản cập nhật mới cho Dashboard. Bấm vào đây để tải lại và trải nghiệm ngay!',
+        'Đã có bản cập nhật mới. Mở mục Software Update và bấm Update now để cập nhật.',
     };
     this.notify();
   }
 
   /**
-   * User chooses to dismiss/snooze the notification
+   * User chooses to clear the pending indicator badge for the session
    */
   public dismissUpdate() {
     this.isDismissedForSession = true;
     this.updateInfo = null;
     this.notify();
+  }
+
+  /**
+   * Checks whether any Service Worker already has a waiting update ready
+   */
+  public async hasWaitingServiceWorker(): Promise<boolean> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return false;
+    }
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      return registrations.some(reg => Boolean(reg.waiting));
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -86,22 +118,30 @@ class AppUpdateService {
     } catch {
       // Ignore cache clearing errors
     } finally {
-      // Hard reload
       window.location.reload();
     }
   }
 
   /**
-   * Check /version.json for newer build deployment
+   * Check /version.json and Service Worker registrations for a newer build
    */
-  public async checkForUpdates(): Promise<boolean> {
-    if (this.isChecking) return false;
+  public async checkForUpdates(force = false): Promise<boolean> {
+    if (this.isChecking) return Boolean(this.updateInfo);
     this.isChecking = true;
+    if (force) {
+      this.isDismissedForSession = false;
+    }
 
     try {
-      // Check SW update
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(reg => reg?.update()).catch(() => {});
+        const reg = await navigator.serviceWorker.getRegistration().catch(() => undefined);
+        if (reg) {
+          await reg.update().catch(() => {});
+          if (reg.waiting && (!this.isDismissedForSession || force)) {
+            this.triggerUpdate();
+            return true;
+          }
+        }
       }
 
       const res = await fetch(`/version.json?_t=${Date.now()}`, {
@@ -109,17 +149,16 @@ class AppUpdateService {
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
 
-      if (!res.ok) return false;
+      if (!res.ok) return Boolean(this.updateInfo);
 
       const data = await res.json();
-      if (!data?.version) return false;
+      if (!data?.version) return Boolean(this.updateInfo);
 
-      // In production (or if version changed from running version)
       if (
         this.currentVersion &&
         this.currentVersion !== 'dev' &&
         data.version !== this.currentVersion &&
-        !this.isDismissedForSession
+        (!this.isDismissedForSession || force)
       ) {
         this.triggerUpdate({
           version: data.version,
@@ -127,9 +166,10 @@ class AppUpdateService {
         });
         return true;
       }
-      return false;
+
+      return Boolean(this.updateInfo);
     } catch {
-      return false;
+      return Boolean(this.updateInfo);
     } finally {
       this.isChecking = false;
     }
@@ -139,6 +179,9 @@ class AppUpdateService {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
     navigator.serviceWorker.ready.then(registration => {
+      if (registration.waiting) {
+        this.triggerUpdate();
+      }
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (!newWorker) return;
@@ -154,9 +197,7 @@ class AppUpdateService {
 
   private startPolling() {
     if (typeof window === 'undefined') return;
-    // Initial check after 12s
     setTimeout(() => void this.checkForUpdates(), 2000);
-    // Poll every 90s
     this.checkInterval = window.setInterval(() => {
       void this.checkForUpdates();
     }, 90000);
@@ -182,8 +223,7 @@ class AppUpdateService {
 
 export const appUpdateService = new AppUpdateService();
 
-// Expose on global window object so it can be triggered from anywhere (console, buttons, scripts)
 if (typeof window !== 'undefined') {
   window.triggerAppUpdate = (info?: Partial<UpdateInfo>) => appUpdateService.triggerUpdate(info);
-  window.checkForAppUpdate = () => appUpdateService.checkForUpdates();
+  window.checkForAppUpdate = () => appUpdateService.checkForUpdates(true);
 }

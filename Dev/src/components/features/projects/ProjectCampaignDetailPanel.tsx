@@ -26,6 +26,7 @@ import { useTranslation } from '../../../i18n/translations';
 import {useMobileReadOnly} from '../../../hooks/useMobileReadOnly';
 import {saveTaskDeliverables} from '../../../lib/taskDeliverables';
 import {useTaskDetailVisibility} from '../../../hooks/useTaskDetailVisibility';
+import {useSmartDrawerOutsideClose} from '../../../hooks/useSmartDrawerOutsideClose';
 import {isAdmin, isGlobalManager, isDepartmentLeader} from '../../../lib/roleScope';
 import {workAssignmentPeople} from '../../../lib/workAccessScope';
 
@@ -209,42 +210,20 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
 
   const panelRef = useRef<HTMLElement>(null);
 
-  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
-  useEffect(() => {
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (panelRef.current && panelRef.current.contains(target)) return;
-      if (
-        target.closest('.tw-calendar-popover') ||
-        target.closest('[role="dialog"]') ||
-        target.closest('[role="menu"]') ||
-        target.closest('[role="listbox"]') ||
-        target.closest('.toast') ||
-        target.closest('#headlessui-portal-root')
-      ) {
-        return;
-      }
-      onClose();
-    };
-
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handlePointerDown);
-      document.addEventListener('touchstart', handlePointerDown);
-    }, 60);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-    };
-  }, [onClose]);
+  // Smart auto-close detail drawer: collapse only on empty space clicks; keep open when clicking interactive UI
+  useSmartDrawerOutsideClose({
+    isOpen: Boolean(data),
+    disabled: resizing,
+    drawerRef: panelRef,
+    onClose,
+  });
 
   if (!data) return null;
 
   return (
     <>
       <div 
+        data-drawer-backdrop="true"
         className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
@@ -252,15 +231,15 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
       <aside 
         ref={panelRef}
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
-        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} ${kind === 'project' ? 'border border-violet-500/20' : 'border border-amber-500/20'} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
+        className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-[#0a192f] shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} ${kind === 'project' ? 'border border-violet-500/20' : 'border border-amber-500/20'} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
       >
       <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-        <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{data.name}</h3>
-          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span>
+      <div className="grid grid-cols-[1fr_auto] items-start gap-3 px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 min-w-0">
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white break-words leading-snug">{data.name}</h3>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${kind==='project' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'} border capitalize whitespace-nowrap shrink-0 self-center`}>{kind === 'project' ? t('projects.projects') : t('projects.campaigns')}</span>
         </div>
-        <button onClick={onClose} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700"><X className="w-5 h-5 text-gray-500" /></button>
+        <button onClick={onClose} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer"><X className="w-5 h-5 text-gray-500" /></button>
       </div>
       
       <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
@@ -346,7 +325,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                           {openCount} {lang === 'en' ? 'in progress' : 'chưa hoàn thành'}
                         </span>
                       )}
-                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${subtasksCollapsed ? '-rotate-90' : ''}`} />
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${subtasksCollapsed ? '-rotate-90' : ''}`} />
                     </button>
                     {!subtasksCollapsed && (
                       <div className="grid grid-flow-col auto-cols-max items-center gap-1 bg-slate-100 dark:bg-[#0a192f] p-0.5 rounded-lg text-xs">
@@ -405,7 +384,7 @@ function ProjectCampaignDetailContent({item,kind,onClose,onUpdated}:PanelProps) 
                       {/* Main content layout: Title (with done checkmark icon) + Metadata (REQ-TOT-05 / Slide 4) */}
                       <div className="min-w-0 grid grid-cols-1 gap-1.5 pr-14 select-none">
                         {/* Row 1: Title */}
-                        <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+                        <span className={`text-sm font-semibold inline-block break-words whitespace-normal leading-snug ${isTaskDone(sub.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
                           {sub.title}
                           {isTaskDone(sub.status) && (
                             <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />

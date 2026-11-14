@@ -26,7 +26,8 @@ import {
   TrendingUp,
   LayoutDashboard,
   Bot,
-  Home
+  Home,
+  RefreshCw
 } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { useTranslation } from '../../i18n/translations';
@@ -41,6 +42,7 @@ import { canViewTeamManagement } from '../../lib/roleScope';
 import toast from 'react-hot-toast';
 import { cn } from '../common/KpiCard';
 import { MobileNotificationSheet } from './MobileNotificationSheet';
+import { appUpdateService, type UpdateInfo } from '../../services/appUpdateService';
 
 export interface MobileHomeHubItem {
   id: string;
@@ -92,6 +94,8 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [navDrawerOpen, setNavDrawerOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => appUpdateService.getUpdateInfo());
+  useEffect(() => appUpdateService.subscribe(setUpdateInfo), []);
   const [notifsOpen, setNotifsOpen] = useState(false);
 
   // Desktop guard: Immediately redirect to desktop destination if viewport >= 1280
@@ -226,6 +230,12 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
             >
               <Avatar name={profile?.name || 'Staff'} src={profile?.avatar_url || undefined} className="w-full h-full text-xs font-bold" />
             </button>
+            {updateInfo && (
+              <span
+                aria-label={isEn ? 'Software update available' : 'Có bản cập nhật mới'}
+                className="pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white dark:ring-[#0a192f] animate-pulse"
+              />
+            )}
 
             {/* Avatar Popover Menu (Feedback #6: Theme, Lang, Profile) */}
             {avatarMenuOpen && (
@@ -255,6 +265,27 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
                   >
                     <User size={15} className="text-[#002e6d] dark:text-sky-400" />
                     <span>{isEn ? 'Personal Profile' : 'Hồ sơ cá nhân'}</span>
+                    <ChevronRight size={14} className="text-gray-400" />
+                  </button>
+
+                  {/* Software Update */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarMenuOpen(false);
+                      navigate('/software-update');
+                    }}
+                    className="w-full text-left p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-[#0f1e36] text-xs font-semibold text-gray-800 dark:text-slate-200 grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw size={15} className="text-[#002e6d] dark:text-sky-400" />
+                    <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                      <span className="truncate">Software Update</span>
+                      {updateInfo && (
+                        <span className="px-1.5 py-px rounded-full text-[9px] font-bold bg-sky-500/15 text-[#002e6d] border border-sky-300/70 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 leading-tight">
+                          {isEn ? 'New' : 'Mới'}
+                        </span>
+                      )}
+                    </span>
                     <ChevronRight size={14} className="text-gray-400" />
                   </button>
 

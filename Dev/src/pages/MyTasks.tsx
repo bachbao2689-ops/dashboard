@@ -40,15 +40,46 @@ export const MyTasks: React.FC = () => {
     return users.filter(u => String(u.department_id) === filterDept);
   }, [filterDept, users]);
 
-  const targetUserId = isManager && filterPic && visibleUsers.some(user => String(user.id) === String(filterPic) && canViewPersonInTeam(profile, user)) ? filterPic : profile?.id;
-  const calendar = useProfileCalendar(targetUserId);
+  const selectedPicId = isManager && filterPic && visibleUsers.some(user => String(user.id) === String(filterPic) && canViewPersonInTeam(profile, user)) ? filterPic : '';
+  const targetUserId = selectedPicId || profile?.id;
+  const scopeAllVisible = isManager && !selectedPicId;
+  const calendar = useProfileCalendar(targetUserId, { scopeAllVisible });
+
+  const scopedCalendarItems = useMemo(() => {
+    if (!isManager || !filterDept || selectedPicId) return calendar.items;
+    const parentDeptByKey = new Map<string, string>();
+    calendar.items.forEach(item => {
+      if ((item.kind === 'project' || item.kind === 'campaign') && item.record?.department_id) {
+        parentDeptByKey.set(`${item.kind}:${item.id}`, String(item.record.department_id));
+      }
+    });
+    return calendar.items.filter(item => {
+      const fallbackParentDept =
+        item.kind === 'campaign_subtask' && item.parentId
+          ? parentDeptByKey.get(`campaign:${item.parentId}`)
+          : item.kind === 'project_subtask' && item.parentId
+            ? parentDeptByKey.get(`project:${item.parentId}`)
+            : item.kind === 'task'
+              ? (item.record?.project_id ? parentDeptByKey.get(`project:${item.record.project_id}`) : undefined) ||
+                (item.record?.campaign_id ? parentDeptByKey.get(`campaign:${item.record.campaign_id}`) : undefined)
+              : undefined;
+      const deptId =
+        item.record?.department_id ||
+        item.record?.project?.department_id ||
+        item.record?.campaign?.department_id ||
+        item.record?.departments?.id ||
+        fallbackParentDept;
+      return deptId && String(deptId) === String(filterDept);
+    });
+  }, [calendar.items, isManager, filterDept, selectedPicId]);
+
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [searchParams]=useSearchParams();
   const [reportOpen, setReportOpen] = useState(searchParams.get("report")==="1");
   const reportRef = useRef<HTMLDivElement>(null);
   useEffect(()=>{if(searchParams.get("report")==="1")setReportOpen(true);},[searchParams]);
   useEffect(() => { if (reportOpen) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [reportOpen]);
-  const selected = calendar.items.find(item => item.key === selectedKey);
+  const selected = scopedCalendarItems.find(item => item.key === selectedKey);
   return (
     <div className="relative flex min-h-full min-w-0">
       <div className={`min-w-0 flex-1 space-y-6 pb-6 transition-all duration-300 ${selected ? 'hidden xl:block xl:mr-[516px] pr-2' : 'pr-0 lg:pr-4'}`}>
@@ -56,6 +87,7 @@ export const MyTasks: React.FC = () => {
         {/* ActivityTaskCard and ReportHistoryModal are temporarily replaced, retained for later use. */}
         <ProfileCalendar 
           {...calendar} 
+          items={scopedCalendarItems}
           onRefresh={calendar.refresh} 
           onOpen={item => setSelectedKey(item.key)} 
           onReport={() => setReportOpen(value => !value)} 

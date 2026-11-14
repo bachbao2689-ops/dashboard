@@ -17,10 +17,11 @@ import {ConfirmHideModal} from '../components/common/ConfirmHideModal';
 import {CampaignPanel} from '../components/features/projects/CampaignPanel';
 import {SubtaskDetailPanel} from '../components/features/projects/SubtaskDetailPanel';
 import {DepartmentFilterDropdown,StatusFilterDropdown,PicFilterDropdown,DateFilterDropdown,PriorityFilterDropdown} from '../components/common/filters';
-import {dateValue,priorityClass,getDueStatusColor,getDueStatusLabel} from '../components/features/projects/projectPresentation';
+import {dateValue,priorityClass,getDueStatusLabel} from '../components/features/projects/projectPresentation';
 import {useProjectsController} from '../hooks/useProjectsController';
 import {useResizableColumns} from '../hooks/useResizableColumns';
 import {useRememberedState} from '../hooks/useRememberedState';
+import {useSmartDrawerOutsideClose} from '../hooks/useSmartDrawerOutsideClose';
 import {EntityActionBadges} from '../components/features/projects/EntityActionBadges';
 import {EntityNoteCell, getCachedNote} from '../components/features/projects/EntityNoteCell';
 import {useUiStore} from '../store/uiStore';
@@ -63,7 +64,7 @@ export const Projects:React.FC=()=>{
    }
  }, [searchParams]);
  const rootCampaignIds=React.useMemo(()=>new Set(state.workflow.tracks.filter(track=>track.entity_type==='campaign'&&track.root).map(track=>track.entity_id)),[state.workflow.tracks]);
-         const {creationPeople,creationDepartments,userIsRestricted: _userIsRestricted,resolvedDeptId: _resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,hasCampaignComments,departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,canHideOrDeleteParent,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,campaignToDelete,setCampaignToDelete,campaignToHide,setCampaignToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,archiveCampaign,executeHideCampaign,removeCampaign,executeRemoveCampaign,addSubtask,addComment,allowPhaseCreation,setAllowPhaseCreation}=state;
+         const {creationPeople,creationDepartments,userIsRestricted: _userIsRestricted,resolvedDeptId: _resolvedDeptId,viewMode,setViewMode,visibleCampaigns,handleUpdateProjectStatus,handleUpdateCampaignStatus,campaignStatus,setCampaignStatus,hasCampaignComments,departments,departmentId,setDepartmentId,departmentFilter,setDepartmentFilter,editStatus,setEditStatus,t,lang,setParams,workflow,sourceTask,setSourceTask,profile,canCreate,canManageProject,canHideOrDeleteParent,projects,setProjects,people,selected,setSelected,picMembers,selectedCampaign,setSelectedCampaign,selectedRoot,projectsExpanded,setProjectsExpanded,createOpen,setCreateOpen,creating,executionMemberIds,setExecutionMemberIds,projectPrimaryOwners,confirmAnchor,clearConfirmAnchor,projectToDelete,setProjectToDelete,deletingIds,projectToHide,setProjectToHide,campaignToDelete,setCampaignToDelete,campaignToHide,setCampaignToHide,subtaskToDelete,setSubtaskToDelete,title,setTitle,description,setDescription,campaignSubtaskToDelete,setCampaignSubtaskToDelete,start,setStart,due,setDue,priority,setPriority,ownerIds,setOwnerIds,creationType,setCreationType,showAdvanced,setShowAdvanced,primaryOwnerId,setPrimaryOwnerId,parentCampaignId,campaignObjective,setCampaignObjective,campaignBudget,setCampaignBudget,campaignChannels,setCampaignChannels,attachmentUrl,setAttachmentUrl,attachmentFile,setAttachmentFile,campaigns,subtasks,setSubtasks,comments,selectedSubtask,setSelectedSubtask,subtaskCommentCounts,subtaskChecklistCounts,subtaskQuantities,hasMentionOrUnread,recentlyCompletedSubtaskId,setRecentlyCompletedSubtaskId,setRefreshDetailTrigger,removeComment,saveEditedComment,newSubtask,setNewSubtask,editMode,setEditMode,showSubtaskForm,setShowSubtaskForm,width,resizing,setResizing,subtaskOwner,setSubtaskOwner,subtaskDue,setSubtaskDue,subtaskQuantity,setSubtaskQuantity,subtaskPriority,setSubtaskPriority,comment,setComment,panelOpen,visiblePeople,projectCommentInput,hasComments,subtaskMembers,searchTerm: _searchTerm,setSearchTerm: _setSearchTerm,statusFilter,setStatusFilter,picFilter,setPicFilter,calendarFilter,setCalendarFilter,customStartDate,setCustomStartDate,customEndDate,setCustomEndDate,priorityFilter,setPriorityFilter,activeDropdown,setActiveDropdown,toolbarRef,hasActiveFilters,handleResetFilters,campaignFilters,visibleProjects,resetCreateForm,selectParentCampaign,createItem,executeRemoveSubtask,executeRemoveCampaignSubtask,removeSubtask,toggleSubtask,saveInlineEdit,executeHideProject,archiveProject,executeRemoveProject,removeProject,archiveCampaign,executeHideCampaign,removeCampaign,executeRemoveCampaign,addSubtask,addComment,allowPhaseCreation,setAllowPhaseCreation}=state;
   const activeDepartments = React.useMemo(() => {
     return departments.filter(d =>
       projects.some(p => String(p.department_id) === String(d.id)) ||
@@ -81,40 +82,18 @@ export const Projects:React.FC=()=>{
 
   const detailDrawerRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto-close detail drawer when clicking outside ("staff bấm chỗ khác thì tự crop vào")
-  React.useEffect(() => {
-    if (!panelOpen) return;
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (detailDrawerRef.current && detailDrawerRef.current.contains(target)) return;
-      // Không đóng nếu click vào calendar portal, toast, dialog portal, menu
-      if (
-        target.closest('.tw-calendar-popover') ||
-        target.closest('[role="dialog"]') ||
-        target.closest('[role="menu"]') ||
-        target.closest('[role="listbox"]') ||
-        target.closest('.toast') ||
-        target.closest('#headlessui-portal-root')
-      ) {
-        return;
-      }
+  // Smart auto-close detail drawer: collapse only on empty space clicks; keep open when clicking interactive UI
+  useSmartDrawerOutsideClose({
+    isOpen: panelOpen && !createOpen,
+    disabled: resizing,
+    drawerRef: detailDrawerRef,
+    onClose: () => {
       setSelected(null);
       setSelectedCampaign(null);
       setSelectedSubtask(null);
-    };
-
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handlePointerDown);
-      document.addEventListener('touchstart', handlePointerDown);
-    }, 60);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-    };
-  }, [panelOpen, setSelected, setSelectedCampaign, setSelectedSubtask]);
+      setParams({}, { replace: true });
+    },
+  });
 
   const handleSaveProjectDesc = async () => {
     if (!selected) return;
@@ -205,27 +184,7 @@ export const Projects:React.FC=()=>{
     };
   }, [isDetailActive, setIsScanMode]);
 
-  React.useEffect(() => {
-    if (!panelOpen) return;
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (resizing) return;
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest('.dashboard-detail-drawer, [data-filter-popover], .tw-calendar-modal, .vanilla-calendar, [role="dialog"], [role="listbox"], .smart-mention-popup, .modal-backdrop')) {
-        return;
-      }
-      if (target.closest('.hover-row-campaign, .hover-row-project, [data-board-card]')) {
-        return;
-      }
-      setSelected(null);
-      setSelectedCampaign(null);
-      setSelectedSubtask(null);
-      setParams({}, { replace: true });
-    };
 
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [panelOpen, resizing, setSelected, setSelectedCampaign, setSelectedSubtask, setParams]);
 
   // Inline Creation: Project Subtask
   const [creatingSubtaskProjectId, setCreatingSubtaskProjectId] = React.useState<string | null>(null);
@@ -447,6 +406,7 @@ export const Projects:React.FC=()=>{
     { value: 'draft', label: lang === 'en' ? 'Draft / To-do' : 'Bản nháp', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'active', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'pending_approval', label: lang === 'en' ? 'Pending Approval' : 'Chờ duyệt', dotColor: 'bg-amber-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
     { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
@@ -455,6 +415,7 @@ export const Projects:React.FC=()=>{
     { value: 'todo', label: lang === 'en' ? 'Draft / To-do' : 'Chưa bắt đầu', dotColor: 'bg-slate-400' },
     { value: 'planning', label: lang === 'en' ? 'Planning' : 'Lên kế hoạch', dotColor: 'bg-purple-500' },
     { value: 'in_progress', label: lang === 'en' ? 'In Progress' : 'Đang thực hiện', dotColor: 'bg-sky-500' },
+    { value: 'pending_approval', label: lang === 'en' ? 'Pending Approval' : 'Chờ duyệt', dotColor: 'bg-amber-500' },
     { value: 'on_hold', label: lang === 'en' ? 'On Hold' : 'Tạm dừng', dotColor: 'bg-amber-500' },
     { value: 'completed', label: lang === 'en' ? 'Completed' : 'Hoàn thành', dotColor: 'bg-emerald-500' },
   ], [lang]);
@@ -620,7 +581,7 @@ export const Projects:React.FC=()=>{
       </div>
 
       {/* Hàng 2: Cụm 3 nút All, Projects, Campaigns bên trái + Cạnh bên phải là Xem Main & + Add New */}
-      <div className="inline-grid grid-flow-col auto-cols-max items-center justify-start gap-2.5 py-1.5 mb-1.5 shrink-0 max-w-full overflow-x-auto no-scrollbar">
+      <div className="inline-grid grid-flow-col auto-cols-max items-center justify-start gap-2.5 py-1.5 mb-1.5 min-h-max shrink-0 max-w-full overflow-x-auto no-scrollbar">
         {/* All, Projects, Campaigns với sliding pill */}
         <SlidingToolbarGroup
           className="p-0.5 rounded-[8px] bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/80 dark:border-slate-700/80 shadow-2xs inline-grid grid-flow-col auto-cols-max items-center gap-0.5 shrink-0"
@@ -648,13 +609,13 @@ export const Projects:React.FC=()=>{
             onClick={() => setEntityFilter('project')}
             className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
               entityFilter === 'project'
-                ? 'bg-gradient-to-b from-violet-100/95 to-violet-200/80 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(124,58,237,.18)] ring-1 ring-violet-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-violet-500/35 dark:to-purple-500/20 dark:!text-violet-100 dark:ring-violet-400/40'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
             }`}
           >
             <FolderKanban
               size={13}
-              className={entityFilter === 'project' ? 'text-violet-600 dark:text-violet-300' : ''}
+              className={entityFilter === 'project' ? 'text-blue-600 dark:text-violet-300' : ''}
             />
             <span>{lang === 'en' ? 'Projects' : 'Dự án'}</span>
             <span className="text-[10.5px] font-bold opacity-80">({totalProjects})</span>
@@ -666,13 +627,13 @@ export const Projects:React.FC=()=>{
             onClick={() => setEntityFilter('campaign')}
             className={`h-[28px] px-2.5 py-0.5 rounded-[6px] text-[11.5px] font-bold transition-all duration-200 inline-grid grid-flow-col auto-cols-max items-center gap-1.5 cursor-pointer z-10 ${
               entityFilter === 'campaign'
-                ? 'bg-gradient-to-b from-amber-100/95 to-amber-200/80 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(217,119,6,.18)] ring-1 ring-amber-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
+                ? 'bg-gradient-to-b from-blue-100/95 to-blue-200/80 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_2px_6px_rgba(37,99,235,.18)] ring-1 ring-blue-300/80 dark:from-amber-500/35 dark:to-orange-500/20 dark:!text-amber-100 dark:ring-amber-300/40'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
             }`}
           >
             <Megaphone
               size={13}
-              className={entityFilter === 'campaign' ? 'text-amber-600 dark:text-amber-300' : ''}
+              className={entityFilter === 'campaign' ? 'text-blue-600 dark:text-amber-300' : ''}
             />
             <span>{lang === 'en' ? 'Campaigns' : 'Chiến dịch'}</span>
             <span className="text-[10.5px] font-bold opacity-80">({totalCampaigns})</span>
@@ -732,6 +693,7 @@ export const Projects:React.FC=()=>{
                 { key: 'all', label: t('projects.allStatuses'), dot: 'bg-gray-400' },
                 { key: 'planning', label: t('projects.statusPlanning'), dot: 'bg-amber-400' },
                 { key: 'in_progress', label: t('projects.statusInProgress'), dot: 'bg-sky-400' },
+                { key: 'pending_approval', label: lang === 'en' ? 'Pending Approval' : 'Chờ duyệt', dot: 'bg-amber-500' },
                 { key: 'completed', label: t('projects.statusCompleted'), dot: 'bg-emerald-500' },
                 { key: 'draft', label: t('projects.statusDraft'), dot: 'bg-slate-400' },
                 { key: 'on_hold', label: t('projects.statusOnHold'), dot: 'bg-rose-400' }
@@ -878,7 +840,7 @@ export const Projects:React.FC=()=>{
       return (
         <article key={project.id} className={`min-w-0 rounded-[8px] border border-gray-200/90 bg-white/90 p-3 dark:border-slate-800 dark:bg-[#071325]/70 shadow-xs ${deletingIds.includes(project.id) ? 'animate-fade-out' : ''}`}>
           {/* Hàng 1: Expand chevron, (i) icon, Title + subtask count + note icon, Status ở góc phải */}
-          <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-1.5">
+          <div className={`grid ${hasPhases ? 'grid-cols-[auto_auto_minmax(0,1fr)_auto]' : 'grid-cols-[auto_minmax(0,1fr)_auto]'} items-center gap-1.5`}>
             <button
               type="button"
               onClick={() => toggleProjectExpand(project.id)}
@@ -908,62 +870,64 @@ export const Projects:React.FC=()=>{
                 })()}
               />
             )}
-            <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 min-w-0 overflow-hidden">
               <button
                 type="button"
                 onClick={() => { setSelectedCampaign(null); setSelectedSubtask(null); setCreateOpen(false); setSelected(project); }}
-                className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left"
+                className="font-bold text-sm text-gray-900 dark:text-white truncate cursor-pointer text-left min-w-0"
               >
                 {project.name}
               </button>
-              {(() => {
-                const phases = projectTrack?.phases || [];
-                const phaseCount = phases.length;
-                const unassignedSubtasks = subtasks.filter(s => {
-                  if (s.status === 'deleted') return false;
-                  if (phaseCount === 0) return true;
-                  return !s.workflow_phase_id;
-                });
-                const unassignedCount = unassignedSubtasks.length;
-                const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
+              <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
+                {(() => {
+                  const phases = projectTrack?.phases || [];
+                  const phaseCount = phases.length;
+                  const unassignedSubtasks = subtasks.filter(s => {
+                    if (s.status === 'deleted') return false;
+                    if (phaseCount === 0) return true;
+                    return !s.workflow_phase_id;
+                  });
+                  const unassignedCount = unassignedSubtasks.length;
+                  const isAllUnassignedDone = unassignedCount > 0 && unassignedSubtasks.every(s => isTaskDone(s.status));
 
-                return (
-                  <>
-                    {unassignedCount > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
-                        isAllUnassignedDone
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
-                          : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                      }`}>
-                        ({unassignedCount} Tasks)
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-              {hasComments[project.id] && (
-                <CommentPreviewPopover
-                  entityType="project"
-                  entityId={project.id}
-                  entityTitle={project.name}
-                  hasUnreadDot={Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]}
-                  iconSize={13}
-                  className="shrink-0"
-                />
-              )}
-              {Boolean(projectNote && projectNote.trim()) && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenNoteEntityIds(prev => ({ ...prev, [project.id]: !prev[project.id] }));
-                  }}
-                  className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
-                  title="Xem ghi chú"
-                >
-                  <FileText size={13} />
-                </button>
-              )}
+                  return (
+                    <>
+                      {unassignedCount > 0 && (
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-[4px] font-bold shrink-0 ${
+                          isAllUnassignedDone
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                            : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                        }`}>
+                          ({unassignedCount} Tasks)
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
+                {hasComments[project.id] && (
+                  <CommentPreviewPopover
+                    entityType="project"
+                    entityId={project.id}
+                    entityTitle={project.name}
+                    hasUnreadDot={Number(project.lead_id) === Number(profile?.id) || hasMentionOrUnread?.[project.id]}
+                    iconSize={13}
+                    className="shrink-0"
+                  />
+                )}
+                {Boolean(projectNote && projectNote.trim()) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenNoteEntityIds(prev => ({ ...prev, [project.id]: !prev[project.id] }));
+                    }}
+                    className="p-0.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 shrink-0 cursor-pointer"
+                    title="Xem ghi chú"
+                  >
+                    <FileText size={13} />
+                  </button>
+                )}
+              </div>
             </div>
             {/* Status badge đưa lên góc phải */}
             <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -1186,7 +1150,7 @@ export const Projects:React.FC=()=>{
               >
                 {/* Cột 1: Title có icon dropdown trước title */}
                 <td className="p-4 relative overflow-hidden">
-                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden">
+                  <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 overflow-hidden max-w-full crop-blur-edge">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1266,18 +1230,18 @@ export const Projects:React.FC=()=>{
                   {canHideOrDeleteParent && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5"
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 ${(projectToHide?.id === project.id || projectToDelete?.id === project.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} focus-within:opacity-100 transition-opacity bg-white/95 dark:bg-[#0a192f]/95 shadow-sm rounded-lg px-1 py-0.5 border border-gray-200/80 dark:border-slate-700/80 z-10 grid grid-flow-col auto-cols-max items-center gap-0.5`}
                     >
                       <ActionButton 
                         icon={<EyeOff size={14}/>} 
-                        onClick={(e) => { e.stopPropagation(); void archiveProject(project); }} 
-                        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors" 
+                        onClick={(e) => { e.stopPropagation(); void archiveProject(project, e.currentTarget); }} 
+                        className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer" 
                         title={t('common.hide')}
                       />
                       <ActionButton 
                         icon={<Trash2 size={14}/>} 
-                        onClick={(e) => { e.stopPropagation(); void removeProject(project); }} 
-                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors" 
+                        onClick={(e) => { e.stopPropagation(); void removeProject(project, e.currentTarget); }} 
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors cursor-pointer" 
                         title={t('common.delete')}
                       />
                     </div>
@@ -1287,7 +1251,7 @@ export const Projects:React.FC=()=>{
                 {/* Cột 2: OWNER / PIC */}
                 <td className="p-4 overflow-hidden text-center">
                   <div className="grid place-content-center">
-                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden mx-auto">
+                    <div className="grid grid-flow-col auto-cols-max items-center justify-center gap-2 overflow-hidden max-w-full mx-auto crop-blur-edge">
                       <div className="grid grid-flow-col auto-cols-max -space-x-2 shrink-0">
                         {(picMembers[project.id] || []).slice(0,4).map(id => { const p = people.find(p=>String(p.id)===id); return <Avatar key={'o'+id} name={p?.name || '?'} src={(p as any)?.avatar_url || undefined} className="w-7 h-7 text-[10px] border-2 border-white dark:border-slate-900 shadow-sm z-10" /> })}
                       </div>
@@ -1322,7 +1286,6 @@ export const Projects:React.FC=()=>{
                       <span>{dateValue(project.start_date || '')} – {dateValue(project.due_date || '')}</span>
                       {project.due_date && (
                         <div className="grid grid-flow-col auto-cols-max items-center gap-1.5 shrink-0">
-                          <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] ${getDueStatusColor(project.due_date, project.status)}`} title={`${t('common.dueDate')}: ${dateValue(project.due_date)}`} />
                           {getDueStatusLabel(project.due_date, project.status, lang === 'en')}
                         </div>
                       )}
@@ -1333,7 +1296,7 @@ export const Projects:React.FC=()=>{
                 {/* Cột 4: PRIORITY */}
                 <td className="p-4 overflow-hidden text-center">
                   <div className="grid place-items-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize truncate ${priorityClass(project.priority || 'medium')}`}>
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${priorityClass(project.priority || 'medium')}`}>
                       {project.priority || 'medium'}
                     </span>
                   </div>
@@ -1524,7 +1487,7 @@ export const Projects:React.FC=()=>{
                           {/* Cột 4: PRIORITY */}
                           <td className="p-3 overflow-hidden text-center">
                             <div className="grid place-content-center">
-                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize truncate ${priorityClass(st.priority || 'medium')}`}>
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize whitespace-nowrap ${priorityClass(st.priority || 'medium')}`}>
                                 {st.priority || 'medium'}
                               </span>
                             </div>
@@ -1670,7 +1633,7 @@ export const Projects:React.FC=()=>{
                                 {/* Cột 4: PRIORITY */}
                                 <td className="py-2 px-4 overflow-hidden text-center">
                                   <div className="grid place-content-center">
-                                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold capitalize truncate ${priorityClass(item.priority || 'medium')}`}>
+                                    <span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize whitespace-nowrap ${priorityClass(item.priority || 'medium')}`}>
                                       {item.priority || 'medium'}
                                     </span>
                                   </div>
@@ -1904,7 +1867,7 @@ export const Projects:React.FC=()=>{
       style={{ '--panel-width': `${width}px` } as React.CSSProperties}
       className={`dashboard-detail-drawer bg-white dark:bg-[#0a192f] shrink-0 ${
         panelOpen
-          ? 'w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] opacity-100 pointer-events-auto drawer-slide-in border ' +
+          ? 'w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--panel-width)] opacity-100 pointer-events-auto drawer-slide-in border ' +
             (selectedCampaign
               ? 'shadow-drawer-campaign border-amber-500/20'
               : 'shadow-drawer-project border-violet-500/20')
@@ -1915,9 +1878,9 @@ export const Projects:React.FC=()=>{
         <div
           onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
           title={lang === 'en' ? 'Drag to resize panel' : 'Kéo để thay đổi độ rộng bảng'}
-          className="hidden xl:grid place-items-center absolute left-0 inset-y-0 w-3 cursor-col-resize z-30 group/resize select-none"
+          className="grid place-items-center absolute left-0 inset-y-0 w-3.5 cursor-col-resize z-30 group/resize select-none"
         >
-          <div className={`w-1 h-12 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-400/80 h-16' : 'bg-transparent group-hover/resize:bg-slate-400/50 dark:group-hover/resize:bg-slate-500/60'}`} />
+          <div className={`w-1 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-500 h-16 w-1.5 shadow-xs' : 'h-12 bg-slate-300/80 dark:bg-slate-600/80 group-hover/resize:bg-blue-500 group-hover/resize:h-16 group-hover/resize:w-1.5 shadow-xs'}`} />
         </div>
       )}
       {selectedSubtask ? (
@@ -1948,13 +1911,13 @@ export const Projects:React.FC=()=>{
         <>
           {selected && (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
-          <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
-            <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
-              <h3 className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1">{selected.name}</h3>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800">{t('projects.projects')}</span>
+          <div className="grid grid-cols-[1fr_auto] items-start gap-3 px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 min-w-0">
+              <h3 className="font-bold text-xl text-gray-900 dark:text-white break-words leading-snug">{selected.name}</h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 whitespace-nowrap shrink-0 self-center">{t('projects.projects')}</span>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => { setSelected(null); setParams({}, { replace: true }); }} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+            <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1 shrink-0">
+              <button onClick={() => { setSelected(null); setParams({}, { replace: true }); }} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -2197,7 +2160,7 @@ export const Projects:React.FC=()=>{
                               >
                                 {/* Hover action buttons in top-right */}
             <div
-              className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
+              className={`absolute top-2.5 right-2.5 ${(subtaskToDelete === s.id || campaignSubtaskToDelete?.id === s.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'} transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10`}
               onClick={event => event.stopPropagation()}
             >
               {canToggle && (
@@ -2215,7 +2178,7 @@ export const Projects:React.FC=()=>{
               {selectedRoot && (
                 <button
                   type="button"
-                  onClick={() => removeSubtask(s.id)}
+                  onClick={(e) => { e.stopPropagation(); removeSubtask(s.id, e.currentTarget); }}
                   title={lang === 'en' ? 'Delete task' : 'Xóa task'}
                   aria-label={lang === 'en' ? 'Delete task' : 'Xóa task'}
                   className="p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
@@ -2228,7 +2191,7 @@ export const Projects:React.FC=()=>{
             {/* Main content layout: Title (with done checkmark icon) + Metadata (REQ-TOT-05 / Slide 4) */}
             <div className="min-w-0 grid grid-cols-1 gap-1.5 pr-14 select-none">
               {/* Row 1: Title */}
-              <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+              <span className={`text-sm font-semibold inline-block break-words whitespace-normal leading-snug ${isTaskDone(s.status) ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
                 {s.title}
                 {isTaskDone(s.status) && (
                   <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
@@ -2357,12 +2320,13 @@ export const Projects:React.FC=()=>{
     {/* Mobile/Tablet Backdrop when Create Drawer is open */}
     {createOpen && (
       <div 
-        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[70] xl:hidden backdrop-blur-xs transition-opacity"
+        data-drawer-backdrop="true"
+        className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[70] md:hidden backdrop-blur-xs transition-opacity"
         onClick={() => setCreateOpen(false)}
       />
     )}
 
-    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer relative overflow-hidden bg-white dark:bg-[#0a192f] dark:!bg-none shrink-0 ${createOpen ? `w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--drawer-width)] ${creationType === 'campaign' ? 'shadow-drawer-campaign border-amber-500/30' : 'shadow-drawer-project border-violet-500/30'} opacity-100 pointer-events-auto drawer-slide-in` : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity,border-color,box-shadow] duration-500 ease-out' : ''}`}>
+    <div style={{ '--drawer-width': `${width}px` } as React.CSSProperties} className={`dashboard-detail-drawer relative overflow-hidden bg-white dark:bg-[#0a192f] dark:!bg-none shrink-0 ${createOpen ? `w-full max-w-full md:max-w-[calc(100vw-32px)] md:w-[var(--drawer-width)] ${creationType === 'campaign' ? 'shadow-drawer-campaign border-amber-500/30' : 'shadow-drawer-project border-violet-500/30'} opacity-100 pointer-events-auto drawer-slide-in` : 'w-0 min-w-0 shadow-none border-0 opacity-0 pointer-events-none'} z-[75] ${!resizing ? 'transition-[width,opacity,border-color,box-shadow] duration-500 ease-out' : ''}`}>
       {/* Dynamic Ambient Background Glow layers at bottom-left (circle at 20% 90%) - Dark mode only, 100% consistent with Dashboard Detail Drawers */}
       <div
         aria-hidden="true"
@@ -2386,22 +2350,22 @@ export const Projects:React.FC=()=>{
       <div
         onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
         title={lang === 'en' ? 'Drag to resize panel' : 'Kéo để thay đổi độ rộng bảng'}
-        className="hidden xl:grid place-items-center absolute left-0 inset-y-0 w-3 cursor-col-resize z-30 group/resize select-none"
+        className="grid place-items-center absolute left-0 inset-y-0 w-3.5 cursor-col-resize z-30 group/resize select-none"
       >
-        <div className={`w-1 h-12 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-400/80 h-16' : 'bg-transparent group-hover/resize:bg-slate-400/50 dark:group-hover/resize:bg-slate-500/60'}`} />
+        <div className={`w-1 rounded-full transition-all duration-200 ${resizing ? 'bg-blue-500 h-16 w-1.5 shadow-xs' : 'h-12 bg-slate-300/80 dark:bg-slate-600/80 group-hover/resize:bg-blue-500 group-hover/resize:h-16 group-hover/resize:w-1.5 shadow-xs'}`} />
       </div>
       <div className="relative z-10 grid grid-cols-[1fr_auto] items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 shrink-0"><h3 className="font-bold text-xl text-gray-900 dark:text-white">{t('projects.createTitle')}</h3><ActionButton icon={<X className="w-5 h-5 text-gray-500" />} disabled={creating} aria-label={t('common.close')} onClick={() => setCreateOpen(false)} className="p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-slate-700"></ActionButton></div>
       <form onSubmit={createItem} aria-busy={creating} className="relative z-10 grid grid-rows-[1fr_auto] h-full min-h-0 overflow-hidden">
       <div className="min-h-0 min-w-0 p-6 md:p-8 overflow-y-auto custom-scrollbar space-y-4">
         <fieldset disabled={creating} className="min-w-0 space-y-4">
-        <div className="relative grid grid-cols-2 gap-1 rounded-[8px] bg-gray-100 dark:bg-slate-900 p-1 w-full" role="tablist" aria-label="Loại khởi tạo">
+        <div className="relative grid grid-cols-2 gap-1 rounded-[8px] bg-gray-100 dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800/80 p-1 w-full" role="tablist" aria-label="Loại khởi tạo">
           {/* Sliding Pill Indicator immune to layout animation and width changes */}
           <div
             aria-hidden="true"
             className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-6px)] rounded-[6px] z-0 transition-[transform,border-color,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               creationType === 'campaign'
-                ? 'translate-x-0 bg-white border border-gray-200/90 shadow-2xs dark:bg-transparent dark:border-amber-400/75 dark:shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                : 'translate-x-[calc(100%+4px)] bg-white border border-gray-200/90 shadow-2xs dark:bg-transparent dark:border-violet-400/75 dark:shadow-[0_0_12px_rgba(139,92,246,0.15)]'
+                ? 'translate-x-0 bg-[#002e6d] border border-[#002e6d] shadow-2xs dark:bg-transparent dark:border-amber-400/75 dark:shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                : 'translate-x-[calc(100%+4px)] bg-[#002e6d] border border-[#002e6d] shadow-2xs dark:bg-transparent dark:border-violet-400/75 dark:shadow-[0_0_12px_rgba(139,92,246,0.15)]'
             }`}
           />
           <button
@@ -2419,7 +2383,7 @@ export const Projects:React.FC=()=>{
             }}
             className={`relative z-10 rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer text-center bg-transparent ${
               creationType === 'campaign'
-                ? 'text-primary dark:!text-amber-300'
+                ? 'text-white dark:!text-amber-300 font-bold'
                 : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -2441,7 +2405,7 @@ export const Projects:React.FC=()=>{
             }}
             className={`relative z-10 rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer text-center bg-transparent ${
               creationType === 'project'
-                ? 'text-primary dark:!text-violet-300'
+                ? 'text-white dark:!text-violet-300 font-bold'
                 : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -2516,12 +2480,12 @@ export const Projects:React.FC=()=>{
       </form>
       </>}
     </div>
-      <ConfirmDeleteModal isOpen={!!projectToDelete} title="Xóa Dự án" message={`Bạn có chắc muốn xóa dự án "${projectToDelete?.name}"? Tất cả subtask của dự án này cũng sẽ bị xóa.`} onConfirm={executeRemoveProject} onCancel={() => setProjectToDelete(null)} />
-      <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa chiến dịch "${campaignToDelete?.name}"? Tất cả subtask của chiến dịch này cũng sẽ bị xóa.`} onConfirm={executeRemoveCampaign} onCancel={() => setCampaignToDelete(null)} />
-      <ConfirmDeleteModal isOpen={!!subtaskToDelete} title="Xóa Subtask" message="Bạn có chắc muốn xóa subtask này?" onConfirm={executeRemoveSubtask} onCancel={() => setSubtaskToDelete(null)} />
-      <ConfirmDeleteModal isOpen={!!campaignSubtaskToDelete} title="Xóa Subtask" message={`Bạn có chắc muốn xóa subtask "${campaignSubtaskToDelete?.title || ''}"?`} onConfirm={executeRemoveCampaignSubtask} onCancel={() => setCampaignSubtaskToDelete(null)} />
-    <ConfirmHideModal isOpen={!!projectToHide} title="Ẩn Dự án" message={`Bạn có chắc muốn ẩn dự án "${projectToHide?.name}"? Dự án sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHideProject} onCancel={() => setProjectToHide(null)} />
-    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} onConfirm={executeHideCampaign} onCancel={() => setCampaignToHide(null)} />
+      <ConfirmDeleteModal isOpen={!!projectToDelete} title="Xóa Dự án" message={`Bạn có chắc muốn xóa dự án "${projectToDelete?.name}"? Tất cả subtask của dự án này cũng sẽ bị xóa.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeRemoveProject} onCancel={() => { setProjectToDelete(null); clearConfirmAnchor(); }} />
+      <ConfirmDeleteModal isOpen={!!campaignToDelete} title="Xóa Chiến dịch" message={`Bạn có chắc muốn xóa chiến dịch "${campaignToDelete?.name}"? Tất cả subtask của chiến dịch này cũng sẽ bị xóa.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeRemoveCampaign} onCancel={() => { setCampaignToDelete(null); clearConfirmAnchor(); }} />
+      <ConfirmDeleteModal isOpen={!!subtaskToDelete} title="Xóa Subtask" message="Bạn có chắc muốn xóa subtask này?" anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeRemoveSubtask} onCancel={() => { setSubtaskToDelete(null); clearConfirmAnchor(); }} />
+      <ConfirmDeleteModal isOpen={!!campaignSubtaskToDelete} title="Xóa Subtask" message={`Bạn có chắc muốn xóa subtask "${campaignSubtaskToDelete?.title || ''}"?`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeRemoveCampaignSubtask} onCancel={() => { setCampaignSubtaskToDelete(null); clearConfirmAnchor(); }} />
+    <ConfirmHideModal isOpen={!!projectToHide} title="Ẩn Dự án" message={`Bạn có chắc muốn ẩn dự án "${projectToHide?.name}"? Dự án sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeHideProject} onCancel={() => { setProjectToHide(null); clearConfirmAnchor(); }} />
+    <ConfirmHideModal isOpen={!!campaignToHide} title="Ẩn Chiến dịch" message={`Bạn có chắc muốn ẩn chiến dịch "${campaignToHide?.name}"? Chiến dịch sẽ được đưa vào lưu trữ và có thể khôi phục sau.`} anchorEl={confirmAnchor?.el} anchorRect={confirmAnchor?.rect} onConfirm={executeHideCampaign} onCancel={() => { setCampaignToHide(null); clearConfirmAnchor(); }} />
   </div>
 );
 };

@@ -46,14 +46,14 @@ export function NotificationIcon({dim=false,message='',metadata}:{dim?:boolean;m
  const isReadCls=dim?' is-read':'';
  if(!name||!known){
   return (
-   <span className={`notif-icon notif-icon-standalone flex h-10 w-10 shrink-0 items-center justify-center rounded-full${isReadCls}`}>
+   <span className={`notif-icon notif-icon-standalone grid place-items-center h-10 w-10 shrink-0 rounded-full${isReadCls}`}>
     <Bell size={18}/>
    </span>
   );
  }
  return (
   <span className="notif-avatar-wrap">
-   <span className={`notif-avatar flex h-10 w-10 shrink-0 items-center justify-center rounded-full${isReadCls}`}>
+   <span className={`notif-avatar grid place-items-center h-10 w-10 shrink-0 rounded-full${isReadCls}`}>
     {src ? (
      <img src={src} alt={name} className="h-full w-full rounded-full object-cover"/>
     ) : (

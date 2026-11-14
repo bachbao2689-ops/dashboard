@@ -66,6 +66,7 @@ export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> =
         type="button"
         aria-expanded={isOpen}
         disabled={disabled}
+        data-filtered={isFiltered ? 'true' : undefined}
         title={
           disabled
             ? (selectedDept ? `Cố định: ${selectedDept.name}` : 'Cố định theo phòng ban')
@@ -87,14 +88,14 @@ export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> =
         }}
         className={
           compact
-            ? `w-[34px] h-[34px] p-0 rounded-[8px] text-xs font-medium grid place-items-center transition-colors relative ${
+            ? `filter-dropdown-trigger w-[34px] h-[34px] p-0 rounded-[8px] text-xs font-medium grid place-items-center transition-colors relative ${
                 disabled
                   ? 'bg-sky-50/50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 opacity-90 cursor-default'
                   : isFiltered
                   ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-400 font-semibold cursor-pointer'
                   : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-slate-800/60 cursor-pointer'
               }`
-            : `h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs ${
+            : `filter-dropdown-trigger h-9 px-3 rounded-[8px] border text-xs font-medium inline-grid grid-flow-col auto-cols-max items-center gap-1.5 transition-all shadow-2xs ${
                 disabled
                   ? 'border-sky-500/50 bg-sky-50/50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 opacity-90 cursor-default font-semibold'
                   : isFiltered
@@ -117,7 +118,7 @@ export const DepartmentFilterDropdown: React.FC<DepartmentFilterDropdownProps> =
 
       {isOpen && (
         <FilterPopover onClose={onClose} anchorRef={containerRef} panelRef={panelRef} align={align}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 grid grid-rows-[auto_auto_1fr] max-h-80`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[8px] shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] grid grid-rows-[auto_auto_1fr] max-h-80`}
           onClick={e => e.stopPropagation()}
         >
           <div className="px-1.5 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">

@@ -16,13 +16,23 @@ import { isGlobalManager } from '../../../lib/roleScope';
 import { completeTrackedTask, updateTrackedTask } from '../../../services/workspaceTasks';
 import { TaskPinButton } from '../tasks/TaskPinButton';
 import { QuickStatusDropdown } from '../../common/QuickStatusDropdown';
+import { useAuthStore } from '../../../store/authStore';
+import { getEntityPhasePermission, saveEntityPhasePermission } from '../../../lib/phasePermission';
+import { PhasePermissionToggle } from './PhasePermissionToggle';
+import { ConfirmDeleteModal } from '../../common/ConfirmDeleteModal';
+import { captureAnchorRect, type AnchorRectSnapshot } from '../../../lib/anchoredPopoverPosition';
 
 export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpanded = false, statusFilter = 'open' }: {
   kind: 'project' | 'campaign'; id: string; hub: ReturnType<typeof useWorkflowHub>; onOpenTask: (task: Task) => void; defaultExpanded?: boolean; statusFilter?: string;
 }) {
+  const authProfile = useAuthStore(s => s.profile);
+  const activeProfile = authProfile ?? hub.profile;
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
   const [isUnplannedOpen, setIsUnplannedOpen] = useState(false);
+  const [allowPhaseCreation, setAllowPhaseCreation] = useState<boolean>(() =>
+    getEntityPhasePermission(kind, id)
+  );
   const navigate = useNavigate();
   const { lang, t } = useTranslation();
   const en = lang === 'en';
@@ -36,10 +46,31 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
   const phaseList = track?.phases || [];
 
   useEffect(() => {
-    if (phaseList.length === 0) {
-      setIsUnplannedOpen(true);
+    setIsUnplannedOpen(false);
+  }, [kind, id]);
+
+  useEffect(() => {
+    setAllowPhaseCreation(getEntityPhasePermission(kind, id));
+    const handlePermChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ entityType?: string; entityId?: string; allow?: boolean; all?: boolean }>).detail;
+      if (!detail || detail.all || (detail.entityType === kind && String(detail.entityId) === String(id))) {
+        if (typeof detail?.allow === 'boolean' && detail.entityType === kind && String(detail.entityId) === String(id)) {
+          setAllowPhaseCreation(detail.allow);
+        } else {
+          setAllowPhaseCreation(getEntityPhasePermission(kind, id));
+        }
+      }
+    };
+    window.addEventListener('phase-permission:changed', handlePermChanged);
+    return () => window.removeEventListener('phase-permission:changed', handlePermChanged);
+  }, [kind, id]);
+
+  const handleTogglePhasePermission = (nextChecked: boolean) => {
+    setAllowPhaseCreation(nextChecked);
+    if (id) {
+      void saveEntityPhasePermission(supabase, kind, id, nextChecked, activeProfile?.id);
     }
-  }, [phaseList.length]);
+  };
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases(prev => ({ ...prev, [phaseId]: !prev[phaseId] }));
@@ -157,13 +188,18 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
     }
   };
 
-  const handleDeleteTask = async (e: React.MouseEvent, task: Task) => {
-    e.stopPropagation();
-    const confirmMsg = en
-      ? `Are you sure you want to delete task "${task.title}"?`
-      : `Bạn có chắc chắn muốn xóa công việc "${task.title}"?`;
-    if (!window.confirm(confirmMsg)) return;
+  const [taskToDelete, setTaskToDelete] = useState<{ task: Task; anchorEl: HTMLElement | null; anchorRect: AnchorRectSnapshot | null } | null>(null);
 
+  const handleDeleteTask = (e: React.MouseEvent, task: Task) => {
+    e.stopPropagation();
+    const anchorEl = e.currentTarget as HTMLElement;
+    setTaskToDelete({ task, anchorEl, anchorRect: captureAnchorRect(anchorEl) });
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+    const { task } = taskToDelete;
+    setTaskToDelete(null);
     try {
       const { error } = await supabase.from('workspace_tasks').delete().eq('id', task.id);
       if (error) throw error;
@@ -193,7 +229,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
       >
         {/* Hover Quick Actions */}
         <div
-          className="absolute top-2.5 right-2.5 opacity-0 group-hover/task:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10"
+          className={`absolute top-2.5 right-2.5 ${taskToDelete?.task.id === task.id ? "opacity-100" : "opacity-0 group-hover/task:opacity-100"} focus-within:opacity-100 transition-opacity grid grid-flow-col auto-cols-max items-center gap-1 z-10`}
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -212,7 +248,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
           {canDelete && (
             <button
               type="button"
-              onClick={(e) => void handleDeleteTask(e, task)}
+              onClick={(e) => handleDeleteTask(e, task)}
               title={en ? 'Delete task' : 'Xóa công việc'}
               className="p-1 rounded-[6px] border border-gray-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 hover:border-red-200 transition-colors cursor-pointer"
             >
@@ -223,7 +259,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
 
         <div className="min-w-0 grid grid-cols-1 gap-1.5 select-none pr-14">
           {/* Dòng 1: Tiêu đề + icon CheckCircle2 nếu hoàn thành */}
-          <span className={`text-sm font-semibold inline-block break-words line-clamp-2 ${isDoneTask ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
+          <span className={`text-sm font-semibold inline-block break-words whitespace-normal leading-snug ${isDoneTask ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-white'}`}>
             {task.title}
             {isDoneTask && (
               <CheckCircle2 size={14} className="inline-block ml-1.5 text-emerald-500 dark:text-emerald-400 shrink-0 align-middle" />
@@ -296,13 +332,13 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
 
   return (
     <section className="rounded-[8px] border border-gray-200/90 dark:border-slate-800 p-4 transition-all bg-white/50 dark:bg-slate-900/40">
-      <button
-        type="button"
-        onClick={() => setIsExpanded(prev => !prev)}
-        className="w-full grid grid-cols-[1fr_auto] items-center gap-2 text-left cursor-pointer select-none group/wf"
-        aria-expanded={isExpanded}
-      >
-        <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
+      <div className="w-full grid grid-cols-[1fr_auto] items-center gap-2 select-none group/wf">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(prev => !prev)}
+          className="min-w-0 grid grid-flow-col auto-cols-max items-center gap-2 text-left cursor-pointer"
+          aria-expanded={isExpanded}
+        >
           <Activity size={16} className="text-primary shrink-0" />
           <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
             {en ? 'Phases' : 'Giai đoạn'}
@@ -310,19 +346,28 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[6px] border border-violet-200/80 dark:border-violet-800/60 bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 shrink-0">
             {phaseList.length} {en ? (phaseList.length > 1 ? 'Phases' : 'Phase') : 'Giai đoạn'}
           </span>
-          {progress.percent != null && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-primary/20 bg-primary/10 text-primary shrink-0">
-              {progress.done}/{progress.total} · {progress.percent}%
-            </span>
-          )}
-        </div>
+        </button>
 
-        <div className="grid place-content-center shrink-0">
-          <div className={`p-1 rounded-lg text-gray-400 group-hover/wf:text-gray-600 dark:group-hover/wf:text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-            <ChevronDown size={16} />
-          </div>
+        <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2 shrink-0">
+          <PhasePermissionToggle
+            inline
+            profile={activeProfile}
+            checked={allowPhaseCreation}
+            onChange={handleTogglePhasePermission}
+            visible={true}
+            lang={lang}
+          />
+          <button
+            type="button"
+            onClick={() => setIsExpanded(prev => !prev)}
+            className="p-1 rounded-lg text-gray-400 group-hover/wf:text-gray-600 dark:group-hover/wf:text-gray-300 transition-transform duration-200 cursor-pointer"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? (en ? 'Collapse phases' : 'Thu gọn giai đoạn') : (en ? 'Expand phases' : 'Mở rộng giai đoạn')}
+          >
+            <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+          </button>
         </div>
-      </button>
+      </div>
 
       {isExpanded && (
         <div className="grid gap-3 pt-3.5 mt-3 border-t border-gray-100 dark:border-slate-700/80 animate-in fade-in duration-200">
@@ -479,11 +524,7 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
                     );
                   })}
                 </div>
-              ) : (track?.phases?.length || 0) === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-[6px] border border-slate-200/60 dark:border-slate-700/60">
-                  💡 {en ? 'Direct task management (no phases).' : 'Dự án này quản lý theo công việc trực tiếp (không sử dụng giai đoạn).'}
-                </p>
-              ) : (
+              ) : (track?.phases?.length || 0) === 0 ? null : (
                 <p className="text-xs text-gray-500">{en ? 'No phases in your scope yet.' : 'Chưa có giai đoạn trong phạm vi của bạn.'}</p>
               )}
 
@@ -523,6 +564,17 @@ export function WorkflowTrackingSummary({ kind, id, hub, onOpenTask, defaultExpa
           </button>
         </div>
       )}
+      <ConfirmDeleteModal
+        isOpen={Boolean(taskToDelete)}
+        title={en ? 'Delete task' : 'Xóa công việc'}
+        message={taskToDelete ? (en ? `Delete task "${taskToDelete.task.title}"?` : `Bạn có chắc chắn muốn xóa công việc "${taskToDelete.task.title}"?`) : ''}
+        anchorEl={taskToDelete?.anchorEl ?? null}
+        anchorRect={taskToDelete?.anchorRect ?? null}
+        confirmLabel={en ? 'Delete' : 'Xóa ngay'}
+        cancelLabel={en ? 'Cancel' : 'Hủy'}
+        onConfirm={() => void confirmDeleteTask()}
+        onCancel={() => setTaskToDelete(null)}
+      />
     </section>
   );
 }

@@ -48,14 +48,14 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
   if (!activePhase) return null;
   return (<>
 {isDetailOpen && activePhase && (
-          <div className="pt-4 border-t border-gray-100 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-300">
+          <div className="pt-1 space-y-4 animate-in fade-in duration-300">
 
             {/* Top Detail Bar with Back Arrow action and Collapse details (REQ-TOT-02 / Slide 2) */}
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 bg-primary/5 dark:bg-primary/10 px-3 py-2 rounded-[8px]">
               <button
                 type="button"
                 onClick={() => setIsDetailOpen(false)}
-                className="inline-grid place-items-center w-7 h-7 rounded-[8px] bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
+                className="inline-grid place-items-center w-7 h-7 rounded-[8px] bg-[#002e6d] hover:bg-[#002250] text-white border border-[#002e6d] dark:bg-primary dark:hover:bg-blue-800 dark:text-white shadow-2xs transition-colors cursor-pointer"
                 title={isEn ? "Back to all phases" : "Quay lại tổng quan các chặng"}
                 aria-label={isEn ? "Back" : "Quay lại"}
               >
@@ -63,12 +63,8 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
               </button>
 
               <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2 min-w-0 overflow-hidden">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
-                <span className="text-xs font-bold text-primary uppercase tracking-wide truncate">
-                  {isEn ? 'Selected Phase Details:' : 'Chi tiết chặng đang chọn:'}
-                </span>
                 <b className="text-xs text-gray-900 dark:text-white truncate">
-                  {activePhase.name} — {activePhase.desc}
+                  {activePhase.name}{activePhase.desc ? ` — ${activePhase.desc}` : ''}
                 </b>
               </div>
 
@@ -129,10 +125,10 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         type="button"
                         disabled={!activePhase.can_edit_tasks || hub.busy || ['completed','cancelled'].includes(activePhase.status)}
                         onClick={() => { if (!showAddTask) { setNewTaskStart(taskCalendar.start); setNewTaskDue(taskCalendar.due); } setShowAddTask(!showAddTask); }}
-                        className={`px-2.5 py-1.5 rounded-[8px] text-[11px] font-bold grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                        className={`px-2.5 py-1.5 rounded-[8px] text-[11px] font-bold grid grid-flow-col auto-cols-max items-center gap-1 transition-all shadow-xs cursor-pointer bg-[#002e6d] hover:bg-[#002250] text-white disabled:opacity-50 ${
                           isCampaign
-                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                            : 'bg-violet-600 hover:bg-violet-700 text-white'
+                            ? 'dark:bg-amber-500 dark:hover:bg-amber-600'
+                            : 'dark:bg-violet-600 dark:hover:bg-violet-700'
                         }`}
                         title={isEn ? '+ Add Phase Task' : '+ Thêm Task của Phase'}
                       >
@@ -314,7 +310,7 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                         return (
                           <div
                             key={s.id}
-                            className={`p-2.5 rounded-[8px] border transition-all grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-2 group group/task relative ${
+                            className={`p-2.5 rounded-[8px] border transition-all grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-center justify-between gap-2 group group/task relative ${
                               'z-10'
                             } ${
                               done
@@ -323,28 +319,30 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                             }`}
                           >
                             {/* Left: Checkbox + Status Hexagon + Quantity badge + Title + Comment Preview */}
-                            <div className="grid grid-flow-col auto-cols-max items-center gap-2 min-w-0">
-                              <input
-                                type="checkbox"
-                                disabled={(done ? !s.canEdit : !s.canComplete) || hub.busy}
-                                checked={done}
-                                onChange={() => toggleSubtask(s.id)}
-                                className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
-                                title={isEn ? 'Mark completed' : 'Đánh dấu hoàn thành'}
-                              />
+                            <div className={`grid ${commentCount > 0 ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[auto_minmax(0,1fr)]'} items-center gap-2 min-w-0 overflow-hidden`}>
+                              <div className="inline-grid grid-flow-col auto-cols-max items-center gap-2 shrink-0">
+                                <input
+                                  type="checkbox"
+                                  disabled={(done ? !s.canEdit : !s.canComplete) || hub.busy}
+                                  checked={done}
+                                  onChange={() => toggleSubtask(s.id)}
+                                  className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
+                                  title={isEn ? 'Mark completed' : 'Đánh dấu hoàn thành'}
+                                />
 
-                              <WorkflowStatusPicker iconOnly status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
+                                <WorkflowStatusPicker iconOnly status={s.record.status} stage={s.status} disabled={!s.canEdit || hub.busy} onChange={async stage=>{await handleQuickChangeStatus(s.id,stage);}} />
 
-                              {/* Quantity Badge */}
-                              {hasQty && (
-                                <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0 shadow-2xs">
-                                  SL: {qty}
-                                </span>
-                              )}
+                                {/* Quantity Badge */}
+                                {hasQty && (
+                                  <span className="px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0 shadow-2xs">
+                                    SL: {qty}
+                                  </span>
+                                )}
+                              </div>
 
                               {/* Task Title */}
                               <button type="button" onClick={()=>openTaskDetails(s.record)}
-                                className={`text-left text-xs truncate max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[400px] hover:text-primary transition-colors cursor-pointer min-w-0 ${
+                                className={`text-left text-xs truncate hover:text-primary transition-colors cursor-pointer min-w-0 ${
                                   done ? 'line-through text-gray-400 dark:text-gray-500' : 'font-medium text-gray-900 dark:text-white'
                                 }`}
                                 title={s.title}
@@ -443,12 +441,6 @@ export function WorkflowPhaseDetails({model}: {model: WorkflowModel}) {
                       })
                     )}
                   </div>
-                </div>
-
-                {/* Footer summary */}
-                <div className="p-2.5 rounded-[8px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[11px] text-gray-500 flex items-center justify-between">
-                  <span>{isEn ? 'Phase completion:' : 'Tiến độ hoàn thành chặng:'}</span>
-                  <b className="text-primary font-bold">{doneSubtasksCount}/{totalSubtasksCount} {isEn ? 'tasks completed' : 'công việc xong'}</b>
                 </div>
               </div>
             </div>

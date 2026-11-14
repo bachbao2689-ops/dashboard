@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Info, Star, CheckCircle2, Circle } from 'lucide-react';
+import { Info, Star, CheckCircle2, Circle, ChevronDown } from 'lucide-react';
 import { Avatar } from '../../common/Avatar';
 import {
   extractKeyGateCriteria,
-  formatEntityDuration,
   displayDate,
   type HubTrack,
 } from '../../../lib/workflowHub';
@@ -41,6 +40,13 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
   const isCampaign = entityType === 'campaign';
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isCriteriaExpanded, setIsCriteriaExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCriteriaExpanded(false);
+    }
+  }, [isOpen, entity.id]);
   const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean }>({
     top: 0,
     left: 0,
@@ -170,7 +176,6 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
   const startDate = entity.start_date || track?.start_date;
   const endDate = entity.end_date || entity.due_date || track?.due_date;
   const timelineStr = `${displayDate(startDate)} – ${displayDate(endDate)}`;
-  const durationStr = formatEntityDuration(startDate, endDate, isEn);
 
   return (
     <>
@@ -195,6 +200,7 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
         createPortal(
           <div
             ref={popoverRef}
+            data-anchored-popover="true"
             style={{
               top: coords.top,
               left: coords.left,
@@ -205,14 +211,14 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
             }}
             onMouseLeave={handleMouseLeave}
             onClick={e => e.stopPropagation()}
-            className={`fixed z-[9999] w-[min(350px,calc(100vw-24px))] p-3.5 rounded-[8px] border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 space-y-3 pointer-events-auto ${
+            className={`fixed z-[9999] w-[min(350px,calc(100vw-24px))] p-3.5 rounded-[12px] dark:rounded-[8px] border shadow-[inset_0_1.5px_1px_0_rgba(255,255,255,1),inset_0_0_14px_0_rgba(255,255,255,0.45),0_12px_28px_-6px_rgba(0,46,109,0.12),0_2px_6px_-1px_rgba(0,0,0,0.03)] dark:shadow-2xl bg-gradient-to-br from-white/95 to-[#f5faff]/90 border-white/90 ring-1 ring-[#dce8fa] backdrop-blur-xl text-gray-800 animate-in fade-in zoom-in-95 space-y-3 pointer-events-auto dark:bg-none dark:ring-0 dark:bg-[#0a192f] dark:text-slate-100 ${
               isCampaign
-                ? 'bg-amber-50/90 dark:bg-[#0a192f] border-amber-300/80 dark:border-amber-700/60 shadow-amber-500/10 text-gray-800 dark:text-slate-100'
-                : 'bg-violet-50/90 dark:bg-[#0a192f] border-violet-300/80 dark:border-violet-700/60 shadow-violet-500/10 text-gray-800 dark:text-slate-100'
+                ? 'dark:border-amber-700/60 dark:shadow-amber-500/10'
+                : 'dark:border-violet-700/60 dark:shadow-violet-500/10'
             }`}
           >
             {/* Header: Type Pill & Name */}
-            <div className="grid grid-cols-[auto_1fr] items-center gap-2 pb-2.5 border-b border-gray-200/80 dark:border-slate-800">
+            <div className="grid grid-cols-[auto_1fr] items-center gap-2 pb-2.5 border-b border-slate-200/75 dark:border-slate-800">
               <span
                 className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
                   isCampaign
@@ -242,9 +248,9 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                 </div>
               </div>
 
-              {/* 2. Sub */}
-              <div className="grid grid-cols-[68px_1fr] items-start gap-2 text-xs">
-                <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wide mt-0.5">
+              {/* 2. Sub - 1 Horizontal Row */}
+              <div className="grid grid-cols-[68px_1fr] items-center gap-2 text-xs">
+                <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wide">
                   Sub
                 </span>
                 {subs.length === 0 ? (
@@ -252,16 +258,24 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                     {isEn ? 'No sub members' : 'Chưa có thành viên phụ trách'}
                   </span>
                 ) : (
-                  <div className="grid grid-cols-1 gap-1 max-h-20 overflow-y-auto custom-scrollbar pr-0.5">
-                    {subs.map(sub => (
-                      <div
+                  <div className="inline-grid grid-flow-col auto-cols-max items-center -space-x-1.5 py-0.5">
+                    {subs.slice(0, 7).map(sub => (
+                      <span
                         key={String(sub.id)}
-                        className="grid grid-flow-col auto-cols-max items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-300"
+                        title={sub.name}
+                        className="relative inline-block rounded-full ring-2 ring-white dark:ring-[#0a192f] shadow-2xs shrink-0"
                       >
-                        <Avatar name={sub.name} src={sub.avatar_url || undefined} className="w-4 h-4 text-[8px]" />
-                        <span className="truncate max-w-[210px]">{sub.name}</span>
-                      </div>
+                        <Avatar name={sub.name} src={sub.avatar_url || undefined} className="w-5 h-5 text-[9px]" />
+                      </span>
                     ))}
+                    {subs.length > 7 && (
+                      <span
+                        title={subs.slice(7).map(s => s.name).join(', ')}
+                        className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 ring-2 ring-white dark:ring-[#0a192f] grid place-items-center text-[9px] font-bold text-slate-700 dark:text-slate-200 shadow-2xs shrink-0 z-10"
+                      >
+                        +{subs.length - 7}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -295,7 +309,7 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                 </div>
               )}
 
-              {/* 6. Timeline & Duration */}
+              {/* 6. Timeline */}
               <div className="grid grid-cols-[68px_1fr] items-start gap-2 text-xs">
                 <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wide mt-0.5">
                   {isEn ? 'Timeline' : 'Thời gian'}
@@ -304,24 +318,38 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                   <span className="font-medium text-gray-700 dark:text-gray-300">
                     {timelineStr}
                   </span>
-                  <span className="text-[10.5px] font-semibold text-primary">
-                    {durationStr}
-                  </span>
                 </div>
               </div>
             </div>
 
             {/* 4. Gate Checklist Key Criteria (★) */}
-            <div className="pt-2 border-t border-gray-200/80 dark:border-slate-800 space-y-1.5">
-              <div className="grid grid-flow-col auto-cols-max items-center gap-1.5">
-                <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                  {isEn ? 'Key Gate Criteria (★)' : 'Tiêu chí chính (Gate Checklist ★)'}
+            <div className="pt-2 border-t border-slate-200/75 dark:border-slate-800 space-y-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsCriteriaExpanded(prev => !prev);
+                }}
+                aria-expanded={isCriteriaExpanded}
+                className="w-full grid grid-cols-[1fr_auto] items-center gap-2 text-left cursor-pointer group/crit py-1 px-1.5 rounded-[6px] hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors"
+              >
+                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 min-w-0">
+                  <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 truncate">
+                    {isEn ? 'Key Gate Criteria (★)' : 'Tiêu chí chính (Gate Checklist ★)'}
+                  </span>
                 </span>
-              </div>
+                <ChevronDown
+                  size={14}
+                  className={`text-gray-400 group-hover/crit:text-gray-600 dark:group-hover/crit:text-gray-200 transition-transform duration-200 ${
+                    isCriteriaExpanded ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-              {keyCriteria.length === 0 ? (
-                <div className="p-2 rounded-[8px] bg-white/70 dark:bg-[#071325]/50 border border-dashed border-gray-200 dark:border-slate-700 text-center">
+              {isCriteriaExpanded && (keyCriteria.length === 0 ? (
+                <div className="p-2 rounded-[8px] bg-white/70 dark:bg-[#071325]/50 border border-dashed border-slate-200 dark:border-slate-700 text-center">
                   <p className="text-[11px] text-gray-400 italic">
                     {isEn
                       ? 'No key criteria starred (★) in Gate Checklist'
@@ -335,8 +363,8 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                       key={kc.id}
                       className={`p-2 rounded-[8px] border text-xs grid grid-cols-[auto_1fr_auto] items-start gap-2 ${
                         kc.checked
-                          ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-gray-900 dark:text-white'
-                          : 'border-gray-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#071325]/60 text-gray-600 dark:text-gray-400'
+                          ? 'border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-950/20 text-gray-900 dark:text-white'
+                          : 'border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-[#071325]/60 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       <div className="mt-0.5 shrink-0">
@@ -360,7 +388,7 @@ export const EntityInfoPopover: React.FC<EntityInfoPopoverProps> = ({
                     </div>
                   ))}
                 </div>
-              )}
+              ))}
             </div>
           </div>,
           document.body

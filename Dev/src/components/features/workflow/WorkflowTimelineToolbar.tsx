@@ -1,4 +1,3 @@
-import {ActionButton} from '../../common/ActionButton';
 import type {WorkflowModel} from '../../../hooks/useWorkflowManagement';
 import {Sparkles, ChevronDown, ChevronUp, Info} from 'lucide-react';
 import {WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABELS_EN, MARKETING_STATUS_GUIDES_EN, MARKETING_STATUS_GUIDES_VI, WorkflowHexagonIcon, type WorkflowTaskStatus} from '../../features/tasks/WorkflowStatusPicker';
@@ -6,16 +5,16 @@ import {WORKFLOW_STATUS_CONFIG, WORKFLOW_STATUS_LABELS_VI, WORKFLOW_STATUS_LABEL
 export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
   const {isEn, isDetailOpen, setIsDetailOpen, activeTooltip, cancelCloseTooltip, openTooltip, scheduleCloseTooltip, togglePinTooltip, phases, activePhaseIndex, taskCountsByStatus, handlePhaseClick} = model;
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-700/80 pb-3">
+    <div className={`grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center justify-between gap-3 ${isDetailOpen ? 'pb-1' : 'border-b border-gray-100 dark:border-slate-700/80 pb-3'}`}>
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
           {isEn ? 'Stage-Gate Stepper Timeline' : 'Lộ trình giai đoạn'}
         </h3>
 
-        {/* Thanh Task biểu hiện những Task trong đó (Requirement 3: move xuống bảng Lộ trình giai đoạn) */}
+        {/* Thanh Task biểu hiện những Task trong đó */}
         <div className="workflow-status-strip grid grid-flow-col auto-cols-max items-center gap-1.5 mt-2">
           <span className="workflow-scope-label text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-0.5">
-            {isEn ? 'Tasks in scope:' : 'Task trong phạm vi:'}
+            {isEn ? 'TASKS IN SCOPE:' : 'TASK TRONG PHẠM VI:'}
           </span>
 
           {/* Small (i) button for Staff guidance on Task Status mechanisms (Requirement 2) */}
@@ -105,24 +104,25 @@ export function WorkflowTimelineToolbar({model}: {model: WorkflowModel}) {
           {(['backlog', 'planned', 'scoping', 'in_progress', 'in_qa', 'completed', 'canceled'] as WorkflowTaskStatus[])
             .filter(st => (taskCountsByStatus[st] || 0) > 0)
             .map(st => {
-            const count = taskCountsByStatus[st] || 0;
-            const cfg = WORKFLOW_STATUS_CONFIG[st];
-            const statusLabel = isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || cfg.label);
-            return (
-              <ActionButton icon={<WorkflowHexagonIcon status={st} size={13} />}
-                key={st}
-                className={`grid grid-flow-col auto-cols-max items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
-                title={`${statusLabel}: ${count} tasks`}
-              >
-                <span className={`font-bold ${cfg.textColor}`}>
-                  {count}
+              const count = taskCountsByStatus[st] || 0;
+              const cfg = WORKFLOW_STATUS_CONFIG[st];
+              const statusLabel = isEn ? WORKFLOW_STATUS_LABELS_EN[st] : (WORKFLOW_STATUS_LABELS_VI[st] || cfg.label);
+              return (
+                <span
+                  key={st}
+                  className={`inline-grid grid-flow-col auto-cols-max items-center gap-1.5 px-2 py-0.5 rounded-[6px] border text-[11px] font-medium shadow-2xs transition-all ${cfg.bgLight} ${cfg.bgDark} ${cfg.borderClass}`}
+                  title={`${statusLabel}: ${count} ${isEn ? (count === 1 ? 'task' : 'tasks') : 'việc'}`}
+                >
+                  <WorkflowHexagonIcon status={st} size={13} />
+                  <strong className={`font-bold ${cfg.textColor}`}>
+                    {count}
+                  </strong>
+                  <span className="text-[10px] text-gray-600 dark:text-gray-300 font-semibold">
+                    {statusLabel}
+                  </span>
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">
-                  {statusLabel}
-                </span>
-              </ActionButton>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 

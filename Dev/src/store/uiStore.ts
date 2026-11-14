@@ -9,6 +9,7 @@ interface UiState {
   isSidebarCollapsed: boolean;
   introFinished: boolean;
   isScanMode: boolean;
+  notificationsMuted: boolean;
   setIntroFinished: (finished: boolean) => void;
   setIsScanMode: (scan: boolean) => void;
   toggleTheme: () => void;
@@ -16,6 +17,8 @@ interface UiState {
   toggleSidebar: () => void;
   toggleSidebarCollapsed: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setNotificationsMuted: (muted: boolean) => void;
+  toggleNotificationsMuted: () => void;
   syncWithUser: () => void;
 }
 
@@ -26,6 +29,7 @@ export const useUiStore = create<UiState>((set) => ({
   isSidebarCollapsed: false,
   introFinished: true,
   isScanMode: false,
+  notificationsMuted: false,
   setIntroFinished: (introFinished) => set({ introFinished }),
   setIsScanMode: (isScanMode) => set({ isScanMode }),
   toggleTheme: () => {
@@ -64,11 +68,24 @@ export const useUiStore = create<UiState>((set) => ({
     userCache.set(profileId, 'sidebarCollapsed', collapsed);
     set({ isSidebarCollapsed: collapsed });
   },
+  setNotificationsMuted: (muted: boolean) => {
+    const profileId = useAuthStore.getState().profile?.id;
+    userCache.set(profileId, 'notificationsMuted', muted);
+    set({ notificationsMuted: muted });
+  },
+  toggleNotificationsMuted: () => {
+    const profileId = useAuthStore.getState().profile?.id;
+    set((state) => {
+      const next = !state.notificationsMuted;
+      userCache.set(profileId, 'notificationsMuted', next);
+      return { notificationsMuted: next };
+    });
+  },
   syncWithUser: () => {
     const profileId = useAuthStore.getState().profile?.id;
     if (!profileId) {
       document.documentElement.classList.remove('dark');
-      set({ theme: 'light', lang: 'vi', isSidebarOpen: true });
+      set({ theme: 'light', lang: 'vi', isSidebarOpen: true, notificationsMuted: false });
       return;
     }
     
@@ -76,11 +93,12 @@ export const useUiStore = create<UiState>((set) => ({
     const cachedLang = userCache.get<'en' | 'vi'>(profileId, 'lang', 'vi');
     const cachedSidebar = userCache.get<boolean>(profileId, 'sidebar', true);
     const cachedCollapsed = userCache.get<boolean>(profileId, 'sidebarCollapsed', false);
+    const cachedNotificationsMuted = userCache.get<boolean>(profileId, 'notificationsMuted', false);
     
     if (cachedTheme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
     
-    set({ theme: cachedTheme, lang: cachedLang, isSidebarOpen: cachedSidebar, isSidebarCollapsed: cachedCollapsed });
+    set({ theme: cachedTheme, lang: cachedLang, isSidebarOpen: cachedSidebar, isSidebarCollapsed: cachedCollapsed, notificationsMuted: cachedNotificationsMuted });
   }
 }));
 
@@ -91,7 +109,7 @@ useAuthStore.subscribe((state, prevState) => {
   }
 });
 
-for (const key of ['theme', 'lang', 'sidebar', 'sidebarCollapsed']) {
+for (const key of ['theme', 'lang', 'sidebar', 'sidebarCollapsed', 'notificationsMuted']) {
   let unsubscribe = () => {};
   const bind = (userId?: number) => {
     unsubscribe();

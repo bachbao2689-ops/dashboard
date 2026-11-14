@@ -63,7 +63,7 @@ export const getDueStatusLabel = (endDateStr?: string | null, status?: string | 
     ? (isEn ? `${Math.abs(diffDays)}d overdue` : `Trễ ${Math.abs(diffDays)} ngày`)
     : diffDays === 0
     ? (isEn ? 'Due today' : 'Hôm nay')
-    : (isEn ? `${diffDays}d left` : `Còn ${diffDays} ngày`);
+    : (isEn ? `${diffDays}d left` : `${diffDays} ngày`);
 
   return <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap ${color}`}>{label}</span>;
 };

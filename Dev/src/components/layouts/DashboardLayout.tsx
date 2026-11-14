@@ -16,6 +16,7 @@ export const DashboardLayout: React.FC = () => {
   const {profile,originalProfile,user,previewBusy,scopeRevision}=useAuthStore();
   const scopeKey=JSON.stringify([profile?.id,profile?.role,profile?.employment_level,profile?.department_id,profile?.is_active,scopeRevision]);
   const isMobileHome = location.pathname === '/mobile-home';
+  const lockDesktopViewportHeight = location.pathname === '/ui-dashboard';
 
   const mobileChromeHidden = useMobileChrome();
   const isSidebarCollapsed = useUiStore(state => state.isSidebarCollapsed);
@@ -26,7 +27,7 @@ export const DashboardLayout: React.FC = () => {
   useEffect(() => {
     if (!introFinished) return;
     setDockingActive(true);
-    const timer = setTimeout(() => setDockingActive(false), 850);
+    const timer = setTimeout(() => setDockingActive(false), 1750);
     return () => clearTimeout(timer);
   }, [introFinished]);
 
@@ -66,7 +67,7 @@ export const DashboardLayout: React.FC = () => {
               <Suspense fallback={<div className="p-8 animate-pulse text-gray-500" role="status">Đang tải…</div>}>
                 {previewBusy || (!profile && Boolean(originalProfile || user))
                   ? <div className="p-8 text-gray-500 dark:text-gray-400" role="status">{previewBusy ? 'Đang xác nhận scope kiểm thử…' : 'Chưa xác nhận được scope. Khôi phục tài khoản gốc trong Dev Tools hoặc tải lại trang.'}</div>
-                  : <Outlet />}
+                  : <div key={location.pathname} className={`cockpit-route-stage grid grid-cols-1 items-stretch min-h-full ${lockDesktopViewportHeight ? 'xl:h-full' : ''} w-full`}><Outlet /></div>}
               </Suspense>
             </PageErrorBoundary>
           </main>

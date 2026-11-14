@@ -8,9 +8,7 @@ import { SlidingToolbarGroup } from '../../common/SlidingToolbarGroup';
 import { EntityNoteCell } from './EntityNoteCell';
 import {
   type Project,
-  dateValue,
   priorityClass,
-  getDueStatusColor,
   getDueStatusLabel,
   getCampaignPriority
 } from './projectPresentation';
@@ -42,10 +40,10 @@ export interface ProjectsKanbanBoardProps {
   onCreateItem: (statusKey: string, defaultKind?: 'project' | 'campaign') => void;
   onUpdateProjectStatus: (id: string, nextStatus: string) => Promise<void>;
   onUpdateCampaignStatus: (id: string, nextStatus: string) => Promise<void>;
-  onHideProject?: (project: Project) => void;
-  onDeleteProject?: (project: Project) => void;
-  onHideCampaign?: (campaign: any) => void;
-  onDeleteCampaign?: (campaign: any) => void;
+  onHideProject?: (project: Project, anchorEl?: HTMLElement | null) => void;
+  onDeleteProject?: (project: Project, anchorEl?: HTMLElement | null) => void;
+  onHideCampaign?: (campaign: any, anchorEl?: HTMLElement | null) => void;
+  onDeleteCampaign?: (campaign: any, anchorEl?: HTMLElement | null) => void;
   profile?: any;
 }
 
@@ -617,9 +615,9 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                                 )
                               )}
 
-                              {/* Label Chờ duyệt (nổi bật màu amber/cam) */}
-                              {((status || '').toLowerCase() === 'pending_approval') && (
-                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/80 shrink-0">
+                              {/* Label Chờ duyệt (nổi bật màu amber đồng bộ) */}
+                              {['pending_approval', 'pending-approval', 'in_qa', 'review'].includes((status || '').toLowerCase().trim()) && (
+                                <span className="inline-grid grid-flow-col auto-cols-max items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/70 shrink-0">
                                   <span>{lang === 'en' ? 'Pending Approval' : 'Chờ duyệt'}</span>
                                 </span>
                               )}
@@ -704,18 +702,20 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                                       icon={<EyeOff size={12} />}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        if (isCampaign) onHideCampaign?.(raw);
-                                        else onHideProject?.(raw);
+                                        const el = e.currentTarget as HTMLElement;
+                                        if (isCampaign) onHideCampaign?.(raw, el);
+                                        else onHideProject?.(raw, el);
                                       }}
-                                      className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-[4px] transition-colors"
+                                      className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-[4px] transition-colors cursor-pointer"
                                       title={t('common.hide') || 'Ẩn'}
                                     />
                                     <ActionButton
                                       icon={<Trash2 size={12} />}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        if (isCampaign) onDeleteCampaign?.(raw);
-                                        else onDeleteProject?.(raw);
+                                        const el = e.currentTarget as HTMLElement;
+                                        if (isCampaign) onDeleteCampaign?.(raw, el);
+                                        else onDeleteProject?.(raw, el);
                                       }}
                                       className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-[4px] transition-colors"
                                       title={t('common.delete') || 'Xóa'}
@@ -825,10 +825,6 @@ export const ProjectsKanbanBoard: React.FC<ProjectsKanbanBoardProps> = ({
                             <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1.5 text-right shrink-0">
                               {dueDate ? (
                                 <div className="inline-grid grid-flow-col auto-cols-max items-center gap-1">
-                                  <div
-                                    className={`w-2.5 h-2.5 rounded-full border-[2px] ${getDueStatusColor(dueDate, status)}`}
-                                    title={`${t('common.dueDate') || 'Hạn'}: ${dateValue(dueDate)}`}
-                                  />
                                   {getDueStatusLabel(dueDate, status, lang === 'en')}
                                 </div>
                               ) : null}

@@ -39,7 +39,7 @@ html[data-sidebar-resizing="true"] * {
   height: 36px;
   border-radius: 9999px;
   opacity: 0;
-  transition: opacity 0.2s ease, height 0.2s ease, background-color 0.2s ease;
+  transition: opacity 0.38s ease, height 0.38s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.38s ease;
 }
 
 html:not(.dark) .sb-resize-grip {
@@ -82,9 +82,9 @@ html:not(.dark) .sb-section-divider {
   border-radius: 16px;
   padding: 6px;
   margin-bottom: 14px;
-  transition: background-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-pin-dropzone {
@@ -121,11 +121,11 @@ html:not(.dark) .sb-pin-dropzone.is-drag-over {
   cursor: grab;
   user-select: none;
   border: 1px solid transparent;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              background-color 0.18s ease,
-              color 0.18s ease,
-              border-color 0.18s ease,
-              box-shadow 0.18s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sb-pinned-pill-item:active {
@@ -180,7 +180,7 @@ html:not(.dark) .sb-pin-dropzone.is-drag-over {
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.35);
-  animation: sbPinToastIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sbPinToastIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
   pointer-events: none;
 }
 
@@ -216,8 +216,8 @@ html:not(.dark) .sb-left-spine-track {
   width: 4px;
   border-radius: 9999px;
   pointer-events: none;
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
               background-color 0.28s ease,
               box-shadow 0.28s ease;
 }
@@ -247,8 +247,8 @@ html:not(.dark) .sb-spine-active-bar {
   letter-spacing: 0.06em;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-              color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-group-header {
@@ -304,8 +304,8 @@ html:not(.dark) .sb-group-header.is-open .sb-group-badge {
 /* Group Collapsible Body (Single-expand slide + fade) */
 .sb-group-body {
   overflow: hidden;
-  transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sb-group-body.is-collapsed {
@@ -333,7 +333,7 @@ html:not(.dark) .sb-group-header.is-open .sb-group-badge {
 }
 
 .sb-tree-active-path {
-  transition: d 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+  transition: d 0.38s cubic-bezier(0.22, 1, 0.36, 1),
               stroke 0.25s ease,
               opacity 0.2s ease;
 }
@@ -407,7 +407,7 @@ html:not(.dark) .sb-subdrawer-pill-btn.is-open {
 .sb-profile-footer-card {
   border-radius: 12px !important;
   padding: 8px 10px !important;
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-profile-footer-card {
@@ -447,9 +447,9 @@ html:not(.dark) .sb-profile-footer-card.is-active {
   margin-top: 6px;
   border-radius: 15px;
   overflow: hidden;
-  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              margin-top 0.24s ease;
+  transition: height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              margin-top 0.38s ease;
   will-change: height, opacity;
 }
 
@@ -565,7 +565,7 @@ html:not(.dark) .sb-drill-viewport {
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-back-row {
@@ -603,7 +603,7 @@ html:not(.dark) .sb-back-row:hover {
   text-align: left;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .sb-item-row {
@@ -755,10 +755,10 @@ html:not(.dark) .sb-drill-trigger:hover {
   border-radius: 12px;
   pointer-events: none;
   z-index: 0;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.18s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
 }
 
 .top-nav-hover-pill.is-instant {
@@ -796,23 +796,23 @@ html:not(.dark) .top-nav-item-locked {
   border-radius: 18px;
   pointer-events: auto;
   will-change: transform, width, opacity;
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .top-nav-morph-popover.is-instant-x {
-  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .top-nav-morph-surface {
   border-radius: 18px;
   overflow: hidden;
   transform-origin: top center;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.25s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.38s ease;
 }
 
 html:not(.dark) .top-nav-morph-surface {
@@ -875,7 +875,7 @@ html:not(.dark) .top-nav-morph-surface {
 .top-nav-morph-viewport {
   position: relative;
   overflow: hidden;
-  transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: height 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Crossfade when switching between different tracked buttons on Navbar */
@@ -891,7 +891,7 @@ html:not(.dark) .top-nav-morph-surface {
 }
 
 .top-nav-crossfade-panel {
-  animation: topNavCrossfadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: topNavCrossfadeIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Effect 3: Vertical Sliding Pill inside Dropdown */
@@ -903,9 +903,9 @@ html:not(.dark) .top-nav-morph-surface {
   border-radius: 12px;
   pointer-events: none;
   z-index: 0;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.15s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
 }
 
 .top-nav-vertical-pill.is-instant {
@@ -943,34 +943,50 @@ html:not(.dark) .top-nav-vertical-pill {
 }
 
 html:not(.dark) .app-sidebar-outer {
-  background: #f8f8f8 !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(240, 246, 255, 0.65) 100%) !important;
+  backdrop-filter: blur(20px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
   padding: 6px !important;
   border-radius: 20px !important;
-  border: 1px solid #e4e4e7 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 16px 0 rgba(255, 255, 255, 0.45),
+    0 8px 24px -6px rgba(0, 46, 109, 0.06) !important;
 }
 
 html:not(.dark) .app-top-sidebar-outer {
-  background: #f8f8f8 !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(240, 246, 255, 0.65) 100%) !important;
+  backdrop-filter: blur(20px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
   padding: 4px !important;
   border-radius: 18px !important;
-  border: 1px solid #e4e4e7 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    0 6px 20px -4px rgba(0, 46, 109, 0.05) !important;
 }
 
 html:not(.dark) .app-sidebar-inner {
-  background: #ffffff !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(246, 250, 255, 0.72) 100%) !important;
+  backdrop-filter: blur(20px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
   border-radius: 16px !important;
-  border: 1px solid #ebebef !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 14px 0 rgba(255, 255, 255, 0.4) !important;
   overflow: hidden;
 }
 
 html:not(.dark) .app-top-sidebar-inner {
-  background: #ffffff !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(246, 250, 255, 0.72) 100%) !important;
+  backdrop-filter: blur(20px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
   border-radius: 14px !important;
-  border: 1px solid #ebebef !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1) !important;
   width: 100%;
 }
 
@@ -1005,9 +1021,13 @@ html:not(.dark) .app-top-sidebar-inner {
 
 /* B. Header: Logo K COFFEE Card */
 html:not(.dark) .sb-logo-card {
-  background: #fafafa !important;
-  border: 1px solid #e4e4e7 !important;
-  box-shadow: none !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 250, 255, 0.78) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    0 2px 8px -2px rgba(0, 46, 109, 0.04) !important;
 }
 
 .dark .sb-logo-card {
@@ -1371,10 +1391,10 @@ html:not(.dark) .sb-pinned-pill-item:hover {
   pointer-events: none;
   z-index: 0;
   border-radius: 9px;
-  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.22s ease;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
   will-change: transform, width, height, opacity;
 }
 
@@ -1427,10 +1447,10 @@ html:not(.dark) .sb-sliding-active-pill {
   pointer-events: none;
   z-index: 0;
   border-radius: 9px;
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.20s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.20s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.18s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
   will-change: transform, width, height, opacity;
 }
 
@@ -1504,18 +1524,18 @@ html:not(.dark) .sb-sliding-hover-pill {
 
 .sliding-active-pill {
   z-index: 0;
-  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.30s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.30s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.22s ease;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
 }
 
 .sliding-hover-pill {
   z-index: 0;
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              width 0.20s cubic-bezier(0.22, 1, 0.36, 1),
-              height 0.20s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.18s ease;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.28s ease;
 }
 
 .sliding-active-pill.is-instant,
@@ -1576,20 +1596,50 @@ html:not(.dark) .sliding-hover-pill {
   z-index: 1;
 }
 
-/* Suppress static hover backgrounds inside .has-sliding-pill so .sliding-hover-pill glides visibly */
-.has-sliding-pill button:not([class*="bg-gradient"]):not([class*="bg-primary"]):not([class*="bg-slate-200"]):not([class*="bg-amber-100"]):not([class*="bg-violet-100"]):hover {
+/* Suppress static hover backgrounds inside .has-sliding-pill (toolbar level only) so .sliding-hover-pill glides visibly */
+:is(
+  .has-sliding-pill > button,
+  .has-sliding-pill > a,
+  .has-sliding-pill > [role="button"],
+  .has-sliding-pill > .mobile-filter-control > button,
+  .has-sliding-pill > div > button
+):not([class*="bg-gradient"]):not([class~="bg-primary"]):not([class*="bg-sky-500/"]):not([class*="bg-slate-200"]):not([class*="bg-amber-100"]):not([class*="bg-violet-100"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not(.btn-add-new):not(.filter-dropdown-trigger[aria-expanded="true"]):not(.filter-dropdown-trigger[data-filtered="true"]):hover {
   background-color: transparent !important;
+}
+
+/* Light Mode specific clean hover for toolbar-level buttons inside .has-sliding-pill */
+html:not(.dark) :is(
+  .has-sliding-pill > button,
+  .has-sliding-pill > a,
+  .has-sliding-pill > [role="button"],
+  .has-sliding-pill > .mobile-filter-control > button,
+  .has-sliding-pill > div > button
+):not([class*="bg-gradient"]):not([class~="bg-primary"]):not([class*="bg-sky-500/"]):not([class*="bg-slate-200"]):not([class*="bg-amber-100"]):not([class*="bg-violet-100"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not(.btn-add-new):not(.filter-dropdown-trigger[aria-expanded="true"]):not(.filter-dropdown-trigger[data-filtered="true"]):hover {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #002e6d !important;
+}
+
+html:not(.dark) :is(
+  .has-sliding-pill > button,
+  .has-sliding-pill > a,
+  .has-sliding-pill > [role="button"],
+  .has-sliding-pill > .mobile-filter-control > button,
+  .has-sliding-pill > div > button
+):not([class*="bg-gradient"]):not([class~="bg-primary"]):not([class*="bg-sky-500/"]):not([class*="bg-slate-200"]):not([class*="bg-amber-100"]):not([class*="bg-violet-100"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not(.btn-add-new):not(.filter-dropdown-trigger[aria-expanded="true"]):not(.filter-dropdown-trigger[data-filtered="true"]):hover svg {
+  color: #002e6d !important;
 }
 
 /* Universal Button Motion standard across Dashboard (smooth cubic-bezier & active feedback) */
 button:not(.is-instant):not([disabled]),
 .btn-motion {
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              background 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 button:not([disabled]):active {

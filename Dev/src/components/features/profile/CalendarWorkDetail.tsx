@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CalendarDays, ChevronRight, FileText, FolderKanban, Megaphone, X } from 'lucide-react';
 import type { CalendarItem } from '../../../lib/profileCalendar';
 import { calendarKindLabel, formatCalendarDay, isCalendarDone } from '../../../lib/profileCalendar';
 import { useTranslation } from '../../../i18n/translations';
+import { getStatusLabel, getStatusBadgeVisual } from '../../../utils/statusTheme';
 import { TaskDescriptionViewer } from '../tasks/TaskDescriptionViewer';
 import { useTaskDetailVisibility } from '../../../hooks/useTaskDetailVisibility';
+import { useSmartDrawerOutsideClose } from '../../../hooks/useSmartDrawerOutsideClose';
 
 // The same drawer shape, information card and scroll/footer layout as TaskDetailPanel.
 export function CalendarWorkDetail({ item, items, onClose, onOpen }: { item: CalendarItem; items: CalendarItem[]; onClose: () => void; onOpen: (item: CalendarItem) => void }) {
   useTaskDetailVisibility(Boolean(item));
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [width, setWidth] = useState(440);
   const [resizing, setResizing] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+  useSmartDrawerOutsideClose({
+    isOpen: Boolean(item),
+    disabled: resizing,
+    drawerRef: panelRef,
+    onClose,
+  });
   useEffect(() => {
     if (!resizing) return;
     const move = (e: MouseEvent) => setWidth(Math.max(300, Math.min(window.innerWidth - e.clientX, 800)));
@@ -25,11 +34,13 @@ export function CalendarWorkDetail({ item, items, onClose, onOpen }: { item: Cal
   return (
     <>
       <div 
+        data-drawer-backdrop="true"
         className="fixed inset-0 bg-slate-900/30 dark:bg-slate-900/60 z-[65] xl:hidden backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
       <aside 
+        ref={panelRef}
         aria-label={`Chi tiết ${calendarKindLabel[item.kind]}`} 
         style={{ '--panel-width': `${width}px` } as React.CSSProperties} 
         className={`dashboard-detail-drawer opacity-100 bg-white dark:bg-slate-800 shrink-0 w-full max-w-full xl:max-w-[calc(100vw-32px)] xl:w-[var(--panel-width)] xl:max-w-[min(var(--panel-width),50vw)] ${shadowClass} z-[70] drawer-slide-in ${!resizing ? 'transition-[width] duration-300' : ''}`}
@@ -37,7 +48,22 @@ export function CalendarWorkDetail({ item, items, onClose, onOpen }: { item: Cal
         <div onMouseDown={() => setResizing(true)} className="hidden xl:block absolute left-0 inset-y-0 w-2 -translate-x-1/2 cursor-col-resize z-10" />
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-4 dark:border-slate-700"><span className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full border ${item.kind === 'campaign' || item.kind === 'campaign_subtask' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : item.kind === 'project' || item.kind === 'project_subtask' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-blue-50 text-primary border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'}`}><Icon size={15} />{calendarKindLabel[item.kind]}</span><button type="button" aria-label={t('common.close')} onClick={onClose} className="rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-slate-700"><X size={20} /></button></header>
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto custom-scrollbar p-6">
-          <div><h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">{item.title}</h2><div className="mt-3 flex flex-wrap gap-2"><span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${isCalendarDone(item.status) ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-primary'}`}>{isCalendarDone(item.status) ? t('dashboard.completed') : item.status || 'Planning'}</span>{item.priority && <span className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{item.priority}</span>}</div></div>
+          <div>
+            <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">{item.title}</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(() => {
+                const effStatus = item.record?.workflow_status || item.status;
+                const sLabel = getStatusLabel(effStatus, lang);
+                const sVisual = getStatusBadgeVisual(effStatus);
+                return (
+                  <span className={`rounded-md px-2.5 py-1 text-xs font-semibold border inline-grid grid-flow-col auto-cols-max items-center gap-1.5 ${sVisual.badgeClass}`}>
+                    <span>{sLabel}</span>
+                  </span>
+                );
+              })()}
+              {item.priority && <span className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{item.priority}</span>}
+            </div>
+          </div>
           <section className="grid grid-cols-2 gap-4 rounded-2xl border border-blue-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/50"><div><p className="text-[10px] uppercase text-gray-400">{item.kind === 'campaign' ? t('projects.primaryOwner') : t('common.assignee')}</p><p className="mt-1 font-semibold">{item.owner || t('profile.notUpdated')}</p></div><div><p className="text-[10px] uppercase text-gray-400 mb-1"><CalendarDays size={12} className="mr-1 inline" />{t('common.timeline')}</p><div className="mt-1 flex items-center gap-1.5 flex-wrap text-sm"><span className="font-normal text-gray-700 dark:text-gray-300">{formatCalendarDay(item.start)}</span><span className="text-gray-400">–</span><span className="font-bold text-red-600 dark:text-red-400">{formatCalendarDay(item.due)}</span></div></div>{item.kind === 'campaign' && item.record.budget != null && <div className="col-span-2"><p className="text-[10px] uppercase text-gray-400">{t('projects.totalBudget')}</p><p className="mt-1 font-bold">{Number(item.record.budget).toLocaleString('vi-VN')}</p></div>}</section>
           <section><h3 className="mb-2 text-sm font-bold">{item.kind === 'campaign' ? t('projects.objectives') : t('common.description')}</h3><TaskDescriptionViewer description={item.description} /></section>
           <section><h3 className="mb-3 text-sm font-bold">{t('profile.myWork')} <span className="font-normal text-gray-400">({children.length})</span></h3><div className="space-y-2">{children.map(child => <button type="button" key={child.key} onClick={() => onOpen(child)} className="flex w-full items-center gap-2 rounded-xl border border-gray-100 bg-slate-50 p-3 text-left hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900/40"><FileText size={15} className="shrink-0 text-primary" /><span className="min-w-0 flex-1"><b className={`block truncate text-sm ${isCalendarDone(child.status) ? 'text-gray-400 line-through' : ''}`}>{child.title}</b><span className="mt-1 block text-xs text-gray-500">{calendarKindLabel[child.kind]} · <span className="font-bold text-red-600 dark:text-red-400">{formatCalendarDay(child.due)}</span></span></span><ChevronRight size={15} /></button>)}{children.length === 0 && <p className="py-4 text-center text-sm text-gray-400">{t('profile.noTasksInKind')}</p>}</div></section>

@@ -40,8 +40,6 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
     };
   }, [activeBoxPopup, activeInfoBox]);
 
-  if (!currentEntity) return null;
-
   // 1. Box 1: Điểm nghẽn hiện tại (Blockers) - Màu Đỏ
   const blockerTasks = useMemo(() => {
     return allTasks.filter((t) => {
@@ -61,22 +59,25 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
 
   const depBlockedCount = Math.max(0, blockerTasks.length - waitingClientCount);
 
-  // 2. Box 2: Công việc hôm nay (Daily Follow-up) - Màu Cam
-  const todayTasks = useMemo(() => {
+  // 2. Box 2: Công việc đến hạn hôm nay (Due Today) - Màu Cam
+  // Chỉ tính các task có hạn chót đúng ngày hôm nay (d === 0)
+  const dueTodayTasks = useMemo(() => {
     return allTasks.filter((t) => {
       const d = daysUntil(t.due_date);
-      return d === 0 || (!isDone(t.status) && t.status === 'in_progress');
+      return d === 0;
     });
   }, [allTasks]);
 
-  const todayDoneCount = todayTasks.filter((t) => isDone(t.status)).length;
-  const todayActiveCount = todayTasks.filter((t) => !isDone(t.status) && t.status === 'in_progress').length;
-  const todayTodoCount = Math.max(0, todayTasks.length - todayDoneCount - todayActiveCount);
+  const todayDoneCount = dueTodayTasks.filter((t) => isDone(t.status)).length;
+  const todayActiveCount = dueTodayTasks.filter((t) => !isDone(t.status) && t.status === 'in_progress').length;
+  const todayPendingCount = Math.max(0, dueTodayTasks.length - todayDoneCount - todayActiveCount);
+  const totalActiveTasksCount = allTasks.filter((t) => !isDone(t.status) && t.status === 'in_progress').length;
 
-  // Group today tasks by assignee
+  // Group today tasks by assignee (nếu hôm nay không có task nào thì fallback sang active tasks để theo dõi)
+  const displayTasksForFollowup = dueTodayTasks.length > 0 ? dueTodayTasks : allTasks.filter((t) => !isDone(t.status) && t.status === 'in_progress');
   const todayTasksByAssignee = useMemo(() => {
     const map = new Map<string, { name: string; avatar?: string; tasks: typeof allTasks }>();
-    for (const t of todayTasks) {
+    for (const t of displayTasksForFollowup) {
       const name = typeof t.assignee === 'object' ? t.assignee?.name : t.assignee || (isEn ? 'Unassigned' : 'Chưa gán');
       const avatar = typeof t.assignee === 'object' ? t.assignee?.avatar_url : undefined;
       const item = map.get(name) || { name, avatar, tasks: [] };
@@ -84,21 +85,45 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
       map.set(name, item);
     }
     return Array.from(map.values());
-  }, [todayTasks, isEn]);
+  }, [displayTasksForFollowup, isEn]);
 
-  // 3. Box 3: Tốc độ thực thi (Velocity) - Màu Xanh dương
+  // 3. Box 3: Tốc độ triển khai (Execution Pace) - Màu Xanh dương
   const doneTasks = useMemo(() => allTasks.filter((t) => isDone(t.status)), [allTasks]);
-  const currentVelocity = (doneTasks.length > 0 ? (doneTasks.length / 5).toFixed(1) : '3.5');
+  
+  // Tính số ngày đã trôi qua từ khi bắt đầu dự án/campaign đến hôm nay (tối thiểu 1 ngày)
+  const elapsedDays = useMemo(() => {
+    const now = new Date();
+    if (currentEntity?.start_date) {
+      const start = new Date(currentEntity.start_date);
+      if (!isNaN(start.getTime())) {
+        const diffMs = now.getTime() - start.getTime();
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        return Math.max(1, days);
+      }
+    }
+    // Fallback: ngày tạo task sớm nhất
+    let earliest = now.getTime();
+    for (const t of allTasks) {
+      if (t.created_at) {
+        const ct = new Date(t.created_at).getTime();
+        if (!isNaN(ct) && ct < earliest) earliest = ct;
+      }
+    }
+    const days = Math.floor((now.getTime() - earliest) / (1000 * 60 * 60 * 24));
+    return Math.max(1, days);
+  }, [currentEntity?.start_date, allTasks]);
+
+  const currentVelocity = (doneTasks.length / elapsedDays).toFixed(1);
   const remainingDaysCount = Math.max(1, daysRemaining ?? 7);
   const remainingTasksCount = Math.max(0, allTasks.length - doneTasks.length);
-  const requiredVelocity = (remainingTasksCount / remainingDaysCount).toFixed(1);
+  const requiredVelocity = (remainingTasksCount / Math.max(1, remainingDaysCount)).toFixed(1);
 
-  // 4. Box 4: Khối lượng còn lại (Burn-down) - Màu Tím
+  // 4. Box 4: Khối lượng còn lại (Remaining Scope) - Màu Tím
   const totalTasksCount = allTasks.length;
   const remainingWorkPct = totalTasksCount > 0 ? Math.round((remainingTasksCount / totalTasksCount) * 100) : 0;
   const remainingTimePct = daysRemaining != null && daysRemaining > 0 ? Math.min(100, Math.max(15, Math.round((daysRemaining / 30) * 100))) : 20;
 
-  // 5. Box 5: Độ lệch kế hoạch (Estimate Variance) - Màu Vàng/Cam
+  // 5. Box 5: Độ lệch kế hoạch (Schedule Forecast) - Màu Vàng/Cam
   const maxOverdueDays = useMemo(() => {
     let max = 0;
     for (const t of blockerTasks) {
@@ -110,14 +135,14 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
 
   const varianceDays = daysRemaining != null && daysRemaining < 0 ? Math.abs(daysRemaining) : maxOverdueDays;
   const planDateStr = useMemo(() => {
-    return currentEntity.due_date ? displayDate(currentEntity.due_date) : (isEn ? 'Not set' : 'Chưa đặt');
-  }, [currentEntity.due_date, isEn]);
+    return currentEntity?.due_date ? displayDate(currentEntity.due_date) : (isEn ? 'Not set' : 'Chưa đặt');
+  }, [currentEntity?.due_date, isEn]);
   const forecastDateStr = useMemo(() => {
-    if (!currentEntity.due_date) return isEn ? 'On Track' : 'Đúng hạn';
+    if (!currentEntity?.due_date) return isEn ? 'On Track' : 'Đúng hạn';
     const d = new Date(currentEntity.due_date);
     d.setDate(d.getDate() + varianceDays);
     return displayDate(d.toISOString());
-  }, [currentEntity.due_date, varianceDays, isEn]);
+  }, [currentEntity?.due_date, varianceDays, isEn]);
 
   // 6. Box 6: Hàng đợi nghiệm thu (Review & Scope Creep) - Màu Xanh ngọc
   const inReviewTasks = useMemo(() => {
@@ -132,6 +157,8 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
   const addedTasksCount = useMemo(() => {
     return allTasks.filter((t) => !t.workflow_phase_id).length;
   }, [allTasks]);
+
+  if (!currentEntity) return null;
 
   return (
     <div ref={containerRef} className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-2.5 w-full relative">
@@ -177,11 +204,11 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             </button>
           </div>
           <div className="text-base sm:text-lg font-extrabold text-rose-600 dark:text-rose-400 tracking-tight leading-none truncate">
-            {blockerTasks.length} {isEn ? 'Blockers' : 'Điểm nghẽn'}
+            {blockerTasks.length} {isEn ? (blockerTasks.length === 1 ? 'Blocker' : 'Blockers') : 'Điểm nghẽn'}
           </div>
           <div
             className="text-[9px] sm:text-[9.5px] text-slate-500 dark:text-slate-400 truncate"
-            title={`${waitingClientCount} ${isEn ? 'Review wait' : 'Chờ duyệt'} · ${depBlockedCount} ${isEn ? 'Overdue' : 'Quá hạn xử lý'}`}
+            title={`${waitingClientCount} ${isEn ? 'Wait' : 'Chờ duyệt'} · ${depBlockedCount} ${isEn ? 'Late' : 'Quá hạn'}`}
           >
             {waitingClientCount} {isEn ? 'Wait' : 'Chờ duyệt'} · {depBlockedCount} {isEn ? 'Late' : 'Quá hạn'}
           </div>
@@ -292,13 +319,13 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             </button>
           </div>
           <div className="text-base sm:text-lg font-extrabold text-amber-600 dark:text-amber-400 tracking-tight leading-none truncate">
-            {todayTasks.length} {isEn ? 'Tasks' : 'Công việc'}
+            {dueTodayTasks.length} {isEn ? (dueTodayTasks.length === 1 ? 'Task' : 'Tasks') : 'Công việc'}
           </div>
           <div
             className="text-[9px] sm:text-[9.5px] text-slate-500 dark:text-slate-400 truncate"
-            title={`${todayDoneCount} Done · ${todayActiveCount} Active · ${todayTodoCount} Pending`}
+            title={`${todayDoneCount} ${isEn ? 'Done' : 'Xong'} · ${totalActiveTasksCount} ${isEn ? 'Active' : 'Đang làm'} · ${todayPendingCount} ${isEn ? 'Due Today' : 'Hạn hôm nay'}`}
           >
-            {todayDoneCount} Xong · {todayActiveCount} Đang chạy · {todayTodoCount} Chờ
+            {todayDoneCount} {isEn ? 'Done' : 'Xong'} · {totalActiveTasksCount} {isEn ? 'Active' : 'Đang làm'} · {todayPendingCount} {isEn ? 'Due' : 'Hạn'}
           </div>
         </div>
 
@@ -312,8 +339,8 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             </div>
             <div>
               {isEn
-                ? 'Aggregates tasks due today or actively running, grouped by assigned team members for quick standup follow-up.'
-                : 'Tổng hợp các đầu việc cần bàn giao trong ngày hôm nay hoặc đang triển khai trực tiếp, gom nhóm theo từng nhân sự thực hiện.'}
+                ? 'Aggregates tasks due today, grouped by assigned team members for quick standup follow-up.'
+                : 'Tổng hợp các đầu việc có hạn chót trong ngày hôm nay, gom nhóm theo từng nhân sự thực hiện.'}
             </div>
           </div>
         )}
@@ -338,7 +365,7 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             <div className="pt-2 max-h-72 overflow-y-auto space-y-2">
               {todayTasksByAssignee.length === 0 ? (
                 <div className="py-6 text-center text-xs text-gray-400">
-                  {isEn ? 'No tasks scheduled for today.' : 'Hôm nay không có task nào đến hạn hoặc đang mở.'}
+                  {isEn ? 'No tasks scheduled for today.' : 'Hôm nay không có task nào đến hạn.'}
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -347,14 +374,14 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
                       <div className="grid grid-flow-col auto-cols-max items-center gap-2">
                         <Avatar name={group.name} src={group.avatar} className="w-4 h-4 text-[8px]" />
                         <span className="font-bold text-xs text-gray-900 dark:text-white">{group.name}</span>
-                        <span className="text-[10px] text-gray-400">({group.tasks.length} tasks)</span>
+                        <span className="text-[10px] text-gray-400">({group.tasks.length} {isEn ? (group.tasks.length === 1 ? 'task' : 'tasks') : 'việc'})</span>
                       </div>
                       <div className="space-y-1 pl-6">
                         {group.tasks.map((t) => (
                           <div key={t.id} className="grid grid-cols-[1fr_auto] items-center gap-2 text-[11px]">
                             <span className="truncate text-gray-700 dark:text-slate-300">• {t.title}</span>
                             <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold ${isDone(t.status) ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'}`}>
-                              {isDone(t.status) ? 'Done' : (t.status || 'Active')}
+                              {isDone(t.status) ? (isEn ? 'Done' : 'Xong') : (t.status || 'Active')}
                             </span>
                           </div>
                         ))}
@@ -410,13 +437,13 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             </button>
           </div>
           <div className="text-base sm:text-lg font-extrabold text-blue-600 dark:text-blue-400 tracking-tight leading-none truncate">
-            {currentVelocity} {isEn ? 't/day' : 'Việc/ngày'}
+            {currentVelocity} {isEn ? 'tasks/d' : 'việc/ngày'}
           </div>
           <div
             className="text-[9px] sm:text-[9.5px] text-slate-500 dark:text-slate-400 truncate"
-            title={`${isEn ? 'Target:' : 'Mục tiêu:'} ${requiredVelocity} ${isEn ? 'tasks/day' : 'việc/ngày'}`}
+            title={`${isEn ? 'Target:' : 'Mục tiêu:'} ${requiredVelocity} ${isEn ? 'tasks/d' : 'việc/ngày'}`}
           >
-            {isEn ? 'Target:' : 'Mục tiêu:'} {requiredVelocity} v/ngày
+            {isEn ? 'Target:' : 'Mục tiêu:'} {requiredVelocity} {isEn ? 'tasks/d' : 'việc/ngày'}
           </div>
         </div>
 
@@ -457,17 +484,17 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div className="p-2 rounded bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
                   <div className="text-[10px] text-gray-500 dark:text-slate-400">{isEn ? 'Current Velocity' : 'Tốc độ hiện tại'}</div>
-                  <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400">{currentVelocity} tasks/ngày</div>
+                  <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400">{currentVelocity} {isEn ? 'tasks/d' : 'việc/ngày'}</div>
                 </div>
                 <div className="p-2 rounded bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800">
                   <div className="text-[10px] text-gray-500 dark:text-slate-400">{isEn ? 'Target Needed' : 'Chỉ tiêu cần đạt'}</div>
-                  <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{requiredVelocity} tasks/ngày</div>
+                  <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{requiredVelocity} {isEn ? 'tasks/d' : 'việc/ngày'}</div>
                 </div>
               </div>
               <div className="text-[11px] text-gray-600 dark:text-slate-300 leading-relaxed">
                 {isEn
-                  ? `To complete all remaining ${remainingTasksCount} tasks within ${remainingDaysCount} remaining days, the team needs to maintain an average pace of ${requiredVelocity} tasks/day.`
-                  : `Để hoàn thành tất cả ${remainingTasksCount} tasks còn lại trong ${remainingDaysCount} ngày tới, đội ngũ cần duy trì tốc độ trung bình ${requiredVelocity} tasks/ngày.`}
+                  ? `To complete all remaining ${remainingTasksCount} tasks within ${remainingDaysCount} remaining days, the team needs to maintain an average pace of ${requiredVelocity} tasks/d.`
+                  : `Để hoàn thành tất cả ${remainingTasksCount} việc còn lại trong ${remainingDaysCount} ngày tới, đội ngũ cần duy trì tốc độ trung bình ${requiredVelocity} việc/ngày.`}
               </div>
             </div>
           </div>
@@ -516,13 +543,13 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
             </button>
           </div>
           <div className="text-base sm:text-lg font-extrabold text-violet-600 dark:text-violet-400 tracking-tight leading-none truncate">
-            Còn {remainingTasksCount}/{totalTasksCount} {isEn ? 'Tasks' : 'Việc'}
+            {isEn ? `${remainingTasksCount}/${totalTasksCount} Tasks Left` : `Còn ${remainingTasksCount}/${totalTasksCount} việc`}
           </div>
           <div
             className="text-[9px] sm:text-[9.5px] text-slate-500 dark:text-slate-400 truncate"
-            title={`Còn ${remainingWorkPct}% việc · ${remainingTimePct}% quỹ thời gian`}
+            title={isEn ? `${remainingWorkPct}% scope left · ${remainingTimePct}% time remaining` : `Còn ${remainingWorkPct}% việc · ${remainingTimePct}% quỹ thời gian`}
           >
-            Còn {remainingWorkPct}% việc · {remainingTimePct}% quỹ tg
+            {isEn ? `${remainingWorkPct}% scope · ${remainingTimePct}% time left` : `Còn ${remainingWorkPct}% việc · ${remainingTimePct}% quỹ tg`}
           </div>
         </div>
 
@@ -626,7 +653,9 @@ export function WorkflowKpis({ model }: { model: WorkflowModel }) {
               <Info size={11} />
             </button>
           </div>
-          <div className="text-base sm:text-lg font-extrabold text-amber-600 dark:text-amber-400 tracking-tight leading-none truncate">
+          <div className={`text-base sm:text-lg font-extrabold tracking-tight leading-none truncate ${
+            varianceDays > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+          }`}>
             {varianceDays > 0 ? (isEn ? `+${varianceDays}d Delay` : `Lệch +${varianceDays} ngày`) : (isEn ? 'On Track' : 'Đúng tiến độ')}
           </div>
           <div

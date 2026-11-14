@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Edit3, Settings, History } from 'lucide-react';
 import { useTranslation } from '../../../i18n/translations';
-import { statusMeta } from '../../../utils/statusTheme';
+import { getStatusLabel, getStatusBadgeVisual } from '../../../utils/statusTheme';
 import { priorityClass } from './projectPresentation';
 import { TaskActivityLogPopover } from '../tasks/TaskActivityLogPopover';
 import { StylizedPinIcon } from '../../common/StylizedPinIcon';
@@ -125,6 +125,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     { value: 'draft', label: isEn ? 'Draft / To-do' : 'Bản nháp', dotClass: 'bg-slate-400' },
     { value: 'planning', label: isEn ? 'Planning' : 'Lên kế hoạch', dotClass: 'bg-purple-500' },
     { value: 'active', label: isEn ? 'In Progress' : 'Đang thực hiện', dotClass: 'bg-sky-500' },
+    { value: 'pending_approval', label: isEn ? 'Pending Approval' : 'Chờ duyệt', dotClass: 'bg-amber-500' },
     { value: 'on_hold', label: isEn ? 'On Hold' : 'Tạm dừng', dotClass: 'bg-amber-500' },
     { value: 'completed', label: isEn ? 'Completed' : 'Hoàn thành', dotClass: 'bg-emerald-500' },
   ];
@@ -136,69 +137,8 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
     dotClass: 'bg-amber-500',
   };
 
-  const meta = statusMeta(currentStatus);
-  const enStatusMap: Record<string, string> = {
-    'Hoàn thành': 'Completed',
-    'Đã duyệt': 'Approved',
-    'Đang thực hiện': 'In Progress',
-    'Chờ duyệt': 'In Review',
-    'Lên kế hoạch': 'Planning',
-    'Bản nháp': 'Draft / To-do',
-    'Tạm dừng': 'On Hold',
-    'Đang chờ': 'Pending',
-    'Quá hạn': 'Overdue',
-    'Từ chối': 'Rejected',
-    'Đã hủy': 'Canceled',
-    'Chưa bắt đầu': 'Draft / To-do',
-    'Đã ẩn / Lưu trữ': 'Archived',
-    'Đã xóa': 'Deleted',
-  };
-  const currentStatusLabel = isEn ? (enStatusMap[meta.label] || meta.label) : meta.label;
-
-  const getStatusButtonVisual = (statusVal: string) => {
-    const s = statusVal.toLowerCase().trim().replace(/[ _]+/g, '-');
-    if (['archived', 'hidden', 'đã-ẩn', 'lưu-trữ'].includes(s)) {
-      return {
-        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700',
-        dotClass: 'bg-slate-500',
-      };
-    }
-    if (['deleted', 'đã-xóa'].includes(s)) {
-      return {
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/70',
-        dotClass: 'bg-rose-500',
-      };
-    }
-    if (['completed', 'complete', 'done', 'hoàn-thành'].includes(s)) {
-      return {
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/70',
-        dotClass: 'bg-emerald-500',
-      };
-    }
-    if (['on-hold', 'on_hold', 'paused', 'tạm-dừng'].includes(s)) {
-      return {
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/70',
-        dotClass: 'bg-amber-500',
-      };
-    }
-    if (['active', 'in-progress', 'in_progress', 'doing', 'đang-làm', 'đang-thực-hiện'].includes(s)) {
-      return {
-        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/70',
-        dotClass: 'bg-sky-500',
-      };
-    }
-    if (['planning', 'lên-kế-hoạch', 'planned', 'backlog'].includes(s)) {
-      return {
-        badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/70',
-        dotClass: 'bg-purple-500',
-      };
-    }
-    return {
-      badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700',
-      dotClass: 'bg-slate-400',
-    };
-  };
-  const statusVisual = getStatusButtonVisual(currentStatus);
+  const currentStatusLabel = getStatusLabel(currentStatus, lang);
+  const statusVisual = getStatusBadgeVisual(currentStatus);
 
   return (
     <div
@@ -304,6 +244,7 @@ export const EntityActionBadges: React.FC<EntityActionBadgesProps> = ({
                   (opt.value === 'draft' && (currentStatus === 'todo' || currentStatus === 'not_started' || currentStatus === 'chưa bắt đầu')) ||
                   (opt.value === 'active' && (currentStatus === 'in_progress' || currentStatus === 'doing')) ||
                   (opt.value === 'planning' && (currentStatus === 'planned' || currentStatus === 'backlog')) ||
+                  (opt.value === 'pending_approval' && (currentStatus === 'in_qa' || currentStatus === 'in_review' || currentStatus === 'review' || currentStatus === 'pending-approval' || currentStatus === 'chờ duyệt')) ||
                   (opt.value === 'on_hold' && (currentStatus === 'paused' || currentStatus === 'on-hold')) ||
                   (opt.value === 'completed' && (currentStatus === 'done' || currentStatus === 'complete'));
                 return (
